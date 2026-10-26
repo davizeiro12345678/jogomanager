@@ -86,7 +86,7 @@ describe("cinematic runtime", () => {
     expect(cinematicDetail("media", true).portrait).toBe(true);
     expect(cinematicDetail("alta", true).portrait).toBe(true);
     expect(cinematicDetail("media", false).portrait).toBe(false);
-    expect(cinematicDetail("media", true).radial).toBe(12);
+    expect(cinematicDetail("media", true).radial).toBe(24);
   });
   it("drives secondary hair from the close-up actor's gait and head turns", () => {
     const moving = cinematicHairMotionDriveAt({

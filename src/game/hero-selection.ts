@@ -42,29 +42,3 @@ export function stageHeroMembership(
   if (added !== undefined) next.add(added);
   return next;
 }
-
-/** Screen coverage remains the eligibility gate. A readable ball carrier,
- * contact beat, keeper save or scorer wins a close tie without promoting
- * tiny or offscreen actors. Retained membership avoids rig churn. */
-export function heroPriorityScore(
-  coverage: number,
-  moment: {
-    retained: boolean;
-    ballHolder: boolean;
-    contact: boolean;
-    keeperSave: boolean;
-    scorer: boolean;
-  },
-): number | null {
-  if (!Number.isFinite(coverage) || coverage <= 0) return null;
-  const salient = moment.ballHolder || moment.contact || moment.keeperSave || moment.scorer;
-  const threshold = moment.retained ? 0.035 : salient ? 0.032 : 0.052;
-  if (coverage < threshold) return null;
-  return (
-    coverage * (moment.retained ? 1.12 : 1) +
-    (moment.ballHolder ? 0.022 : 0) +
-    (moment.contact ? 0.018 : 0) +
-    (moment.keeperSave ? 0.045 : 0) +
-    (moment.scorer ? 0.04 : 0)
-  );
-}

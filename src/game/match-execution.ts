@@ -72,10 +72,16 @@ export async function initializeMatchExecution(
     authority?.dispose();
     return sim.executionContract();
   }
-  if (kernel) sim.setPassLaneIntoKernel(kernel, "wasm");
+  try {
+    if (kernel) sim.setPassLaneIntoKernel(kernel, "wasm");
+  } catch (error) {
+    // Physics is still owned by this initializer until it is attached below.
+    // A rejected perception backend must not orphan its completed WASM world.
+    authority?.dispose();
+    throw error;
+  }
   if (authority) {
     sim.setBallPhysicsAuthority(authority);
-    if (!sim.hasBallPhysicsAuthority()) authority.dispose();
   }
   return sim.executionContract();
 }

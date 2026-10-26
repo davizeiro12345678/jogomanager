@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { buildPuddleInstanceMatrices, PUDDLE_COUNT } from "@/game/puddle-instance-data";
 
 /** The twelve coplanar, non-overlapping ellipses share their original physical

@@ -8,11 +8,12 @@ import {
   palmSurface,
 } from "./rig-geometry";
 import { buildRigSkin, countRigSkin } from "./rig-skin";
+import { headComplexion } from "./sculpt/head";
 import { HERO_MESH_COST } from "./draw-budget";
 import { lookFor, proportionsFor, type HairStyle } from "./player-model";
 import { faceMorphology, skinAlbedo } from "./player-morphology";
 import { playerMaterials } from "./player-materials";
-import { beardAlbedo } from "./rig-materials";
+import { beardAlbedo, eyeWhiteMaterial } from "./rig-materials";
 import {
   buildSculptedFace,
   eyelidSurface,
@@ -36,6 +37,27 @@ const look = lookFor("studio-fla-MF-1", "MF", true);
 const P = proportionsFor(look);
 
 describe("sculpted football player", () => {
+  it("settles the outer eyelid attachment against the orbit while retaining a raised waterline", () => {
+    for (const side of [-1, 1])
+      for (const upper of [true, false]) {
+        const lid = eyelidSurface(P, side, look.seed, upper);
+        const position = lid.getAttribute("position");
+        for (let i = 0; i < position.count; i++) {
+          const projection =
+            position.getZ(i) - faceSurfaceZ(P, position.getX(i), position.getY(i), look.seed);
+          if (i >= 4 * 25) {
+            expect(projection).toBeGreaterThan(0);
+            expect(projection).toBeLessThan(P.headR * 0.002);
+          }
+          if (i >= 10 && i <= 14) expect(projection).toBeGreaterThan(P.headR * 0.032);
+          // The intermediate tissue must already have settled into the face;
+          // carrying the wet rim's depth over this row creates a visible bag.
+          if (i >= 2 * 25 && i < 3 * 25) expect(projection).toBeLessThan(P.headR * 0.012);
+        }
+        lid.dispose();
+      }
+  });
+
   it("occludes the adult iris arcs with the relaxed orbital lids across seeded faces", () => {
     const material = new THREE.MeshBasicMaterial();
     for (const id of [
@@ -44,32 +66,45 @@ describe("sculpted football player", () => {
       "orbital-depth-light",
       "orbital-depth-dark",
     ]) {
-      const athlete = lookFor(id, "MF", true),
-        p = proportionsFor(athlete),
-        morphology = faceMorphology(athlete.seed);
-      const face = buildSculptedFace(p, athlete, playerMaterials(athlete, kit, null, "alta"), true);
-      for (const side of [-1, 1]) {
-        const iris = new THREE.Mesh(face.eyes[side < 0 ? 0 : 4]!.geometry, material);
-        iris.updateMatrixWorld(true);
-        const x = side * p.headW * morphology.eyeSpacing,
-          y = p.headR * (0.14 + side * morphology.eyeAsymmetry);
-        for (const upper of [true, false]) {
-          const lid = new THREE.Mesh(eyelidSurface(p, side, athlete.seed, upper), material);
-          lid.updateMatrixWorld(true);
-          const probeY = y + p.headR * (upper ? 0.054 : -0.0565);
-          const ray = new THREE.Raycaster(
-            new THREE.Vector3(x, probeY, 1),
-            new THREE.Vector3(0, 0, -1),
-          );
-          const irisHit = ray.intersectObject(iris)[0],
-            lidHit = ray.intersectObject(lid)[0];
-          expect(irisHit).toBeDefined();
-          expect(lidHit).toBeDefined();
-          expect(lidHit!.distance).toBeLessThan(irisHit!.distance);
-          lid.geometry.dispose();
+      for (const portrait of [false, true]) {
+        const athlete = lookFor(id, "MF", true),
+          p = proportionsFor(athlete),
+          morphology = faceMorphology(athlete.seed);
+        const face = buildSculptedFace(
+          p,
+          athlete,
+          playerMaterials(athlete, kit, null, "alta"),
+          true,
+          portrait,
+        );
+        for (const side of [-1, 1]) {
+          const iris = new THREE.Mesh(face.eyes[side < 0 ? 0 : 4]!.geometry, material);
+          iris.updateMatrixWorld(true);
+          const x = side * p.headW * morphology.eyeSpacing,
+            // Probe the same anatomical iris arcs relative to the actual
+            // authored pupil centre in both match and isolated portrait rigs.
+            y = new THREE.Vector3().setFromMatrixPosition(face.eyes[side < 0 ? 2 : 6]!.matrix).y;
+          for (const upper of [true, false]) {
+            const lid = new THREE.Mesh(
+              eyelidSurface(p, side, athlete.seed, upper, portrait),
+              material,
+            );
+            lid.updateMatrixWorld(true);
+            const probeY = y + p.headR * (upper ? 0.054 : -0.0565);
+            const ray = new THREE.Raycaster(
+              new THREE.Vector3(x, probeY, 1),
+              new THREE.Vector3(0, 0, -1),
+            );
+            const irisHit = ray.intersectObject(iris)[0],
+              lidHit = ray.intersectObject(lid)[0];
+            expect(irisHit).toBeDefined();
+            expect(lidHit).toBeDefined();
+            expect(lidHit!.distance).toBeLessThan(irisHit!.distance);
+            lid.geometry.dispose();
+          }
         }
+        for (const parts of Object.values(face)) for (const part of parts) part.geometry.dispose();
       }
-      for (const parts of Object.values(face)) for (const part of parts) part.geometry.dispose();
     }
     material.dispose();
   });
@@ -134,9 +169,12 @@ describe("sculpted football player", () => {
           expect(projection).toBeLessThan(p.headR * 0.017);
           if (i >= 6 * 25) {
             expect(projection).toBeCloseTo(p.headR * 0.0008, 7);
-            expect(colors.getX(i)).toBeCloseTo(1, 7);
-            expect(colors.getY(i)).toBeCloseTo(1, 7);
-            expect(colors.getZ(i)).toBeCloseTo(1, 7);
+            // At the attachment, match the skull's actual complexion, not
+            // unpigmented white (which made a bright strip under the lip).
+            const pigment = headComplexion(p, x, y, positions.getZ(i), new THREE.Color());
+            expect(colors.getX(i)).toBeCloseTo(pigment.r, 7);
+            expect(colors.getY(i)).toBeCloseTo(pigment.g, 7);
+            expect(colors.getZ(i)).toBeCloseTo(pigment.b, 7);
           }
           // Reconstruct the head sample from its authored nonuniform UV grid.
           // This verifies the attached lip samples pores/roughness at the same
@@ -208,10 +246,22 @@ describe("sculpted football player", () => {
           lowest = Math.min(lowest, depth);
           highest = Math.max(highest, depth);
         }
-        // Peripheral cornea is recessed under the lids; the visible centre
-        // clears the sclera. Lid occlusion is checked with rays above.
-        expect(lowest).toBeGreaterThan(0);
-        expect(highest).toBeGreaterThan(p.headR * 0.03);
+        // Assert ordering against actual authored sclera instead of freezing
+        // its old protrusion into the test. Sinking the complete eye into its
+        // socket must preserve limbus visibility and every pupil sample.
+        const sclera = face.face.filter((part) => part.material === eyeWhiteMaterial(true));
+        let scleraProjection = -Infinity;
+        for (const part of sclera) {
+          const scleraPoints = part.geometry.getAttribute("position");
+          for (let i = 0; i < scleraPoints.count; i++)
+            scleraProjection = Math.max(
+              scleraProjection,
+              scleraPoints.getZ(i) -
+                faceSurfaceZ(p, scleraPoints.getX(i), scleraPoints.getY(i), athlete.seed),
+            );
+        }
+        expect(sclera.length).toBe(2);
+        expect(lowest).toBeGreaterThan(scleraProjection);
         const pupilCentre = new THREE.Vector3().setFromMatrixPosition(pupil.matrix);
         expect(
           pupilCentre.z - faceSurfaceZ(p, pupilCentre.x, pupilCentre.y, athlete.seed),
@@ -342,11 +392,7 @@ describe("sculpted football player", () => {
           (value) => Number.isFinite(value) && value >= 0.8 && value <= 1,
         ),
       ).toBe(true);
-      // Both LOD grids retain visible pigment variation without requiring
-      // the sparse mesh to land exactly on the deepest socket sample.
-      expect(
-        Math.max(...Array.from(colors.array)) - Math.min(...Array.from(colors.array)),
-      ).toBeGreaterThan(0.05);
+      expect(Math.min(...Array.from(colors.array))).toBeLessThan(0.94);
       const columns = geometry === detailed ? 136 : 18;
       for (let row = 0; row < colors.count; row += columns + 1) {
         for (const component of ["getX", "getY", "getZ"] as const)
@@ -380,16 +426,17 @@ describe("sculpted football player", () => {
   it("embeds almond eyes in the sculpted sockets instead of floating eyeballs", () => {
     const mats = playerMaterials(look, kit, null, "alta");
     const face = buildSculptedFace(P, look, mats, true);
-    const lenses = face.face.filter(
-      (part) => (part.material as THREE.MeshStandardMaterial).color?.getHexString() === "c9c3b8",
-    );
+    const lenses = face.face.filter((part) => part.material === eyeWhiteMaterial(true));
     expect(lenses).toHaveLength(2);
     for (const lens of lenses) {
       const points = lens.geometry.getAttribute("position");
       for (let i = 0; i < points.count; i++) {
         const projection =
           points.getZ(i) - faceSurfaceZ(P, points.getX(i), points.getY(i), look.seed);
-        expect(projection).toBeGreaterThan(0);
+        // Corners are intentionally buried; the central sclera remains
+        // visible while pale point-like triangles cannot escape the orbit.
+        if (i % 21 === 0 || i % 21 === 20) expect(projection).toBeLessThan(0);
+        else expect(projection).toBeGreaterThan(-P.headR * 0.02);
         expect(projection).toBeLessThan(P.headR * 0.05);
       }
     }
@@ -407,9 +454,7 @@ describe("sculpted football player", () => {
 
     const mats = playerMaterials(look, kit, null, "alta");
     const face = buildSculptedFace(P, look, mats, true);
-    const eyePatches = face.face.filter(
-      (part) => (part.material as THREE.MeshStandardMaterial).color?.getHexString() === "c9c3b8",
-    );
+    const eyePatches = face.face.filter((part) => part.material === eyeWhiteMaterial(true));
     expect(eyePatches).toHaveLength(2);
     const centers = eyePatches.map((part) => {
       const points = part.geometry.getAttribute("position");
@@ -469,9 +514,12 @@ describe("sculpted football player", () => {
     }
   });
 
-  it("accounts for material and shadow draws across roles, haircuts and accessories", () => {
-    const costs: number[] = [];
-    for (const pos of ["MF", "FW", "DF", "GK"])
+  // Preserve all 128 combinations while giving each role its own ordinary
+  // timeout. One aggregate test exceeded it even with no concurrent build.
+  it.each(["MF", "FW", "DF", "GK"] as const)(
+    "accounts for material and shadow draws across haircuts and accessories for %s",
+    (pos) => {
+      const costs: number[] = [];
       for (let seed = 0; seed < 4; seed++)
         for (const sleeves of ["short", "long"] as const)
           for (const hairStyle of ["bald", "short", "afro", "dreads"] as const) {
@@ -508,6 +556,7 @@ describe("sculpted football player", () => {
             );
             skin.dispose();
           }
-    expect(Math.max(...costs)).toBeLessThanOrEqual(HERO_MESH_COST);
-  });
+      expect(Math.max(...costs)).toBeLessThanOrEqual(HERO_MESH_COST);
+    },
+  );
 });

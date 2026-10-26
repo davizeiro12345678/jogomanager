@@ -25,7 +25,11 @@ import { Badge } from "@/components/ui/badge";
 
 import { useSignedIn } from "@/hooks/useCareer";
 
-import { useStoreCatalog } from "@/hooks/useStoreCatalog";
+import { salePrice, useStoreCatalog } from "@/hooks/useStoreCatalog";
+import { CoinOfferDetails } from "@/components/store/CoinOfferDetails";
+import { StoreCheckoutAction } from "@/components/store/StoreCheckoutAction";
+import { isStoreCheckoutAllowed } from "@/lib/store-eligibility";
+import { compareCoinOffers, storeProductDescription } from "@/game/store-offers";
 
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
@@ -62,6 +66,8 @@ export function ProdutosPage() {
   const signedIn = useSignedIn();
   const productsQuery = useStoreCatalog();
   const products = productsQuery.data ?? [];
+  const offerTime = Date.now();
+  const coinValues = compareCoinOffers(products, offerTime);
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [opening, setOpening] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
@@ -69,7 +75,8 @@ export function ProdutosPage() {
 
   function buy(productKey: string) {
     // A sessão autenticada preserva o fluxo de conta já existente.
-    if (signedIn !== true) return;
+    const product = products.find((candidate) => candidate.key === productKey);
+    if (signedIn !== true || !product || !isStoreCheckoutAllowed(product)) return;
     setOpening(productKey);
     try {
       openCheckout({
@@ -159,6 +166,9 @@ export function ProdutosPage() {
             products.map((product) => {
               const kind = asPackKind(product.kind);
               const presentation = PACK_BY_KEY[product.key];
+              const offer = salePrice(product, offerTime);
+              const coinValue = coinValues.get(product.key);
+              const betterOffer = products.find((other) => other.key === coinValue?.betterOfferKey);
 
               return (
                 <article
@@ -188,44 +198,71 @@ export function ProdutosPage() {
 
                   <div className="flex flex-1 flex-col p-5">
                     <h2 className="font-display text-lg uppercase tracking-wide">{product.name}</h2>
-                    <p className="mt-3 text-sm text-muted-foreground">{product.description}</p>
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      {storeProductDescription(product)}
+                    </p>
+                    {coinValues.get(product.key)?.isBestValue ? (
+                      <Badge className="mt-3 w-fit">Melhor relação moedas/preço</Badge>
+                    ) : null}
 
                     {product.coins > 0 ? (
                       <span className="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
                         <Coins size={12} /> +{product.coins} moedas
                       </span>
                     ) : null}
+                    <div className="mt-2">
+                      <CoinOfferDetails
+                        {...(coinValue ? { value: coinValue } : {})}
+                        {...(betterOffer ? { betterOffer } : {})}
+                        anchorPrefix=""
+                      />
+                    </div>
 
                     <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <span className="font-display text-2xl">
-                          {formatPrice(product.price_cents, product.currency)}
+                          {formatPrice(offer.cents, product.currency)}
+                          {offer.percent > 0 ? (
+                            <>
+                              <s className="ml-2 text-sm text-muted-foreground">
+                                {formatPrice(product.price_cents, product.currency)}
+                              </s>
+                              <Badge className="ml-2" variant="destructive">
+                                -{offer.percent}%
+                              </Badge>
+                            </>
+                          ) : null}
                         </span>
                         <p className="mt-1 max-w-[14rem] text-[11px] text-muted-foreground">
                           Preço de catálogo; o checkout confirma total e disponibilidade.
                         </p>
                       </div>
-                      {signedIn === true ? (
-                        <Button onClick={() => buy(product.key)} disabled={opening === product.key}>
-                          {opening === product.key ? "Abrindo…" : "Comprar agora"}
-                        </Button>
-                      ) : signedIn === false ? (
-                        <Button
-                          data-testid="guest-checkout-start"
-                          onClick={() =>
-                            setGuestProduct({
-                              key: product.key,
-                              name: product.name,
-                              priceCents: product.price_cents,
-                              currency: product.currency,
-                            })
-                          }
-                        >
-                          Comprar como visitante
-                        </Button>
-                      ) : (
-                        <Button disabled>Verificando conta…</Button>
-                      )}
+                      <StoreCheckoutAction product={product}>
+                        {signedIn === true ? (
+                          <Button
+                            onClick={() => buy(product.key)}
+                            disabled={opening === product.key}
+                          >
+                            {opening === product.key ? "Abrindo…" : "Comprar agora"}
+                          </Button>
+                        ) : signedIn === false ? (
+                          <Button
+                            data-testid="guest-checkout-start"
+                            onClick={() =>
+                              setGuestProduct({
+                                key: product.key,
+                                name: product.name,
+                                priceCents: offer.cents,
+                                currency: product.currency,
+                              })
+                            }
+                          >
+                            Comprar como visitante
+                          </Button>
+                        ) : (
+                          <Button disabled>Verificando conta…</Button>
+                        )}
+                      </StoreCheckoutAction>
                     </div>
                     <Button
                       type="button"
@@ -258,7 +295,7 @@ export function ProdutosPage() {
                 {previewProduct.name}
               </h2>
               <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-                {previewProduct.description}
+                {storeProductDescription(previewProduct)}
               </p>
               <p className="mt-5 text-sm text-muted-foreground">
                 Esta é a única cena 3D da vitrine. Os cards usam posters leves para que a loja

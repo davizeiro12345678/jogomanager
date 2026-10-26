@@ -1,0 +1,30 @@
+[
+  {
+    "path": "src/game/player-locomotion-pose.ts",
+    "sha256": "f1f67fabfb3dae529780805c3c015dd5a763ddfb4189011f7357aa79d8e8d9a7"
+  },
+  {
+    "path": "src/game/athlete-dynamics.ts",
+    "sha256": "1e3cc93667cac1de9a2f3714c2860a3aa966e8ef03d6d7194bd08a7eaeb18235"
+  },
+  {
+    "path": "src/game/ground-contact.ts",
+    "sha256": "1d76ca63095fb7fb486af2ad9c91cd1aa55eaaa4e5294e390c435591ce427f88"
+  },
+  {
+    "path": "src/game/sculpt/head.ts",
+    "sha256": "a91bbd1aa1c6c6500b30bf3173fb72a139529e1c6944383e20505cce45b97d06"
+  },
+  {
+    "path": "src/game/player-sculpt.ts",
+    "sha256": "8578c5622b2d88c445a324fd885fff4cc546d50e2a8430388feff4ef2d9bf11a"
+  },
+  {
+    "path": "src/game/rapier-ball-authority.ts",
+    "sha256": "5ff109173af46de5eee1b7a7e5552767e17c6af383232bb519ac19127ebc459f"
+  },
+  {
+    "path": "src/game/crowd-sector.ts",
+    "sha256": "58d24ba5397d65979e6db43115dd0904b1047f5900c9a1f5baacf646b382b439"
+  }
+]

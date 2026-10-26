@@ -83,16 +83,6 @@ export const evaluatePassLanesIntoFallback: PassLaneIntoKernel = (
 };
 
 let loading: Promise<PassLaneKernel | null> | undefined;
-let intoLoading: Promise<PassLaneIntoKernel | null> | undefined;
-export function loadPassLaneIntoKernel(): Promise<PassLaneIntoKernel | null> {
-  intoLoading ??= loadGameWasm(WASM_CAPABILITY.perception | WASM_CAPABILITY.boundedPerception).then(
-    (module) =>
-      module && typeof module.evaluate_pass_lanes_into === "function"
-        ? (module.evaluate_pass_lanes_into as PassLaneIntoKernel)
-        : null,
-  );
-  return intoLoading;
-}
 export function loadPassLaneKernel(): Promise<PassLaneKernel | null> {
   loading ??= loadGameWasm(WASM_CAPABILITY.perception | WASM_CAPABILITY.boundedPerception).then(
     (module) =>
@@ -101,4 +91,30 @@ export function loadPassLaneKernel(): Promise<PassLaneKernel | null> {
         : null,
   );
   return loading;
+}
+
+let intoLoading: Promise<PassLaneIntoKernel | null> | undefined;
+/**
+ * Load the allocation-free Rust path used by the live match Worker. The output
+ * always remains JavaScript-owned so a WASM memory growth cannot invalidate it.
+ */
+export function loadPassLaneIntoKernel(): Promise<PassLaneIntoKernel | null> {
+  intoLoading ??= loadGameWasm(WASM_CAPABILITY.perception | WASM_CAPABILITY.boundedPerception).then(
+    (module) => {
+      const evaluateInto = module?.evaluate_pass_lanes_into;
+      if (typeof evaluateInto !== "function") return null;
+      return (x, z, receivers, defenders, output) => {
+        const written = evaluateInto(x, z, receivers, defenders, output);
+        if (
+          !Number.isSafeInteger(written) ||
+          written < 0 ||
+          written > output.length ||
+          written % 3 !== 0
+        )
+          throw new Error("Invalid bounded pass-lane output");
+        return written;
+      };
+    },
+  );
+  return intoLoading;
 }

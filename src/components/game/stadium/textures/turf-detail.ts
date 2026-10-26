@@ -1,37 +1,8 @@
 import * as THREE from "three";
 import { buildTurfDetail } from "@/game/turf-detail";
-import { acquirePresentationLanes } from "@/game/presentation-lanes";
 
 const SIZE = 512;
 let cached: { normal: THREE.DataTexture; roughness: THREE.DataTexture } | undefined;
-let owners = 0;
-let cancelBuild: (() => void) | undefined;
-const listeners = new Set<() => void>();
-export function onTurfDetailReady(callback: () => void) {
-  listeners.add(callback);
-  return () => {
-    listeners.delete(callback);
-  };
-}
-export function retainTurfDetail() {
-  const maps = cached;
-  if (!maps) return () => undefined;
-  owners += 1;
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    owners -= 1;
-    queueMicrotask(() => {
-      if (owners || cached !== maps) return;
-      cancelBuild?.();
-      cancelBuild = undefined;
-      maps.normal.dispose();
-      maps.roughness.dispose();
-      cached = undefined;
-    });
-  };
-}
 
 /** Session-owned tile: shared by every mowing pattern and match, never per frame. */
 export function turfDetailTextures() {
@@ -55,27 +26,11 @@ export function turfDetailTextures() {
   let finished = false;
   let worker: Worker | undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined;
-  let releaseLane: (() => void) | null = null;
-  const controller = new AbortController();
-  const stop = () => {
-    clearTimeout(timeout);
-    if (worker) {
-      worker.onmessage = null;
-      worker.onerror = null;
-      worker.terminate();
-    }
-    releaseLane?.();
-    releaseLane = null;
-    controller.abort();
-  };
-  cancelBuild = () => {
-    finished = true;
-    stop();
-  };
   const finish = (bytes: Uint8Array, backend: string) => {
     if (finished) return;
     finished = true;
-    stop();
+    clearTimeout(timeout);
+    worker?.terminate();
     const length = SIZE * SIZE * 4;
     if (!(bytes instanceof Uint8Array) || bytes.length !== length * 2) {
       bytes = buildTurfDetail(SIZE, 0x5eed02);
@@ -87,31 +42,19 @@ export function turfDetailTextures() {
       map.userData["generationBackend"] = backend;
       map.needsUpdate = true;
     }
-    for (const listener of listeners) listener();
   };
   const fallback = () => finish(buildTurfDetail(SIZE, 0x5eed02), "typescript");
-  void acquirePresentationLanes(1, controller.signal).then((lease) => {
-    if (finished) {
-      lease?.();
-      return;
-    }
-    releaseLane = lease;
-    if (!lease) {
-      fallback();
-      return;
-    }
-    try {
-      worker = new Worker(new URL("../../../../game/turf-detail.worker.ts", import.meta.url), {
-        type: "module",
-      });
-      worker.onmessage = ({ data }: MessageEvent<{ bytes: Uint8Array; backend: string }>) =>
-        finish(data.bytes, data.backend);
-      worker.onerror = fallback;
-      timeout = setTimeout(fallback, 10_000);
-      worker.postMessage({ size: SIZE, seed: 0x5eed02 });
-    } catch {
-      fallback();
-    }
-  });
+  try {
+    worker = new Worker(new URL("../../../../game/turf-detail.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    worker.onmessage = ({ data }: MessageEvent<{ bytes: Uint8Array; backend: string }>) =>
+      finish(data.bytes, data.backend);
+    worker.onerror = fallback;
+    timeout = setTimeout(fallback, 10_000);
+    worker.postMessage({ size: SIZE, seed: 0x5eed02 });
+  } catch {
+    fallback();
+  }
   return maps;
 }

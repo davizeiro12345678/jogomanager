@@ -14,40 +14,43 @@ const kit = {
 } as const;
 
 describe("athlete portrait surface continuity", () => {
-  it("settles the attached eyelid edge into the skull with the same pore coordinates", () => {
-    for (const id of ["studio-fla-MF-1", "orbital-depth-light", "orbital-depth-dark"]) {
-      const look = lookFor(id, "MF", true);
-      const p = proportionsFor(look);
-      for (const side of [-1, 1]) {
-        for (const upper of [false, true]) {
-          const geometry = eyelidSurface(p, side, look.seed, upper);
-          const position = geometry.getAttribute("position");
-          const uv = geometry.getAttribute("uv");
-          // The attached row must disappear into the head instead of leaving
-          // an elevated strip around the entire eye. Inspect its actual mesh.
-          for (let i = 4 * 25; i < position.count; i++) {
-            const x = position.getX(i),
-              y = position.getY(i);
-            const separation = position.getZ(i) - faceSurfaceZ(p, x, y, look.seed);
-            expect(separation).toBeGreaterThan(0);
-            expect(separation).toBeLessThan(p.headR * 0.002);
-            const theta = uv.getX(i) * Math.PI * 2;
-            const angle = theta - Math.sin(theta) * 0.6;
-            const centered = uv.getY(i) * 2 - 1;
-            const skull = headPoint(
-              p,
-              centered * (0.7 + centered ** 2 * 0.3) * 1.14,
-              angle,
-              look.seed,
-            );
-            expect(skull.x).toBeCloseTo(x, 6);
-            expect(skull.y).toBeCloseTo(y, 6);
+  it.each([false, true])(
+    "settles the attached eyelid edge into the skull with the same pore coordinates (portrait=%s)",
+    (portrait) => {
+      for (const id of ["studio-fla-MF-1", "orbital-depth-light", "orbital-depth-dark"]) {
+        const look = lookFor(id, "MF", true);
+        const p = proportionsFor(look);
+        for (const side of [-1, 1]) {
+          for (const upper of [false, true]) {
+            const geometry = eyelidSurface(p, side, look.seed, upper, portrait);
+            const position = geometry.getAttribute("position");
+            const uv = geometry.getAttribute("uv");
+            // The attached row must disappear into the head instead of leaving
+            // an elevated strip around the entire eye. Inspect its actual mesh.
+            for (let i = 4 * 25; i < position.count; i++) {
+              const x = position.getX(i),
+                y = position.getY(i);
+              const separation = position.getZ(i) - faceSurfaceZ(p, x, y, look.seed);
+              expect(separation).toBeGreaterThan(0);
+              expect(separation).toBeLessThan(p.headR * 0.002);
+              const theta = uv.getX(i) * Math.PI * 2;
+              const angle = theta - Math.sin(theta) * 0.6;
+              const centered = uv.getY(i) * 2 - 1;
+              const skull = headPoint(
+                p,
+                centered * (0.7 + centered ** 2 * 0.3) * 1.14,
+                angle,
+                look.seed,
+              );
+              expect(skull.x).toBeCloseTo(x, 6);
+              expect(skull.y).toBeCloseTo(y, 6);
+            }
+            geometry.dispose();
           }
-          geometry.dispose();
         }
       }
-    }
-  });
+    },
+  );
 
   it("buries the sleeve apex in the jersey silhouette rather than displaying a separate shoulder cap", () => {
     for (const role of ["MF", "DF", "GK"]) {

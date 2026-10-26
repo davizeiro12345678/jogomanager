@@ -1,4 +1,5 @@
 import type { RealPlayer } from "./realSquads";
+import { isPlayerRecord } from "./football-person-kind";
 import {
   identityText,
   providerName,
@@ -27,6 +28,7 @@ export function normalizeRealPlayers(input: unknown, clubId: string): RealPlayer
   const seen = new Map<string, number>();
   for (const raw of input) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    if (!isPlayerRecord(raw)) continue;
     const name = identityText(raw.name);
     if (!name || name.length > 120 || !["GK", "DF", "MF", "FW"].includes(raw.position)) continue;
     const id = identityText(raw.id);
@@ -48,6 +50,7 @@ export function normalizeRealPlayers(input: unknown, clubId: string): RealPlayer
       ...(source ? { data_source: source } : {}),
       ...(external ? { source_id: external } : {}),
       ...(birth ? { birth_date: birth } : {}),
+      source_kind: "player",
       name,
       position: raw.position,
       age: raw.age,
@@ -60,9 +63,14 @@ export function normalizeRealPlayers(input: unknown, clubId: string): RealPlayer
       photo_url: /^https:\/\//.test(photo) ? photo : null,
       ...(aliases.length ? { identity_aliases: aliases } : {}),
     };
-    const keys = id
-      ? realPlayerKeys({ id, source, source_id: external, clubId, name, identity_aliases: aliases })
-      : [];
+    const keys = realPlayerKeys({
+      id,
+      source,
+      source_id: external,
+      clubId,
+      name,
+      identity_aliases: aliases,
+    }).filter((key) => key !== "record:");
     const person = source !== "generated-fictional" ? verifiedPersonKey(name, birth, clubId) : "";
     if (person) keys.push(person);
     // Exact transport duplicates without IDs are safe to collapse; name/age alone is not an ID.

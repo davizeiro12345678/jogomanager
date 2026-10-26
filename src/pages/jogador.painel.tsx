@@ -296,15 +296,15 @@ function Panel({
                   Seus objetivos e consequências
                 </h2>
                 <p className="athlete-meta">
-                  ${finished} de ${objectives.length} metas cumpridas. Resultados são avaliados no
-                  fim da temporada e afetam moral, confiança e reputação.
+                  {finished} de {objectives.length} metas cumpridas. Resultados são avaliados no fim
+                  da temporada e afetam moral, confiança e reputação.
                 </p>
               </div>
               <span
                 className="athlete-objectives-score"
                 aria-label={`${finished} de ${objectives.length} metas alcançadas`}
               >
-                ${finished}/${objectives.length}
+                {finished}/{objectives.length}
               </span>
             </div>
             <div className="athlete-objectives-list">

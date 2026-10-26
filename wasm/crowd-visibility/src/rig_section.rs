@@ -33,30 +33,38 @@ pub fn generate_rig_section(rings: &[f64], radial: u32, roundness: f64, caps: u3
         Vec::with_capacity((rows * (radial as usize + 1) + cap_count * (radial as usize + 2)) * 5);
     let bottom = rings[0];
     let span = (rings[(rows - 1) * 4] - bottom).max(0.001);
+    // A bounded, invocation-local profile avoids repeating transcendental
+    // work for every ring without caching mutable caller input or output.
+    let mut profile = [[0.0_f64; 3]; 129];
+    for side in 0..=radial {
+        let u = side as f64 / radial as f64;
+        let angle = u * std::f64::consts::TAU;
+        let s = angle.sin();
+        let c = angle.cos();
+        let signed_s = if s == 0.0 {
+            s
+        } else {
+            s.signum() * s.abs().powf(roundness)
+        };
+        let signed_c = if c == 0.0 {
+            c
+        } else {
+            c.signum() * c.abs().powf(roundness)
+        };
+        profile[side as usize] = [signed_s, signed_c, u];
+    }
     for row in 0..rows {
         let offset = row * 4;
+        let v = (rings[offset] - bottom) / span;
         for side in 0..=radial {
-            let u = side as f64 / radial as f64;
-            let angle = u * std::f64::consts::TAU;
-            let s = angle.sin();
-            let c = angle.cos();
-            let signed_s = if s == 0.0 {
-                s
-            } else {
-                s.signum() * s.abs().powf(roundness)
-            };
-            let signed_c = if c == 0.0 {
-                c
-            } else {
-                c.signum() * c.abs().powf(roundness)
-            };
+            let [signed_s, signed_c, u] = profile[side as usize];
             write(
                 &mut output,
                 signed_s * rings[offset + 1],
                 rings[offset],
                 signed_c * rings[offset + 2] + rings[offset + 3],
                 u,
-                (rings[offset] - bottom) / span,
+                v,
             );
         }
     }
@@ -82,6 +90,64 @@ pub fn generate_rig_section(rings: &[f64], radial: u32, roundness: f64, caps: u3
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn profile_reuse_preserves_scalar_vertex_bits() {
+        for rows in [2_usize, 16, 256] {
+            let rings: Vec<f64> = (0..rows * 4)
+                .map(|i| {
+                    let row = (i / 4) as f64;
+                    match i % 4 {
+                        0 => row * 0.0001,
+                        1 => 0.35 + row * 0.002,
+                        2 => 0.24 + row * 0.001,
+                        _ => ((i / 4) % 3) as f64 * 0.01 - 0.01,
+                    }
+                })
+                .collect();
+            for radial in [3_u32, 16, 64, 128] {
+                for roundness in [0.25_f64, 1.0, 1.2, 2.0, 4.0] {
+                    let output = generate_rig_section(&rings, radial, roundness, 3);
+                    let bottom = rings[0];
+                    let span = (rings[(rows - 1) * 4] - bottom).max(0.001);
+                    for row in 0..rows {
+                        for side in 0..=radial {
+                            // Baseline scalar formula, recomputed independently
+                            // for each vertex, before invocation-local reuse.
+                            let u = side as f64 / radial as f64;
+                            let angle = u * std::f64::consts::TAU;
+                            let sine = angle.sin();
+                            let cosine = angle.cos();
+                            let sx = if sine == 0.0 {
+                                sine
+                            } else {
+                                sine.signum() * sine.abs().powf(roundness)
+                            };
+                            let cz = if cosine == 0.0 {
+                                cosine
+                            } else {
+                                cosine.signum() * cosine.abs().powf(roundness)
+                            };
+                            let offset = row * 4;
+                            let expected = [
+                                (sx * rings[offset + 1]) as f32,
+                                rings[offset] as f32,
+                                (cz * rings[offset + 2] + rings[offset + 3]) as f32,
+                                u as f32,
+                                ((rings[offset] - bottom) / span) as f32,
+                            ];
+                            let start = (row * (radial as usize + 1) + side as usize) * 5;
+                            for axis in 0..5 {
+                                assert_eq!(
+                                    output[start + axis].to_bits(),
+                                    expected[axis].to_bits()
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     #[test]
     fn sizes_caps_and_bounds() {
         let rings = [0.0, 0.2, 0.1, 0.0, 1.0, 0.3, 0.2, 0.01];

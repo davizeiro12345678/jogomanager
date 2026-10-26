@@ -338,15 +338,21 @@ function appendReserves(club: Club, existing: Player[], minimum: number): Player
   const names = new Set(squad.map((p) => p.name));
   const numbers = new Set(squad.map((p) => p.number));
   const targets: Record<Position, number> = { GK: 3, DF: 8, MF: 8, FW: 7 };
+  const positions = Object.keys(targets) as Position[];
+  const counts = { GK: 0, DF: 0, MF: 0, FW: 0 };
+  for (const player of squad) counts[player.pos]++;
   let index = 0;
-  while (squad.length < minimum || squad.filter((p) => p.pos === "GK").length < MIN_GOALKEEPERS) {
+  let number = 1;
+  while (squad.length < minimum || counts.GK < MIN_GOALKEEPERS) {
     const id = `${clubId}-reserve-${index++}`;
     if (ids.has(id)) continue;
-    const counts = { GK: 0, DF: 0, MF: 0, FW: 0 };
-    squad.forEach((p) => counts[p.pos]++);
-    const pos = (Object.keys(targets) as Position[]).sort(
-      (a, b) => targets[b] - counts[b] - (targets[a] - counts[a]),
-    )[0]!;
+    // Preserve the original stable GK/DF/MF/FW tie order without sorting a
+    // fresh key array and recounting the entire squad for each reserve.
+    let pos = positions[0]!;
+    for (let i = 1; i < positions.length; i++) {
+      const candidate = positions[i]!;
+      if (targets[candidate] - counts[candidate] > targets[pos] - counts[pos]) pos = candidate;
+    }
     let name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;
     if (names.has(name)) name = `${name} ${index}`;
     const d: DraftPlayer = {
@@ -356,13 +362,14 @@ function appendReserves(club: Club, existing: Player[], minimum: number): Player
       ovr: clamp(club.strength - 10 - Math.floor(rnd() * 9), 40, 85),
       named: false,
     };
-    const number = Array.from({ length: 99 }, (_, i) => i + 1).find((n) => !numbers.has(n));
-    if (!number) break;
+    while (number <= 99 && numbers.has(number)) number++;
+    if (number > 99) break;
     const player = { ...makePlayer(club, [d], 0, number, rnd), id };
     squad.push(player);
     ids.add(id);
     names.add(name);
     numbers.add(number);
+    counts[pos]++;
   }
   return squad;
 }

@@ -67,13 +67,7 @@ function readCache(): OfficialAssets | null {
     )
       return null;
     return parsed.data;
-  } catch (error) {
-    reportSilent("assets.cache", error, {
-      classification: "degradation",
-      feature: "official-assets",
-      phase: "read",
-      dedupeKey: "official-assets-read",
-    });
+  } catch {
     return null;
   }
 }
@@ -100,13 +94,8 @@ export function loadOfficialAssets(): Promise<void> {
         cache = data;
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data }));
-        } catch (error) {
-          reportSilent("assets.cache", error, {
-            classification: "ignorable",
-            feature: "official-assets",
-            phase: "write",
-            dedupeKey: "official-assets-write",
-          });
+        } catch {
+          /* storage full — memory cache still works */
         }
       }
       loaded = true;

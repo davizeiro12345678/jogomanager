@@ -39,7 +39,7 @@ describe("configured authentication methods", () => {
       "Spotify",
       "Figma",
     ]);
-    expect(methods).toMatchObject({ email: true, passkeys: true, signup: true });
+    expect(methods).toMatchObject({ email: true, phone: false, passkeys: true, signup: true });
   });
 
   it("filters enabled social providers through an explicit public allowlist", () => {
@@ -77,6 +77,13 @@ describe("configured authentication methods", () => {
       passkeys: false,
       signup: false,
     });
+  });
+
+  it("enables phone login only when public settings explicitly enable it", () => {
+    expect(parseAuthMethods({ external: { phone: true } }).phone).toBe(true);
+    for (const phone of [undefined, false, "true", 1, null]) {
+      expect(parseAuthMethods({ external: { phone } }).phone).toBe(false);
+    }
   });
 
   it("supports newly enabled built-in and custom OIDC providers", () => {

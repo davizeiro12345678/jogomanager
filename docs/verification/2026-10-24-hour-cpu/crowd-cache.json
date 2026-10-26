@@ -1,0 +1,84 @@
+{
+  "fixture": {
+    "seats": 5120,
+    "tiles": 32,
+    "visibleTiles": 12,
+    "updates": 1000,
+    "seed": "deterministic-grid",
+    "note": "static-camera fallback only; excludes GPU and healthy Worker"
+  },
+  "before": [
+    {
+      "milliseconds": 18.429352999999992,
+      "calls": 1000,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 16.823208000000022,
+      "calls": 1000,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 17.976942000000008,
+      "calls": 1000,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 18.954431999999997,
+      "calls": 1000,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 17.886866999999995,
+      "calls": 1000,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 17.72239000000002,
+      "calls": 1000,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 17.77926500000001,
+      "calls": 1000,
+      "checksum": 1920000
+    }
+  ],
+  "after": [
+    {
+      "milliseconds": 0.12703100000004497,
+      "calls": 1,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 0.13350100000002385,
+      "calls": 1,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 0.05707599999999502,
+      "calls": 1,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 0.05317000000002281,
+      "calls": 1,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 0.0559849999999642,
+      "calls": 1,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 0.05320999999997866,
+      "calls": 1,
+      "checksum": 1920000
+    },
+    {
+      "milliseconds": 0.056474999999977626,
+      "calls": 1,
+      "checksum": 1920000
+    }
+  ]
+}

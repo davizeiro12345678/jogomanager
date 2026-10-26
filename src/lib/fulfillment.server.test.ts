@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { assertStoreProductKey, parseStoreProductContents } from "./store-products.server";
+import {
+  assertStoreProductKey,
+  calculateCheckoutPriceCents,
+  parseStoreProductContents,
+} from "./store-products.server";
 
 describe("server store-product contract", () => {
   it("normaliza conteúdos completos e deduplica temas repetidos", () => {
@@ -36,5 +40,16 @@ describe("server store-product contract", () => {
     expect(parseStoreProductContents([])).toBeNull();
     expect(() => assertStoreProductKey("../coins")).toThrow("Produto inválido");
     expect(() => assertStoreProductKey("coins_small")).not.toThrow();
+  });
+
+  it("usa o mesmo arredondamento da vitrine para o valor cobrado", () => {
+    expect(calculateCheckoutPriceCents(490, 10)).toBe(441);
+    expect(calculateCheckoutPriceCents(1290, 15)).toBe(1097);
+    expect(calculateCheckoutPriceCents(490, 0)).toBe(490);
+  });
+
+  it("recusa descontos e preços impossíveis", () => {
+    expect(() => calculateCheckoutPriceCents(-1, 10)).toThrow("Preço inválido");
+    expect(() => calculateCheckoutPriceCents(490, 91)).toThrow("Desconto inválido");
   });
 });

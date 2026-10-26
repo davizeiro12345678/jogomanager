@@ -20,6 +20,16 @@ import type Stripe from "stripe";
 import { markGuestCheckoutFailed, markGuestCheckoutPaid } from "@/lib/guest-checkout.functions";
 import { deliverClaimedGuestPurchase } from "@/lib/guest-checkout-delivery.server";
 
+type StripeInvoiceEvent = {
+  parent?: {
+    subscription_details?: {
+      subscription?: string | { id?: string } | null;
+    } | null;
+  } | null;
+  /** `subscription` remains present on invoices created with older API versions. */
+  subscription?: string | { id?: string } | null;
+};
+
 type StripeSessionEvent = {
   id: string;
   payment_status?: string | null;
@@ -63,6 +73,15 @@ function isUnclaimedGuestSubscription(subscription: StripeSubscriptionEvent): bo
   );
 }
 
+function invoiceSubscriptionId(invoice: StripeInvoiceEvent): string | null {
+  const subscription =
+    invoice.parent?.subscription_details?.subscription ?? invoice.subscription ?? null;
+  if (typeof subscription === "string") return subscription || null;
+  return typeof subscription?.id === "string" && subscription.id.length > 0
+    ? subscription.id
+    : null;
+}
+
 /**
  * A Stripe NÃO envia os itens comprados no corpo do evento: é preciso buscar a
  * sessão com `line_items` expandido. Sem isso o jogo não descobre qual pacote
@@ -103,7 +122,12 @@ async function resolvePurchase(sessionId: string, env: StripeEnv) {
     full.amount_total ??
     0;
   const paidAmount = full.amount_total;
-  if (paidAmount === null || !Number.isSafeInteger(paidAmount) || paidAmount < 0) {
+  if (
+    paidAmount === null ||
+    !Number.isSafeInteger(paidAmount) ||
+    paidAmount < 0 ||
+    paidAmount > amount
+  ) {
     throw new Error("Checkout has no valid settled amount");
   }
   return { productKey, amount, paidAmount, snapshot: offer.snapshot, session: full };
@@ -133,7 +157,9 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   switch (event.type) {
     case "customer.subscription.created":
     case "customer.subscription.updated":
-    case "customer.subscription.deleted": {
+    case "customer.subscription.deleted":
+    case "customer.subscription.paused":
+    case "customer.subscription.resumed": {
       const subscription = await createStripeClient(env).subscriptions.retrieve(
         event.data.object.id,
       );
@@ -201,10 +227,8 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
       // A checkout-bound intent must resolve from Stripe, never event metadata.
       // No sessions means a payment created outside this application's checkout.
       for (const session of sessions.data) {
-        const intentId = guestCheckoutIntentId(session);
-        if (event.type === "payment_intent.payment_failed" && intentId) {
-          await markGuestCheckoutFailed(intentId, session.id, env);
-        }
+        // A card failure can be retried in the same session. Only definitive
+        // async/expired events close a guest intent.
         await reconcilePaymentReview({
           eventId: event.id,
           reference: session.id,
@@ -228,9 +252,19 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
       break;
     }
 
-    case "invoice.paid": {
-      // Subscription renewals reconcile here; customer.subscription.updated
-      // already keeps the row current. Use this for extra reconciliation if needed.
+    case "invoice.paid":
+    case "invoice.payment_failed": {
+      const subscriptionId = invoiceSubscriptionId(event.data.object as StripeInvoiceEvent);
+      if (!subscriptionId) break;
+      const subscription = await createStripeClient(env).subscriptions.retrieve(subscriptionId);
+      if (!isUnclaimedGuestSubscription(subscription)) await syncSubscription(subscription, env);
+      break;
+    }
+    case "checkout.session.expired": {
+      const session = event.data.object;
+      const intentId = guestCheckoutIntentId(session);
+      if (intentId) await markGuestCheckoutFailed(intentId, session.id, env);
+      else await markPurchaseFailed(session.id, "Checkout expirou antes do pagamento");
       break;
     }
     default:

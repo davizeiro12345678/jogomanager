@@ -1,5 +1,6 @@
 // LHCI runs this after the real Nitro/Cloudflare preview is ready. A fast
 // compressed error/garbage page must never be accepted as a performance result.
+const { verifyPreviewStylesheets } = require("./preview-stylesheets.cjs");
 module.exports = async () => {
   const routes = ["/", "/guias", "/guia-de-scouting", "/melhores-formacoes", "/partida-rapida"];
   for (const route of routes) {
@@ -18,7 +19,14 @@ module.exports = async () => {
       ) {
         throw new Error(`Invalid rendered HTML for ${route} with Accept-Encoding ${encoding}`);
       }
+      if (encoding === "identity")
+        await verifyPreviewStylesheets(html, `http://127.0.0.1:4173${route}`);
       console.log(`Verified decoded HTML: ${route} (${encoding})`);
     }
   }
+  // Private screens use the shared app sheet while public CSS is inlined.
+  const career = await fetch("http://127.0.0.1:4173/new");
+  if (career.status !== 200) throw new Error("Career preview did not render");
+  await verifyPreviewStylesheets(await career.text(), career.url);
+  console.log("Verified private app stylesheet: /new");
 };

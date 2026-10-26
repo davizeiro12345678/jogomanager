@@ -8,7 +8,7 @@
 //  cuida de animação, física da bola e eventos.
 // ============================================================================
 
-import type { Side } from "./sim";
+import type { Side } from "./sim-types";
 
 /* -------------------------------------------------------------------------- */
 /*  Medidas do campo (fonte única: `sim.ts` reexporta para compatibilidade)   */
@@ -18,6 +18,11 @@ export const FIELD_X = 52.5;
 export const FIELD_Z = 34;
 export const GOAL_Z = 3.66;
 export const GOAL_H = 2.44;
+/** Canonical ball radius; goal/out decisions require the whole ball over the line. */
+export const BALL_RADIUS = 0.12;
+/** Existing authoritative goal-frame contact radius, shared with its mesh. */
+export const GOAL_POST_RADIUS = 0.075;
+export const GOAL_NET_DEPTH = 1.9;
 /** distância da marca do pênalti até a linha de fundo */
 export const PENALTY_DIST = 11;
 /** profundidade e meia-largura da grande área */
@@ -107,7 +112,7 @@ export function defensiveLineX(players: OffsideLineInput[], attacking: Side): nu
   const foes = players
     .filter((p) => p.side !== attacking && !p.sentOff)
     .map((p) => p.x)
-    .sort((a, b) => (attacking === "home" ? a - b : b - a));
+    .sort((a, b) => (attacking === "home" ? b - a : a - b));
   if (foes.length < 2) return attacking === "home" ? -FIELD_X : FIELD_X;
   return foes[1]!;
 }
@@ -149,6 +154,10 @@ export interface FoulInput {
   tactical: boolean;
   /** nega chance clara de gol */
   goalDenied: boolean;
+  /** Referee awards a penalty for this offence inside the defending area. */
+  penaltyAwarded?: boolean;
+  /** Attempt to play or challenge for the ball, rather than holding/pushing. */
+  attemptBall?: boolean;
   /** faltas do jogador na partida (reincidência pesa) */
   rapSheet: number;
   ref: RefProfile;
@@ -157,10 +166,13 @@ export interface FoulInput {
 
 /** Decisão do árbitro: nada, amarelo ou vermelho direto. */
 export function cardForFoul(f: FoulInput): "none" | "yellow" | "red" {
-  if (f.goalDenied && (f.slide || f.rnd() < 0.5)) return "red";
+  const redP = f.slide ? 0.008 + f.ref.strict * 0.014 : 0.003;
+  // IFAB Law 12: a penalty restores DOGSO for a genuine ball challenge.
+  // Serious foul play remains a sending-off offence in its own right.
+  if (f.goalDenied && f.penaltyAwarded && f.attemptBall) return f.rnd() < redP ? "red" : "yellow";
+  if (f.goalDenied) return "red";
   let yellowP = 0.1 + f.ref.strict * 0.22 + (f.slide ? 0.16 : 0) + (f.tactical ? 0.2 : 0);
   yellowP += Math.min(0.2, f.rapSheet * 0.06);
-  const redP = f.slide ? 0.008 + f.ref.strict * 0.014 : 0.003;
   const roll = f.rnd();
   if (roll < redP) return "red";
   return roll < redP + yellowP ? "yellow" : "none";

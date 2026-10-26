@@ -44,6 +44,20 @@ export function refineAthletePosture(pose: Pose, input: AthletePostureInput): Po
   pose.spine += acceleration * 0.72 + fatigue * 0.075 + breath * (0.003 + fatigue * 0.023);
   pose.chest -= acceleration * 0.32;
   pose.chest += breath * (0.002 + fatigue * 0.012);
+  // Deceleration lowers the centre of mass and flexes the support legs.
+  // Counter-rotation lets the upper body absorb a stop instead of pitching
+  // the whole athlete as a rigid object. Authored contacts keep full control.
+  const braking = clamp(-acceleration / 0.085, 0, 1) * effort;
+  pose.hipY -= braking * 0.018;
+  pose.hipPitch -= braking * 0.045;
+  pose.legLPitch -= braking * 0.055;
+  pose.legRPitch -= braking * 0.055;
+  pose.kneeL -= braking * 0.11;
+  pose.kneeR -= braking * 0.11;
+  pose.ankleL -= braking * 0.055;
+  pose.ankleR -= braking * 0.055;
+  pose.elbowL -= braking * 0.12;
+  pose.elbowR -= braking * 0.12;
   pose.headPitch += fatigue * 0.06 - acceleration * 0.28;
   const turn = clamp(input.turnRate, -4, 4) * effort * actionFree;
   pose.hipYaw += turn * 0.012;
@@ -78,6 +92,13 @@ export function refineAthletePosture(pose: Pose, input: AthletePostureInput): Po
     pose.spine += readiness;
     pose.armLRoll += readiness * 1.5;
     pose.armRRoll -= readiness * 1.5;
+    pose.hipY -= readiness * 0.42;
+    pose.legLPitch -= readiness * 1.5;
+    pose.legRPitch -= readiness * 1.5;
+    pose.kneeL -= readiness * 3;
+    pose.kneeR -= readiness * 3;
+    pose.ankleL -= readiness * 1.5;
+    pose.ankleR -= readiness * 1.5;
   }
   if (fatigue > 0.6 && input.speed < 0.6 && actionFree) {
     const exhausted = (fatigue - 0.6) / 0.4;

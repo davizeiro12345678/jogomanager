@@ -1,5 +1,18 @@
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Canvas, flushSync, useFrame, useThree } from "@react-three/fiber";
+import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
+import {
+  useEffect,
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import * as THREE from "three";
+import { SEQUENCE_LIBRARY } from "@/game/football-sequences";
 import { CLIP_NAMES, type ClipName, type PlayerAction } from "@/game/animation";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
 import { gkKitFor, kitFor } from "@/game/kits";
@@ -13,13 +26,16 @@ import {
 } from "@/game/player-career/appearance";
 import {
   lookFor,
-  lookWithPhysique,
+  type PlayerLook,
+  type HairStyle,
   type BeardStyle,
   type BodyType,
-  type HairStyle,
-  type PlayerLook,
 } from "@/game/player-model";
-import { studioAppearanceRevision } from "@/game/player-studio-appearance";
+import {
+  createStudioAppearanceStore,
+  resolveStudioAppearance,
+  studioAppearanceRevision,
+} from "@/game/player-studio-appearance";
 import { studioCameraFit } from "@/game/player-studio-camera";
 import {
   STUDIO_NEUTRAL_GAZE_BALL_Z,
@@ -27,13 +43,21 @@ import {
 } from "@/game/player-studio-presentation";
 import { getAnnotatedClip } from "@/game/register-animations";
 import type { RigSkin } from "@/game/rig-skin";
-import type { SimPlayer, TeamSetup } from "@/game/sim";
+import type { SimPlayer, TeamSetup } from "@/game/sim-contracts";
 import { safeClub } from "@/game/squad";
 import { useAccessibility } from "@/hooks/useAccessibility";
+import { useVisibleGraphics } from "@/hooks/useVisibleGraphics";
 import { useT } from "@/i18n/provider";
 import { studioMovementLabel } from "@/i18n/studio-movement-messages";
-import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  MOVEMENT_GROUPS,
+  movementGroup,
+  movementSearch,
+  studioLibraryCopy,
+  type MovementGroup,
+} from "@/game/player-studio-library";
+import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Activity,
   ArrowLeft,
@@ -48,16 +72,13 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import * as THREE from "three";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { CanvasLifecycle } from "../CanvasLifecycle";
+import type { CanvasStatus } from "../canvas-lifecycle";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
-import type { CanvasStatus } from "../canvas-lifecycle";
-import "../cinematic/studio.css";
 import { LowPlayers } from "./LowPlayers";
-import { PlayerRig } from "./PlayerRig";
+import { PlayerRig, type RenderedPlayerAppearance } from "./PlayerRig";
+import "../cinematic/studio.css";
 
 interface StudioMovement {
   id: string;
@@ -71,21 +92,34 @@ interface StudioMovement {
 }
 type CameraCommand = { action: "left" | "right" | "in" | "out"; sequence: number } | null;
 
-/**
- * `value` turns the appearance controls into a controlled editor. Existing
- * studio callers may continue to omit it and keep their local preview state.
- */
-export interface PlayerStudioProps {
-  clubId?: string;
-  position?: string;
-  heightCm?: number;
-  weightKg?: number;
-  value?: AthleteAppearanceV1;
-  onChange?: (value: AthleteAppearanceV1) => void;
-}
-
 const MOVEMENTS: StudioMovement[] = [
+  ...SEQUENCE_LIBRARY.map(([id, label, action]) => ({
+    id,
+    label,
+    action,
+    speed: id === "runningPassRecover" ? 3.5 : 0,
+  })),
   { id: "idle", label: "Em pé", speed: 0, action: null },
+  { id: "thoracicRotation", label: "Rotação do tronco", speed: 0, action: null },
+  { id: "anklePushOff", label: "Impulsão pelos tornozelos", speed: 0, action: null },
+  { id: "hipPivotLeft", label: "Pivô do quadril à esquerda", speed: 0, action: null },
+  { id: "hipPivotRight", label: "Pivô do quadril à direita", speed: 0, action: null },
+  { id: "keeperReach", label: "Alcance e apoio do goleiro", speed: 0, action: null },
+  { id: "landingSettle", label: "Absorção e recuperação do apoio", speed: 0, action: null },
+  { id: "readyPress", label: "Preparação para pressionar", speed: 0, action: null },
+  { id: "receiveScan", label: "Olhar antes de receber", speed: 0, action: null },
+  { id: "keeperSettle", label: "Base e ajuste do goleiro", speed: 0, action: null },
+  { id: "balanceRecover", label: "Recuperação de equilíbrio", speed: 0, action: null },
+  { id: "shoulderRelease", label: "Soltar os ombros", speed: 0, action: null },
+  { id: "ankleMobilise", label: "Mobilidade do tornozelo", speed: 0, action: null },
+  { id: "splitStep", label: "Salto curto de preparação", speed: 0, action: null },
+  { id: "kneeDrive", label: "Elevação alternada dos joelhos", speed: 0, action: null },
+  { id: "heelRecovery", label: "Calcanhares em recuperação", speed: 0, action: null },
+  { id: "lateralReach", label: "Apoio e alcance lateral", speed: 0, action: null },
+  { id: "hipOpen", label: "Abertura do quadril", speed: 0, action: null },
+  { id: "captainSignal", label: "Orientação do capitão", speed: 0, action: null },
+  { id: "keeperShuffle", label: "Passos curtos do goleiro", speed: 0, action: null },
+  { id: "calfRaise", label: "Ativação da panturrilha", speed: 0, action: null },
   { id: "walk", label: "Caminhada", speed: 1.6, action: null },
   { id: "run", label: "Corrida", speed: 5.5, action: null },
   { id: "sprint", label: "Sprint", speed: 8, action: null },
@@ -209,11 +243,14 @@ function StudioScene({
   framing,
   stamina,
   previewAt,
-  appearance,
+  appearanceStore,
   viewReset,
   viewAngle,
   cameraCommand,
   clothPhysics,
+  playbackRate,
+  onAppearanceReady,
+  onSceneAppearanceReady,
 }: {
   preview: ReturnType<typeof fixture>;
   movement: (typeof MOVEMENTS)[number];
@@ -223,14 +260,34 @@ function StudioScene({
   framing: string;
   stamina: number;
   previewAt?: number | undefined;
-  appearance: PlayerLook;
+  appearanceStore: ReturnType<typeof createStudioAppearanceStore>;
   viewReset: number;
   viewAngle: string;
   cameraCommand: CameraCommand;
   clothPhysics: boolean;
+  playbackRate: number;
+  onAppearanceReady: (appearance: RenderedPlayerAppearance) => void;
+  onSceneAppearanceReady: (revision: string) => void;
 }) {
+  const appearance = useSyncExternalStore(
+    appearanceStore.subscribe,
+    appearanceStore.getSnapshot,
+    appearanceStore.getSnapshot,
+  );
+  const acknowledgeRig = useCallback(
+    (next: RenderedPlayerAppearance) => {
+      onAppearanceReady({ ...next, bridge: appearanceStore.diagnostics().id });
+    },
+    [onAppearanceReady, appearanceStore],
+  );
+  useLayoutEffect(() => {
+    onSceneAppearanceReady(studioAppearanceRevision(appearance));
+  }, [appearance, onSceneAppearanceReady]);
   const pulse = useRef(0);
   const actionClock = useRef(0);
+  useLayoutEffect(() => {
+    actionClock.current = 0;
+  }, [movement.id]);
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, invalidate, size } = useThree();
   const { reducedMotion } = useAccessibility();
@@ -295,15 +352,11 @@ function StudioScene({
     () => new Map([[preview.player.id, appearance]]),
     [preview, appearance],
   );
-  // R3F primitives own the Three.js scene object outside React's ordinary
-  // DOM lifecycle.  Appearance edits change the skinned geometry itself, so
-  // give the rig a semantic revision key and never leave an old hair/beard
-  // shell attached after a Studio select changes.
-  const appearanceRevision = useMemo(() => studioAppearanceRevision(appearance), [appearance]);
   // An idle inspection stays idle instead of randomly selecting a team
   // gesture from the match state machine. Actions still use their phases.
   const previewClip =
-    !movement.action && CLIP_NAMES.includes(movement.id as ClipName)
+    (!movement.action || SEQUENCE_LIBRARY.some(([id]) => id === movement.id)) &&
+    CLIP_NAMES.includes(movement.id as ClipName)
       ? (movement.id as ClipName)
       : undefined;
   const ballFocusDistance = studioBallFocusDistanceFor(movement);
@@ -332,19 +385,12 @@ function StudioScene({
       ),
     [height, size.width, size.height, framing, overhead, groundAction],
   );
-  // A real wide studio viewport left the hero visually small, with unused
-  // floor and side space. Preserve the camera-fit envelope for actions and
-  // narrow displays, but spend part of its standing-body safety margin on
-  // presence where width is available.
-  const bodyPresenceScale =
-    size.width / Math.max(1, size.height) >= 0.9
-      ? 0.89
-      : size.width / Math.max(1, size.height) >= 0.6
-        ? 0.92
-        : 0.96;
+  // The old whole-body fit left a larger safety border than the default
+  // studio needs. Tighten only the standing body view, retaining the wider
+  // envelopes for jumps, saves and compact screens.
   const presentationDistance =
     framing === "body" && !overhead && !groundAction
-      ? cameraFit.distance * bodyPresenceScale
+      ? cameraFit.distance * 0.8
       : cameraFit.distance;
   const targetY =
     framing === "face"
@@ -447,20 +493,20 @@ function StudioScene({
   );
   const keeperKit = useMemo(() => gkKitFor(preview.view.home.clubId), [preview]);
   useLayoutEffect(() => {
-    if (previewAt === undefined || !movement.action) return;
     const player = preview.player;
-    player.vx = player.vz = 0;
+    player.vx = movement.lateral ?? 0;
+    player.vz = movement.lateral ? 0 : movement.speed * (movement.reverse ? -1 : 1);
     player.action = movement.action;
     player.actionDur = 1.5;
-    player.actionT = (1 - previewAt) * player.actionDur;
+    player.actionT = (1 - (previewAt ?? 0)) * player.actionDur;
     player.stamina = stamina;
-    actionClock.current = previewAt * player.actionDur;
+    actionClock.current = (previewAt ?? 0) * player.actionDur;
     preview.view.time = actionClock.current;
     invalidate();
-  }, [previewAt, movement, preview, stamina, invalidate]);
+  }, [previewAt, movement, preview, stamina, appearance, invalidate]);
   useFrame((_, dt) => {
     if (paused) return;
-    actionClock.current += Math.min(dt, 0.25);
+    actionClock.current += Math.min(dt, 0.25) * playbackRate;
     const player = preview.player;
     const tempo = (actionClock.current % 6) / 6;
     const ramp = THREE.MathUtils.smoothstep(tempo, 0.15, 0.72);
@@ -489,18 +535,17 @@ function StudioScene({
       <fog attach="fog" args={[light === "noite" ? "#101922" : "#253441", 6, 15]} />
       <hemisphereLight args={["#e5edf2", "#29323a", light === "noite" ? 0.24 : 0.38]} />
       <directionalLight
-        position={[-2.2, 7.5, 2.4]}
+        position={[-3.5, 4.6, 4]}
         color={warm ? "#ffd5aa" : "#fff4e9"}
         intensity={3.05}
         castShadow
-        shadow-intensity={0.38}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-3}
         shadow-camera-right={3}
         shadow-camera-top={4}
         shadow-camera-bottom={-2}
         shadow-bias={-0.0002}
-        shadow-normalBias={0.02}
+        shadow-normalBias={0.002}
         shadow-radius={3}
       />
       <directionalLight
@@ -542,19 +587,19 @@ function StudioScene({
         <meshStandardMaterial color="#354753" roughness={0.76} metalness={0.05} />
       </mesh>
       <ContactShadows
-        key={`${appearance.seed}:${movement.id}:${previewAt ?? "live"}:${detail}`}
+        key={`${studioAppearanceRevision(appearance)}:${movement.id}:${previewAt ?? "live"}:${detail}`}
         position={[0, 0.002, 0]}
-        opacity={0.26}
+        opacity={0.38}
         scale={4}
-        blur={3.2}
-        far={1.3}
+        blur={2.5}
+        far={2}
         resolution={256}
         frames={1}
         color="#061018"
       />
       {detail ? (
         <PlayerRig
-          key={appearanceRevision}
+          key={studioAppearanceRevision(appearance)}
           player={preview.player}
           sim={preview.view}
           kit={preview.player.pos === "GK" ? keeperKit : kit}
@@ -567,10 +612,13 @@ function StudioScene({
           previewAt={previewAt}
           lookOverride={appearance}
           previewClip={previewClip}
+          previewRevision={movement.id}
           onPoseReady={framing === "body" ? undefined : inspectPose}
+          onAppearanceReady={acknowledgeRig}
         />
       ) : (
         <LowPlayers
+          key={studioAppearanceRevision(appearance)}
           sim={preview.view}
           homeKit={kit}
           awayKit={kit}
@@ -580,6 +628,7 @@ function StudioScene({
           previewAt={previewAt}
           lookOverrides={overrides}
           previewClip={previewClip}
+          previewRevision={movement.id}
         />
       )}
       <OrbitControls
@@ -598,6 +647,21 @@ function StudioScene({
   );
 }
 
+export interface PlayerStudioProps {
+  clubId?: string;
+  position?: string;
+  heightCm?: number;
+  weightKg?: number;
+  value?: AthleteAppearanceV1;
+  onChange?: (value: AthleteAppearanceV1) => void;
+  /** Existing saved look for a read-only career portrait. */
+  appearanceOverride?: PlayerLook;
+  initialPosition?: string;
+  /** Deterministic standalone inspection; never writes career/save state. */
+  initialInspection?: { movement: string; phase: number; framing: string; angle: string };
+  title?: string;
+}
+
 export default function PlayerStudio({
   clubId = "fla",
   position: positionValue,
@@ -605,36 +669,71 @@ export default function PlayerStudio({
   weightKg: externalWeightKg,
   value,
   onChange,
+  appearanceOverride,
+  initialPosition,
+  initialInspection,
+  title,
 }: PlayerStudioProps) {
   const { t, dir, lang } = useT();
   const { reducedMotion } = useAccessibility();
-  const [localPosition, setLocalPosition] = useState("MF");
+  const viewportHost = useRef<HTMLDivElement>(null);
+  const graphicsVisible = useVisibleGraphics(viewportHost);
+  const [localPosition, setPosition] = useState(initialPosition ?? "MF");
   const position = positionValue ?? localPosition;
-  const [movementId, setMovementId] = useState("idle");
+  const [movementId, setMovementId] = useState(
+    MOVEMENTS.some((movement) => movement.id === initialInspection?.movement)
+      ? initialInspection!.movement
+      : "idle",
+  );
+  const [movementQuery, setMovementQuery] = useState("");
+  const [movementCategory, setMovementCategory] = useState<MovementGroup>("all");
+  const libraryStatusId = useId();
+  const viewportId = useId();
+  const settingsId = useId();
   const [variation, setVariation] = useState(1);
   const [light, setLight] = useState("dia");
-  const [viewAngle, setViewAngle] = useState("threeQuarter");
+  const [viewAngle, setViewAngle] = useState(
+    ["front", "profile", "back"].includes(initialInspection?.angle ?? "")
+      ? initialInspection!.angle
+      : "threeQuarter",
+  );
   const [detail, setDetail] = useState(true);
   const [clothPhysics, setClothPhysics] = useState(true);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(Boolean(initialInspection));
+  const [playbackRate, setPlaybackRate] = useState(1);
   const cinematicCovered = useSyncExternalStore(
     subscribeCinematicOverlay,
     cinematicOverlayActive,
     () => false,
   );
-  const scenePaused = paused || cinematicCovered;
-  const [framing, setFraming] = useState("body");
+  const scenePaused = paused || cinematicCovered || !graphicsVisible;
+  const [framing, setFraming] = useState(
+    ["body", "face", "kit", "legs", "boots", "hands"].includes(initialInspection?.framing ?? "")
+      ? initialInspection!.framing
+      : "body",
+  );
   const [stamina, setStamina] = useState(100);
-  const [previewAt, setPreviewAt] = useState<number | undefined>(undefined);
+  const [previewAt, setPreviewAt] = useState<number | undefined>(
+    initialInspection && Number.isFinite(initialInspection.phase)
+      ? Math.max(0, Math.min(1, initialInspection.phase))
+      : undefined,
+  );
   const [hairStyle, setHairStyle] = useState<HairStyle | "original">("original");
   const [beard, setBeard] = useState<BeardStyle | "original">("original");
   const [physique, setPhysique] = useState<BodyType | "original">("original");
-  const [localHeightCm, setLocalHeightCm] = useState<number | undefined>(undefined);
-  const [localWeightKg, setLocalWeightKg] = useState<number | undefined>(undefined);
+  const [localHeightCm, setHeightCm] = useState<number | undefined>(undefined);
+  const [localWeightKg, setWeightKg] = useState<number | undefined>(undefined);
   const [panel, setPanel] = useState(() => (value ? "look" : "motion"));
+  const [sceneStatus, setSceneStatus] = useState<CanvasStatus>("loading");
   const [viewReset, setViewReset] = useState(0);
   const [cameraCommand, setCameraCommand] = useState<CameraCommand>(null);
-  const [sceneStatus, setSceneStatus] = useState<CanvasStatus>("loading");
+  const [sceneAppearanceRevision, acknowledgeSceneAppearance] = useState("");
+  const [renderedAppearance, setRenderedAppearance] = useState<RenderedPlayerAppearance>();
+  const acknowledgeAppearance = useCallback((next: RenderedPlayerAppearance) => {
+    setRenderedAppearance((previous) =>
+      previous?.root === next.root && previous.revision === next.revision ? previous : next,
+    );
+  }, []);
   useEffect(() => {
     if (reducedMotion) setPaused(true);
   }, [reducedMotion]);
@@ -659,50 +758,93 @@ export default function PlayerStudio({
     onChange(normalizeAthleteAppearance({ ...controlledAppearance, ...patch }, fallbackAppearance));
   };
   const appearance = useMemo(() => {
-    if (controlledAppearance) {
-      return athleteLookForAppearance({
-        seed: preview.player.id,
-        role: position,
-        captain: true,
-        appearance: controlledAppearance,
-        heightCm,
-        weightKg,
-      });
-    }
-    const look = lookFor(preview.player.id, position, true);
-    return lookWithPhysique(
-      {
-        ...look,
-        hairStyle: hairStyle === "original" ? look.hairStyle : hairStyle,
-        beard: beard === "original" ? look.beard : beard,
-        bodyType: physique === "original" ? look.bodyType : physique,
-        girth:
-          physique === "original"
-            ? look.girth
-            : physique === "strong"
-              ? 1.16
-              : physique === "slim"
-                ? 0.88
-                : 1,
-        headband: hairStyle === "headband" || (hairStyle === "original" && look.headband),
-      },
-      { height: heightCm, weight: weightKg },
-    );
-  }, [preview, position, controlledAppearance, hairStyle, beard, physique, heightCm, weightKg]);
+    const look =
+      appearanceOverride ??
+      (controlledAppearance
+        ? athleteLookForAppearance({
+            seed: preview.player.id,
+            role: position,
+            captain: true,
+            appearance: controlledAppearance,
+            heightCm,
+            weightKg,
+          })
+        : lookFor(preview.player.id, position, true));
+    return resolveStudioAppearance(look, {
+      hairStyle,
+      beard,
+      physique,
+      height: heightCm,
+      weight: weightKg,
+    });
+  }, [
+    preview,
+    position,
+    appearanceOverride,
+    controlledAppearance,
+    hairStyle,
+    beard,
+    physique,
+    heightCm,
+    weightKg,
+  ]);
+  const [appearanceStore] = useState(() => createStudioAppearanceStore(appearance, viewportId));
+  const [publishedAppearance, setPublishedAppearance] = useState(appearanceStore.diagnostics);
+  useLayoutEffect(() => {
+    let cancelled = false;
+    // DOM and Canvas are separate React roots. A structural authoring edit
+    // must finish in both roots even when the preview is paused. Flush through
+    // R3F's public API, outside the DOM commit to avoid nested lifecycle work.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      flushSync(() => appearanceStore.set(appearance));
+      setPublishedAppearance(appearanceStore.diagnostics());
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [appearanceStore, appearance]);
   const metadata = getAnnotatedClip(movement.id)?.metadata;
   const height = (appearance.height * 1.8).toFixed(2);
   const selectClass = "studio-select";
+  const library = studioLibraryCopy(lang);
+  const query = movementSearch(movementQuery);
+  const availableMovements = MOVEMENTS.filter(
+    (item) =>
+      (movementCategory === "all" || movementGroup(item.id) === movementCategory) &&
+      movementSearch(studioMovementLabel(lang, item.id, item.label)).includes(query),
+  );
+  const chooseMovement = (id: string) => {
+    setMovementId(id);
+    setPaused(reducedMotion);
+    setPreviewAt(undefined);
+    if (movementGroup(id) === "keeper") setPosition("GK");
+  };
   return (
     <section
       aria-label={t("studio.preview")}
       className="studio-card"
       data-cinematic-covered={cinematicCovered}
       data-scene-status={sceneStatus}
+      data-player-hair-style={appearance.hairStyle}
+      data-player-appearance-revision={studioAppearanceRevision(appearance)}
+      data-rendered-player-hair-style={renderedAppearance?.hairStyle}
+      data-rendered-player-appearance-revision={renderedAppearance?.revision}
+      data-rendered-player-root={renderedAppearance?.root}
+      data-rendered-player-meshes={renderedAppearance?.meshes}
+      data-rendered-player-vertices={renderedAppearance?.vertices}
+      data-rendered-player-top={renderedAppearance?.top}
+      data-rendered-player-bridge={renderedAppearance?.bridge}
+      data-rendered-scene-revision={sceneAppearanceRevision}
+      data-published-player-revision={publishedAppearance.revision}
+      data-published-player-bridge={publishedAppearance.id}
+      data-published-player-subscribers={publishedAppearance.subscribers}
+      data-published-player-notifications={publishedAppearance.notifications}
     >
       <div className="studio-toolbar">
         <div className="studio-title">
           <p className="studio-kicker">{t("studio.kicker")}</p>
-          <h2>{t("studio.title")}</h2>
+          <h2>{title ?? t("studio.title")}</h2>
         </div>
         <span className="studio-height">{height} m</span>
         <label className="studio-framing">
@@ -723,374 +865,113 @@ export default function PlayerStudio({
           </select>
         </label>
         <AccessibilitySettings />
+        <nav className="studio-section-links" aria-label={t("studio.settings")}>
+          <a href={`#${viewportId}`}>{t("studio.preview")}</a>
+          <a href={`#${settingsId}`}>{t("studio.settings")}</a>
+        </nav>
       </div>
       <div className="studio-layout">
-        <div className="studio-viewport">
-          <div className="studio-canvas">
-            <GraphicsBoundary>
-              <Canvas
-                camera={{ position: [1.8, 1.55, 3.2], fov: 32 }}
-                dpr={[1, 1.5]}
-                shadows={{ type: THREE.PCFShadowMap }}
-                frameloop={scenePaused ? "demand" : "always"}
-                gl={{ antialias: true, powerPreference: "high-performance" }}
-                onCreated={({ gl }) => {
-                  gl.toneMapping = THREE.ACESFilmicToneMapping;
-                  gl.toneMappingExposure = 0.9;
-                }}
-                fallback={
-                  <p role="status" className="p-8 text-center">
-                    {t("studio.webgl")}
-                  </p>
-                }
-              >
-                <CanvasLifecycle onStatus={setSceneStatus} />
-                <Ktx2CanvasAssets enabled={detail} />
-                <StudioScene
-                  key={movementId}
-                  preview={preview}
-                  movement={movement}
-                  light={light}
-                  detail={detail}
-                  paused={scenePaused}
-                  framing={framing}
-                  stamina={stamina}
-                  previewAt={previewAt}
-                  appearance={appearance}
-                  viewReset={viewReset}
-                  viewAngle={viewAngle}
-                  cameraCommand={cameraCommand}
-                  clothPhysics={clothPhysics}
-                />
-              </Canvas>
-            </GraphicsBoundary>
-          </div>
-          <div className="studio-keyboard-camera" role="group" aria-label={t("studio.frame")}>
-            {(
-              [
-                ["left", "studio.left", ArrowLeft],
-                ["right", "studio.right", ArrowRight],
-                ["in", "studio.zoomIn", ZoomIn],
-                ["out", "studio.zoomOut", ZoomOut],
-              ] as const
-            ).map(([action, key, Icon]) => (
-              <button
-                key={action}
-                type="button"
-                className="studio-button"
-                aria-label={t(key)}
-                title={t(key)}
-                onClick={() =>
-                  setCameraCommand((old) => ({ action, sequence: (old?.sequence ?? 0) + 1 }))
-                }
-              >
-                <Icon size={18} aria-hidden="true" />
-              </button>
-            ))}
-          </div>
-          <div className="studio-view-actions">
-            <button
-              type="button"
-              aria-pressed={paused}
-              onClick={() => {
-                setPreviewAt(undefined);
-                setPaused(!paused);
-              }}
-              className="studio-button"
-            >
-              {paused ? <Play size={15} /> : <Pause size={15} />}
-              {t(paused ? "common.play" : "common.pause")}
-            </button>
-            <button
-              type="button"
-              aria-label={t("studio.resetCamera")}
-              onClick={() => setViewReset((n) => n + 1)}
-              className="studio-button"
-            >
-              <RotateCcw size={15} />
-            </button>
-            <button
-              type="button"
-              aria-pressed={!detail}
-              onClick={() => setDetail(!detail)}
-              className="studio-button"
-            >
-              {t(detail ? "studio.compare" : "studio.detailed")}
-            </button>
-          </div>
-        </div>
-        <aside className="studio-panel" aria-label={t("studio.settings")}>
-          <Tabs value={panel} onValueChange={setPanel} dir={dir}>
-            <TabsList className="studio-tabs" aria-label={t("studio.settings")}>
-              {[
-                { id: "motion", label: t("studio.motion"), icon: Activity },
-                { id: "look", label: t("studio.look"), icon: UserRound },
-                { id: "scene", label: t("studio.scene"), icon: Sun },
-              ].map(({ id, label, icon: Icon }) => (
-                <TabsTrigger value={id} key={id}>
-                  <Icon size={14} />
-                  {label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {panel === "motion" && (
-              <TabsContent value="motion" className="studio-fields">
-                <label>
-                  {t("studio.position")}
-                  <select
-                    aria-label={t("studio.position")}
-                    value={position}
-                    disabled={positionValue !== undefined}
-                    onChange={(e) => setLocalPosition(e.target.value)}
-                    className={selectClass}
-                  >
-                    <option value="MF">{t("studio.mf")}</option>
-                    <option value="DF">{t("studio.df")}</option>
-                    <option value="FW">{t("studio.fw")}</option>
-                    <option value="GK">{t("studio.gk")}</option>
-                  </select>
-                </label>
-                <label>
-                  {t("studio.motion")}
-                  <select
-                    aria-label={t("studio.motion")}
-                    value={movementId}
-                    onChange={(e) => {
-                      setMovementId(e.target.value);
-                      setPaused(reducedMotion);
-                      setPreviewAt(undefined);
-                      if (
-                        !positionValue &&
-                        /^(save|diveLeft|diveRight|saveHigh|catch)$/.test(e.target.value)
-                      )
-                        setLocalPosition("GK");
-                    }}
-                    className={selectClass}
-                  >
-                    {MOVEMENTS.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {studioMovementLabel(lang, m.id, m.label)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="studio-wide">
-                  {t("studio.condition")}
-                  <select
-                    aria-label={t("studio.condition")}
-                    value={stamina}
-                    onChange={(e) => {
-                      setStamina(Number(e.target.value));
-                      setPaused(false);
-                      setPreviewAt(undefined);
-                    }}
-                    className={selectClass}
-                  >
-                    <option value={100}>{t("studio.rested")}</option>
-                    <option value={45}>{t("studio.tired")}</option>
-                    <option value={10}>{t("studio.exhausted")}</option>
-                  </select>
-                </label>
-              </TabsContent>
-            )}
-            {panel === "look" && (
-              <TabsContent value="look" className="studio-fields">
-                <label>
-                  Cabelo
-                  <select
-                    aria-label="Cabelo do atleta"
-                    value={controlledAppearance?.hairStyle ?? hairStyle}
-                    disabled={value !== undefined && !onChange}
-                    onChange={(e) => {
-                      const next = e.target.value as HairStyle | "original";
-                      if (controlledAppearance) {
-                        updateControlledAppearance({
-                          hairStyle: next === "original" ? fallbackAppearance.hairStyle : next,
-                        });
-                      } else {
-                        setHairStyle(next);
-                      }
-                    }}
-                    className={selectClass}
-                  >
-                    <option value="original">Original do atleta</option>
-                    {[
-                      { id: "buzz", label: "Raspado" },
-                      { id: "short", label: "Curto" },
-                      { id: "medium", label: "Médio" },
-                      { id: "curly", label: "Cacheado" },
-                      { id: "afro", label: "Afro" },
-                      { id: "mohawk", label: "Moicano" },
-                      { id: "bun", label: "Coque" },
-                      { id: "ponytail", label: "Rabo de cavalo" },
-                      { id: "dreads", label: "Dreads" },
-                      { id: "braids", label: "Tranças" },
-                      { id: "headband", label: "Com faixa" },
-                      { id: "bald", label: "Sem cabelo" },
-                    ].map((item) => (
-                      <option value={item.id} key={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Barba
-                  <select
-                    aria-label="Barba do atleta"
-                    value={controlledAppearance?.beardStyle ?? beard}
-                    disabled={value !== undefined && !onChange}
-                    onChange={(e) => {
-                      const next = e.target.value as BeardStyle | "original";
-                      if (controlledAppearance) {
-                        updateControlledAppearance({
-                          beardStyle: next === "original" ? fallbackAppearance.beardStyle : next,
-                        });
-                      } else {
-                        setBeard(next);
-                      }
-                    }}
-                    className={selectClass}
-                  >
-                    <option value="original">Original do atleta</option>
-                    <option value="none">Sem barba</option>
-                    <option value="stubble">Por fazer</option>
-                    <option value="goatee">Cavanhaque</option>
-                    <option value="full">Completa</option>
-                    <option value="moustache">Bigode</option>
-                  </select>
-                </label>
-                <label className="studio-wide">
-                  Constituição física
-                  <select
-                    aria-label="Constituição física"
-                    value={controlledAppearance?.bodyType ?? physique}
-                    disabled={value !== undefined && !onChange}
-                    onChange={(e) => {
-                      const next = e.target.value as BodyType | "original";
-                      if (controlledAppearance) {
-                        updateControlledAppearance({
-                          bodyType: next === "original" ? fallbackAppearance.bodyType : next,
-                        });
-                      } else {
-                        setPhysique(next);
-                        setLocalWeightKg(undefined);
-                      }
-                    }}
-                    className={selectClass}
-                  >
-                    <option value="original">Original do atleta</option>
-                    <option value="slim">Esguio</option>
-                    <option value="normal">Atlético</option>
-                    <option value="strong">Robusto</option>
-                    <option value="tall">Alto</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className="studio-button studio-wide"
-                  onClick={() => {
-                    if (controlledAppearance) {
-                      onChange?.(fallbackAppearance);
-                    } else {
-                      setHairStyle("original");
-                      setBeard("original");
-                      setPhysique("original");
-                      setLocalHeightCm(undefined);
-                      setLocalWeightKg(undefined);
-                    }
+        <div className="studio-preview-column">
+          <div className="studio-viewport" id={viewportId} tabIndex={-1} ref={viewportHost}>
+            <div className="studio-canvas">
+              <GraphicsBoundary>
+                <Canvas
+                  camera={{ position: [1.8, 1.55, 3.2], fov: 32 }}
+                  dpr={[1, 1.5]}
+                  shadows={{ type: THREE.PCFShadowMap }}
+                  frameloop={scenePaused ? "demand" : "always"}
+                  gl={{ antialias: true, powerPreference: "high-performance" }}
+                  onCreated={({ gl }) => {
+                    gl.toneMapping = THREE.ACESFilmicToneMapping;
+                    gl.toneMappingExposure = 0.9;
                   }}
-                  disabled={value !== undefined && !onChange}
+                  fallback={
+                    <p role="status" className="p-8 text-center">
+                      {t("studio.webgl")}
+                    </p>
+                  }
                 >
-                  Restaurar aparência
-                </button>
-                {hasExternalMeasurements ? (
-                  <p className="studio-hint studio-wide">
-                    Altura e peso acompanham os dados físicos definidos na criação.
-                  </p>
-                ) : (
-                  <>
-                    <label className="studio-wide">
-                      Altura · {Math.round(appearance.height * 180)} cm
-                      <input
-                        type="range"
-                        aria-label={t("studio.height")}
-                        aria-valuetext={`${Math.round(appearance.height * 180)} cm`}
-                        className="studio-timeline"
-                        min={160}
-                        max={205}
-                        value={Math.round(appearance.height * 180)}
-                        onChange={(e) => setLocalHeightCm(Number(e.target.value))}
-                      />
-                    </label>
-                    <label className="studio-wide">
-                      Peso ·{" "}
-                      {weightKg ??
-                        Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)}{" "}
-                      kg
-                      <input
-                        type="range"
-                        aria-label={t("studio.weight")}
-                        aria-valuetext={`${weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)} kg`}
-                        className="studio-timeline"
-                        min={55}
-                        max={110}
-                        value={
-                          weightKg ??
-                          Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)
-                        }
-                        onChange={(e) => setLocalWeightKg(Number(e.target.value))}
-                      />
-                    </label>
-                  </>
-                )}
-              </TabsContent>
-            )}
-            {panel === "scene" && (
-              <TabsContent value="scene" className="studio-fields">
-                <label className="studio-wide">
-                  Ângulo da câmera
-                  <select
-                    aria-label="Ângulo da câmera"
-                    value={viewAngle}
-                    onChange={(e) => setViewAngle(e.target.value)}
-                    className={selectClass}
-                  >
-                    <option value="threeQuarter">Três quartos</option>
-                    <option value="front">Frente</option>
-                    <option value="profile">Perfil</option>
-                    <option value="back">Costas</option>
-                  </select>
-                </label>
-                <label className="studio-wide">
-                  {t("studio.light")}
-                  <select
-                    aria-label={t("studio.light")}
-                    value={light}
-                    onChange={(e) => setLight(e.target.value)}
-                    className={selectClass}
-                  >
-                    <option value="dia">{t("studio.day")}</option>
-                    <option value="entardecer">{t("studio.sunset")}</option>
-                    <option value="noite">{t("studio.night")}</option>
-                  </select>
-                </label>
-                <p className="studio-hint studio-wide">{t("studio.cameraHint")}</p>
-                <label
-                  className="studio-wide"
-                  style={{ display: "flex", alignItems: "center", gap: 10 }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={clothPhysics}
-                    onChange={(e) => setClothPhysics(e.target.checked)}
+                  <CanvasLifecycle onStatus={setSceneStatus} />
+                  <Ktx2CanvasAssets enabled={detail} portrait />
+                  <StudioScene
+                    preview={preview}
+                    movement={movement}
+                    light={light}
+                    detail={detail}
+                    paused={scenePaused}
+                    framing={framing}
+                    stamina={stamina}
+                    previewAt={previewAt}
+                    appearanceStore={appearanceStore}
+                    viewReset={viewReset}
+                    viewAngle={viewAngle}
+                    cameraCommand={cameraCommand}
+                    clothPhysics={clothPhysics}
+                    playbackRate={playbackRate}
+                    onAppearanceReady={acknowledgeAppearance}
+                    onSceneAppearanceReady={acknowledgeSceneAppearance}
                   />
-                  {t("studio.clothMotion")}
-                </label>
-                <p className="studio-hint studio-wide">{t("studio.clothHint")}</p>
-              </TabsContent>
-            )}
-          </Tabs>
+                </Canvas>
+              </GraphicsBoundary>
+            </div>
+            <div className="studio-keyboard-camera" role="group" aria-label={t("studio.frame")}>
+              {(
+                [
+                  ["left", "studio.left", ArrowLeft],
+                  ["right", "studio.right", ArrowRight],
+                  ["in", "studio.zoomIn", ZoomIn],
+                  ["out", "studio.zoomOut", ZoomOut],
+                ] as const
+              ).map(([action, key, Icon]) => (
+                <button
+                  key={action}
+                  type="button"
+                  className="studio-button"
+                  aria-label={t(key)}
+                  title={t(key)}
+                  onClick={() =>
+                    setCameraCommand((old) => ({ action, sequence: (old?.sequence ?? 0) + 1 }))
+                  }
+                >
+                  <Icon size={18} aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+            <div className="studio-view-actions">
+              <div className="studio-now-playing">
+                <span className="studio-kicker">{t("studio.motion")}</span>
+                <strong>{studioMovementLabel(lang, movement.id, movement.label)}</strong>
+              </div>
+              <button
+                type="button"
+                aria-pressed={paused}
+                onClick={() => {
+                  setPreviewAt(undefined);
+                  setPaused(!paused);
+                }}
+                className="studio-button"
+              >
+                {paused ? <Play size={15} /> : <Pause size={15} />}
+                {t(paused ? "common.play" : "common.pause")}
+              </button>
+              <button
+                type="button"
+                aria-label={t("studio.resetCamera")}
+                onClick={() => setViewReset((n) => n + 1)}
+                className="studio-button"
+              >
+                <RotateCcw size={15} />
+              </button>
+              <button
+                type="button"
+                aria-pressed={!detail}
+                onClick={() => setDetail(!detail)}
+                className="studio-button"
+              >
+                {t(detail ? "studio.compare" : "studio.detailed")}
+              </button>
+            </div>
+          </div>
           {movement.action && (
             <div className="studio-phase" aria-label="Inspeção do movimento">
               <p className="studio-kicker">{t("studio.phase")}</p>
@@ -1140,6 +1021,340 @@ export default function PlayerStudio({
               <p className="studio-hint">{t("studio.phaseHint")}</p>
             </div>
           )}
+        </div>
+        <aside
+          className="studio-panel"
+          id={settingsId}
+          tabIndex={-1}
+          aria-label={t("studio.settings")}
+        >
+          <Tabs value={panel} onValueChange={setPanel} dir={dir}>
+            <TabsList className="studio-tabs" aria-label={t("studio.settings")}>
+              {[
+                { id: "motion", label: t("studio.motion"), icon: Activity },
+                { id: "look", label: t("studio.look"), icon: UserRound },
+                { id: "scene", label: t("studio.scene"), icon: Sun },
+              ].map(({ id, label, icon: Icon }) => (
+                <TabsTrigger value={id} key={id}>
+                  <Icon size={14} />
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {panel === "motion" && (
+              <TabsContent value="motion" className="studio-fields">
+                <label>
+                  {lang.startsWith("pt") ? "Velocidade de reprodução" : "Playback speed"}
+                  <select
+                    className={selectClass}
+                    aria-label={
+                      lang.startsWith("pt") ? "Velocidade de reprodução" : "Playback speed"
+                    }
+                    value={playbackRate}
+                    onChange={(event) => setPlaybackRate(Number(event.target.value))}
+                  >
+                    <option value={1}>1×</option>
+                    <option value={0.5}>0.5×</option>
+                    <option value={0.25}>0.25×</option>
+                  </select>
+                </label>
+                <div className="studio-library studio-wide">
+                  <label>
+                    {library.search}
+                    <input
+                      type="search"
+                      value={movementQuery}
+                      placeholder={library.placeholder}
+                      aria-label={library.search}
+                      aria-describedby={libraryStatusId}
+                      onChange={(event) => setMovementQuery(event.target.value)}
+                      className="studio-input"
+                    />
+                  </label>
+                  <label>
+                    {library.group}
+                    <select
+                      aria-label={library.group}
+                      value={movementCategory}
+                      className={selectClass}
+                      onChange={(event) => setMovementCategory(event.target.value as MovementGroup)}
+                    >
+                      {MOVEMENT_GROUPS.map((group) => (
+                        <option value={group} key={group}>
+                          {library[group]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="studio-library-status">
+                    <p id={libraryStatusId} role="status">
+                      {availableMovements.length} {library.results}
+                    </p>
+                    {movementQuery && (
+                      <button
+                        type="button"
+                        className="studio-clear"
+                        onClick={() => setMovementQuery("")}
+                      >
+                        {library.clear}
+                      </button>
+                    )}
+                  </div>
+                  <div className="studio-quick-movements" role="group" aria-label={library.quick}>
+                    {["idle", "run", "shotPower", "diveLeft"].map((id) => {
+                      const item = MOVEMENTS.find((entry) => entry.id === id)!;
+                      return (
+                        <button
+                          type="button"
+                          key={id}
+                          aria-pressed={movementId === id}
+                          onClick={() => chooseMovement(id)}
+                        >
+                          {studioMovementLabel(lang, id, item.label)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <label>
+                  {t("studio.position")}
+                  <select
+                    aria-label={t("studio.position")}
+                    disabled={positionValue !== undefined}
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="MF">{t("studio.mf")}</option>
+                    <option value="DF">{t("studio.df")}</option>
+                    <option value="FW">{t("studio.fw")}</option>
+                    <option value="GK">{t("studio.gk")}</option>
+                  </select>
+                </label>
+                <label>
+                  {t("studio.motion")}
+                  <select
+                    aria-label={t("studio.motion")}
+                    value={movementId}
+                    onChange={(e) => chooseMovement(e.target.value)}
+                    className={selectClass}
+                  >
+                    {!availableMovements.includes(movement) && (
+                      <option value={movement.id}>
+                        {library.current}: {studioMovementLabel(lang, movement.id, movement.label)}
+                      </option>
+                    )}
+                    {availableMovements.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {studioMovementLabel(lang, m.id, m.label)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="studio-wide">
+                  {t("studio.condition")}
+                  <select
+                    aria-label={t("studio.condition")}
+                    value={stamina}
+                    onChange={(e) => {
+                      setStamina(Number(e.target.value));
+                      setPaused(reducedMotion);
+                      setPreviewAt(undefined);
+                    }}
+                    className={selectClass}
+                  >
+                    <option value={100}>{t("studio.rested")}</option>
+                    <option value={45}>{t("studio.tired")}</option>
+                    <option value={10}>{t("studio.exhausted")}</option>
+                  </select>
+                </label>
+              </TabsContent>
+            )}
+            {panel === "look" && (
+              <TabsContent value="look" className="studio-fields">
+                <label>
+                  Cabelo
+                  <select
+                    aria-label="Cabelo do atleta"
+                    value={controlledAppearance?.hairStyle ?? hairStyle}
+                    disabled={value !== undefined && !onChange}
+                    onChange={(e) => {
+                      const next = e.target.value as HairStyle | "original";
+                      if (controlledAppearance)
+                        updateControlledAppearance({
+                          hairStyle: next === "original" ? fallbackAppearance.hairStyle : next,
+                        });
+                      else setHairStyle(next);
+                    }}
+                    className={selectClass}
+                  >
+                    <option value="original">Original do atleta</option>
+                    {[
+                      { id: "buzz", label: "Raspado" },
+                      { id: "short", label: "Curto" },
+                      { id: "medium", label: "Médio" },
+                      { id: "curly", label: "Cacheado" },
+                      { id: "afro", label: "Afro" },
+                      { id: "mohawk", label: "Moicano" },
+                      { id: "bun", label: "Coque" },
+                      { id: "ponytail", label: "Rabo de cavalo" },
+                      { id: "dreads", label: "Dreads" },
+                      { id: "braids", label: "Tranças" },
+                      { id: "headband", label: "Com faixa" },
+                      { id: "bald", label: "Sem cabelo" },
+                    ].map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Barba
+                  <select
+                    aria-label="Barba do atleta"
+                    value={controlledAppearance?.beardStyle ?? beard}
+                    disabled={value !== undefined && !onChange}
+                    onChange={(e) => {
+                      const next = e.target.value as BeardStyle | "original";
+                      if (controlledAppearance)
+                        updateControlledAppearance({
+                          beardStyle: next === "original" ? fallbackAppearance.beardStyle : next,
+                        });
+                      else setBeard(next);
+                    }}
+                    className={selectClass}
+                  >
+                    <option value="original">Original do atleta</option>
+                    <option value="none">Sem barba</option>
+                    <option value="stubble">Por fazer</option>
+                    <option value="goatee">Cavanhaque</option>
+                    <option value="full">Completa</option>
+                    <option value="moustache">Bigode</option>
+                  </select>
+                </label>
+                <label className="studio-wide">
+                  Constituição física
+                  <select
+                    aria-label="Constituição física"
+                    value={controlledAppearance?.bodyType ?? physique}
+                    disabled={value !== undefined && !onChange}
+                    onChange={(e) => {
+                      const next = e.target.value as BodyType | "original";
+                      if (controlledAppearance)
+                        updateControlledAppearance({
+                          bodyType: next === "original" ? fallbackAppearance.bodyType : next,
+                        });
+                      else {
+                        setPhysique(next);
+                        setWeightKg(undefined);
+                      }
+                    }}
+                    className={selectClass}
+                  >
+                    <option value="original">Original do atleta</option>
+                    <option value="slim">Esguio</option>
+                    <option value="normal">Atlético</option>
+                    <option value="strong">Robusto</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="studio-button studio-wide"
+                  disabled={value !== undefined && !onChange}
+                  onClick={() => {
+                    if (controlledAppearance) onChange?.(fallbackAppearance);
+                    else {
+                      setHairStyle("original");
+                      setBeard("original");
+                      setPhysique("original");
+                      setHeightCm(undefined);
+                      setWeightKg(undefined);
+                    }
+                  }}
+                >
+                  Restaurar aparência
+                </button>
+                <label className="studio-wide">
+                  Altura · {Math.round(appearance.height * 180)} cm
+                  <input
+                    type="range"
+                    aria-label={t("studio.height")}
+                    disabled={hasExternalMeasurements}
+                    aria-valuetext={`${Math.round(appearance.height * 180)} cm`}
+                    className="studio-timeline"
+                    min={160}
+                    max={205}
+                    value={Math.round(appearance.height * 180)}
+                    onChange={(e) => setHeightCm(Number(e.target.value))}
+                  />
+                </label>
+                <label className="studio-wide">
+                  Peso ·{" "}
+                  {weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)}{" "}
+                  kg
+                  <input
+                    type="range"
+                    aria-label={t("studio.weight")}
+                    disabled={hasExternalMeasurements}
+                    aria-valuetext={`${weightKg ?? Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)} kg`}
+                    className="studio-timeline"
+                    min={55}
+                    max={110}
+                    value={
+                      weightKg ??
+                      Math.round(76.788 * appearance.girth ** 2 * appearance.height ** 2)
+                    }
+                    onChange={(e) => setWeightKg(Number(e.target.value))}
+                  />
+                </label>
+              </TabsContent>
+            )}
+            {panel === "scene" && (
+              <TabsContent value="scene" className="studio-fields">
+                <label className="studio-wide">
+                  Ângulo da câmera
+                  <select
+                    aria-label="Ângulo da câmera"
+                    value={viewAngle}
+                    onChange={(e) => setViewAngle(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="threeQuarter">Três quartos</option>
+                    <option value="front">Frente</option>
+                    <option value="profile">Perfil</option>
+                    <option value="back">Costas</option>
+                  </select>
+                </label>
+                <label className="studio-wide">
+                  {t("studio.light")}
+                  <select
+                    aria-label={t("studio.light")}
+                    value={light}
+                    onChange={(e) => setLight(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="dia">{t("studio.day")}</option>
+                    <option value="entardecer">{t("studio.sunset")}</option>
+                    <option value="noite">{t("studio.night")}</option>
+                  </select>
+                </label>
+                <p className="studio-hint studio-wide">{t("studio.cameraHint")}</p>
+                <label
+                  className="studio-wide"
+                  style={{ display: "flex", alignItems: "center", gap: 10 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={clothPhysics}
+                    onChange={(e) => setClothPhysics(e.target.checked)}
+                  />
+                  {t("studio.clothMotion")}
+                </label>
+                <p className="studio-hint studio-wide">{t("studio.clothHint")}</p>
+              </TabsContent>
+            )}
+          </Tabs>
           <button
             type="button"
             className="studio-button mt-4 w-full"

@@ -26,6 +26,8 @@ export interface SimPlayer {
   name: string;
   number: number;
   pos: string;
+  /** Original role while an active outfielder covers an absent goalkeeper. */
+  emergencyKeeper?: { pos: string; slotX: number; slotZ: number };
   /** Cosmetic body measurements from the player's profile (cm / kg). */
   heightCm?: number;
   weightKg?: number;
@@ -137,7 +139,7 @@ export interface MatchStats {
   fouls: number;
   /** passes tentados */
   passes: number;
-  /** passes que chegaram ao destinatário pretendido */
+  /** passes controlados por um companheiro, incluindo desvios do alvo pretendido */
   passesOk: number;
   corners: number;
   yellow: number;

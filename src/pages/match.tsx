@@ -1,3 +1,4 @@
+import styles from "@/components/game/cinematic/cinematic.module.css";
 import { playGoalAnthem } from "@/game/goal-anthem";
 
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -64,6 +65,7 @@ import { WorkerMatchView } from "@/game/live-match";
 import type { TeamSetup, TeamTalkKind } from "@/game/sim";
 
 import { ReplayRecorder, saveReplay } from "@/game/replay";
+import { appendMatchAnalytics, summarizeMatch } from "@/game/match-analytics";
 
 import type { NarrationEvent } from "@/game/narrator";
 
@@ -160,9 +162,10 @@ function buildOpponent(clubId: string): TeamSetup {
 
 export function MatchPage() {
   useCinematicPreload();
-  const { career, update } = useCareer();
+  const { career, update, ownerId, signedIn } = useCareer();
   const navigate = useNavigate();
 
+  if (signedIn === null) return null;
   if (!career)
     return (
       <Suspense fallback={<p role="status">Carregando carreira…</p>}>
@@ -182,7 +185,15 @@ export function MatchPage() {
     );
   }
 
-  return <LiveMatch career={career} update={update} navigate={navigate} />;
+  return (
+    <LiveMatch
+      key={ownerId ?? "guest"}
+      ownerId={ownerId}
+      career={career}
+      update={update}
+      navigate={navigate}
+    />
+  );
 }
 
 const MATCH_SPEEDS = [1, 2, 4, 8] as const;
@@ -193,10 +204,12 @@ function nextMatchSpeed(current: number) {
 }
 
 function LiveMatch({
+  ownerId,
   career,
   update,
   navigate,
 }: {
+  ownerId: string | null;
   career: CareerState;
   update: (s: CareerState) => void;
   navigate: ReturnType<typeof useNavigate>;
@@ -412,8 +425,11 @@ function LiveMatch({
       rec.build(
         `${sim.home.short} ${sim.stats.home.goals}-${sim.stats.away.goals} ${sim.away.short}`,
       ),
-    );
-  }, [sim]);
+      ownerId,
+    ).then((saved) => {
+      if (!saved && recorderRef.current === rec) savedRef.current = false;
+    });
+  }, [sim, ownerId]);
 
   useEffect(() => {
     recorderRef.current = new ReplayRecorder(sim);
@@ -517,7 +533,13 @@ function LiveMatch({
         injuryWeeks: r.injuryWeeks,
       }));
     setAdvancing(true);
-    void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
+    const measuredCareer = sim.analytics
+      ? appendMatchAnalytics(
+          career,
+          summarizeMatch(sim.analytics, career, fixture.home, fixture.away, sim.stats),
+        )
+      : career;
+    void advanceRoundAsync(measuredCareer, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
       for (const id of next.achievements ?? []) {
         if (!before.has(id)) {
@@ -629,7 +651,7 @@ function LiveMatch({
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
                   }}
-                  className="cutscene-control px-3 text-xs"
+                  className={`${styles["cutscene-control"]} px-3 text-xs`}
                 >
                   Pular para o jogo
                 </button>
@@ -640,7 +662,7 @@ function LiveMatch({
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
                   }}
-                  className="cutscene-control px-3 text-xs"
+                  className={`${styles["cutscene-control"]} px-3 text-xs`}
                 >
                   Não mostrar mais
                 </button>

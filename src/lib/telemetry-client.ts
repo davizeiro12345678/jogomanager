@@ -14,7 +14,7 @@ function browserFamily() {
 }
 
 /** Envia no máximo um resumo por sessão, e só com consentimento. */
-export function reportTechSample(sample: { fps: number; p95: number; errorCode?: string }) {
+export function reportTechSample(sample: { fps?: number; p95?: number; errorCode?: string }) {
   if (typeof window === "undefined" || !readConsent().telemetry) return;
   if (sessionStorage.getItem(SENT)) return;
   sessionStorage.setItem(SENT, "1");
@@ -22,8 +22,14 @@ export function reportTechSample(sample: { fps: number; p95: number; errorCode?:
     PerformanceNavigationTiming | undefined;
   void sendTechTelemetry({
     data: {
-      fpsAvg: Math.round(sample.fps * 10) / 10,
-      frameTimeP95Ms: Math.round(sample.p95 * 10) / 10,
+      fpsAvg:
+        typeof sample.fps === "number" && Number.isFinite(sample.fps)
+          ? Math.round(sample.fps * 10) / 10
+          : null,
+      frameTimeP95Ms:
+        typeof sample.p95 === "number" && Number.isFinite(sample.p95)
+          ? Math.round(sample.p95 * 10) / 10
+          : null,
       browser: browserFamily(),
       gpuTier: null,
       graphicsPreset: "auto",

@@ -6,13 +6,14 @@ import {
   Vignette,
   N8AO,
   SMAA,
+  FXAA,
   BrightnessContrast,
   ChromaticAberration,
   DepthOfField,
   HueSaturation,
   Noise,
 } from "@react-three/postprocessing";
-import { BlendFunction, type DepthOfFieldEffect } from "postprocessing";
+import { BlendFunction, KernelSize, SMAAPreset, type DepthOfFieldEffect } from "postprocessing";
 import * as THREE from "three";
 import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
@@ -41,6 +42,7 @@ export function PostFX({
   grading,
   focusTarget,
   antialias = true,
+  legacyMatchEffects = false,
 }: {
   quality: PostQuality;
   replay?: boolean;
@@ -58,6 +60,8 @@ export function PostFX({
   focusTarget?: THREE.Vector3 | undefined;
   /** A canvas with native MSAA does not need a second antialias pass or SMAA images. */
   antialias?: boolean;
+  /** Isolated A/B fixture only; the ordinary match uses the bounded effect path. */
+  legacyMatchEffects?: boolean;
 }) {
   const m: PostMoment = moment ?? (replay ? "replay" : "match");
   const p = useMemo(() => postPreset(quality, m, time, intensity), [quality, m, time, intensity]);
@@ -90,7 +94,6 @@ export function PostFX({
 
   return (
     <EffectComposer
-      // Sem trocar a key por momento: remontar o compositor piscava a tela.
       key="alta"
       // N8AO reconstructs its normals from depth; the remaining lens effects
       // also use depth/color. An unused NormalPass redrew the complete scene.
@@ -124,13 +127,18 @@ export function PostFX({
       ) : (
         <></>
       )}
-      <Bloom
-        intensity={Math.max(0.05, p.bloom)}
-        luminanceThreshold={Math.max(0.82, p.bloomThreshold)}
-        luminanceSmoothing={0.22}
-        radius={0.72}
-        mipmapBlur
-      />
+      {cinema || legacyMatchEffects || time !== "dia" ? (
+        <Bloom
+          intensity={Math.max(0.05, p.bloom)}
+          luminanceThreshold={p.bloomThreshold}
+          luminanceSmoothing={0.35}
+          mipmapBlur={cinema || legacyMatchEffects}
+          resolutionScale={cinema || legacyMatchEffects ? 0.5 : 0.35}
+          kernelSize={cinema || legacyMatchEffects ? KernelSize.LARGE : KernelSize.SMALL}
+        />
+      ) : (
+        <></>
+      )}
       {cinema ? (
         <ChromaticAberration offset={ab} radialModulation modulationOffset={0.35} />
       ) : (
@@ -147,7 +155,15 @@ export function PostFX({
       )}
       <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
       {/* O renderer já aplica ACES; uma segunda curva aqui esmagava médios e realces. */}
-      {antialias ? <SMAA /> : <></>}
+      {antialias ? (
+        cinema || legacyMatchEffects ? (
+          <SMAA preset={SMAAPreset.HIGH} />
+        ) : (
+          <FXAA />
+        )
+      ) : (
+        <></>
+      )}
     </EffectComposer>
   );
 }

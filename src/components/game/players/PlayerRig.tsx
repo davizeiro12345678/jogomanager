@@ -33,7 +33,7 @@ import { type Quality, type RigProps } from "./player-rig-contract";
 import { usePlayerRigFrame, type PlayerRigBoneRefs } from "./player-rig-frame";
 import { usePlayerRigMeshes } from "./player-rig-meshes";
 import { softShadowTexture } from "./soft-shadow";
-export type { Quality } from "./player-rig-contract";
+export type { Quality, RenderedPlayerAppearance } from "./player-rig-contract";
 
 export const PlayerRig = memo(function PlayerRig({
   player,
@@ -47,11 +47,13 @@ export const PlayerRig = memo(function PlayerRig({
   matchTopology = false,
   clothPhysics = true,
   previewClip,
+  previewRevision,
   quality: baseQuality,
   paused = false,
   respectVisualSettings = true,
   previewAt,
   onPoseReady,
+  onAppearanceReady,
 }: RigProps) {
   // O usuário pode forçar mais ou menos detalhe na página /visual.
   const detail = useVisual().playerDetail;
@@ -62,6 +64,8 @@ export const PlayerRig = memo(function PlayerRig({
       : detail === "simples"
         ? "baixa"
         : baseQuality;
+
+  useEffect(() => retainRigGeometryPreparation(), []);
 
   /* ------------------------------------------------------------ aparência */
 
@@ -94,10 +98,6 @@ export const PlayerRig = memo(function PlayerRig({
     trimKitTextures(kitBudget(quality).limitBytes);
     return release;
   }, [quality, tex]);
-  // A disabled or unmeasured Rust geometry path remains inert. Once its
-  // full-flow gate is approved this mounts one bounded preparation owner for
-  // the visible rig, with cleanup on every Studio/match exit.
-  useEffect(() => retainRigGeometryPreparation(), []);
 
   // Cor de identificação que contrasta com a camisa.
   const jerseyInk = useMemo(() => {
@@ -154,6 +154,7 @@ export const PlayerRig = memo(function PlayerRig({
   const clavRRef = useRef<THREE.Bone>(null);
   const jawRef = useRef<THREE.Bone>(null);
   const eyesRef = useRef<THREE.Bone>(null);
+
   // LOD por grupo de desenho: os grupos "near" (rosto, dedos) somem a partir
   // do LOD 1 e os "boot" (travas) a partir do LOD 2 — a maioria dos 22
   // atletas fica longe da câmera na maior parte do tempo.
@@ -162,6 +163,7 @@ export const PlayerRig = memo(function PlayerRig({
   const skinnedMeshes = useRef<THREE.SkinnedMesh[]>([]);
   const lodState = useRef<LodLevel | null>(null);
   const castState = useRef<boolean | null>(null);
+
   const painted = useRef(false);
 
   const { skin, cloth, drawMeshes } = usePlayerRigMeshes({
@@ -185,6 +187,11 @@ export const PlayerRig = memo(function PlayerRig({
     nearMeshes,
     bootMeshes,
     skinnedMeshes,
+    root,
+    previewClip,
+    previewRevision,
+    paused,
+    onAppearanceReady,
   });
 
   // Junta -> osso. `createElement` (e não JSX) de propósito: o plugin de
@@ -251,6 +258,7 @@ export const PlayerRig = memo(function PlayerRig({
       paused,
       previewClip,
       previewAt,
+      wet: surface.wet,
       onPoseReady,
     },
     resources: {
@@ -279,12 +287,7 @@ export const PlayerRig = memo(function PlayerRig({
       position={[player.x, 0, player.z]}
     >
       {/* sombra de contato */}
-      <mesh
-        ref={shadowRef}
-        visible={!portrait}
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.015, 0]}
-      >
+      <mesh ref={shadowRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
         <circleGeometry args={[0.36, 16]} />
         <meshBasicMaterial
           map={contactShadow}

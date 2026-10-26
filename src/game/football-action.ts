@@ -27,7 +27,7 @@ export function refineBallFootContact(
   target: { x: number; z: number; height: number },
 ) {
   if (
-    action === null ||
+    !action ||
     !FOOT_ACTIONS.test(action) ||
     ![target.x, target.z, target.height].every(Number.isFinite)
   )
@@ -36,7 +36,12 @@ export function refineBallFootContact(
   if (distance > 1.15 || target.z < -0.25 || target.height > 0.9 || target.height < 0) return pose;
   const phase = Math.exp(-(((progress - footballContactAt(action)) / 0.075) ** 2));
   const reach = 1 - smooth((distance - 0.65) / 0.5);
-  const weight = phase * reach * 0.72;
+  // A reachable-to-unreachable ball must release the boot gradually. Hard
+  // height/rear cutoffs otherwise discarded a full-strength IK correction
+  // in one frame, snapping a knee by more than a radian near a high ball.
+  const heightReach = 1 - smooth((target.height - 0.72) / 0.18);
+  const rearReach = smooth((target.z + 0.25) / 0.13);
+  const weight = phase * reach * heightReach * rearReach * 0.72;
   const left = foot === "left";
   const lateral = Math.max(-0.22, Math.min(0.22, target.x - (left ? 1 : -1) * p.hipW * 0.36));
   const forward = Math.max(-0.15, Math.min(0.58, target.z - p.footLen * 0.5));
@@ -45,9 +50,15 @@ export function refineBallFootContact(
   const pitch = left ? "legLPitch" : "legRPitch";
   const knee = left ? "kneeL" : "kneeR";
   const roll = left ? "legLRoll" : "legRRoll";
+  const ankle = left ? "ankleL" : "ankleR";
+  const authoredBootPitch = pose[pitch] - pose[knee] + pose[ankle];
   pose[pitch] += (contact.pitch - pose[pitch]) * weight;
   pose[knee] += (contact.knee - pose[knee]) * weight;
   pose[roll] += ((left ? contact.roll : -contact.roll) - pose[roll]) * weight;
+  // IK moves the boot to the ball, but must retain the instep/inside-foot
+  // orientation authored by the kick. Leaving its local ankle unchanged
+  // rotates the sole by the full accumulated thigh/knee correction.
+  pose[ankle] = authoredBootPitch - pose[pitch] + pose[knee];
   return pose;
 }
 

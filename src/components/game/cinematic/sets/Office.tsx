@@ -1,10 +1,20 @@
+import type { Speaker } from "@/content/cutscenes";
+
 import { CinematicActor as Figure } from "../CinematicActor";
+
+import { ClubTrophy } from "../CinematicSetDetails";
 import { useCinematicArtwork } from "../cinematic-artwork";
 import { cinematicSurface } from "../cinematic-surfaces";
-import { ClubTrophy } from "../CinematicSetDetails";
-import type { CinematicSetProps } from "./types";
 
-export function Office({ primary, secondary, speaker }: CinematicSetProps) {
+export function Office({
+  primary,
+  secondary,
+  speaker,
+}: {
+  primary: string;
+  secondary: string;
+  speaker: Speaker | null;
+}) {
   const vista = useCinematicArtwork("stadium", primary, secondary);
   return (
     <group>
@@ -30,10 +40,12 @@ export function Office({ primary, secondary, speaker }: CinematicSetProps) {
           roughness={0.9}
         />
       </mesh>
+      {/* janela com estádio ao fundo */}
       <mesh position={[4.4, 2.2, -3.86]}>
         <planeGeometry args={[4.6, 2.6]} />
         <meshBasicMaterial map={vista} color="#d4e3eb" />
       </mesh>
+      {/* mesa e cadeiras */}
       <mesh position={[0, 0.74, -1.4]} castShadow receiveShadow>
         <boxGeometry args={[3.8, 0.12, 1.5]} />
         <meshStandardMaterial
@@ -51,6 +63,7 @@ export function Office({ primary, secondary, speaker }: CinematicSetProps) {
           <meshStandardMaterial color="#2a1d12" roughness={0.7} />
         </mesh>
       ))}
+      {/* troféus na estante */}
       <mesh position={[-4.6, 1.5, -3.8]} receiveShadow>
         <boxGeometry args={[4, 3, 0.4]} />
         <meshStandardMaterial color="#241a12" roughness={0.85} />

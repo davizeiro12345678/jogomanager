@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { GRAPHICS_PROFILES } from "./contracts/graphics-profile";
 import { QualityGovernor } from "./quality-governor";
 
 function runWindow(governor: QualityGovernor, frameMs: number, frames = 45) {
@@ -7,6 +8,22 @@ function runWindow(governor: QualityGovernor, frameMs: number, frames = 45) {
 }
 
 describe("adaptive match quality governor", () => {
+  it("uses a 60 FPS frame budget for every real-time quality tier", () => {
+    for (const tier of ["baixa", "media", "alta"] as const) {
+      const profile = GRAPHICS_PROFILES[tier];
+      expect(profile.targetFps).toBe(60);
+      expect(profile.targetP95FrameMs).toBe(15);
+
+      const governor = new QualityGovernor(profile.targetP95FrameMs);
+      for (let frame = 0; frame < 240; frame += 1) governor.sample(1 / 60);
+      expect(
+        governor.stage,
+        `${tier} should lower scene cost after sustained >60 FPS frame times`,
+      ).toBeGreaterThan(0);
+    }
+    expect(GRAPHICS_PROFILES.cinema.targetFps).toBe(30);
+  });
+
   it("reacts to severe frame-budget misses before the match spends many seconds overloaded", () => {
     const governor = new QualityGovernor(20);
 

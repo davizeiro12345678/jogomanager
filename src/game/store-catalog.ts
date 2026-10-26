@@ -1,10 +1,9 @@
 /**
  * Catálogo dos pacotes da loja.
  *
- * É a mesma lista que está na tabela `store_products`; aqui ela existe em
- * código para a vitrine pública (/produtos) funcionar sem login e sem
- * esperar o banco responder. Os `priceId` são exatamente os mesmos usados
- * no checkout da loja.
+ * Referências de apresentação para a prévia dos pacotes. Preço, quantidade e
+ * disponibilidade exibidos vêm de `store_products`; o Checkout valida a oferta
+ * no servidor. Estes valores locais não são uma oferta de venda alternativa.
  */
 
 export type PackKind = "coins" | "scout" | "training" | "cosmetic" | "pass";
@@ -31,7 +30,7 @@ export const STORE_PACKS: StorePack[] = [
     key: "coins_starter",
     priceId: "coins_starter",
     name: "Moedas iniciais",
-    tagline: "O jeito mais barato de experimentar",
+    tagline: "Um pacote compacto de moedas",
     description:
       "Um punhado pequeno de moedas para testar relatórios, impulsos de treino e temas sem gastar quase nada.",
     priceCents: 490,
@@ -61,14 +60,14 @@ export const STORE_PACKS: StorePack[] = [
     key: "coins_medium",
     priceId: "coins_medium",
     name: "Baú de moedas",
-    tagline: "O melhor custo por moeda",
+    tagline: "Uma reserva para a temporada",
     description:
       "Baú cheio para atravessar a temporada inteira contratando, treinando e mudando o visual do clube.",
     priceCents: 2990,
     currency: "brl",
     coins: 1800,
     kind: "coins",
-    contents: ["1.800 moedas creditadas na hora", "Bônus de 20% sobre o pacote menor"],
+    contents: ["1.800 moedas creditadas na hora", "Vale para qualquer item do jogo"],
     accent: "#ffd977",
     accent2: "#7a4a08",
   },
@@ -77,13 +76,12 @@ export const STORE_PACKS: StorePack[] = [
     priceId: "coins_large",
     name: "Cofre de moedas",
     tagline: "Para quem joga várias temporadas",
-    description:
-      "O maior volume de moedas do jogo, com o melhor bônus por real, para contratar e customizar sem contar centavos.",
+    description: "Uma reserva maior de moedas para jogar várias temporadas e customizar o clube.",
     priceCents: 5990,
     currency: "brl",
     coins: 4000,
     kind: "coins",
-    contents: ["4.000 moedas creditadas na hora", "Maior bônus da loja", "Vale para qualquer item"],
+    contents: ["4.000 moedas creditadas na hora", "Vale para qualquer item do jogo"],
     accent: "#ffe9a8",
     accent2: "#6a3d05",
   },

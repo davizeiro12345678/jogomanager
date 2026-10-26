@@ -8,11 +8,38 @@ import {
 import { GOAL_PRESENTATION_SECONDS } from "@/game/goal-choreography";
 import { GAIT_SPEED } from "./player-rig-contract";
 
+/** Presentation clocks retain elapsed time even when integration must be bounded.
+ * A long frame must not slow the pose relative to interpolated Worker positions. */
+export class PlayerRigAnimationClock {
+  private elapsed = 0;
+
+  consume(rawSeconds: number, minimumInterval: number): number | null {
+    this.elapsed += Number.isFinite(rawSeconds) ? Math.max(0, rawSeconds) : 0;
+    if (this.elapsed + 1e-12 < minimumInterval) return null;
+    const elapsed = this.elapsed;
+    this.elapsed = 0;
+    return elapsed;
+  }
+
+  reset(): void {
+    this.elapsed = 0;
+  }
+}
+
+/** Exponential support transfer has the same response at 10 and 60 Hz.
+ * Linear dt*rate smoothing snapped the pelvis to its target at low FPS. */
+export function supportShiftAt(previous: number, target: number, elapsed: number): number {
+  const dt = Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
+  return previous + (target - previous) * (1 - Math.exp(-14 * dt));
+}
+
 export interface PlayerRigAnimationInput {
   currentClip: ClipName;
   currentTime: number;
   deltaSeconds: number;
   previewClip?: ClipName | undefined;
+  /** Stable per-event choice shared with the instanced player path. */
+  selectedClip?: ClipName | undefined;
   previewAt?: number | undefined;
   goalProgress?: number | undefined;
   selection: SelectCtx;
@@ -30,11 +57,12 @@ export function resolvePlayerRigAnimationFrame({
   currentTime,
   deltaSeconds,
   previewClip,
+  selectedClip,
   previewAt,
   goalProgress,
   selection,
 }: PlayerRigAnimationInput): PlayerRigAnimationFrame {
-  const clip = previewClip ?? selectClip(selection);
+  const clip = previewClip ?? selectedClip ?? selectClip(selection);
   const baseTime = clip === currentClip ? currentTime : 0;
   const nominal = GAIT_SPEED[clip];
   const cadence = nominal ? Math.max(0.55, Math.min(1.7, selection.speed / nominal)) : 1;

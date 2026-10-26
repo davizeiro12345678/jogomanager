@@ -12,6 +12,8 @@ import {
   MatchSim,
 } from "@/game/sim";
 
+const SETTLEMENT_LEASE_MS = 5 * 60_000;
+
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export interface MultiplayerRoomRecord {
@@ -44,7 +46,7 @@ export const createMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({ hostClub: z.string().min(1).max(80) }).parse(input))
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.hostClub]) return { ok: false, reason: "invalid_club" };
+    if (!Object.hasOwn(CLUBS, data.hostClub)) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -84,7 +86,7 @@ export const joinMatchRoom = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.guestClub]) return { ok: false, reason: "invalid_club" };
+    if (!Object.hasOwn(CLUBS, data.guestClub)) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
@@ -121,8 +123,8 @@ export const startMatchRoom = createServerFn({ method: "POST" })
       currentRoom.status !== "ready" ||
       !currentRoom.server_seeded ||
       !currentRoom.guest_club ||
-      !CLUBS[currentRoom.host_club] ||
-      !CLUBS[currentRoom.guest_club]
+      !Object.hasOwn(CLUBS, currentRoom.host_club) ||
+      !Object.hasOwn(CLUBS, currentRoom.guest_club)
     ) {
       return { ok: false, reason: "room_not_ready" };
     }
@@ -172,13 +174,19 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
     // A deterministic replay is already running under the server-side finish
     // claim. Ending the room here would race the result publication and could
     // remove the private seed while it is in use.
-    if (room.status === "settling") return { ok: false, reason: "settling" };
-    const { error } = await supabaseAdmin
+    if (room.status === "live" || room.status === "settling") {
+      // Leaving must not erase a losing match. Settle through the same trusted
+      // replay and single-owner claim used by normal completion.
+      return settleMatchRoom(data.roomId, context.userId);
+    }
+    const { data: closed, error } = await supabaseAdmin
       .from("match_rooms")
       .update({ status: "done", state: {}, updated_at: new Date().toISOString() })
       .eq("id", data.roomId)
-      .eq("status", room.status);
-    if (error) return { ok: false, reason: "leave_failed" };
+      .eq("status", room.status)
+      .select("id")
+      .maybeSingle();
+    if (error || !closed) return { ok: false, reason: "leave_failed" };
     await supabaseAdmin.from("match_room_secrets").delete().eq("room_id", data.roomId);
     return { ok: true };
   });
@@ -191,149 +199,170 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
 export const finishMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({ roomId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }): Promise<FinishRoomResult> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: room, error } = await supabaseAdmin
+  .handler(async ({ data, context }): Promise<FinishRoomResult> =>
+    settleMatchRoom(data.roomId, context.userId),
+  );
+
+async function settleMatchRoom(roomId: string, userId: string): Promise<FinishRoomResult> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: room, error } = await supabaseAdmin
+    .from("match_rooms")
+    .select(
+      "id, host_id, guest_id, guest_club, host_club, server_seeded, status, state, updated_at",
+    )
+    .eq("id", roomId)
+    .maybeSingle();
+  if (error || !room) return { ok: false, reason: "not_found" };
+  if (room.host_id !== userId && room.guest_id !== userId) {
+    return { ok: false, reason: "not_participant" };
+  }
+  if (room.status === "done") {
+    if (!room.server_seeded) return { ok: false, reason: "room_closed" };
+    const state = room.state as { hg?: unknown; ag?: unknown } | null;
+    return Number.isInteger(state?.hg) && Number.isInteger(state?.ag)
+      ? { ok: true }
+      : { ok: false, reason: "room_closed" };
+  }
+  const recovering = room.status === "settling";
+  const claimedAt = Date.parse(room.updated_at);
+  if (recovering && (!Number.isFinite(claimedAt) || Date.now() - claimedAt < SETTLEMENT_LEASE_MS)) {
+    return { ok: false, reason: "settling" };
+  }
+  if (room.status !== "live" && !recovering) return { ok: false, reason: "not_live" };
+  if (!room.server_seeded || !room.guest_club) {
+    return { ok: false, reason: "invalid_room" };
+  }
+  if (!Object.hasOwn(CLUBS, room.host_club) || !Object.hasOwn(CLUBS, room.guest_club)) {
+    return { ok: false, reason: "invalid_room" };
+  }
+
+  // Claim publication before the expensive full replay. Repeated finish
+  // clicks therefore observe "settling" instead of independently replaying
+  // the same 90 minutes on the server.
+  const claimToken = globalThis.crypto.randomUUID();
+  let claimQuery = supabaseAdmin
+    .from("match_rooms")
+    .update({
+      status: "settling",
+      state: { settlementClaim: claimToken },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", room.id)
+    .eq("host_id", room.host_id)
+    .eq("status", recovering ? "settling" : "live")
+    .eq("server_seeded", true)
+    .not("guest_id", "is", null)
+    .not("guest_club", "is", null);
+  // Compare the exact lease we observed: concurrent recovery cannot replace
+  // a newer owner. Every publish/release below is fenced by a random token.
+  if (recovering) claimQuery = claimQuery.eq("updated_at", room.updated_at);
+  const { data: claim, error: claimError } = await claimQuery.select("id").maybeSingle();
+  if (claimError) return { ok: false, reason: "update_failed" };
+  if (!claim) {
+    const { data: latest } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_club, host_club, server_seeded, status, state")
-      .eq("id", data.roomId)
+      .select("status, server_seeded, state")
+      .eq("id", room.id)
       .maybeSingle();
-    if (error || !room) return { ok: false, reason: "not_found" };
-    if (room.host_id !== context.userId) return { ok: false, reason: "not_host" };
-    if (room.status === "done") {
-      if (!room.server_seeded) return { ok: false, reason: "room_closed" };
-      const state = room.state as { hg?: unknown; ag?: unknown } | null;
-      return Number.isInteger(state?.hg) && Number.isInteger(state?.ag)
-        ? { ok: true }
-        : { ok: false, reason: "room_closed" };
+    if (latest?.status === "settling") return { ok: false, reason: "settling" };
+    const state = latest?.state as { hg?: unknown; ag?: unknown } | null;
+    if (
+      latest?.status === "done" &&
+      latest.server_seeded &&
+      Number.isInteger(state?.hg) &&
+      Number.isInteger(state?.ag)
+    ) {
+      return { ok: true };
     }
-    if (room.status === "settling") return { ok: false, reason: "settling" };
-    if (room.status !== "live") return { ok: false, reason: "not_live" };
-    if (!room.server_seeded || !room.guest_club) {
-      return { ok: false, reason: "invalid_room" };
-    }
-    if (!CLUBS[room.host_club] || !CLUBS[room.guest_club]) {
-      return { ok: false, reason: "invalid_room" };
+    return { ok: false, reason: "room_closed" };
+  }
+
+  let published = false;
+  const releaseClaim = async () => {
+    await supabaseAdmin
+      .from("match_rooms")
+      .update({ status: "live", state: {}, updated_at: new Date().toISOString() })
+      .eq("id", room.id)
+      .eq("host_id", room.host_id)
+      .eq("status", "settling")
+      .eq("state->>settlementClaim", claimToken)
+      .eq("server_seeded", true);
+  };
+
+  try {
+    const { data: secret, error: secretError } = await supabaseAdmin
+      .from("match_room_secrets")
+      .select("seed")
+      .eq("room_id", room.id)
+      .maybeSingle();
+    if (secretError || !secret?.seed) return { ok: false, reason: "invalid_room" };
+
+    // Only the trusted server may choose the remote authority.
+    // Default production behavior stays unchanged until static-IP
+    // egress, secrets, and Atlas connectivity pass an end-to-end test.
+    const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
+    let result: { hg: number; ag: number; minute: number };
+    if (matchAuxEnabled()) {
+      const verified = await simulateOnMatchAux({
+        roomId: room.id,
+        homeClub: room.host_club,
+        awayClub: room.guest_club,
+        seed: secret.seed,
+      });
+      result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
+    } else {
+      const sim = new MatchSim(
+        buildTeamSetup(room.host_club),
+        buildTeamSetup(room.guest_club),
+        secret.seed,
+      );
+      let steps = 0;
+      while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {
+        sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+      }
+      if (!sim.finished) return { ok: false, reason: "simulation_failed" };
+      result = {
+        hg: sim.stats.home.goals,
+        ag: sim.stats.away.goals,
+        minute: sim.minute(),
+      };
     }
 
-    // Claim publication before the expensive full replay. Repeated finish
-    // clicks therefore observe "settling" instead of independently replaying
-    // the same 90 minutes on the server.
-    const { data: claim, error: claimError } = await supabaseAdmin
+    const { data: updatedRoom, error: updateError } = await supabaseAdmin
       .from("match_rooms")
-      .update({ status: "settling", updated_at: new Date().toISOString() })
+      .update({
+        status: "done",
+        minute: result.minute,
+        state: { hg: result.hg, ag: result.ag },
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", room.id)
-      .eq("host_id", context.userId)
-      .eq("status", "live")
+      .eq("host_id", room.host_id)
+      .eq("status", "settling")
+      .eq("state->>settlementClaim", claimToken)
       .eq("server_seeded", true)
-      .not("guest_id", "is", null)
-      .not("guest_club", "is", null)
       .select("id")
       .maybeSingle();
-    if (claimError) return { ok: false, reason: "update_failed" };
-    if (!claim) {
-      const { data: latest } = await supabaseAdmin
-        .from("match_rooms")
-        .select("status, server_seeded, state")
-        .eq("id", room.id)
-        .maybeSingle();
-      if (latest?.status === "settling") return { ok: false, reason: "settling" };
-      const state = latest?.state as { hg?: unknown; ag?: unknown } | null;
-      if (
-        latest?.status === "done" &&
-        latest.server_seeded &&
-        Number.isInteger(state?.hg) &&
-        Number.isInteger(state?.ag)
-      ) {
-        return { ok: true };
-      }
-      return { ok: false, reason: "room_closed" };
-    }
-
-    let published = false;
-    const releaseClaim = async () => {
-      await supabaseAdmin
-        .from("match_rooms")
-        .update({ status: "live", updated_at: new Date().toISOString() })
-        .eq("id", room.id)
-        .eq("host_id", context.userId)
-        .eq("status", "settling")
-        .eq("server_seeded", true);
-    };
-
+    if (updateError) return { ok: false, reason: "update_failed" };
+    if (!updatedRoom) return { ok: false, reason: "room_closed" };
+    published = true;
+    // Secret cleanup is best effort only after the durable server result. A
+    // transient cleanup error cannot make a completed result look failed.
     try {
-      const { data: secret, error: secretError } = await supabaseAdmin
-        .from("match_room_secrets")
-        .select("seed")
-        .eq("room_id", room.id)
-        .maybeSingle();
-      if (secretError || !secret?.seed) return { ok: false, reason: "invalid_room" };
-
-      // Only the trusted server may choose the remote authority.
-      // Default production behavior stays unchanged until static-IP
-      // egress, secrets, and Atlas connectivity pass an end-to-end test.
-      const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
-      let result: { hg: number; ag: number; minute: number };
-      if (matchAuxEnabled()) {
-        const verified = await simulateOnMatchAux({
-          roomId: room.id,
-          homeClub: room.host_club,
-          awayClub: room.guest_club,
-          seed: secret.seed,
-        });
-        result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
-      } else {
-        const sim = new MatchSim(
-          buildTeamSetup(room.host_club),
-          buildTeamSetup(room.guest_club),
-          secret.seed,
-        );
-        let steps = 0;
-        while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {
-          sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
-        }
-        if (!sim.finished) return { ok: false, reason: "simulation_failed" };
-        result = {
-          hg: sim.stats.home.goals,
-          ag: sim.stats.away.goals,
-          minute: sim.minute(),
-        };
-      }
-
-      const { data: updatedRoom, error: updateError } = await supabaseAdmin
-        .from("match_rooms")
-        .update({
-          status: "done",
-          minute: result.minute,
-          state: { hg: result.hg, ag: result.ag },
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", room.id)
-        .eq("host_id", context.userId)
-        .eq("status", "settling")
-        .eq("server_seeded", true)
-        .select("id")
-        .maybeSingle();
-      if (updateError) return { ok: false, reason: "update_failed" };
-      if (!updatedRoom) return { ok: false, reason: "room_closed" };
-      published = true;
-      // Secret cleanup is best effort only after the durable server result. A
-      // transient cleanup error cannot make a completed result look failed.
-      try {
-        await supabaseAdmin.from("match_room_secrets").delete().eq("room_id", room.id);
-      } catch {
-        // The room stays completed and the private table remains server-only.
-      }
-      return { ok: true };
+      await supabaseAdmin.from("match_room_secrets").delete().eq("room_id", room.id);
     } catch {
-      return { ok: false, reason: "simulation_failed" };
-    } finally {
-      if (!published) {
-        try {
-          await releaseClaim();
-        } catch {
-          // The next authorized finish attempt can recover the persisted claim.
-        }
+      // The room stays completed and the private table remains server-only.
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "simulation_failed" };
+  } finally {
+    if (!published) {
+      try {
+        await releaseClaim();
+      } catch {
+        // The next authorized finish attempt can recover the persisted claim.
       }
     }
-  });
+  }
+}

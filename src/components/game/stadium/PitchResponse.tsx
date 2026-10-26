@@ -17,7 +17,8 @@ import * as THREE from "three";
 
 import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
 import { censusRef } from "@/game/scene-census";
-import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import type { SimView } from "@/game/sim-contracts";
 
 const MAX_MARKS = 64;
 const SCUFF = 0;

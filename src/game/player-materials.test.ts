@@ -1,5 +1,16 @@
 import { expect, it, vi } from "vitest";
 import * as THREE from "three";
+
+const { loadedMaps } = vi.hoisted(() => ({ loadedMaps: new Map<string, unknown>() }));
+vi.mock("@/game/textures/ktx2", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/game/textures/ktx2")>();
+  return {
+    ...actual,
+    ktx2: (name: string) => (loadedMaps.get(name) as THREE.Texture | undefined) ?? null,
+    needsKtx2ProceduralFallback: () => true,
+  };
+});
+
 import type { Kit } from "./kits";
 import { lookFor } from "./player-model";
 import { playerMaterials, retainPlayerMaterials } from "./player-materials";
@@ -100,4 +111,53 @@ it("pairs seeded leather, synthetic and knit detail maps with their physical fin
   expect((set.jerseyPlain as THREE.MeshPhysicalMaterial).sheen).toBe(
     (set.jersey as THREE.MeshPhysicalMaterial).sheen,
   );
+});
+
+it("uses shared compressed skin and fabric normals at medium quality", () => {
+  const fiber = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+  const skin = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1);
+  loadedMaps.set("fiberNormal", fiber);
+  loadedMaps.set("skinNormal", skin);
+
+  const look = lookFor("medium-detail", "MF");
+  const kit: Kit = {
+    base: "#cc2028",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const set = playerMaterials(look, kit, null, "media");
+  expect((set.jersey as THREE.MeshStandardMaterial).normalMap).toBe(fiber);
+  expect((set.jerseyPlain as THREE.MeshStandardMaterial).normalMap).toBe(fiber);
+  expect((set.skin as THREE.MeshStandardMaterial).normalMap).toBe(skin);
+  expect((set.boot as THREE.MeshStandardMaterial).normalMap).toBeNull();
+  expect((set.jersey as THREE.MeshStandardMaterial).normalScale.x).toBeCloseTo(0.18);
+  expect(set.jersey).toBeInstanceOf(THREE.MeshStandardMaterial);
+
+  for (const material of Object.values(set)) material.dispose();
+  fiber.dispose();
+  skin.dispose();
+  loadedMaps.clear();
+});
+
+it("keeps light shorts and ribbed socks below the satin finish of equipment", () => {
+  const look = lookFor("floodlit-white-kit", "MF");
+  const kit: Kit = {
+    base: "#ffffff",
+    detail: "#15191f",
+    shorts: "#ffffff",
+    socks: "#ffffff",
+    pattern: "solid",
+  };
+  const mats = playerMaterials(look, kit, null, "alta");
+  const shorts = mats.shorts as THREE.MeshPhysicalMaterial;
+  const socks = mats.socks as THREE.MeshPhysicalMaterial;
+  for (const garment of [shorts, socks]) {
+    expect(garment.sheen).toBeLessThanOrEqual(0.3);
+    expect(garment.roughness).toBeGreaterThanOrEqual(0.9);
+    expect(garment.normalScale.length()).toBeLessThan(0.5);
+    expect(garment.clearcoat).toBe(0);
+  }
+  expect(playerMaterials(look, kit, null, "alta")).toBe(mats);
 });

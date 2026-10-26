@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { matchLighting } from "./match-lighting";
 
 describe("weather motivated match lighting", () => {
+  it("keeps daylight directional while retaining the no-IBL tier's fill", () => {
+    const detailed = matchLighting("dia", "seco", false);
+    const low = matchLighting("dia", "seco", true);
+    expect(detailed.keyIntensity / detailed.fillIntensity).toBeGreaterThan(8);
+    expect(detailed.environmentKey).toBeLessThan(2);
+    expect(low.fillIntensity).toBeGreaterThan(detailed.fillIntensity);
+    expect(low.hemiIntensity).toBeGreaterThan(detailed.hemiIntensity);
+  });
   it("replaces direct daylight with diffuse sky fill in rain without changing night floodlights", () => {
     const dry = matchLighting("dia", "seco", false),
       rain = matchLighting("dia", "chuva", false);

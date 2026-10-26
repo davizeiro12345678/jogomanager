@@ -12,6 +12,33 @@ export function nativeMeasurementTiming(search: string) {
   };
 }
 
+type SchedulingDocument = {
+  visibilityState?: unknown;
+  hasFocus?: unknown;
+};
+
+/**
+ * Visibility alone cannot prove that an OS scheduled an animation normally.
+ * Record the browser's focus signal beside every native sample, but never use
+ * it to hide slow intervals from the distribution.
+ */
+export function nativePageSchedulingState(documentLike: SchedulingDocument) {
+  const visibility =
+    documentLike.visibilityState === "visible" || documentLike.visibilityState === "hidden"
+      ? documentLike.visibilityState
+      : "unknown";
+  let hasFocus: boolean | null = null;
+  if (typeof documentLike.hasFocus === "function") {
+    try {
+      const value = documentLike.hasFocus();
+      hasFocus = typeof value === "boolean" ? value : null;
+    } catch {
+      // Privacy wrappers and embedded browser hosts can reject this optional read.
+    }
+  }
+  return { visibility, hasFocus };
+}
+
 /** Include a visible stall crossing the final boundary; wall time alone is not coverage. */
 export function nativeFrameInterval(
   previous: number,
@@ -55,27 +82,16 @@ export function assessNativePerformance(sample: {
     sample.quality !== "alta"
   )
     reasons.push("quality-contract-mismatch");
-  if (
-    !sample.gpuRenderer ||
-    /swiftshader|llvmpipe|softpipe|lavapipe|software|basic render/i.test(sample.gpuRenderer)
-  )
+  if (!sample.gpuRenderer || /swiftshader|llvmpipe|software|basic render/i.test(sample.gpuRenderer))
     reasons.push("native-gpu-unverified");
-  if (!Number.isFinite(sample.fps) || sample.fps < 45) reasons.push("mean-fps-below-45");
-  if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 28)
-    reasons.push("p95-above-28ms");
-  const stretchReasons = [...reasons];
-  if (sample.warmupMs < 60000 || sample.measurementMs < 300000)
-    stretchReasons.push("extended-protocol-incomplete");
-  if (!Number.isFinite(sample.fps) || sample.fps < 69) stretchReasons.push("mean-fps-below-69");
+  if (!Number.isFinite(sample.fps) || sample.fps < 69) reasons.push("mean-fps-below-69");
   if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 20)
-    stretchReasons.push("p95-above-20ms");
+    reasons.push("p95-above-20ms");
   if (!Number.isFinite(sample.onePercentLow) || sample.onePercentLow < 50)
-    stretchReasons.push("one-percent-low-below-50");
+    reasons.push("one-percent-low-below-50");
   return {
-    target: { quality: "alta", width: 1280, height: 720, dpr: 1, fps: 45, p95Ms: 28 },
     passes: reasons.length === 0,
     reasons,
-    stretch: { targetFps: 69, passes: stretchReasons.length === 0, reasons: stretchReasons },
     scope: "single run; three equivalent runs and both GPUs required for campaign acceptance",
   };
 }

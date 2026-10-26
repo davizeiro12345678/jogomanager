@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import type { RemotePlayer } from "./football-api.server";
 import { validBirthDate } from "../game/player-identity";
+import { isPlayerRecord } from "./football-person-kind";
 
 const trimmed = (maximum: number) => z.string().trim().min(1).max(maximum);
 const httpsUrl = z
@@ -18,6 +19,8 @@ const httpsUrl = z
 
 const remotePlayerSchema = z.object({
   source: trimmed(64),
+  sourceKind: z.literal("player").optional(),
+  rawPosition: z.string().max(120).optional(),
   externalId: trimmed(160),
   name: trimmed(120),
   position: z.enum(["GK", "DF", "MF", "FW"]),
@@ -52,14 +55,23 @@ export function validateRemotePlayers(rows: readonly unknown[]): RemotePlayersVa
   const providerIds = new Set<string>();
 
   rows.forEach((row, index) => {
+    if (!row || typeof row !== "object" || !isPlayerRecord(row)) {
+      rejected.push({ index, reason: "schema" });
+      return;
+    }
     const parsed = remotePlayerSchema.safeParse(row);
     if (!parsed.success) {
       rejected.push({ index, reason: "schema" });
       return;
     }
 
-    const player: RemotePlayer = { ...parsed.data, source: parsed.data.source.toLowerCase() };
-    const providerId = `${player.source}:${player.externalId}`;
+    const { sourceKind, ...fields } = parsed.data;
+    const player: RemotePlayer = {
+      ...fields,
+      source: fields.source.toLowerCase(),
+      ...(sourceKind ? { sourceKind } : {}),
+    };
+    const providerId = JSON.stringify([player.source, player.externalId]);
     if (providerIds.has(providerId)) {
       rejected.push({ index, reason: "duplicate-provider-id" });
       return;

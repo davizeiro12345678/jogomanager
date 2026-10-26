@@ -1,6 +1,15 @@
 import * as THREE from "three";
 import type { Proportions } from "./player-model";
 
+// One fitted envelope for cloth and its separate trim rings. Keep clearance
+// over the quadriceps while avoiding inflated openings on lean athletes.
+export const SHORTS_FIT = {
+  crotchRadius: 1.34,
+  hemWidth: 1.16,
+  hemDepth: 1.25,
+  allowance: 0.007,
+} as const;
+
 /** One garment: a continuous waist branches into two tailored openings.
  * The crotch is part of the topology rather than a capped pelvis plus two
  * oversized sleeves. Vertices below the seat are weighted to the legs. */
@@ -17,7 +26,8 @@ export function footballShorts(
   // The crotch closes between the legs, but its outer contour still has to
   // contain the quadriceps. A circle with radius equal to the joint spacing
   // was too narrow and let triangular patches of thigh pierce the garment.
-  const crotchRadius = (centers + p.legR * 1.34 + 0.01) * 0.5;
+  // Separate lateral tailoring from the deeper clearance needed when seated.
+  const crotchRadius = (centers + p.legR * 1.18 + SHORTS_FIT.allowance) * 0.5;
   const top = p.hipH * 0.5;
   const crotch = -p.hipH * 0.73;
   const hem = -p.hipH * 0.4 - p.thigh * 0.49;
@@ -33,11 +43,10 @@ export function footballShorts(
   const rows = options?.waistRows ?? 8;
   for (let row = 0; row <= rows; row++) {
     const t = row / rows;
-    const split = t * t * (3 - 2 * t);
-    // Keep a full front/seat panel until the lower rise. Collapsing its centre
-    // from the waistband made a deep artificial cleft on both sides. Only
-    // depth changes here; branch endpoints and leg skinning stay identical.
-    const depthSplit = THREE.MathUtils.smoothstep(t, 0.42, 1);
+    // Keep the waistband and upper seat one continuous volume. Branch only
+    // below the pelvis so the front does not collapse between the thighs.
+    const branchT = Math.max(0, (t - 0.5) / 0.5);
+    const split = branchT * branchT * (3 - 2 * branchT);
     for (let i = 0; i <= radial * 2; i++) {
       const right = i > radial;
       const phase = ((right ? i - radial : i) / radial) * Math.PI * 2;
@@ -48,11 +57,12 @@ export function footballShorts(
       const xWaist = sign * Math.sin(phase / 2) * p.hipW * (0.62 + Math.sin(t * Math.PI) * 0.024);
       const zWaist = sign * Math.cos(phase / 2) * p.chestD * (0.87 + Math.sin(t * Math.PI) * 0.032);
       const xLeg = sign * crotchRadius * (1 - Math.cos(phase));
-      const zLeg = sign * Math.sin(phase) * (p.legR * 1.34 + 0.007);
+      const zLeg =
+        sign * Math.sin(phase) * (p.legR * SHORTS_FIT.crotchRadius + SHORTS_FIT.allowance);
       append(
         xWaist + (xLeg - xWaist) * split,
         top + (crotch - top) * t,
-        zWaist + (zLeg - zWaist) * depthSplit,
+        zWaist + (zLeg - zWaist) * split,
         i / (radial * 2),
       );
     }
@@ -66,8 +76,11 @@ export function footballShorts(
       const t = row / legRows;
       const y = crotch + (hem - crotch) * t;
       const center = crotchRadius + (centers - crotchRadius) * t;
-      const width = crotchRadius * (1 - t) + (p.legR * 1.16 + 0.007) * t;
-      const depth = p.legR * (1.34 - t * 0.1) + 0.007;
+      const width =
+        crotchRadius * (1 - t) + (p.legR * SHORTS_FIT.hemWidth + SHORTS_FIT.allowance) * t;
+      const depth =
+        p.legR * (SHORTS_FIT.crotchRadius + t * (SHORTS_FIT.hemDepth - SHORTS_FIT.crotchRadius)) +
+        SHORTS_FIT.allowance;
       const start = positions.length / 3;
       for (let i = 0; i <= radial; i++) {
         // Meet the thigh's sin/cos angular grid at the opening. A 90-degree

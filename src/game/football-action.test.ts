@@ -11,6 +11,45 @@ const sample = (action: PlayerAction, u: number, foot: "left" | "right" = "right
   refineFootballAction(emptyPose(), action, u, proportions, foot);
 
 describe("football choreography", () => {
+  it("preserves the authored boot pitch when contact IK changes thigh and knee", () => {
+    const p = proportionsFor(lookFor("boot-contact-orientation", "MF"));
+    const progress = footballContactAt("shotPower");
+    for (const foot of ["left", "right"] as const) {
+      const pose = sample("shotPower", progress, foot);
+      const pitch = foot === "left" ? "legLPitch" : "legRPitch";
+      const knee = foot === "left" ? "kneeL" : "kneeR";
+      const ankle = foot === "left" ? "ankleL" : "ankleR";
+      const bootPitch = pose[pitch] - pose[knee] + pose[ankle];
+      refineBallFootContact(pose, "shotPower", progress, p, foot, {
+        x: foot === "left" ? 0.14 : -0.14,
+        z: 0.48,
+        height: 0.35,
+      });
+      expect(pose[pitch] - pose[knee] + pose[ankle]).toBeCloseTo(bootPitch, 7);
+    }
+  });
+
+  it("releases boot IK continuously as a ball leaves the reachable height or rear arc", () => {
+    const p = proportionsFor(lookFor("contact-release", "MF"));
+    const progress = footballContactAt("shotPower");
+    for (const boundary of ["height", "rear"] as const) {
+      const inside = sample("shotPower", progress),
+        outside = { ...inside };
+      refineBallFootContact(inside, "shotPower", progress, p, "right", {
+        x: -0.14,
+        z: boundary === "rear" ? -0.25 + 1e-6 : 0.48,
+        height: boundary === "height" ? 0.9 - 1e-6 : 0.12,
+      });
+      refineBallFootContact(outside, "shotPower", progress, p, "right", {
+        x: -0.14,
+        z: boundary === "rear" ? -0.25 - 1e-6 : 0.48,
+        height: boundary === "height" ? 0.9 + 1e-6 : 0.12,
+      });
+      for (const joint of JOINTS)
+        expect(Math.abs(inside[joint] - outside[joint])).toBeLessThan(0.001);
+    }
+  });
+
   it("adjusts only the striking boot toward a reachable ball during contact", () => {
     const p = proportionsFor(lookFor("foot-contact", "MF"));
     const contact = footballContactAt("shotPower");

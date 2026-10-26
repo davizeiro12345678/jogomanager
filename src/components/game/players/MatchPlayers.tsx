@@ -6,13 +6,15 @@ import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { allocateHeroes } from "@/game/draw-budget";
 import { denseMatchRig, legacyMatchRigRequested } from "@/game/match-rig-detail";
 import { createNonHeroDrawCounter } from "@/game/scene-census";
-import { HeroSelectionBuffer, stageHeroMembership, heroPriorityScore } from "@/game/hero-selection";
+import { HeroSelectionBuffer, stageHeroMembership } from "@/game/hero-selection";
 import type { RuntimeSceneBudget } from "@/game/runtime-scene-budget";
-import type { SimView } from "@/game/sim";
+import type { SimView } from "@/game/sim-types";
+import type { PlayerLook } from "@/game/player-model";
 import { goalPresentationFor, type GoalFocusRef } from "@/game/goal-choreography";
 import { gkKitFor, type Kit } from "@/game/kits";
-import { reportSilent } from "@/lib/silent-errors";
+import type { PlayerRig as DetailedPlayerRig } from "./PlayerRig";
 import { LowPlayers } from "./LowPlayers";
+const NO_HEROES: ReadonlySet<string> = new Set();
 
 /** Full articulated geometry is mounted only for visible, nearby athletes.
  * Distant athletes share the existing instance batches, including contact shadows.
@@ -21,8 +23,6 @@ import { LowPlayers } from "./LowPlayers";
  * é conhecido (`HERO_MESH_COST`) e o teto de desenhos do tier também, então a
  * quantidade é derivada do que sobrou depois dos subsistemos medidos. Subir
  * heróis sem essa conta foi o que estourou o orçamento de Alta no passado. */
-const NO_DETAILED_RIGS: ReadonlySet<string> = new Set();
-
 export function MatchPlayers({
   sim,
   homeKit,
@@ -33,6 +33,7 @@ export function MatchPlayers({
   mode,
   replay,
   budget,
+  lookOverrides,
 }: {
   sim: SimView;
   homeKit: Kit;
@@ -43,30 +44,11 @@ export function MatchPlayers({
   mode: CameraMode;
   replay: boolean;
   budget: Pick<RuntimeSceneBudget, "heroPlayers" | "replayHeroPlayers" | "tier">;
+  lookOverrides?: ReadonlyMap<string, PlayerLook> | undefined;
 }) {
+  const wideMode = mode === "tactical" || mode === "skycam" || mode === "fan";
   const [near, setNear] = useState<ReadonlySet<string>>(new Set());
   const [dense, setDense] = useState<ReadonlySet<string>>(new Set());
-  // Do not fetch the articulated geometry, skinning, IK, textures and clips
-  // until the match camera has actually selected its first visible hero.
-  const [DetailedRig, setDetailedRig] = useState<
-    (typeof import("./PlayerRig"))["PlayerRig"] | null
-  >(null);
-  useEffect(() => {
-    if (quality === "baixa" || near.size === 0 || DetailedRig) return;
-    let mounted = true;
-    void import("./PlayerRig")
-      .then(({ PlayerRig }) => {
-        if (mounted) setDetailedRig(() => PlayerRig);
-      })
-      .catch((error: unknown) => {
-        // Instanced players continue to render if a lazy chunk is unavailable.
-        reportSilent("match.player-rig.chunk", error, { classification: "degradation" });
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [DetailedRig, near.size, quality]);
-
   const legacyTopology = useMemo(
     () =>
       typeof location !== "undefined" &&
@@ -74,20 +56,27 @@ export function MatchPlayers({
     [],
   );
   const [heroLimit, setHeroLimit] = useState(() =>
-    quality === "baixa" ? 0 : replay ? budget.replayHeroPlayers : budget.heroPlayers,
+    quality === "baixa" || wideMode ? 0 : replay ? budget.replayHeroPlayers : budget.heroPlayers,
   );
+  const [PlayerRig, setPlayerRig] = useState<typeof DetailedPlayerRig | null>(null);
+  useEffect(() => {
+    if (wideMode || quality === "baixa" || heroLimit <= 0 || PlayerRig) return;
+    let active = true;
+    void import("./PlayerRig")
+      .then((module) => {
+        if (active) setPlayerRig(() => module.PlayerRig);
+      })
+      .catch(() => {
+        /* The instanced team remains playable when a detail chunk fails. */
+      });
+    return () => {
+      active = false;
+    };
+  }, [heroLimit, PlayerRig, wideMode, quality]);
   const timer = useRef(0);
   const firstDraw = useRef(false);
   const drawTimer = useRef(0);
   const direction = useMemo(() => new THREE.Vector3(), []);
-  const visibility = useMemo(
-    () => ({
-      matrix: new THREE.Matrix4(),
-      frustum: new THREE.Frustum(),
-      bounds: new THREE.Sphere(new THREE.Vector3(), 1.5),
-    }),
-    [],
-  );
   const selection = useMemo(() => new HeroSelectionBuffer(), []);
   const denseCandidates = useMemo(() => new Set<string>(), []);
   const countNonHeroDraws = useMemo(createNonHeroDrawCounter, []);
@@ -102,11 +91,20 @@ export function MatchPlayers({
       firstDraw.current = true;
       return;
     }
+    // Wide cameras draw the instanced squad exclusively. Do not traverse the
+    // stadium or download/build the close-up rig for an unreachable LOD.
+    if (wideMode || quality === "baixa") {
+      if (heroLimit !== 0) setHeroLimit(0);
+      if (near.size) setNear(NO_HEROES);
+      if (dense.size) setDense(NO_HEROES);
+      headroom.current = 0;
+      return;
+    }
     // ---- orçamento medido: quantos heróis cabem no que sobrou
     drawTimer.current += dt;
     if (drawTimer.current >= 0.5) {
       drawTimer.current = 0;
-      const base = quality === "baixa" ? 0 : replay ? budget.replayHeroPlayers : budget.heroPlayers;
+      const base = replay ? budget.replayHeroPlayers : budget.heroPlayers;
       if (base > 0) {
         const maxDraws = GRAPHICS_PROFILES[budget.tier].maxDrawCalls;
         // Renderer counters can be reset by post-processing or FrameProbe.
@@ -136,15 +134,9 @@ export function MatchPlayers({
     timer.current = 0;
     selection.reset();
     denseCandidates.clear();
-    const wideMode = mode === "tactical" || mode === "skycam" || mode === "fan";
-    const maxDetailed =
-      quality === "baixa" || wideMode
-        ? 0
-        : Math.min(heroLimit, replay ? budget.replayHeroPlayers : budget.heroPlayers);
+    const maxDetailed = Math.min(heroLimit, replay ? budget.replayHeroPlayers : budget.heroPlayers);
 
     if (maxDetailed > 0) {
-      visibility.matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-      visibility.frustum.setFromProjectionMatrix(visibility.matrix);
       camera.getWorldDirection(direction);
       const perspective = camera as THREE.PerspectiveCamera;
       const lens = perspective.isPerspectiveCamera
@@ -154,12 +146,6 @@ export function MatchPlayers({
         const player = sim.players[index]!;
         if (player.sentOff) continue;
         const presentation = goalPresentationFor(player, goalFocus.current, goalPulse.current);
-        visibility.bounds.center.set(
-          presentation?.rootX ?? player.x,
-          1.05,
-          presentation?.rootZ ?? player.z,
-        );
-        if (!visibility.frustum.intersectsSphere(visibility.bounds)) continue;
         const dx = (presentation?.rootX ?? player.x) - camera.position.x;
         const dy = 1.05 - camera.position.y;
         const dz = (presentation?.rootZ ?? player.z) - camera.position.z;
@@ -169,23 +155,8 @@ export function MatchPlayers({
         // and retains a small hysteresis for an athlete already promoted.
         const coverage = inFront ? (1.78 * lens) / Math.max(1, distance) : 0;
         if (denseMatchRig(coverage, dense.has(player.id))) denseCandidates.add(player.id);
-        const progress = player.actionDur > 0 ? 1 - player.actionT / player.actionDur : 0;
-        const actionLive = player.actionT > 0;
-        const priority = heroPriorityScore(coverage, {
-          retained: near.has(player.id),
-          ballHolder: sim.ball.holder === player.id,
-          contact:
-            actionLive &&
-            progress >= 0.2 &&
-            progress <= 0.8 &&
-            /^(pass|shoot|shot|cross|tackle|header|volley|trap|dribble)/.test(player.action ?? ""),
-          keeperSave:
-            actionLive &&
-            player.pos === "GK" &&
-            /^(dive|save|catch|punch|claim)/.test(player.action ?? ""),
-          scorer: goalPulse.current > 0.01 && player.id === goalFocus.current?.scorerId,
-        });
-        if (priority !== null) selection.add(index, priority, maxDetailed);
+        const threshold = near.has(player.id) ? 0.035 : 0.052;
+        if (coverage >= threshold) selection.add(index, coverage, maxDetailed);
       }
     }
     let changed = selection.count !== near.size;
@@ -225,14 +196,15 @@ export function MatchPlayers({
         awayGkKit={awayGkKit}
         goalPulse={goalPulse}
         goalFocus={goalFocus}
-        excluded={DetailedRig ? near : NO_DETAILED_RIGS}
+        excluded={PlayerRig && quality !== "baixa" ? near : NO_HEROES}
         simplified
+        lookOverrides={lookOverrides}
       />
-      {DetailedRig &&
+      {PlayerRig &&
         sim.players
           .filter((player) => !player.sentOff && quality !== "baixa" && near.has(player.id))
           .map((player) => (
-            <DetailedRig
+            <PlayerRig
               key={player.id}
               player={player}
               sim={sim}
@@ -250,6 +222,7 @@ export function MatchPlayers({
               quality={quality}
               denseGeometry={legacyTopology || dense.has(player.id)}
               matchTopology={!legacyTopology}
+              lookOverride={lookOverrides?.get(player.id)}
             />
           ))}
     </>

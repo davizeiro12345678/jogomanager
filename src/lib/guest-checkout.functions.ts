@@ -20,6 +20,9 @@ import {
   type ServerStoreProduct,
   type StoreProductContents,
 } from "@/lib/store-products.server";
+import { validateGuestCheckoutOffer } from "./guest-checkout-offer.server";
+import { getTrustedCheckoutOrigin } from "./checkout-origin.server";
+import { assessGuestCheckoutFraudDefense } from "./google-fraud-defense.server";
 import { classifyGuestCheckoutSession } from "@/lib/guest-checkout-state";
 import { resolveOrCreateCustomer } from "@/utils/payments.functions";
 import { assertGuestCheckoutEnabled } from "@/lib/payments-config.server";
@@ -318,7 +321,7 @@ async function openStripeSession(
   const customerId = await resolveOrCreateCustomer(stripe, { email });
   const request = getRequest();
   if (!request) throw new Error("Não foi possível determinar o endereço de retorno do checkout.");
-  const origin = new URL(request.url).origin;
+  const origin = getTrustedCheckoutOrigin(request);
   const returnUrl = `${origin}/checkout/guest?intent=${encodeURIComponent(intent.id)}&session_id={CHECKOUT_SESSION_ID}`;
   const expiresAt = Math.floor(Date.now() / 1000) + INTENT_TTL_MS / 1000;
   const isRecurring = price.type === "recurring";
@@ -380,7 +383,13 @@ export const startGuestCheckout = createServerFn({ method: "POST" })
       email: string;
       hasPurchaseConsent: boolean;
       clientEnvironment: StripeEnv;
+      fraudDefenseToken?: string | null;
     }) => {
+      if (
+        data.fraudDefenseToken != null &&
+        (typeof data.fraudDefenseToken !== "string" || data.fraudDefenseToken.length > 16_384)
+      )
+        throw new Error("Verificação de compra inválida.");
       assertStoreProductKey(data.productKey);
       normalizeGuestEmail(data.email);
       if (data.hasPurchaseConsent !== true) {
@@ -394,7 +403,11 @@ export const startGuestCheckout = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<StartGuestCheckoutResult> => {
     try {
+      const request = getRequest();
+      if (!request) throw new Error("Origem do checkout indisponível.");
+      getTrustedCheckoutOrigin(request);
       const environment = assertGuestCheckoutEnabled();
+      await assessGuestCheckoutFraudDefense(data.fraudDefenseToken, request);
       if (data.clientEnvironment !== environment) {
         throw new Error(
           "A chave pública de pagamentos não corresponde ao ambiente liberado no servidor.",
@@ -568,23 +581,7 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
         return { status: "error", message: "O e-mail do pagamento não confere com esta compra." };
       }
 
-      const lineItem = session.line_items?.data?.[0];
-      // List price before Stripe discounts; sales and promo codes lower only the total.
-      const amount = lineItem?.amount_subtotal ?? session.amount_subtotal ?? 0;
-      const paymentCurrency = lineItem?.price?.currency ?? session.currency;
-      const snapshotContents = parseStoreProductContents(intent.contents_snapshot);
-      if (
-        !intent.stripe_price_id ||
-        !snapshotContents ||
-        lineItem?.price?.id !== intent.stripe_price_id ||
-        amount !== intent.amount_cents ||
-        paymentCurrency?.toUpperCase() !== intent.currency
-      ) {
-        return {
-          status: "error",
-          message: "O valor do pagamento não confere com a compra registrada.",
-        };
-      }
+      validateGuestCheckoutOffer(session, intent, environment);
 
       const { data: claimReserved, error: reserveError } = await getServiceSupabase().rpc(
         "reserve_guest_checkout_claim",

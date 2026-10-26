@@ -32,6 +32,7 @@ jobs:
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - run: node --test scripts/preview-stylesheets.test.cjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
@@ -149,6 +150,8 @@ jobs:
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify participant-only room chat and spoofing/rate contracts
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/multiplayer-room-chat.sql
       - name: Verify public catalog and bounded identity enrichment
         run: |
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql

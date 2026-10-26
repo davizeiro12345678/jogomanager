@@ -1,0 +1,154 @@
+{
+  "results": [
+    {
+      "name": "match setup: buildTeamSetup",
+      "beforeMs": 0.1335296555555556,
+      "afterMs": 0.07596660952380954,
+      "ratio": 0.5689118960709316
+    },
+    {
+      "name": "match setup: new MatchSim",
+      "beforeMs": 0.11301579214559396,
+      "afterMs": 0.05058738697318027,
+      "ratio": 0.4476134353684878
+    },
+    {
+      "name": "match simulation: 300 live ticks",
+      "beforeMs": 5.295291261904756,
+      "afterMs": 5.489738452380964,
+      "ratio": 1.0367207733925978
+    },
+    {
+      "name": "match simulation: 120 coarse steps",
+      "beforeMs": 3.642253272727272,
+      "afterMs": 3.754045303030304,
+      "ratio": 1.0306930962599763
+    },
+    {
+      "name": "live match: snapshotMatch",
+      "beforeMs": 0.0035881407467532236,
+      "afterMs": 0.0031806705627705663,
+      "ratio": 0.8864397433820392
+    },
+    {
+      "name": "live match: WorkerMatchView.apply",
+      "beforeMs": 0.02575181492478224,
+      "afterMs": 0.00578717933491683,
+      "ratio": 0.22472898907593275
+    },
+    {
+      "name": "replay codec: encodeReplay",
+      "beforeMs": 19.166459499999895,
+      "afterMs": 20.459330250000068,
+      "ratio": 1.067454855185966
+    },
+    {
+      "name": "replay codec: decodeReplay",
+      "beforeMs": 10.385938555555487,
+      "afterMs": 9.171809555555582,
+      "ratio": 0.8830987692151845
+    },
+    {
+      "name": "season: generateFixtures",
+      "beforeMs": 0.027234352564102712,
+      "afterMs": 0.0182193688034192,
+      "ratio": 0.6689848330536023
+    },
+    {
+      "name": "season: tableFromFixtures",
+      "beforeMs": 0.03672824025974068,
+      "afterMs": 0.0309870303030318,
+      "ratio": 0.8436840448628284
+    },
+    {
+      "name": "season: simulateDivisionTable",
+      "beforeMs": 3.043325880952363,
+      "afterMs": 2.1834657380952325,
+      "ratio": 0.717460378384437
+    },
+    {
+      "name": "rng: makeRng 10k draws",
+      "beforeMs": 0.05956775456621102,
+      "afterMs": 0.024470220890411443,
+      "ratio": 0.410796429521482
+    },
+    {
+      "name": "rig geometry: fallback 64 radial",
+      "beforeMs": 0.07254934600389826,
+      "afterMs": 0.02160727631578924,
+      "ratio": 0.2978286849702026
+    },
+    {
+      "name": "rig geometry: fallback 16 radial",
+      "beforeMs": 0.018501876135216887,
+      "afterMs": 0.007913254709048061,
+      "ratio": 0.42770012355589143
+    },
+    {
+      "name": "rig geometry: Rust/WASM 64 radial",
+      "beforeMs": 0.14339352663622584,
+      "afterMs": 0.020065592085235895,
+      "ratio": 0.13993373728885386
+    },
+    {
+      "name": "rig geometry: Rust/WASM 16 radial",
+      "beforeMs": 0.03357563298791029,
+      "afterMs": 0.006132197970639313,
+      "ratio": 0.18263834289728378
+    },
+    {
+      "name": "presentation adapter: 22 mixed action poses",
+      "beforeMs": 0.025796947415328626,
+      "afterMs": 0.01679632843137266,
+      "ratio": 0.6510975178943935
+    },
+    {
+      "name": "presentation adapter: 22 run poses",
+      "beforeMs": 0.023223879721669966,
+      "afterMs": 0.015115187375745454,
+      "ratio": 0.6508467817132908
+    },
+    {
+      "name": "presentation locomotion: 22 reusable gait poses",
+      "beforeMs": 0.01875344796798052,
+      "afterMs": 0.010806330870279223,
+      "ratio": 0.5762316822341076
+    },
+    {
+      "name": "presentation contact: 22 grounded athletes",
+      "beforeMs": 0.03564636924493511,
+      "afterMs": 0.022202214548802994,
+      "ratio": 0.6228464502582586
+    },
+    {
+      "name": "presentation contact: body recovery",
+      "beforeMs": 0.0017115359006616366,
+      "afterMs": 0.001002153946510139,
+      "ratio": 0.585529024616271
+    },
+    {
+      "name": "presentation geometry: head portrait",
+      "beforeMs": 78.05707833333327,
+      "afterMs": 29.22148316666668,
+      "ratio": 0.3743604525124536
+    },
+    {
+      "name": "presentation geometry: head match close",
+      "beforeMs": 30.755325916666457,
+      "afterMs": 11.722353250000044,
+      "ratio": 0.3811487246717046
+    },
+    {
+      "name": "presentation geometry: head match distant",
+      "beforeMs": 2.2559040777777732,
+      "afterMs": 0.897615877777773,
+      "ratio": 0.3978962964870336
+    },
+    {
+      "name": "presentation geometry: detailed hair",
+      "beforeMs": 19.518492666666738,
+      "afterMs": 13.84665091666678,
+      "ratio": 0.709411897380467
+    }
+  ]
+}

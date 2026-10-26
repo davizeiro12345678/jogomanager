@@ -1,0 +1,371 @@
+{
+  "date": "2026-10-25",
+  "parent": "243b32ddc1f9477be0f7daacb411a1c43ad6b7c1",
+  "comparisonMain": "5a75fef3662e3750917df1c2259169e4ed9f24d3",
+  "runtime": "v24.22.0",
+  "sourceHashes": {
+    "src/hooks/useCareer.ts": "a8ae3a5f33ed80d519652bb9b527a002fb09977ebd61b6acddef5c1cc632a197",
+    "src/lib/offline/sync.ts": "354ad2309de27ca6de307c624fc83dd4e778266f36ab5d6f1dae57ad1f0c87f7",
+    "src/lib/offline/sync.test.ts": "ed6676efd78cfcb441fc85207515c348dd334147f5c5003982969ec381f8dde4",
+    "vite.config.ts": "2da2390c58a89ef7171a480ac6e3ab4c8198134746a2c9e300082fba6ca69403"
+  },
+  "browserBuildVerifiedIdentical": true,
+  "browserAssetCount": 414,
+  "unit": {
+    "files": 408,
+    "tests": 2229,
+    "passed": true,
+    "excluded": "src/game/sim.stress.test.ts"
+  },
+  "focused": {
+    "files": 2,
+    "tests": 19,
+    "passed": true,
+    "includesFinalDeletionRegression": true
+  },
+  "performanceContractTests": 23,
+  "checks": [
+    {
+      "name": "app-build",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "name": "bundle-absolute",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "name": "performance-contracts",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "name": "typecheck",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "name": "lint",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "name": "unit",
+      "status": "passed",
+      "exitCode": 0
+    }
+  ],
+  "browser": [
+    {
+      "kind": "backup-fresh",
+      "checks": [
+        {
+          "name": "profile-a persisted critical fields",
+          "fingerprints": {
+            "players": "6a582ddc49a1a3fcf14490fc8f5faea75cb43441592eccbc40fd6c02cfdb3a73",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "profile-a survived reload",
+          "fingerprints": {
+            "players": "6a582ddc49a1a3fcf14490fc8f5faea75cb43441592eccbc40fd6c02cfdb3a73",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "download contains validated career and eight unchanged sections",
+          "passed": true,
+          "downloadedPath": "<local-verification>\\output\\playwright\\followup25-final-backup-fresh\\carreira-fla-t2-r4.pfm3d.json"
+        },
+        {
+          "name": "profile-b persisted critical fields",
+          "fingerprints": {
+            "players": "6a582ddc49a1a3fcf14490fc8f5faea75cb43441592eccbc40fd6c02cfdb3a73",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "profile-b survived reload",
+          "fingerprints": {
+            "players": "6a582ddc49a1a3fcf14490fc8f5faea75cb43441592eccbc40fd6c02cfdb3a73",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "second isolated browser profile renders squad finances history and league calendar",
+          "passed": true
+        },
+        {
+          "name": "editor and career exports are distinct and wrong-file imports preserve the career",
+          "passed": true
+        },
+        {
+          "name": "unsupported future version produces recovery UI and is never downgraded",
+          "passed": true
+        }
+      ],
+      "errorCount": 0,
+      "screenshots": 14,
+      "reportSha256": "aed95dbd68509986a9723138303d6b0139ca39a695bab7f6e90ec09a49d5efa4"
+    },
+    {
+      "kind": "backup-legacy",
+      "checks": [
+        {
+          "name": "profile-a persisted critical fields",
+          "fingerprints": {
+            "players": "b545e728081b24717fcb80997ad06ba592523f1531db1cd4bffcefe5b35e469a",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "profile-a survived reload",
+          "fingerprints": {
+            "players": "b545e728081b24717fcb80997ad06ba592523f1531db1cd4bffcefe5b35e469a",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "download contains validated career and eight unchanged sections",
+          "passed": true,
+          "downloadedPath": "<local-verification>\\output\\playwright\\followup25-final-backup-legacy\\carreira-fla-t2-r4.pfm3d.json"
+        },
+        {
+          "name": "profile-b persisted critical fields",
+          "fingerprints": {
+            "players": "b545e728081b24717fcb80997ad06ba592523f1531db1cd4bffcefe5b35e469a",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "profile-b survived reload",
+          "fingerprints": {
+            "players": "b545e728081b24717fcb80997ad06ba592523f1531db1cd4bffcefe5b35e469a",
+            "lineup": "bf6b3c0db4b0bc1bd72be3334a69da1583e5a0e5c410c238aab32e108b150fa2",
+            "bench": "b209b69940bf37e32ca5f2aeacb9935687069c1294dedb6b5dc48d1e9e29cb61",
+            "finances": "23376a00803a8356725b89bec415c1673a63b6375f3c43834e4372d62de53b87",
+            "fixtures": "c2b73127a4e40f5471eea090e6529e80246c193c258f067893c4ae5ce23efc7f",
+            "results": "80a2f1422bc2187249635c5ae5131f5dcce16693dfa0c26e3872d8c8d3897b88",
+            "history": "b6adf40e8045a9e55d73acfcfd90eee6dba655d48f0972ebcb1c9df25621a1d3",
+            "managerHistory": "28f6fc33df40c9f04d69cc54720db2da24ccaf2782d47c0c950e899f9b0cc6ce"
+          },
+          "passed": true
+        },
+        {
+          "name": "second isolated browser profile renders squad finances history and league calendar",
+          "passed": true
+        },
+        {
+          "name": "editor and career exports are distinct and wrong-file imports preserve the career",
+          "passed": true
+        },
+        {
+          "name": "unsupported future version produces recovery UI and is never downgraded",
+          "passed": true
+        }
+      ],
+      "errorCount": 0,
+      "screenshots": 14,
+      "reportSha256": "ccafd3c6683ed9f798ad75106f9ce3e4442c3a0c04656fce8cd9f7de946c9a48"
+    },
+    {
+      "kind": "store",
+      "checks": [
+        {
+          "surface": "produtos",
+          "winner": "coins_medium",
+          "starterDominatedBy": "coins_small",
+          "legacyPurchasesDisabled": true,
+          "cosmeticPolicyPreserved": true
+        },
+        {
+          "surface": "loja",
+          "winner": "coins_medium",
+          "starterDominatedBy": "coins_small",
+          "legacyPurchasesDisabled": true,
+          "cosmeticPolicyPreserved": true
+        }
+      ],
+      "errorCount": 0,
+      "screenshots": 2,
+      "reportSha256": "e064e81fe38cdb1a871d700b6e4a55c7be0d46a1e4b3b504e2580c1dad1d5ae3"
+    },
+    {
+      "kind": "unsaved",
+      "checks": [
+        {
+          "name": "synthetic writes rejected in both backends while the current UI retains the new choice",
+          "blocked": {
+            "local": 1,
+            "idb": 1
+          },
+          "passed": true
+        },
+        {
+          "name": "both storage writes rejected; unsaved state survives profile navigation and real download",
+          "blocked": {
+            "local": 1,
+            "idb": 1
+          },
+          "passed": true
+        },
+        {
+          "name": "a later verified save clears the failure and persists the latest state",
+          "passed": true
+        }
+      ],
+      "errorCount": 0,
+      "screenshots": 0,
+      "reportSha256": "df94136e29b3d1cf3ee4f046646bcf05e3394805ef5a552bde234ce8ff039736"
+    }
+  ],
+  "bundle": {
+    "metric": "offline compressed bytes of static startup closure, including hydration",
+    "rows": [
+      {
+        "surface": "Página inicial",
+        "mainGzip": 167786,
+        "beforeGzip": 169607,
+        "afterGzip": 167142,
+        "reductionFromParentPercent": 1.4533598259505842,
+        "mainBrotli": 158910,
+        "beforeBrotli": 160545,
+        "afterBrotli": 158119,
+        "passesMainGate": true
+      },
+      {
+        "surface": "Nova carreira",
+        "mainGzip": 438766,
+        "beforeGzip": 467619,
+        "afterGzip": 390882,
+        "reductionFromParentPercent": 16.410154420585986,
+        "mainBrotli": 414565,
+        "beforeBrotli": 441881,
+        "afterBrotli": 368985,
+        "passesMainGate": true
+      },
+      {
+        "surface": "Partida rápida",
+        "mainGzip": 302375,
+        "beforeGzip": 307952,
+        "afterGzip": 305533,
+        "reductionFromParentPercent": 0.7855120278485006,
+        "mainBrotli": 286410,
+        "beforeBrotli": 291445,
+        "afterBrotli": 289065,
+        "passesMainGate": false
+      },
+      {
+        "surface": "Match 3D",
+        "mainGzip": 563824,
+        "beforeGzip": 588377,
+        "afterGzip": 546636,
+        "reductionFromParentPercent": 7.094260992526902,
+        "mainBrotli": 533118,
+        "beforeBrotli": 555984,
+        "afterBrotli": 517774,
+        "passesMainGate": true
+      },
+      {
+        "surface": "Palco cinematográfico",
+        "mainGzip": 537727,
+        "beforeGzip": 543329,
+        "afterGzip": 540879,
+        "reductionFromParentPercent": 0.45092384172389366,
+        "mainBrotli": 504561,
+        "beforeBrotli": 510467,
+        "afterBrotli": 508051,
+        "passesMainGate": false
+      },
+      {
+        "surface": "Editor",
+        "mainGzip": 178356,
+        "beforeGzip": 182587,
+        "afterGzip": 180174,
+        "reductionFromParentPercent": 1.3215617760300558,
+        "mainBrotli": 168891,
+        "beforeBrotli": 172795,
+        "afterBrotli": 170416,
+        "passesMainGate": false
+      },
+      {
+        "surface": "Simulação Worker",
+        "mainGzip": 28419,
+        "beforeGzip": 13731,
+        "afterGzip": 13731,
+        "reductionFromParentPercent": 0,
+        "mainBrotli": 27354,
+        "beforeBrotli": 13267,
+        "afterBrotli": 13267,
+        "passesMainGate": true
+      }
+    ],
+    "totalGzip": {
+      "main": 2235547,
+      "before": 2192344,
+      "after": 2196568
+    },
+    "totalBrotli": {
+      "main": 2106456,
+      "before": 2071288,
+      "after": 2077034
+    }
+  },
+  "productionReady": false,
+  "pending": [
+    "Relative bundle gate: partida rápida, editor and cinematic stage exceed main",
+    "Latest required mobile Lighthouse gate remains failed on parent 243b32d; new head requires CI",
+    "No new native GPU/full moving-match campaign or all-club 690-match campaign in this follow-up"
+  ]
+}

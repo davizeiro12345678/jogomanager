@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { cinematicCrowdUpdateAt } from "@/game/cinematic-crowd-timing";
 import { useCinematicFrame, useCinematicRuntime } from "./cinematic-runtime";
@@ -27,6 +28,7 @@ export function CinematicCrowd({
   festive?: boolean;
 }) {
   const runtime = useCinematicRuntime();
+  const invalidate = useThree((state) => state.invalidate);
   const torso = useRef<THREE.InstancedMesh>(null),
     heads = useRef<THREE.InstancedMesh>(null);
   const hair = useRef<THREE.InstancedMesh>(null),
@@ -50,6 +52,11 @@ export function CinematicCrowd({
     }),
     [],
   );
+  useLayoutEffect(() => {
+    initialized.current = false;
+    cadence.current = { accumulator: 0, initialized: false };
+    invalidate();
+  }, [count, cols, y, z, palette, festive, runtime.quality, invalidate]);
   useEffect(() => () => Object.values(materials).forEach((m) => m.dispose()), [materials]);
   useCinematicFrame((time, dt) => {
     if (!torso.current || !heads.current || !arms.current || !legs.current || !hair.current) return;
@@ -86,6 +93,8 @@ export function CinematicCrowd({
       const base = y + row * 0.62;
       const depth = z - row * 0.7;
       const sway = Math.sin(time * (festive ? 1.8 : 0.65) + i * 0.71) * (festive ? 0.045 : 0.012);
+      const wavePhase = (time * 1.2 - col * 0.15 - row * 0.08) % (Math.PI * 2);
+      const ola = festive ? Math.max(0, Math.cos(wavePhase)) ** 6 : 0;
       const lift = festive
         ? 0.5 + Math.sin(time * 1.9 + i * 0.8) * 0.5
         : randomAt(i + 41) > 0.88
@@ -100,14 +109,17 @@ export function CinematicCrowd({
           arms.current,
           i * 2 + side,
           x + sway + sign * (0.19 + lift * 0.07),
-          base - 0.08 + lift * 0.24,
+          base - 0.08 + lift * 0.24 + ola * 0.08,
           depth + 0.015,
           1,
           1,
           1,
-          sign * (0.12 + lift * 2.5),
+          sign * (0.12 + Math.max(lift, ola) * 2.5),
         );
-        place(legs.current, i * 2 + side, x + sign * 0.075, base - 0.31, depth + 0.08, 1, 1, 1);
+        // Feet never sway in this seated audience. Keep their matrix buffer
+        // resident instead of rewriting/uploading two identical legs per tick.
+        if (!initialized.current)
+          place(legs.current, i * 2 + side, x + sign * 0.075, base - 0.31, depth + 0.08, 1, 1, 1);
       }
       if (!initialized.current) {
         const color = palette[Math.floor(randomAt(i + 13) * palette.length)]!;
@@ -120,10 +132,11 @@ export function CinematicCrowd({
         );
       }
     }
-    for (const mesh of [torso.current, heads.current, hair.current, arms.current, legs.current]) {
+    for (const mesh of [torso.current, heads.current, hair.current, arms.current]) {
       mesh.instanceMatrix.needsUpdate = true;
       if (!initialized.current && mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
+    if (!initialized.current) legs.current.instanceMatrix.needsUpdate = true;
     initialized.current = true;
     cadence.current = { accumulator: nextCadence.accumulator, initialized: true };
   });

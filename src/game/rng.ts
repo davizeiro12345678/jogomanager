@@ -12,11 +12,12 @@ export function makeRng(seed: number | string) {
   if (s === 0) s = 0x9e3779b9;
   const next = () => {
     s ^= s << 13;
-    s >>>= 0;
+    // Every bitwise operator already coerces its input to a signed int32.
+    // Keep that representation between draws; only the public value/state
+    // needs the unsigned conversion. The arithmetic right shift is intentional.
     s ^= s >> 17;
     s ^= s << 5;
-    s >>>= 0;
-    return s / 4294967296;
+    return (s >>> 0) / 4294967296;
   };
   next.state = () => s >>> 0;
   next.restore = (state: number) => {
@@ -25,4 +26,19 @@ export function makeRng(seed: number | string) {
     s = state >>> 0;
   };
   return next;
+}
+
+/** Consume a short, independent stream when no live/restorable RNG is needed.
+ * Used for match-day form, which only needs the sum of its three draws. */
+export function sumRngDraws(seed: number | string, count: number): number {
+  let s = typeof seed === "string" ? hashSeed(seed) : seed >>> 0;
+  if (s === 0) s = 0x9e3779b9;
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    s ^= s << 13;
+    s ^= s >> 17;
+    s ^= s << 5;
+    total += (s >>> 0) / 4294967296;
+  }
+  return total;
 }

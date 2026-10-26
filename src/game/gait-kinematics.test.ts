@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyPose } from "./animation-core";
+import { emptyPose, JOINTS } from "./animation-core";
 import { gaitCadence, gaitPoseAt, locomotionWeight, solveLegTarget } from "./gait-kinematics";
 import {
   airborneFactor,
@@ -18,6 +18,70 @@ const legEnd = (pitch: number, knee: number) => ({
 });
 
 describe("physical player movement", () => {
+  it("keeps both feet quiet and loaded at zero speed regardless of phase", () => {
+    const baseline = gaitPoseAt(0, 0, p).pose;
+    for (let frame = 0; frame < 120; frame++) {
+      const sample = gaitPoseAt((frame / 120) * Math.PI * 2, 0, p);
+      expect(sample.contactL).toBe(1);
+      expect(sample.contactR).toBe(1);
+      for (const joint of JOINTS) expect(sample.pose[joint]).toBeCloseTo(baseline[joint], 12);
+    }
+  });
+
+  it("removes the arm jump when accelerating across the old stride cutoff", () => {
+    for (const speed of [0, 0.0001, 0.001, 0.002, 0.003]) {
+      const pose = gaitPoseAt(1.2, speed, p).pose;
+      expect(Math.abs(pose.armLPitch - 0.04)).toBeLessThan(0.001);
+      expect(Math.abs(pose.armRPitch - 0.04)).toBeLessThan(0.001);
+    }
+  });
+
+  it("reuses caller-owned gait and leg buffers without allocating per-frame results", () => {
+    const out = emptyPose();
+    const first = gaitPoseAt(0, 5, p, out);
+    for (let frame = 1; frame < 120; frame++) {
+      expect(gaitPoseAt(frame * 0.1, 5, p, out)).toBe(first);
+      expect(first.pose).toBe(out);
+    }
+    const leg = { pitch: 0, knee: 0, ankle: 0, roll: 0 };
+    expect(solveLegTarget(0.1, 0.6, p.thigh, p.shin, 0, leg)).toBe(leg);
+  });
+
+  it("overwrites every reused pose channel after downstream layers mutate the buffer", () => {
+    const out = emptyPose();
+    const direction = { forward: 3, lateral: -1, turnRate: 0.3, stamina: 65, hasBall: true };
+    for (const speed of [0, 0.001, 0.5, 3, 8, 12]) {
+      for (const phase of [-5, 0, 1.2, 9]) {
+        for (const joint of JOINTS) out[joint] = Number.NaN;
+        const fresh = gaitPoseAt(phase, speed, p, emptyPose(), direction);
+        const reused = gaitPoseAt(phase, speed, p, out, direction);
+        expect(reused.pose).toEqual(fresh.pose);
+        expect(reused.contactL).toBe(fresh.contactL);
+        expect(reused.contactR).toBe(fresh.contactR);
+      }
+    }
+  });
+
+  it.each([1.6, 5.5, 8])(
+    "keeps both ankles continuous through toe-off and heel-strike at %s m/s",
+    (speed) => {
+      const duty = 0.64 - Math.min(1, speed / 6.8) * 0.38;
+      for (const boundary of [0, duty, 0.5, (duty + 0.5) % 1]) {
+        const before = gaitPoseAt((boundary - 1e-6) * Math.PI * 2, speed, p).pose;
+        const after = gaitPoseAt((boundary + 1e-6) * Math.PI * 2, speed, p).pose;
+        for (const joint of [
+          "ankleL",
+          "ankleR",
+          "kneeL",
+          "kneeR",
+          "legLPitch",
+          "legRPitch",
+        ] as const)
+          expect(Math.abs(after[joint] - before[joint])).toBeLessThan(0.001);
+      }
+    },
+  );
+
   it.each([-0.3, 0, 0.35])("reaches a target at %s m with a knee that bends anatomically", (z) => {
     const target = solveLegTarget(z, p.thigh + p.shin - 0.16, p.thigh, p.shin);
     const end = legEnd(target.pitch, target.knee);
@@ -78,6 +142,18 @@ describe("physical player movement", () => {
       (start + 0.8 * gaitCadence(5.5, p.thigh + p.shin) * Math.PI * 2) % (Math.PI * 2),
       6,
     );
+  });
+
+  it("returns a shared frame before reading motion inputs again", () => {
+    const player = { id: "cached", x: 0, z: 0, vx: 0, vz: 5.5 };
+    const owner = {};
+    const result = visualMotionFor(owner, player, { x: 0, z: 5 }, 12, p.thigh + p.shin, 1);
+    Object.defineProperty(player, "vx", {
+      get: () => {
+        throw new Error("duplicate motion calculation");
+      },
+    });
+    expect(visualMotionFor(owner, player, { x: 0, z: 5 }, 12, p.thigh + p.shin, 1)).toBe(result);
   });
 
   it("gives the same stride clock at 30 and 120 frames per second", () => {

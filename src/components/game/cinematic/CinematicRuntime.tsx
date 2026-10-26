@@ -8,7 +8,7 @@ import { cinematicDelta } from "@/game/cinematic-performance";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import type { CinematicCue } from "@/game/cinematic-cue";
 import type { CinematicVoiceClockRef } from "@/game/cutscene-visemes";
-import { CinematicContext } from "./cinematic-runtime";
+import { CinematicContext, type CinematicFrameCallback } from "./cinematic-runtime";
 
 export function CinematicRuntime({
   children,
@@ -41,10 +41,12 @@ export function CinematicRuntime({
     lineTime: 0,
   });
   const previousCue = useRef(cue?.id);
+  const frames = useRef(new Set<CinematicFrameCallback>()).current;
   const focus = useMemo(() => new Vector3(0, 1.2, 0), []);
   const runtime = useMemo(
     () => ({
       clock: clock.current,
+      frames,
       focus,
       quality,
       look,
@@ -56,7 +58,19 @@ export function CinematicRuntime({
       voiceClockRef,
       voicePlayingRef,
     }),
-    [quality, look, cast, stopped, reduced, focus, manner, cue, voiceClockRef, voicePlayingRef],
+    [
+      quality,
+      look,
+      cast,
+      stopped,
+      reduced,
+      focus,
+      manner,
+      cue,
+      voiceClockRef,
+      voicePlayingRef,
+      frames,
+    ],
   );
   useFrame((_, raw) => {
     clock.current.dt = cinematicDelta(raw, stopped || reduced);
@@ -67,5 +81,8 @@ export function CinematicRuntime({
     clock.current.time += clock.current.dt;
     clock.current.lineTime += clock.current.dt;
   }, -100);
+  useFrame(() => {
+    for (const frame of frames) frame(clock.current.time, clock.current.dt);
+  });
   return <CinematicContext.Provider value={runtime}>{children}</CinematicContext.Provider>;
 }

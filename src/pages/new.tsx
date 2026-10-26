@@ -1,4 +1,5 @@
 import { CATALOG_EVENT, loadDbCatalog } from "@/lib/db-catalog";
+import { SHIPPED_CATALOG } from "@/game/data/catalog-facts";
 
 import { Link, useNavigate } from "@tanstack/react-router";
 
@@ -28,8 +29,6 @@ import {
 
 import { getLeague, LEAGUES } from "@/game/data/leagues";
 
-import { initCareer } from "@/game/career";
-
 import {
   createManagerProfile,
   DEFAULT_MANAGER_ATTRIBUTES,
@@ -37,6 +36,7 @@ import {
 } from "@/game/manager-profile";
 
 import {
+  careerLeagues,
   discoverClubs,
   searchKey,
   type CareerChallenge,
@@ -46,10 +46,6 @@ import {
 import { Crest } from "@/components/game/Crest";
 
 import { useCareer } from "@/hooks/useCareer";
-
-import { loadRealSquad } from "@/lib/realSquads";
-
-import { startWorldForNewCareer } from "@/lib/world";
 
 import { Flag } from "@/components/game/Flag";
 
@@ -110,7 +106,7 @@ const CHALLENGES: { id: CareerChallenge; label: string }[] = [
 
 export function NewCareer() {
   const navigate = useNavigate();
-  const { career, update, reset } = useCareer();
+  const { career, update, reset, loadError } = useCareer();
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
   const [name, setName] = useState("Técnico");
@@ -157,6 +153,7 @@ export function NewCareer() {
     }
   }, [step]);
   const [catalog, setCatalog] = useState(() => [...LEAGUES]);
+  const allCareerLeagues = useMemo(() => careerLeagues(catalog), [catalog]);
   useEffect(() => {
     // The catalog hydrates the shared league list in place. Give React a new
     // snapshot so memoized discovery depends on the data it actually reads.
@@ -174,7 +171,9 @@ export function NewCareer() {
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
   const countryOptions = useMemo(() => {
-    const unique = [...new Map(catalog.map((league) => [league.country, league])).values()];
+    const unique = [
+      ...new Map(allCareerLeagues.map((league) => [league.country, league])).values(),
+    ];
     return unique
       .filter((league) => searchKey(league.country).includes(searchKey(countryQuery)))
       .sort((a, b) =>
@@ -184,10 +183,10 @@ export function NewCareer() {
             ? 1
             : a.country.localeCompare(b.country, "pt-BR"),
       );
-  }, [countryQuery, catalog]);
+  }, [countryQuery, allCareerLeagues]);
   const clubs = useMemo(
     () =>
-      discoverClubs(catalog, {
+      discoverClubs(allCareerLeagues, {
         query,
         leagueId,
         reputation,
@@ -195,7 +194,7 @@ export function NewCareer() {
         availableOnly: available,
         scopeSearch,
       }),
-    [query, leagueId, reputation, challenge, available, scopeSearch, catalog],
+    [query, leagueId, reputation, challenge, available, scopeSearch, allCareerLeagues],
   );
   const selectionLocked = !!selected && selected.reputation > reputation;
   function go(next: number) {
@@ -224,6 +223,12 @@ export function NewCareer() {
     });
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
+      const [{ initCareer }, { loadRealSquad }, { startWorldForNewCareer }] = await Promise.all([
+        import("@/game/career"),
+        import("@/lib/realSquads"),
+        import("@/lib/world"),
+      ]);
+      if (!mounted.current) return;
       // A slow optional sports endpoint cannot trap a guest in the wizard.
       await Promise.race([
         loadRealSquad(club.id),
@@ -249,8 +254,23 @@ export function NewCareer() {
     }
   }
   const stepCopy = STEP_COPY[step]!;
+  if (loadError)
+    return (
+      <main className="mx-auto max-w-xl p-8">
+        <h1 className="font-display text-2xl">Recupere a carreira antes de criar outra</h1>
+        <p className="mt-3 text-sm">{loadError}</p>
+        <Link to="/perfil" className="mt-4 inline-block underline">
+          Abrir perfil e recuperar carreira
+        </Link>
+      </main>
+    );
   return (
     <main className="career-create">
+      <p className="sr-only">
+        O catálogo incluído tem {SHIPPED_CATALOG.competitions} competições e{" "}
+        {SHIPPED_CATALOG.playableClubs} clubes únicos; {allCareerLeagues.length} ligas compatíveis
+        com carreira estão disponíveis neste aparelho.
+      </p>
       <header className="career-top">
         <Link to="/" className="career-back">
           <ArrowLeft size={16} />
@@ -585,7 +605,7 @@ export function NewCareer() {
                         setScopeSearch(true);
                       }}
                     >
-                      {LEAGUES.map((league) => (
+                      {allCareerLeagues.map((league) => (
                         <option key={league.id} value={league.id}>
                           {league.country} · {league.name}
                         </option>

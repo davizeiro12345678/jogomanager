@@ -1,10 +1,10 @@
-import { useFrame } from "@react-three/fiber";
+import { selectPlayerClip } from "@/game/visual-clip-selection";
+import { useFrame, useThree } from "@react-three/fiber";
 import { createElement, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import type { MutableRefObject } from "react";
 import * as THREE from "three";
-import { softShadowTexture } from "./soft-shadow";
-import { emptyPose, getClip, mixPose, selectClip, type ClipName } from "@/game/animation";
-import { gaitPoseAt, locomotionWeight } from "@/game/gait-kinematics";
+import { selectClip, type ClipName } from "@/game/animation";
+import { PlayerLocomotionPose } from "@/game/player-locomotion-pose";
 import { airborneFactor, clampPoseAnatomy, solveGroundContact } from "@/game/ground-contact";
 import type { Kit } from "@/game/kits";
 import {
@@ -19,6 +19,8 @@ import { createLowPlayerGeometries } from "@/game/player-lod-geometry";
 import { applyLowKitShader, lowKitPattern } from "@/game/player-lod-kit";
 import { LowShortsAnimator } from "@/game/player-lod-shorts";
 import { LowTorsoAnimator } from "@/game/player-lod-torso";
+import { applyLowClothShader, supportsAffinePlayerCloth } from "@/game/player-lod-cloth";
+import { webglRendererName } from "@/game/gpu-quality";
 import { skinAlbedo } from "@/game/player-morphology";
 import {
   appendPlayerInstance,
@@ -27,7 +29,7 @@ import {
 } from "@/game/player-instance-batch";
 import { censusRef } from "@/game/scene-census";
 import { placeScaledInstancePart } from "@/game/instance-transform";
-import type { SimView } from "@/game/sim";
+import type { SimView } from "@/game/sim-types";
 import { visualMotionFor } from "@/game/visual-motion";
 import { footballSupportFor, refineFootballAction } from "@/game/football-action";
 import { refineAthletePosture, shoulderPose } from "@/game/athlete-posture";
@@ -55,6 +57,7 @@ type LowPlayersProps = {
   previewAt?: number | undefined;
   lookOverrides?: ReadonlyMap<string, PlayerLook> | undefined;
   previewClip?: ClipName | undefined;
+  previewRevision?: string | undefined;
 };
 const MAX_PLAYERS = 22;
 const SIDES = [1, -1] as const;
@@ -88,15 +91,24 @@ export function LowPlayers({
   previewAt,
   lookOverrides,
   previewClip,
+  previewRevision,
   simplified = false,
 }: LowPlayersProps) {
+  const affineCloth = useThree(({ gl }) => {
+    if ((gl as { isWebGPURenderer?: boolean }).isWebGPURenderer) return false;
+    const context = gl.getContext();
+    return supportsAffinePlayerCloth(
+      webglRendererName(gl),
+      context.getParameter(context.MAX_VERTEX_ATTRIBS),
+    );
+  });
   const refs = useRef<Partial<Record<Batch, THREE.InstancedMesh>>>({});
   const palettes = useRef<Partial<Record<Batch, PlayerInstancePalette>>>({});
   const painted = useRef(false);
   const sampled = useRef<number | undefined>(undefined);
   useLayoutEffect(() => {
     painted.current = false;
-  }, [sim.players, lookOverrides]);
+  }, [sim.players, lookOverrides, previewClip, previewRevision, paused]);
   const looks = useMemo(
     () =>
       sim.players.map(
@@ -119,7 +131,10 @@ export function LowPlayers({
     () => sim.players.map(() => new AthletePoseBlender()),
     [sim.players],
   );
-  const geometries = useMemo(() => createLowPlayerGeometries(simplified), [simplified]);
+  const geometries = useMemo(
+    () => createLowPlayerGeometries(simplified, affineCloth),
+    [simplified, affineCloth],
+  );
   const kitSource = useMemo(() => new Float32Array(MAX_PLAYERS * 4), []);
   const kitAttribute = useMemo(() => {
     const attribute = new THREE.InstancedBufferAttribute(new Float32Array(MAX_PLAYERS * 4), 4);
@@ -137,7 +152,18 @@ export function LowPlayers({
   );
   const shortsAnimator = useMemo(() => new LowShortsAnimator(geometries["hips"]!), [geometries]);
   const torsoAnimator = useMemo(() => new LowTorsoAnimator(geometries["torso"]!), [geometries]);
-  const gaitBuffer = useRef(emptyPose());
+  const locomotionPose = useMemo(() => new PlayerLocomotionPose(), []);
+  const locomotionDirection = useMemo(
+    () => ({
+      forward: 0,
+      lateral: 0,
+      turnRate: 0,
+      stamina: 100,
+      hasBall: false,
+      style: 0,
+    }),
+    [],
+  );
   const rootY = useRef(new Float32Array(MAX_PLAYERS));
   const tmp = useMemo(
     () => ({
@@ -314,7 +340,10 @@ export function LowPlayers({
         1,
         goalPresentation?.rootZ ?? player.z,
       );
-      if (simplified && !visibility.frustum.intersectsSphere(visibility.bounds)) continue;
+      // The complete body envelope includes arms, jumps and recovery poses.
+      // Cull every instanced tier before evaluating clips, IK and cloth;
+      // quality controls geometry, not whether off-camera work is discarded.
+      if (!visibility.frustum.intersectsSphere(visibility.bounds)) continue;
       const action = goalPresentation?.action ?? player.action;
       const ballDistance = Math.hypot(sim.ball.x - player.x, sim.ball.z - player.z);
       const motion = visualMotionFor(
@@ -329,7 +358,7 @@ export function LowPlayers({
       const speed = motion.speed;
       const clip =
         previewClip ??
-        selectClip({
+        selectPlayerClip(sim, player.id, {
           isGK: player.pos === "GK",
           action,
           actionT: goalPresentation ? 1 - goalPresentation.progress : player.actionT,
@@ -338,6 +367,7 @@ export function LowPlayers({
           speed,
           hasBall: sim.ball.holder === player.id,
           ballDist: ballDistance,
+          ballHeight: sim.ball.height,
           stamina: player.stamina,
           defending: sim.possession !== player.side,
           stopped: speed < 0.35,
@@ -350,33 +380,31 @@ export function LowPlayers({
         (action && player.actionDur > 0
           ? Math.max(0, Math.min(1, 1 - player.actionT / player.actionDur))
           : (clock.elapsedTime % 1.4) / 1.4);
-      const authored = getClip(clip)({
-        t:
-          previewAt !== undefined
-            ? previewAt * (player.actionDur || 1.4)
-            : goalPresentation
-              ? goalPresentation.progress * GOAL_PRESENTATION_SECONDS
-              : clock.elapsedTime,
-        u,
-        speed,
-        stride: Math.min(1, speed / 7),
-        seed: look.seed % 97,
-      });
-      const gaitWeight = locomotionWeight(speed, action, clip);
-      if (gaitWeight > 0)
-        mixPose(
-          authored,
-          gaitPoseAt(motion.phase, speed, p, gaitBuffer.current, {
-            forward: motion.forward,
-            lateral: motion.lateral,
-            turnRate: motion.turnRate,
-            stamina: player.stamina,
-            hasBall: sim.ball.holder === player.id,
-            style: look.seed,
-          }).pose,
-          gaitWeight,
-          authored,
-        );
+      locomotionDirection.forward = motion.forward;
+      locomotionDirection.lateral = motion.lateral;
+      locomotionDirection.turnRate = motion.turnRate;
+      locomotionDirection.stamina = player.stamina;
+      locomotionDirection.hasBall = sim.ball.holder === player.id;
+      locomotionDirection.style = look.seed;
+      const authored = locomotionPose.sample(
+        clip,
+        {
+          t:
+            previewAt !== undefined
+              ? previewAt * (player.actionDur || 1.4)
+              : goalPresentation
+                ? goalPresentation.progress * GOAL_PRESENTATION_SECONDS
+                : clock.elapsedTime,
+          u,
+          speed,
+          stride: Math.min(1, speed / 7),
+          seed: look.seed % 97,
+        },
+        action,
+        motion.phase,
+        p,
+        locomotionDirection,
+      );
       const actionContext = visual?.actionContexts[index];
       const usedFoot = actionContext?.action ? actionContext.usedFoot : dominantFeet[index]!;
       refineFootballAction(authored, action, u, p, usedFoot);
@@ -391,15 +419,18 @@ export function LowPlayers({
         hasAction: Boolean(action),
         defending: sim.possession !== player.side,
       });
+      const actionSupport = footballSupportFor(action, u, p.hipW, usedFoot);
       const pose = clampPoseAnatomy(
         poseBlenders[index]!.sample(clampPoseAnatomy(authored), dt, {
           clip,
           action,
           progress: u,
+          supportFoot: actionSupport.plantedFoot,
+          phase: motion.phase,
+          event: goalPresentation?.actionSeed,
           instant: paused || previewAt !== undefined,
         }),
       );
-      const actionSupport = footballSupportFor(action, u, p.hipW, usedFoot);
       const shift =
         Math.max(-1, Math.min(1, pose.legRPitch - pose.legLPitch)) *
           0.045 *
@@ -625,13 +656,7 @@ export function LowPlayers({
           renderOrder={name === "shadow" ? 1 : 0}
         >
           {name === "shadow" ? (
-            <meshBasicMaterial
-              map={softShadowTexture()}
-              color="#050806"
-              transparent
-              opacity={0.32}
-              depthWrite={false}
-            />
+            <meshBasicMaterial color="#050806" transparent opacity={0.23} depthWrite={false} />
           ) : (
             <meshStandardMaterial
               color="white"
@@ -643,7 +668,20 @@ export function LowPlayers({
                     : 0.85
               }
               envMapIntensity={0.7}
-              {...(name === "torso" ? { onUpdate: applyLowKitShader } : {})}
+              {...(name === "torso" || (name === "hips" && affineCloth)
+                ? {
+                    onUpdate: (material: THREE.MeshStandardMaterial) => {
+                      if (name === "torso") applyLowKitShader(material);
+                      else {
+                        material.onBeforeCompile = THREE.Material.prototype.onBeforeCompile;
+                        material.customProgramCacheKey =
+                          THREE.Material.prototype.customProgramCacheKey;
+                      }
+                      if (affineCloth)
+                        applyLowClothShader(material, name === "torso" ? "torso" : "shorts");
+                    },
+                  }
+                : {})}
             />
           )}
           {createElement("primitive", { object: geometries[name], attach: "geometry" })}

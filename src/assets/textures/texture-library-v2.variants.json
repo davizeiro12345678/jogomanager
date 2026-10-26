@@ -1,0 +1,390 @@
+{
+  "ball_normal": {
+    "256": "0fc6fae45c245ec3",
+    "512": "bcbcd9f5fc6f2949"
+  },
+  "ball_rough": {
+    "256": "b7f9395b73bc2069",
+    "512": "0a6200381428f341"
+  },
+  "beard_normal": {
+    "256": "e46251340efbfa1f",
+    "512": "88d2aa81b86a341a"
+  },
+  "boot_knit_normal": {
+    "256": "b72e1b16d3e193f5",
+    "512": "e4ac5b777f33bda3"
+  },
+  "boot_leather_normal": {
+    "256": "b2264ba4694bf7a9",
+    "512": "d75f04c287cdd9de"
+  },
+  "boot_normal": {
+    "256": "b2264ba4694bf7a9",
+    "512": "d75f04c287cdd9de"
+  },
+  "boot_rough": {
+    "256": "66f7eea099d7d249",
+    "512": "b37f542eb00715f5"
+  },
+  "boot_synthetic_normal": {
+    "256": "b4c7c7ae9f770a3a",
+    "512": "60513c600fa92d0d"
+  },
+  "cinema_tile_albedo": {
+    "256": "f0649737d8f95731",
+    "512": "9a3c100fd3a125a7",
+    "1024": "db2606dfa2b0257e"
+  },
+  "cinema_tile_normal": {
+    "256": "536d51ab4f339da2",
+    "512": "55b896ebe0fe7726"
+  },
+  "cinema_tile_rough": {
+    "256": "8b72d85db08d19c1",
+    "512": "c7d7f92ca8a6ad1d"
+  },
+  "cinema_wall_albedo": {
+    "256": "b6ec9befe600566f",
+    "512": "0d404288e0eb5a52",
+    "1024": "e43f9963157bf39c"
+  },
+  "cinema_wall_normal": {
+    "256": "18b904679701b25e",
+    "512": "1173da49116652b7"
+  },
+  "cinema_wall_rough": {
+    "256": "18c7398f07d59068",
+    "512": "851cf8c20536e713"
+  },
+  "cinema_wood_albedo": {
+    "256": "8a45fd127b65d028",
+    "512": "543a446e48bb7a4b",
+    "1024": "0c8830116f23a824"
+  },
+  "cinema_wood_normal": {
+    "256": "2ec4d4ecd96539d4",
+    "512": "91bd852be2b2fd4b"
+  },
+  "cinema_wood_rough": {
+    "256": "c14fd1514d4241c2",
+    "512": "b915f083ae19d0e6"
+  },
+  "concrete_albedo": {
+    "256": "b6ec9befe600566f",
+    "512": "0d404288e0eb5a52",
+    "1024": "e43f9963157bf39c"
+  },
+  "concrete_normal": {
+    "256": "859e2acd386694f7",
+    "512": "60b626ce1165d53d"
+  },
+  "concrete_rough": {
+    "256": "4955f6d2454632e1",
+    "512": "a0213398f9b18c0e"
+  },
+  "fiber_normal": {
+    "256": "643db80f6037c321",
+    "512": "237765c9a947b023"
+  },
+  "fiber_rough": {
+    "256": "d91a4fc5a7d4c112",
+    "512": "7bb2f5a1d232fd88"
+  },
+  "glove_normal": {
+    "256": "0fc6fae45c245ec3",
+    "512": "bcbcd9f5fc6f2949"
+  },
+  "glove_rough": {
+    "256": "b7f9395b73bc2069",
+    "512": "0a6200381428f341"
+  },
+  "grass_albedo": {
+    "256": "06b816346ee2af5c",
+    "512": "25ffcc42a6855993",
+    "1024": "1d2fd48543825954"
+  },
+  "grass_bands_albedo": {
+    "256": "58d4fe05e9f24831",
+    "512": "6b92786d19a10b79",
+    "1024": "27bc64a4adccdfbb"
+  },
+  "grass_blade_albedo": {
+    "256": "bfea5e22b4eb7711",
+    "512": "190b4a81ec5e266e",
+    "1024": "166b8bb9be4c120a"
+  },
+  "grass_detail_rough": {
+    "256": "192743abfd5269d3",
+    "512": "d84e407db3fd6658"
+  },
+  "grass_diagonal_albedo": {
+    "256": "6f341066ff128ce7",
+    "512": "103d966c0d351571",
+    "1024": "8a50585766e9c1d1"
+  },
+  "grass_diamond_albedo": {
+    "256": "b17165345b052a00",
+    "512": "d79dc6554a8fb0a3",
+    "1024": "021a4bef6398cbd5"
+  },
+  "grass_fine_albedo": {
+    "256": "725b19ae47f27cec",
+    "512": "96a206f5e588b609",
+    "1024": "a31307d8745880f3"
+  },
+  "grass_normal": {
+    "256": "0495632e924ad0fb",
+    "512": "0acdbdecf228cc43"
+  },
+  "grass_rings_albedo": {
+    "256": "abe8933265d2aa70",
+    "512": "3265b67cec4bda46",
+    "1024": "eaa25228a567152e"
+  },
+  "grass_rough": {
+    "256": "192743abfd5269d3",
+    "512": "d84e407db3fd6658"
+  },
+  "grass_spiral_albedo": {
+    "256": "b55b73521d7a4068",
+    "512": "f79eefa2743c7a17",
+    "1024": "baab2e5d13cfbe6b"
+  },
+  "grass_stripes_albedo": {
+    "256": "9ff4442f1c59b6a0",
+    "512": "dd965049d501c382",
+    "1024": "95dbd6cdc004b96f"
+  },
+  "grass_wide_albedo": {
+    "256": "0a34402bd472ce68",
+    "512": "909933cb7a7ca07a",
+    "1024": "24f2a52fbc528f09"
+  },
+  "hair_normal": {
+    "256": "27addae304441b42",
+    "512": "3df319354b0ba737",
+    "1024": "e0acce589d363eac"
+  },
+  "hair_rough": {
+    "256": "26bf259b0a5439c8",
+    "512": "b6afc770f77aff3f"
+  },
+  "iris_detail_albedo": {
+    "256": "398ae8ea5fa0ad0e",
+    "512": "acdeccac970c6eb8",
+    "1024": "b388ef85331933cd"
+  },
+  "jersey_checks_normal": {
+    "256": "a79370b492dababc",
+    "512": "05fe07db52d2c5ff"
+  },
+  "jersey_checks_rough": {
+    "256": "94646f0213f1ba8d",
+    "512": "c710bad776caf8ef"
+  },
+  "jersey_halves_normal": {
+    "256": "e46b3b50bc975e26",
+    "512": "3a07da1825f2e80f"
+  },
+  "jersey_halves_rough": {
+    "256": "be24cb278f3e2e68",
+    "512": "4f4535f6ccf54245"
+  },
+  "jersey_hoops_normal": {
+    "256": "9bbe6ca462b12884",
+    "512": "94e8898e1758b940"
+  },
+  "jersey_hoops_rough": {
+    "256": "7cec35a49051b130",
+    "512": "9caff47db09d33ff"
+  },
+  "jersey_pin_normal": {
+    "256": "500504c3bda735f5",
+    "512": "ff0fa982dbbce11c"
+  },
+  "jersey_pin_rough": {
+    "256": "07e786be28381f68",
+    "512": "9efde5b992b097cf"
+  },
+  "jersey_sash_normal": {
+    "256": "6ba4eb0cb15afe98",
+    "512": "ee1a9df0571d22bf"
+  },
+  "jersey_sash_rough": {
+    "256": "92059ac7d86a2147",
+    "512": "3606f7a260886736"
+  },
+  "jersey_solid_normal": {
+    "256": "643db80f6037c321",
+    "512": "237765c9a947b023"
+  },
+  "jersey_solid_rough": {
+    "256": "d91a4fc5a7d4c112",
+    "512": "7bb2f5a1d232fd88"
+  },
+  "jersey_stripes_normal": {
+    "256": "54e4ea818d3b7192",
+    "512": "4563146d04dd36db"
+  },
+  "jersey_stripes_rough": {
+    "256": "490b516cdc995173",
+    "512": "ace7fb97e613aa17"
+  },
+  "lip_normal": {
+    "256": "9ee1fa1a01142164",
+    "512": "ffde123bc135284c"
+  },
+  "lip_rough": {
+    "256": "3a7faca3d19647ab",
+    "512": "7305463fa209761a"
+  },
+  "net_mask": {
+    "256": "eb7b9343e8711cdd",
+    "512": "7a818ce734ad0d1e"
+  },
+  "net_normal": {
+    "256": "44796865e1598446",
+    "512": "60576dcc5e0573e9"
+  },
+  "net_rough": {
+    "256": "8d947a02fc41da53",
+    "512": "5bfd34d031f0c79d"
+  },
+  "sclera_albedo": {
+    "256": "ba4e3e3e0d711d48",
+    "512": "cbd3aa61f9bc8593",
+    "1024": "7c1346b07be8d819"
+  },
+  "shin_normal": {
+    "256": "5f70f55599b16312",
+    "512": "664289fa174bd649"
+  },
+  "shin_rough": {
+    "256": "25e9aa670cdd396a",
+    "512": "7ba6bb5ead263ee6"
+  },
+  "shorts_mesh_normal": {
+    "256": "e698d23c30aae837",
+    "512": "92bf3ce4782470f1"
+  },
+  "shorts_mesh_rough": {
+    "256": "860415023dc0ab33",
+    "512": "d78b2ec9abddbe4c"
+  },
+  "shorts_plain_normal": {
+    "256": "643db80f6037c321",
+    "512": "237765c9a947b023"
+  },
+  "shorts_plain_rough": {
+    "256": "d91a4fc5a7d4c112",
+    "512": "7bb2f5a1d232fd88"
+  },
+  "shorts_stitched_normal": {
+    "256": "59a91aea705bedca",
+    "512": "a934dd5ae9a20b78"
+  },
+  "shorts_stitched_rough": {
+    "256": "6785f11352502b3f",
+    "512": "4f63c1ef943e6d17"
+  },
+  "skin_dark_normal": {
+    "256": "6b6248cf0e012d9d",
+    "512": "386cce9e3b856c68",
+    "1024": "769d78b74d06a20b"
+  },
+  "skin_light_normal": {
+    "256": "6b6248cf0e012d9d",
+    "512": "386cce9e3b856c68",
+    "1024": "769d78b74d06a20b"
+  },
+  "skin_medium_normal": {
+    "256": "6b6248cf0e012d9d",
+    "512": "386cce9e3b856c68",
+    "1024": "769d78b74d06a20b"
+  },
+  "skin_normal": {
+    "256": "6b6248cf0e012d9d",
+    "512": "386cce9e3b856c68",
+    "1024": "769d78b74d06a20b"
+  },
+  "skin_rough": {
+    "256": "2eec7eb05556e45c",
+    "512": "5d2f0706f438d136"
+  },
+  "sock_normal": {
+    "256": "398b8ac14b695bae",
+    "512": "27abd27461bc38ca"
+  },
+  "socks_fine_normal": {
+    "256": "b6d3ad2faae79026",
+    "512": "371a9d0d6658b853"
+  },
+  "socks_fine_rough": {
+    "256": "5d06f5e79203af54",
+    "512": "ed09deb76610f33a"
+  },
+  "socks_heavy_normal": {
+    "256": "c33539772e120714",
+    "512": "ac24fe7b4bf9b60a"
+  },
+  "socks_heavy_rough": {
+    "256": "ad4e643dc36acac6",
+    "512": "4256b65e08e24967"
+  },
+  "socks_rib_normal": {
+    "256": "398b8ac14b695bae",
+    "512": "27abd27461bc38ca"
+  },
+  "socks_rib_rough": {
+    "256": "ad4e643dc36acac6",
+    "512": "4256b65e08e24967"
+  },
+  "stadium_asphalt_albedo": {
+    "256": "71485e07e0362406",
+    "512": "baaf2bd8f28d1667",
+    "1024": "1d0b3e1fca3adfd4"
+  },
+  "stadium_asphalt_normal": {
+    "256": "b34cadc161d915a3",
+    "512": "11127237a5e86c8c"
+  },
+  "stadium_asphalt_rough": {
+    "256": "7b0e32d8367871ff",
+    "512": "90f1e40162f7bddd"
+  },
+  "stadium_metal_albedo": {
+    "256": "9d1d3646b02d693a",
+    "512": "7cfd417941f77247",
+    "1024": "f1a2458090ca603c"
+  },
+  "stadium_metal_normal": {
+    "256": "6ab5061694e2c796",
+    "512": "4e7ab62a4db710df"
+  },
+  "stadium_metal_rough": {
+    "256": "bdcb9919d9b430a0",
+    "512": "10b3095e78023aed"
+  },
+  "stadium_seat_albedo": {
+    "256": "be7b4ccb81835e8a",
+    "512": "2e01cab6654c9b9b",
+    "1024": "9e434bbee72d0caa"
+  },
+  "stadium_seat_normal": {
+    "256": "0fc6fae45c245ec3",
+    "512": "bcbcd9f5fc6f2949"
+  },
+  "stadium_seat_rough": {
+    "256": "b7f9395b73bc2069",
+    "512": "0a6200381428f341"
+  },
+  "sweat_mask": {
+    "256": "cf1035a5b49d7ab8",
+    "512": "797f4c9bbd722024"
+  },
+  "sweat_normal": {
+    "256": "fd7e63657a644bee",
+    "512": "472ee8ec5fc873e2"
+  }
+}

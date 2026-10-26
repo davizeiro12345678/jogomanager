@@ -29,7 +29,7 @@ import {
   SurfaceContext,
   SurfaceStateContext,
 } from "@/game/graphics/surface-context-state";
-import type { SimView } from "@/game/sim";
+import type { SimView } from "@/game/sim-contracts";
 
 export const MatchSurfaceProvider = memo(function MatchSurfaceProvider({
   sim,

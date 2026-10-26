@@ -17,21 +17,24 @@ import { CUTSCENES } from "@/content/cutscenes";
 import { safeClub } from "@/game/squad";
 import type { ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
+import { useT } from "@/i18n/provider";
+import { sceneTitle } from "@/game/scene-localization";
+import { createTransferDealScene, createSponsorDealScene } from "@/game/business-cutscenes";
 import { CutsceneStage as Cutscene } from "./CutsceneStage";
 import { preloadCinematicStage, useCinematicPreload } from "./cinematic-loading";
 import "./studio.css";
 
 const look: ManagerLook = { skin: 2, hair: 2, hairColor: "#30231d", beard: 1, outfit: 1 };
 const examples = [
-  { art: "dressing", label: "Vestiário", hint: "Conversas de grupo", icon: Shirt },
-  { art: "press", label: "Coletiva", hint: "Sob os holofotes", icon: Mic2 },
-  { art: "arrival", label: "Chegada", hint: "A recepção da torcida", icon: BusFront },
-  { art: "board", label: "Diretoria", hint: "Decisões nos bastidores", icon: Building2 },
-  { art: "tunnel", label: "Túnel", hint: "Antes de entrar em campo", icon: DoorOpen },
-  { art: "trophy", label: "Taça", hint: "A noite da conquista", icon: Trophy },
-  { art: "training", label: "Treino", hint: "Trabalho com bola", icon: Activity },
-  { art: "gym", label: "Academia", hint: "Preparação e força", icon: Dumbbell },
-  { art: "medical", label: "Departamento médico", hint: "Cuidar de quem joga", icon: HeartPulse },
+  { art: "dressing", icon: Shirt },
+  { art: "press", icon: Mic2 },
+  { art: "arrival", icon: BusFront },
+  { art: "board", icon: Building2 },
+  { art: "tunnel", icon: DoorOpen },
+  { art: "trophy", icon: Trophy },
+  { art: "training", icon: Activity },
+  { art: "gym", icon: Dumbbell },
+  { art: "medical", icon: HeartPulse },
 ] as const;
 const searchable = (text: string) =>
   text
@@ -40,6 +43,7 @@ const searchable = (text: string) =>
     .toLowerCase();
 
 export default function CinematicStudio({ clubId = "fla" }: { clubId?: string }) {
+  const { t, lang } = useT();
   useCinematicPreload();
   const [scene, setScene] = useState<string | null>(null);
   const [selected, setSelected] = useState("derby-eve-talk");
@@ -52,62 +56,101 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
   const [reduceMotion, setReduceMotion] = useState(false);
   const [startPaused, setStartPaused] = useState(false);
   const club = safeClub(clubId);
-  const scenes = useMemo(() => Object.values(CUTSCENES), []);
+  const scenes = useMemo(() => {
+    const en = !lang.startsWith("pt");
+    const stages = ["negotiation", "signing", "presentation"] as const;
+    const demos = stages
+      .flatMap((stage) => [
+        createTransferDealScene(
+          {
+            dealId: `studio-${club.id}`,
+            clubName: club.name,
+            playerName: en ? "Demo player" : "Jogador de demonstração",
+            managerName: t("cinemaStudio.manager"),
+            fromName: en ? "Demo club" : "Clube de demonstração",
+            feeMillion: 8.5,
+            wageThousandWeekly: 35,
+            shirtNumber: 10,
+          },
+          stage,
+          lang,
+        ),
+        createSponsorDealScene(
+          {
+            dealId: `studio-${club.id}`,
+            clubName: club.name,
+            sponsorName: en ? "Demo sponsor" : "Patrocinador de demonstração",
+            managerName: t("cinemaStudio.manager"),
+            incomeMillionWeekly: 0.25,
+            currentRound: 1,
+            endsRound: 20,
+          },
+          stage,
+          lang,
+        ),
+      ])
+      .map((item) => ({ ...item, title: `${en ? "Demo" : "Demonstração"} — ${item.title}` }));
+    return [...Object.values(CUTSCENES), ...demos];
+  }, [club.id, club.name, lang, t]);
   const filtered = useMemo(
-    () => scenes.filter((item) => searchable(item.title).includes(searchable(query))),
-    [scenes, query],
+    () =>
+      scenes.filter((item) =>
+        searchable(`${sceneTitle(item, lang, t)} ${item.title}`).includes(searchable(query)),
+      ),
+    [scenes, query, lang, t],
   );
-  const selectedScene = CUTSCENES[selected];
+  const selectedScene = scenes.find((item) => item.id === selected);
   const open = (id: string) => {
     setOutcome("");
     setScene(id);
   };
   return (
-    <section className="studio-card" aria-label="Prévia das cenas cinematográficas">
+    <section className="studio-card" aria-label={t("cinemaStudio.previewLabel")}>
       <div className="cinema-intro">
         <div className="mr-auto">
           <p className="studio-kicker flex items-center gap-2">
             <Clapperboard size={16} />
-            Cinema da carreira
+            {t("cinemaStudio.title")}
           </p>
           <h2>
-            O futebol também acontece
+            {t("cinemaStudio.headlineStart")}
             <br />
-            fora das quatro linhas.
+            {t("cinemaStudio.headlineEnd")}
           </h2>
-          <p className="studio-hint">
-            Explore os ambientes, os exercícios, os olhares e os diálogos em uma cena 3D. Suas
-            escolhas aqui ficam apenas na prévia.
-          </p>
+          <p className="studio-hint">{t("cinemaStudio.description")}</p>
         </div>
-        <span className="studio-height">{scenes.length} cenas para explorar</span>
+        <span className="studio-height">
+          {t("cinemaStudio.sceneCount", { count: scenes.length })}
+        </span>
       </div>
       <div className="studio-toolbar cinema-toolbar">
         <label className="min-w-0 flex-1 basis-48 text-xs text-slate-400">
           <span className="flex items-center gap-2">
             <Search size={14} />
-            Buscar cena
+            {t("cinemaStudio.search")}
           </span>
           <input
             type="search"
             className="studio-input"
-            aria-label="Buscar cena"
-            placeholder="Clássico, contratação, título…"
+            aria-label={t("cinemaStudio.search")}
+            placeholder={t("cinemaStudio.searchPlaceholder")}
             value={query}
             onChange={(e) => {
               const value = e.target.value;
               setQuery(value);
               const first = scenes.find((item) =>
-                searchable(item.title).includes(searchable(value)),
+                searchable(`${sceneTitle(item, lang, t)} ${item.title}`).includes(
+                  searchable(value),
+                ),
               );
               if (first) setSelected(first.id);
             }}
           />
         </label>
         <label className="min-w-0 flex-1 basis-60 text-xs text-slate-400">
-          Cena cinematográfica
+          {t("cinemaStudio.scene")}
           <select
-            aria-label="Cena cinematográfica"
+            aria-label={t("cinemaStudio.scene")}
             className="studio-select"
             value={selected}
             disabled={filtered.length === 0}
@@ -115,7 +158,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
           >
             {filtered.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.title}
+                {sceneTitle(item, lang, t)}
               </option>
             ))}
           </select>
@@ -129,22 +172,26 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
           onClick={() => open(selected)}
         >
           <Play size={16} />
-          Ver cena
+          {t("cinemaStudio.play")}
         </button>
       </div>
       <p className="studio-hint px-4 pt-3" role="status">
         {filtered.length === 0
-          ? "Nenhuma cena encontrada. Experimente outra palavra."
+          ? t("cinemaStudio.noResults")
           : query
-            ? filtered.length + " cenas encontradas"
-            : selectedScene?.title + " · " + selectedScene?.lines.length + " falas"}
+            ? t("cinemaStudio.resultCount", { count: filtered.length })
+            : t("cinemaStudio.selectedDetail", {
+                title: selectedScene ? sceneTitle(selectedScene, lang, t) : "",
+                count: selectedScene?.lines.length ?? 0,
+              })}
       </p>
-      <div className="cinema-library" aria-label="Ambientes do cinema">
-        {examples.map(({ art, label, hint, icon: Icon }) => (
+      <div className="cinema-library" aria-label={t("cinemaStudio.environments")}>
+        {examples.map(({ art, icon: Icon }) => (
           <button
             type="button"
             key={art}
             className="cinema-card"
+            aria-pressed={selectedScene?.art === art}
             onClick={() => {
               const example =
                 art === "trophy"
@@ -160,13 +207,13 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
             }}
           >
             <Icon size={24} />
-            <strong>{label}</strong>
-            <span>{hint}</span>
+            <strong>{t(`cinemaStudio.environment.${art}.label`)}</strong>
+            <span>{t(`cinemaStudio.environment.${art}.hint`)}</span>
           </button>
         ))}
       </div>
       <details className="cinema-config">
-        <summary>Ajustes de exibição e encenação</summary>
+        <summary>{t("cinemaStudio.settings")}</summary>
         <div className="studio-fields">
           <label className="flex items-center gap-2">
             <input
@@ -174,7 +221,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
               checked={autoPlay}
               onChange={(e) => setAutoPlay(e.target.checked)}
             />
-            Reprodução automática
+            {t("cinemaStudio.autoPlay")}
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -182,7 +229,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
               checked={narration}
               onChange={(e) => setNarration(e.target.checked)}
             />
-            Ouvir diálogos
+            {t("cinemaStudio.narration")}
           </label>
           <label className="flex items-center gap-2">
             <input
@@ -190,35 +237,35 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
               checked={reduceMotion}
               onChange={(e) => setReduceMotion(e.target.checked)}
             />
-            Reduzir movimento
+            {t("cinemaStudio.reduceMotion")}
           </label>
           <label>
-            Qualidade
+            {t("cinemaStudio.quality")}
             <select
-              aria-label="Qualidade do cinema"
+              aria-label={t("cinemaStudio.qualityLabel")}
               value={quality}
               onChange={(e) => setQuality(e.target.value as QualityLevel | "auto")}
               className="studio-select"
             >
-              <option value="auto">Qualidade automática</option>
-              <option value="alta">Mais detalhes</option>
-              <option value="media">Equilibrada</option>
-              <option value="baixa">Mais leve</option>
+              <option value="auto">{t("cinemaStudio.qualityAuto")}</option>
+              <option value="alta">{t("cinemaStudio.qualityHigh")}</option>
+              <option value="media">{t("cinemaStudio.qualityMedium")}</option>
+              <option value="baixa">{t("cinemaStudio.qualityLow")}</option>
             </select>
           </label>
           <label>
-            Momento da encenação
+            {t("cinemaStudio.moment")}
             <select
-              aria-label="Momento da encenação"
+              aria-label={t("cinemaStudio.moment")}
               value={previewTime}
               onChange={(e) => setPreviewTime(Number(e.target.value))}
               className="studio-select"
             >
-              <option value={0}>Início da encenação</option>
-              <option value={1.972}>Contato do chute · 1,97 s</option>
-              <option value={8}>Olhares e pés · 8 s</option>
-              <option value={13}>Posturas e braços · 13 s</option>
-              <option value={17}>Levantar do banco · 17 s</option>
+              <option value={0}>{t("cinemaStudio.momentStart")}</option>
+              <option value={1.972}>{t("cinemaStudio.momentContact")}</option>
+              <option value={8}>{t("cinemaStudio.momentGaze")}</option>
+              <option value={13}>{t("cinemaStudio.momentPosture")}</option>
+              <option value={17}>{t("cinemaStudio.momentRise")}</option>
             </select>
           </label>
           <label className="flex items-center gap-2">
@@ -227,7 +274,7 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
               checked={startPaused}
               onChange={(e) => setStartPaused(e.target.checked)}
             />
-            Pausar ao abrir
+            {t("cinemaStudio.pauseOnOpen")}
           </label>
         </div>
       </details>
@@ -239,19 +286,20 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
       {scene && (
         <Cutscene
           scene={scene}
+          sceneData={scenes.find((item) => item.id === scene)}
           look={look}
           cinematic
           accent={club.primary}
           accent2={club.secondary}
           club={club}
-          managerName="Treinador"
+          managerName={t("cinemaStudio.manager")}
           renderQuality={quality}
           previewTime={previewTime}
           startPaused={startPaused}
           autoPlay={autoPlay}
           narrate={narration}
           reduceMotion={reduceMotion}
-          onEffect={() => setOutcome("Resposta experimentada. A prévia não altera sua carreira.")}
+          onEffect={() => setOutcome(t("cinemaStudio.choicePreview"))}
           onDone={() => setScene(null)}
         />
       )}

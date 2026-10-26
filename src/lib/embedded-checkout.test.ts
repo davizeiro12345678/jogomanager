@@ -1,16 +1,13 @@
 import type { StripeEmbeddedCheckoutOptions } from "@stripe/stripe-js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  checkoutErrorMessage,
-  startEmbeddedCheckout,
-  withPaymentTimeout,
-} from "./embedded-checkout";
+import { startEmbeddedCheckout, withPaymentTimeout } from "./embedded-checkout";
 
 const cleanups: Array<() => void> = [];
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -51,9 +48,7 @@ describe("embedded payment lifecycle", () => {
     f.load.mockRejectedValue(new Error("Falha ao carregar Stripe.js"));
     f.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.error).toHaveBeenCalledWith(
-      "Não foi possível abrir o pagamento seguro. Tente novamente.",
-    );
+    expect(f.error).toHaveBeenCalledWith("Falha ao carregar Stripe.js");
     expect(f.fetchSecret).not.toHaveBeenCalled();
   });
 
@@ -62,9 +57,7 @@ describe("embedded payment lifecycle", () => {
     f.create.mockRejectedValue(new Error("A sessão de pagamento expirou"));
     f.start();
     await vi.advanceTimersByTimeAsync(0);
-    expect(f.error).toHaveBeenCalledWith(
-      "A sessão de pagamento expirou. Volte à loja para abrir uma nova tentativa.",
-    );
+    expect(f.error).toHaveBeenCalledWith("A sessão de pagamento expirou");
     expect(f.instance.mount).not.toHaveBeenCalled();
   });
 
@@ -73,7 +66,7 @@ describe("embedded payment lifecycle", () => {
     const stop = f.start();
     await vi.advanceTimersByTimeAsync(0);
     expect(f.instance.mount).toHaveBeenCalledWith(f.element);
-    expect(f.phase).toHaveBeenCalledWith("ready");
+    expect(f.phase).not.toHaveBeenCalledWith("ready");
     const options = f.create.mock.calls[0]![0];
     expect(await options.fetchClientSecret!()).toBe("cs_test_fixture_secret_fixture");
     options.onAnalyticsEvent!({
@@ -87,6 +80,70 @@ describe("embedded payment lifecycle", () => {
     await vi.advanceTimersByTimeAsync(200);
     expect(f.error).not.toHaveBeenCalled();
     stop();
+    expect(f.instance.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts a loaded visible Stripe iframe if the analytics event is not delivered", async () => {
+    const f = fixture();
+    let onMutation: MutationCallback | undefined;
+    class MutationObserverMock {
+      constructor(callback: MutationCallback) {
+        onMutation = callback;
+      }
+      observe() {}
+      disconnect() {}
+      takeRecords(): MutationRecord[] {
+        return [];
+      }
+    }
+    vi.stubGlobal("MutationObserver", MutationObserverMock);
+
+    const iframe = Object.assign(new EventTarget(), {
+      getBoundingClientRect: () => ({ height: 400 }),
+    }) as unknown as HTMLIFrameElement;
+    const querySelector = vi.fn((_selector: string): Element | null => null);
+    const element = { querySelector } as unknown as HTMLElement;
+    cleanups.push(
+      startEmbeddedCheckout({
+        element,
+        loadStripe: f.load,
+        fetchClientSecret: f.fetchSecret,
+        onPhase: f.phase,
+        onError: f.error,
+        timeoutMs: 100,
+      }),
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.phase).not.toHaveBeenCalledWith("ready");
+    querySelector.mockReturnValue(iframe);
+    onMutation?.([], {} as MutationObserver);
+    expect(f.phase).not.toHaveBeenCalledWith("ready");
+    iframe.dispatchEvent(new Event("load"));
+    expect(f.phase).toHaveBeenLastCalledWith("ready");
+    expect(f.error).not.toHaveBeenCalled();
+  });
+  it("keeps the timeout and retry path for an inserted iframe that never loads", async () => {
+    const f = fixture();
+    const iframe = Object.assign(new EventTarget(), {
+      getBoundingClientRect: () => ({ height: 400 }),
+    }) as unknown as HTMLIFrameElement;
+    cleanups.push(
+      startEmbeddedCheckout({
+        element: { querySelector: () => iframe } as unknown as HTMLElement,
+        loadStripe: f.load,
+        fetchClientSecret: f.fetchSecret,
+        onPhase: f.phase,
+        onError: f.error,
+        timeoutMs: 100,
+      }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.phase).not.toHaveBeenCalledWith("ready");
+    await vi.advanceTimersByTimeAsync(100);
+    expect(f.error).toHaveBeenCalledWith(expect.stringContaining("demorou"));
+    iframe.dispatchEvent(new Event("load"));
+    expect(f.phase).not.toHaveBeenCalledWith("ready");
     expect(f.instance.destroy).toHaveBeenCalledTimes(1);
   });
 
@@ -153,12 +210,29 @@ describe("embedded payment lifecycle", () => {
     expect(f.error).toHaveBeenCalledWith(expect.stringContaining("Entre novamente"));
     expect(f.create).not.toHaveBeenCalled();
   });
-
-  it("does not reflect a provider diagnostic or secret into the payment interface", () => {
-    const message = checkoutErrorMessage(
-      new Error("Stripe trace=req_123 private token=do-not-show"),
+  it("does not reveal provider exceptions or embedded checkout secrets", async () => {
+    const f = fixture();
+    f.fetchSecret.mockRejectedValue(
+      new Error("SQL payment_sessions cs_live_fixture_secret_internal"),
     );
-    expect(message).toBe("Não foi possível abrir o pagamento seguro. Tente novamente.");
-    expect(message).not.toContain("req_123");
+    f.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.error).toHaveBeenCalledWith(
+      "Não foi possível abrir o pagamento seguro. Tente novamente.",
+    );
+  });
+  it("notifies a mount failure even when the SDK throws during destroy", async () => {
+    const f = fixture();
+    f.instance.mount.mockImplementation(() => {
+      throw new Error("private provider failure");
+    });
+    f.instance.destroy.mockImplementation(() => {
+      throw new Error("SDK teardown failed");
+    });
+    f.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(f.error).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(f.instance.destroy).toHaveBeenCalledTimes(1);
   });
 });

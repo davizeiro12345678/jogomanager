@@ -18,9 +18,14 @@ if (mode === "fixture") {
   );
   const fixture = readFileSync(fixturePath, "utf8");
   const checkpoints = [];
+  let executionContract;
   for (const seed of ["bench-setup", "setup-parity-1", "setup-parity-2"]) {
     const { home, away } = JSON.parse(fixture);
     const sim = new MatchSim(home, away, seed);
+    const execution = sim.executionContract();
+    if (executionContract && JSON.stringify(executionContract) !== JSON.stringify(execution))
+      throw new Error("Execution contract changed between deterministic fixture seeds");
+    executionContract = execution;
     for (let tick = 0; tick <= 1800; tick++) {
       if (tick % 300 === 0)
         checkpoints.push({
@@ -61,6 +66,7 @@ if (mode === "fixture") {
           cpu: os.cpus()[0]?.model,
         },
         fixtureSha256: createHash("sha256").update(fixture).digest("hex"),
+        executionContract,
         warmup,
         iterations,
         checksum,

@@ -229,7 +229,7 @@ describe("public football queries", () => {
         expect(url.searchParams.get("source_kind")).toBe("eq.player");
         expect(url.searchParams.get("canonical_player_id")).toBe("is.null");
         expect(url.searchParams.get("select")).toBe(
-          "id,source,source_id,birth_date,name,position,age,shirt_number,nationality,overall,photo_url,club_id",
+          "id,source,source_id,source_kind,canonical_player_id,birth_date,name,position,age,shirt_number,nationality,overall,photo_url,club_id",
         );
         const visible = records.filter(
           (row) => row.source_kind === "player" && row.canonical_player_id === null,

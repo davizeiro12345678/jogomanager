@@ -25,7 +25,9 @@ O agregado **Critical performance release gate** exige sucesso dos jobs de verif
 
 `npm run perf:match-setup -- DIRETORIO_BASE DIRETORIO_CANDIDATO SAIDA` exige o Node de `.nvmrc` e a mesma árvore de dependências. O runner serializa uma única fixture de Flamengo × Palmeiras e a reutiliza nas duas revisões. A ordem é base, candidato, candidato, base. Cada passagem aquece 3.000 construções e coleta 31 lotes de 1.000 construções.
 
-Os checkpoints de três sementes em sete instantes devem coincidir. O relatório inclui hashes da fixture e do lockfile, ambiente, amostras brutas e violações. O bootstrap caracteriza a variabilidade observada no protocolo; não certifica representatividade de todo hardware nem transforma CPU do construtor em tempo de carregamento ou FPS.
+Os checkpoints de três sementes em sete instantes devem coincidir entre as duas repetições independentes de cada revisão. Quando o contrato de execução tem a mesma revisão, também devem coincidir entre base e candidato. Uma transição explícita entre revisões conhecidas e adjacentes da física permite resultados diferentes entre versões: o próprio contrato rejeita a retomada de checkpoints antigos nesse caso. A comparação continua exigindo os mesmos backends, fixture e ambiente, além de igualdade exata nas repetições de cada versão; não aceita checkpoints ausentes, duplicados, troca de semente ou revisão desconhecida. O limite de CPU permanece inalterado.
+
+O relatório inclui os dois contratos de execução, a política de comparação, hashes da fixture e do lockfile, ambiente, amostras brutas e violações. Essa distinção não amplia a compatibilidade dos saves ou replays em execução. O bootstrap caracteriza a variabilidade observada no protocolo; não certifica representatividade de todo hardware nem transforma CPU do construtor em tempo de carregamento ou FPS.
 
 ## Limites gráficos por perfil
 
@@ -33,10 +35,12 @@ Os valores são definidos em `src/game/contracts/graphics-profile.ts` e continua
 
 | Perfil | FPS alvo | Frame time p95 máximo | Draw calls máximas | Triângulos máximos |
 | ------ | -------: | --------------------: | -----------------: | -----------------: |
-| Baixa  |       60 |                 22 ms |                 90 |            180.000 |
-| Média  |       60 |                 20 ms |                170 |            420.000 |
-| Alta   |       45 |                 28 ms |                260 |            850.000 |
+| Baixa  |       60 |                 15 ms |                 90 |            180.000 |
+| Média  |       60 |                 15 ms |                170 |            420.000 |
+| Alta   |       60 |                 15 ms |                260 |            850.000 |
 | Cinema |       30 |               33,3 ms |                340 |          1.200.000 |
+
+Esses valores são os alvos configurados para o controlador; a atualização de 22/10/2026 tornou os alvos de frame time e do perfil Alta mais exigentes, sem aumentar os limites de geometria ou chamadas de desenho. A configuração não comprova que um dispositivo alcançou o alvo.
 
 O governador reduz o trabalho visual quando há pressão. Testes de contrato e imagens de um navegador com renderização por software não comprovam esses limites em um aparelho físico. Mudanças do rig ou do renderizador exigem comparação no mesmo cenário, semente, resolução, qualidade, dispositivo e caminho gráfico, com erros e perdas visuais examinados. Registrar explicitamente quando essa certificação não foi realizada.
 

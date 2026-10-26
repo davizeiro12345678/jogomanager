@@ -37,6 +37,16 @@ export type Quality = "alta" | "media" | "baixa";
 
 /* -------------------------------------------------------------------------- */
 
+export interface RenderedPlayerAppearance {
+  hairStyle: PlayerLook["hairStyle"];
+  revision: string;
+  root: string;
+  meshes: number;
+  vertices: number;
+  top: number;
+  bridge?: string;
+}
+
 export interface RigProps {
   player: SimPlayer;
   sim: SimView;
@@ -51,6 +61,7 @@ export interface RigProps {
   /** Studio-only presentation override; never changes the simulation/save. */
   lookOverride?: PlayerLook | undefined;
   previewClip?: ClipName | undefined;
+  previewRevision?: string | undefined;
   /** Dense face topology is reserved for the isolated portrait preview. */
   portrait?: boolean;
   /** Match-only topology LOD; materials and animation retain the selected quality. */
@@ -60,4 +71,5 @@ export interface RigProps {
   clothPhysics?: boolean;
   /** Inspection cameras follow actual posed bones, never simulation positions. */
   onPoseReady?: ((skin: RigSkin) => void) | undefined;
+  onAppearanceReady?: ((appearance: RenderedPlayerAppearance) => void) | undefined;
 }

@@ -13,7 +13,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 
 import { censusRef } from "@/game/scene-census";
 import type { TimeOfDay } from "@/game/matchday";
-import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 
 const BIRDS = 7;
 const PAPERS = 22;
@@ -28,6 +28,7 @@ function gullGeometry() {
     return g;
   };
   const merged = mergeGeometries([wing(-1), wing(1)], false)!;
+  merged.scale(0.46, 0.46, 0.46);
   return merged;
 }
 
@@ -98,7 +99,7 @@ export const AmbientLife = memo(function AmbientLife({ time }: { time: TimeOfDay
     [gull, mothGeo],
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const t = clock.elapsedTime;
     if (birds.current && !night) {
       for (let i = 0; i < BIRDS; i++) {
@@ -113,12 +114,18 @@ export const AmbientLife = memo(function AmbientLife({ time }: { time: TimeOfDay
         dummy.rotation.set(0, -a + (b.speed > 0 ? 0 : Math.PI), 0);
         dummy.rotateZ(0.18 * Math.sign(b.speed));
         dummy.rotateX(Math.sin(t * b.flap + i) * 0.25);
+        // A bird close to a broadcast lens read as a large black object over
+        // the pitch. Preserve distant ambience without obscuring the play.
+        dummy.scale.setScalar(
+          THREE.MathUtils.smoothstep(camera.position.distanceTo(dummy.position), 22, 55),
+        );
         dummy.updateMatrix();
         birds.current.setMatrixAt(i, dummy.matrix);
       }
       birds.current.instanceMatrix.needsUpdate = true;
     }
     if (papers.current) {
+      dummy.scale.setScalar(1);
       for (let i = 0; i < PAPERS; i++) {
         const p = litter[i]!;
         // deriva do vento de oeste para leste, reciclando na borda

@@ -7,6 +7,8 @@
 import { EXTRA_CLIPS } from "./animation-extra";
 import { EXTRA2_CLIPS } from "./animation-extra2";
 import { EXTRA3_CLIPS } from "./animation-extra3";
+import { FOOTBALL_SEQUENCE_CLIPS } from "./football-sequences";
+import { ATHLETIC_CLIPS } from "./animation-athletic";
 import {
   JOINTS,
   emptyPose,
@@ -852,7 +854,14 @@ export const BASE_CLIPS = {
 } satisfies Record<string, Clip>;
 
 /** catálogo completo: clipes base + pacotes extras */
-const CLIPS = { ...BASE_CLIPS, ...EXTRA_CLIPS, ...EXTRA2_CLIPS, ...EXTRA3_CLIPS };
+const CLIPS = {
+  ...BASE_CLIPS,
+  ...EXTRA_CLIPS,
+  ...EXTRA2_CLIPS,
+  ...EXTRA3_CLIPS,
+  ...ATHLETIC_CLIPS,
+  ...FOOTBALL_SEQUENCE_CLIPS,
+};
 
 export type ClipName = keyof typeof CLIPS;
 
@@ -955,7 +964,63 @@ const ACTION_CLIP: Record<PlayerAction, ClipName> = {
   elastico: "elastico",
 };
 
+/** Authored alternatives for generic events. Selection is deterministic for the
+ * lifetime of an action, so the pose never changes halfway through. */
+const ACTION_VARIANTS = {
+  shot: ["shotLow", "shotPower", "shotPlaced"],
+  pass: ["passShort"],
+  save: ["gkSaveLow", "gkDiveLow", "keeperParryRecover"],
+  distribute: ["gkDistribute", "keeperRiseDistribute"],
+  trap: ["trap", "receiveOriented"],
+  duel: ["shoulderDuel", "shieldPivot"],
+  decelerate: ["decelerate", "brakeCut90"],
+  backpedal: ["backpedal", "backpedalBurst"],
+  shotPlaced: ["shotPlaced", "offBalanceFinish"],
+  headClear: ["headClear", "aerialLanding"],
+  saveHigh: ["gkSaveHigh", "gkDiveHigh"],
+  tackle: ["standTackle", "intercept", "tackleRecover"],
+  celebrate: [
+    "celebrateArms",
+    "celebrateArmsWide",
+    "celebrateFistPump",
+    "celebratePoint",
+    "celebrateHeart",
+    "celebrateCalm",
+    "celebrateShirtPull",
+    "celebrateSiuu",
+    "celebrateBadgeKiss",
+    "celebrateSalute",
+    "celebrateDanceStep",
+    "celebrateSpin",
+    "celebrateRockCradle",
+    "celebrateCameraPose",
+  ],
+  celebrateRun: ["celebrateRun", "celebrateRunAway", "celebrateCornerFlag"],
+  kneeSlide: ["kneeSlide", "celebrateKneeSlide", "celebrateSlidingKnees", "celebrateSlideStop"],
+  hug: ["groupHug", "celebrateJumpHug", "celebrateTeamLine", "celebrateArmsWide"],
+  dejected: ["dejected", "missSighs", "disallowedShock"],
+} as const satisfies Partial<Record<PlayerAction, readonly ClipName[]>>;
+
+function actionClip(action: PlayerAction, c: SelectCtx): ClipName {
+  if (action === "trap" && (c.ballHeight ?? 0) > 1.05) return "chestControlExit";
+  if (action === "trap" && (c.ballHeight ?? 0) > 0.5) return "thighCushion";
+  if (action === "pass" && c.speed > 2.2) return "runningPassRecover";
+  const variants = (ACTION_VARIANTS as Partial<Record<PlayerAction, readonly ClipName[]>>)[action];
+  if (!variants?.length) return ACTION_CLIP[action];
+  const elapsed =
+    c.actionDur !== undefined && c.actionT !== undefined ? Math.max(0, c.actionDur - c.actionT) : 0;
+  // Reconstructing the same event can land a few ulps either side of a half
+  // tick. Keep the established tie bias so its clip survives the whole action.
+  const event = c.actionSeed ?? Math.round((c.time - elapsed) * 30 + 1e-6);
+  let hash = Math.imul((c.seed | 0) ^ Math.imul(event | 0, 0x9e3779b1), 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
+  return variants[(hash >>> 0) % variants.length]!;
+}
+
 export interface SelectCtx {
+  ballHeight?: number;
   isGK: boolean;
   action: PlayerAction | null;
   actionT?: number;
@@ -977,33 +1042,9 @@ function pick<T>(list: T[], c: SelectCtx, every = 4): T {
   return list[i]!;
 }
 
-/** Keep a presentation variant for the whole action, even across a time
- * bucket boundary. These optional fields do not change simulation state. */
-function pickAction<T>(list: T[], c: SelectCtx): T {
-  const elapsed =
-    c.actionDur !== undefined && c.actionT !== undefined ? Math.max(0, c.actionDur - c.actionT) : 0;
-  const event = c.actionSeed ?? Math.round((c.time - elapsed) * 30 + 1e-6);
-  let hash = Math.imul((c.seed | 0) ^ Math.imul(event | 0, 0x9e3779b1), 0x85ebca6b);
-  hash ^= hash >>> 13;
-  return list[(hash >>> 0) % list.length]!;
-}
-
 export function selectClip(c: SelectCtx): ClipName {
-  // defesas variam entre a saída clássica e o mergulho do novo pacote: o
-  // sorteio é lento, então cada defesa usa um clipe só do início ao fim
-  if (c.action === "save") return pickAction<ClipName>(["gkSaveLow", "gkDiveLow"], c);
-  if (c.action === "saveHigh") return pickAction<ClipName>(["gkSaveHigh", "gkDiveHigh"], c);
-  if (c.action === "celebrate")
-    return pickAction<ClipName>(
-      ["celebrateArms", "celebrateArmsWide", "celebrateFistPump", "celebrateBadgeKiss"],
-      c,
-    );
-  if (c.action === "celebrateRun")
-    return pickAction<ClipName>(["celebrateRun", "celebrateSiuu", "celebrateSlideStop"], c);
-  if (c.action === "kneeSlide") return pick<ClipName>(["kneeSlide", "celebrateKneeSlide"], c, 2.4);
-  if (c.action === "hug")
-    return pickAction<ClipName>(["groupHug", "celebrateJumpHug", "celebrateTeamLine"], c);
-  if (c.action) return ACTION_CLIP[c.action];
+  // The event seed holds the keeper's variant through takeoff, contact and landing.
+  if (c.action) return actionClip(c.action, c);
 
   if (c.isGK) {
     if (c.speed > 5) return "gkSweeper";
@@ -1087,11 +1128,19 @@ export function selectClip(c: SelectCtx): ClipName {
 
   if (sp < 0.35) {
     if (c.defending && c.ballDist < 18)
-      return pick<ClipName>(["mark", "markTight", "jockey", "checkShoulder"], c, 3);
+      return pick<ClipName>(["mark", "markTight", "readyPress", "jockey", "checkShoulder"], c, 3);
     if (c.stamina < 30)
       return pick<ClipName>(["catchBreathKnees", "handsOnHips", "tired", "missSighs"], c, 3);
     return pick<ClipName>(
-      ["idle", "breathe", "weightShift", "handsOnHips", "encourageTeammate", "checkShoulder"],
+      [
+        "idle",
+        "breathe",
+        "weightShift",
+        "receiveScan",
+        "handsOnHips",
+        "encourageTeammate",
+        "checkShoulder",
+      ],
       c,
     );
   }

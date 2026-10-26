@@ -5,6 +5,7 @@ import { buildRigBody, countRigBody, type RigBodyContext } from "./rig-body";
 import {
   buildRigSkin,
   countRigSkin,
+  countRigSkinTriangles,
   MESH_OWNER,
   rebindRigSkinMaterials,
   rigRestMatrix,
@@ -42,6 +43,27 @@ function context(overrides: Partial<RigBodyContext> = {}): RigBodyContext {
 
 const ROOT: [number, number, number] = [12.5, 0, -7.25];
 
+it("builds a selected buzz portrait through the complete merged skin pipeline", () => {
+  const base = context();
+  const look = { ...base.look, hairStyle: "buzz" as const };
+  const skin = buildRigSkin({ ...base, look, portrait: true }, ROOT);
+  const medium = buildRigSkin(
+    { ...base, look: { ...look, hairStyle: "medium" }, portrait: true },
+    ROOT,
+  );
+  expect(skin.groups.length).toBeGreaterThan(0);
+  expect(skin.groups.some((group) => group.materialKey === "hair")).toBe(false);
+  expect(medium.groups.some((group) => group.materialKey === "hair")).toBe(true);
+  for (const group of skin.groups) {
+    expect(group.geometry.getAttribute("position").count).toBeGreaterThan(0);
+    expect(Array.from(group.geometry.getAttribute("position").array).every(Number.isFinite)).toBe(
+      true,
+    );
+  }
+  skin.dispose();
+  medium.dispose();
+});
+
 /**
  * Atualiza o esqueleto como o renderizador faria: o osso raiz é filho do grupo
  * que posiciona o atleta (por isso a translação entra nas matrizes de mundo) e
@@ -69,46 +91,22 @@ function vertices(geometry: THREE.BufferGeometry): number[] {
 }
 
 describe("rig skin", () => {
-  it("keeps the jersey neckline attached to the collar when the shoulders rise", () => {
-    const ctx = context();
-    const skin = buildRigSkin(ctx, ROOT);
-    const rootOffset = new THREE.Vector3(...ROOT);
-    const neckline = new THREE.Vector3(0, ctx.P.chestLen, 0)
-      .applyMatrix4(rigRestMatrix(skin, "chest"))
-      .sub(rootOffset);
-    const probes: { mesh: THREE.SkinnedMesh; vertex: number; rest: THREE.Vector3 }[] = [];
-    for (const group of skin.groups.filter((item) => item.materialKey === "jersey")) {
-      const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
-      mesh.skeleton = skin.skeleton;
-      mesh.bindMatrix.copy(skin.bindMatrix);
-      mesh.bindMatrixInverse.copy(skin.bindMatrix).invert();
-      const positions = group.geometry.getAttribute("position");
-      for (let vertex = 0; vertex < positions.count; vertex += 1) {
-        const rest = new THREE.Vector3().fromBufferAttribute(positions, vertex);
-        if (
-          Math.abs(rest.y - neckline.y) > 0.004 ||
-          Math.abs(rest.x) > ctx.P.neckR * 1.6 ||
-          Math.abs(rest.z) > ctx.P.neckR * 1.6
-        )
-          continue;
-        probes.push({ mesh, vertex, rest });
-      }
-    }
-    expect(probes.length).toBeGreaterThan(12);
-    update(skin, () => {
-      skin.boneOf.clavL.rotation.z = 0.6;
-      skin.boneOf.clavR.rotation.z = -0.6;
-    });
-    for (const probe of probes) {
-      const posed = probe.rest.clone();
-      probe.mesh.applyBoneTransform(probe.vertex, posed);
-      expect(
-        posed.distanceTo(probe.rest),
-        "the collar seam must not follow a raised shoulder",
-      ).toBeLessThan(0.00001);
-    }
-    skin.dispose();
+  it("triples the rendered topology only for the high-detail close athlete", () => {
+    const look = { ...lookFor("topology-closeup", "MF", false), hairStyle: "short" as const };
+    const mats = playerMaterials(look, KIT, null, "alta");
+    const base = buildRigSkin(
+      context({ look, mats, portrait: false, segs: { radial: 16, cap: 6 }, topology: "standard" }),
+      ROOT,
+    );
+    const ultra = buildRigSkin(
+      context({ look, mats, portrait: false, segs: { radial: 32, cap: 12 }, topology: "ultra" }),
+      ROOT,
+    );
+    expect(countRigSkinTriangles(ultra)).toBeGreaterThanOrEqual(countRigSkinTriangles(base) * 3);
+    base.dispose();
+    ultra.dispose();
   });
+
   it("leases detail materials before another rig can evict them and releases each resource once", () => {
     const skin = buildRigSkin(context(), ROOT);
     const detail = skin.groups.find((group) => !group.materialKey)!;

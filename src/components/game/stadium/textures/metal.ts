@@ -58,7 +58,7 @@ function makeBrushed() {
     const y = rand() * 512;
     const r = 6 + rand() * 40;
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(96,72,48,${0.05 + rand() * 0.16})`);
+    g.addColorStop(0, `rgba(96,72,48,${0.035 + rand() * 0.1})`);
     g.addColorStop(1, "rgba(96,72,48,0)");
     ctx.fillStyle = g;
     ctx.beginPath();

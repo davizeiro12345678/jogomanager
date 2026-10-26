@@ -2,7 +2,8 @@
  * Cliente do Web Worker de simulação, com retorno automático para a thread
  * principal se o navegador não suportar workers (ou se o worker falhar).
  */
-import { advanceRound, type MatchPerformance } from "./career";
+import type { MatchPerformance } from "./career";
+import { initialMatchSnapshot } from "./sim-initial-view";
 import type { AutoWeek } from "./autoplay";
 import {
   WorkerMatchView,
@@ -17,7 +18,9 @@ import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
   MATCH_SIMULATION_TICK_LIMIT,
-  MatchSim,
+} from "./sim-constants";
+import {
+  type MatchSim,
   type Side,
   type TeamSetup,
   type TeamTalkKind,
@@ -33,11 +36,9 @@ import type { Player, Tactics } from "./types";
 import type { WeatherKind } from "./sim-rules";
 import { LiveSnapshotDecoder } from "./live-transport";
 import { reportSilent } from "../lib/report-silent";
-import { recoverMatch } from "./match-recovery";
 import { LIVE_CONTROL_RESPONSE_TIMEOUT_MS, validMatchCommand } from "./match-command-validation";
 import { MAX_PENDING_SIMULATION_COMMANDS } from "./sequential-worker-queue";
 import { initializeMatchExecution } from "./match-execution";
-import { autoSeasonCooperative } from "./season-cooperative";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -157,6 +158,7 @@ export interface LiveMatchController {
   isWorker: boolean;
   pause(paused: boolean): void;
   setSpeed(speed: number): void;
+  setAnalyticsVisible(visible: boolean): void;
   setTactics(side: Side, tactics: Tactics): void;
   talk(side: Side, kind: TeamTalkKind): Promise<boolean>;
   substitute(side: Side, outPid: string, incoming: Player): Promise<boolean>;
@@ -215,15 +217,7 @@ function createLiveMatchWorker(telemetry: boolean) {
 }
 
 function bootstrapView(view: WorkerMatchView, options: LiveMatchOptions): void {
-  const sim = new MatchSim(options.home, options.away, options.seed, {
-    knockout: options.knockout,
-    weather: options.weather,
-  });
-  try {
-    view.apply(snapshotMatch(sim, 0));
-  } finally {
-    sim.dispose();
-  }
+  view.apply(initialMatchSnapshot(options.home, options.away, options.seed, options.weather));
 }
 
 /**
@@ -237,6 +231,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   bootstrapView(view, options);
   let liveWorker: Worker | null = null;
   let localSim: MatchSim | null = null;
+  let analyticsVisible = false;
   let localTimer: ReturnType<typeof setInterval> | null = null;
   let localSkipTimer: ReturnType<typeof setTimeout> | null = null;
   let localTick: (() => void) | null = null;
@@ -249,6 +244,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   let latestState: LiveResult | LiveSnapshot | null = null;
   const checkpoints = new Map<number, MatchCheckpoint>();
   let recovering = false;
+  let skipAfterRecovery = false;
   const initializationAbort = new AbortController();
   const deferredTactics = new Map<Side, Tactics>();
   const pendingCommands = new Set<() => void>();
@@ -259,6 +255,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   const tacticsRequests = new Map<number, { side: Side; tactics: Tactics; pending: boolean }>();
   const snapshotTelemetry = options.telemetry ? createSnapshotTelemetryTracker() : null;
   const decoder = new LiveSnapshotDecoder();
+  let consecutiveDecodeFailures = 0;
   let recoveryBytes = 0;
 
   const apply = (
@@ -270,6 +267,14 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     const applyStartedAt = snapshotTelemetry ? performance.now() : 0;
     const transport = snapshotTelemetry?.sample(wire, applyStartedAt);
     view.apply(state);
+    for (const side of ["home", "away"] as const) {
+      let pendingTactics: Tactics | undefined;
+      for (const request of tacticsRequests.values())
+        if (request.side === side && request.pending) pendingTactics = request.tactics;
+      if (state.tactics && !pendingTactics)
+        confirmedTactics[side] = { id: command, tactics: structuredClone(state.tactics[side]) };
+      if (pendingTactics) (side === "home" ? view.home : view.away).tactics = pendingTactics;
+    }
     if (transport) {
       const sample: LiveMatchTelemetrySample = {
         source,
@@ -372,6 +377,28 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     });
   };
 
+  const finishLocalMatch = () => {
+    if (!localSim || disposed) return;
+    stopLocal();
+    let guard = 0;
+    const finishInChunks = () => {
+      if (!localSim || disposed) return;
+      const end = Math.min(guard + 240, MATCH_SIMULATION_TICK_LIMIT);
+      while (!localSim.finished && guard < end) {
+        localSim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+        guard++;
+      }
+      if (localSim.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
+        sequence += 1;
+        apply(resultMatch(localSim, sequence), "fallback");
+        localSkipTimer = null;
+        return;
+      }
+      localSkipTimer = setTimeout(finishInChunks, 0);
+    };
+    finishInChunks();
+  };
+
   const startFallback = (reason?: string) => {
     cancelPendingCommands();
     for (const id of [...tacticsRequests.keys()]) settleTactics(id, false);
@@ -390,7 +417,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         return;
       }
       for (const [side, tactics] of deferredTactics) {
-        (side === "home" ? restored.home : restored.away).tactics = { ...tactics };
+        restored.applyTacticalCommand(side, tactics);
       }
       deferredTactics.clear();
       for (const side of ["home", "away"] as const) {
@@ -400,7 +427,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       }
       recovering = false;
       localSim = restored;
-      apply(snapshotMatch(localSim, ++sequence), "fallback");
+      apply(snapshotMatch(localSim, ++sequence, undefined, true, analyticsVisible), "fallback");
       let accumulator = 0;
       localLast = performance.now();
       localTick = () => {
@@ -416,12 +443,17 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         }
         sequence += 1;
         apply(
-          localSim.finished ? resultMatch(localSim, sequence) : snapshotMatch(localSim, sequence),
+          localSim.finished
+            ? resultMatch(localSim, sequence)
+            : snapshotMatch(localSim, sequence, undefined, true, analyticsVisible),
           "fallback",
         );
         if (localSim.finished) stopLocal();
       };
-      if (!localPaused) localTimer = setInterval(localTick, 100);
+      if (skipAfterRecovery) {
+        skipAfterRecovery = false;
+        finishLocalMatch();
+      } else if (!localPaused) localTimer = setInterval(localTick, 100);
     };
     if (latestState !== null) {
       const confirmed = latestState;
@@ -438,7 +470,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         return;
       }
       recovering = true;
-      void recoverMatch(checkpoint, confirmed, () => disposed)
+      void import("./match-recovery")
+        .then(({ recoverMatch }) => recoverMatch(checkpoint, confirmed, () => disposed))
         .then(startLocal)
         .catch((error) => {
           recovering = false;
@@ -451,18 +484,32 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
           }
         });
     } else {
-      const initial = new MatchSim(options.home, options.away, options.seed, {
-        knockout: options.knockout,
-        weather: options.weather,
-      });
       recovering = true;
-      void initializeMatchExecution(initial, initializationAbort.signal).then(
-        () => startLocal(initial),
-        () => {
+      void import("./sim")
+        .then(async ({ MatchSim }) => {
+          if (disposed) return;
+          const initial = new MatchSim(options.home, options.away, options.seed, {
+            knockout: options.knockout,
+            weather: options.weather,
+          });
+          try {
+            await initializeMatchExecution(initial, initializationAbort.signal);
+          } catch {
+            // Initialization keeps its explicitly selected compatible backend.
+          }
           if (disposed) initial.dispose();
           else startLocal(initial);
-        },
-      );
+        })
+        .catch((error) => {
+          recovering = false;
+          localPaused = true;
+          if (!disposed) {
+            reportSilent("match-recovery", error, { class: "fatal", code: "fallback-load-failed" });
+            options.onError?.(
+              "Não foi possível carregar a simulação local. A partida permanece pausada.",
+            );
+          }
+        });
     }
   };
 
@@ -505,19 +552,9 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
           const current = liveWorker;
           try {
             const decoded = decoder.decode(packet);
-            if (decoded) apply(decoded, "worker", packet);
-            // Return the exact transferable frame buffer, avoiding clone cost.
-            if (current && liveWorker === current) {
-              current.postMessage(
-                {
-                  id: ++command,
-                  type: "recycleLive",
-                  session: packet.session,
-                  slot: packet.slot,
-                  buffer: packet.frame.buffer,
-                },
-                [packet.frame.buffer],
-              );
+            if (decoded) {
+              consecutiveDecodeFailures = 0;
+              apply(decoded, "worker", packet);
             }
           } catch (error) {
             reportSilent("live-transport", error, {
@@ -525,7 +562,43 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
               code: "decode-frame",
               sequence: packet.seq,
             });
-            startFallback("O snapshot da partida não pôde ser aplicado; modo compatível ativado.");
+            consecutiveDecodeFailures++;
+            if (consecutiveDecodeFailures >= 3) {
+              startFallback("Falha persistente de transporte; recuperando a partida localmente.");
+            } else {
+              try {
+                current?.postMessage({ id: ++command, type: "resyncLive" });
+              } catch (resyncError) {
+                reportSilent("live-transport", resyncError, {
+                  class: "degradation",
+                  code: "resync-failed",
+                });
+                startFallback(
+                  "Não foi possível sincronizar o Worker; recuperando a partida localmente.",
+                );
+              }
+            }
+          } finally {
+            // Failed decodes must also release their transferable slot. Otherwise
+            // a recoverable metadata miss can starve all three Worker buffers.
+            try {
+              if (current && liveWorker === current && packet.frame.buffer.byteLength)
+                current.postMessage(
+                  {
+                    id: ++command,
+                    type: "recycleLive",
+                    session: packet.session,
+                    slot: packet.slot,
+                    buffer: packet.frame.buffer,
+                  },
+                  [packet.frame.buffer],
+                );
+            } catch (error) {
+              reportSilent("live-transport", error, {
+                class: "degradation",
+                code: "recycle-failed",
+              });
+            }
           }
         } else if (message.type === "snapshot") apply(message.snapshot, "worker");
         else if (message.type === "finished") apply(message.result, "worker");
@@ -581,6 +654,11 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       localSpeed = Math.max(1, Math.min(8, value));
       send({ type: "speedLive", speed: localSpeed });
     },
+    setAnalyticsVisible(visible) {
+      if (typeof visible !== "boolean") return;
+      analyticsVisible = visible;
+      send({ type: "analyticsLive", visible });
+    },
     setTactics(side, tactics) {
       const expiresAt = Date.now() + LIVE_CONTROL_RESPONSE_TIMEOUT_MS;
       if (!validMatchCommand({ id: 0, type: "tacticsLive", side, tactics, expiresAt })) return;
@@ -592,7 +670,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       const setup = side === "home" ? view.home : view.away;
       setup.tactics = { ...tactics };
       if (localSim) {
-        (side === "home" ? localSim.home : localSim.away).tactics = { ...tactics };
+        localSim.applyTacticalCommand(side, tactics);
         confirmedTactics[side] = { id: command, tactics: { ...tactics } };
         return;
       }
@@ -624,26 +702,12 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       return requestBoolean({ type: "substituteLive", side, outPid, incoming, expiresAt });
     },
     skip() {
-      if (localSim) {
-        stopLocal();
-        let guard = 0;
-        const finishInChunks = () => {
-          if (!localSim || disposed) return;
-          const end = Math.min(guard + 240, MATCH_SIMULATION_TICK_LIMIT);
-          while (!localSim.finished && guard < end) {
-            localSim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
-            guard++;
-          }
-          if (localSim.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
-            sequence += 1;
-            apply(resultMatch(localSim, sequence), "fallback");
-            localSkipTimer = null;
-            return;
-          }
-          localSkipTimer = setTimeout(finishInChunks, 0);
-        };
-        finishInChunks();
-      } else send({ type: "skipLive" });
+      if (recovering && !localSim) {
+        skipAfterRecovery = true;
+        return;
+      }
+      if (localSim) finishLocalMatch();
+      else send({ type: "skipLive" });
     },
     dispose() {
       if (disposed) return;
@@ -678,8 +742,12 @@ export function advanceRoundAsync(
   performances: MatchPerformance[] = [],
 ): Promise<CareerState> {
   const evaluatedAt = Date.now();
-  return call<CareerState>({ type: "advance", career, result, performances, evaluatedAt }, () =>
-    advanceRound(career, result, performances, "Liga", evaluatedAt),
+  return call<CareerState>(
+    { type: "advance", career, result, performances, evaluatedAt },
+    async () => {
+      const { advanceRound } = await import("./career");
+      return advanceRound(career, result, performances, "Liga", evaluatedAt);
+    },
   );
 }
 
@@ -691,7 +759,10 @@ export function autoSeasonAsync(
   const evaluatedAt = Date.now();
   return call(
     { type: "autoSeason", career, maxWeeks, evaluatedAt },
-    () => autoSeasonCooperative(career, maxWeeks, evaluatedAt),
+    async () => {
+      const { autoSeasonCooperative } = await import("./season-cooperative");
+      return autoSeasonCooperative(career, maxWeeks, evaluatedAt);
+    },
     90_000,
   );
 }

@@ -1,0 +1,276 @@
+{
+  "sourceCommit": "32e42a9efec4192815d184efbc02a042e80eae77",
+  "comparisonBase": "5a75fef3662e3750917df1c2259169e4ed9f24d3",
+  "startedAt": "2026-10-25T15:20:36.553Z",
+  "finishedAt": "2026-10-25T15:32:29.553Z",
+  "complete": true,
+  "allLocalChecksPassed": false,
+  "unit": {
+    "passedTests": 2226,
+    "passedFiles": 408,
+    "excluded": "src/game/sim.stress.test.ts; separately executed by CI"
+  },
+  "performanceContractTests": 23,
+  "jobs": [
+    {
+      "name": "performance-contracts",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:20:36.555Z",
+      "finishedAt": "2026-10-25T15:20:42.338Z"
+    },
+    {
+      "name": "typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:20:42.352Z",
+      "finishedAt": "2026-10-25T15:23:09.762Z"
+    },
+    {
+      "name": "lint",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:23:09.766Z",
+      "finishedAt": "2026-10-25T15:24:36.612Z"
+    },
+    {
+      "name": "unit",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:24:36.614Z",
+      "finishedAt": "2026-10-25T15:30:05.654Z"
+    },
+    {
+      "name": "setup-abba",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:30:05.654Z",
+      "finishedAt": "2026-10-25T15:30:46.066Z"
+    },
+    {
+      "name": "baseline-build",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:30:46.068Z",
+      "finishedAt": "2026-10-25T15:31:54.400Z"
+    },
+    {
+      "name": "baseline-report",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:31:54.401Z",
+      "finishedAt": "2026-10-25T15:31:55.914Z"
+    },
+    {
+      "name": "app-build",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:31:55.917Z",
+      "finishedAt": "2026-10-25T15:32:22.872Z"
+    },
+    {
+      "name": "graphics-build",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:32:22.873Z",
+      "finishedAt": "2026-10-25T15:32:26.772Z"
+    },
+    {
+      "name": "candidate-report",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:32:26.779Z",
+      "finishedAt": "2026-10-25T15:32:28.123Z"
+    },
+    {
+      "name": "bundle-absolute",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-10-25T15:32:28.124Z",
+      "finishedAt": "2026-10-25T15:32:29.453Z"
+    },
+    {
+      "name": "bundle-comparison",
+      "status": "failed",
+      "exitCode": 1,
+      "startedAt": "2026-10-25T15:32:29.454Z",
+      "finishedAt": "2026-10-25T15:32:29.552Z"
+    }
+  ],
+  "benchmarkScripts": {
+    "scripts/compare-match-setup.mjs": "1338e1e5c9396f35bcbdfb3894c9a542c85746f59eb515d05b53c2312513fb56",
+    "scripts/match-setup-sample.mjs": "5526b380fabdf907b0f61ad862f9ef60bbdcdb03ef4979f29cf4cb40cf08b6ae",
+    "scripts/match-setup-parity.mjs": "22d3fe28346cf38f746f2b2dd60947e8aa0f5ebb3d55030e4a466a41af1ef454",
+    "scripts/match-setup-parity.test.mjs": "c2f6dc0ce52f81f5238299a04af25c8f26781a579f51bfbd68487e479d22b996"
+  },
+  "setup": {
+    "generatedAt": "2026-10-25T15:30:46.032Z",
+    "protocol": "same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass",
+    "environment": {
+      "node": "v24.22.0",
+      "platform": "win32",
+      "architecture": "x64",
+      "kernel": "10.0.26300",
+      "cpu": "12th Gen Intel(R) Core(TM) i5-12500H"
+    },
+    "dependencyLockSha256": "97d014a35d3ae69b8e60340859176965063df8da2110a5f8181c281f397df5db",
+    "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+    "samplesPerRevision": 62,
+    "deterministicCheckpoints": 21,
+    "parity": {
+      "baselineExecution": {
+        "revision": 2,
+        "physics": "compat",
+        "perception": "compat"
+      },
+      "candidateExecution": {
+        "revision": 3,
+        "physics": "compat",
+        "perception": "compat"
+      },
+      "crossRevisionEqualityRequired": false,
+      "checkpointPolicy": "exact independent replays within each revision; cross-revision equality for the same execution revision; explicit adjacent revision boundary otherwise",
+      "violations": []
+    },
+    "budget": {
+      "baselineCpuMs": 0.422,
+      "candidateCpuMs": 0.063,
+      "durationChangePercent": -85.07109004739335,
+      "materialRegressionPercent": 10,
+      "confidence": 0.99,
+      "lowerRatio": 0.14302059496567507,
+      "upperRatio": 0.18840579710144928,
+      "failed": false
+    },
+    "violations": []
+  },
+  "bundles": {
+    "before": "baseline-followup25",
+    "after": "candidate-followup25",
+    "comparisonDate": "2026-10-25T15:32:29.541Z",
+    "rows": [
+      {
+        "label": "JS emitido total (inclui lazy)",
+        "before": 6911054,
+        "after": 6711666,
+        "reductionPercent": "2.89%"
+      },
+      {
+        "label": "JS emitido total (gzip)",
+        "before": 2235547,
+        "after": 2192344,
+        "reductionPercent": "1.93%"
+      },
+      {
+        "label": "JS emitido total (Brotli Q6)",
+        "before": 2106456,
+        "after": 2071288,
+        "reductionPercent": "1.67%"
+      },
+      {
+        "label": "Página inicial startup (gzip)",
+        "before": 167786,
+        "after": 169607,
+        "reductionPercent": "-1.09%"
+      },
+      {
+        "label": "Página inicial startup (Brotli Q6)",
+        "before": 158910,
+        "after": 160545,
+        "reductionPercent": "-1.03%"
+      },
+      {
+        "label": "Nova carreira startup (gzip)",
+        "before": 438766,
+        "after": 467619,
+        "reductionPercent": "-6.58%"
+      },
+      {
+        "label": "Nova carreira startup (Brotli Q6)",
+        "before": 414565,
+        "after": 441881,
+        "reductionPercent": "-6.59%"
+      },
+      {
+        "label": "Partida rápida startup (gzip)",
+        "before": 302375,
+        "after": 307952,
+        "reductionPercent": "-1.84%"
+      },
+      {
+        "label": "Partida rápida startup (Brotli Q6)",
+        "before": 286410,
+        "after": 291445,
+        "reductionPercent": "-1.76%"
+      },
+      {
+        "label": "Match 3D startup (gzip)",
+        "before": 563824,
+        "after": 588377,
+        "reductionPercent": "-4.35%"
+      },
+      {
+        "label": "Match 3D startup (Brotli Q6)",
+        "before": 533118,
+        "after": 555984,
+        "reductionPercent": "-4.29%"
+      },
+      {
+        "label": "Palco cinematográfico startup (gzip)",
+        "before": 537727,
+        "after": 543329,
+        "reductionPercent": "-1.04%"
+      },
+      {
+        "label": "Palco cinematográfico startup (Brotli Q6)",
+        "before": 504561,
+        "after": 510467,
+        "reductionPercent": "-1.17%"
+      },
+      {
+        "label": "Editor startup (gzip)",
+        "before": 178356,
+        "after": 182587,
+        "reductionPercent": "-2.37%"
+      },
+      {
+        "label": "Editor startup (Brotli Q6)",
+        "before": 168891,
+        "after": 172795,
+        "reductionPercent": "-2.31%"
+      },
+      {
+        "label": "Simulação Worker startup (gzip)",
+        "before": 28419,
+        "after": 13731,
+        "reductionPercent": "51.68%"
+      },
+      {
+        "label": "Simulação Worker startup (Brotli Q6)",
+        "before": 27354,
+        "after": 13267,
+        "reductionPercent": "51.50%"
+      }
+    ],
+    "violations": [
+      "Página inicial startup (gzip): 169607 exceeds baseline 167786 by 1821 bytes",
+      "Página inicial startup (Brotli Q6): 160545 exceeds baseline 158910 by 1635 bytes",
+      "Nova carreira startup (gzip): 467619 exceeds baseline 438766 by 28853 bytes",
+      "Nova carreira startup (Brotli Q6): 441881 exceeds baseline 414565 by 27316 bytes",
+      "Partida rápida startup (gzip): 307952 exceeds baseline 302375 by 5577 bytes",
+      "Partida rápida startup (Brotli Q6): 291445 exceeds baseline 286410 by 5035 bytes",
+      "Match 3D startup (gzip): 588377 exceeds baseline 563824 by 24553 bytes",
+      "Match 3D startup (Brotli Q6): 555984 exceeds baseline 533118 by 22866 bytes",
+      "Palco cinematográfico startup (gzip): 543329 exceeds baseline 537727 by 5602 bytes",
+      "Palco cinematográfico startup (Brotli Q6): 510467 exceeds baseline 504561 by 5906 bytes",
+      "Editor startup (gzip): 182587 exceeds baseline 178356 by 4231 bytes",
+      "Editor startup (Brotli Q6): 172795 exceeds baseline 168891 by 3904 bytes"
+    ]
+  },
+  "limits": [
+    "CPU figures measure MatchSim construction, not a running match or GPU load.",
+    "Bundle sizes are offline transfer estimates, not measured browser load times.",
+    "This patch changes verification scripts and documentation; engine, renderer and database migrations remain at sourceCommit.",
+    "Lighthouse mobile and relative startup bundles remain release blockers."
+  ]
+}

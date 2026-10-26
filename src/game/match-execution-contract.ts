@@ -1,4 +1,6 @@
-export const MATCH_EXECUTION_REVISION = 2 as const;
+// Revision 3 aligns the goal colliders and aerodynamic units. Old live solver
+// snapshots cannot be resumed under these rules; completed career data is separate.
+export const MATCH_EXECUTION_REVISION = 3 as const;
 export interface MatchExecutionContract {
   revision: typeof MATCH_EXECUTION_REVISION;
   physics: "compat" | "rapier";

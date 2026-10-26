@@ -1,3 +1,4 @@
+import { initializeRapier } from "./rapier-runtime";
 /**
  * Ponte física visual de baixa complexidade para a bola.
  *
@@ -5,13 +6,7 @@
  * imagem com quique, giro, trave e rede, mas nunca devolve dados para
  * `MatchSim`. Regras, placar, posse, saves e replays continuam canônicos.
  */
-import {
-  ColliderDesc,
-  init as initializeRapierWasm,
-  RigidBodyDesc,
-  RigidBodyType,
-  World,
-} from "@dimforge/rapier3d-compat";
+import { ColliderDesc, RigidBodyDesc, RigidBodyType, World } from "@dimforge/rapier3d-compat";
 
 import {
   type CanonicalBallPhysicsState,
@@ -19,8 +14,9 @@ import {
   visualBallFromCanonical,
 } from "./visual-ball";
 import { highFidelitySubsteps } from "./physics-quality";
+import { BALL_RADIUS, GOAL_NET_DEPTH, GOAL_POST_RADIUS } from "./sim-rules";
 
-export const BALL_PHYSICS_RADIUS = 0.12;
+export const BALL_PHYSICS_RADIUS = BALL_RADIUS;
 
 const DEFAULT_FIELD_X = 52.5;
 const DEFAULT_FIELD_Z = 34;
@@ -36,8 +32,12 @@ export interface RapierVisualPhysicsOptions {
 export interface RapierVisualPhysics {
   readonly engine: "rapier-wasm-visual";
   reset(canonical: CanonicalBallPhysicsState): void;
+  /** Supply both canonical snapshots before each visual step. The after
+   * snapshot becomes the reconciliation target for that tick. */
   synchronize(before: CanonicalBallPhysicsState, after: CanonicalBallPhysicsState): void;
   step(dt: number): void;
+  /** Observational only. Fallback supplies attached/disposed or nonfinite
+   * values; it never updates the reconciliation target. Use synchronize. */
   read(fallback: CanonicalBallPhysicsState): VisualBallState;
   dispose(): void;
 }
@@ -55,12 +55,6 @@ function distance3D(
   b: Pick<CanonicalBallPhysicsState, "x" | "z" | "height">,
 ) {
   return Math.hypot(a.x - b.x, a.z - b.z, a.height - b.height);
-}
-
-let rapierReady: Promise<void> | null = null;
-
-function initializeRapier() {
-  return (rapierReady ??= initializeRapierWasm());
 }
 
 function makeWorld() {
@@ -142,7 +136,11 @@ class RapierVisualBall implements RapierVisualPhysics {
   }
 
   step(dt: number) {
-    if (this.disposed || this.attached || !Number.isFinite(dt) || dt <= 0) return;
+    // A paused/invalid frame has no elapsed time. Check before the release
+    // guard so it cannot consume the one valid tick already integrated by
+    // MatchSim, nor advance the solver/reconciliation while paused.
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    if (this.disposed || this.attached) return;
     if (this.skipNextStep) {
       this.skipNextStep = false;
       return;
@@ -157,23 +155,28 @@ class RapierVisualBall implements RapierVisualPhysics {
     const substeps = highFidelitySubsteps(safeDt, 10);
     const substep = safeDt / substeps;
     for (let index = 0; index < substeps; index++) {
-      const velocity = this.ballBody.linvel();
-      const speed = Math.hypot(velocity.x, velocity.z);
-      if (Math.abs(this.visualSpin) > 0.001 && speed > 0.01) {
-        const magnus = this.visualSpin * substep * 0.045;
-        this.ballBody.setLinvel(
-          {
-            x: velocity.x - (velocity.z / speed) * magnus,
-            y: velocity.y,
-            z: velocity.z + (velocity.x / speed) * magnus,
-          },
-          true,
-        );
-        this.visualSpin *= Math.exp(-0.85 * substep);
+      if (Math.abs(this.visualSpin) > 0.001) {
+        const velocity = this.ballBody.linvel();
+        const speed = Math.hypot(velocity.x, velocity.z);
+        if (speed > 0.01) {
+          const magnus = this.visualSpin * substep * 0.045;
+          this.ballBody.setLinvel(
+            {
+              x: velocity.x - (velocity.z / speed) * magnus,
+              y: velocity.y,
+              z: velocity.z + (velocity.x / speed) * magnus,
+            },
+            true,
+          );
+          this.visualSpin *= Math.exp(-0.85 * substep);
+        }
       }
       this.world.timestep = substep;
       this.world.step();
     }
+    // Reconcile once per simulated tick, independent of how many render,
+    // camera or telemetry consumers subsequently read this presentation.
+    if (this.lastCanonical) this.reconcile(this.lastCanonical);
   }
 
   read(fallback: CanonicalBallPhysicsState): VisualBallState {
@@ -190,9 +193,13 @@ class RapierVisualBall implements RapierVisualPhysics {
       vz: finite(velocity.z, fallback.vz),
       spin: finite(this.visualSpin, fallback.spin),
     };
+    return visual;
+  }
 
+  private reconcile(fallback: CanonicalBallPhysicsState) {
+    const visual = this.read(fallback);
     const divergence = distance3D(visual, fallback);
-    if (divergence <= MAX_VISUAL_DIVERGENCE) return visual;
+    if (divergence <= MAX_VISUAL_DIVERGENCE) return;
 
     // Um rebote visual pode divergir por um instante; depois aproximamos a
     // apresentação da verdade canônica para que uma regra posterior nunca
@@ -209,7 +216,6 @@ class RapierVisualBall implements RapierVisualPhysics {
       spin: visual.spin + (fallback.spin - visual.spin) * blend,
     };
     this.setDynamic({ ...fallback, ...corrected, attached: false, holder: null });
-    return corrected;
   }
 
   dispose() {
@@ -290,14 +296,14 @@ class RapierVisualBall implements RapierVisualPhysics {
       const goalX = direction * fieldX;
       for (const goalZ of [-GOAL_HALF_WIDTH, GOAL_HALF_WIDTH]) {
         this.world.createCollider(
-          ColliderDesc.cylinder(GOAL_HEIGHT / 2, 0.075)
+          ColliderDesc.cylinder(GOAL_HEIGHT / 2, GOAL_POST_RADIUS)
             .setTranslation(goalX, GOAL_HEIGHT / 2, goalZ)
             .setFriction(0.35)
             .setRestitution(0.7),
         );
       }
       this.world.createCollider(
-        ColliderDesc.cuboid(0.075, 0.075, GOAL_HALF_WIDTH)
+        ColliderDesc.cuboid(GOAL_POST_RADIUS, GOAL_POST_RADIUS, GOAL_HALF_WIDTH)
           .setTranslation(goalX, GOAL_HEIGHT, 0)
           .setFriction(0.35)
           .setRestitution(0.68),
@@ -305,7 +311,7 @@ class RapierVisualBall implements RapierVisualPhysics {
       // Rede leve: dá retorno visual à finalização sem decidir se foi gol.
       this.world.createCollider(
         ColliderDesc.cuboid(0.04, GOAL_HEIGHT / 2, GOAL_HALF_WIDTH)
-          .setTranslation(direction * (fieldX + 0.95), GOAL_HEIGHT / 2, 0)
+          .setTranslation(direction * (fieldX + GOAL_NET_DEPTH), GOAL_HEIGHT / 2, 0)
           .setFriction(0.72)
           .setRestitution(0.22),
       );

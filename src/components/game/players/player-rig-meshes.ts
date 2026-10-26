@@ -16,9 +16,16 @@ import { requestKtx2 } from "@/game/textures/ktx2";
 import type React from "react";
 import { createElement, useEffect, useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
-import type { Quality } from "./player-rig-contract";
+import type { Quality, RenderedPlayerAppearance } from "./player-rig-contract";
+import type { ClipName } from "@/game/animation";
+import { studioAppearanceRevision } from "@/game/player-studio-appearance";
 
 interface RigMeshInputs {
+  root: React.RefObject<THREE.Group | null>;
+  previewClip: ClipName | undefined;
+  previewRevision: string | undefined;
+  paused: boolean;
+  onAppearanceReady: ((appearance: RenderedPlayerAppearance) => void) | undefined;
   quality: Quality;
   portrait: boolean;
   denseGeometry: boolean;
@@ -42,6 +49,11 @@ interface RigMeshInputs {
 }
 
 export function usePlayerRigMeshes({
+  root,
+  previewClip,
+  previewRevision,
+  paused,
+  onAppearanceReady,
   quality,
   portrait,
   denseGeometry,
@@ -69,6 +81,7 @@ export function usePlayerRigMeshes({
   // jogadores. Ajustar a geometria ao nível global reduz muito o trabalho da
   // GPU sem alterar silhueta, materiais ou animações.
   const segs = matchRigSegments(quality, portrait || denseGeometry, !portrait && matchTopology);
+  const ultraTopology = hi && (portrait || (matchTopology && denseGeometry));
 
   // Materiais compartilhados entre jogadores com a mesma combinação de
   // uniforme/aparência: derruba o número de programas de shader e de objetos
@@ -96,6 +109,7 @@ export function usePlayerRigMeshes({
           segs: { radial: segs.radial, cap: segs.cap },
           hi,
           portrait,
+          topology: ultraTopology ? "ultra" : "standard",
           mats,
           jerseyInk,
           handR: look.gloves ? P.handR * 1.25 : P.handR,
@@ -107,7 +121,7 @@ export function usePlayerRigMeshes({
     // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
     // do atleta a cada movimento.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [P, look, kit, segs.radial, segs.cap, hi, portrait, jerseyInk],
+    [P, look, kit, segs.radial, segs.cap, hi, portrait, ultraTopology, jerseyInk],
   );
   useEffect(() => () => skin.dispose(), [skin]);
   const cloth = useMemo(
@@ -121,7 +135,7 @@ export function usePlayerRigMeshes({
     // The first sample sets the articulated lids at their open rest pose.
     for (const joint of ["eyelidUpperL", "eyelidLowerL", "eyelidUpperR", "eyelidLowerR"] as const)
       skin.boneOf[joint].rotation.x = 0;
-  }, [skin, look.seed, painted, lodState, castState]);
+  }, [skin, look.seed, painted, lodState, castState, previewClip, previewRevision, paused]);
 
   // As malhas são criadas fora do JSX para carregar esqueleto, esfera de
   // culling generosa (a pose animada sai da pose de bind) e o estado de LOD.
@@ -167,5 +181,26 @@ export function usePlayerRigMeshes({
       if (!hi || !clothPhysics) mesh.morphTargetInfluences?.fill(0);
     }
   }, [skin, cloth, drawMeshes, hi, clothPhysics, skinnedMeshes]);
+  useLayoutEffect(() => {
+    if (!onAppearanceReady || !root.current) return;
+    const meshes = root.current.children.filter(
+      (child): child is THREE.SkinnedMesh => child instanceof THREE.SkinnedMesh,
+    );
+    let vertices = 0;
+    let top = -Infinity;
+    for (const mesh of meshes) {
+      const positions = mesh.geometry.getAttribute("position");
+      vertices += positions.count;
+      for (let i = 0; i < positions.count; i++) top = Math.max(top, positions.getY(i));
+    }
+    onAppearanceReady({
+      hairStyle: look.hairStyle,
+      revision: studioAppearanceRevision(look),
+      root: root.current.uuid,
+      meshes: meshes.length,
+      vertices,
+      top,
+    });
+  }, [skin, look, drawMeshes, onAppearanceReady, root]);
   return { skin, cloth, drawMeshes };
 }

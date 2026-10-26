@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-
+import { completePasswordRecovery, authCallbackUrlWithoutErrorDetails } from "@/lib/auth-policy";
+import { getRouteApi, useNavigate, Link } from "@tanstack/react-router";
 import {
   CheckCircle2,
   Cloud,
@@ -8,6 +8,7 @@ import {
   Fingerprint,
   Gamepad2,
   Mail,
+  Phone,
   ShieldCheck,
 } from "lucide-react";
 
@@ -15,28 +16,20 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { needsMfaChallenge } from "@/lib/mfa-session";
 
 import { Button } from "@/components/ui/button";
-
 import { DiscordLink } from "@/components/CommunityInvite";
-
 import { supabase } from "@/integrations/supabase/client";
-
 import {
   lovableOAuthProvider,
   socialOAuthOptions,
   socialProviderLabel,
   type SocialProvider,
 } from "@/integrations/supabase/social-auth";
-
 import { authCallbackErrorMessage, authErrorMessage, type AuthMode } from "@/lib/auth-policy";
-
 import { useAuthMethods } from "@/hooks/useAuthMethods";
-
 import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
-
 import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as=url";
-
 import "@/components/auth-store.css";
-import { getRouteApi } from "@tanstack/react-router";
+
 const Route = getRouteApi("/auth");
 
 const PhoneAuthPanel = lazy(() =>
@@ -70,6 +63,7 @@ export function AuthPage() {
     retry: retryMethods,
   } = useAuthMethods();
   const [emailOtp, setEmailOtp] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [magicEmail, setMagicEmail] = useState("");
   const [recoveryReady, setRecoveryReady] = useState(false);
@@ -105,6 +99,12 @@ export function AuthPage() {
     const authError = hashParams.get("error") || searchParams.get("error");
     if (authError || authErrorCode || authErrorDescription)
       setError(authCallbackErrorMessage(authErrorCode, authErrorDescription));
+    if (authError || authErrorCode || authErrorDescription)
+      window.history.replaceState(
+        window.history.state,
+        "",
+        authCallbackUrlWithoutErrorDetails(window.location.href),
+      );
     if (recovery) setMode("update");
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
@@ -190,7 +190,30 @@ export function AuthPage() {
     }
     setBusy(true);
     try {
-      if (mode === "magic") {
+      if (mode === "phone") {
+        if (!methods?.phone) throw new Error("Phone login is not enabled");
+        const phone = phoneNumber.trim();
+        if (!/^\+[1-9]\d{7,14}$/.test(phone)) throw new Error("Invalid phone");
+        if (otpSent) {
+          const result = await supabase.auth.verifyOtp({
+            phone,
+            token: emailOtp.trim(),
+            type: "sms",
+          });
+          if (result.error) throw result.error;
+          if (!result.data.session) throw new Error("No verified session");
+          await navigate({ href: destination });
+        } else {
+          const result = await supabase.auth.signInWithOtp({
+            phone,
+            options: { shouldCreateUser: methods.signup },
+          });
+          if (result.error) throw result.error;
+          setPhoneNumber(phone);
+          setOtpSent(true);
+          setNotice("Enviamos um código por SMS. Informe o código para entrar na sua conta.");
+        }
+      } else if (mode === "magic") {
         if (otpSent) {
           const result = await supabase.auth.verifyOtp({
             email: magicEmail,
@@ -227,9 +250,12 @@ export function AuthPage() {
       } else if (mode === "update") {
         if (!recoveryReady) throw new Error("No recovery session");
         if (await checkMfa()) return;
-        const result = await supabase.auth.updateUser({ password });
-        if (result.error) throw result.error;
-        setNotice("Senha atualizada. Você já pode continuar sua carreira.");
+        const result = await completePasswordRecovery(supabase.auth, password);
+        setNotice(
+          result.otherSessionsRevoked
+            ? "Senha atualizada. O encerramento das outras sessões foi solicitado. Você pode continuar neste navegador."
+            : "Senha atualizada, mas não foi possível encerrar as outras sessões. Confira sua conexão e revise as sessões da conta.",
+        );
         setPassword("");
         setConfirmPassword("");
       } else {
@@ -337,6 +363,7 @@ export function AuthPage() {
     reset: "Recuperar sua senha",
     update: "Definir nova senha",
     magic: "Entrar sem senha",
+    phone: "Entrar com telefone",
   }[mode];
   const inputClass =
     "min-h-11 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary";
@@ -539,6 +566,53 @@ export function AuthPage() {
               O cadastro está indisponível no momento. Se você já tem conta, volte para entrar.
             </p>
           )}
+          {(mode === "in" || mode === "up") && methods?.phone && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 min-h-11 w-full"
+              disabled={busy}
+              onClick={() => switchMode("phone")}
+            >
+              <Phone className="mr-2 h-4 w-4" aria-hidden />
+              Entrar com telefone
+            </Button>
+          )}
+          {mode === "phone" && methods?.phone && (
+            <form onSubmit={submit} className="mt-5 space-y-4" aria-busy={busy}>
+              <label className="block text-sm">
+                Telefone com código do país
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  required
+                  pattern="\+[1-9][0-9]{7,14}"
+                  placeholder="+5511999999999"
+                  value={phoneNumber}
+                  onChange={(event) => setPhoneNumber(event.target.value)}
+                  disabled={busy || otpSent}
+                  className={inputClass}
+                />
+              </label>
+              {otpSent && (
+                <label className="block text-sm">
+                  Código SMS
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    required
+                    value={emailOtp}
+                    onChange={(event) => setEmailOtp(event.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+              )}
+              <Button type="submit" className="min-h-11 w-full" disabled={busy}>
+                {busy ? "Aguarde…" : otpSent ? "Confirmar código SMS" : "Receber código SMS"}
+              </Button>
+            </form>
+          )}
           {confirmationSent ? (
             <Button
               type="button"
@@ -550,6 +624,7 @@ export function AuthPage() {
               {busy ? "Aguarde…" : "Reenviar confirmação"}
             </Button>
           ) : (
+            mode !== "phone" &&
             (mode === "update" || (methods?.email && (mode !== "up" || methods.signup))) && (
               <form onSubmit={submit} className="mt-5 space-y-4" aria-busy={busy}>
                 {mode === "up" && (
@@ -683,6 +758,7 @@ export function AuthPage() {
                         reset: "Enviar link de recuperação",
                         update: "Salvar nova senha",
                         magic: otpSent ? "Validar código e entrar" : "Enviar link de acesso",
+                        phone: otpSent ? "Validar código e entrar" : "Enviar código por SMS",
                       }[mode]}
                 </Button>
               </form>

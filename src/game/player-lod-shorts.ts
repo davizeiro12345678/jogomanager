@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { Pose } from "./animation-core";
 import { footballShorts } from "./player-shorts";
+import { prepareLowClothGeometry, writeLowClothPose } from "./player-lod-cloth";
 
 const template = { hipW: 1, hipH: 1, chestD: 0.47, legR: 0.306, thigh: 3.4 };
 const normalScale = [0.255, 0.14, 0.255] as const;
@@ -8,8 +9,9 @@ const normalScale = [0.255, 0.14, 0.255] as const;
 /** Three-joint cloth skinning expressed as native instanced morph targets.
  * The 18 coefficients are the two femur rotation matrices minus identity.
  * It retains one garment/draw for the team without custom renderer shaders. */
-export function lowShortsGeometry() {
+export function lowShortsGeometry(affine = false) {
   const geometry = footballShorts(template, 8, { waistRows: 4, legRows: 2 });
+  if (affine) return prepareLowClothGeometry(geometry, "shorts");
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
   geometry.morphTargetsRelative = true;
@@ -48,6 +50,7 @@ export function lowShortsGeometry() {
 
 /** Fixed buffers; only 18 weights per visible player are uploaded per frame. */
 export class LowShortsAnimator {
+  private readonly affineWeights = new Float32Array(18);
   private readonly proxy: THREE.Mesh;
   private readonly rotation = new THREE.Matrix4();
   private readonly quaternion = new THREE.Quaternion();
@@ -67,7 +70,7 @@ export class LowShortsAnimator {
     sz: number,
   ) {
     this.scale.set(sx, sy, sz);
-    const weights = this.proxy.morphTargetInfluences!;
+    const weights = this.proxy.morphTargetInfluences ?? this.affineWeights;
     for (let leg = 0; leg < 2; leg++) {
       this.quaternion.setFromEuler(
         this.euler.set(
@@ -84,6 +87,10 @@ export class LowShortsAnimator {
             (this.rotation.elements[source * 4 + destination]! * this.scale.getComponent(source)) /
               this.scale.getComponent(destination) -
             (source === destination ? 1 : 0);
+    }
+    if (mesh.geometry.userData["lowClothKind"] === "shorts") {
+      writeLowClothPose(mesh.geometry, index, weights, "shorts");
+      return;
     }
     if (!mesh.morphTexture) {
       // LowPlayers compacts mesh.count each frame. Allocate for its capacity,

@@ -15,6 +15,25 @@ import { tattooAlphaMask } from "./rig-materials";
 import { shirtPanelU } from "./rig-body";
 
 describe("adult player anatomy", () => {
+  it("keeps a continuous bony knee landmark across the thigh and lower leg", () => {
+    const radius = 0.08,
+      radial = 16;
+    const thigh = anatomicalLimb("thigh", 0.46, radius, radial);
+    const calf = anatomicalLimb("calf", 0.43, radius, radial);
+    const upper = thigh.getAttribute("position"),
+      lower = calf.getAttribute("position");
+    const lastRing = lower.count - radial - 1;
+    // The anterior patella has a shallow projection above the condyle
+    // ellipse, while both skin segments share the identical knee opening.
+    expect(upper.getZ(0)).toBeGreaterThan(radius * 0.84);
+    for (let i = 0; i <= radial; i++) {
+      expect(upper.getX(i)).toBeCloseTo(lower.getX(lastRing + i), 6);
+      expect(upper.getZ(i)).toBeCloseTo(lower.getZ(lastRing + i), 6);
+    }
+    thigh.dispose();
+    calf.dispose();
+  });
+
   it("changes stature and mass without rerolling the athlete's identity", () => {
     const original = lookFor("fixed-athlete-identity", "FW", true);
     const lean = lookWithPhysique(original, { height: 174, weight: 64 });

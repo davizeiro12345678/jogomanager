@@ -2,6 +2,9 @@ import { ptBR as ptBRBootstrap, en as enBootstrap } from "./bootstrap-messages";
 import type { Lang } from "./locale-catalog";
 import { EXPANDED_MESSAGES } from "./expanded-messages";
 import { INTERFACE_MESSAGES } from "./interface-messages";
+import { CINEMA_STUDIO_MESSAGES } from "./cinema-studio-messages";
+import { SCENE_INTERFACE_MESSAGES } from "./scene-interface-messages";
+import { resolveMessage } from "./format-message";
 type Dict = Record<string, string>;
 
 const ptBR: Dict = ptBRBootstrap;
@@ -1102,12 +1105,23 @@ const DICTS: Record<Lang, Dict> = {
 };
 
 export function translate(lang: Lang, key: string): string {
-  return (
-    INTERFACE_MESSAGES[lang]?.[key] ??
-    DICTS[lang][key] ??
-    INTERFACE_MESSAGES.en?.[key] ??
-    en[key] ??
-    ptBR[key] ??
-    key
-  );
+  return resolveTranslation(lang, key)?.text ?? key;
+}
+
+export function messageLanguage(lang: Lang, key: string): Lang {
+  return resolveTranslation(lang, key)?.lang ?? "pt-BR";
+}
+
+function resolveTranslation(lang: Lang, key: string) {
+  return resolveMessage(key, [
+    { lang, messages: CINEMA_STUDIO_MESSAGES[lang as keyof typeof CINEMA_STUDIO_MESSAGES] },
+    { lang, messages: SCENE_INTERFACE_MESSAGES[lang] },
+    { lang, messages: INTERFACE_MESSAGES[lang] },
+    { lang, messages: DICTS[lang] },
+    { lang: "en", messages: INTERFACE_MESSAGES.en },
+    { lang: "en", messages: CINEMA_STUDIO_MESSAGES.en },
+    { lang: "en", messages: SCENE_INTERFACE_MESSAGES.en },
+    { lang: "en", messages: en },
+    { lang: "pt-BR", messages: ptBR },
+  ]);
 }

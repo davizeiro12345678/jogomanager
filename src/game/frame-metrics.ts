@@ -1,15 +1,4 @@
 /** Bounded samples. Visible stalls stay in the distribution, including >250 ms. */
-export type PerformanceWithMemory = Performance & {
-  memory?: { usedJSHeapSize?: number };
-};
-
-export function heapUsedBytes(
-  source: PerformanceWithMemory | { memory?: { usedJSHeapSize?: number } } = performance,
-) {
-  const value = source.memory?.usedJSHeapSize;
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
 export class FrameMetrics {
   private readonly samples: Float64Array;
   private scratch = new Float64Array(0);

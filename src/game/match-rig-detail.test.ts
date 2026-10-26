@@ -21,6 +21,7 @@ describe("match rig screen detail", () => {
     expect(matchRigSegments("alta", false)).toEqual({ radial: 16, cap: 6 });
     expect(matchRigSegments("media", false)).toEqual(segmentsFor(1));
     expect(matchRigSegments("baixa", false)).toEqual(segmentsFor(2));
-    expect(matchRigSegments("alta", true, true)).toEqual(matchRigSegments("alta", false, true));
+    expect(matchRigSegments("alta", false, true)).toEqual({ radial: 16, cap: 6 });
+    expect(matchRigSegments("alta", true, true)).toEqual({ radial: 32, cap: 12 });
   });
 });

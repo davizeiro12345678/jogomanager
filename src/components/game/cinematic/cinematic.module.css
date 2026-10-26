@@ -2,14 +2,11 @@
 .cutscene-screen {
   --cine-panel: oklch(0.15 0.012 210 / 0.82);
   --cine-line: oklch(0.96 0.008 210 / 0.16);
-  --cine-text: oklch(0.98 0.006 210);
-  --cine-muted: oklch(0.82 0.014 210);
-  --cine-highlight: oklch(0.84 0.105 82);
   position: fixed;
   inset: 0;
   z-index: 70;
   isolation: isolate;
-  color: var(--cine-text);
+  color: oklch(0.98 0.006 210);
   background: oklch(0.09 0.012 210);
   outline: none;
 }
@@ -22,8 +19,15 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(to bottom, oklch(0.06 0.01 210) 0 1.3dvh, transparent 1.3dvh 96.5dvh, oklch(0.06 0.01 210) 96.5dvh);
-  box-shadow: inset 0 0 10dvw oklch(0 0 0 / 0.18);
+  background: linear-gradient(
+    to bottom,
+    #030609 0,
+    #030609 1.3dvh,
+    transparent 1.3dvh,
+    transparent 96.5dvh,
+    #030609 96.5dvh
+  );
+  box-shadow: inset 0 0 10dvw rgb(0 0 0 / 0.18);
 }
 .cutscene-slate {
   position: absolute;
@@ -34,7 +38,7 @@
   max-width: 75%;
   padding: 0.7rem 1.1rem;
   border-left: 2px solid var(--color-primary);
-  background: linear-gradient(90deg, oklch(0.08 0.014 210 / 0.7), transparent);
+  background: linear-gradient(90deg, rgb(3 7 12 / 0.7), transparent);
   pointer-events: none;
   animation: cutscene-slate 4.6s both;
 }
@@ -42,12 +46,12 @@
   font-size: 0.65rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--cine-muted);
+  color: #c3cbd4;
 }
 .cutscene-slate strong {
   font-size: clamp(1.15rem, 2.5vw, 2rem);
   font-weight: 600;
-  text-shadow: 0 2px 12px oklch(0 0 0);
+  text-shadow: 0 2px 12px #000;
 }
 @keyframes cutscene-slate {
   0% {
@@ -69,13 +73,13 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cine-highlight);
+  color: #e6c886;
 }
 .cutscene-decision {
   margin: 0;
   padding-left: 0.5rem;
   font-size: 0.72rem;
-  color: var(--cine-highlight);
+  color: #e6c886;
 }
 .cutscene-progress {
   display: flex;
@@ -86,13 +90,13 @@
   flex: 1;
   height: 2px;
   border-radius: 2px;
-  background: oklch(1 0 0 / 0.15);
+  background: rgb(255 255 255 / 0.15);
 }
 .cutscene-progress span[data-complete="true"] {
-  background: oklch(1 0 0 / 0.5);
+  background: rgb(255 255 255 / 0.5);
 }
 .cutscene-progress span[data-active="true"] {
-  background: var(--cine-highlight);
+  background: #e6c886;
 }
 .cutscene-loading {
   position: absolute;
@@ -102,46 +106,9 @@
   padding: 0.8rem 1.2rem;
   border-radius: 0.75rem;
   background: var(--cine-panel);
-  color: var(--cine-text);
+  color: white;
   text-align: center;
   font-size: 0.875rem;
-}
-.cutscene-load-fallback {
-  position: absolute;
-  left: 50%;
-  top: 45%;
-  z-index: 20;
-  display: grid;
-  width: min(28rem, calc(100% - 2rem));
-  gap: 0.65rem;
-  transform: translate(-50%, -50%);
-  padding: 1rem 1.2rem;
-  border: 1px solid var(--cine-line);
-  border-radius: 0.9rem;
-  background: rgb(10 17 24 / 0.95);
-  box-shadow: 0 16px 48px rgb(0 0 0 / 0.35);
-  text-align: center;
-}
-.cutscene-load-fallback span {
-  color: rgb(255 255 255 / 0.72);
-  font-size: 0.84rem;
-}
-.cutscene-load-fallback-actions {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.cutscene-load-fallback-actions button {
-  min-height: 2.5rem;
-  padding: 0.55rem 0.8rem;
-  border: 1px solid var(--cine-line);
-  border-radius: 0.6rem;
-  background: rgb(255 255 255 / 0.08);
-}
-.cutscene-load-fallback-actions button:first-child {
-  border-color: color-mix(in oklab, var(--color-primary) 70%, white);
-  background: color-mix(in oklab, var(--color-primary) 20%, transparent);
 }
 .cutscene-screen[data-scene-paused="true"] .cutscene-world *,
 .cutscene-screen[data-scene-paused="true"] .cutscene-slate {
@@ -179,14 +146,116 @@
   gap: 0.6rem;
   max-height: 44dvh;
 }
+.cutscene-caption {
+  font-size: calc(1rem * var(--cine-caption-scale, 1));
+  overflow-wrap: anywhere;
+}
+.cutscene-bottom[hidden] {
+  display: none;
+}
+.cutscene-transcript {
+  position: absolute;
+  inset-block: max(5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-bottom));
+  inset-inline-end: clamp(1rem, 3vw, 2.5rem);
+  width: min(30rem, calc(100% - 2rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--cine-line);
+  border-radius: 1rem;
+  background: #0b141ef5;
+  padding: clamp(1rem, 3vw, 1.6rem);
+  box-shadow: 0 20px 70px #0008;
+}
+.cutscene-transcript-heading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.cutscene-transcript h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.cutscene-transcript > p {
+  color: #c2ccd6;
+  margin-block: 1rem;
+  line-height: 1.6;
+}
+.cutscene-transcript ol {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0;
+  list-style: none;
+}
+.cutscene-transcript li {
+  padding: 1rem;
+  border-inline-start: 2px solid #64748b;
+  background: #ffffff06;
+  border-radius: 0.4rem;
+}
+.cutscene-transcript li[aria-current] {
+  border-color: #e6c886;
+  background: #e6c8860c;
+}
+.cutscene-transcript li strong {
+  color: #e6c886;
+  font-size: 0.8rem;
+}
+.cutscene-transcript li p {
+  margin-block-start: 0.4rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.cutscene-screen :focus-visible {
+  outline: 3px solid #f4d899;
+  outline-offset: 3px;
+}
+html[data-contrast="high"] .cutscene-dialogue,
+html[data-contrast="high"] .cutscene-controls,
+html[data-contrast="high"] .cutscene-settings,
+html[data-contrast="high"] .cutscene-transcript {
+  background: #060a0f;
+  border-color: #cbd5e1;
+}
+html[data-text-size="large"] .cutscene-caption,
+html[data-text-size="large"] .cutscene-transcript li p {
+  font-size: calc(1.15rem * var(--cine-caption-scale, 1));
+}
+html[data-text-size="xlarge"] .cutscene-caption,
+html[data-text-size="xlarge"] .cutscene-transcript li p {
+  font-size: calc(1.3rem * var(--cine-caption-scale, 1));
+}
+[dir="rtl"] .cutscene-slate {
+  left: auto;
+  inset-inline-start: clamp(1.25rem, 5vw, 5rem);
+  border-left: 0;
+  border-inline-start: 2px solid var(--color-primary);
+}
+.cutscene-caption-size {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+}
+.cutscene-caption-size input {
+  width: 7rem;
+  accent-color: var(--color-primary);
+}
 .cutscene-dialogue {
+  min-height: 0;
+  flex: 0 1 auto;
   padding: 1rem 1.3rem;
   border: 1px solid var(--cine-line);
-  border-radius: 0.9rem;
-  background: linear-gradient(135deg, oklch(0.17 0.016 215 / 0.94), oklch(0.14 0.014 215 / 0.86));
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, rgb(12 20 29 / 0.94), rgb(10 17 24 / 0.83));
   box-shadow: 0 12px 32px oklch(0.04 0 0 / 0.3);
   backdrop-filter: blur(8px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   animation: cutscene-dialogue-in 180ms ease-out both;
 }
 @keyframes cutscene-dialogue-in {
@@ -200,6 +269,7 @@
   }
 }
 .cutscene-controls {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -207,10 +277,12 @@
   padding: 0.35rem;
   border: 1px solid var(--cine-line);
   border-radius: 0.9rem;
-  background: color-mix(in oklab, var(--cine-panel) 92%, transparent);
-  backdrop-filter: blur(12px) saturate(1.15);
+  background: var(--cine-panel);
 }
 .cutscene-settings {
+  flex-shrink: 0;
+  max-height: 22dvh;
+  overflow-y: auto;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
@@ -250,6 +322,7 @@
   margin-top: 0.9rem;
 }
 .cutscene-choice {
+  overflow-wrap: anywhere;
   min-height: 3rem;
   padding: 0.75rem 1rem;
   text-align: left;
@@ -263,10 +336,6 @@
   border-color: var(--color-primary);
   background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
 }
-.cutscene-choice:active,
-.cutscene-control:active {
-  transform: translateY(1px);
-}
 .cutscene-screen[data-scene-mood="bad"] .cutscene-speaker {
   color: #e1b8b4;
 }
@@ -277,10 +346,6 @@
   opacity: 0.4;
 }
 @media (max-width: 35rem) {
-  .cutscene-top {
-    align-items: flex-start;
-    padding-inline: 0.75rem;
-  }
   .cutscene-bottom {
     width: calc(100% - 1rem);
     bottom: max(0.5rem, env(safe-area-inset-bottom));
@@ -291,17 +356,6 @@
   }
   .cutscene-controls {
     gap: 0.15rem;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    overscroll-behavior-inline: contain;
-    scrollbar-width: none;
-  }
-  .cutscene-controls::-webkit-scrollbar {
-    display: none;
-  }
-  .cutscene-settings {
-    max-height: min(14rem, 32dvh);
-    overflow-y: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {

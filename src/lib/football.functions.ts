@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
+import { isPlayerRecord } from "./football-person-kind";
+import { validCatalogIdentity } from "./catalog-integrity";
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
@@ -144,7 +146,9 @@ async function attachPublicIdentityAliases<T extends { id: string }>(
 
 export const getRealSquad = createServerFn({ method: "GET" })
   .validator((input: unknown) =>
-    z.object({ clubId: z.string().trim().min(1).max(120) }).parse(input),
+    z
+      .object({ clubId: z.string().trim().min(1).max(120).refine(validCatalogIdentity) })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const { cachedPublicRead } = await import("./public-read-cache.server");
@@ -155,7 +159,7 @@ export const getRealSquad = createServerFn({ method: "GET" })
         const query = db
           .from("players")
           .select(
-            "id, data_source:source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url",
+            "id, data_source:source, source_id, source_kind, canonical_player_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url",
           )
           .in("club_id", clubIds)
           .eq("source_kind", "player")
@@ -164,7 +168,7 @@ export const getRealSquad = createServerFn({ method: "GET" })
           .limit(50);
         return cursor ? query.gt("id", cursor) : query;
       }, 1_000);
-      return attachPublicIdentityAliases(rows);
+      return attachPublicIdentityAliases(rows.filter(isPlayerRecord));
     });
   });
 
@@ -180,6 +184,8 @@ export interface MarketSearchInput {
 }
 
 export interface MarketRow {
+  canonical_player_id?: string | null;
+  source_kind?: string | null;
   id: string;
   name: string;
   position: string;
@@ -228,7 +234,7 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
         let query = db
           .from("players")
           .select(
-            "id, source, source_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id",
+            "id, source, source_id, source_kind, canonical_player_id, birth_date, name, position, age, shirt_number, nationality, overall, photo_url, club_id",
           )
           .eq("source_kind", "player")
           .is("canonical_player_id", null)
@@ -251,7 +257,7 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
         list.push(...rows);
       }
       return {
-        rows: await attachPublicIdentityAliases(list.slice(0, PAGE)),
+        rows: await attachPublicIdentityAliases(list.slice(0, PAGE).filter(isPlayerRecord)),
         page,
         hasMore: list.length > PAGE,
       };

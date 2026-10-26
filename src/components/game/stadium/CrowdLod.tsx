@@ -1,9 +1,12 @@
+import { CrowdSelectionCameraCache } from "@/game/crowd-sector";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
+import { CROWD_MOTION_GLSL, createCrowdBehavior, advanceCrowdBehavior } from "@/game/crowd-motion";
+import { useVisual } from "@/game/visual-settings";
 import { supporterGeometry } from "@/game/crowd-geometry";
 import { crowdLodMaterial } from "@/game/crowd-lod-material";
+import { crowdCard } from "./textures/crowd-card";
 
 import { resolveRuntimeSceneBudget, type RuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import { censusRef } from "@/game/scene-census";
@@ -17,13 +20,19 @@ import { presentationWorkerCount } from "@/game/device-workload";
 import { prepareSharedSeatBuffers } from "@/game/wasm/shared-seat-transforms";
 import { acquirePresentationLanes } from "@/game/presentation-lanes";
 
-type CrowdData = { positions: THREE.Vector3[]; colors: THREE.Color[]; skins: THREE.Color[] };
+type CrowdData = {
+  positions: THREE.Vector3[];
+  colors: THREE.Color[];
+  skins: THREE.Color[];
+  affiliations?: number[];
+};
 type CrowdTile = { indices: number[]; sphere: THREE.Sphere; distance: number };
 type CrowdSeatUpload = Readonly<{
   matrices: Float32Array;
   colors: Float32Array;
   skins: Float32Array;
   styles: Float32Array;
+  affiliations: Float32Array;
 }>;
 
 const TILE_SECTORS = 12;
@@ -56,7 +65,13 @@ function prepareSeatUpload(crowd: CrowdData): CrowdSeatUpload {
     styles[index * 2] = (index % 13) / 12;
     styles[index * 2 + 1] = (index % 11) / 10;
   }
-  return { matrices, colors, skins, styles };
+  return {
+    matrices,
+    colors,
+    skins,
+    styles,
+    affiliations: Float32Array.from(crowd.affiliations ?? crowd.positions.map(() => 0)),
+  };
 }
 
 function copySeatAttribute(
@@ -78,6 +93,14 @@ function copySeatToInstance(
   instance: number,
   source: CrowdSeatUpload,
 ) {
+  copySeatAttribute(
+    (mesh.geometry.getAttribute("crowdAffiliation") as THREE.InstancedBufferAttribute)
+      .array as Float32Array,
+    source.affiliations,
+    1,
+    seat,
+    instance,
+  );
   copySeatAttribute(mesh.instanceMatrix.array as Float32Array, source.matrices, 16, seat, instance);
   mesh.instanceColor ??= new THREE.InstancedBufferAttribute(
     new Float32Array(mesh.instanceMatrix.count * 3),
@@ -100,36 +123,6 @@ function copySeatToInstance(
     seat,
     instance,
   );
-}
-
-function crowdCard() {
-  if (typeof document === "undefined") return new THREE.Texture();
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 128;
-  const c = canvas.getContext("2d")!;
-  c.fillStyle = "#ffffff";
-  c.beginPath();
-  c.ellipse(32, 20, 11, 14, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = "#ffffff";
-  c.beginPath();
-  c.ellipse(32, 12, 11, 7, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = "#ffffff";
-  c.beginPath();
-  c.moveTo(17, 37);
-  c.lineTo(47, 37);
-  c.lineTo(55, 81);
-  c.lineTo(10, 81);
-  c.closePath();
-  c.fill();
-  c.fillStyle = "#ffffff";
-  c.fillRect(18, 81, 12, 42);
-  c.fillRect(34, 81, 12, 42);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
 }
 
 function tileIndex(position: THREE.Vector3) {
@@ -168,12 +161,14 @@ function buildTiles(positions: THREE.Vector3[]): CrowdTile[] {
 export function CrowdLod({
   crowd,
   pulse,
+  sim,
   budget,
   supporters,
   webgl2 = true,
 }: {
   crowd: CrowdData;
   pulse: React.MutableRefObject<number>;
+  sim?: import("@/game/sim-types").SimView;
   budget: Pick<
     RuntimeSceneBudget,
     "crowdInstances" | "crowdVisibleTiles" | "crowdUpdateSeconds" | "stage" | "tier"
@@ -182,6 +177,17 @@ export function CrowdLod({
   /** Native WebGPU keeps the same instance pools, without GLSL-only motion hooks. */
   webgl2?: boolean;
 }) {
+  const behavior = useRef(createCrowdBehavior());
+  const visual = useVisual();
+  const soundLoader = useRef<Promise<typeof import("@/game/goal-anthem")> | null>(null);
+  const soundEnabled = useRef(visual.crowdSound);
+  soundEnabled.current = visual.crowdSound;
+  useEffect(
+    () => () => {
+      soundEnabled.current = false;
+    },
+    [],
+  );
   const capacity = Math.min(
     MAX_CROWD_INSTANCES,
     resolveRuntimeSceneBudget(budget.tier).crowdInstances,
@@ -222,7 +228,15 @@ export function CrowdLod({
     setSeatState(null);
     void prepareSharedSeatBuffers(crowd, controller.signal).then((buffers) => {
       if (!controller.signal.aborted)
-        setSeatState({ crowd, buffers: buffers ?? prepareSeatUpload(crowd) });
+        setSeatState({
+          crowd,
+          buffers: buffers
+            ? {
+                ...buffers,
+                affiliations: Float32Array.from(crowd.affiliations ?? crowd.positions.map(() => 0)),
+              }
+            : prepareSeatUpload(crowd),
+        });
     });
     return () => controller.abort();
   }, [crowd]);
@@ -258,12 +272,20 @@ export function CrowdLod({
     };
   }, [layout, seatUpload]);
   const data = useMemo(() => {
-    const card = crowdCard();
+    const card = crowdCard(webgl2);
     const uniforms = {
       time: { value: 0 },
       pulse: { value: 0 },
       wave: { value: 0 },
       agitation: { value: 0 },
+      energy: { value: 0 },
+      protest: { value: 0 },
+      waveStrength: { value: 0 },
+      eventAge: { value: 0 },
+      surprise: { value: 0 },
+      chant: { value: 0 },
+      eventSide: { value: 1 },
+      celebrate: { value: 0 },
     };
     const materials = [0, 1, 2].map((tier) => {
       const legacy =
@@ -271,35 +293,48 @@ export function CrowdLod({
         location.pathname.endsWith("/graphics-benchmark.html") &&
         new URLSearchParams(location.search).get("crowdLighting") === "legacy";
       const material = crowdLodMaterial(tier, card, legacy);
-      if (webgl2)
+      if (webgl2) {
+        material.customProgramCacheKey = () => `crowd-articulation-v7-tier-${tier}`;
         material.onBeforeCompile = (shader) => {
+          shader.uniforms["crowdEventSide"] = uniforms.eventSide;
+          shader.uniforms["crowdCelebrate"] = uniforms.celebrate;
           shader.uniforms["crowdTime"] = uniforms.time;
           shader.uniforms["crowdPulse"] = uniforms.pulse;
           shader.uniforms["crowdWave"] = uniforms.wave;
           shader.uniforms["crowdAgitation"] = uniforms.agitation;
+          shader.uniforms["crowdEnergy"] = uniforms.energy;
+          shader.uniforms["crowdProtest"] = uniforms.protest;
+          shader.uniforms["crowdWaveStrength"] = uniforms.waveStrength;
+          shader.uniforms["crowdEventAge"] = uniforms.eventAge;
+          shader.uniforms["crowdSurprise"] = uniforms.surprise;
+          shader.uniforms["crowdChant"] = uniforms.chant;
           shader.vertexShader = shader.vertexShader
             .replace(
               "#include <common>",
-              "#include <common>\nuniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
+              "#include <common>\nuniform float crowdEventSide; uniform float crowdCelebrate; attribute float crowdAffiliation; uniform float crowdTime; uniform float crowdPulse; uniform float crowdWave; uniform float crowdAgitation; uniform float crowdEnergy; uniform float crowdProtest; uniform float crowdWaveStrength; uniform float crowdEventAge; uniform float crowdSurprise; uniform float crowdChant; attribute vec3 crowdSkin; attribute vec2 crowdStyle; attribute float crowdRegion;\n" +
                 CROWD_MOTION_GLSL,
             )
             .replace(
               "#include <beginnormal_vertex>",
-              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdArticulate(objectNormal, true);" : ""}`,
+              `#include <beginnormal_vertex>\n${tier < 2 ? "objectNormal = crowdShearNormal(crowdArticulate(objectNormal, true) / crowdBodyScale());" : ""}`,
             )
             .replace(
               "#include <begin_vertex>",
               `#include <begin_vertex>
               float phase = instanceMatrix[3].x * 0.71 + instanceMatrix[3].z * 0.37;
               ${tier < 2 ? "transformed = crowdArticulate(transformed, false);" : ""}
-              transformed.x += sin(crowdTime * 1.7 + phase) * 0.035 * max(0.0, position.y + 0.6);
-              transformed.z += sin(crowdTime * 5.2 + phase) * crowdAgitation * 0.05 * max(0.0, position.y + 0.6);
-              transformed.y += abs(sin(crowdTime * (5.8 + crowdStyle.x) + phase)) * crowdPulse * 0.24;
+              // Independent shoulder breadth and torso fullness without new geometry.
+              transformed *= crowdBodyScale();
+              float response = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
+              vec2 shear = crowdShear();
+              transformed.xz += shear * max(0.0, transformed.y + 0.55);
+              transformed.y += abs(sin(crowdTime * 5.8 + phase)) * crowdLocalEnergy() * response * 0.24;
+              transformed.y -= sin(min(crowdEventAge * 9.0, 3.14159265)) * crowdLocalEnergy() * 0.07;
               // ola mexicana: corcova que viaja ao redor do anel (uma volta a
               // cada ~28 s); sutil no jogo corrido, erupção quando sai o gol
               float ang = atan(instanceMatrix[3].z, instanceMatrix[3].x);
               float dw = abs(mod(ang - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
-              transformed.y += exp(-dw * dw * 5.0) * (0.1 + crowdPulse * 0.6);`,
+              transformed.y += exp(-dw * dw * 5.0) * crowdLocalWave() * 0.45;`,
             );
           if (tier < 2)
             // color_vertex includes the instance tint when available; its vColor
@@ -310,16 +345,77 @@ export function CrowdLod({
            if (crowdRegion > 0.5 && crowdRegion < 1.5) vColor.rgb = crowdSkin;
            else if (crowdRegion > 1.5 && crowdRegion < 2.5) vColor.rgb = mix(vec3(0.021, 0.035, 0.049), vec3(0.15, 0.18, 0.22), crowdStyle.x);
            else if (crowdRegion > 2.5 && crowdRegion < 3.5) vColor.rgb = mix(vec3(0.012, 0.009, 0.007), vec3(0.23, 0.12, 0.047), crowdStyle.y);
-           else if (crowdRegion > 3.5) vColor.rgb = mix(vColor.rgb, vec3(0.75), step(0.6, crowdStyle.x));`,
+           else if (crowdRegion > 3.5) vColor.rgb = mix(vColor.rgb, vec3(0.75), step(0.6, crowdStyle.x));
+           if (crowdRegion < 0.5) {
+             // Seeded shirt panels stay in the existing single spectator draw.
+             float shirtBand = 1.0 - smoothstep(0.035, 0.07, abs(position.y - 0.12));
+             float shirtStyle = step(0.55, crowdStyle.y);
+             vColor.rgb = mix(vColor.rgb, mix(vColor.rgb * 0.35, vec3(0.76), crowdStyle.x), shirtBand * shirtStyle * 0.65);
+           }`,
             );
-          else
-            shader.vertexShader = shader.vertexShader.replace(
-              "#include <color_vertex>",
-              `#include <color_vertex>
-           if (uv.y > 0.70) vColor.rgb = mix(crowdSkin, vec3(0.024, 0.014, 0.009), step(0.89, uv.y));
-           else if (uv.y < 0.37) vColor.rgb = vec3(0.028, 0.043, 0.06);`,
-            );
+          else {
+            shader.vertexShader = shader.vertexShader
+              .replace(
+                "#include <common>",
+                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle; varying vec2 crowdNextFrameUv; varying float crowdFrameBlend;",
+              )
+              .replace(
+                "#include <uv_vertex>",
+                `#include <uv_vertex>
+                crowdCardUv = uv;
+                crowdCardSkin = crowdSkin;
+                crowdCardStyle = crowdStyle;
+                float seatPhase = instanceMatrix[3].x * 0.057 + instanceMatrix[3].z * 0.033;
+                float cardBeat = 0.5 + 0.5 * sin(crowdTime * 5.6 + floor(seatPhase) * 0.7);
+                float cardResponse = smoothstep(0.0, 0.32, max(0.0, crowdEventAge - crowdStyle.x * 0.22));
+                float cardAng = atan(instanceMatrix[3].z, instanceMatrix[3].x);
+                float cardDw = abs(mod(cardAng - crowdWave + 3.14159265, 6.2831853) - 3.14159265);
+                float cardWaveRaise = exp(-cardDw * cardDw * 5.0) * crowdLocalWave();
+                float cardCheer = crowdLocalEnergy() * cardResponse;
+                float cardPose = 0.0;
+                if (crowdChant > 0.1 && cardBeat > mix(0.42, 0.68, crowdStyle.x)) cardPose = 2.0;
+                if (max(cardCheer, cardWaveRaise) > 0.18) cardPose = cardBeat > 0.26 || cardWaveRaise > 0.2 ? 1.0 : 2.0;
+                if (crowdLocalSurprise() * cardResponse > 0.12) cardPose = 3.0;
+                float cardPhase = mod(crowdTime * 8.0 + crowdStyle.x * 8.0, 8.0);
+                float cardFrame = floor(cardPhase);
+                crowdFrameBlend = fract(cardPhase);
+                // Pixel inset prevents atlas bleed at the edge of a gesture tile.
+                vec2 insetUv = mix(vec2(0.5 / 64.0, 0.5 / 128.0), vec2(1.0 - 0.5 / 64.0, 1.0 - 0.5 / 128.0), vMapUv);
+                vMapUv = insetUv * vec2(0.125, 0.25) + vec2(cardFrame * 0.125, 0.75 - cardPose * 0.25);
+                crowdNextFrameUv = insetUv * vec2(0.125, 0.25) + vec2(mod(cardFrame + 1.0, 8.0) * 0.125, 0.75 - cardPose * 0.25);`,
+              );
+            // Colour by fragment region, avoiding the old four-vertex skin gradient
+            // that washed team shirts into flesh from head to waist.
+            shader.fragmentShader = shader.fragmentShader
+              .replace(
+                "#include <map_fragment>",
+                `#ifdef USE_MAP
+                // Interpolate in the same colour space as Three's CanvasTexture.
+                // Preserve alpha for the existing opaque alpha-tested batch.
+                vec4 crowdA = texture2D(map, vMapUv);
+                vec4 crowdB = texture2D(map, crowdNextFrameUv);
+                diffuseColor *= mix(crowdA, crowdB, crowdFrameBlend);
+                #endif`,
+              )
+              .replace(
+                "#include <common>",
+                "#include <common>\nvarying vec2 crowdCardUv; varying vec3 crowdCardSkin; varying vec2 crowdCardStyle; varying vec2 crowdNextFrameUv; varying float crowdFrameBlend;",
+              )
+              .replace(
+                "#include <color_fragment>",
+                `#include <color_fragment>
+                vec2 cardUv = crowdCardUv;
+                if (cardUv.y > 0.69 && abs(cardUv.x - 0.5) < 0.18)
+                  diffuseColor.rgb = mix(crowdCardSkin, vec3(0.025, 0.016, 0.011), step(0.845, cardUv.y));
+                else if (cardUv.y < 0.34) diffuseColor.rgb = mix(vec3(0.025, 0.038, 0.055), vec3(0.12, 0.15, 0.2), crowdCardStyle.x);
+                else {
+                  float band = step(0.55, crowdCardStyle.y) * (1.0 - smoothstep(0.025, 0.055, abs(cardUv.y - 0.48)));
+                  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.025), vec3(0.8), step(0.7, crowdCardStyle.x)), band * 0.8);
+                }`,
+              );
+          }
         };
+      }
       return material;
     });
     const geometries = [
@@ -328,6 +424,10 @@ export function CrowdLod({
       new THREE.PlaneGeometry(0.64, 1.5).translate(0, -0.04, 0),
     ];
     geometries.forEach((geometry, tier) => {
+      geometry.setAttribute(
+        "crowdAffiliation",
+        new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1),
+      );
       if (tier === 2) {
         geometry.setAttribute(
           "crowdRegion",
@@ -365,6 +465,7 @@ export function CrowdLod({
       changed: [false, false, false],
       firstChanged: [0, 0, 0],
       lastChanged: [0, 0, 0],
+      fallbackCamera: new CrowdSelectionCameraCache(),
     };
   }, [webgl2, capacity]);
   useEffect(
@@ -381,12 +482,49 @@ export function CrowdLod({
     // Another match can reuse the same seat numbers with different club colours.
     // Reset the cached uploads while retaining geometry and material pools.
     data.seats.forEach((seats) => seats.fill(-1));
+    data.fallbackCamera.invalidate();
     elapsed.current = Number.POSITIVE_INFINITY;
   }, [crowd, data]);
   useFrame(({ camera, clock, size }, dt) => {
     if (!seatUpload) return;
     data.uniforms.time.value = clock.elapsedTime;
     data.uniforms.pulse.value = pulse.current;
+    if (sim) advanceCrowdBehavior(behavior.current, sim, dt, supporters);
+    const mood = behavior.current;
+    if (visual.crowdSound && !document.hidden && mood.age <= Math.min(0.1, dt) && sim) {
+      const kind = mood.behavior,
+        energy = mood.intensity;
+      soundLoader.current ??= import("@/game/goal-anthem");
+      void soundLoader.current
+        .then((audio) => {
+          if (soundEnabled.current) audio.playCrowdAccent(kind, energy);
+        })
+        .catch(() => {
+          soundLoader.current = null;
+        });
+    }
+    data.uniforms.eventSide.value = mood.side === "home" ? 1 : -1;
+    data.uniforms.celebrate.value = mood.behavior === "celebrate" ? 1 : 0;
+    data.uniforms.eventAge.value = mood.age;
+    data.uniforms.surprise.value = mood.behavior === "gasp" ? mood.intensity : 0;
+    data.uniforms.chant.value =
+      mood.behavior === "chant" ? 0.75 : mood.behavior === "taunt" ? 0.4 : 0;
+    data.uniforms.energy.value =
+      mood.behavior === "celebrate"
+        ? mood.intensity
+        : mood.behavior === "chant"
+          ? 0.08
+          : mood.behavior === "taunt"
+            ? 0.3
+            : 0;
+    data.uniforms.protest.value =
+      mood.behavior === "boo" || mood.behavior === "taunt" ? mood.intensity : 0;
+    data.uniforms.waveStrength.value =
+      mood.behavior === "wave"
+        ? mood.intensity
+        : mood.behavior === "celebrate"
+          ? mood.intensity * 0.6
+          : 0;
     data.uniforms.agitation.value =
       supporters?.climate === "protesto"
         ? supporters.intensity
@@ -403,8 +541,23 @@ export function CrowdLod({
     changed.fill(false);
     data.firstChanged.fill(capacity);
     data.lastChanged.fill(0);
+    if (budget.crowdInstances <= 0) data.fallbackCamera.invalidate();
     if (budget.crowdInstances > 0) {
       camera.updateMatrixWorld();
+      const client = worker.current;
+      const cameraUnchanged = data.fallbackCamera.unchanged(
+        camera.matrixWorldInverse.elements,
+        camera.projectionMatrix.elements,
+        size.height,
+        Math.min(capacity, budget.crowdInstances),
+        budget.crowdVisibleTiles,
+        budget.stage >= 5 ? 52 : 42,
+        budget.stage >= 5 ? 34 : 28,
+        camera instanceof THREE.PerspectiveCamera,
+      );
+      // The optional worker must still consume pending mailbox results.
+      if (client && !client.failed) data.fallbackCamera.invalidate();
+      else if (cameraUnchanged && hasSelection.current) return;
       data.projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
       data.frustum.setFromProjectionMatrix(data.projection);
       // Keep facial geometry for supporters large enough to read on screen.
@@ -432,7 +585,6 @@ export function CrowdLod({
         detailedPixels,
         meshPixels,
       };
-      const client = worker.current;
       let selected = client?.select(input);
       // Retain the visible pool while the worker computes a new camera snapshot.
       // Only the first frame or a failed worker uses the synchronous fallback.
@@ -462,6 +614,11 @@ export function CrowdLod({
       if (changed[tier]) {
         const first = data.firstChanged[tier]!;
         const count = data.lastChanged[tier]! - first;
+        const affiliation = mesh.geometry.getAttribute(
+          "crowdAffiliation",
+        ) as THREE.InstancedBufferAttribute;
+        affiliation.addUpdateRange(first, count);
+        affiliation.needsUpdate = true;
         mesh.instanceMatrix.addUpdateRange(first * 16, count * 16);
         mesh.instanceColor?.addUpdateRange(first * 3, count * 3);
         (mesh.geometry.getAttribute("crowdSkin") as THREE.InstancedBufferAttribute).addUpdateRange(

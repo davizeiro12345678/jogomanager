@@ -2,13 +2,17 @@
 // does not ship, so every imported club can be chosen. Bundled entries win.
 import { CLUBS, LEAGUES } from "@/game/data/leagues";
 import type { Club, League } from "@/game/types";
+import { catalogCountryNames } from "./catalog-country";
+import { validCatalogIdentity, validCatalogLabel } from "./catalog-integrity";
+import { CATALOG_EVENT } from "./catalog-events";
 import { catalogImageUrl } from "./catalog-media";
 
 // v1 could silently truncate competitions and clubs at the Data API row cap.
+export { CATALOG_EVENT } from "./catalog-events";
+
 const CACHE_KEY = "db-catalog-v3";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const PAGE = 1000;
-export const CATALOG_EVENT = "db-catalog-updated";
 
 type LeagueRow = [id: string, name: string, country: string, flag: string, logo?: string];
 type ClubRow = [
@@ -34,16 +38,21 @@ let refreshedAt = 0;
 let refreshing: Promise<void> | null = null;
 
 function apply(cache: Cache) {
+  const countryName = catalogCountryNames([
+    ...LEAGUES,
+    ...cache.leagues.map(([, , country, flag]) => ({ country, flag })),
+  ]);
   const byId = new Map(LEAGUES.map((l) => [l.id, l]));
   const added = new Set<string>();
   for (const [id, name, country, flag, logo] of cache.leagues) {
+    if (!validCatalogIdentity(id) || !validCatalogLabel(name)) continue;
     const existing = byId.get(id);
     if (existing) existing.logoUrl = catalogImageUrl(logo);
     if (!byId.has(id)) {
       const league: League = {
         id,
         name,
-        country,
+        country: countryName(country, flag),
         flag: flag || "🏳️",
         clubs: [],
         catalogStatus: "sourced",
@@ -55,6 +64,8 @@ function apply(cache: Cache) {
     }
   }
   for (const [id, leagueId, name, short, p, s, str, crest, city, country, founded] of cache.clubs) {
+    if (!validCatalogIdentity(id) || !validCatalogIdentity(leagueId) || !validCatalogLabel(name))
+      continue;
     // Enrich identity without changing bundled strengths, IDs or memberships.
     const metadata = {
       crestUrl: catalogImageUrl(crest),
@@ -64,13 +75,18 @@ function apply(cache: Cache) {
         typeof founded === "number" && founded >= 1800 && founded <= 2100 ? founded : undefined,
     };
     if (CLUBS[id]) Object.assign(CLUBS[id]!, metadata);
-    if (CLUBS[id]) continue;
     const league = byId.get(leagueId);
     if (!league) continue;
+    if (CLUBS[id]) {
+      const existing = CLUBS[id]!;
+      if (existing.league === leagueId && !league.clubs.some((club) => club.id === id))
+        league.clubs.push(existing);
+      continue;
+    }
     const club: Club = {
       id,
-      name,
-      short: short || name.slice(0, 3).toUpperCase(),
+      name: name.trim(),
+      short: short.trim() || name.trim().slice(0, 3).toUpperCase(),
       league: leagueId,
       primary: HEX.test(p) ? p : "#1f4fa0",
       secondary: HEX.test(s) ? s : "#ffffff",
@@ -91,28 +107,44 @@ function readCache(): Cache | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    const cache = JSON.parse(raw) as Cache;
-    return Number.isFinite(cache.at) &&
-      Array.isArray(cache.leagues) &&
-      cache.leagues.every(
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== "object") return null;
+    const candidate = value as Cache;
+    if (
+      !Number.isFinite(candidate.at) ||
+      candidate.at < 0 ||
+      candidate.at > Date.now() + 300000 ||
+      !Array.isArray(candidate.leagues) ||
+      candidate.leagues.length > 50000 ||
+      !Array.isArray(candidate.clubs) ||
+      candidate.clubs.length > 300000
+    )
+      return null;
+    if (
+      candidate.leagues.some(
         (row) =>
-          Array.isArray(row) &&
-          (row.length === 4 || row.length === 5) &&
-          row.every((value) => typeof value === "string"),
-      ) &&
-      Array.isArray(cache.clubs) &&
-      cache.clubs.every(
+          !Array.isArray(row) ||
+          (row.length !== 4 && row.length !== 5) ||
+          row.some((x) => typeof x !== "string" || x.length > 1000),
+      ) ||
+      candidate.clubs.some(
         (row) =>
-          Array.isArray(row) &&
-          (row.length === 7 ||
-            (row.length === 11 &&
-              row.slice(7, 10).every((value) => typeof value === "string") &&
-              (row[10] === null || Number.isFinite(row[10])))) &&
-          row.slice(0, 6).every((value) => typeof value === "string") &&
-          Number.isFinite(row[6]),
+          !Array.isArray(row) ||
+          (row.length !== 7 && row.length !== 11) ||
+          row.slice(0, 6).some((x) => typeof x !== "string" || x.length > 1000) ||
+          !Number.isFinite(row[6]) ||
+          (row.length === 11 &&
+            (row.slice(7, 10).some((x) => typeof x !== "string" || x.length > 1000) ||
+              (row[10] !== null && !Number.isFinite(row[10])))),
       )
-      ? cache
-      : null;
+    )
+      return null;
+    if (
+      new Set(candidate.leagues.map((row) => row[0])).size !== candidate.leagues.length ||
+      new Set(candidate.clubs.map((row) => row[0])).size !== candidate.clubs.length
+    )
+      return null;
+    return candidate;
   } catch {
     return null;
   }
@@ -179,7 +211,12 @@ async function fetchAll(): Promise<Cache> {
   ]);
   const clubs: ClubRow[] = [];
   for (const c of fetchedClubs) {
-    if (!c.competition_id) continue;
+    if (
+      !validCatalogIdentity(c.id) ||
+      !validCatalogIdentity(c.competition_id) ||
+      !validCatalogLabel(c.name)
+    )
+      continue;
     clubs.push([
       c.id,
       c.competition_id,
@@ -194,13 +231,9 @@ async function fetchAll(): Promise<Cache> {
       c.founded ?? null,
     ]);
   }
-  const leagues: LeagueRow[] = (comps ?? []).map((c) => [
-    c.id,
-    c.name,
-    c.country,
-    c.flag ?? "",
-    catalogImageUrl(c.logo_url) ?? "",
-  ]);
+  const leagues: LeagueRow[] = (comps ?? [])
+    .filter((c) => validCatalogIdentity(c.id) && validCatalogLabel(c.name))
+    .map((c) => [c.id, c.name, c.country, c.flag ?? "", catalogImageUrl(c.logo_url) ?? ""]);
   return { at: Date.now(), leagues, clubs };
 }
 

@@ -14,6 +14,7 @@ import {
 import { makeRng } from "@/game/rng";
 import type { CareerState, Player } from "@/game/types";
 import { effectivePlayer } from "./player-development";
+import { appendMatchAnalytics, type CareerMatchAnalytics } from "./match-analytics";
 
 export interface AutoWeek {
   kind: "match" | "bye";
@@ -119,18 +120,37 @@ export function autoWeek(
   }
 
   const seed = `${state.clubId}-auto-${state.season}-${state.round}`;
-  const { hg, ag } = quickSimulate(
+  const result = quickSimulate(
     fixture.home,
     fixture.away,
     seed,
     careerMatchContext(state, fixture.home, fixture.away),
   );
+  const { hg, ag } = result;
   const home = fixture.home === state.clubId;
   const gf = home ? hg : ag;
   const ga = home ? ag : hg;
 
   const perf = buildPerformances(state, gf, `${seed}-perf`);
-  const next = advanceRound(state, { hg, ag }, perf, "Liga", evaluatedAt);
+  let measured = state;
+  if ("analytics" in result && result.analytics) {
+    const last = result.analytics.timeline.at(-1);
+    const entry: CareerMatchAnalytics = {
+      id: `${state.season}:${state.round}:${fixture.home}:${fixture.away}`,
+      season: state.season,
+      round: state.round,
+      home: fixture.home,
+      away: fixture.away,
+      source: "quick",
+      score: [hg, ag],
+      xg: [last?.homeXg ?? 0, last?.awayXg ?? 0],
+      possession: [0, 0],
+      passes: [0, 0],
+      changes: result.analytics.changes.slice(-40),
+    };
+    measured = appendMatchAnalytics(state, entry);
+  }
+  const next = advanceRound(measured, { hg, ag }, perf, "Liga", evaluatedAt);
 
   const scorers = perf
     .filter((p) => p.goals > 0)

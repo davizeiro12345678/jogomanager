@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { boundedPhysicsInitialization, validExecutionContract } from "./match-execution";
+import {
+  boundedPhysicsInitialization,
+  initializeMatchExecution,
+  validExecutionContract,
+} from "./match-execution";
+import * as perception from "./wasm/match-perception";
+import * as physics from "./rapier-ball-authority";
 import type { BallPhysicsAuthority } from "./rapier-ball-authority";
 import { MatchSim, MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE } from "./sim";
 import { buildTeamSetup } from "./quickMatch";
@@ -11,9 +17,26 @@ function authority(step: BallPhysicsAuthority["step"] = vi.fn()): BallPhysicsAut
 function match() {
   return new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "execution-v2");
 }
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe("fixed match execution contract", () => {
+  it("releases unattached physics when a fixed match rejects perception initialization", async () => {
+    const sim = match();
+    sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+    const unused = authority();
+    vi.spyOn(perception, "loadPassLaneIntoKernel").mockResolvedValue(evaluatePassLanesIntoFallback);
+    vi.spyOn(physics, "createRapierBallAuthority").mockResolvedValue(
+      unused as Awaited<ReturnType<typeof physics.createRapierBallAuthority>>,
+    );
+    await expect(initializeMatchExecution(sim)).rejects.toThrow(/fixed/);
+    expect(unused.dispose).toHaveBeenCalledTimes(1);
+    expect(unused.reset).not.toHaveBeenCalled();
+    expect(sim.executionContract().physics).toBe("compat");
+    sim.dispose();
+  });
   it("releases late initialization exactly once without attaching it", async () => {
     vi.useFakeTimers();
     let resolve!: (value: BallPhysicsAuthority) => void;
@@ -77,7 +100,7 @@ describe("fixed match execution contract", () => {
     expect(() => sim.setPassLaneIntoKernel(evaluatePassLanesIntoFallback, "wasm")).toThrow(/fixed/);
     expect(late.reset).not.toHaveBeenCalled();
     expect(sim.executionContract()).toEqual({
-      revision: 2,
+      revision: 3,
       physics: "compat",
       perception: "compat",
     });
@@ -101,17 +124,21 @@ describe("fixed match execution contract", () => {
     const sim = match();
     sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
     const before = sim.checkpoint();
+    const restored = match();
+    const untouched = restored.checkpoint();
     expect(() =>
-      sim.restoreCheckpoint({
+      restored.restoreCheckpoint({
         ...before,
-        execution: { revision: 2, physics: "rapier", perception: "compat" },
+        execution: { revision: 3, physics: "rapier", perception: "compat" },
       }),
     ).toThrow(/checkpoint/);
+    expect(restored.checkpoint()).toEqual(untouched);
     expect(sim.checkpoint()).toEqual(before);
     expect(validExecutionContract({ revision: 999, physics: "compat", perception: "compat" })).toBe(
       false,
     );
     sim.dispose();
+    restored.dispose();
   });
   it("preserves state when speed groups the same fixed ticks", () => {
     const normal = match();

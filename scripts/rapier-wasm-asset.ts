@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { transformWithOxc, type Plugin } from "vite";
-import { rapierSourceModules, sharedRapierBindings } from "./rapier-source-modules";
+import { rapierSourceModules, sharedRapierBindings } from "./rapier-source-modules.ts";
 
 // The pinned compat package embeds the exact binary it also ships as a file.
 // Keep its official bindings/init, but let browsers and workers fetch the
@@ -48,7 +48,7 @@ export function isRapierCompatModule(id: string): boolean {
 }
 
 /** Browser builds only: server physics and development retain their original init. */
-export function rapierWasmAsset(): Plugin {
+export function rapierWasmAsset(options: { clientOnly?: boolean } = {}): Plugin {
   const prefix = "\0pfm-rapier-source/";
   const modulePath = createRequire(import.meta.url)
     .resolve("@dimforge/rapier3d-compat")
@@ -58,7 +58,9 @@ export function rapierWasmAsset(): Plugin {
   return {
     name: "pfm-rapier-wasm-asset",
     apply: "build",
-    applyToEnvironment: (environment) => environment.config.consumer === "client",
+    applyToEnvironment: (environment) =>
+      environment.config.consumer === "client" &&
+      (!options.clientOnly || environment.name === "client"),
     enforce: "pre",
     async buildStart() {
       const code = readFileSync(modulePath, "utf8");

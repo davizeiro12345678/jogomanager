@@ -4,7 +4,8 @@ import { StaticBatch } from "./StaticBatch";
 import { RigidActorBatch } from "./RigidActorBatch";
 import * as THREE from "three";
 import { censusRef } from "@/game/scene-census";
-import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import { type SimView } from "@/game/sim-types";
 import { metalAlbedo, metalRoughness, grilleTexture } from "./textures/metal";
 
 /**
@@ -86,6 +87,7 @@ function Dugout({ x, color }: { x: number; color: string }) {
         <meshStandardMaterial
           color="#8fb6cf"
           transparent
+          forceSinglePass
           opacity={0.22}
           roughness={0.08}
           metalness={0}
@@ -135,6 +137,7 @@ function SectorGrilles({ rings }: { rings: number }) {
       metalness: 0.6,
       transparent: true,
       alphaTest: 0.35,
+      forceSinglePass: true,
       side: THREE.DoubleSide,
     });
     if (tex) {

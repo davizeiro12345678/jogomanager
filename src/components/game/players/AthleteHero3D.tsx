@@ -1,6 +1,6 @@
 import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { Suspense, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { kitFor } from "@/game/kits";
@@ -15,8 +15,12 @@ import {
 } from "@/game/player-career/appearance";
 import type { Appearance, BodyBuild, PlayerPosition } from "@/game/player-career/types";
 import { safeClub } from "@/game/squad";
-import type { SimPlayer, TeamSetup } from "@/game/sim";
+import type { SimPlayer, TeamSetup } from "@/game/sim-types";
 import { GraphicsBoundary } from "../GraphicsBoundary";
+import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
+import { PortraitFrames } from "../PortraitFrames";
+import { useVisibleGraphics } from "@/hooks/useVisibleGraphics";
+import { useAccessibility } from "@/hooks/useAccessibility";
 import { PlayerRig } from "./PlayerRig";
 
 interface AthleteHeroData {
@@ -107,7 +111,7 @@ function portraitFixture(
   return { view, player };
 }
 
-function appearanceFor(athlete: AthleteHeroData) {
+function appearanceFor(athlete: Omit<AthleteHeroData, "clubId" | "nickname">) {
   const role = RIG_POSITION_FOR_CAREER[athlete.position];
   const fallback = defaultAthleteAppearance(athlete.seed, role, BODY_TYPE_FOR_BUILD[athlete.build]);
   const appearance =
@@ -122,7 +126,7 @@ function appearanceFor(athlete: AthleteHeroData) {
   });
 }
 
-function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
+function AthletePortraitScene({ athlete, paused }: { athlete: AthleteHeroData; paused: boolean }) {
   const {
     seed,
     clubId,
@@ -143,8 +147,6 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
     () =>
       appearanceFor({
         seed,
-        clubId,
-        nickname,
         position,
         shirtNumber,
         heightCm,
@@ -153,18 +155,7 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
         appearance: legacyAppearance,
         appearanceV1,
       }),
-    [
-      seed,
-      clubId,
-      nickname,
-      position,
-      shirtNumber,
-      heightCm,
-      weightKg,
-      build,
-      legacyAppearance,
-      appearanceV1,
-    ],
+    [seed, position, shirtNumber, heightCm, weightKg, build, legacyAppearance, appearanceV1],
   );
   const club = safeClub(athlete.clubId);
   const kit = useMemo(
@@ -189,7 +180,7 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
         shadow-camera-top={3}
         shadow-camera-bottom={-1}
         shadow-bias={-0.0002}
-        shadow-normalBias={0.02}
+        shadow-normalBias={0.002}
       />
       <directionalLight position={[2.8, 3.8, -2.5]} color="#8fc9ff" intensity={2.1} />
       <Environment frames={1} resolution={128}>
@@ -227,6 +218,8 @@ function AthletePortraitScene({ athlete }: { athlete: AthleteHeroData }) {
         respectVisualSettings={false}
         lookOverride={appearance}
         previewClip="idle"
+        paused={paused}
+        previewRevision={JSON.stringify(appearance)}
       />
     </>
   );
@@ -242,11 +235,76 @@ function PortraitCamera() {
   return null;
 }
 
-export function AthleteHero3D({ athlete, className }: AthleteHero3DProps) {
+/** A lightweight model stays visible while the detailed rig and its assets load. */
+function LoadingPortrait({ athlete }: { athlete: AthleteHeroData }) {
+  const club = safeClub(athlete.clubId);
+  const look = appearanceFor(athlete);
   return (
-    <div className={className} aria-label={`Modelo 3D de ${athlete.nickname || "atleta"}`}>
-      <GraphicsBoundary>
+    <>
+      <color attach="background" args={["#111d26"]} />
+      <hemisphereLight args={["#e7f1f7", "#17232c", 1.1]} />
+      <directionalLight position={[-2, 4, 3]} intensity={2.4} color="#fff3e5" />
+      <directionalLight position={[2, 3, -2]} intensity={1.2} color="#8fc9ff" />
+      <mesh rotation-x={-Math.PI / 2} position-y={-0.01} receiveShadow>
+        <circleGeometry args={[1.45, 40]} />
+        <meshStandardMaterial color="#1c2b35" roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 1.73, 0]} castShadow>
+        <sphereGeometry args={[0.2, 24, 16]} />
+        <meshStandardMaterial color={look.skin} roughness={0.82} />
+      </mesh>
+      <mesh position={[0, 1.82, 0]} castShadow>
+        <sphereGeometry args={[0.205, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={look.hairColor} roughness={0.78} />
+      </mesh>
+      <mesh position={[0, 1.1, 0]} castShadow>
+        <capsuleGeometry args={[0.31, 0.52, 6, 16]} />
+        <meshStandardMaterial color={club.primary} roughness={0.72} />
+      </mesh>
+      <mesh position={[-0.39, 1.1, 0]} rotation-z={0.14} castShadow>
+        <capsuleGeometry args={[0.085, 0.52, 5, 12]} />
+        <meshStandardMaterial color={look.skin} roughness={0.82} />
+      </mesh>
+      <mesh position={[0.39, 1.1, 0]} rotation-z={-0.14} castShadow>
+        <capsuleGeometry args={[0.085, 0.52, 5, 12]} />
+        <meshStandardMaterial color={look.skin} roughness={0.82} />
+      </mesh>
+      <mesh position={[0, 0.56, 0]} castShadow>
+        <boxGeometry args={[0.46, 0.31, 0.3]} />
+        <meshStandardMaterial color={club.secondary} roughness={0.8} />
+      </mesh>
+      <mesh position={[-0.13, 0.2, 0]} castShadow>
+        <capsuleGeometry args={[0.09, 0.46, 5, 12]} />
+        <meshStandardMaterial color={look.skin} roughness={0.82} />
+      </mesh>
+      <mesh position={[0.13, 0.2, 0]} castShadow>
+        <capsuleGeometry args={[0.09, 0.46, 5, 12]} />
+        <meshStandardMaterial color={look.skin} roughness={0.82} />
+      </mesh>
+      <ContactShadows position={[0, 0.006, 0]} opacity={0.32} scale={2.5} blur={2.5} far={1.3} />
+    </>
+  );
+}
+
+export function AthleteHero3D({ athlete, className }: AthleteHero3DProps) {
+  const host = useRef<HTMLDivElement>(null);
+  const visible = useVisibleGraphics(host);
+  const { reducedMotion } = useAccessibility();
+  const paused = !visible || reducedMotion;
+  return (
+    <div
+      ref={host}
+      data-graphics-active={visible ? "true" : "false"}
+      className={className}
+      aria-label={`Modelo 3D de ${athlete.nickname || "atleta"}`}
+    >
+      <GraphicsBoundary
+        fallback={
+          <p className="athlete-preview-fallback">Prévia 3D indisponível neste aparelho.</p>
+        }
+      >
         <Canvas
+          frameloop="demand"
           camera={{ position: [1.5, 1.4, 3.15], fov: 30 }}
           dpr={[1, 1.5]}
           shadows={{ type: THREE.PCFShadowMap }}
@@ -259,8 +317,12 @@ export function AthleteHero3D({ athlete, className }: AthleteHero3DProps) {
             <p className="athlete-preview-fallback">Prévia 3D indisponível neste aparelho.</p>
           }
         >
+          <PortraitFrames paused={paused} />
           <PortraitCamera />
-          <AthletePortraitScene athlete={athlete} />
+          <Ktx2CanvasAssets portrait />
+          <Suspense fallback={<LoadingPortrait athlete={athlete} />}>
+            <AthletePortraitScene athlete={athlete} paused={paused} />
+          </Suspense>
         </Canvas>
       </GraphicsBoundary>
     </div>

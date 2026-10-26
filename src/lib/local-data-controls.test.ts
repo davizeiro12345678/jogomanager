@@ -1,10 +1,21 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { clearLocalData, exportLocalData } from "./local-data-controls";
+
+vi.mock("@/lib/offline/store", () => ({
+  exportLocalCareerData: async () => ({}),
+  clearLocalCareerData: async () => true,
+}));
+vi.mock("@/game/replay-storage", () => ({
+  exportReplayArchive: async () => ({}),
+  clearReplayArchive: async () => true,
+}));
+vi.mock("@/game/audio-cache", () => ({ clearVoiceCache: async () => true }));
 afterEach(() => vi.unstubAllGlobals());
 function storage() {
   const entries = new Map([
-    ["pfm-save", '{"season":2026}'],
-    ["pfm-theme", "dark"],
+    ["manager3d.career.v1", '{"season":2026}'],
+    ["pfm3d.lang", "pt-BR"],
+    ["manager3d.career.v1:user:another-owner", "private-other-player"],
     ["sb-project-auth-token", "private-session"],
   ]);
   vi.stubGlobal("window", {
@@ -25,12 +36,20 @@ function storage() {
   });
   return entries;
 }
-it("exports game data without exposing Supabase session tokens", () => {
+it("exports guest game data without exposing session tokens or another owner's save", async () => {
   storage();
-  expect(exportLocalData()).toEqual({ "pfm-save": { season: 2026 }, "pfm-theme": "dark" });
+  expect(await exportLocalData()).toEqual({
+    "manager3d.career.v1": { season: 2026 },
+    "pfm3d.lang": "pt-BR",
+    offlineCareer: {},
+    localReplayArchive: {},
+  });
 });
-it("clears a stable snapshot of game keys while preserving the signed-in session", () => {
+it("clears guest stores while preserving the signed-in session and another owner's data", async () => {
   const entries = storage();
-  clearLocalData();
-  expect([...entries]).toEqual([["sb-project-auth-token", "private-session"]]);
+  await expect(clearLocalData()).resolves.toBe(true);
+  expect([...entries]).toEqual([
+    ["manager3d.career.v1:user:another-owner", "private-other-player"],
+    ["sb-project-auth-token", "private-session"],
+  ]);
 });

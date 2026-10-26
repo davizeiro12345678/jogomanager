@@ -1,9 +1,11 @@
 import * as THREE from "three";
+import { prepareLowClothGeometry, writeLowClothPose } from "./player-lod-cloth";
 
 /** A continuous shirt follows the chest hinge even in the instanced match LOD.
  * Twelve relative morph coefficients encode an affine transform. Its lower
  * hem remains on the lumbar bone; no second torso mesh or bone texture is used. */
-export function articulateLowTorso(geometry: THREE.BufferGeometry) {
+export function articulateLowTorso(geometry: THREE.BufferGeometry, affine = false) {
+  if (affine) return prepareLowClothGeometry(geometry, "torso");
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
   const positions: THREE.Float32BufferAttribute[] = [];
@@ -33,6 +35,7 @@ export function articulateLowTorso(geometry: THREE.BufferGeometry) {
 }
 
 export class LowTorsoAnimator {
+  private readonly affineWeights = new Float32Array(12);
   private readonly proxy: THREE.Mesh;
   private readonly rotation = new THREE.Matrix4();
   private readonly quaternion = new THREE.Quaternion();
@@ -60,7 +63,7 @@ export class LowTorsoAnimator {
     this.rotation.makeRotationFromQuaternion(this.quaternion);
     this.hinge.set(0, hingeY, 0);
     this.rotatedHinge.copy(this.hinge).applyMatrix4(this.rotation);
-    const weights = this.proxy.morphTargetInfluences!;
+    const weights = this.proxy.morphTargetInfluences ?? this.affineWeights;
     for (let source = 0; source < 3; source++)
       for (let destination = 0; destination < 3; destination++)
         weights[source * 3 + destination] =
@@ -71,6 +74,10 @@ export class LowTorsoAnimator {
       weights[9 + destination] =
         (this.hinge.getComponent(destination) - this.rotatedHinge.getComponent(destination)) /
         this.scale.getComponent(destination);
+    if (mesh.geometry.userData["lowClothKind"] === "torso") {
+      writeLowClothPose(mesh.geometry, index, weights, "torso");
+      return;
+    }
     if (!mesh.morphTexture) {
       const count = mesh.count;
       mesh.count = mesh.instanceMatrix.count;

@@ -1,0 +1,25 @@
+import { performance } from 'node:perf_hooks';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const [root, output, planPath] = process.argv.slice(2);
+const tasks: {name:string,fn:()=>unknown}[]=[];
+const collector={add(name:string,fn:()=>unknown){tasks.push({name,fn});return this;}};
+for(const [file,fn] of [['match','registerMatchBenchmarks'],['season','registerSeasonBenchmarks'],['rig','registerRigBenchmarks'],['presentation','registerPresentationBenchmarks']]){
+ const mod=await import(pathToFileURL(`${root}/src/game/benchmarks/${file}.ts`).href);mod[fn](collector);
+}
+const plan=planPath ? JSON.parse(readFileSync(planPath,'utf8')).plan: {};
+let sink:unknown;
+const result=[];
+for(const {name,fn} of tasks){
+ const warmStart=performance.now(); let warmCalls=0;
+ while(warmCalls<32 || performance.now()-warmStart<100){sink=fn();warmCalls++;}
+ let iterations=plan[name];
+ if(!iterations){const t=performance.now();for(let i=0;i<16;i++)sink=fn();iterations=Math.max(2,Math.min(100000,Math.ceil(35/((performance.now()-t)/16))));plan[name]=iterations;}
+ const samples=[];
+ for(let sample=0;sample<5;sample++){
+ const start=performance.now();for(let i=0;i<iterations;i++)sink=fn();samples.push((performance.now()-start)/iterations);
+ }
+ result.push({name,iterations,samplesMs:samples});
+}
+writeFileSync(output,JSON.stringify({root,node:process.version,at:new Date().toISOString(),plan,results:result},null,2));
+console.log(JSON.stringify({output,count:result.length,sink:typeof sink}));

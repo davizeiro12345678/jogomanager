@@ -1,13 +1,11 @@
-import { migrateCareer } from "@/game/career";
+import { migrateCareer } from "@/game/career/migration";
+import { CLUBS } from "@/game/data/leagues";
+import { calendarYear } from "@/game/competition-regulations";
 import type { CareerState } from "@/game/types";
-import { assertUntrustedJson } from "@/lib/untrusted-json";
+import { parseImportJson, record } from "@/lib/import-validation";
 
 export const CAREER_TRANSFER_VERSION = 1 as const;
 export const CAREER_TRANSFER_KIND = "pro-football-manager-3d-career" as const;
-// This is checked before JSON.parse so a manually supplied import cannot make
-// the browser allocate an unbounded object graph. The structural guard below
-// separately limits nesting, keys and string content.
-export const MAX_CAREER_TRANSFER_BYTES = 8_000_000;
 
 export interface CareerTransferFile {
   kind: typeof CAREER_TRANSFER_KIND;
@@ -16,6 +14,87 @@ export interface CareerTransferFile {
   gameSaveVersion: number;
   checksum: string;
   career: CareerState;
+}
+
+export interface CareerTransferPreview {
+  managerName: string;
+  clubId: string;
+  clubName: string;
+  season: number;
+  round: number;
+  calendarYear: number;
+  gameSaveVersion: number;
+  exportedAt: string;
+  checksum: string;
+  playerCount: number;
+  fixtureCount: number;
+  historyCount: number;
+}
+
+const nonempty = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0 && value.length <= 120;
+const finite = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+const positiveInteger = (value: unknown): value is number =>
+  finite(value) && Number.isInteger(value) && value >= 1;
+
+/** Reject missing progress before migration can manufacture defaults for it. */
+function assertCareerContents(value: unknown): asserts value is CareerState {
+  if (
+    !record(value) ||
+    ![1, 2, 3].includes(Number(value["version"])) ||
+    !nonempty(value["managerName"]) ||
+    !nonempty(value["clubId"]) ||
+    !nonempty(value["leagueId"]) ||
+    !positiveInteger(value["round"]) ||
+    (value["season"] !== undefined && !positiveInteger(value["season"])) ||
+    !record(value["players"]) ||
+    !Object.keys(value["players"]).length ||
+    !Array.isArray(value["fixtures"]) ||
+    !value["fixtures"].length ||
+    !Array.isArray(value["lineup"]) ||
+    !value["lineup"].every(nonempty) ||
+    !Array.isArray(value["bench"]) ||
+    !value["bench"].every(nonempty) ||
+    !record(value["tactics"]) ||
+    !nonempty(value["tactics"]["formation"])
+  )
+    throw new Error("A carreira está incompleta: confira clube, elenco, escalação e calendário.");
+  for (const [id, player] of Object.entries(value["players"])) {
+    if (
+      !record(player) ||
+      player["id"] !== id ||
+      !nonempty(player["name"]) ||
+      !nonempty(player["clubId"]) ||
+      !["GK", "DF", "MF", "FW"].includes(String(player["pos"]))
+    )
+      throw new Error("A carreira contém um elenco incompleto ou inválido.");
+  }
+  for (const fixture of value["fixtures"]) {
+    if (
+      !record(fixture) ||
+      !positiveInteger(fixture["round"]) ||
+      !nonempty(fixture["home"]) ||
+      !nonempty(fixture["away"]) ||
+      ![fixture["homeGoals"], fixture["awayGoals"]].every(
+        (goal) => goal === null || (finite(goal) && Number.isInteger(goal) && goal >= 0),
+      )
+    )
+      throw new Error("A carreira contém um calendário incompleto ou inválido.");
+  }
+  const current = value["version"] === 3;
+  const finances = value["finances"];
+  if (
+    (current || finances !== undefined) &&
+    (!record(finances) || !["budget", "spent", "income"].every((key) => finite(finances[key])))
+  )
+    throw new Error("A carreira contém finanças incompletas ou um valor inválido.");
+  if (
+    (current && !positiveInteger(value["season"])) ||
+    !Array.isArray(value["results"]) ||
+    ((current || value["history"] !== undefined) && !Array.isArray(value["history"]))
+  )
+    throw new Error("A carreira contém progresso ou histórico incompleto.");
 }
 
 function hash(text: string): string {
@@ -27,68 +106,70 @@ function hash(text: string): string {
   return (value >>> 0).toString(16).padStart(8, "0");
 }
 
-/** Counts UTF-8 bytes without allocating a second full-size byte array. */
-function exceedsCareerTransferByteLimit(text: string): boolean {
-  let bytes = 0;
-  for (let index = 0; index < text.length; index++) {
-    const code = text.charCodeAt(index);
-    if (code <= 0x7f) bytes += 1;
-    else if (code <= 0x7ff) bytes += 2;
-    else if (
-      code >= 0xd800 &&
-      code <= 0xdbff &&
-      index + 1 < text.length &&
-      text.charCodeAt(index + 1) >= 0xdc00 &&
-      text.charCodeAt(index + 1) <= 0xdfff
-    ) {
-      bytes += 4;
-      index++;
-    } else bytes += 3;
-    if (bytes > MAX_CAREER_TRANSFER_BYTES) return true;
-  }
-  return false;
-}
-
-function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 export function exportCareerFile(career: CareerState): string {
-  const payload = JSON.stringify(career);
+  assertCareerContents(career);
+  const payload = JSON.stringify(career, (_key, value: unknown) => {
+    if (typeof value === "number" && !Number.isFinite(value))
+      throw new Error("A carreira contém um valor inválido. O arquivo não foi exportado.");
+    return value;
+  });
   const file: CareerTransferFile = {
     kind: CAREER_TRANSFER_KIND,
     version: CAREER_TRANSFER_VERSION,
     exportedAt: new Date().toISOString(),
     gameSaveVersion: career.version,
     checksum: hash(payload),
-    career,
+    career: JSON.parse(payload) as CareerState,
   };
-  return JSON.stringify(file, null, 2);
+  const serialized = JSON.stringify(file, null, 2);
+  // Validate the bytes destined for the download, including size and checksum.
+  readCareerFile(serialized);
+  return serialized;
+}
+
+function readCareerFile(text: string): CareerTransferFile {
+  const value = parseImportJson(text);
+  if (!record(value)) throw new Error("Este arquivo nao e uma carreira compativel.");
+  const parsed = value as Partial<CareerTransferFile>;
+  if (
+    parsed.kind !== CAREER_TRANSFER_KIND ||
+    parsed.version !== CAREER_TRANSFER_VERSION ||
+    !parsed.career ||
+    typeof parsed.exportedAt !== "string" ||
+    !Number.isFinite(Date.parse(parsed.exportedAt)) ||
+    ![1, 2, 3].includes(parsed.gameSaveVersion ?? 0) ||
+    parsed.gameSaveVersion !== parsed.career.version
+  )
+    throw new Error("Este arquivo não é uma carreira compatível.");
+  if (hash(JSON.stringify(parsed.career)) !== parsed.checksum)
+    throw new Error("O arquivo da carreira está incompleto ou foi alterado.");
+  assertCareerContents(parsed.career);
+  return parsed as CareerTransferFile;
+}
+
+/** Metadata comes from the validated serialized save, never a separate UI label. */
+export function previewCareerFile(text: string): CareerTransferPreview {
+  const file = readCareerFile(text);
+  const career = file.career;
+  return {
+    managerName: career.managerName,
+    clubId: career.clubId,
+    clubName: CLUBS[career.clubId]?.name ?? career.clubId,
+    season: career.season ?? 1,
+    round: career.round,
+    calendarYear: calendarYear({ ...career, season: career.season ?? 1 }),
+    gameSaveVersion: file.gameSaveVersion,
+    exportedAt: file.exportedAt,
+    checksum: file.checksum,
+    playerCount: Object.keys(career.players).length,
+    fixtureCount: career.fixtures.length,
+    historyCount: career.history?.length ?? 0,
+  };
 }
 
 export function importCareerFile(text: string): CareerState {
-  if (typeof text !== "string" || exceedsCareerTransferByteLimit(text))
-    throw new Error("O arquivo da carreira excede o limite permitido.");
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    throw new Error("Arquivo inválido: não é um JSON válido.");
-  }
-
-  // Imports are personal, untrusted saves. Validate the whole object before
-  // serializing its career payload or passing it to the migration path.
-  assertUntrustedJson(parsed);
-  if (
-    !isJsonRecord(parsed) ||
-    parsed["kind"] !== CAREER_TRANSFER_KIND ||
-    parsed["version"] !== CAREER_TRANSFER_VERSION ||
-    typeof parsed["checksum"] !== "string" ||
-    !isJsonRecord(parsed["career"])
-  )
-    throw new Error("Este arquivo não é uma carreira compatível.");
-  if (hash(JSON.stringify(parsed["career"])) !== parsed["checksum"])
-    throw new Error("O arquivo da carreira está incompleto ou foi alterado.");
-  return migrateCareer(parsed["career"] as unknown as CareerState);
+  return migrateCareer(readCareerFile(text).career);
 }
+
+/** Compatibility name retained for existing callers. */
+export { MAX_IMPORT_BYTES as MAX_CAREER_TRANSFER_BYTES } from "@/lib/import-validation";

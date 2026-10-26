@@ -15,7 +15,8 @@ import {
   type OfficialCue,
   type OfficialRole,
 } from "@/game/official-presentation";
-import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import { type SimView } from "@/game/sim-types";
 import { censusRef } from "@/game/scene-census";
 
 /** Officials share the athlete's anatomical skeleton, joint corrections and

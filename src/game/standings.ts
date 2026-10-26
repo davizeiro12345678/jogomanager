@@ -9,11 +9,12 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     if (group.length < 2) return group;
     const criterion = remaining[0];
     if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
-    const ids = new Set(group.map((r) => r.clubId));
-    const head = new Map(group.map((r) => [r.clubId, 0]));
+    let head: Map<string, number> | undefined;
     if (criterion === "headToHead") {
       // A CBF só aplica confronto direto quando restam duas associações empatadas.
       if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const ids = new Set(group.map((r) => r.clubId));
+      head = new Map(group.map((r) => [r.clubId, 0]));
       const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
       if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
         return split(group, remaining.slice(1));
@@ -38,7 +39,7 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
           : criterion === "goalsFor"
             ? r.gf
             : criterion === "headToHead"
-              ? head.get(r.clubId)!
+              ? head!.get(r.clubId)!
               : -fixtures.reduce(
                   (cards, f) =>
                     cards +
@@ -49,15 +50,42 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     const buckets = new Map<number, TableRow[]>();
     for (const row of group) {
       const key = value(row);
-      buckets.set(key, [...(buckets.get(key) ?? []), row]);
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(row);
+      else buckets.set(key, [row]);
     }
     return [...buckets]
       .sort(([a], [b]) => b - a)
       .flatMap(([, bucket]) => split(bucket, remaining.slice(1)));
   };
+  if (rows.every((row) => Number.isFinite(row.pts))) {
+    // Most teams have distinct totals. Sort one owned array and allocate a
+    // subgroup only for a real tie, retaining the same recursive criteria.
+    const ranked = [...rows].sort((a, b) => b.pts - a.pts);
+    for (let start = 0; start < ranked.length;) {
+      let end = start + 1;
+      while (end < ranked.length && ranked[end]!.pts === ranked[start]!.pts) end++;
+      if (end - start > 1) {
+        const group = split(ranked.slice(start, end), criteria);
+        for (let i = 0; i < group.length; i++) ranked[start + i] = group[i]!;
+      }
+      start = end;
+    }
+    return ranked;
+  }
+  // Preserve Map's SameValueZero grouping and stable ordering for unusual
+  // non-finite external rows; generated tables use the finite path above.
   const points = new Map<number, TableRow[]>();
-  for (const row of rows) points.set(row.pts, [...(points.get(row.pts) ?? []), row]);
-  return [...points].sort(([a], [b]) => b - a).flatMap(([, group]) => split(group, criteria));
+  for (const row of rows) {
+    const group = points.get(row.pts);
+    if (group) group.push(row);
+    else points.set(row.pts, [row]);
+  }
+  const ranked: TableRow[] = [];
+  for (const [, group] of [...points].sort(([a], [b]) => b - a)) {
+    for (const row of split(group, criteria)) ranked.push(row);
+  }
+  return ranked;
 }
 
 export function tableFromFixtures(
@@ -73,26 +101,26 @@ export function tableFromFixtures(
     const h = rows.get(f.home),
       a = rows.get(f.away);
     if (!h || !a) continue;
-    h.p++;
-    a.p++;
     h.gf += f.homeGoals;
     h.ga += f.awayGoals;
     a.gf += f.awayGoals;
     a.ga += f.homeGoals;
     if (f.homeGoals > f.awayGoals) {
       h.w++;
-      h.pts += 3;
       a.l++;
     } else if (f.homeGoals < f.awayGoals) {
       a.w++;
-      a.pts += 3;
       h.l++;
     } else {
       h.d++;
       a.d++;
-      h.pts++;
-      a.pts++;
     }
+  }
+  // Derive these integer totals once per club instead of rewriting them
+  // for both sides of every played fixture (also handles a self-fixture).
+  for (const row of rows.values()) {
+    row.p = row.w + row.d + row.l;
+    row.pts = row.w * 3 + row.d;
   }
   return rankTable([...rows.values()], fixtures, country);
 }

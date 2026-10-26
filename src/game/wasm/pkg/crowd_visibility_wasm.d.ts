@@ -18,10 +18,30 @@ export class CrowdSelector {
 }
 
 /**
+ * Presentation-only Float32 cloth. No match state, clock, seed or RNG input.
+ */
+export class FloatNet {
+    free(): void;
+    [Symbol.dispose](): void;
+    data_len(): number;
+    data_ptr(): number;
+    impact(u: number, v: number, speed: number): void;
+    constructor(cols: number, rows: number, width: number, height: number);
+    restore(displacement: Float32Array, velocity: Float32Array, accumulator: number): boolean;
+    step(dt: number, time: number, wind: number, wet: number): void;
+}
+
+/**
  * A seamless fibre normal tile and roughness tile, packed RGBA then RGBA.
  * Integer arithmetic keeps native Rust, WASM and the JS fallback byte-identical.
  */
 export function build_turf_detail(size: number, seed: number): Uint8Array;
+
+/**
+ * Packed f32 GPU spawn data: x/y/z, fall speed, snow phase. Presentation only.
+ * A bounded one-time batch; movement stays in the vertex shader.
+ */
+export function build_weather_instances(count: number, seed: number): Float32Array;
 
 export function crowd_max_references(): number;
 
@@ -66,7 +86,9 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_crowdselector_free: (a: number, b: number) => void;
+    readonly __wbg_floatnet_free: (a: number, b: number) => void;
     readonly build_turf_detail: (a: number, b: number) => [number, number];
+    readonly build_weather_instances: (a: number, b: number) => [number, number];
     readonly crowd_max_references: () => number;
     readonly crowd_max_seats: () => number;
     readonly crowd_max_tiles: () => number;
@@ -75,12 +97,19 @@ export interface InitOutput {
     readonly crowdselector_select_into: (a: number, b: any, c: any, d: number, e: number, f: number, g: number, h: number, i: number, j: any) => number;
     readonly evaluate_pass_lanes: (a: number, b: number, c: any, d: any) => [number, number];
     readonly evaluate_pass_lanes_into: (a: number, b: number, c: any, d: any, e: any) => number;
+    readonly floatnet_data_len: (a: number) => number;
+    readonly floatnet_data_ptr: (a: number) => number;
+    readonly floatnet_impact: (a: number, b: number, c: number, d: number) => void;
+    readonly floatnet_new: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly floatnet_restore: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly floatnet_step: (a: number, b: number, c: number, d: number, e: number) => void;
     readonly generate_rig_section: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly select_crowd: (a: any, b: any, c: any, d: any, e: any, f: any, g: number, h: number, i: number, j: number, k: number, l: number) => [number, number];
     readonly wasm_abi_version: () => number;
     readonly wasm_capabilities: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+    readonly __externref_table_dealloc: (a: number) => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_start: () => void;
 }

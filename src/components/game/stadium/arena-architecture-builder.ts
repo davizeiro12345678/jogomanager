@@ -1,23 +1,32 @@
 import * as THREE from "three";
-
-import { FIELD_X, FIELD_Z } from "@/game/sim";
-
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { mergeRigParts, rigPart, type RigPart } from "@/game/rig-geometry";
+import { stadiumSurfaceDetail } from "@/game/stadium-surface-detail";
 
 /** Public builder makes the same three-material geometry budget testable. */
 export function buildArenaArchitecture(rings: number, color: string, night: boolean) {
   rings = THREE.MathUtils.clamp(Math.round(rings), 4, 16);
-  const concrete = new THREE.MeshStandardMaterial({ color: "#77827a", roughness: 0.95 });
+  const detail = stadiumSurfaceDetail();
+  const concrete = new THREE.MeshStandardMaterial({
+    color: "#aaa79d",
+    roughness: 0.94,
+    normalMap: detail.normal,
+    roughnessMap: detail.roughness,
+    normalScale: new THREE.Vector2(0.23, 0.23),
+    vertexColors: true,
+  });
   const metal = new THREE.MeshStandardMaterial({
-    color: "#abb3b8",
-    roughness: 0.55,
-    metalness: 0.4,
+    color: "#a1afb7",
+    roughness: 0.46,
+    metalness: 0.66,
+    vertexColors: true,
   });
   const accent = new THREE.MeshStandardMaterial({
     color,
     roughness: 0.65,
     emissive: color,
     emissiveIntensity: night ? 0.3 : 0.03,
+    vertexColors: true,
   });
   const parts: RigPart[] = [];
   const box = (
@@ -39,9 +48,9 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
           z = side * (FIELD_Z + 7 + row * 1.5);
         box([1.45, 0.035, 1.46], [lane, y + 0.025, z], concrete);
         box([1.45, 0.14, 0.16], [lane, y - 0.02, z - side * 0.62], accent);
-        // Supports every two rows retain the continuous handrails while
+        // Supports every three rows retain the continuous handrails while
         // freeing the fixed triangle budget for the goal-end and portals.
-        if (row % 2 === 0 || row === rings - 1)
+        if (row % 3 === 0 || row === rings - 1)
           for (const edge of [-1, 1])
             box([0.055, 0.9, 0.055], [lane + edge * 0.77, y + 0.44, z], metal);
         if (row < rings - 1)
@@ -57,7 +66,7 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
           x = side * (FIELD_X + 10 + row * 1.5);
         box([1.46, 0.035, 1.45], [x, y + 0.025, lane], concrete);
         box([0.16, 0.14, 1.45], [x - side * 0.62, y - 0.02, lane], accent);
-        if (row % 2 === 0 || row === rings - 1)
+        if (row % 3 === 0 || row === rings - 1)
           box([0.055, 0.9, 0.055], [x, y + 0.44, lane + 0.77], metal);
       }
     const roofY = 2 + rings * 1.45 + 7;
@@ -67,6 +76,17 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
     box([0.22, 0.36, FIELD_Z * 2 + 40], [side * (FIELD_X + outer - 2), roofY - 0.32, 0], accent);
     for (let i = -5; i <= 5; i++)
       box([0.09, 0.12, 11.2], [i * 12, roofY - 0.48, side * (FIELD_Z + outer + 4)], metal);
+    // Triangular cantilevers make the roof read as a supported arena rather
+    // than a flat ring. They join the existing metal/concrete material batches.
+    for (const bay of [-42, -14, 14, 42]) {
+      box([0.12, 2.8, 0.14], [bay, roofY - 2, side * (FIELD_Z + outer + 1.7)], metal);
+      box([0.12, 0.12, 5.4], [bay, roofY - 1.52, side * (FIELD_Z + outer - 0.35)], metal, [
+        -side * 0.42,
+        0,
+        0,
+      ]);
+      box([2.2, 0.16, 0.5], [bay, roofY - 0.87, side * (FIELD_Z + outer - 2.1)], accent);
+    }
     // Braced roof bays have depth when viewed from the pitch. All braces
     // remain in the existing metal batch; they need no lights or textures.
     for (let i = -5; i < 5; i++) {
@@ -83,6 +103,26 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
     // bowl a readable scale while keeping every stair tread unobstructed.
     const concourseY = 2 + Math.floor(rings * 0.52) * 1.45;
     const concourseZ = side * (FIELD_Z + 7 + Math.floor(rings * 0.52) * 1.5);
+    // Recessed hospitality bays and continuous tier edges establish a second
+    // architectural scale. Openings retain the existing circulation lanes.
+    for (const center of [-24, 24]) {
+      const width = 20;
+      box([width, 0.28, 1.25], [center, concourseY - 0.22, concourseZ + side * 0.38], concrete);
+      box([width, 0.2, 0.12], [center, concourseY + 0.12, concourseZ - side * 0.3], accent);
+      box([width, 0.08, 0.08], [center, concourseY + 1.06, concourseZ - side * 0.3], metal);
+      for (const partition of [0])
+        box(
+          [0.06, 0.95, 0.06],
+          [center + partition * width, concourseY + 0.57, concourseZ - side * 0.3],
+          metal,
+        );
+    }
+    for (const lane of [-24, 24]) {
+      const end = side * (FIELD_X + 10 + Math.floor(rings * 0.52) * 1.5);
+      box([1.2, 0.28, 20], [end, concourseY - 0.22, lane], concrete);
+      box([0.12, 0.2, 20], [end - side * 0.5, concourseY + 0.12, lane], accent);
+      box([0.08, 0.08, 20], [end - side * 0.5, concourseY + 1.06, lane], metal);
+    }
     for (const lane of [-36, 0, 36]) {
       for (const edge of [-1, 1])
         box([0.13, 2.3, 0.22], [lane + edge * 0.92, concourseY + 1.15, concourseZ], metal);
@@ -125,6 +165,27 @@ export function buildArenaArchitecture(rings: number, color: string, night: bool
     }
   }
   const meshes = mergeRigParts(parts);
+  // Soft architectural occlusion is baked into the static vertices. Steps,
+  // recessed fronts and beam undersides gain depth without another AO pass,
+  // texture, light or draw. Positions keep the tint stable across cameras.
+  for (const mesh of meshes) {
+    const position = mesh.geometry.getAttribute("position");
+    const normal = mesh.geometry.getAttribute("normal");
+    const colors = new Float32Array(position.count * 3);
+    for (let i = 0; i < position.count; i++) {
+      const up = normal.getY(i);
+      const panel =
+        0.04 *
+        Math.sin(Math.floor(position.getX(i) / 8) * 2.17 + Math.floor(position.getZ(i) / 6) * 1.71);
+      const shade = THREE.MathUtils.clamp(
+        (up < -0.2 ? 0.48 : up > 0.5 ? 1 : 0.76) + panel,
+        0.44,
+        1.03,
+      );
+      colors.set([shade, shade * 0.985, shade * 0.96], i * 3);
+    }
+    mesh.geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  }
   // mergeRigParts clones its inputs. Release the construction geometry too.
   parts.forEach((part) => part.geometry.dispose());
   return { meshes, materials: [concrete, metal, accent] };

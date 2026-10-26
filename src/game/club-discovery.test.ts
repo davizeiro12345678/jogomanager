@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { discoverClubs, requiredReputation } from "./club-discovery";
+import {
+  careerLeagueOptions,
+  discoverClubs,
+  isCareerCompetition,
+  requiredReputation,
+} from "./club-discovery";
 import type { League } from "./types";
 
 const leagues: League[] = [
@@ -73,5 +78,29 @@ describe("career club discovery", () => {
     expect(discoverClubs(leagues, { ...base, challenge: "build" }).map((r) => r.club.id)).toEqual([
       "sao",
     ]);
+  });
+  it("keeps cups and continental competitions out of new career searches", () => {
+    const cup = { ...leagues[0]!, id: "cup", name: "Copa do Brasil" };
+    const continental = { ...leagues[0]!, id: "continental", name: "Champions League" };
+    expect(isCareerCompetition(cup)).toBe(false);
+    expect(isCareerCompetition(continental)).toBe(false);
+    expect(discoverClubs([cup, continental], { ...base, query: "sao" })).toEqual([]);
+  });
+  it("searches large catalogs while retaining the selected league option", () => {
+    const playableClubs = Array.from({ length: 6 }, (_, i) => ({
+      ...leagues[0]!.clubs[0]!,
+      id: `club-${i}`,
+    }));
+    const large = Array.from({ length: 50 }, (_, i) => ({
+      ...leagues[0]!,
+      id: `league-${i}`,
+      name: i === 49 ? "Brasileirão Série B" : `Liga ${i}`,
+      clubs: playableClubs,
+    }));
+    const options = careerLeagueOptions(large, "serie b", "league-0", 10);
+    expect(options.map((league) => league.id)).toEqual(["league-49", "league-0"]);
+    expect(careerLeagueOptions(large).length).toBe(40);
+    expect(careerLeagueOptions(large, "serie b", "league-0", 1)).toEqual([large[0]]);
+    expect(careerLeagueOptions(large, "sem correspondência", "league-0", 10, false)).toEqual([]);
   });
 });

@@ -86,6 +86,9 @@ export interface GraphicsBenchmarkMetadata {
     label: "Flamengo x Palmeiras";
   };
   viewport: typeof GRAPHICS_BENCHMARK_VIEWPORT;
+  rigTopology: "screen" | "legacy";
+  effectsPath: "bounded" | "legacy";
+  postFx: boolean;
   requested: {
     scenario: string | null;
     seed: string | null;
@@ -150,6 +153,9 @@ export function resolveGraphicsBenchmark(search: string): GraphicsBenchmarkMetad
       label: "Flamengo x Palmeiras",
     },
     viewport: GRAPHICS_BENCHMARK_VIEWPORT,
+    rigTopology: params.get("rigTopology") === "legacy" ? "legacy" : "screen",
+    effectsPath: params.get("effectsPath") === "legacy" ? "legacy" : "bounded",
+    postFx: params.get("postFx") !== "0",
     requested: {
       scenario: params.get("scenario"),
       seed: params.get("seed"),

@@ -34,12 +34,15 @@ export function visualMotionFor(
     players = new Map();
     caches.set(owner, players);
   }
+  let state = players.get(player.id);
+  // Shared instanced/hero consumers can ask for the same frame. Return before
+  // repeating speed and facing trigonometry, not after calculating them.
+  if (state && time === state.time) return state;
   const speed = Math.hypot(player.vx, player.vz);
   const desired =
     speed > 0.5 && !(trackBall && speed < 3.1)
       ? Math.atan2(player.vx, player.vz)
       : Math.atan2(ball.x - player.x, ball.z - player.z);
-  let state = players.get(player.id);
   if (!state || time < state.time) {
     state = {
       time,
@@ -58,7 +61,6 @@ export function visualMotionFor(
     players.set(player.id, state);
     return state;
   }
-  if (time === state.time) return state;
   const elapsed = Math.max(0, time - state.time);
   const dt = clamp(elapsed, 0, 0.1);
   const desiredTurn = wrap(desired - state.yaw) * (1 - Math.exp(-(speed > 0.5 ? 13 : 5) * dt));

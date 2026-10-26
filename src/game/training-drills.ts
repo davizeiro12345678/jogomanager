@@ -1,5 +1,6 @@
 import { CLUBS } from "./data/leagues";
 import { quickSimulate } from "./career";
+import { learnTactics } from "./tactical-plan";
 import { makeRng } from "./rng";
 import { developedPlayer, profileFor, withDevelopmentBase } from "./attributes";
 import {
@@ -296,6 +297,7 @@ export function runDrill(state: CareerState, drillId: string): CareerState {
     players,
     attrDeltas,
     trainingReports: [report, ...(state.trainingReports ?? [])].slice(0, 24),
+    tactics: learnTactics(state, "training", roundKey(state)).tactics,
     drillsByRound: { ...(state.drillsByRound ?? {}), [roundKey(state)]: drillId },
     news: [news, ...state.news].slice(0, 60),
   };

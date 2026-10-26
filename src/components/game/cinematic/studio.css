@@ -1,4 +1,7 @@
 .studio-page {
+  --studio-accent: #9ce5ca;
+  --studio-border: #344754;
+  --studio-panel: #101f2a;
   min-height: 100dvh;
   padding: clamp(0.75rem, 2vw, 1.75rem);
   background: radial-gradient(ellipse at 65% 0%, #182c37 0, transparent 65%), #0b141b;
@@ -78,6 +81,10 @@
   flex-wrap: wrap;
 }
 .studio-keyboard-camera {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-inline-start: auto;
   background: #10202bf2;
   padding: 6px;
   border: 1px solid #496575;
@@ -121,6 +128,58 @@
   font-size: 1.05rem;
   font-weight: 750;
   letter-spacing: -0.02em;
+}
+.studio-section-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.studio-section-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--studio-border);
+  border-radius: 0.65rem;
+  color: var(--studio-accent);
+  font-size: 0.8rem;
+}
+.studio-section-links a:hover {
+  background: #203b48;
+}
+.studio-preview-column {
+  min-width: 0;
+}
+.studio-preview-column > .studio-phase {
+  margin: 0;
+  padding: 1rem;
+  background: var(--studio-panel);
+}
+.studio-preview-column .studio-phase-buttons {
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+.studio-viewport,
+.studio-panel {
+  scroll-margin-block-start: 1rem;
+}
+.studio-viewport:focus-visible,
+.studio-panel:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: -3px;
+}
+.studio-now-playing {
+  flex: 1 1 8rem;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.15rem 0.25rem;
+}
+.studio-now-playing strong {
+  font-size: 0.9rem;
+  color: #e7edf2;
+  overflow-wrap: anywhere;
 }
 .studio-height {
   padding: 0.3rem 0.65rem;
@@ -186,6 +245,15 @@
   border-top: 1px solid #496575;
   background: #10202b;
 }
+.studio-view-actions > .studio-keyboard-camera {
+  position: static;
+  inset: auto;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .studio-button {
   display: inline-flex;
   min-height: 44px;
@@ -222,12 +290,20 @@
   border-top: 1px solid #344754;
 }
 .studio-tabs {
+  position: static;
+  inset-block-start: 0;
+  z-index: 2;
+  height: auto;
+  min-height: 3.25rem;
   display: flex;
   gap: 0.25rem;
   padding: 0.25rem;
   border-radius: 0.7rem;
   background: #0c1a24;
   margin-bottom: 1.15rem;
+  box-shadow:
+    0 -1rem 0 var(--studio-panel),
+    0 0.6rem 0 var(--studio-panel);
 }
 .studio-tabs button {
   flex: 1;
@@ -501,12 +577,15 @@
   .studio-toolbar > .preference-launcher span {
     display: none;
   }
+  .studio-section-links {
+    grid-column: 1 / -1;
+  }
 }
 @media (max-width: 24rem) {
   .studio-fields {
     grid-template-columns: minmax(0, 1fr);
   }
-  .studio-view-actions button:last-child {
+  .studio-view-actions > button:last-of-type {
     flex-basis: 100%;
   }
 }
@@ -514,5 +593,72 @@
   .studio-card * {
     scroll-behavior: auto;
     transition: none;
+  }
+}
+
+.studio-library {
+  display: grid;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid #344754;
+}
+.studio-library-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  color: #b9cbd7;
+  font-size: 0.8rem;
+}
+.studio-clear {
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.5rem;
+  color: #adedd3;
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+.studio-quick-movements {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.studio-quick-movements button {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #425b69;
+  border-radius: 0.65rem;
+  color: #c3d4df;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.studio-quick-movements button:hover {
+  background: #203b48;
+  color: #fff;
+}
+.studio-quick-movements button[aria-pressed="true"] {
+  color: #d6ffed;
+  border-color: #70b79c;
+  background: #24483e;
+}
+@media (min-width: 60rem) {
+  .studio-panel {
+    max-height: 76dvh;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  .studio-viewport {
+    height: clamp(30rem, 76dvh, 51rem);
+  }
+  .studio-tabs {
+    position: sticky;
+  }
+}
+@media (max-width: 40rem) {
+  .studio-viewport {
+    height: clamp(24rem, 66dvh, 36rem);
+  }
+  .studio-now-playing {
+    flex-basis: 100%;
   }
 }

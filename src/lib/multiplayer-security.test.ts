@@ -59,7 +59,7 @@ describe("server-managed multiplayer results", () => {
   });
 
   it("keeps a live room mounted during a temporary browser disconnect", () => {
-    const liveRoom = pageSource.indexOf('if (room && room.status === "live" && room.guest_club)');
+    const liveRoom = pageSource.indexOf("if (room && room.guest_club && shouldShowLiveRoom(room))");
     const offlineFallback = pageSource.indexOf("if (!online)");
     expect(liveRoom).toBeGreaterThanOrEqual(0);
     expect(liveRoom).toBeLessThan(offlineFallback);

@@ -28,6 +28,7 @@ import { useT } from "@/i18n/provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { GameShell } from "@/components/game/GameShell";
+import { useCareer } from "@/hooks/useCareer";
 
 /** Altura mínima de toque (44px) usada em todos os botões do kit. */
 const TOUCH = "min-h-11";
@@ -38,6 +39,29 @@ const TOUCH = "min-h-11";
  */
 export function NoCareer({ hint }: { hint?: string }) {
   const { t } = useT();
+  const { isLoading, loadError } = useCareer();
+  if (isLoading)
+    return (
+      <GameShell career={null}>
+        <p role="status" aria-busy="true" className="p-6 text-sm text-muted-foreground">
+          Carregando sua carreira…
+        </p>
+      </GameShell>
+    );
+  if (loadError)
+    return (
+      <GameShell career={null}>
+        <section className="mx-auto max-w-xl px-6 py-12">
+          <h1 className="font-display text-2xl">Carreira preservada para recuperação</h1>
+          <p role="alert" className="mt-3 text-sm text-muted-foreground">
+            {loadError}
+          </p>
+          <Link to="/perfil" className={`mt-6 inline-flex ${TOUCH} items-center underline`}>
+            Abrir perfil e recuperar carreira
+          </Link>
+        </section>
+      </GameShell>
+    );
   return (
     <GameShell career={null}>
       <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center px-6 text-center">

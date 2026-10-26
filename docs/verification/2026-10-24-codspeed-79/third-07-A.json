@@ -1,0 +1,309 @@
+{
+  "root": "/workspace/scratch/codspeed-target-baseline",
+  "node": "v24.22.1",
+  "at": "2026-10-24T16:49:46.484Z",
+  "plan": {
+    "match setup: buildTeamSetup": 315,
+    "match setup: new MatchSim": 522,
+    "match simulation: 300 live ticks": 21,
+    "match simulation: 120 coarse steps": 33,
+    "live match: snapshotMatch": 9240,
+    "live match: WorkerMatchView.apply": 2526,
+    "replay codec: encodeReplay": 6,
+    "replay codec: decodeReplay": 9,
+    "season: generateFixtures": 1170,
+    "season: tableFromFixtures": 231,
+    "season: simulateDivisionTable": 21,
+    "rng: makeRng 10k draws": 876,
+    "rig geometry: fallback 64 radial": 1026,
+    "rig geometry: fallback 16 radial": 5946,
+    "rig geometry: Rust/WASM 64 radial": 657,
+    "rig geometry: Rust/WASM 16 radial": 2316,
+    "presentation adapter: 22 mixed action poses": 1122,
+    "presentation adapter: 22 run poses": 3018,
+    "presentation locomotion: 22 reusable gait poses": 4872,
+    "presentation contact: 22 grounded athletes": 543,
+    "presentation contact: body recovery": 21462,
+    "presentation geometry: head portrait": 6,
+    "presentation geometry: head match close": 6,
+    "presentation geometry: head match distant": 45,
+    "presentation geometry: detailed hair": 6
+  },
+  "results": [
+    {
+      "name": "match setup: buildTeamSetup",
+      "iterations": 315,
+      "samplesMs": [
+        0.16891913650793608,
+        0.1373121301587299,
+        0.13133560952380957,
+        0.1329681365079364,
+        0.14800601587301584
+      ]
+    },
+    {
+      "name": "match setup: new MatchSim",
+      "iterations": 522,
+      "samplesMs": [
+        0.12636613218390805,
+        0.11597519923371706,
+        0.1127051800766285,
+        0.12073147318007624,
+        0.11299726436781579
+      ]
+    },
+    {
+      "name": "match simulation: 300 live ticks",
+      "iterations": 21,
+      "samplesMs": [
+        7.070441761904758,
+        5.645914142857128,
+        6.675459666666657,
+        5.669707904761903,
+        5.032911619047614
+      ]
+    },
+    {
+      "name": "match simulation: 120 coarse steps",
+      "iterations": 33,
+      "samplesMs": [
+        3.825242181818188,
+        3.5436652121212098,
+        3.827856727272733,
+        3.852388060606052,
+        4.139578696969693
+      ]
+    },
+    {
+      "name": "live match: snapshotMatch",
+      "iterations": 9240,
+      "samplesMs": [
+        0.003545295238095221,
+        0.003615818722943748,
+        0.0035006017316017045,
+        0.003472588852813817,
+        0.003545795995670957
+      ]
+    },
+    {
+      "name": "live match: WorkerMatchView.apply",
+      "iterations": 2526,
+      "samplesMs": [
+        0.024660809976246784,
+        0.02532630839271579,
+        0.024753454473475912,
+        0.03445111401425195,
+        0.0410699239904988
+      ]
+    },
+    {
+      "name": "replay codec: encodeReplay",
+      "iterations": 6,
+      "samplesMs": [
+        22.077509499999906,
+        25.710873833333455,
+        27.80898166666672,
+        23.721414000000095,
+        23.7749193333334
+      ]
+    },
+    {
+      "name": "replay codec: decodeReplay",
+      "iterations": 9,
+      "samplesMs": [
+        20.783807333333343,
+        15.554711111111121,
+        7.733771777777798,
+        8.144388888888898,
+        9.330829000000044
+      ]
+    },
+    {
+      "name": "season: generateFixtures",
+      "iterations": 1170,
+      "samplesMs": [
+        0.026908858974359018,
+        0.026592776923076662,
+        0.028419123076922466,
+        0.026046487179487446,
+        0.025622372649573105
+      ]
+    },
+    {
+      "name": "season: tableFromFixtures",
+      "iterations": 231,
+      "samplesMs": [
+        0.044415077922076704,
+        0.04305680519480644,
+        0.04003582683982797,
+        0.04314433766234036,
+        0.03908209956710053
+      ]
+    },
+    {
+      "name": "season: simulateDivisionTable",
+      "iterations": 21,
+      "samplesMs": [
+        3.8950709047619188,
+        3.2691046190476256,
+        3.284336523809543,
+        3.2094584761905156,
+        3.252260285714285
+      ]
+    },
+    {
+      "name": "rng: makeRng 10k draws",
+      "iterations": 876,
+      "samplesMs": [
+        0.06621099200913301,
+        0.06907208675798947,
+        0.057561599315066894,
+        0.06320090410958755,
+        0.06175856963470436
+      ]
+    },
+    {
+      "name": "rig geometry: fallback 64 radial",
+      "iterations": 1026,
+      "samplesMs": [
+        0.0741358060428846,
+        0.08827804775828411,
+        0.08478346783625644,
+        0.06480821539960985,
+        0.06464236159844038
+      ]
+    },
+    {
+      "name": "rig geometry: fallback 16 radial",
+      "iterations": 5946,
+      "samplesMs": [
+        0.017447057013117846,
+        0.02705141759165842,
+        0.01798674655230425,
+        0.026728058190380065,
+        0.026991302219979682
+      ]
+    },
+    {
+      "name": "rig geometry: Rust/WASM 64 radial",
+      "iterations": 657,
+      "samplesMs": [
+        0.1454618417047202,
+        0.1467129741248086,
+        0.139727791476406,
+        0.1353962237442904,
+        0.13057137442922392
+      ]
+    },
+    {
+      "name": "rig geometry: Rust/WASM 16 radial",
+      "iterations": 2316,
+      "samplesMs": [
+        0.0515731243523315,
+        0.039531722797927174,
+        0.035179554404145094,
+        0.034679832037996544,
+        0.03484249827288499
+      ]
+    },
+    {
+      "name": "presentation adapter: 22 mixed action poses",
+      "iterations": 1122,
+      "samplesMs": [
+        0.026712902852049865,
+        0.026061274509804673,
+        0.025837837789661207,
+        0.025752630124777288,
+        0.02567793672014222
+      ]
+    },
+    {
+      "name": "presentation adapter: 22 run poses",
+      "iterations": 3018,
+      "samplesMs": [
+        0.02304162027832996,
+        0.023760545062956138,
+        0.023366607024519193,
+        0.022752288933067973,
+        0.02302212392312794
+      ]
+    },
+    {
+      "name": "presentation locomotion: 22 reusable gait poses",
+      "iterations": 4872,
+      "samplesMs": [
+        0.018764656609195365,
+        0.018597350779966937,
+        0.01849276888341546,
+        0.018483561576354474,
+        0.01884609236453193
+      ]
+    },
+    {
+      "name": "presentation contact: 22 grounded athletes",
+      "iterations": 543,
+      "samplesMs": [
+        0.03644165377532357,
+        0.0360879705340719,
+        0.03606277716390277,
+        0.041859725598527735,
+        0.037605073664822436
+      ]
+    },
+    {
+      "name": "presentation contact: body recovery",
+      "iterations": 21462,
+      "samplesMs": [
+        0.0016721657347870964,
+        0.0018024264746995106,
+        0.002904622122821729,
+        0.0016910300997111148,
+        0.0016937348336594563
+      ]
+    },
+    {
+      "name": "presentation geometry: head portrait",
+      "iterations": 6,
+      "samplesMs": [
+        85.98719600000004,
+        77.00979049999994,
+        75.26463916666701,
+        74.23557033333357,
+        73.81284099999964
+      ]
+    },
+    {
+      "name": "presentation geometry: head match close",
+      "iterations": 6,
+      "samplesMs": [
+        29.883526833333235,
+        32.46245266666665,
+        31.362178333333457,
+        31.84934433333304,
+        31.72276366666665
+      ]
+    },
+    {
+      "name": "presentation geometry: head match distant",
+      "iterations": 45,
+      "samplesMs": [
+        2.168025844444411,
+        2.209028022222224,
+        2.126713622222208,
+        2.34411537777778,
+        2.1084526666667243
+      ]
+    },
+    {
+      "name": "presentation geometry: detailed hair",
+      "iterations": 6,
+      "samplesMs": [
+        19.803615499999676,
+        20.075997333333362,
+        19.017559333333338,
+        19.017095333333298,
+        19.25805183333311
+      ]
+    }
+  ]
+}

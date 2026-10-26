@@ -354,7 +354,7 @@
     box-shadow: inset 0 -2px var(--color-primary);
   }
   .game-shell :is(button, select, a):focus-visible,
-  .cutscene-screen button:focus-visible {
+  [data-scene-mode] button:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 3px;
   }

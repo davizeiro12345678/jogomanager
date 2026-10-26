@@ -22,7 +22,7 @@ export default defineTool({
       .maybeSingle();
     if (error)
       return {
-        content: [{ type: "text", text: error.message }],
+        content: [{ type: "text", text: "Career data is unavailable right now. Try again later." }],
         isError: true,
       };
     if (!data)

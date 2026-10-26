@@ -1,8 +1,10 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { FIELD_X, type SimView } from "@/game/sim";
+import { FIELD_X } from "@/game/sim-rules";
+import { type SimView } from "@/game/sim-types";
 import { NetDynamics, rearNetImpact, type NetBall } from "@/game/net-dynamics";
+import type { NetMotion } from "@/game/wasm/net-float";
 
 type Face = "back" | "left" | "right" | "roof";
 
@@ -14,12 +16,14 @@ export function GoalNetPanel({
   material,
   quality,
   face = "back",
+  wet = 0,
 }: {
   side: number;
   sim: SimView;
   material: THREE.Material;
   quality: "alta" | "media" | "baixa";
   face?: Face;
+  wet?: number;
 }) {
   const cols = quality === "alta" ? 28 : quality === "media" ? 18 : 10;
   const rows = quality === "alta" ? 16 : quality === "media" ? 10 : 6;
@@ -45,7 +49,41 @@ export function GoalNetPanel({
     () => new THREE.PlaneGeometry(spec.width, spec.height, cols, rows),
     [spec, cols, rows],
   );
-  const wave = useMemo(() => new NetDynamics(cols, rows), [cols, rows]);
+  const fallback = useMemo(
+    () => new NetDynamics(cols, rows, spec.width, spec.height),
+    [cols, rows, spec.width, spec.height],
+  );
+  const currentWave = useRef<NetMotion>(fallback);
+  const ties = useMemo(() => {
+    const values = new Float32Array((cols + 1) * (rows + 1));
+    for (let y = 0; y <= rows; y++)
+      for (let x = 0; x <= cols; x++)
+        values[y * (cols + 1) + x] =
+          -0.12 * Math.sin((Math.PI * x) / cols) * Math.sin((Math.PI * y) / rows);
+    return values;
+  }, [cols, rows]);
+  useEffect(() => {
+    currentWave.current = fallback;
+    let active = true;
+    let release: (() => void) | undefined;
+    if (quality !== "baixa")
+      void import("@/game/wasm/net-float")
+        .then((m) => (active ? m.promoteNetFloat(fallback) : null))
+        .then((net) => {
+          if (!net) return;
+          if (!active) {
+            net.dispose();
+            return;
+          }
+          currentWave.current = net;
+          release = () => net.dispose();
+        })
+        .catch(() => undefined);
+    return () => {
+      active = false;
+      release?.();
+    };
+  }, [fallback, quality]);
   const previous = useRef<NetBall | null>(null);
   const goalCount = useRef(side > 0 ? sim.stats.home.goals : sim.stats.away.goals);
   const lastFlight = useRef<NetBall | null>(null);
@@ -55,6 +93,7 @@ export function GoalNetPanel({
   const normalTime = useRef(0);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useFrame(({ clock }, dt) => {
+    const wave = currentWave.current;
     const b = sim.visualBall ?? sim.ball;
     const prior = previous.current;
     if (side * b.vx > 4 && side * b.x > FIELD_X - 20 && Math.abs(b.z) < 5)
@@ -112,17 +151,17 @@ export function GoalNetPanel({
         : face === "roof"
           ? strength * 0.2
           : Math.abs(sim.wind?.z ?? 0);
-    wave.step(dt, clock.elapsedTime, Math.min(1, normalWind));
+    wave.step(dt, clock.elapsedTime, Math.min(1, normalWind), wet);
     meshTime.current += dt;
     normalTime.current += dt;
     if (meshTime.current < 1 / 30) return;
     meshTime.current %= 1 / 30;
     const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
+    const displacement = wave.displacement;
     for (let y = 0; y <= rows; y++) {
       for (let x = 0; x <= cols; x++) {
         const index = y * (cols + 1) + x;
-        const tie = Math.sin((Math.PI * x) / cols) * Math.sin((Math.PI * y) / rows);
-        positions.setZ(index, -0.12 * tie + wave.displacement[index]!);
+        positions.setZ(index, ties[index]! + displacement[index]!);
       }
     }
     positions.needsUpdate = true;
