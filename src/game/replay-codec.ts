@@ -66,23 +66,26 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
     const frame = frames[frameIndex]!;
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
+    const ballOffset = frameIndex * 3;
+    const scoreOffset = frameIndex * 2;
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
     for (let axis = 0; axis < 3; axis += 1)
-      ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
-    score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
-    score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
+      ball[ballOffset + axis] = integer(frame.b[axis]!);
+    score[scoreOffset] = Math.max(0, Math.min(65_535, frame.hg));
+    score[scoreOffset + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
     const frameBase = frameIndex * playerCount;
+    const positionBase = frameBase * 4;
     const coords = frame.p;
     const frameActions = frame.a;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const source = playerIndex * 4;
-      const target = (frameBase + playerIndex) * 4;
-      positions[target] = integer(coords[source] ?? 0 / 1);
-      positions[target + 1] = integer(coords[source + 1] ?? 0 / 1);
-      positions[target + 2] = integer(coords[source + 2] ?? 0 / 1);
-      positions[target + 3] = integer(coords[source + 3] ?? 0 / 1);
+      const target = positionBase + source;
+      positions[target] = integer(coords[source] ?? 0);
+      positions[target + 1] = integer(coords[source + 1] ?? 0);
+      positions[target + 2] = integer(coords[source + 2] ?? 0);
+      positions[target + 3] = integer(coords[source + 3] ?? 0);
       actions[frameBase + playerIndex] = actionCode(frameActions[playerIndex] ?? null);
     }
   }
