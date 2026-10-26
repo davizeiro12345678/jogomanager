@@ -70,8 +70,7 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     const scoreOffset = frameIndex * 2;
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
-    for (let axis = 0; axis < 3; axis += 1)
-      ball[ballOffset + axis] = integer(frame.b[axis]!);
+    for (let axis = 0; axis < 3; axis += 1) ball[ballOffset + axis] = integer(frame.b[axis]!);
     score[scoreOffset] = Math.max(0, Math.min(65_535, frame.hg));
     score[scoreOffset + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
