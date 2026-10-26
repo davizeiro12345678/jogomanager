@@ -71,9 +71,8 @@ describe("versioned replay codec", () => {
     };
     for (const replay of [original, withoutVisual]) {
       const encoded = encodeReplay(replay);
-      const expected = estimateReplayBytes(replay, encoded).reductionRatio >= REPLAY_V3_MIN_REDUCTION
-        ? encoded
-        : { version: 2, ...replay };
+      const reduction = estimateReplayBytes(replay, encoded).reductionRatio;
+      const expected = reduction >= REPLAY_V3_MIN_REDUCTION ? encoded : { version: 2, ...replay };
       const actual = encodeStoredReplay(replay);
       expect(actual).toEqual(expected);
       expect(decodeReplay(actual)).toEqual(decodeReplay(expected));
