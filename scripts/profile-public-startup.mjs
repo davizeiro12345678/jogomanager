@@ -24,7 +24,7 @@ const server = spawn(
     "--port",
     String(port),
   ],
-  { cwd: root, env: process.env, stdio: ["ignore", "pipe", "pipe"] },
+  { cwd: root, env: process.env, detached: true, stdio: ["ignore", "pipe", "pipe"] },
 );
 let serverLog = "",
   browser;
@@ -40,15 +40,22 @@ const report = {
   runs: [],
 };
 try {
+  let ready = false;
   for (let attempt = 0; attempt < 120; attempt++) {
-    if (server.exitCode !== null) throw new Error(`Preview exited: ${serverLog}`);
+    // Nitro's Cloudflare preview launcher exits0 after spawning Wrangler.
+    if (server.exitCode !== null && server.exitCode !== 0)
+      throw new Error(`Preview exited: ${serverLog}`);
     try {
-      if ((await fetch(`http://127.0.0.1:${port}/`)).ok) break;
+      if ((await fetch(`http://127.0.0.1:${port}/`)).ok) {
+        ready = true;
+        break;
+      }
     } catch {
       /* startup */
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
+  if (!ready) throw new Error(`Preview did not become ready: ${serverLog}`);
   browser = await chromium.launch({
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
     headless: true,
@@ -120,6 +127,10 @@ try {
     }
 } finally {
   await browser?.close();
-  server.kill("SIGTERM");
+  try {
+    process.kill(-server.pid, "SIGTERM");
+  } catch (error) {
+    if (error.code !== "ESRCH") throw error;
+  }
   await writeFile(path.join(output, "server.log"), serverLog);
 }
