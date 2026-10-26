@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { buildRigBody } from "./rig-body";
 import { lookFor, proportionsFor } from "./player-model";
 import { playerMaterials } from "./player-materials";
-import { eyelidSurface, faceSurfaceZ, headPoint } from "./player-sculpt";
+import { eyelidSurface, lipPatch, faceSurfaceZ, headPoint } from "./player-sculpt";
 
 const kit = {
   base: "#b71928",
@@ -14,6 +14,39 @@ const kit = {
 } as const;
 
 describe("athlete portrait surface continuity", () => {
+  it("joins eyelid and lip lighting to the skull without a bright normal seam", () => {
+    for (const id of ["studio-fla-MF-1", "orbital-depth-dark", "orbital-depth-light"]) {
+      const look = lookFor(id, "MF", true),
+        p = proportionsFor(look);
+      const patches = [
+        eyelidSurface(p, -1, look.seed, true),
+        eyelidSurface(p, 1, look.seed, false),
+        lipPatch(p, look.seed, true),
+        lipPatch(p, look.seed, false),
+      ];
+      for (const geometry of patches) {
+        const positions = geometry.getAttribute("position"),
+          normals = geometry.getAttribute("normal");
+        for (let i = positions.count - 25; i < positions.count; i++) {
+          const x = positions.getX(i),
+            y = positions.getY(i),
+            epsilon = 0.000001;
+          const dx =
+            (faceSurfaceZ(p, x + epsilon, y, look.seed) -
+              faceSurfaceZ(p, x - epsilon, y, look.seed)) /
+            (2 * epsilon);
+          const dy =
+            (faceSurfaceZ(p, x, y + epsilon, look.seed) -
+              faceSurfaceZ(p, x, y - epsilon, look.seed)) /
+            (2 * epsilon);
+          const skull = new THREE.Vector3(-dx, -dy, 1).normalize();
+          const attached = new THREE.Vector3().fromBufferAttribute(normals, i);
+          expect(attached.dot(skull), `${id}: attached patch ${i}`).toBeGreaterThan(0.995);
+        }
+        geometry.dispose();
+      }
+    }
+  });
   it("settles the attached eyelid edge into the skull with the same pore coordinates", () => {
     for (const id of ["studio-fla-MF-1", "orbital-depth-light", "orbital-depth-dark"]) {
       const look = lookFor(id, "MF", true);

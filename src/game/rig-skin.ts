@@ -20,7 +20,7 @@
 // ============================================================================
 
 import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { mergeRigSurfaces } from "./rig-geometry";
 
 import { buildRigBody, type RigBody, type RigBodyContext } from "./rig-body";
 import { handBoneSpecs, FINGER_LENGTHS, type HandJoint } from "./player-hands";
@@ -289,11 +289,13 @@ export function buildRigSkin(
 
   const bones: THREE.Bone[] = [];
   const boneOf = {} as Record<RigJoint, THREE.Bone>;
+  const indexOf = {} as Record<RigJoint, number>;
   for (const spec of specs) {
     const bone = new THREE.Bone();
     bone.name = spec.joint;
     bone.position.fromArray(spec.offset);
     bone.updateMatrix();
+    indexOf[spec.joint] = bones.length;
     bones.push(bone);
     boneOf[spec.joint] = bone;
   }
@@ -308,41 +310,17 @@ export function buildRigSkin(
   // A raiz da cena translada o atleta; os ossos e as malhas são filhos dela,
   // então a matriz de bind é exatamente essa translação.
   const bindMatrix = new THREE.Matrix4().makeTranslation(...rootOffset);
-  const restWorld = new THREE.Matrix4();
   const boneInverses: THREE.Matrix4[] = [];
-  for (const spec of specs) {
-    restWorld.copy(bindMatrix);
-    // sobe a hierarquia acumulando os deslocamentos locais
-    const chain: RigJoint[] = [];
-    for (let cursor: RigJoint | null = spec.joint; cursor;) {
-      chain.push(cursor);
-      cursor = specs.find((s) => s.joint === cursor)?.parent ?? null;
-    }
-    for (const joint of chain.reverse()) {
-      restWorld.multiply(boneOf[joint].matrix);
-    }
-    boneInverses.push(restWorld.clone().invert());
-  }
-
-  const skeleton = new THREE.Skeleton(bones, boneInverses);
-
-  /* ------------------------------------------- geometria com skinning */
-
-  // Matriz de repouso de cada junta NO ESPAÇO LOCAL DA MALHA (sem a translação
-  // do grupo raiz). A geometria é autorada no espaço da junta, então precisa
-  // desta multiplicação para virar o espaço em que o three.js espera os
-  // vértices de um SkinnedMesh — sem ela o atleta aparece desmontado.
   const localRest = new Map<RigJoint, THREE.Matrix4>();
+  // jointSpecs lists each parent before its children. Accumulate it once,
+  // rather than walking/searching the same hierarchy twice for every bone.
   for (const spec of specs) {
-    const chain: RigJoint[] = [];
-    for (let cursor: RigJoint | null = spec.joint; cursor;) {
-      chain.push(cursor);
-      cursor = specs.find((s) => s.joint === cursor)?.parent ?? null;
-    }
-    const matrix = new THREE.Matrix4();
-    for (const joint of chain.reverse()) matrix.multiply(boneOf[joint].matrix);
+    const matrix = spec.parent ? localRest.get(spec.parent)!.clone() : new THREE.Matrix4();
+    matrix.multiply(boneOf[spec.joint].matrix);
     localRest.set(spec.joint, matrix);
+    boneInverses.push(new THREE.Matrix4().multiplyMatrices(bindMatrix, matrix).invert());
   }
+  const skeleton = new THREE.Skeleton(bones, boneInverses);
 
   const buckets = new Map<
     string,
@@ -367,29 +345,11 @@ export function buildRigSkin(
     // Cinematic actors retain every surface at a fixed detail level, so the
     // same material can share a draw across face, body and boot groups.
     const lod = options?.mergeLods ? "core" : MESH_LOD[key];
-    const boneIndex = bones.indexOf(boneOf[owner]);
+    const boneIndex = indexOf[owner];
     const rest = localRest.get(owner)!;
     for (const mesh of meshes) {
       const geometry = mesh.geometry.clone();
-      if (mesh.material === ctx.mats.skin) {
-        const position = geometry.getAttribute("position");
-        const authored = geometry.getAttribute("color");
-        const color = authored
-          ? new Float32Array(authored.array)
-          : new Float32Array(position.count * 3).fill(1);
-        if (key === "head" && !authored)
-          for (let i = 0; i < position.count; i++) {
-            const x = position.getX(i) / ctx.P.headW,
-              y = position.getY(i) / ctx.P.headR,
-              z = position.getZ(i) / ctx.P.headD;
-            const blush =
-              Math.exp(-(((Math.abs(x) - 0.52) / 0.24) ** 2) - ((y + 0.18) / 0.24) ** 2) *
-              Math.max(0, z);
-            color[i * 3 + 1] = color[i * 3 + 1]! * (1 - blush * 0.09);
-            color[i * 3 + 2] = color[i * 3 + 2]! * (1 - blush * 0.075);
-          }
-        geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
-      }
+      // rigPart already normalizes pigment, and clone owns an independent buffer.
       if (mesh.material === ctx.mats.glove) {
         // Latex palm, coloured backhand and a dark wrist closure share one
         // material. Bake their albedo once, including articulated fingers.
@@ -411,7 +371,7 @@ export function buildRigSkin(
         }
         geometry.setAttribute("color", new THREE.Float32BufferAttribute(color, 3));
       }
-      addSkinning(geometry, owner, bones, ctx, key);
+      addSkinning(geometry, owner, indexOf, ctx, key);
       geometry.applyMatrix4(rest);
       const materialKey = materialKeys.get(mesh.material);
       const bucketKey = (materialKey ?? mesh.material.uuid) + "|" + lod;
@@ -433,43 +393,37 @@ export function buildRigSkin(
 
   const groups: RigSkinGroup[] = [];
   for (const bucket of buckets.values()) {
-    const merged =
-      bucket.geometries.length === 1
-        ? bucket.geometries[0]!
-        : mergeGeometries(bucket.geometries, false);
-    for (const geometry of bucket.geometries) {
-      if (geometry !== merged) geometry.dispose();
+    for (const merged of mergeRigSurfaces(bucket.geometries)) {
+      merged.computeBoundingSphere();
+      merged.computeBoundingBox();
+      // Small detail buckets can travel much farther than their own rest
+      // radius (a glove moves from the hip to above the head). Bound the whole
+      // reachable athlete around the pelvis, retaining ordinary frustum tests.
+      if (merged.boundingSphere) {
+        const p = ctx.P;
+        const armReach =
+          p.hipH * 0.5 +
+          p.spineLen +
+          p.chestLen +
+          p.shoulderW * 0.52 +
+          p.upperArm +
+          p.foreArm +
+          ctx.handR * 2.3;
+        const legReach = p.hipH * 0.4 + p.thigh + p.shin + p.footLen + p.footH;
+        const headReach =
+          p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headH + p.headR * 0.4;
+        merged.boundingSphere.center.set(0, p.hipY, 0);
+        merged.boundingSphere.radius = CULL_MARGIN + Math.max(armReach, legReach, headReach);
+      }
+      groups.push({
+        material: bucket.material,
+        ...(bucket.materialKey !== undefined ? { materialKey: bucket.materialKey } : {}),
+        geometry: merged,
+        lod: bucket.lod,
+        castShadow: bucket.castShadow,
+        bone: bucket.bone,
+      });
     }
-    if (!merged) continue;
-    merged.computeBoundingSphere();
-    merged.computeBoundingBox();
-    // Small detail buckets can travel much farther than their own rest
-    // radius (a glove moves from the hip to above the head). Bound the whole
-    // reachable athlete around the pelvis, retaining ordinary frustum tests.
-    if (merged.boundingSphere) {
-      const p = ctx.P;
-      const armReach =
-        p.hipH * 0.5 +
-        p.spineLen +
-        p.chestLen +
-        p.shoulderW * 0.52 +
-        p.upperArm +
-        p.foreArm +
-        ctx.handR * 2.3;
-      const legReach = p.hipH * 0.4 + p.thigh + p.shin + p.footLen + p.footH;
-      const headReach =
-        p.hipH * 0.5 + p.spineLen + p.chestLen + p.neckLen + p.headH + p.headR * 0.4;
-      merged.boundingSphere.center.set(0, p.hipY, 0);
-      merged.boundingSphere.radius = CULL_MARGIN + Math.max(armReach, legReach, headReach);
-    }
-    groups.push({
-      material: bucket.material,
-      ...(bucket.materialKey !== undefined ? { materialKey: bucket.materialKey } : {}),
-      geometry: merged,
-      lod: bucket.lod,
-      castShadow: bucket.castShadow,
-      bone: bucket.bone,
-    });
   }
   // The intermediate body is cloned into the skinned buckets. Release its
   // CPU geometry too when changing appearance or promoting another athlete.
@@ -505,66 +459,65 @@ export function buildRigSkin(
 function addSkinning(
   geometry: THREE.BufferGeometry,
   owner: RigJoint,
-  bones: THREE.Bone[],
+  indexOf: Record<RigJoint, number>,
   ctx: RigBodyContext,
   part: Exclude<keyof RigBody, "all">,
 ): void {
-  const boneIndex = bones.findIndex((bone) => bone.name === owner);
+  const boneIndex = indexOf[owner];
   const p = ctx.P;
-  const bands: Partial<
-    Record<RigJoint, { other: RigJoint; y: number; width: number; below: boolean }>
-  > = {
-    spine: { other: "hips", y: 0, width: p.spineLen * 0.35, below: true },
-    chest: { other: "spine", y: 0, width: p.chestLen * 0.3, below: true },
-    armL: { other: "foreL", y: -p.upperArm, width: p.armR * 1.5, below: true },
-    armR: { other: "foreR", y: -p.upperArm, width: p.armR * 1.5, below: true },
-    foreL: { other: "armL", y: 0, width: p.armR * 1.5, below: false },
-    foreR: { other: "armR", y: 0, width: p.armR * 1.5, below: false },
-    legL: { other: "kneeL", y: -p.thigh, width: p.legR * 1.6, below: true },
-    legR: { other: "kneeR", y: -p.thigh, width: p.legR * 1.6, below: true },
-    kneeL: { other: "legL", y: 0, width: p.legR * 1.6, below: false },
-    kneeR: { other: "legR", y: 0, width: p.legR * 1.6, below: false },
-  };
-  const band = bands[owner];
-  const otherIndex = band ? bones.findIndex((bone) => bone.name === band.other) : boneIndex;
-  const indexOf = Object.fromEntries(bones.map((bone, index) => [bone.name, index])) as Record<
-    RigJoint,
-    number
-  >;
+  const side = owner.endsWith("L") ? "L" : "R";
+  const family = owner === "spine" || owner === "chest" ? owner : owner.slice(0, -1);
+  let band: readonly [RigJoint, number, number, number] | undefined;
+  switch (family) {
+    case "spine":
+      band = ["hips", 0, p.spineLen * 0.35, 1];
+      break;
+    case "chest":
+      band = ["spine", 0, p.chestLen * 0.3, 1];
+      break;
+    case "arm":
+      band = [`fore${side}`, -p.upperArm, p.armR * 1.5, 1];
+      break;
+    case "fore":
+      band = [`arm${side}`, 0, p.armR * 1.5, -1];
+      break;
+    case "leg":
+      band = [`knee${side}`, -p.thigh, p.legR * 1.6, 1];
+      break;
+    case "knee":
+      band = [`leg${side}`, 0, p.legR * 1.6, -1];
+      break;
+  }
+  const otherIndex = band ? indexOf[band[0]] : boneIndex;
   const positions = geometry.getAttribute("position");
   const openingLeg = geometry.getAttribute("openingLeg");
-  const count = geometry.getAttribute("position").count;
+  const count = positions.count;
   const skinIndex = new Uint16Array(count * 4);
   const skinWeight = new Float32Array(count * 4);
+  let slot = 0;
+  const blendJoint = (proximal: RigJoint, distal: RigJoint, helper: CorrectiveJoint, t: number) => {
+    const w = THREE.MathUtils.clamp(t, 0, 1);
+    const corrective = 4 * w * (1 - w) * 0.7;
+    skinIndex[slot] = indexOf[proximal];
+    skinIndex[slot + 1] = indexOf[distal];
+    skinIndex[slot + 2] = indexOf[helper];
+    skinWeight[slot] = (1 - w) * (1 - corrective);
+    skinWeight[slot + 1] = w * (1 - corrective);
+    skinWeight[slot + 2] = corrective;
+    skinWeight[slot + 3] = 0;
+  };
   for (let i = 0; i < count; i += 1) {
-    const distance = band ? (positions.getY(i) - band.y) * (band.below ? 1 : -1) : 1;
-    const u = band ? Math.max(0, Math.min(1, (band.width - distance) / (band.width * 2))) : 0;
+    slot = i * 4;
+    const distance = band ? (positions.getY(i) - band[1]) * band[3] : 1;
+    const u = band ? Math.max(0, Math.min(1, (band[2] - distance) / (band[2] * 2))) : 0;
     const weight = u * u * (3 - 2 * u);
     skinIndex[i * 4] = boneIndex;
     skinIndex[i * 4 + 1] = otherIndex;
     skinWeight[i * 4] = 1 - weight;
     skinWeight[i * 4 + 1] = weight;
-    const blendJoint = (
-      proximal: RigJoint,
-      distal: RigJoint,
-      helper: CorrectiveJoint,
-      t: number,
-    ) => {
-      const w = THREE.MathUtils.clamp(t, 0, 1);
-      const corrective = 4 * w * (1 - w) * 0.7;
-      skinIndex[i * 4] = indexOf[proximal];
-      skinIndex[i * 4 + 1] = indexOf[distal];
-      skinIndex[i * 4 + 2] = indexOf[helper];
-      skinWeight[i * 4] = (1 - w) * (1 - corrective);
-      skinWeight[i * 4 + 1] = w * (1 - corrective);
-      skinWeight[i * 4 + 2] = corrective;
-      skinWeight[i * 4 + 3] = 0;
-    };
-    if (owner === "armL" || owner === "armR") {
-      const side = owner === "armL" ? "L" : "R";
+    if (family === "arm") {
       blendJoint(owner, `fore${side}`, `elbowVolume${side}`, weight);
-    } else if (owner === "foreL" || owner === "foreR") {
-      const side = owner === "foreL" ? "L" : "R";
+    } else if (family === "fore") {
       blendJoint(`arm${side}`, owner, `elbowVolume${side}`, 1 - weight);
       const wristWeight =
         1 -
@@ -578,18 +531,16 @@ function addSkinning(
       // through the distal forearm. The fourth slot already exists on GPU.
       const twist = THREE.MathUtils.smoothstep(-positions.getY(i) / p.foreArm, 0.16, 0.82);
       for (let c = 0; c < 3; c++) {
-        if (skinIndex[i * 4 + c] !== indexOf[owner]) continue;
+        if (skinIndex[i * 4 + c] !== boneIndex) continue;
         const share = skinWeight[i * 4 + c]! * twist;
         skinWeight[i * 4 + c] = skinWeight[i * 4 + c]! - share;
         skinIndex[i * 4 + 3] = indexOf[`forearmTwist${side}`];
         skinWeight[i * 4 + 3] = share;
         break;
       }
-    } else if (owner === "legL" || owner === "legR") {
-      const side = owner === "legL" ? "L" : "R";
+    } else if (family === "leg") {
       blendJoint(owner, `knee${side}`, `kneeVolume${side}`, weight);
-    } else if (owner === "kneeL" || owner === "kneeR") {
-      const side = owner === "kneeL" ? "L" : "R";
+    } else if (family === "knee") {
       blendJoint(`leg${side}`, owner, `kneeVolume${side}`, 1 - weight);
       const ankleWeight =
         1 -
@@ -599,13 +550,11 @@ function addSkinning(
           -p.shin + p.legR * 0.4,
         );
       if (ankleWeight > 0) blendJoint(owner, `ankle${side}`, `ankleVolume${side}`, ankleWeight);
-    } else if (owner === "handL" || owner === "handR") {
-      const side = owner === "handL" ? "L" : "R";
+    } else if (family === "hand") {
       const wristWeight =
         1 - THREE.MathUtils.smoothstep(positions.getY(i), -ctx.handR * 0.4, ctx.handR * 0.3);
       blendJoint(`forearmTwist${side}`, owner, `wristVolume${side}`, wristWeight);
-    } else if (owner === "ankleL" || owner === "ankleR") {
-      const side = owner === "ankleL" ? "L" : "R";
+    } else if (family === "ankle") {
       // Only the sock/socket follows ankle flexion; the boot last stays rigid.
       if (positions.getY(i) > -p.footH * 0.15)
         blendJoint(

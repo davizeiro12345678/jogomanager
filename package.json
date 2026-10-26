@@ -11,7 +11,7 @@
     "bundle:report": "node scripts/bundle-report.mjs current",
     "bundle:check": "node scripts/bundle-report.mjs current .output/public/assets --check",
     "perf:match-setup": "node scripts/compare-match-setup.mjs",
-    "test:performance-gates": "node --test scripts/performance-gates.test.mjs scripts/postfx-lookup-assets.test.mjs scripts/module-preload-plan.test.mjs",
+    "test:performance-gates": "node --test scripts/performance-gates.test.mjs scripts/postfx-lookup-assets.test.mjs scripts/module-preload-plan.test.mjs scripts/verify-preview-representations.test.cjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "preview:worker": "wrangler dev --config .output/server/wrangler.json --local",

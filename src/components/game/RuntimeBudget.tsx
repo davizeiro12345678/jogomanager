@@ -6,7 +6,7 @@ import { GRAPHICS_PROFILES, type GraphicsTier } from "@/game/contracts/graphics-
 
 import { QualityGovernor } from "@/game/quality-governor";
 import { isCoarsePointer } from "@/game/device";
-import { mobileRenderBudget } from "@/game/mobile-render-budget";
+import { MOBILE_TARGET_P95_MS } from "@/game/mobile-render-budget";
 
 export function RuntimeBudget({
   tier,
@@ -22,8 +22,7 @@ export function RuntimeBudget({
   const governor = useMemo(
     () =>
       new QualityGovernor(
-        mobileRenderBudget(tier, isCoarsePointer())?.targetP95FrameMs ??
-          GRAPHICS_PROFILES[tier].targetP95FrameMs,
+        isCoarsePointer() ? MOBILE_TARGET_P95_MS : GRAPHICS_PROFILES[tier].targetP95FrameMs,
       ),
     [tier],
   );

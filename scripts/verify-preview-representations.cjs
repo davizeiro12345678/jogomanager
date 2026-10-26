@@ -18,6 +18,13 @@ module.exports = async () => {
       ) {
         throw new Error(`Invalid rendered HTML for ${route} with Accept-Encoding ${encoding}`);
       }
+      const head = html.split(/<\/head>/i)[0];
+      if (
+        !/<link\b(?=[^>]*\brel=["']stylesheet["'])(?=[^>]*\bhref=["'][^"']*public-styles[^"']*\.css)[^>]*>/i.test(
+          head,
+        )
+      )
+        throw new Error(`Missing critical SSR stylesheet for ${route}`);
       console.log(`Verified decoded HTML: ${route} (${encoding})`);
     }
   }

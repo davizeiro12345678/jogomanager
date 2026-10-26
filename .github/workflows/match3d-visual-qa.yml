@@ -36,6 +36,8 @@ jobs:
       - run: npm ci
       - name: Install isolated browser test tooling
         run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
           npm install --prefix "$RUNNER_TEMP/match3d-qa" --no-package-lock --no-save playwright@1.62.1
           command -v google-chrome > "$RUNNER_TEMP/match3d-chrome-path"
       - name: Prepare immutable baseline
@@ -48,14 +50,16 @@ jobs:
         run: |
           export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/match3d-chrome-path")"
           (cd "$RUNNER_TEMP/match3d-base" && npm run graphics:build)
-          node scripts/capture-match3d-evidence.mjs "$RUNNER_TEMP/match3d-base" "$RUNNER_TEMP/match3d-evidence/baseline" 4194 "$BASE_SHA"
+          node --import tsx scripts/capture-match3d-evidence.mjs "$RUNNER_TEMP/match3d-base" "$RUNNER_TEMP/match3d-evidence/baseline" 4194 "$BASE_SHA"
       - name: Build and capture candidate
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
         run: |
           export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/match3d-chrome-path")"
           npm run graphics:build
-          node scripts/capture-match3d-evidence.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/match3d-evidence/candidate" 4193 "$CANDIDATE_SHA"
+          node --import tsx scripts/capture-match3d-evidence.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/match3d-evidence/candidate" 4193 "$CANDIDATE_SHA"
+      - name: Compare fixtures, authority and mobile scene ceilings
+        run: node scripts/compare-match3d-evidence.mjs "$RUNNER_TEMP/match3d-evidence/baseline/evidence.json" "$RUNNER_TEMP/match3d-evidence/candidate/evidence.json" "$RUNNER_TEMP/match3d-evidence/comparison.json"
       - name: Pair the six sampled-pose videos
         run: |
           mkdir -p "$RUNNER_TEMP/match3d-evidence/comparisons"

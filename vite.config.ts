@@ -15,6 +15,7 @@ import { rapierWasmAsset } from "./scripts/rapier-wasm-asset.ts";
 import { bundleModuleAudit } from "./scripts/bundle-module-audit.ts";
 import { postfxLookupAssets } from "./scripts/postfx-lookup-assets.ts";
 import { modulePreloadPlan } from "./scripts/module-preload-plan.ts";
+import { compactShaderSource } from "./scripts/compact-shader-source.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
@@ -156,6 +157,7 @@ const projectConfig = defineConfig({
     plugins: [
       ...(enableMcpRouteGenerator ? [mcpPlugin()] : []),
       imagetools(),
+      compactShaderSource(),
       postfxLookupAssets(),
       preloadPlan.plugin,
       rapierWasmAsset(),

@@ -249,6 +249,27 @@ function gridSurface(
   return geometry;
 }
 
+type HeadSampler = (height: number, angle: number, target: THREE.Vector3) => THREE.Vector3;
+const normalScratch = Array.from({ length: 4 }, () => new THREE.Vector3());
+/** The same continuous tangent plane joins the skull, lids and lip edges. */
+function sampleHeadNormal(
+  sample: HeadSampler,
+  height: number,
+  angle: number,
+  target: THREE.Vector3,
+) {
+  const [a, b, tangentAngle, tangentHeight] = normalScratch as [
+    THREE.Vector3,
+    THREE.Vector3,
+    THREE.Vector3,
+    THREE.Vector3,
+  ];
+  const epsilon = 0.0005;
+  tangentAngle.copy(sample(height, angle + epsilon, a)).sub(sample(height, angle - epsilon, b));
+  tangentHeight.copy(sample(height + epsilon, angle, a)).sub(sample(height - epsilon, angle, b));
+  return target.crossVectors(tangentAngle, tangentHeight).normalize();
+}
+
 export function sculptedHead(
   P: HeadShape,
   seed = 0,
@@ -293,23 +314,12 @@ export function sculptedHead(
   const normal = geometry.getAttribute("normal");
   const positions = geometry.getAttribute("position");
   const uv = geometry.getAttribute("uv");
-  const tangentAngle = new THREE.Vector3(),
-    tangentHeight = new THREE.Vector3();
   const surfaceNormal = new THREE.Vector3();
-  const surfaceA = new THREE.Vector3(),
-    surfaceB = new THREE.Vector3();
-  const epsilon = 0.0005;
   const complexion = new Float32Array(positions.count * 3);
   for (let i = 0; i < positions.count; i++) {
     const angle = headAngle(uv.getX(i)),
       height = positions.getY(i) / P.headR;
-    tangentAngle
-      .copy(sample(height, angle + epsilon, surfaceA))
-      .sub(sample(height, angle - epsilon, surfaceB));
-    tangentHeight
-      .copy(sample(height + epsilon, angle, surfaceA))
-      .sub(sample(height - epsilon, angle, surfaceB));
-    surfaceNormal.crossVectors(tangentAngle, tangentHeight).normalize();
+    sampleHeadNormal(sample, height, angle, surfaceNormal);
     normal.setXYZ(i, surfaceNormal.x, surfaceNormal.y, surfaceNormal.z);
     const x = positions.getX(i) / P.headW;
     const y = positions.getY(i) / P.headR;
@@ -651,12 +661,19 @@ export function lipPatch(P: Proportions, seed: number, lower: boolean) {
 function mapHeadSurfaceUv(geometry: THREE.BufferGeometry, P: HeadShape, seed: number) {
   const points = geometry.getAttribute("position"),
     uv = geometry.getAttribute("uv");
+  const normals = geometry.getAttribute("normal"),
+    normal = new THREE.Vector3();
+  const sample: HeadSampler = (height, angle, target) => headPoint(P, height, angle, seed, target);
   for (let i = 0; i < points.count; i++) {
     const y = points.getY(i) / P.headR;
     const ring = faceRing(y, seed);
     const angle = Math.asin(
       THREE.MathUtils.clamp(points.getX(i) / (P.headW * ring.width), -0.999, 0.999),
     );
+    if (uv.getY(i) === 1) {
+      sampleHeadNormal(sample, y, angle, normal);
+      normals.setXYZ(i, normal.x, normal.y, normal.z);
+    }
     let u = angle / (Math.PI * 2);
     let centered = y / 1.14;
     for (let iteration = 0; iteration < 4; iteration++) {

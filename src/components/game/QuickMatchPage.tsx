@@ -1,4 +1,3 @@
-import "@/public-styles.css";
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
@@ -8,21 +7,15 @@ import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import { LEAGUES, getLeague } from "@/game/data/leagues";
 import type { Difficulty } from "@/game/quickMatch";
+import { loadQuickLive } from "@/game/quick-match-entry";
 import { safeClub } from "@/game/club-reference";
 import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
 import { useT } from "@/i18n/provider";
 
-const loadQuickLive = () => import("@/components/game/QuickLive");
 const QuickLive = lazy(loadQuickLive);
-const preloadQuickLive = () => {
-  void loadQuickLive().catch(() => undefined);
-};
+const preloadQuickLive = () => loadQuickLive().catch(() => undefined);
 
-const DIFFS: { id: Difficulty; label: string }[] = [
-  { id: "facil", label: "Fácil" },
-  { id: "normal", label: "Normal" },
-  { id: "dificil", label: "Difícil" },
-];
+const DIFFS: Difficulty[] = ["facil", "normal", "dificil"];
 
 export function QuickMatchPage() {
   const { t, lang } = useT();
@@ -136,22 +129,16 @@ export function QuickMatchPage() {
           <div className="grid grid-cols-3 gap-2 sm:flex">
             {DIFFS.map((d) => (
               <button
-                key={d.id}
-                onClick={() => setDifficulty(d.id)}
-                aria-pressed={difficulty === d.id}
+                key={d}
+                onClick={() => setDifficulty(d)}
+                aria-pressed={difficulty === d}
                 className={`min-h-11 rounded-lg border px-3 py-2 font-display text-xs uppercase tracking-wide ${
-                  difficulty === d.id
+                  difficulty === d
                     ? "border-primary bg-primary/15"
                     : "border-border surface-card text-muted-foreground"
                 }`}
               >
-                {t(
-                  d.id === "facil"
-                    ? "quick.easy"
-                    : d.id === "dificil"
-                      ? "quick.hard"
-                      : "quick.normal",
-                )}
+                {t(d === "facil" ? "quick.easy" : d === "dificil" ? "quick.hard" : "quick.normal")}
               </button>
             ))}
           </div>
@@ -195,19 +182,20 @@ function TeamPicker({
   onChange: (id: string) => void;
   disabled: string;
 }) {
+  const selected = safeClub(value);
   return (
     <section className="rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
         {title}
       </h2>
       <div className="mt-3 flex items-center gap-3">
-        <Crest club={safeClub(value)} size={44} detail="full" />
-        <span className="font-display text-lg">{safeClub(value).name}</span>
+        <Crest club={selected} size={44} detail="full" />
+        <span className="font-display text-lg">{selected.name}</span>
         <span
           className="ml-auto rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-xs tabular-nums text-primary"
-          aria-label={`Força de referência ${safeClub(value).strength}`}
+          aria-label={`Força de referência ${selected.strength}`}
         >
-          Força {safeClub(value).strength}
+          Força {selected.strength}
         </span>
       </div>
       <div className="mt-3 grid max-h-56 gap-1 overflow-y-auto pr-1">

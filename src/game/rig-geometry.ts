@@ -95,44 +95,24 @@ export function mergeRigParts(parts: RigPart[]): RigMesh[] {
 
   const meshes: RigMesh[] = [];
   for (const group of groups.values()) {
-    if (group.length === 1) {
-      const only = group[0]!;
-      const geometry = only.geometry.clone();
-      geometry.applyMatrix4(only.matrix);
+    const baked = group.map((part) => part.geometry.clone().applyMatrix4(part.matrix));
+    for (const geometry of mergeRigSurfaces(baked)) {
       geometry.computeBoundingSphere();
       geometry.computeBoundingBox();
-      meshes.push({ material: only.material, geometry, castShadow: only.castShadow });
-      continue;
+      meshes.push({ material: group[0]!.material, geometry, castShadow: group[0]!.castShadow });
     }
-    const baked: THREE.BufferGeometry[] = [];
-    for (const part of group) {
-      const geometry = part.geometry.clone();
-      geometry.applyMatrix4(part.matrix);
-      baked.push(geometry);
-    }
-    const merged = mergeGeometries(baked, false);
-    for (const geometry of baked) geometry.dispose();
-    if (!merged) {
-      // caminho seguro: mantém cada peça como malha própria
-      for (const part of group) {
-        const geometry = part.geometry.clone();
-        geometry.applyMatrix4(part.matrix);
-        geometry.computeBoundingSphere();
-        geometry.computeBoundingBox();
-        meshes.push({ material: part.material, geometry, castShadow: part.castShadow });
-      }
-      continue;
-    }
-    merged.computeBoundingSphere();
-    merged.computeBoundingBox();
-    meshes.push({
-      material: group[0]!.material,
-      geometry: merged,
-      castShadow: group[0]!.castShadow,
-    });
   }
   for (const part of parts) part.geometry.dispose();
   return meshes;
+}
+
+/** Keep original surfaces on incompatible attributes; never erase anatomy. */
+export function mergeRigSurfaces(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry[] {
+  if (!geometries.length) return [];
+  const merged = geometries.length === 1 ? geometries[0]! : mergeGeometries(geometries, false);
+  if (!merged) return geometries;
+  for (const geometry of geometries) if (geometry !== merged) geometry.dispose();
+  return [merged];
 }
 
 /** Smooth elliptical rings: waist, ribcage and shoulders have distinct widths.

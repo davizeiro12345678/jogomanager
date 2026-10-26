@@ -32,6 +32,5 @@ export function isPublicContentPath(pathname: string): boolean {
 
 /** Partida rápida pode usar o CSS leve, mas precisa inicializar o mundo do jogo. */
 export function isLightweightCssPath(pathname: string): boolean {
-  const path = pathname.replace(/\/$/, "") || "/";
-  return path === "/partida-rapida" || isPublicContentPath(path);
+  return /^\/partida-rapida\/?$/.test(pathname) || isPublicContentPath(pathname);
 }

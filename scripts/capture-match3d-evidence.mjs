@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { MobileFrameMetrics } from "./mobile-frame-metrics.ts";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
@@ -41,9 +42,123 @@ const report = {
   physicalDeviceCertification: false,
   errors: [],
   resourceErrors: [],
+  consoleErrors: [],
   captures: [],
   videos: [],
 };
+async function observe(page, label) {
+  page.on("pageerror", (error) => report.errors.push(`${label}: ${error.message}`));
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      const text = message.text();
+      report.consoleErrors.push({ label, text });
+      if (/Shader Error|VALIDATE_STATUS|WebGL: INVALID|THREE.WebGLProgram/.test(text))
+        report.errors.push(`${label}: ${text}`);
+    }
+  });
+  page.on("requestfailed", (request) =>
+    report.resourceErrors.push({ label, url: request.url(), error: request.failure()?.errorText }),
+  );
+  page.on("response", (response) => {
+    if (response.status() >= 400)
+      report.resourceErrors.push({ label, url: response.url(), status: response.status() });
+  });
+  await page.addInitScript(() => {
+    // Read-only counters include shadow/offscreen passes. Times describe WebGL
+    // submissions in software, never compositor presentation on a phone.
+    const probe = (window.__match3dQA = {
+      draws: 0,
+      triangles: 0,
+      frames: [],
+      basis: "webgl-submissions",
+      contextLosses: 0,
+    });
+    document.addEventListener(
+      "webglcontextlost",
+      () => {
+        probe.contextLosses++;
+      },
+      true,
+    );
+    for (const name of [
+      "drawElements",
+      "drawArrays",
+      "drawElementsInstanced",
+      "drawArraysInstanced",
+    ]) {
+      const original = WebGL2RenderingContext.prototype[name];
+      WebGL2RenderingContext.prototype[name] = function (...args) {
+        const count = args[name.startsWith("drawElements") ? 1 : 2];
+        const instances = name.endsWith("Instanced")
+          ? args[name.startsWith("drawElements") ? 4 : 3]
+          : 1;
+        probe.draws++;
+        if (args[0] === this.TRIANGLES) probe.triangles += Math.floor(count / 3) * instances;
+        return Reflect.apply(original, this, args);
+      };
+    }
+    const frame = (now) => {
+      if (probe.draws && probe.frames.length < 120000)
+        probe.frames.push({ now, draws: probe.draws, triangles: probe.triangles });
+      probe.draws = probe.triangles = 0;
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+async function renderer(page) {
+  return page
+    .locator("canvas")
+    .first()
+    .evaluate((canvas) => {
+      const gl = canvas.getContext("webgl2"),
+        extension = gl?.getExtension("WEBGL_debug_renderer_info");
+      return {
+        width: canvas.width,
+        height: canvas.height,
+        coarse: matchMedia("(pointer: coarse)").matches,
+        dpr: devicePixelRatio,
+        renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null,
+        version: gl ? gl.getParameter(gl.VERSION) : null,
+        contextLosses: window.__match3dQA.contextLosses,
+      };
+    });
+}
+
+async function measure(page, label) {
+  await page.waitForTimeout(2000);
+  const start = await page.evaluate(() => performance.now());
+  await page.waitForTimeout(10000);
+  const end = await page.evaluate(() => performance.now());
+  const frames = await page.evaluate(
+    ({ start, end }) => window.__match3dQA.frames.filter((f) => f.now >= start && f.now <= end),
+    { start, end },
+  );
+  if (frames.length < 2) throw new Error(`${label}: insufficient real submissions`);
+  const metrics = new MobileFrameMetrics(120000);
+  for (let index = 1; index < frames.length; index++)
+    metrics.add(frames[index].now - frames[index - 1].now);
+  const result = {
+    label,
+    basis: "software-webgl-submissions",
+    certification: false,
+    warmupMs: 2000,
+    observedMs: end - start,
+    renderer: await renderer(page),
+    metrics: metrics.summary(),
+    peakDraws: Math.max(...frames.map((f) => f.draws)),
+    peakTriangles: Math.max(...frames.map((f) => f.triangles)),
+    frames,
+  };
+  await writeFile(
+    path.join(output, `${label}-submissions.json`),
+    JSON.stringify(result, null, 2) + "\n",
+  );
+  const { frames: _raw, ...summary } = result;
+  return summary;
+}
+
 try {
   let ready = false;
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -70,50 +185,7 @@ try {
     deviceScaleFactor: 1,
     locale: "pt-BR",
   });
-  page.on("pageerror", (error) => report.errors.push(error.message));
-  page.on("requestfailed", (request) =>
-    report.resourceErrors.push({ url: request.url(), error: request.failure()?.errorText }),
-  );
-  page.on("response", (response) => {
-    if (response.status() >= 400)
-      report.resourceErrors.push({ url: response.url(), status: response.status() });
-  });
-  // Read-only WebGL command counters work on the immutable baseline too.
-  // They measure submissions, including shadow/offscreen passes, not display FPS.
-  await page.addInitScript(() => {
-    const probe = (window.__match3dQA = {
-      draws: 0,
-      triangles: 0,
-      frames: [],
-      basis: "webgl-submissions",
-    });
-    for (const name of [
-      "drawElements",
-      "drawArrays",
-      "drawElementsInstanced",
-      "drawArraysInstanced",
-    ]) {
-      const original = WebGL2RenderingContext.prototype[name];
-      WebGL2RenderingContext.prototype[name] = function (...args) {
-        const count = args[name.startsWith("drawElements") ? 1 : 2];
-        const instances = name.endsWith("Instanced")
-          ? args[name.startsWith("drawElements") ? 4 : 3]
-          : 1;
-        probe.draws++;
-        if (args[0] === this.TRIANGLES) probe.triangles += Math.floor(count / 3) * instances;
-        return Reflect.apply(original, this, args);
-      };
-    }
-    const frame = (now) => {
-      if (probe.draws) {
-        probe.frames.push({ now, draws: probe.draws, triangles: probe.triangles });
-        if (probe.frames.length > 120) probe.frames.shift();
-      }
-      probe.draws = probe.triangles = 0;
-      requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  });
+  await observe(page, "desktop");
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.locator('section[data-scene-status="ready"]').waitFor({ timeout: 60_000 });
   await page.waitForTimeout(2000);
@@ -126,6 +198,7 @@ try {
       height: canvas.height,
       renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null,
       version: gl ? gl.getParameter(gl.VERSION) : null,
+      contextLosses: window.__match3dQA.contextLosses,
     };
   });
   const framing = page.locator('select:has(option[value="legs"])');
@@ -197,6 +270,29 @@ try {
       });
     }
   }
+  await motionTab.click();
+  await movement.selectOption("idle");
+  await framing.selectOption("body");
+  let identityVariation = 1;
+  for (const role of ["MF", "DF", "FW", "GK"]) {
+    await motionTab.click();
+    await page.locator('select:has(option[value="MF"]):has(option[value="GK"])').selectOption(role);
+    for (let variant = 1; variant <= 3; variant++) {
+      await shot(`identity-${role}-${variant}`, {
+        role,
+        variant,
+        seed: `studio-fla-${role}-${identityVariation}`,
+        clip: "idle",
+        framing: "body",
+      });
+      if (variant < 3) {
+        await page.locator("button.studio-button.w-full").click();
+        identityVariation++;
+      }
+    }
+  }
+  await motionTab.click();
+  await page.locator('select:has(option[value="MF"]):has(option[value="GK"])').selectOption("MF");
   // Six real rendered pose sequences. Encoding rate is presentation only;
   // sampled action phases must never be reported as physical frame timings.
   await framing.selectOption("body");
@@ -210,6 +306,11 @@ try {
     for (let frame = 0; frame < 12; frame++) {
       const progress = Math.round((frame * 100) / 11);
       await page.locator("input.studio-timeline").evaluate((input, value) => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+        if (input.value === String(value)) {
+          setter.call(input, value === 0 ? "1" : "0");
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(
           input,
           String(value),
@@ -223,6 +324,7 @@ try {
           `${value}%`,
         progress,
       );
+      await page.getByRole("button", { name: /^(Reproduzir|Play)$/ }).waitFor({ state: "visible" });
       await page.waitForTimeout(180);
       await page
         .locator("canvas")
@@ -256,26 +358,134 @@ try {
   await page.setViewportSize({ width: 844, height: 390 });
   await framing.selectOption("body");
   await shot("mobile-landscape", { viewport: { width: 844, height: 390 }, framing: "body" });
-  const mobile = await browser.newPage({
-    viewport: { width: 844, height: 390 },
-    deviceScaleFactor: 2.75,
-    isMobile: true,
-    hasTouch: true,
-    locale: "pt-BR",
-  });
-  await mobile.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await mobile.locator('section[data-scene-status="ready"]').waitFor({ timeout: 60000 });
-  await mobile.waitForTimeout(1500);
-  await mobile.screenshot({ path: path.join(output, "mobile-coarse.png") });
-  report.mobile = await mobile.locator("canvas").evaluate((canvas) => ({
-    width: canvas.width,
-    height: canvas.height,
-    coarse: matchMedia("(pointer: coarse)").matches,
-    dpr: devicePixelRatio,
-  }));
-  await mobile.close();
+  await page.close();
+  report.mobileDiagnostics = [];
+  for (const fixture of [
+    { id: "mobile-actual-viewport", width: 844, height: 390, dpr: 2.75, cores: 4, memory: 3 },
+    {
+      id: "mobile-basic-reference",
+      width: 1440,
+      height: 1000,
+      dpr: 1,
+      cores: 4,
+      memory: 3,
+      canvas: [960, 540],
+    },
+    {
+      id: "mobile-mid-reference",
+      width: 1440,
+      height: 1000,
+      dpr: 1,
+      cores: 6,
+      memory: 6,
+      canvas: [1280, 720],
+    },
+  ]) {
+    const mobile = await browser.newPage({
+      viewport: { width: fixture.width, height: fixture.height },
+      deviceScaleFactor: fixture.dpr,
+      isMobile: true,
+      hasTouch: true,
+      locale: "pt-BR",
+    });
+    await observe(mobile, fixture.id);
+    await mobile.addInitScript(({ cores, memory }) => {
+      Object.defineProperty(navigator, "hardwareConcurrency", { get: () => cores });
+      Object.defineProperty(navigator, "deviceMemory", { get: () => memory });
+    }, fixture);
+    await mobile.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await mobile.locator('section[data-scene-status="ready"]').waitFor({ timeout: 60000 });
+    if (fixture.canvas) {
+      await mobile.locator(".studio-canvas").evaluate((element, dimensions) => {
+        element.style.width = `${dimensions[0]}px`;
+        element.style.height = `${dimensions[1]}px`;
+      }, fixture.canvas);
+      await mobile.waitForFunction(([width, height]) => {
+        const canvas = document.querySelector(".studio-canvas canvas");
+        return canvas?.width === width && canvas?.height === height;
+      }, fixture.canvas);
+    }
+    const diagnostic = await measure(mobile, fixture.id);
+    await mobile.screenshot({ path: path.join(output, `${fixture.id}.png`) });
+    report.mobileDiagnostics.push({ ...diagnostic, fixture });
+    await mobile.close();
+  }
+  report.matchScenes = [];
+  for (const config of [
+    { id: "baseline" },
+    { id: "broadcast" },
+    { id: "director" },
+    { id: "cinema" },
+    {
+      id: "mobile-basic",
+      scenario: "broadcast",
+      quality: "baixa",
+      canvas: [960, 540],
+      cores: 4,
+      memory: 3,
+    },
+    {
+      id: "mobile-mid",
+      scenario: "broadcast",
+      quality: "media",
+      canvas: [1280, 720],
+      cores: 6,
+      memory: 6,
+    },
+  ]) {
+    const scenario = config.scenario || config.id;
+    const match = await browser.newPage({
+      viewport: { width: 1440, height: 1000 },
+      deviceScaleFactor: 1,
+      locale: "pt-BR",
+      isMobile: Boolean(config.canvas),
+      hasTouch: Boolean(config.canvas),
+    });
+    if (config.canvas)
+      await match.addInitScript(({ cores, memory }) => {
+        Object.defineProperty(navigator, "hardwareConcurrency", { get: () => cores });
+        Object.defineProperty(navigator, "deviceMemory", { get: () => memory });
+      }, config);
+    await observe(match, `match-${config.id}`);
+    await match.goto(
+      `http://127.0.0.1:${port}/graphics-benchmark.html?scenario=${scenario}${config.quality ? `&quality=${config.quality}` : ""}&manual=1&warmup=5&duration=30`,
+      { waitUntil: "domcontentloaded", timeout: 60000 },
+    );
+    await match.waitForFunction(
+      () => {
+        const scene = window.render_game_to_text?.();
+        return scene && JSON.parse(scene).simulation !== null;
+      },
+      undefined,
+      { timeout: 60000 },
+    );
+    if (config.canvas) {
+      await match
+        .locator("main > div")
+        .nth(1)
+        .evaluate((element, dimensions) => {
+          element.style.width = `${dimensions[0]}px`;
+          element.style.height = `${dimensions[1]}px`;
+        }, config.canvas);
+      await match.waitForFunction(([width, height]) => {
+        const canvas = document.querySelector("canvas");
+        return canvas?.width === width && canvas?.height === height;
+      }, config.canvas);
+    }
+    await match.evaluate(() => window.advanceTime(6000));
+    await match.waitForFunction(
+      () => JSON.parse(window.render_game_to_text()).simulation.minute > 0,
+    );
+    await match.waitForTimeout(2000);
+    const shotPath = `match-${config.id}.png`;
+    await match.screenshot({ path: path.join(output, shotPath) });
+    const scene = await match.evaluate(() => JSON.parse(window.render_game_to_text()));
+    const diagnostic = await measure(match, `match-${config.id}`);
+    report.matchScenes.push({ file: shotPath, scene, config, ...diagnostic });
+    await match.close();
+  }
   report.renderedFlow =
-    "Studio -> frame/body and legs -> camera views -> 12 clips -> paused action timeline -> mobile viewport";
+    "Studio -> frame/body and legs -> camera views -> 12 clips -> paused action timeline -> 12 identities -> coarse mobile/fixed framebuffer diagnostics -> four deterministic match scenes";
   report.assetsComplete = report.resourceErrors.length === 0;
   report.status = report.errors.length
     ? "failed-runtime"

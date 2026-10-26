@@ -137,7 +137,147 @@ Já existem testes de sobreposição do short com a coxa em poses específicas. 
 
 **Evidência P0:** sequência antes/depois no mesmo instante e câmera, vídeo contínuo da pose que causava o rasgo, identificação da causa e dos arquivos alterados, teste falhando antes e aprovado depois. A análise da imagem deve usar a geometria deformada e a cobertura efetiva da região, além dos testes estruturais de índices/pesos.
 
-### Etapa 2. Corrigir corpo, proporções, pivôs e deformaç…4652 tokens truncated… para essa meta. Os perfis Alta/Cinema existentes não representam, por si, certificação a 60 FPS nessa faixa de aparelhos. Aumento de assets carregados após abrir o 3D depende de orçamento de transferência/memória medido e não relaxa a proteção do JavaScript inicial.
+### Etapa 2. Corrigir corpo, proporções, pivôs e deformação
+
+**Arquivos existentes:** src/game/player-model.ts, rig-body.ts, rig-geometry.ts, rig-skin.ts, rig-correctives.ts e src/components/game/players/PlayerRig.tsx. **Testes relevantes:** player-anatomy.test.ts, rig-body.test.ts, rig-skin.test.ts, rig-correctives.test.ts.
+
+**Interfaces preservadas:** proportionsFor(look: PlayerLook): Proportions; lookWithPhysique(look, measurements): PlayerLook. Novas medidas internas devem ser derivadas dessa referência, não de constantes independentes por renderizador.
+
+- [ ] Criar fixtures de atletas cobrindo GK/DF/MF/FW, corpos leves/normais/fortes/altos e extremos válidos de altura. Usar 12 identidades fixas para comparação visual.
+- [ ] Comparar as medidas nominais com a geometria montada; localizar excesso de escala no tronco, quadril, membros, cabeça e pescoço.
+- [ ] Corrigir volumes de ombro, peito, cintura, pelve, coxas e panturrilhas, mantendo continuidade das superfícies e articulações.
+- [ ] Verificar bind pose, hierarquia, normalização dos pesos, normais e deformações em corrida, flexão, chute e salto.
+- [ ] Ajustar o caimento da camisa e do short ao corpo; preservar cobertura e evitar que a roupa distorça a leitura do tronco.
+- [ ] Manter testes nominais já existentes e adicionar verificações que meçam a malha real, inclusive após skinning.
+
+**Critérios propostos:** altura visível neutra, sem cabelo, a até 1% da altura alvo; ausência de NaN/infinito e de colapso grave em articulações; silhueta humana consistente nas quatro vistas. A tolerância visual adicional não substitui testes nominais mais rigorosos existentes.
+
+Os testes atuais usam faixas de 7,1 a 8,7 cabeças de altura, entreperna/altura entre 0,46 e 0,54 e largura de ombros/altura entre 0,24 e 0,36 em amostras semeadas. São guardas do código, não prova de correção estética; não serão afrouxados para esconder defeitos.
+
+### Etapa 3. Melhorar cabeça, rosto, pescoço e materiais do atleta
+
+**Arquivos existentes:** src/game/player-sculpt.ts, player-morphology.ts, player-materials.ts, rig-materials.ts e src/components/game/players/player-rig-face.ts. **Testes:** player-sculpt.test.ts, player-morphology.test.ts, player-materials.test.ts e player-naturalness.test.ts.
+
+**Interface preservada:** faceMorphology(seed: number): Readonly<FaceMorphology>. As variações continuam relacionadas à identidade existente.
+
+- [ ] Corrigir implantação do pescoço, largura/profundidade do crânio, mandíbula e ligação com o tronco.
+- [ ] Refinar olhos, pálpebras, nariz, boca, orelhas e linha do cabelo, começando pelas formas que afetam a silhueta.
+- [ ] Revisar normais, UVs e rugosidade da pele; controlar brilho de suor, contraste dos olhos e separação entre cabelo, pele e tecido.
+- [ ] Preservar diversidade entre atletas sem transformar assimetrias em deformações.
+- [ ] Revisar mãos, antebraços e chuteiras nos enquadramentos próximos, dentro do limite do perfil.
+- [ ] Validar os mesmos atletas em luz neutra, dia, entardecer e noite, com exposição controlada na comparação.
+
+**Aceite:** melhora visível nas vistas comparáveis; sem olhos desalinhados, pescoço desconectado ou superfície severamente facetada onde o close exige continuidade. Sem exigir semelhança fotográfica com jogadores reais, salvo decisão expressa acompanhada de referências e assets adequados.
+
+### Etapa 4. Melhorar locomoção, ações e transições
+
+**Arquivos existentes:** src/game/animation-core.ts, animation.ts, animation-extra*.ts, animation-catalog.ts, gait-kinematics.ts, athlete-pose-blender.ts, football-action.ts, ground-contact.ts e src/components/game/players/player-rig-frame.ts. **Testes:** animation-catalog.test.ts, gait-kinematics.test.ts, athlete-pose-blender.test.ts e player-rig-animation.test.ts.
+
+**Interfaces de referência:** mixPose(a, b, k, out?); seleção de clipe existente; solveGroundContact(input: GroundContactInput): GroundContactResult. A sequência final de aplicação deve preservar apoio e marcadores de contato depois das misturas.
+
+- [ ] Registrar 12 clipes representativos: caminhada, corrida, sprint, arrancada, freada, mudança lateral/direção, passe, chute, domínio, cabeceio, defesa do goleiro e queda/recuperação.
+- [ ] Reproduzir saltos de pose na transição entre clipes e conflitos entre IK, olhar, cansaço e postura.
+- [ ] Sincronizar a passada com a velocidade real; corrigir apoio, transferência de peso, inclinação e movimento dos braços.
+- [ ] Melhorar antecipação, contato e recuperação de ações, mantendo o instante de toque coerente com a bola.
+- [ ] Corrigir pé dominante e tratamento espelhado; manter as mãos do goleiro e o eixo do corpo coerentes com a defesa.
+- [ ] Comparar playback a 30, 60 e 120 FPS de renderização nos mesmos instantes autoritativos, inclusive pausa e replay.
+- [ ] Verificar que o jogador distante não perde o significado da ação quando recebe atualizações menos frequentes.
+
+**Aceite:** ausência de saltos severos de pose, apoio legível, ausência de joelhos invertidos e de evento de contato duplicado. Comparação em vídeo obrigatória; capturas estáticas não aprovam naturalidade de movimento. A frequência de renderização não pode alterar a regra ou o resultado autoritativo por si só.
+
+### Etapa 5. Corrigir física e contato com invariantes verificáveis
+
+**Arquivos existentes:** src/game/rapier-ball-authority.ts, physics-quality.ts, ball-climate.ts, ball-response.ts, rapier-ball-visual.ts, ground-contact.ts e football-action.ts. **Testes:** rapier-ball-authority.test.ts, rapier-ball-visual.test.ts, physics-quality.test.ts, ground-boot-contact.test.ts e live-match.visual-ball.test.ts.
+
+**Interfaces preservadas:** BallPhysicsAuthority, RapierBallAuthority e highFidelitySubsteps(elapsed, maxSubsteps?). Não introduzir outro integrador concorrente para a mesma bola.
+
+- [ ] Auditar unidades, raio visível/físico, colliders, restituição, atrito, damping e posse/soltura da bola.
+- [ ] Testar bola no solo, quique, rolamento, impacto em trave, cruzamento rápido, chute e defesa em sequência.
+- [ ] Avaliar colisão contínua nos corpos rápidos e custo dos subpassos; manter o contrato atual até haver comparação física e temporal aprovada.
+- [ ] Corrigir sola/gramado, apoio de um pé no chute, aterrissagem e transição entre suspensão e contato.
+- [ ] Sincronizar reação ao contato entre atletas com o evento da simulação; evitar transformar todo o elenco em ragdolls permanentes.
+- [ ] Testar retomada após uma pausa longa, delta inválido e alta velocidade, sem explosão numérica nem atualização duplicada de posição.
+- [ ] Verificar se uma correção de trajetória preserva os 21 checkpoints protegidos; separar qualquer alteração incompatível em lote não publicável, com proposta explícita de versionamento, referência e validação, preservando saves e resultados gravados.
+
+**Critérios propostos:** nenhum valor não finito; bola atravessando trave/solo em nenhum cenário de colisão do conjunto aprovado; em poses de apoio plano, penetração máxima da sola de 1 cm. A tolerância de 1 cm é uma proposta para a camada visual, não autorização para ampliar tolerâncias do solver. Repetibilidade dentro da mesma versão, ordem de eventos consistente e prova de custo por cenário.
+
+**Limite de integração:** o primeiro release só recebe as correções compatíveis com os checkpoints obrigatórios. Se eliminar um defeito autoritativo exigir mudar esses estados, entregar a reprodução, o patch isolado e a proposta de transição; manter esse trecho bloqueado para publicação até resolver o contrato, sem apresentar a física incompatível como já entregue em produção.
+
+**Evolução física proposta:** auditar o conjunto bola/solo/traves, vínculo entre gesto e impacto, posse/soltura/defesa, apoio/aterrissagem dos atletas e reações às disputas. Distinguir o evento físico, sua apresentação e a regra esportiva evita que um ajuste visual produza um segundo impulso ou outra autoridade sobre a bola.
+
+| Ensaio físico               | Critério proposto                                                                                 | Como comprovar                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Bola sobre plano e impactos | Penetração no plano <= 5 mm no cenário controlado, preservando tolerância existente mais rigorosa | Distância do centro ao plano comparada ao raio físico por passo                |
+| Trajetória rápida e traves  | Nenhuma passagem indevida pelo collider no conjunto de ensaios aprovado                           | Trajetórias, eventos de colisão e clipe em câmera lenta                        |
+| Passe/chute/defesa          | Evento de impacto único; marcador visual a até um tick de regras do contato autoritativo          | Linha do tempo com evento, pose, distância de contato e resultado              |
+| Apoio dos atletas           | Penetração visual da sola <= 1 cm no apoio plano; sem acumular altura na suspensão                | Medida com a geometria final transformada, nos dois pés                        |
+| Repetibilidade              | Mesmo estado nos replays da mesma versão e fixtures; preservar os 21 checkpoints do release atual | Hashes e relatórios de stress, incluindo identificação da versão               |
+| Robustez temporal           | Nenhum NaN/infinito ou evento duplicado com pausa, retomada e render a 30/60/120 Hz               | Testes por sequência de passos e comparação nos mesmos instantes autoritativos |
+
+Os parâmetros de atrito, restituição, resistência e contato serão calibrados por ensaio; elevar a frequência de integração ou a quantidade de iterações só será aceito com benefício físico demonstrado e custo medido. A simulação autoritativa mantém as mesmas regras nos aparelhos: o governador pode ajustar detalhes visuais, tecido e torcida, mas não reduzir a precisão física de forma que altere o resultado por dispositivo.
+
+### Etapa 6. Integrar LODs e otimizar CPU/GPU sem perder anatomia
+
+**Arquivos existentes:** src/components/game/players/MatchPlayers.tsx, LowPlayers.tsx, player-rig-frame.ts, src/game/player-lod-geometry.ts, player-lod-torso.ts, player-lod-shorts.ts, player-instance-batch.ts, draw-budget.ts, runtime-scene-budget.ts e quality-governor.ts. **Testes:** os testes correspondentes de LOD, batch, draw-budget e governador.
+
+- [ ] Derivar largura, altura, pivôs e posição da cabeça dos mesmos dados do atleta detalhado.
+- [ ] Validar mudanças de distância em torno dos limites com histerese, sem oscilação de silhueta, altura ou identidade.
+- [ ] Medir separadamente seleção de atletas detalhados, avaliação de pose, IK, montagem de geometria, skinning, uploads e desenho.
+- [ ] Reutilizar buffers, geometria e materiais onde apropriado; eliminar alocações e reprocessamentos demonstrados pelo perfil.
+- [ ] Reduzir atualizações de detalhes invisíveis e trabalho fora de campo; preservar a interpolação das ações relevantes.
+- [ ] Conferir propriedade e liberação de recursos ao abrir/fechar estúdio, entrar/sair de partidas e alternar replay.
+- [ ] Manter os kernels WASM condicionados às medições e controles já existentes; não ativar um caminho apenas por ele usar WASM.
+
+**Aceite:** todos os perfis dentro do orçamento; mesma anatomia reconhecível entre representações; nenhum crescimento contínuo de contagem de geometrias/texturas depois do aquecimento e de ciclos de entrada/saída. A comparação principal fixa o perfil, a resolução e o conteúdo: baixar qualidade não contará como ganho equivalente.
+
+### Etapa 7. Melhorar ambiente, torcida e apresentação
+
+**Arquivos existentes:** src/components/game/Stadium3D.tsx, stadium/CrowdLod.tsx, stadium/CrowdReaction.tsx, cinematic/CinematicCrowd.tsx, CinematicDirector.tsx e post/PostFX.tsx.
+
+- [ ] Melhorar variação de pose e reação da torcida, com eventos e fases determinísticos e custo proporcional à visibilidade.
+- [ ] Revisar gramado, linhas, contatos de sombra e separação visual entre atleta, bola e campo.
+- [ ] Ajustar enquadramento de replay/close para mostrar a melhoria do personagem e a ação, preservando o fluxo da partida.
+- [ ] Ajustar iluminação, exposição e pós-processamento após aprovar forma e deformação do atleta.
+- [ ] Controlar efeitos opcionais por perfil; testar dia/noite e seco/molhado sem exceder o orçamento total.
+
+**Aceite:** comparação visual com mesmos instantes, condições e câmera; torcida e efeitos não retiram recursos críticos dos jogadores e da bola. Mudanças de interface, controles ou direção de câmera que ultrapassem esse acabamento exigem uma decisão de escopo específica.
+
+### Etapa 8. Validar, apresentar e preparar a liberação
+
+**Arquivos existentes:** .github/workflows/quality.yml, codspeed.yml, scripts/compare-match-setup.mjs, verify-stress-report.mjs, verify-game-assets.mjs e verify-public-deployment.mjs. **Relatórios propostos:** docs/qa/match3d-2026-10-25/ e artefatos de CI vinculados ao SHA candidato.
+
+- [ ] Executar testes focados nas mudanças de anatomia, animação e física, seguidos dos controles completos requeridos para release.
+- [ ] Validar build, lint sem avisos, tipos, stress de 200 partidas, determinismo, bundles, contratos gráficos/assets, WASM, replay do banco descartável e auditoria de dependências.
+- [ ] Executar a comparação ABBA do construtor no mesmo runner e manter seus 21 checkpoints; separar essa medida do FPS e do custo da cena.
+- [ ] Executar Lighthouse com as três medições por URL e os limites atuais.
+- [ ] Entregar preview, vídeo comparativo, tabela antes/depois e PR com os riscos materiais e a validação realmente executada.
+- [ ] Publicar somente no escopo aprovado, com todos os controles exigidos aprovados; conferir HTTPS, prontidão do backend e SHA compilado exato em /api/health.
+- [ ] Preservar a revisão anterior e executar o procedimento de retorno se a versão entregue mostrar regressão material.
+
+**Aceite:** código e evidências apontam para a mesma revisão; nenhum teste obrigatório ausente, ignorado ou cancelado é tratado como sucesso. Nenhuma afirmação de FPS físico sem medição em aparelho real autorizado.
+
+## 7. Orçamentos obrigatórios preservados
+
+| Perfil | FPS alvo | Tempo de quadro p95 máximo | Draw calls máximas | Triângulos máximos |
+| ------ | -------- | -------------------------- | ------------------ | ------------------ |
+| Baixa  | 60       | 22 ms                      | 90                 | 180.000            |
+| Média  | 60       | 20 ms                      | 170                | 420.000            |
+| Alta   | 45       | 28 ms                      | 260                | 850.000            |
+| Cinema | 30       | 33,3 ms                    | 340                | 1.200.000          |
+
+Fonte desses limites: src/game/contracts/graphics-profile.ts e docs/critical-performance.md. São contratos do projeto, não resultados atuais medidos. O alvo de FPS e o p95 são indicadores distintos; não se deve converter 22 ms de p95 em uma promessa de 60 FPS constantes.
+
+| Controle           | Regra preservada                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Lint e tipos       | Zero erros e zero avisos no lint; nenhum erro de TypeScript                                                            |
+| Stress             | 200 sementes e replays independentes efetivamente executados                                                           |
+| CPU do construtor  | Reprovar regressão material > 10% confirmada pelo limite inferior do intervalo bootstrap de 99% no protocolo existente |
+| Bundle inicial     | Nenhum crescimento de gzip/Brotli Q6 nos caminhos comparados e no total; cumprir limites absolutos                     |
+| Lighthouse mobile  | Performance >= 98; acessibilidade >= 90; LCP <= 2.500 ms; CLS <= 0,1; TBT <= 200 ms                                    |
+| Lighthouse desktop | Performance >= 45; acessibilidade >= 90; boas práticas >= 85                                                           |
+| Release            | Workflow completo aprovado e revisão pública correspondente ao SHA esperado                                            |
+
+O usuário já definiu 60 FPS em celulares básicos/intermediários de 2020 como prioridade. Os contratos acima continuam obrigatórios, e o contrato mobile adicional abaixo será usado para essa meta. Os perfis Alta/Cinema existentes não representam, por si, certificação a 60 FPS nessa faixa de aparelhos. Aumento de assets carregados após abrir o 3D depende de orçamento de transferência/memória medido e não relaxa a proteção do JavaScript inicial.
 
 ### Contrato adicional proposto para mobile de 2020
 

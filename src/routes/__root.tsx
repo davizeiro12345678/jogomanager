@@ -7,6 +7,7 @@ import {
   RootComponent,
 } from "@/components/RootLayout";
 import appCss from "../styles.css?url";
+import publicCss from "../public-styles.css?url";
 
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
@@ -47,10 +48,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Pro Football Manager 3D" },
     ],
     links: [
-      // Public CSS is owned by route components so Start can inline it on SSR.
-      ...(!isLightweightCssPath(matches.at(-1)?.pathname ?? "")
-        ? [{ rel: "stylesheet", href: appCss }]
-        : []),
+      // Critical CSS belongs to the SSR head. A route's deferred JS/CSS import
+      // is too late for the first styled paint on a throttled mobile device.
+      {
+        rel: "stylesheet",
+        href: isLightweightCssPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
+      },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       // Fontes carregadas sem bloquear a primeira pintura: entram como "print"

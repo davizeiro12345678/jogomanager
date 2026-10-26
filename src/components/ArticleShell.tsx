@@ -1,4 +1,3 @@
-import "@/public-styles.css";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 

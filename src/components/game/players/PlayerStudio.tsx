@@ -53,7 +53,7 @@ import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { CanvasLifecycle } from "../CanvasLifecycle";
 import { MobileFramebufferBudget } from "../MobileFramebufferBudget";
-import { detectQuality } from "@/game/device";
+import { detectQuality, isCoarsePointer } from "@/game/device";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
 import type { CanvasStatus } from "../canvas-lifecycle";
@@ -494,7 +494,7 @@ function StudioScene({
         position={[-2.2, 7.5, 2.4]}
         color={warm ? "#ffd5aa" : "#fff4e9"}
         intensity={3.05}
-        castShadow
+        castShadow={!isCoarsePointer()}
         shadow-intensity={0.38}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-3}
