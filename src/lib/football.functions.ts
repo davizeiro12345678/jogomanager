@@ -61,13 +61,22 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
       // Independent catalogs load together. Walk their primary keys until an
       // empty page, so a lower Data API cap never becomes a cached partial list.
       const [clubs, kitRows] = await Promise.all([
-        readPublicPages((cursor) => {
-          let query = db.from("clubs").select("id, crest_url, website").order("id").limit(1_000);
-          query = logoToken
-            ? query.or("crest_url.not.is.null,website.not.is.null")
-            : query.not("crest_url", "is", null);
-          return cursor ? query.gt("id", cursor) : query;
-        }),
+        (async () => {
+          // Opt-in canary: use VPS only for anonymous crest projections. Logo.dev
+          // fallback still requires the full authoritative Supabase projection.
+          if (!logoToken) {
+            const { fetchVpsPublicCrests } = await import("./vps-public-catalog.server");
+            const fromVps = await fetchVpsPublicCrests();
+            if (fromVps) return fromVps.map((club) => ({ ...club, website: null }));
+          }
+          return readPublicPages((cursor) => {
+            let query = db.from("clubs").select("id, crest_url, website").order("id").limit(1_000);
+            query = logoToken
+              ? query.or("crest_url.not.is.null,website.not.is.null")
+              : query.not("crest_url", "is", null);
+            return cursor ? query.gt("id", cursor) : query;
+          });
+        })(),
         readPublicPages((cursor) => {
           const query = db
             .from("kits")
