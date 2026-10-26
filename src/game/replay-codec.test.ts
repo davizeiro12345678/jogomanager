@@ -67,7 +67,11 @@ describe("versioned replay codec", () => {
     const original = makeReplay();
     const withoutVisual = {
       ...original,
-      frames: original.frames.map((frame) => ({ ...frame, v: undefined })),
+      frames: original.frames.map((frame) => {
+        const copy = { ...frame };
+        delete copy.v;
+        return copy;
+      }),
     };
     for (const replay of [original, withoutVisual]) {
       const encoded = encodeReplay(replay);
