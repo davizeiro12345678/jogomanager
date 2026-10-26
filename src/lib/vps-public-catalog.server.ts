@@ -32,7 +32,8 @@ function safeOrigin(input: string | undefined): URL | null {
       (url.pathname !== "/" && url.pathname !== "") ||
       url.search ||
       url.hash
-    ) return null;
+    )
+      return null;
     return url;
   } catch {
     return null;
@@ -91,7 +92,8 @@ export async function fetchVpsPublicCrests(
               row["id"].length > 120 ||
               (row["crest_url"] !== null &&
                 (typeof row["crest_url"] !== "string" || row["crest_url"].length > 2048))
-            ) throw new Error("vps_catalog_invalid_row");
+            )
+              throw new Error("vps_catalog_invalid_row");
             return { id: row["id"], crest_url: row["crest_url"] as string | null };
           });
         }),
