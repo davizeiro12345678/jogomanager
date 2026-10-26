@@ -77,7 +77,10 @@ export function reportSilent(scope: string, error: unknown, context: SilentError
     if (isDevelopment())
       console.warn(`[silent:${context.classification}] ${scope}`, error, context);
   }
-  captureReportedError(error, { scope, ...context });
+  // The recovery slot is consumed only by server.ts after h3 catches a throw.
+  // Keep the browser's local diagnostics, without a second unused error copy.
+  if (import.meta.env?.SSR ?? typeof window === "undefined")
+    captureReportedError(error, { scope, ...context });
 }
 
 export function getSilentErrorReports(): SilentErrorReport[] {

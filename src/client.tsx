@@ -13,3 +13,5 @@ const painted =
     : Promise.resolve();
 
 void Promise.all([import("./hydrate-app"), painted]).then(([{ hydrateApp }]) => hydrateApp());
+
+export {};

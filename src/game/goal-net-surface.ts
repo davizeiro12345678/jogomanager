@@ -34,77 +34,73 @@ function panelSpec(side: number, face: Face) {
 /** Four independent original cloth fields share one GPU surface. Texture
  * repetition is baked into each panel's UVs; contacts and wave cadence stay
  * independent. The caller owns all generated buffers. */
-export class GoalNetSurface {
-  readonly panels;
-  readonly geometry: THREE.BufferGeometry;
-  private point = new THREE.Vector3();
-  constructor(
-    private readonly side: number,
-    quality: "alta" | "media" | "baixa",
-    sim: SimView,
-  ) {
-    const cols = quality === "alta" ? 28 : quality === "media" ? 18 : 10;
-    const rows = quality === "alta" ? 16 : quality === "media" ? 10 : 6;
-    let offset = 0;
-    this.panels = (["back", "left", "right", "roof"] as Face[]).map((face) => {
-      const spec = panelSpec(side, face),
-        geometry = new THREE.PlaneGeometry(spec.width, spec.height, cols, rows);
-      const panel = {
-        face,
-        spec,
-        geometry,
-        cols,
-        rows,
-        offset,
-        wave: new NetDynamics(cols, rows),
-        previous: null as NetBall | null,
-        lastFlight: null as NetBall | null,
-        goalCount: side > 0 ? sim.stats.home.goals : sim.stats.away.goals,
-        meshTime: 0,
-        normalTime: 0,
-        localBefore: new THREE.Vector3(),
-        localBall: new THREE.Vector3(),
-      };
-      offset += geometry.getAttribute("position").count;
-      return panel;
-    });
-    const parts = this.panels.map(({ face, spec, geometry }) => {
-      const part = geometry.clone().applyMatrix4(spec.matrix),
-        uv = part.getAttribute("uv") as THREE.BufferAttribute;
-      for (let i = 0; i < uv.count; i++)
-        uv.setXY(
-          i,
-          uv.getX(i) * (face === "back" ? 14 : 4),
-          uv.getY(i) * (face === "roof" ? 14 : 5),
-        );
-      return part;
-    });
-    this.geometry = mergeGeometries(parts)!;
-    parts.forEach((part) => part.dispose());
-    (this.geometry.getAttribute("position") as THREE.BufferAttribute).setUsage(
-      THREE.DynamicDrawUsage,
-    );
-    (this.geometry.getAttribute("normal") as THREE.BufferAttribute).setUsage(
-      THREE.DynamicDrawUsage,
-    );
-  }
-  update(sim: SimView, dt: number, time: number) {
-    const side = this.side;
-    const output = this.geometry.getAttribute("position") as THREE.BufferAttribute;
-    const normals = this.geometry.getAttribute("normal") as THREE.BufferAttribute;
-    for (const panel of this.panels) {
-      const { face, spec, geometry, wave, cols, rows, localBefore, localBall } = panel;
+export function createGoalNetSurface(
+  side: number,
+  quality: "alta" | "media" | "baixa",
+  sim: SimView,
+) {
+  const point = new THREE.Vector3(),
+    localBefore = new THREE.Vector3(),
+    localBall = new THREE.Vector3();
+  let previous: NetBall | null = null,
+    lastFlight: NetBall | null = null,
+    goalCount: number,
+    meshTime = 0,
+    normalTime = 0;
 
-      const b = sim.visualBall ?? sim.ball;
-      const prior = panel.previous;
-      if (side * b.vx > 4 && side * b.x > FIELD_X - 20 && Math.abs(b.z) < 5)
-        panel.lastFlight = { ...b };
-      const goals = side > 0 ? sim.stats.home.goals : sim.stats.away.goals;
+  const cols = quality === "alta" ? 28 : quality === "media" ? 18 : 10;
+  const rows = quality === "alta" ? 16 : quality === "media" ? 10 : 6;
+  goalCount = side > 0 ? sim.stats.home.goals : sim.stats.away.goals;
+  const sag = new Float32Array((cols + 1) * (rows + 1));
+  for (let y = 0; y <= rows; y++)
+    for (let x = 0; x <= cols; x++)
+      sag[y * (cols + 1) + x] =
+        -0.12 * Math.sin((Math.PI * x) / cols) * Math.sin((Math.PI * y) / rows);
+  let offset = 0;
+  const panels = (["back", "left", "right", "roof"] as Face[]).map((face) => {
+    const spec = panelSpec(side, face),
+      geometry = new THREE.PlaneGeometry(spec.width, spec.height, cols, rows);
+    const panel = {
+      face,
+      spec,
+      geometry,
+      offset,
+      wave: new NetDynamics(cols, rows),
+    };
+    offset += geometry.getAttribute("position").count;
+    return panel;
+  });
+  const parts = panels.map(({ face, spec, geometry }) => {
+    const part = geometry.clone().applyMatrix4(spec.matrix),
+      uv = part.getAttribute("uv") as THREE.BufferAttribute;
+    for (let i = 0; i < uv.count; i++)
+      uv.setXY(i, uv.getX(i) * (face === "back" ? 14 : 4), uv.getY(i) * (face === "roof" ? 14 : 5));
+    return part;
+  });
+  const geometry = mergeGeometries(parts)!;
+  parts.forEach((part) => part.dispose());
+  (geometry.getAttribute("position") as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
+  (geometry.getAttribute("normal") as THREE.BufferAttribute).setUsage(THREE.DynamicDrawUsage);
+  function update(sim: SimView, dt: number, time: number) {
+    const output = geometry.getAttribute("position") as THREE.BufferAttribute;
+    const normals = geometry.getAttribute("normal") as THREE.BufferAttribute;
+    const b = sim.visualBall ?? sim.ball;
+    const prior = previous;
+    if (side * b.vx > 4 && side * b.x > FIELD_X - 20 && Math.abs(b.z) < 5) lastFlight = { ...b };
+    const goals = side > 0 ? sim.stats.home.goals : sim.stats.away.goals;
+    meshTime += dt;
+    normalTime += dt;
+    const updateMesh = meshTime >= 1 / 30;
+    const normalChanged = updateMesh && normalTime >= 1 / 15;
+    if (updateMesh) meshTime %= 1 / 30;
+    if (normalChanged) normalTime %= 1 / 15;
+    for (const panel of panels) {
+      const { face, spec, geometry, wave } = panel;
       // MatchSim restarts immediately after scoring. A confirmed score also
       // excites the cloth, using the last incoming trajectory when available.
       // Mounting an old replay score never triggers a spurious goal impact.
-      if (goals > panel.goalCount && face === "back") {
-        const flight = panel.lastFlight;
+      if (goals > goalCount && face === "back") {
+        const flight = lastFlight;
         const speed = flight ? Math.hypot(flight.vx, flight.vz) : 12;
         const depth = flight ? Math.max(0, side * (side * (FIELD_X + 1.72) - flight.x)) : 0;
         const travel =
@@ -112,9 +108,8 @@ export class GoalNetSurface {
         const z = THREE.MathUtils.clamp((flight?.z ?? 0) + (flight?.vz ?? 0) * travel, -3.3, 3.3);
         const height = THREE.MathUtils.clamp(flight?.height ?? 1, 0.22, 2.22);
         wave.impact(0.5 - (side * z) / 7.32, 1 - height / 2.44, speed);
-        panel.lastFlight = null;
+        lastFlight = null;
       }
-      panel.goalCount = goals;
       if (prior) {
         let impact = face === "back" ? rearNetImpact(prior, b, side, FIELD_X) : null;
         if (face !== "back") {
@@ -143,8 +138,6 @@ export class GoalNetSurface {
         }
         if (impact) wave.impact(impact.u, impact.v, impact.speed);
       }
-      if (!panel.previous) panel.previous = { ...b };
-      else Object.assign(panel.previous, b);
       const strength = sim.wind?.strength01 ?? 0.25;
       const normalWind =
         face === "back"
@@ -153,42 +146,38 @@ export class GoalNetSurface {
             ? strength * 0.2
             : Math.abs(sim.wind?.z ?? 0);
       wave.step(dt, time, Math.min(1, normalWind));
-      panel.meshTime += dt;
-      panel.normalTime += dt;
-      if (panel.meshTime < 1 / 30) continue;
-      panel.meshTime %= 1 / 30;
+      if (!updateMesh) continue;
       const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
-      for (let y = 0; y <= rows; y++) {
-        for (let x = 0; x <= cols; x++) {
-          const index = y * (cols + 1) + x;
-          const tie = Math.sin((Math.PI * x) / cols) * Math.sin((Math.PI * y) / rows);
-          positions.setZ(index, -0.12 * tie + wave.displacement[index]!);
-        }
-      }
+      for (let index = 0; index < positions.count; index++)
+        positions.setZ(index, sag[index]! + wave.displacement[index]!);
       positions.needsUpdate = true;
-      const normalChanged = panel.normalTime >= 1 / 15;
-      if (normalChanged) {
-        geometry.computeVertexNormals();
-        panel.normalTime %= 1 / 15;
-      }
+      if (normalChanged) geometry.computeVertexNormals();
       const localNormals = geometry.getAttribute("normal");
       for (let index = 0; index < positions.count; index++) {
-        this.point.fromBufferAttribute(positions, index).applyMatrix4(spec.matrix);
-        output.setXYZ(panel.offset + index, this.point.x, this.point.y, this.point.z);
+        point.fromBufferAttribute(positions, index).applyMatrix4(spec.matrix);
+        output.setXYZ(panel.offset + index, point.x, point.y, point.z);
         if (normalChanged) {
-          this.point
+          point
             .fromBufferAttribute(localNormals, index)
             .applyMatrix3(spec.normalMatrix)
             .normalize();
-          normals.setXYZ(panel.offset + index, this.point.x, this.point.y, this.point.z);
+          normals.setXYZ(panel.offset + index, point.x, point.y, point.z);
         }
       }
       output.needsUpdate = true;
       if (normalChanged) normals.needsUpdate = true;
     }
+    goalCount = goals;
+    if (!previous) previous = { ...b };
+    else Object.assign(previous, b);
   }
-  dispose() {
-    this.geometry.dispose();
-    for (const panel of this.panels) panel.geometry.dispose();
-  }
+  return {
+    panels,
+    geometry,
+    update,
+    dispose() {
+      geometry.dispose();
+      for (const panel of panels) panel.geometry.dispose();
+    },
+  };
 }

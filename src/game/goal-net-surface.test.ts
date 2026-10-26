@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { GoalNetSurface } from "./goal-net-surface";
+import { createGoalNetSurface } from "./goal-net-surface";
 import reference from "./goal-net-reference.json";
 import type { SimView } from "./sim";
 
@@ -12,7 +12,7 @@ it.each(["baixa", "media"] as const)(
         wind: { x: 0.7, z: -0.4, strength01: 0.4 },
         ball: { x: 0, z: 0, height: 1, vx: 0, vz: 0 },
       } as unknown as SimView;
-      const surface = new GoalNetSurface(side, quality, sim);
+      const surface = createGoalNetSurface(side, quality, sim);
       try {
         expect(surface.geometry.groups).toHaveLength(0);
         for (let tick = 1; tick <= 60; tick++) {

@@ -1,0 +1,127 @@
+{
+  "stylesheet": "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=optional",
+  "downloadedAt": "2026-10-26T17:48:21.898424+00:00",
+  "originalCssSha256": "b91827662cacc2d2ef758a673f4a24837bbc8d16d808105dc773e073f58847f3",
+  "files": [
+    {
+      "file": "HTxqL289NzCGg4MzN6KJ7eW6CYKF_i7y.woff2",
+      "url": "https://fonts.gstatic.com/s/archivoblack/v23/HTxqL289NzCGg4MzN6KJ7eW6CYKF_i7y.woff2",
+      "bytes": 14332,
+      "sha256": "a69dfe4ff8ea7fd225bc3c1fe703866e9ec308024bbac1b27cd76cc63f5e3e54"
+    },
+    {
+      "file": "HTxqL289NzCGg4MzN6KJ7eW6CYyF_g.woff2",
+      "url": "https://fonts.gstatic.com/s/archivoblack/v23/HTxqL289NzCGg4MzN6KJ7eW6CYyF_g.woff2",
+      "bytes": 18604,
+      "sha256": "25f33e61cf995abd6be62931cf03bf427286259177b43618cc410ee0157cfd30"
+    },
+    {
+      "file": "5aU19_a8oxmIfJpbER2SjQpf.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfJpbER2SjQpf.woff2",
+      "bytes": 71192,
+      "sha256": "6eaed2a8a864b34deb784a68902eb60c3b355b9e0591419d75d0521b9332d52e"
+    },
+    {
+      "file": "5aU19_a8oxmIfJpbERKSjQpf.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfJpbERKSjQpf.woff2",
+      "bytes": 9556,
+      "sha256": "a568491cbba5148f271afecf0f7343c5772865371629577775dc750010a47c70"
+    },
+    {
+      "file": "5aU19_a8oxmIfJpbERySjQ.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfJpbERySjQ.woff2",
+      "bytes": 16788,
+      "sha256": "16ab274f0ede84be01a0361263faeb3ff18d2d95d155d6b9d654ef37f87db1f5"
+    },
+    {
+      "file": "5aU19_a8oxmIfLZcER2SjQpf.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfLZcER2SjQpf.woff2",
+      "bytes": 71512,
+      "sha256": "732a7089dc1c3eedf9112838b73c024fabc3cd92da41752a8c3e594a6a2291c2"
+    },
+    {
+      "file": "5aU19_a8oxmIfLZcERKSjQpf.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfLZcERKSjQpf.woff2",
+      "bytes": 9528,
+      "sha256": "7325c3ea8a779451f1d7bab5ddd8dd5073ea519457f7f513045f6ea2583ed9b6"
+    },
+    {
+      "file": "5aU19_a8oxmIfLZcERySjQ.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfLZcERySjQ.woff2",
+      "bytes": 16612,
+      "sha256": "078751117ee4d17e09b4d4ac5d9f7358bc4487cb94561df738c6ee000eeffb4d"
+    },
+    {
+      "file": "5aU19_a8oxmIfNJdER2SjQpf.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfNJdER2SjQpf.woff2",
+      "bytes": 70428,
+      "sha256": "30b5ca4fdc95c2bfd2b806a700c59bbda959333035edd73285f0617264c45455"
+    },
+    {
+      "file": "5aU19_a8oxmIfNJdERKSjQpf.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfNJdERKSjQpf.woff2",
+      "bytes": 9452,
+      "sha256": "bee730f8fd624a73ad5bf9ea5e74f05eab47b4b2799faec1d8756498e0b0fcfb"
+    },
+    {
+      "file": "5aU19_a8oxmIfNJdERySjQ.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU19_a8oxmIfNJdERySjQ.woff2",
+      "bytes": 16268,
+      "sha256": "5aed4a8f357d7edc1ac50eb4de07867c83e69a10a1711e10053bddce99294b7e"
+    },
+    {
+      "file": "5aU69_a8oxmIdGd4BCOz.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIdGd4BCOz.woff2",
+      "bytes": 9160,
+      "sha256": "c40c3cface01f3cc0de73d4390c441d50c170f0c09a705833e2729ac60698d96"
+    },
+    {
+      "file": "5aU69_a8oxmIdGh4BCOz.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIdGh4BCOz.woff2",
+      "bytes": 74936,
+      "sha256": "6939ca4cd32f9ec67af18f76e054dd63d9de0a4fafac9f0aca1e1bf652257aa8"
+    },
+    {
+      "file": "5aU69_a8oxmIdGl4BA.woff2",
+      "url": "https://fonts.gstatic.com/s/hind/v18/5aU69_a8oxmIdGl4BA.woff2",
+      "bytes": 16216,
+      "sha256": "aca5dec430a7470ff1d8a16f9e7bb3ca30f2ff58f3bd60432cf1dddfa30c9d71"
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwhsk.woff2",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwhsk.woff2",
+      "bytes": 1640,
+      "sha256": "62213be8a78b42f1e29d1452d91e2f8b3e745572a9dd98d3941e39fa00b37d76"
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2",
+      "bytes": 11624,
+      "sha256": "db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52"
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2",
+      "bytes": 31432,
+      "sha256": "83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be"
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwhsk.woff2",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwhsk.woff2",
+      "bytes": 6836,
+      "sha256": "0a557721b1f8b36d3f3f84442689a71ca4a744300abcb46a1953f51bfc663b66"
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwhsk.woff2",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwhsk.woff2",
+      "bytes": 8872,
+      "sha256": "e17cfd15fb96909d64095015f958207063a0c07191da3512df7d560a781aebdf"
+    },
+    {
+      "file": "tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2",
+      "bytes": 5888,
+      "sha256": "c89b9cc0bc6262bd4f8d8494b6961601f3aefa829d08c2e3635f4d501d3a47c2"
+    }
+  ]
+}
