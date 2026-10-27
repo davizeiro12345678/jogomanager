@@ -68,7 +68,7 @@ export async function fetchVpsPublicCrests(
       );
       const responses = await Promise.all(
         pages.map(async (page): Promise<PublicCrest[]> => {
-          const url = new URL("/v1/public/clubs", origin);
+          const url = new URL("/v1/public/crests", origin);
           url.searchParams.set("limit", String(PAGE_SIZE));
           url.searchParams.set("page", String(page));
           const response = await fetchImpl(url, {
