@@ -1,7 +1,8 @@
 import { Crown, LockKeyhole, Sparkles } from "lucide-react";
 import { LOCAL_VIP_OFFERS } from "@/lib/vip-offers";
-import { formatPrice } from "@/game/store-catalog";
 import { STORE_KIND_IMAGE } from "@/lib/store-product-artwork";
+
+const PRICE_FORMATTER = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 /**
  * Informational preview only: Stripe Prices and product rows are inactive.
@@ -46,7 +47,7 @@ export function VipPlansPreview() {
               </div>
               <div className="p-5">
                 <p className="font-display text-2xl">
-                  {formatPrice(offer.displayPriceCents, offer.currency)}
+                  {PRICE_FORMATTER.format(offer.displayPriceCents / 100)}
                   <span className="ml-1 text-xs font-normal text-muted-foreground">
                     /mês (previsto)
                   </span>
