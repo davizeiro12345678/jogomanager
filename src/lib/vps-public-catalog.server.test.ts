@@ -80,11 +80,34 @@ describe("VPS catalog canary", () => {
     }
   });
 
+  it("retrieves the whole 38,854-club public projection without truncation", async () => {
+    const calls: number[] = [];
+    const mock = vi.fn(async (input: RequestInfo | URL) => {
+      const page = Number(new URL(String(input)).searchParams.get("page"));
+      calls.push(page);
+      const remaining = Math.max(0, 38_854 - page * 1_000);
+      const count = Math.min(1_000, remaining);
+      const rows = Array.from({ length: count }, (_, i) => ({
+        id: `club-${page}-${i}`,
+        crest_url: `https://example.com/${page}/${i}.png`,
+      }));
+      return new Response(JSON.stringify(rows), { status: 200 });
+    });
+    const result = await fetchVpsPublicCrests({
+      enabled: true,
+      origin,
+      fetchImpl: mock as typeof fetch,
+    });
+    expect(result).toHaveLength(38_854);
+    expect(new Set(result?.map((item) => item.id)).size).toBe(38_854);
+    expect(calls).toHaveLength(42);
+  });
+
   it("rejects a truncated catalog beyond its page cap", async () => {
     const mock = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       const page = Number(url.searchParams.get("page"));
-      const rows = Array.from({ length: 100 }, (_, index) => ({
+      const rows = Array.from({ length: 1_000 }, (_, index) => ({
         id: `club-${page}-${index}`,
         crest_url: null,
       }));
@@ -96,6 +119,6 @@ describe("VPS catalog canary", () => {
       fetchImpl: mock as typeof fetch,
     });
     expect(result).toBeNull();
-    expect(mock).toHaveBeenCalledTimes(72);
+    expect(mock).toHaveBeenCalledTimes(48);
   });
 });
