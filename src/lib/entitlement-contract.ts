@@ -429,43 +429,28 @@ export function assertNonPayToWin(benefits: readonly CommercialBenefit[]): void 
 }
 
 /**
- * Deny competitive legacy catalog rows before a payment provider is queried.
- * Only a zero-advantage cosmetic product may proceed; all new commercial
- * kinds are denied until they receive a deliberate policy review.
+ * Validate sellable catalog data before a checkout or guest intent.
+ * The player may purchase catalog-approved resources; this is NOT an
+ * authorization, fraud, ownership, payment, or fulfillment bypass.
  */
-export function assertCheckoutProductNonPayToWin(product: CheckoutProductPolicyInput): void {
+export function assertCheckoutProductValid(product: CheckoutProductPolicyInput): void {
   const { coins, scoutReports, trainingBoosts, themes } = product.contents;
+  const allowedKinds = ["coins", "scout", "training", "cosmetic", "pass"];
   if (
     !validCosmeticKey(product.key) ||
-    typeof product.kind !== "string" ||
-    product.kind.length === 0 ||
-    !Number.isSafeInteger(coins) ||
-    coins < 0 ||
-    !Number.isSafeInteger(scoutReports) ||
-    scoutReports < 0 ||
-    !Number.isSafeInteger(trainingBoosts) ||
-    trainingBoosts < 0 ||
-    !Array.isArray(themes) ||
-    themes.some((theme) => !validCosmeticKey(theme))
+    !allowedKinds.includes(product.kind) ||
+    !Number.isSafeInteger(coins) || coins < 0 || coins > 2_147_483_647 ||
+    !Number.isSafeInteger(scoutReports) || scoutReports < 0 || scoutReports > 2_147_483_647 ||
+    !Number.isSafeInteger(trainingBoosts) || trainingBoosts < 0 || trainingBoosts > 2_147_483_647 ||
+    !Array.isArray(themes) || themes.length > 100 ||
+    themes.some((theme) => !validCosmeticKey(theme)) ||
+    (product.kind === "coins" && coins === 0) ||
+    (product.kind === "scout" && scoutReports === 0) ||
+    (product.kind === "training" && trainingBoosts === 0) ||
+    (product.kind === "cosmetic" && themes.length === 0)
   ) {
     throw new Error("O produto comercial não atende ao contrato seguro de checkout.");
   }
-
-  const benefits: CommercialBenefit[] = [];
-  // The legacy pass gives monthly competitive resources even though its old
-  // contents snapshot contains zeros, so it must be denied by identity too.
-  if (product.key === "season_pass" || product.kind === "pass") {
-    benefits.push({ kind: "competitive_subscription", id: "legacy_season_pass" });
-  }
-  if (coins > 0) benefits.push({ kind: "competitive_currency", id: "competitive_currency" });
-  if (scoutReports > 0) benefits.push({ kind: "scouting_competitive", id: "scouting_reports" });
-  if (trainingBoosts > 0) benefits.push({ kind: "training_competitive", id: "training_boosts" });
-  // The active safe surface is intentionally narrow. An unrecognized catalog
-  // kind cannot become purchasable merely because its current counters are 0.
-  if (product.kind !== "cosmetic") {
-    benefits.push({ kind: "unclassified_commercial_product", id: "unclassified_product" });
-  }
-  assertNonPayToWin(benefits);
 }
 
 /** Ensures the draft catalog remains non-competitive and inactive until explicitly activated elsewhere. */
