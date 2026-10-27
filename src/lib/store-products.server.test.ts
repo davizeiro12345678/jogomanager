@@ -62,6 +62,11 @@ describe("server checkout commercial validation", () => {
           lookup_key: lookup_keys[0],
           unit_amount: products.find((p) => p.stripeLookupKey === lookup_keys[0])?.priceCents,
           currency: "brl",
+          type: lookup_keys[0] === "season_pass_monthly" ? "recurring" : "one_time",
+          recurring:
+            lookup_keys[0] === "season_pass_monthly"
+              ? { interval: "month", interval_count: 1, usage_type: "licensed" }
+              : null,
         },
       ],
     }));
@@ -86,6 +91,62 @@ describe("server checkout commercial validation", () => {
       ),
     ).rejects.toThrow(/contrato seguro/);
     expect(list).not.toHaveBeenCalled();
+  });
+
+
+  it("rejects an inactive SKU before querying Stripe", async () => {
+    const list = vi.fn();
+    await expect(
+      resolveValidatedStripePrice({ prices: { list } } as never, product({ active: false })),
+    ).rejects.toThrow(/não está disponível/);
+    expect(list).not.toHaveBeenCalled();
+  });
+
+  it("never creates a recurring charge for a one-time coins product", async () => {
+    const list = vi.fn().mockResolvedValue({
+      data: [
+        {
+          lookup_key: "coins_small",
+          unit_amount: 490,
+          currency: "brl",
+          type: "recurring",
+          recurring: { interval: "month", interval_count: 1, usage_type: "licensed" },
+        },
+      ],
+    });
+    const coins = product({
+      key: "coins_small",
+      stripeLookupKey: "coins_small",
+      kind: "coins",
+      priceCents: 490,
+      contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
+    });
+    await expect(resolveValidatedStripePrice({ prices: { list } } as never, coins)).rejects.toThrow(
+      /modalidade de cobrança/,
+    );
+  });
+
+  it("rejects annual, metered or one-time prices for a monthly pass", async () => {
+    const pass = product({
+      key: "season_pass",
+      stripeLookupKey: "season_pass_monthly",
+      kind: "pass",
+      priceCents: 2490,
+      contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
+    });
+    for (const price of [
+      { type: "one_time", recurring: null },
+      { type: "recurring", recurring: { interval: "year", interval_count: 1 } },
+      { type: "recurring", recurring: { interval: "month", interval_count: 1, usage_type: "metered" } },
+      { type: "recurring", recurring: { interval: "month", interval_count: 2, usage_type: "licensed" } },
+    ]) {
+      const list = vi.fn().mockResolvedValue({
+        data: [{ lookup_key: pass.stripeLookupKey, unit_amount: 2490, currency: "brl", ...price }],
+      });
+      await expect(resolveValidatedStripePrice({ prices: { list } } as never, pass)).rejects.toThrow(
+        /modalidade de cobrança/,
+      );
+    }
   });
 
   it("fails closed on a Stripe amount mismatch", async () => {
