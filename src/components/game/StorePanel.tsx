@@ -63,6 +63,7 @@ const KIND_LABELS: Record<string, string> = {
   training: "Treino",
   cosmetic: "Cosmético",
   pass: "Passe de temporada",
+  bundle: "Combos",
 };
 
 const KIND_ART: Record<string, string> = {
@@ -71,6 +72,7 @@ const KIND_ART: Record<string, string> = {
   training: artTraining,
   cosmetic: artCosmetic,
   pass: artPass,
+  bundle: artCoins,
 };
 
 const KIND_ICONS: Record<string, ReactNode> = {
@@ -79,6 +81,7 @@ const KIND_ICONS: Record<string, ReactNode> = {
   training: <Dumbbell size={16} />,
   cosmetic: <Palette size={16} />,
   pass: <Crown size={16} />,
+  bundle: <Package size={16} />,
 };
 
 function formatDate(iso: string | null | undefined): string {
