@@ -3,6 +3,18 @@
 -- This generates unnecessary WAL, index pressure and heap churn.
 -- Based on immutable migration 20261004002003; verify prod function hash before deploy.
 -- pg_proc.prosrc (production baseline): 2b470d06ab06f37b2949bf33291e5c8b
+-- Fail closed if a concurrent production change modified the function.
+DO $verify$
+BEGIN
+  IF (SELECT md5(prosrc) FROM pg_catalog.pg_proc
+      WHERE oid='public.sportsdb_save_records(jsonb)'::pg_catalog.regprocedure)
+      IS DISTINCT FROM '2b470d06ab06f37b2949bf33291e5c8b'
+  THEN
+    RAISE EXCEPTION 'sportsdb_save_records definition changed; rebase optimization';
+  END IF;
+END
+$verify$;
+
 CREATE OR REPLACE FUNCTION public.sportsdb_save_records(p_rows jsonb) RETURNS integer
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
 DECLARE saved integer;
