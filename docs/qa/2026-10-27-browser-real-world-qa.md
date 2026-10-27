@@ -9,7 +9,7 @@ As 14 combinações das rotas `/auth`, `/produtos`, `/loja`, `/visual`, `/partid
 - Produção `/produtos`: 10 itens, falso CTA «Comprar como visitante»; prévia modal abre e um Canvas 3D é criado.
 - Produção `/loja`: apenas 3 cosméticos apesar de 10 SKUs ativos. O PR #80 remove o filtro e corrige o CTA de visitante.
 - Produção `/auth`: campos e-mail/senha, opção link/código de e-mail, recuperação de senha, provedores OAuth e passkeys visíveis. Tela responsiva, mas ainda **sem** teste de callback, entrega ou leitura de e-mail/OTP.
-- Produção `/visual`: botões Girar à esquerda/direita, Aproximar/Afastar, Pausar, Restaurar câmera, abas Aparência e Cena operaram sem `pageerror`. «Ver cena» abriu modal cinematográfico «Véspera de clássico» com falas (1/3) e **dois canvases** na página. Isso verifica abertura de interface, **não** renderização perfeita de cada cutscene.
+- Produção `/visual`: botões Girar à esquerda/direita, Aproximar/Afastar, Pausar, Restaurar câmera, abas Aparência e Cena operaram sem `pageerror`. «Ver cena» abriu modal cinematográfico «Véspera de clássico» com falas (1/3) e **dois canvases** na página. Foi ampliado o teste para quatro cenas («Chegada ao clube», «Apresentação à imprensa», «Vestiário antes do jogo» e «Túnel de acesso»): as quatro abriram diálogo e 2 Canvas, o botão «Pular cena» fechou corretamente e o Canvas voltou a 1, **sem exceções Javascript**; isso verifica ciclo de abrir/pular/liberar interface, **não** renderização perfeita de todas as 87 cutscenes.
 - Produção `/partida-rapida` e `/multiplayer`: seleção de times e página multiplayer carregaram, sem autenticação nem execução de partida real.
 
 ## Erros concretos reproduzidos com DevTools e curl
