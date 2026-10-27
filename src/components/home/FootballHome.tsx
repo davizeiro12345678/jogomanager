@@ -309,20 +309,24 @@ export function FootballHome() {
             <Check size={14} />
             Grátis para começar<span>·</span>Direto no navegador<span>·</span>Sem cadastro inicial
           </p>
-          <dl className="home-hero-stats" aria-label="O jogo em números">
+          <dl className="home-hero-stats" aria-label="Registros verificados do banco de dados">
             <div>
-              <dt>Clubes</dt>
-              <dd>24 mil+</dd>
+              <dt>Clubes cadastrados na base</dt>
+              <dd>38.854</dd>
             </div>
             <div>
-              <dt>Jogadores reais</dt>
-              <dd>200 mil</dd>
+              <dt>Futebolistas únicos na base</dt>
+              <dd>196.235</dd>
             </div>
             <div>
-              <dt>Ligas</dt>
-              <dd>1.900</dd>
+              <dt>Competições de liga catalogadas</dt>
+              <dd>1.389</dd>
             </div>
           </dl>
+          <p className="home-hero-note">
+            Contagens verificadas no banco em 27/10/2026. São registros catalogados, não uma
+            promessa de que todos estejam jogáveis ou carregados nesta sessão.
+          </p>
           {resume ? (
             <Link to="/dashboard" className="home-resume">
               <span>SEU PRÓXIMO CAPÍTULO</span>

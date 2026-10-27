@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Coins, Crown, Dumbbell, Package, Palette, Search, ShoppingBag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { PACK_BY_KEY, formatPrice } from "@/game/store-catalog";
+import { formatStoreCurrency, storePresentation } from "@/lib/store-presentation";
 import { useStoreCatalog, type StoreCatalogProduct } from "@/hooks/useStoreCatalog";
 
 const ICON_BY_KIND = {
@@ -19,14 +19,15 @@ const KIND_LABEL: Record<string, string> = {
   training: "Impulso de treino",
   cosmetic: "Item visual",
   pass: "Passe de temporada",
+  bundle: "Pacote combinado",
 };
 
 function ProductCard({ product }: { product: StoreCatalogProduct }) {
-  const presentation = PACK_BY_KEY[product.key];
+  const presentation = storePresentation(product.key, product.kind);
   const Icon = ICON_BY_KIND[product.kind as keyof typeof ICON_BY_KIND] ?? Package;
   const label = KIND_LABEL[product.kind] ?? "Item da loja";
-  const accent = presentation?.accent ?? "#57b6ff";
-  const accent2 = presentation?.accent2 ?? "#0f3f6b";
+  const accent = presentation.accent;
+  const accent2 = presentation.accent2;
 
   return (
     <article
@@ -65,7 +66,7 @@ function ProductCard({ product }: { product: StoreCatalogProduct }) {
         <div className="mt-5 flex items-end justify-between gap-3">
           <div>
             <p className="font-display text-2xl tracking-wide text-foreground">
-              {formatPrice(product.price_cents, product.currency)}
+              {formatStoreCurrency(product.price_cents, product.currency)}
             </p>
             <p className="mt-1 text-[0.68rem] text-muted-foreground">Preço público atual</p>
           </div>

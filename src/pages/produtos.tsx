@@ -14,11 +14,6 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
-import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
-
 import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +24,11 @@ import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
-import { formatPrice, PACK_BY_KEY, type PackKind } from "@/game/store-catalog";
+import type { PackKind } from "@/game/store-catalog";
+import { formatStoreCurrency, storePresentation } from "@/lib/store-presentation";
 import { PRODUTOS_PATH as PATH } from "@/lib/public-route-paths";
+import { storeArtworkForProduct } from "@/lib/store-product-artwork";
+import { VipPlansPreview } from "@/components/store/VipPlansPreview";
 
 const PackScene = lazy(() =>
   import("@/components/store/PackScene").then((m) => ({ default: m.PackScene })),
@@ -42,6 +40,7 @@ const ICONS: Record<PackKind, React.ReactNode> = {
   training: <Dumbbell size={14} />,
   cosmetic: <Palette size={14} />,
   pass: <Crown size={14} />,
+  bundle: <Package size={14} />,
 };
 
 const KIND_LABEL: Record<PackKind, string> = {
@@ -50,9 +49,17 @@ const KIND_LABEL: Record<PackKind, string> = {
   training: "Treino",
   cosmetic: "Visual",
   pass: "Assinatura",
+  bundle: "Combos",
 };
 
-const PACK_KINDS: readonly PackKind[] = ["coins", "scout", "training", "cosmetic", "pass"];
+const PACK_KINDS: readonly PackKind[] = [
+  "coins",
+  "scout",
+  "training",
+  "cosmetic",
+  "pass",
+  "bundle",
+];
 
 function asPackKind(kind: string): PackKind | null {
   return PACK_KINDS.includes(kind as PackKind) ? (kind as PackKind) : null;
@@ -65,7 +72,6 @@ export function ProdutosPage() {
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [opening, setOpening] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
   function buy(productKey: string) {
     // A sessão autenticada preserva o fluxo de conta já existente.
@@ -87,10 +93,10 @@ export function ProdutosPage() {
   }
 
   const previewProduct = products.find((product) => product.key === previewKey) ?? null;
-  const previewPresentation = previewProduct ? PACK_BY_KEY[previewProduct.key] : undefined;
-  const previewKind = previewProduct
-    ? (asPackKind(previewProduct.kind) ?? previewPresentation?.kind ?? "coins")
-    : "coins";
+  const previewPresentation = previewProduct
+    ? storePresentation(previewProduct.key, previewProduct.kind)
+    : undefined;
+  const previewKind = previewProduct ? (asPackKind(previewProduct.kind) ?? "coins") : "coins";
 
   return (
     <div className="pitch-bg min-h-screen">
@@ -110,8 +116,8 @@ export function ProdutosPage() {
             className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
           >
             <p className="text-muted-foreground">
-              Compare os itens e preços à vontade. Você pode comprar com e-mail ou entrar para
-              vincular a compra diretamente à sua carreira.
+              Compare os itens e preços à vontade. Entre para vincular as compras diretamente à sua
+              carreira.
             </p>
             <Button asChild variant="outline" className="shrink-0">
               <Link to="/auth" search={{ next: PATH }}>
@@ -158,7 +164,7 @@ export function ProdutosPage() {
           ) : (
             products.map((product) => {
               const kind = asPackKind(product.kind);
-              const presentation = PACK_BY_KEY[product.key];
+              const presentation = storePresentation(product.key, product.kind);
 
               return (
                 <article
@@ -172,14 +178,16 @@ export function ProdutosPage() {
                       background: `radial-gradient(120% 100% at 50% 20%, ${presentation?.accent ?? "#60a5fa"}22, transparent 70%)`,
                     }}
                   >
-                    <div className="grid h-full place-items-center">
-                      <div className="grid h-24 w-24 place-items-center rounded-[2rem] border border-primary/30 bg-background/30 text-primary shadow-[0_0_50px_color-mix(in_srgb,var(--primary)_20%,transparent)]">
-                        {kind ? ICONS[kind] : <Package size={32} />}
-                      </div>
-                      <span className="-mt-9 text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                        Visual do pacote
-                      </span>
-                    </div>
+                    <img
+                      src={storeArtworkForProduct(product.key, product.kind)}
+                      alt={`Ilustração do produto ${product.name}`}
+                      loading="lazy"
+                      decoding="async"
+                      width={640}
+                      height={320}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
                     <Badge variant="secondary" className="absolute left-3 top-3 gap-1">
                       {kind ? ICONS[kind] : <Package size={14} />}
                       {kind ? KIND_LABEL[kind] : "Item da loja"}
@@ -199,7 +207,7 @@ export function ProdutosPage() {
                     <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <span className="font-display text-2xl">
-                          {formatPrice(product.price_cents, product.currency)}
+                          {formatStoreCurrency(product.price_cents, product.currency)}
                         </span>
                         <p className="mt-1 max-w-[14rem] text-[11px] text-muted-foreground">
                           Preço de catálogo; o checkout confirma total e disponibilidade.
@@ -210,18 +218,10 @@ export function ProdutosPage() {
                           {opening === product.key ? "Abrindo…" : "Comprar agora"}
                         </Button>
                       ) : signedIn === false ? (
-                        <Button
-                          data-testid="guest-checkout-start"
-                          onClick={() =>
-                            setGuestProduct({
-                              key: product.key,
-                              name: product.name,
-                              priceCents: product.price_cents,
-                              currency: product.currency,
-                            })
-                          }
-                        >
-                          Comprar como visitante
+                        <Button asChild>
+                          <Link to="/auth" search={{ next: PATH }}>
+                            Entrar para comprar
+                          </Link>
                         </Button>
                       ) : (
                         <Button disabled>Verificando conta…</Button>
@@ -241,6 +241,8 @@ export function ProdutosPage() {
             })
           )}
         </div>
+
+        <VipPlansPreview />
 
         {previewProduct ? (
           <section
@@ -297,9 +299,8 @@ export function ProdutosPage() {
           </p>
           <p>
             Se você já tem uma conta, entre antes da compra para vincular o pedido à sua carreira.
-            Também é possível iniciar uma compra como visitante com e-mail. Use um endereço ao qual
-            tenha acesso e guarde a confirmação recebida para acompanhar o pedido e vincular os
-            itens quando necessário.
+            Para comprar, é necessário autenticar sua conta. Guarde a confirmação do pagamento e
+            consulte o histórico de compras para acompanhar a entrega.
           </p>
           <p>
             Após o pagamento, aguarde a confirmação e consulte o resultado apresentado na tela.
@@ -341,14 +342,6 @@ export function ProdutosPage() {
             </div>
           ) : null}
         </div>
-
-        <GuestCheckoutDialog
-          product={guestProduct}
-          open={guestProduct !== null}
-          onOpenChange={(open) => {
-            if (!open) setGuestProduct(null);
-          }}
-        />
 
         <p className="mt-8 text-sm text-muted-foreground">
           Já tem carreira em andamento? Os itens comprados aparecem direto na{" "}

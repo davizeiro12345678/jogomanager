@@ -153,11 +153,29 @@ try {
     await settle();
   }
   await open();
-  for (let i = 0; i < 2; i++) {
+  // Lazy scene variants allocate materials on their first few toggles.
+  // The baseline must be a settled GPU state, not an arbitrary second frame.
+  // Keep a hard eight-cycle warmup limit so a genuine leak still fails CI.
+  report.warmup = [];
+  let warm;
+  let stableRounds = 0;
+  for (let i = 0; i < 8; i++) {
     await toggle(true);
     await toggle(false);
+    const sample = await page.evaluate(() => structuredClone(window.__life));
+    report.warmup.push({ cycle: i + 1, live: sample.live });
+    if (warm && Object.keys(sample.live).every((kind) => sample.live[kind] === warm.live[kind])) {
+      stableRounds++;
+    } else {
+      stableRounds = 0;
+    }
+    warm = sample;
+    if (stableRounds >= 2) break;
   }
-  const warm = await page.evaluate(() => structuredClone(window.__life));
+  if (stableRounds < 2)
+    throw Error(
+      `GPU resource counts never stabilized during bounded warmup: ${JSON.stringify(report.warmup)}`,
+    );
   report.warm = warm;
   await page.screenshot({ path: path.join(output, "before-cycles.png") });
   for (let cycle = 1; cycle <= 5; cycle++) {

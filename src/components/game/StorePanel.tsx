@@ -21,10 +21,6 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -63,6 +59,7 @@ const KIND_LABELS: Record<string, string> = {
   training: "Treino",
   cosmetic: "Cosmético",
   pass: "Passe de temporada",
+  bundle: "Combos",
 };
 
 const KIND_ART: Record<string, string> = {
@@ -71,6 +68,7 @@ const KIND_ART: Record<string, string> = {
   training: artTraining,
   cosmetic: artCosmetic,
   pass: artPass,
+  bundle: artCoins,
 };
 
 const KIND_ICONS: Record<string, ReactNode> = {
@@ -79,6 +77,7 @@ const KIND_ICONS: Record<string, ReactNode> = {
   training: <Dumbbell size={16} />,
   cosmetic: <Palette size={16} />,
   pass: <Crown size={16} />,
+  bundle: <Package size={16} />,
 };
 
 function formatDate(iso: string | null | undefined): string {
@@ -122,7 +121,6 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
   // A leitura é publicamente permitida por RLS; usar a mesma consulta para
   // visitantes e contas evita que a oferta mude depois do login.
@@ -156,9 +154,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
   const isGuest = signedIn === false;
   const isSessionLoading = signedIn === null;
-  // Competitive legacy offers cannot reach checkout; keep the same policy
-  // visible in the shop so players are not invited into a rejected purchase.
-  const products = (productsQuery.data ?? []).filter((p) => p.kind === "cosmetic" && p.coins === 0);
+  // Every active SKU returned by the canonical public catalog belongs in the shop.
+  // Eligibility, price and fulfillment are verified by the payment server.
+  const products = productsQuery.data ?? [];
 
   // Destaca o pacote de moedas com mais moedas por real, para o jogador
   // comparar sem fazer conta de cabeça.
@@ -228,10 +226,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           </p>
         ) : isGuest ? (
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>
-              Veja os pacotes e preços. Compre por e-mail ou entre para vincular o item direto à
-              carreira.
-            </p>
+            <p>Veja os pacotes e preços. Entre para vincular sua compra à carreira.</p>
             <Link
               to="/auth"
               search={{ next }}
@@ -382,20 +377,10 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                         Verificando conta…
                       </Button>
                     ) : isGuest ? (
-                      <Button
-                        className="w-full"
-                        data-testid="guest-checkout-start"
-                        disabled={!checkoutEnabled}
-                        onClick={() =>
-                          setGuestProduct({
-                            key: p.key,
-                            name: p.name,
-                            priceCents: salePrice(p).cents,
-                            currency: p.currency,
-                          })
-                        }
-                      >
-                        Comprar como visitante
+                      <Button asChild className="w-full">
+                        <Link to="/auth" search={{ next }}>
+                          Entrar para comprar
+                        </Link>
                       </Button>
                     ) : (
                       <Button
@@ -422,7 +407,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       {isSessionLoading
                         ? "Aguarde a verificação da conta"
                         : isGuest
-                          ? "Compra segura por e-mail; entre se já tiver uma conta"
+                          ? "Entre para concluir o pagamento e receber o item na sua conta"
                           : "Entrega automática na sua conta"}
                     </p>
                   </div>
@@ -445,14 +430,6 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           )}
         </>
       )}
-
-      <GuestCheckoutDialog
-        product={guestProduct}
-        open={guestProduct !== null}
-        onOpenChange={(open) => {
-          if (!open) setGuestProduct(null);
-        }}
-      />
     </div>
   );
 }

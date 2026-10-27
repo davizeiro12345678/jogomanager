@@ -165,7 +165,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - run: node scripts/verify-game-assets.mjs
+      - run: |
+          node scripts/verify-game-assets.mjs
+          node scripts/verify-ktx2-mirror.mjs
 
   graphics-contract:
     name: Deterministic 3D benchmark contract

@@ -2,10 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import { persistGuestCheckoutIntentIfAllowed } from "./guest-checkout-policy.server";
 
-describe("guest checkout anti-pay-to-win persistence gate", () => {
-  it("does not persist an intent for blocked legacy competitive SKUs", async () => {
-    const persistIntent = vi.fn().mockResolvedValue({ id: "intent_should_not_exist" });
-
+describe("guest checkout catalog validation gate", () => {
+  it("persists verified catalog categories without bypassing payment", async () => {
+    const persist = vi.fn().mockResolvedValue({ id: "pending_intent" });
     for (const product of [
       {
         key: "coins_small",
@@ -27,28 +26,31 @@ describe("guest checkout anti-pay-to-win persistence gate", () => {
         kind: "pass",
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
       },
+      {
+        key: "theme_pack",
+        kind: "cosmetic",
+        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
+      },
     ]) {
-      await expect(persistGuestCheckoutIntentIfAllowed(product, persistIntent)).rejects.toThrow(
-        /anti-pay-to-win/i,
-      );
+      await expect(persistGuestCheckoutIntentIfAllowed(product, persist)).resolves.toEqual({
+        id: "pending_intent",
+      });
     }
-
-    expect(persistIntent).not.toHaveBeenCalled();
+    expect(persist).toHaveBeenCalledTimes(5);
   });
 
-  it("persists a zero-advantage cosmetic checkout intent normally", async () => {
-    const persistIntent = vi.fn().mockResolvedValue({ id: "cosmetic_intent" });
-
+  it("rejects malformed or unsupported SKUs before any persistence", async () => {
+    const persist = vi.fn();
     await expect(
       persistGuestCheckoutIntentIfAllowed(
         {
-          key: "theme_pack",
-          kind: "cosmetic",
-          contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
+          key: "invalid",
+          kind: "unknown",
+          contents: { coins: 100, scoutReports: 0, trainingBoosts: 0, themes: [] },
         },
-        persistIntent,
+        persist,
       ),
-    ).resolves.toEqual({ id: "cosmetic_intent" });
-    expect(persistIntent).toHaveBeenCalledTimes(1);
+    ).rejects.toThrow(/contrato seguro/);
+    expect(persist).not.toHaveBeenCalled();
   });
 });
