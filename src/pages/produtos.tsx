@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { useSignedIn } from "@/hooks/useCareer";
 
-import { useStoreCatalog } from "@/hooks/useStoreCatalog";
+import { salePrice, useStoreCatalog } from "@/hooks/useStoreCatalog";
 
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
@@ -165,6 +165,7 @@ export function ProdutosPage() {
             products.map((product) => {
               const kind = asPackKind(product.kind);
               const presentation = storePresentation(product.key, product.kind);
+              const offer = salePrice(product);
 
               return (
                 <article
@@ -207,7 +208,17 @@ export function ProdutosPage() {
                     <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <span className="font-display text-2xl">
-                          {formatStoreCurrency(product.price_cents, product.currency)}
+                          {formatStoreCurrency(offer.cents, product.currency)}
+                          {offer.percent > 0 ? (
+                            <>
+                              <s className="ml-2 text-sm text-muted-foreground">
+                                {formatStoreCurrency(product.price_cents, product.currency)}
+                              </s>
+                              <Badge className="ml-2" variant="destructive">
+                                -{offer.percent}%
+                              </Badge>
+                            </>
+                          ) : null}
                         </span>
                         <p className="mt-1 max-w-[14rem] text-[11px] text-muted-foreground">
                           Preço de catálogo; o checkout confirma total e disponibilidade.
