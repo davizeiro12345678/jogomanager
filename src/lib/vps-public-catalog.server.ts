@@ -13,9 +13,11 @@ export interface VpsCatalogOptions {
   fetchImpl?: typeof fetch;
 }
 
-const PAGE_SIZE = 100;
+// Larger bounded pages drastically reduce roundtrips for ~39k public clubs.
+const PAGE_SIZE = 1_000;
 const PAGE_BATCH = 6;
-const MAX_PAGES = 72;
+// Cover 48k rows while still rejecting incomplete/truncated catalogs.
+const MAX_PAGES = 48;
 const REQUEST_BUDGET_MS = 4_500;
 const CATALOG_HOST = "catalog.jogomanager.com";
 
