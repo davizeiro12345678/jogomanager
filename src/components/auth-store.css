@@ -2,8 +2,16 @@
 .auth-stage,
 .store-stage {
   background:
-    radial-gradient(60rem 40rem at 10% -10%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 60%),
-    radial-gradient(50rem 30rem at 110% 110%, color-mix(in oklab, var(--accent, var(--primary)) 16%, transparent), transparent 60%),
+    radial-gradient(
+      60rem 40rem at 10% -10%,
+      color-mix(in oklab, var(--primary) 22%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 30rem at 110% 110%,
+      color-mix(in oklab, var(--accent, var(--primary)) 16%, transparent),
+      transparent 60%
+    ),
     var(--background);
 }
 
@@ -45,7 +53,9 @@
 }
 
 .auth-card input {
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .auth-card input:focus {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 30%, transparent);
@@ -55,7 +65,9 @@
   min-width: 0;
   white-space: normal;
   overflow-wrap: anywhere;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 .auth-social:hover {
   transform: translateY(-1px);
