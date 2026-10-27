@@ -26,8 +26,46 @@ export function upgradeCatalogPagination(source) {
       throw new Error("incompatible_gateway_source: refusing silent changes");
     updated = updated.replace(before, after);
   }
-  if (!updated.includes('if (req.method === "GET" && u.pathname === "/v1/public/clubs")'))
-    throw new Error("unexpected route layout");
+  // Add a versioned, smaller public projection. Original /clubs contract remains untouched.
+  function once(text, from, to) {
+    if (text.split(from).length !== 2) throw new Error("unexpected_gateway_shape");
+    return text.replace(from, to);
+  }
+  updated = once(updated, "async function publicPage(page, limit) {",
+    "async function publicPage(page, limit, crestsOnly = false) {");
+  updated = once(updated, 'url.searchParams.set("select", "id,name,crest_url");',
+    'url.searchParams.set("select", crestsOnly ? "id,crest_url" : "id,name,crest_url");');
+  updated = once(updated, "function refreshInBackground(id, page, limit) {",
+    "function refreshInBackground(id, page, limit, crestsOnly = false) {");
+
+  function upgradeSection(text, opening, closing, change) {
+    const from = text.indexOf(opening), to = text.indexOf(closing);
+    if (from < 0 || to < from) throw new Error("unexpected_gateway_section");
+    return text.slice(0, from) + change(text.slice(from, to)) + text.slice(to);
+  }
+  updated = upgradeSection(updated, "function refreshInBackground(", "async function prewarm(",
+    (section) => once(section, "publicPage(page, limit)", "publicPage(page, limit, crestsOnly)"));
+  updated = upgradeSection(updated, "async function prewarm(", "function prewarmOnBoot(",
+    (section) => once(section, 'const id = page + ":" + limit;',
+      'const id = "clubs:" + page + ":" + limit;'));
+  updated = upgradeSection(updated,
+    'if (req.method === "GET" && u.pathname === "/v1/public/clubs")',
+    'if (req.method === "POST" && u.pathname === "/v1/events/click")',
+    (section) => {
+      let changed = once(section,
+        'if (req.method === "GET" && u.pathname === "/v1/public/clubs") {',
+        'if (req.method === "GET" && (u.pathname === "/v1/public/clubs" || u.pathname === "/v1/public/crests")) {\n    const crestsOnly = u.pathname === "/v1/public/crests";');
+      changed = once(changed, 'const id = page + ":" + limit;',
+        'const id = (crestsOnly ? "crests:" : "clubs:") + page + ":" + limit;');
+      if (changed.split("refreshInBackground(id, page, limit)").length !== 3)
+        throw new Error("unexpected_refresh_call_count");
+      changed = changed.replaceAll("refreshInBackground(id, page, limit)",
+        "refreshInBackground(id, page, limit, crestsOnly)");
+      return once(changed, "p = publicPage(page, limit);", "p = publicPage(page, limit, crestsOnly);");
+    });
+
+  if (!updated.includes('u.pathname === "/v1/public/crests"'))
+    throw new Error("missing_canonical_crests_route");
   if (!updated.includes("MAX_ITEM_BYTES = 160 * 1024"))
     throw new Error("unexpected max-item-size contract");
   return updated;
