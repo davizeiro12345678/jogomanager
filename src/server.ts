@@ -1,4 +1,4 @@
-import "./lib/error-capture";
+import "./lib/error-capture.server";
 import { compressPublicHtml } from "./lib/public-html-compression";
 
 import { consumeLastCapturedError } from "./lib/error-capture";

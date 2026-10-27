@@ -44,3 +44,11 @@
 @source "./pages/tabelas.index.tsx";
 @source "./pages/tabelas.$slug.tsx";
 @import "./design-system.css";
+
+/* Long guides retain searchable, accessible content while the browser skips
+   layout/paint of sections outside the viewport. Unsupported browsers render
+   the same content normally; anchor navigation reveals the target section. */
+[data-public-shell] article > .space-y-8 > section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 560px;
+}

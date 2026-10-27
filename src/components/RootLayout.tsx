@@ -17,10 +17,8 @@ import { AccessibilityProvider } from "@/components/accessibility/AccessibilityP
 import { RouteHeadContent } from "@/components/RouteHeadContent";
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
-const AccessibilitySettings = lazy(() =>
-  import("@/components/accessibility/AccessibilitySettings").then((m) => ({
-    default: m.AccessibilitySettings,
-  })),
+const AccessibilitySettings = lazy(
+  () => import("@/components/accessibility/AccessibilitySettings"),
 );
 
 export function NotFoundComponent() {
@@ -88,7 +86,7 @@ export function RootShell({ children }: { children: ReactNode }) {
     <html
       lang="pt-BR"
       className="dark"
-      data-public-shell={isLightweightCssPath(pathname) ? "true" : undefined}
+      data-public-shell={isLightweightCssPath(pathname) || undefined}
     >
       <head>
         <RouteHeadContent />
@@ -106,18 +104,12 @@ export function RootShell({ children }: { children: ReactNode }) {
 export function RootComponent() {
   const { queryClient } = useRouteContext({ from: "__root__" });
   const pathname = useLocation({ select: (location) => location.pathname });
-  const worldReady = useRef(false);
 
   useEffect(() => {
     // The public home needs no catalogue. Restore the campaign on entry to the
     // rest of the app, rather than downloading every club after first paint.
-    if (isPublicContentPath(pathname) || worldReady.current) return;
-    worldReady.current = true;
-    void import("../lib/world")
-      .then((m) => m.applyWorld())
-      .catch(() => {
-        worldReady.current = false;
-      });
+    if (!isLightweightCssPath(pathname))
+      void import("../lib/world").then((world) => world.default()).catch(() => undefined);
   }, [pathname]);
 
   useEffect(() => {
@@ -127,19 +119,12 @@ export function RootComponent() {
     window.addEventListener("consent-changed", start);
     const ric = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
       .requestIdleCallback;
-    if (typeof ric === "function") {
-      const id = ric(start, { timeout: 5000 });
-      return () => {
-        window.removeEventListener("consent-changed", start);
-        (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback?.(
-          id,
-        );
-      };
-    }
-    const timer = window.setTimeout(start, 3000);
+    const idle = typeof ric === "function";
+    const handle = idle ? ric(start, { timeout: 5000 }) : window.setTimeout(start, 3000);
     return () => {
       window.removeEventListener("consent-changed", start);
-      window.clearTimeout(timer);
+      if (idle) window.cancelIdleCallback?.(handle);
+      else window.clearTimeout(handle);
     };
   }, []);
 

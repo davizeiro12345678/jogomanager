@@ -12,6 +12,7 @@ export function lowShortsGeometry() {
   const geometry = footballShorts(template, 8, { waistRows: 4, legRows: 2 });
   const position = geometry.getAttribute("position");
   const normal = geometry.getAttribute("normal");
+  const opening = geometry.getAttribute("openingLeg");
   geometry.morphTargetsRelative = true;
   const positions: THREE.Float32BufferAttribute[] = [];
   const normals: THREE.Float32BufferAttribute[] = [];
@@ -24,7 +25,10 @@ export function lowShortsGeometry() {
           const x = position.getX(vertex),
             y = position.getY(vertex);
           const legWeight = 1 - THREE.MathUtils.smoothstep(y, -0.85, 0.1);
-          const left = THREE.MathUtils.smoothstep(x, -0.12, 0.12);
+          // An inner hem can cross x=0 while remaining on its own leg.
+          // Share the authored opening ownership used by the skinned rig.
+          const owner = opening.getX(vertex);
+          const left = owner ? (owner > 0 ? 1 : 0) : THREE.MathUtils.smoothstep(x, -0.12, 0.12);
           const weight = legWeight * (side === 1 ? left : 1 - left);
           const pivot = source === 0 ? side * 0.36 : source === 1 ? -0.4 : 0;
           delta[vertex * 3 + destination] =

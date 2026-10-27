@@ -1,4 +1,4 @@
-import { AccessibilitySettings } from "@/components/accessibility/AccessibilitySettings";
+import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CLIP_NAMES, type ClipName, type PlayerAction } from "@/game/animation";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
@@ -52,6 +52,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 import * as THREE from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { CanvasLifecycle } from "../CanvasLifecycle";
+import { MobileFramebufferBudget } from "../MobileFramebufferBudget";
+import { detectQuality, isCoarsePointer } from "@/game/device";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
 import type { CanvasStatus } from "../canvas-lifecycle";
@@ -492,7 +494,7 @@ function StudioScene({
         position={[-2.2, 7.5, 2.4]}
         color={warm ? "#ffd5aa" : "#fff4e9"}
         intensity={3.05}
-        castShadow
+        castShadow={!isCoarsePointer()}
         shadow-intensity={0.38}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-3}
@@ -541,17 +543,6 @@ function StudioScene({
         <circleGeometry args={[1.65, 64]} />
         <meshStandardMaterial color="#354753" roughness={0.76} metalness={0.05} />
       </mesh>
-      <ContactShadows
-        key={`${appearance.seed}:${movement.id}:${previewAt ?? "live"}:${detail}`}
-        position={[0, 0.002, 0]}
-        opacity={0.26}
-        scale={4}
-        blur={3.2}
-        far={1.3}
-        resolution={256}
-        frames={1}
-        color="#061018"
-      />
       {detail ? (
         <PlayerRig
           key={appearanceRevision}
@@ -608,6 +599,7 @@ export default function PlayerStudio({
 }: PlayerStudioProps) {
   const { t, dir, lang } = useT();
   const { reducedMotion } = useAccessibility();
+  const [deviceQuality] = useState(detectQuality);
   const [localPosition, setLocalPosition] = useState("MF");
   const position = positionValue ?? localPosition;
   const [movementId, setMovementId] = useState("idle");
@@ -745,6 +737,7 @@ export default function PlayerStudio({
                 }
               >
                 <CanvasLifecycle onStatus={setSceneStatus} />
+                <MobileFramebufferBudget tier={deviceQuality} requested={[1, 1.5]} />
                 <Ktx2CanvasAssets enabled={detail} />
                 <StudioScene
                   key={movementId}
@@ -761,6 +754,19 @@ export default function PlayerStudio({
                   viewAngle={viewAngle}
                   cameraCommand={cameraCommand}
                   clothPhysics={clothPhysics}
+                />
+                {/* Keep Drei's capture resources alive for this Canvas. Its
+                    one-frame counter resets on control rerenders; remounting
+                    per pose leaked offscreen geometry/targets in Drei. */}
+                <ContactShadows
+                  position={[0, 0.002, 0]}
+                  opacity={0.26}
+                  scale={4}
+                  blur={3.2}
+                  far={1.3}
+                  resolution={256}
+                  frames={1}
+                  color="#061018"
                 />
               </Canvas>
             </GraphicsBoundary>

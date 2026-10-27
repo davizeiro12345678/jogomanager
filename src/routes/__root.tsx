@@ -7,17 +7,10 @@ import {
   RootComponent,
 } from "@/components/RootLayout";
 import appCss from "../styles.css?url";
+import publicCss from "../public-styles.css?url";
 
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
-
-// Optional prevents late font swaps after first paint, avoiding text-induced CLS
-// on mobile routes without blocking the initial stylesheet and LCP.
-const GOOGLE_FONTS =
-  "https://fonts.googleapis.com/css2?family=Archivo+Black&family=Hind:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=optional";
-
-/** Keep font downloads out of the hero's critical network window. */
-const ENABLE_FONTS = `(function(){var l=document.getElementById('google-fonts');if(!l)return;var go=function(){if(l.sheet)l.media='all'};document.readyState==='complete'?go():window.addEventListener('load',go,{once:true})})();`;
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: ({ matches }) => ({
@@ -47,23 +40,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Pro Football Manager 3D" },
     ],
     links: [
-      // Public CSS is owned by route components so Start can inline it on SSR.
-      ...(!isLightweightCssPath(matches.at(-1)?.pathname ?? "")
-        ? [{ rel: "stylesheet", href: appCss }]
-        : []),
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      // Fontes carregadas sem bloquear a primeira pintura: entram como "print"
-      // e o script abaixo as libera assim que o navegador as baixa.
-      // Avoid high-priority font CSS competing with the LCP image on mobile.
-      { rel: "stylesheet", href: GOOGLE_FONTS, media: "print", id: "google-fonts" },
+      // Critical CSS belongs to the SSR head. A route's deferred JS/CSS import
+      // is too late for the first styled paint on a throttled mobile device.
+      {
+        rel: "stylesheet",
+        href: isLightweightCssPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
+      },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       // Resumo do site para assistentes de IA (padrão llms.txt)
       { rel: "llms", type: "text/plain", href: "/llms.txt" },
     ],
-    scripts: [{ children: ENABLE_FONTS }, { children: CONSENT_VISIBILITY_SCRIPT }],
+    scripts: [{ children: CONSENT_VISIBILITY_SCRIPT }],
   }),
 
   shellComponent: RootShell,

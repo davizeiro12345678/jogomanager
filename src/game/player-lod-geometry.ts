@@ -4,6 +4,7 @@ import {
   anatomicalSection,
   athleticTorsoSurface,
   fittedLimbCover,
+  footballThigh,
   footballBoot,
 } from "./rig-geometry";
 import { sculptedHead } from "./player-sculpt";
@@ -45,10 +46,12 @@ export function createLowPlayerGeometries(compact = false): Record<string, THREE
     forearms: anatomicalLimb("forearm", 1, 0.5, radial, true, 1).translate(0, 0.5, 0),
     // Two longitudinal samples preserve the sculpted thigh silhouette while
     // remaining well below the high LOD triangle budget.
-    thighs: fittedLimbCover("thigh", 1, 0.5, radial, 0.43, 0, 1.035, 2).translate(0, 0.5, 0),
+    thighs: footballThigh(1, 0.5, radial, 2).translate(0, 0.5, 0),
     shins: anatomicalLimb("calf", 1, 0.5, radial, true, 1).translate(0, 0.5, 0),
     hands: new THREE.SphereGeometry(0.5, radial, compact ? 4 : 6),
-    sleeves: new THREE.CylinderGeometry(0.46, 0.5, 1, radial, 1),
+    // Shirt and real upper arm already close these openings. Hidden cloth
+    // discs wasted 704 team triangles; spend them on continuous thigh skin.
+    sleeves: new THREE.CylinderGeometry(0.46, 0.5, 1, radial, 1, true),
     neck: new THREE.CylinderGeometry(0.4, 0.5, 1, radial),
     shadow: new THREE.CircleGeometry(1, 12),
   };

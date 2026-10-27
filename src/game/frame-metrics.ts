@@ -11,10 +11,10 @@ export function heapUsedBytes(
 }
 
 export class FrameMetrics {
-  private readonly samples: Float64Array;
+  protected readonly samples: Float64Array;
   private scratch = new Float64Array(0);
-  private size = 0;
-  private cursor = 0;
+  protected size = 0;
+  protected cursor = 0;
   constructor(readonly capacity = 18000) {
     if (!Number.isInteger(capacity) || capacity < 1)
       throw new RangeError("FrameMetrics capacity must be a positive integer");

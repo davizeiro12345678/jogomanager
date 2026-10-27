@@ -27,6 +27,7 @@ import { retainRigGeometryPreparation } from "@/game/rig-geometry-worker-client"
 import { type RigJoint } from "@/game/rig-skin";
 import { censusRef } from "@/game/scene-census";
 import { onKtx2Ready } from "@/game/textures/ktx2";
+import { isCoarsePointer } from "@/game/device";
 import { useVisual } from "@/game/visual-settings";
 
 import { type Quality, type RigProps } from "./player-rig-contract";
@@ -113,7 +114,7 @@ export const PlayerRig = memo(function PlayerRig({
   // The match keeps its small contact ellipse under each athlete. Full body
   // shadow-map silhouettes stay in the isolated portrait studio; in broadcast
   // views they read as broad cool blotches across the pitch.
-  const shadows = quality === "alta" && portrait;
+  const shadows = quality === "alta" && portrait && !isCoarsePointer();
   const contactShadow = useMemo(softShadowTexture, []);
   const invalidate = useThree((state) => state.invalidate);
   // Demand-rendered studio previews still display newly loaded maps while

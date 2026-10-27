@@ -15,7 +15,7 @@ export function RouteHeadContent() {
   return (
     <>
       {visibleTags.map((tag) => (
-        <Asset {...tag} key={`tsr-meta-${JSON.stringify(tag)}`} {...(nonce ? { nonce } : {})} />
+        <Asset {...tag} key={JSON.stringify(tag)} {...(nonce ? { nonce } : {})} />
       ))}
     </>
   );

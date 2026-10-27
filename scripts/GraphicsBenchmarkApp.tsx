@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { readDrawInventory } from "./graphics-draw-inventory";
 
 import { Stadium3D, type Quality } from "../src/components/game/Stadium3D";
 
@@ -98,9 +99,12 @@ export function Benchmark() {
     const bridge = window as Window & {
       render_game_to_text?: () => string;
       advanceTime?: (ms: number) => Promise<void>;
+      render_draw_inventory?: typeof readDrawInventory;
     };
     const priorAdvance = bridge.advanceTime;
     const priorText = bridge.render_game_to_text;
+    const priorInventory = bridge.render_draw_inventory;
+    bridge.render_draw_inventory = readDrawInventory;
     bridge.advanceTime = async (ms) => {
       if (manual) workerRef.current?.postMessage({ type: "advance", ms });
       // A worker message is sufficient to move the deterministic fixture. Do
@@ -128,6 +132,8 @@ export function Benchmark() {
         metrics: sample,
       });
     return () => {
+      if (priorInventory) bridge.render_draw_inventory = priorInventory;
+      else delete bridge.render_draw_inventory;
       if (priorAdvance) bridge.advanceTime = priorAdvance;
       else delete bridge.advanceTime;
       if (priorText) bridge.render_game_to_text = priorText;

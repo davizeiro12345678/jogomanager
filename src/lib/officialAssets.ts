@@ -7,6 +7,7 @@
  */
 import type { OfficialAssets } from "./football.functions";
 import { reportSilent } from "./silent-errors";
+import { get, set } from "idb-keyval";
 
 // v1 could contain a Data API-truncated catalog. Fetch it completely once.
 const CACHE_KEY = "manager3d.official.v3";
@@ -52,28 +53,34 @@ function stringRecord(value: unknown): value is Record<string, string> {
     Object.values(value).every((item) => typeof item === "string")
   );
 }
-function readCache(): OfficialAssets | null {
-  if (typeof localStorage === "undefined") return null;
+function reportCacheError(error: unknown, phase: "read" | "write" | "load") {
+  reportSilent("assets.cache", error, {
+    classification: phase === "write" ? "ignorable" : "degradation",
+    feature: "official-assets",
+    phase,
+    dedupeKey: `official-assets-${phase}`,
+  });
+}
+async function readCache(): Promise<OfficialAssets | null> {
+  let parsed: { at: number; data: OfficialAssets } | null | undefined;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { at: number; data: OfficialAssets };
-    if (
-      !Number.isFinite(parsed.at) ||
-      Date.now() - parsed.at > TTL ||
-      !parsed.data ||
-      !stringRecord(parsed.data.crests) ||
-      !stringRecord(parsed.data.kits)
-    )
-      return null;
-    return parsed.data;
+    parsed = await get(CACHE_KEY);
+  } catch {
+    // An existing offline catalogue remains usable if IndexedDB is denied.
+  }
+  try {
+    if (parsed == null && typeof localStorage !== "undefined")
+      parsed = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null");
+    return parsed &&
+      Number.isFinite(parsed.at) &&
+      Date.now() - parsed.at <= TTL &&
+      parsed.data &&
+      stringRecord(parsed.data.crests) &&
+      stringRecord(parsed.data.kits)
+      ? parsed.data
+      : null;
   } catch (error) {
-    reportSilent("assets.cache", error, {
-      classification: "degradation",
-      feature: "official-assets",
-      phase: "read",
-      dedupeKey: "official-assets-read",
-    });
+    reportCacheError(error, "read");
     return null;
   }
 }
@@ -83,49 +90,34 @@ export function loadOfficialAssets(): Promise<void> {
   if (loaded) return Promise.resolve();
   if (inflight) return inflight;
 
-  const cached = readCache();
-  if (cached) {
-    cache = cached;
-    loaded = true;
-    listeners.forEach((l) => l());
-    return Promise.resolve();
-  }
-
-  // The local crest renderer and isolated graphics previews do not need to
-  // initialize the server-function runtime just to import this cache.
-  inflight = import("./football.functions")
-    .then(({ getOfficialAssets }) => getOfficialAssets())
-    .then((data) => {
-      if (data && (Object.keys(data.crests).length || Object.keys(data.kits).length)) {
-        cache = data;
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data }));
-        } catch (error) {
-          reportSilent("assets.cache", error, {
-            classification: "ignorable",
-            feature: "official-assets",
-            phase: "write",
-            dedupeKey: "official-assets-write",
+  inflight = (async () => {
+    try {
+      const cached = await readCache();
+      if (cached) cache = cached;
+      else {
+        // Isolated/local crest rendering never initializes the server runtime.
+        const { getOfficialAssets } = await import("./football.functions");
+        const data = await getOfficialAssets();
+        if (data && (Object.keys(data.crests).length || Object.keys(data.kits).length)) {
+          cache = data;
+          // Persist the structured catalogue asynchronously. Synchronous JSON +
+          // localStorage writes stalled the selection UI on slower devices.
+          void set(CACHE_KEY, { at: Date.now(), data }).catch((error) => {
+            reportCacheError(error, "write");
           });
         }
       }
       loaded = true;
       listeners.forEach((l) => l());
-    })
-    .catch((error) => {
-      reportSilent("assets.cache", error, {
-        classification: "degradation",
-        feature: "official-assets",
-        phase: "load",
-        dedupeKey: "official-assets-load",
-      });
+    } catch (error) {
+      reportCacheError(error, "load");
       // A failed request did not load a catalog. A later explicit load may
       // recover; simultaneous callers still share the in-flight request.
       loaded = false;
-    })
-    .finally(() => {
+    } finally {
       inflight = null;
-    });
+    }
+  })();
 
   return inflight;
 }

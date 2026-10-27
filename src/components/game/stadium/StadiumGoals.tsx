@@ -5,9 +5,10 @@ import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
 import { censusRef } from "@/game/scene-census";
-import { GoalNetPanel } from "./GoalNet";
+import { GoalNet } from "./GoalNet";
 import { ktx2, useKtx2Revision } from "@/game/textures/ktx2";
 import { presentationBall } from "./stadium-ball";
+import { StaticBatch } from "./StaticBatch";
 
 function netTexture() {
   if (typeof document === "undefined") return null;
@@ -56,6 +57,7 @@ function useNetMaterial(repeatX: number, repeatY: number, high = false) {
       roughness: 0.65,
       metalness: 0,
       transparent: true,
+      forceSinglePass: true,
       side: THREE.DoubleSide,
       depthWrite: false,
       opacity: 0.95,
@@ -82,9 +84,7 @@ function useNetMaterial(repeatX: number, repeatY: number, high = false) {
 
 export function Goal({ side, quality, sim }: { side: number; quality: Quality; sim: SimView }) {
   const x = side * FIELD_X;
-  const backMat = useNetMaterial(14, 5, quality === "alta");
-  const sideMat = useNetMaterial(4, 5, quality === "alta");
-  const topMat = useNetMaterial(4, 14, quality === "alta");
+  const netMaterial = useNetMaterial(1, 1, quality === "alta");
   const post = <meshStandardMaterial color="#fdfdfd" roughness={0.22} metalness={0.08} />;
   // trave viva: bola raspando poste/travessão treme a estrutura e pisca
   const frame = useRef<THREE.Group>(null);
@@ -136,37 +136,36 @@ export function Goal({ side, quality, sim }: { side: number; quality: Quality; s
         />
       </mesh>
       <group ref={frame}>
-        {[-3.66, 3.66].map((z) => (
-          <group key={z}>
-            <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
-              <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
-              {post}
-            </mesh>
-            {/* suporte traseiro da rede */}
-            <mesh position={[side * 1.05, 0.62, z]} rotation={[0, 0, side * 0.9]}>
-              <cylinderGeometry args={[0.035, 0.035, 2.2, 8]} />
-              {post}
-            </mesh>
-          </group>
-        ))}
-        <mesh
-          position={[0, 2.44, 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-          castShadow={quality === "alta"}
-        >
-          <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
-          {post}
-        </mesh>
-        {/* barras traseiras horizontais */}
-        <mesh position={[side * 1.9, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.04, 0.04, 7.32, 10]} />
-          {post}
-        </mesh>
+        <StaticBatch signature={`goal-frame:${side}:${quality}`}>
+          {[-3.66, 3.66].map((z) => (
+            <group key={z}>
+              <mesh position={[0, 1.22, z]} castShadow={quality === "alta"}>
+                <cylinderGeometry args={[0.06, 0.06, 2.44, 16]} />
+                {post}
+              </mesh>
+              {/* suporte traseiro da rede */}
+              <mesh position={[side * 1.05, 0.62, z]} rotation={[0, 0, side * 0.9]}>
+                <cylinderGeometry args={[0.035, 0.035, 2.2, 8]} />
+                {post}
+              </mesh>
+            </group>
+          ))}
+          <mesh
+            position={[0, 2.44, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+            castShadow={quality === "alta"}
+          >
+            <cylinderGeometry args={[0.06, 0.06, 7.32, 16]} />
+            {post}
+          </mesh>
+          {/* barras traseiras horizontais */}
+          <mesh position={[side * 1.9, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.04, 0.04, 7.32, 10]} />
+            {post}
+          </mesh>
+        </StaticBatch>
         {/* rede: fundo (com barriga), laterais e teto */}
-        <GoalNetPanel side={side} sim={sim} material={backMat} quality={quality} />
-        <GoalNetPanel side={side} sim={sim} material={sideMat} quality={quality} face="left" />
-        <GoalNetPanel side={side} sim={sim} material={sideMat} quality={quality} face="right" />
-        <GoalNetPanel side={side} sim={sim} material={topMat} quality={quality} face="roof" />
+        <GoalNet side={side} sim={sim} material={netMaterial} quality={quality} />
       </group>
     </group>
   );

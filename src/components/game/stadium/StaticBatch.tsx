@@ -1,17 +1,29 @@
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { useContext, useLayoutEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { batchStaticStadium, type StaticStadiumBatch } from "@/game/static-stadium-batch";
+import type { CensusBucket } from "@/game/scene-census";
+import { StaticBatchOwner } from "./static-batch-context";
+import { useKtx2Revision } from "@/game/textures/ktx2";
 
 /** Wait for descendant geometry to settle after R3F commits. Rebuild only
  * when the explicit signature changes; source meshes stay recoverable. */
 export function StaticBatch({
   children,
   signature,
+  enabled = true,
+  bucket,
+  shadows,
 }: {
   children: ReactNode;
   signature?: string | number;
+  enabled?: boolean;
+  bucket?: CensusBucket;
+  shadows?: boolean;
 }) {
+  const parentOwns = useContext(StaticBatchOwner);
+  const active = enabled && !parentOwns;
+  const textureRevision = useKtx2Revision();
   const root = useRef<THREE.Group>(null);
   const pending = useRef(true);
   const settled = useRef({ signature: "", frames: 0 });
@@ -23,8 +35,9 @@ export function StaticBatch({
       cleanup.current?.();
       cleanup.current = null;
     };
-  }, [signature]);
+  }, [signature, active, bucket, shadows, textureRevision]);
   useFrame(() => {
+    if (!active) return;
     if (pending.current && root.current) {
       // Descendants may attach from layout effects after the parent mounts.
       // Batching an empty first frame permanently missed those stadium props.
@@ -39,11 +52,18 @@ export function StaticBatch({
       state.frames = sourceSignature === state.signature ? state.frames + 1 : 0;
       state.signature = sourceSignature;
       if (sources.length && state.frames >= 2) {
-        cleanup.current = batchStaticStadium(root.current);
+        cleanup.current = batchStaticStadium(root.current, {
+          ...(bucket ? { bucket } : {}),
+          ...(shadows === undefined ? {} : { shadows }),
+        });
         pending.current = false;
       }
     }
     cleanup.current?.hideSources();
   }, -90);
-  return <group ref={root}>{children}</group>;
+  return (
+    <StaticBatchOwner.Provider value={parentOwns || active}>
+      <group ref={root}>{children}</group>
+    </StaticBatchOwner.Provider>
+  );
 }

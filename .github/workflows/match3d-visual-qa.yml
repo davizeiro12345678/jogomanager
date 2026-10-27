@@ -1,0 +1,81 @@
+name: Match 3D visual evidence
+
+on:
+  pull_request:
+    paths:
+      - "src/game/**"
+      - "src/components/game/**"
+      - "scripts/**"
+      - ".github/workflows/match3d-visual-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: match3d-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    # Two serial software-rendered captures, including 12 action video encodes.
+    # This runner allowance changes no measured frame-time or graphics budget.
+    timeout-minutes: 60
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || '5a75fef3662e3750917df1c2259169e4ed9f24d3' }}
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NODE_USE_ENV_PROXY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser test tooling
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          npm install --prefix "$RUNNER_TEMP/match3d-qa" --no-package-lock --no-save playwright@1.62.1
+          command -v google-chrome > "$RUNNER_TEMP/match3d-chrome-path"
+      - name: Prepare immutable baseline
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/match3d-base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/match3d-base/node_modules"
+      - name: Build and capture baseline with the candidate evidence runner
+        id: baseline_capture
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
+        run: |
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/match3d-chrome-path")"
+          (cd "$RUNNER_TEMP/match3d-base" && npm run graphics:build)
+          node --import tsx scripts/capture-match3d-evidence.mjs "$RUNNER_TEMP/match3d-base" "$RUNNER_TEMP/match3d-evidence/baseline" 4194 "$BASE_SHA"
+      - name: Build and capture candidate
+        id: candidate_capture
+        if: ${{ !cancelled() && steps.baseline_capture.outcome != 'skipped' }}
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/match3d-qa/node_modules/playwright
+        run: |
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/match3d-chrome-path")"
+          npm run graphics:build
+          node --import tsx scripts/capture-match3d-evidence.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/match3d-evidence/candidate" 4193 "$CANDIDATE_SHA"
+      - name: Compare fixtures, authority and mobile scene ceilings
+        run: node scripts/compare-match3d-evidence.mjs "$RUNNER_TEMP/match3d-evidence/baseline/evidence.json" "$RUNNER_TEMP/match3d-evidence/candidate/evidence.json" "$RUNNER_TEMP/match3d-evidence/comparison.json"
+      - name: Pair the six sampled-pose videos
+        if: ${{ !cancelled() && steps.candidate_capture.outcome != 'skipped' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/match3d-evidence/comparisons"
+          for clip in pass shotPower trap header diveLeft slide; do
+            ffmpeg -y -loglevel error -i "$RUNNER_TEMP/match3d-evidence/baseline/$clip.mp4" -i "$RUNNER_TEMP/match3d-evidence/candidate/$clip.mp4" -filter_complex "[0:v]drawtext=text='BASE ${BASE_SHA:0:8}':x=20:y=20:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.7[a];[1:v]drawtext=text='CANDIDATO ${CANDIDATE_SHA:0:8}':x=20:y=20:fontsize=24:fontcolor=white:box=1:boxcolor=black@0.7[b];[a][b]hstack=inputs=2" -c:v libx264 -crf 20 "$RUNNER_TEMP/match3d-evidence/comparisons/$clip.mp4"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match3d-visual-evidence
+          path: ${{ runner.temp }}/match3d-evidence
+          if-no-files-found: error
+          retention-days: 14

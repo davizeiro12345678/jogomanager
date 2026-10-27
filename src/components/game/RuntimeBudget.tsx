@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { GRAPHICS_PROFILES, type GraphicsTier } from "@/game/contracts/graphics-profile";
 
 import { QualityGovernor } from "@/game/quality-governor";
+import { isCoarsePointer } from "@/game/device";
+import { MOBILE_TARGET_P95_MS } from "@/game/mobile-render-budget";
 
 export function RuntimeBudget({
   tier,
@@ -18,7 +20,10 @@ export function RuntimeBudget({
   onChange: (stage: number) => void;
 }) {
   const governor = useMemo(
-    () => new QualityGovernor(GRAPHICS_PROFILES[tier].targetP95FrameMs),
+    () =>
+      new QualityGovernor(
+        isCoarsePointer() ? MOBILE_TARGET_P95_MS : GRAPHICS_PROFILES[tier].targetP95FrameMs,
+      ),
     [tier],
   );
   const previous = useRef(0);

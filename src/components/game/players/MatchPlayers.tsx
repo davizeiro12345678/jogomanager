@@ -2,7 +2,6 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { CameraMode } from "@/game/camera-modes";
-import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { allocateHeroes } from "@/game/draw-budget";
 import { denseMatchRig, legacyMatchRigRequested } from "@/game/match-rig-detail";
 import { createNonHeroDrawCounter } from "@/game/scene-census";
@@ -42,7 +41,7 @@ export function MatchPlayers({
   quality: "alta" | "media" | "baixa";
   mode: CameraMode;
   replay: boolean;
-  budget: Pick<RuntimeSceneBudget, "heroPlayers" | "replayHeroPlayers" | "tier">;
+  budget: Pick<RuntimeSceneBudget, "heroPlayers" | "replayHeroPlayers" | "tier" | "maxDrawCalls">;
 }) {
   const [near, setNear] = useState<ReadonlySet<string>>(new Set());
   const [dense, setDense] = useState<ReadonlySet<string>>(new Set());
@@ -108,11 +107,13 @@ export function MatchPlayers({
       drawTimer.current = 0;
       const base = quality === "baixa" ? 0 : replay ? budget.replayHeroPlayers : budget.heroPlayers;
       if (base > 0) {
-        const maxDraws = GRAPHICS_PROFILES[budget.tier].maxDrawCalls;
+        const maxDraws = budget.maxDrawCalls;
         // Renderer counters can be reset by post-processing or FrameProbe.
         // Measure actual non-player surfaces instead of treating zero as headroom.
         const otherDraws = countNonHeroDraws(scene);
-        const wanted = allocateHeroes(maxDraws, otherDraws, base, 1).count;
+        // A detailed rig is optional; its athlete remains in LowPlayers when
+        // there is no room. A forced minimum defeated the measured ceiling.
+        const wanted = allocateHeroes(maxDraws, otherDraws, base).count;
         if (wanted < heroLimit) {
           headroom.current = 0;
           setHeroLimit(wanted);

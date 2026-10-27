@@ -5,6 +5,25 @@ import { solveGroundContact, soleHeightFor } from "./ground-contact";
 import { lookFor, proportionsFor } from "./player-model";
 import { footballBoot } from "./rig-geometry";
 
+it("keeps support and ankle corrections finite after invalid clock deltas", () => {
+  const P = proportionsFor(lookFor("support-clock-recovery", "MF"));
+  const input = {
+    P,
+    pose: { ...emptyPose(), ankleL: 0.2 },
+    hipShiftX: 0,
+    leanX: 0.1,
+    leanZ: 0.1,
+    airborne: 0,
+    previousRootY: 0.15,
+    dt: 0,
+  };
+  const frozen = solveGroundContact(input);
+  for (const dt of [NaN, Infinity, -Infinity, -0.1])
+    expect(solveGroundContact({ ...input, dt })).toEqual(frozen);
+  const resumed = solveGroundContact({ ...input, previousRootY: frozen.rootY, dt: 1 / 60 });
+  expect(Object.values(resumed).every(Number.isFinite)).toBe(true);
+});
+
 it("keeps actual outer sole vertices above the turf during inclined lateral support", () => {
   const p = proportionsFor(lookFor("lateral-boot-contact", "DF"));
   const sole = footballBoot(p.footLen, p.footH, 20, true);

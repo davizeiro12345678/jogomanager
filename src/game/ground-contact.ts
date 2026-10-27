@@ -172,7 +172,10 @@ export function solveGroundContact(input: GroundContactInput): GroundContactResu
   // pelvis becomes the support surface. Flight remains an authored offset.
   const supported = planted + (Math.max(planted, bodyPlanted) - planted) * bodyContact;
   const target = supported * (1 - air);
-  const k = 1 - Math.exp(-20 * Math.max(0, dt));
+  // A missing clock sample freezes suspension rather than snapping the root
+  // to zero or permanently contaminating subsequent ankle/support samples.
+  const elapsed = Number.isFinite(dt) ? Math.max(0, dt) : 0;
+  const k = 1 - Math.exp(-20 * elapsed);
   const eased = previousRootY + (target - previousRootY) * k;
   // Ground penetration must be corrected immediately; upward/downward
   // suspension can settle smoothly when the sole has clearance.

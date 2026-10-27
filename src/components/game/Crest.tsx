@@ -1,8 +1,7 @@
 import { useEffect, useId, useState } from "react";
 
 import type { Club } from "@/game/types";
-import { crestStyleFor } from "@/game/customStyle";
-import { badgeFor } from "@/lib/customData";
+import { badgeFor, crestStyleFor } from "@/game/customStyle";
 import { loadOfficialAssets, officialCrest, subscribeOfficial } from "@/lib/officialAssets";
 
 function hash(str: string) {

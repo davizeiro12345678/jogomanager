@@ -41,6 +41,7 @@ import {
   tailoredJerseySurface,
   clothSurface,
   fittedLimbCover,
+  footballThigh,
   forearmTattooSurface,
   footballBoot,
   footballBootUpperY,
@@ -824,18 +825,13 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
         );
     }
 
-    /* Covered upper-thigh faces cannot pierce the waistband during a raised
-       femur. Bare skin starts just inside the hem, retaining overlap. */
-    leg.push(
-      rigPart(
-        ctx.trousers
-          ? anatomicalLimb("thigh", P.thigh, P.legR, segs.radial, false, undefined, side)
-          : fittedLimbCover("thigh", P.thigh, P.legR, segs.radial, 0.43, 0, 1.035, undefined, side),
-        ctx.trousers ? shorts : skin,
-        undefined,
-        cast,
-      ),
-    );
+    // Retain the hidden upper thigh. Cutting it at 43% left an open window
+    // behind the cuff when viewed upward during a raised leg. Inset only the
+    // covered socket so it stays inside the garment when the femur flexes.
+    const thigh = ctx.trousers
+      ? anatomicalLimb("thigh", P.thigh, P.legR, segs.radial, false, undefined, side)
+      : footballThigh(P.thigh, P.legR, segs.radial, undefined, side);
+    leg.push(rigPart(thigh, ctx.trousers ? shorts : skin, undefined, cast));
 
     /* Socks follow the real calf and taper into the ankle, including the
        low/mid/high options. They do not add another capsule around the leg. */

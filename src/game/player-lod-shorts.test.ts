@@ -18,6 +18,49 @@ function morphedVertex(mesh: THREE.InstancedMesh, instance: number, vertex: numb
 }
 
 describe("continuous instanced player shorts", () => {
+  it("keeps crossed inner hems attached to their own femur in the actual instanced morph buffer", () => {
+    const geometry = lowShortsGeometry(),
+      material = new THREE.MeshStandardMaterial();
+    const mesh = new THREE.InstancedMesh(geometry, material, 1),
+      animator = new LowShortsAnimator(geometry);
+    const p = proportionsFor(lookFor("crossed-inner-hem", "MF"));
+    const scale = new THREE.Vector3(p.hipW, p.hipH, p.chestD / 0.47);
+    const position = geometry.getAttribute("position"),
+      uv = geometry.getAttribute("uv");
+    const hemY = Math.min(...Array.from({ length: position.count }, (_, i) => position.getY(i)));
+    let left = -1,
+      right = -1;
+    for (let i = 0; i < position.count; i++) {
+      if (Math.abs(position.getY(i) - hemY) > 1e-6) continue;
+      if (uv.getX(i) < 0.5 && position.getX(i) < 0) left = i;
+      if (uv.getX(i) > 0.5 && position.getX(i) > 0) right = i;
+    }
+    try {
+      expect(left).toBeGreaterThanOrEqual(0);
+      expect(right).toBeGreaterThanOrEqual(0);
+      animator.update(mesh, 0, emptyPose(), scale.x, scale.y, scale.z);
+      const beforeL = morphedVertex(mesh, 0, left).multiply(scale),
+        beforeR = morphedVertex(mesh, 0, right).multiply(scale);
+      animator.update(
+        mesh,
+        0,
+        { ...emptyPose(), legLPitch: -0.9, legLRoll: -0.35 },
+        scale.x,
+        scale.y,
+        scale.z,
+      );
+      expect(morphedVertex(mesh, 0, left).multiply(scale).distanceTo(beforeL)).toBeGreaterThan(
+        0.08,
+      );
+      expect(morphedVertex(mesh, 0, right).multiply(scale).distanceTo(beforeR)).toBeLessThan(0.002);
+    } finally {
+      animator.dispose();
+      mesh.dispose();
+      geometry.dispose();
+      material.dispose();
+    }
+  });
+
   it("matches weighted femur movement across different physiques without moving the waistband", () => {
     const geometry = lowShortsGeometry();
     const material = new THREE.MeshStandardMaterial();
@@ -43,7 +86,12 @@ describe("continuous instanced player shorts", () => {
         for (let vertex = 0; vertex < position.count; vertex++) {
           const bind = new THREE.Vector3().fromBufferAttribute(position, vertex).multiply(scale);
           const weight = 1 - THREE.MathUtils.smoothstep(bind.y, -0.85 * p.hipH, 0.1 * p.hipH);
-          const leftWeight = THREE.MathUtils.smoothstep(bind.x, -0.12 * p.hipW, 0.12 * p.hipW);
+          const owner = geometry.getAttribute("openingLeg").getX(vertex);
+          const leftWeight = owner
+            ? owner > 0
+              ? 1
+              : 0
+            : THREE.MathUtils.smoothstep(bind.x, -0.12 * p.hipW, 0.12 * p.hipW);
           const pivotL = new THREE.Vector3(0.36 * p.hipW, -0.4 * p.hipH, 0);
           const pivotR = new THREE.Vector3(-0.36 * p.hipW, -0.4 * p.hipH, 0);
           const onLeft = bind.clone().sub(pivotL).applyQuaternion(left).add(pivotL);

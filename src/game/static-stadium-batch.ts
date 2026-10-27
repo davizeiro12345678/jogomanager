@@ -16,7 +16,10 @@ export type StaticStadiumBatch = (() => void) & { hideSources: () => void };
 
 /** Immutable opaque objects only. Cleanup restores the source meshes; their
  * original geometry and materials always remain owned by the renderer. */
-export function batchStaticStadium(group: THREE.Group): StaticStadiumBatch {
+export function batchStaticStadium(
+  group: THREE.Group,
+  policy: { bucket?: CensusBucket; shadows?: boolean } = {},
+): StaticStadiumBatch {
   group.updateWorldMatrix(true, true);
   const inverse = group.matrixWorld.clone().invert();
   const batches = new Map<
@@ -36,7 +39,7 @@ export function batchStaticStadium(group: THREE.Group): StaticStadiumBatch {
       !Object.hasOwn(mesh.material, "onBeforeCompile")
     ) {
       const material = mesh.material as THREE.MeshPhysicalMaterial;
-      const bucket = bucketFor(mesh);
+      const bucket = policy.bucket ?? bucketFor(mesh);
       const key = [
         material.type,
         material.map?.uuid,
@@ -73,8 +76,8 @@ export function batchStaticStadium(group: THREE.Group): StaticStadiumBatch {
         material.polygonOffset,
         material.polygonOffsetFactor,
         material.polygonOffsetUnits,
-        mesh.castShadow,
-        mesh.receiveShadow,
+        policy.shadows !== false && mesh.castShadow,
+        policy.shadows !== false && mesh.receiveShadow,
         bucket,
       ].join("|");
       const batch = batches.get(key);
@@ -114,8 +117,8 @@ export function batchStaticStadium(group: THREE.Group): StaticStadiumBatch {
     material.vertexColors = true;
     const mesh = new THREE.Mesh(geometry, material);
     tagCensus(mesh, batch.bucket);
-    mesh.castShadow = batch.meshes[0]!.castShadow;
-    mesh.receiveShadow = batch.meshes[0]!.receiveShadow;
+    mesh.castShadow = policy.shadows !== false && batch.meshes[0]!.castShadow;
+    mesh.receiveShadow = policy.shadows !== false && batch.meshes[0]!.receiveShadow;
     group.add(mesh);
     created.push(mesh);
     for (const original of batch.meshes) {

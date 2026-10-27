@@ -1,0 +1,35 @@
+name: Match 3D mobile startup traces
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/trace-mobile-startup.mjs"
+      - ".github/workflows/match3d-lighthouse-trace.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Capture fifteen traces with the protected mobile settings
+        run: |
+          npm install --prefix "$RUNNER_TEMP/lh-trace" --no-package-lock --no-save lighthouse@12.6.1
+          export LIGHTHOUSE_CLI="$RUNNER_TEMP/lh-trace/node_modules/lighthouse/cli/index.js"
+          node .github/scripts/trace-mobile-startup.mjs "$RUNNER_TEMP/lighthouse-traces" "${{ github.event.pull_request.head.sha || github.sha }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-startup-traces
+          path: ${{ runner.temp }}/lighthouse-traces
+          if-no-files-found: error
+          retention-days: 14

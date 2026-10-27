@@ -1,0 +1,58 @@
+name: Match 3D startup CPU diagnostic
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "scripts/profile-public-startup.mjs"
+      - ".github/workflows/match3d-startup-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: match3d-startup-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_SHA: "5a75fef3662e3750917df1c2259169e4ed9f24d3"
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install isolated diagnostic tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/startup-profile" --no-package-lock --no-save playwright@1.62.1
+          command -v google-chrome > "$RUNNER_TEMP/startup-chrome-path"
+      - name: Prepare baseline
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+      - name: Profile baseline then candidate with identical public fixtures
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright
+        run: |
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/startup-chrome-path")"
+          (cd "$RUNNER_TEMP/startup-base" && PFM_LOCAL_VERIFY=1 npm run build)
+          node scripts/profile-public-startup.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline" 4175 "$BASE_SHA"
+          PFM_LOCAL_VERIFY=1 npm run build
+          node scripts/profile-public-startup.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/startup-evidence/candidate" 4176 "$CANDIDATE_SHA"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: match3d-startup-cpu
+          path: ${{ runner.temp }}/startup-evidence
+          if-no-files-found: error
+          retention-days: 14

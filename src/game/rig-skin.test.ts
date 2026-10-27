@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 
 import { buildRigBody, countRigBody, type RigBodyContext } from "./rig-body";
+import * as rigBodyModule from "./rig-body";
 import {
   buildRigSkin,
   countRigSkin,
@@ -69,6 +70,32 @@ function vertices(geometry: THREE.BufferGeometry): number[] {
 }
 
 describe("rig skin", () => {
+  it("retains every skin surface if a malformed limb cannot merge with its siblings", () => {
+    const original = rigBodyModule.buildRigBody;
+    const body = vi.spyOn(rigBodyModule, "buildRigBody").mockImplementationOnce((ctx) => {
+      const result = original(ctx);
+      result.legL.find((mesh) => mesh.material === ctx.mats.skin)!.geometry.deleteAttribute("uv");
+      return result;
+    });
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let skin: ReturnType<typeof buildRigSkin> | undefined;
+    try {
+      const ctx = context();
+      skin = buildRigSkin(ctx, ROOT);
+      const surfaces = skin.groups.filter(
+        (group) => group.material === ctx.mats.skin && group.lod === "core",
+      );
+      expect(
+        surfaces.length,
+        "the entire shared skin must not disappear after a merge failure",
+      ).toBeGreaterThan(0);
+      expect(error).toHaveBeenCalled();
+    } finally {
+      skin?.dispose();
+      body.mockRestore();
+      error.mockRestore();
+    }
+  });
   it("keeps the jersey neckline attached to the collar when the shoulders rise", () => {
     const ctx = context();
     const skin = buildRigSkin(ctx, ROOT);

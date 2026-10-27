@@ -95,44 +95,24 @@ export function mergeRigParts(parts: RigPart[]): RigMesh[] {
 
   const meshes: RigMesh[] = [];
   for (const group of groups.values()) {
-    if (group.length === 1) {
-      const only = group[0]!;
-      const geometry = only.geometry.clone();
-      geometry.applyMatrix4(only.matrix);
+    const baked = group.map((part) => part.geometry.clone().applyMatrix4(part.matrix));
+    for (const geometry of mergeRigSurfaces(baked)) {
       geometry.computeBoundingSphere();
       geometry.computeBoundingBox();
-      meshes.push({ material: only.material, geometry, castShadow: only.castShadow });
-      continue;
+      meshes.push({ material: group[0]!.material, geometry, castShadow: group[0]!.castShadow });
     }
-    const baked: THREE.BufferGeometry[] = [];
-    for (const part of group) {
-      const geometry = part.geometry.clone();
-      geometry.applyMatrix4(part.matrix);
-      baked.push(geometry);
-    }
-    const merged = mergeGeometries(baked, false);
-    for (const geometry of baked) geometry.dispose();
-    if (!merged) {
-      // caminho seguro: mantém cada peça como malha própria
-      for (const part of group) {
-        const geometry = part.geometry.clone();
-        geometry.applyMatrix4(part.matrix);
-        geometry.computeBoundingSphere();
-        geometry.computeBoundingBox();
-        meshes.push({ material: part.material, geometry, castShadow: part.castShadow });
-      }
-      continue;
-    }
-    merged.computeBoundingSphere();
-    merged.computeBoundingBox();
-    meshes.push({
-      material: group[0]!.material,
-      geometry: merged,
-      castShadow: group[0]!.castShadow,
-    });
   }
   for (const part of parts) part.geometry.dispose();
   return meshes;
+}
+
+/** Keep original surfaces on incompatible attributes; never erase anatomy. */
+export function mergeRigSurfaces(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry[] {
+  if (!geometries.length) return [];
+  const merged = geometries.length === 1 ? geometries[0]! : mergeGeometries(geometries, false);
+  if (!merged) return geometries;
+  for (const geometry of geometries) if (geometry !== merged) geometry.dispose();
+  return [merged];
 }
 
 /** Smooth elliptical rings: waist, ribcage and shoulders have distinct widths.
@@ -983,9 +963,41 @@ export function fittedLimbCover(
   cover.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   cover.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   cover.setIndex(indices);
-  cover.computeVertexNormals();
-  smoothRingSeams(cover, radial);
+  cover.userData["surfaceSeams"] = heights.map((_, row) => [
+    row * (radial + 1),
+    row * (radial + 1) + radial,
+  ]);
+  refreshSurfaceNormals(cover);
   return cover;
+}
+
+/** Continuous skin under the cuff, inset only where the garment covers it. */
+export function footballThigh(
+  length: number,
+  radius: number,
+  radial: number,
+  subdivisions?: number,
+  side: -1 | 1 = 1,
+) {
+  const geometry = fittedLimbCover(
+    "thigh",
+    length,
+    radius,
+    radial,
+    0,
+    0,
+    1.035,
+    subdivisions,
+    side,
+  );
+  const position = geometry.getAttribute("position");
+  for (let i = 0; i < position.count; i++) {
+    const inset = 0.72 + 0.28 * THREE.MathUtils.smoothstep(-position.getY(i) / length, 0, 0.4);
+    position.setX(i, position.getX(i) * inset);
+    position.setZ(i, position.getZ(i) * inset);
+  }
+  refreshSurfaceNormals(geometry);
+  return geometry;
 }
 
 /** Libera as geometrias criadas pelo merge (materiais são compartilhados). */

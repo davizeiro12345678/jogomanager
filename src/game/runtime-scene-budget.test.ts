@@ -3,6 +3,25 @@ import { describe, expect, it } from "vitest";
 import { resolveRuntimeSceneBudget } from "./runtime-scene-budget";
 
 describe("RuntimeSceneBudget", () => {
+  it("exposes the actual mobile draw ceiling used to reserve hero headroom", () => {
+    expect(resolveRuntimeSceneBudget("baixa", 0, true).maxDrawCalls).toBe(75);
+    expect(resolveRuntimeSceneBudget("media", 0, true).maxDrawCalls).toBe(110);
+    expect(resolveRuntimeSceneBudget("media").maxDrawCalls).toBe(170);
+  });
+  it("keeps mobile background work bounded even when a high tier is requested", () => {
+    for (const tier of ["baixa", "media", "alta", "cinema"] as const) {
+      const initial = resolveRuntimeSceneBudget(tier, 0, true);
+      for (let stage = 0; stage <= 8; stage++) {
+        const budget = resolveRuntimeSceneBudget(tier, stage, true);
+        expect(budget.heroPlayers).toBeLessThanOrEqual(tier === "baixa" ? 0 : 1);
+        expect(budget.crowdInstances).toBeLessThanOrEqual(tier === "baixa" ? 512 : 1024);
+        expect(budget.grassChunks).toBeLessThanOrEqual(6);
+        expect(budget.crowdInstances).toBeLessThanOrEqual(initial.crowdInstances);
+        expect(budget.shadows).toBe(false);
+        expect(budget.post).toBe("off");
+      }
+    }
+  });
   it("keeps High crowd and near-player work inside the planned first-stage budget", () => {
     const high = resolveRuntimeSceneBudget("alta");
     expect(high.crowdInstances).toBe(4_096);

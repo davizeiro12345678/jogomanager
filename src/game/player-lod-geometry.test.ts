@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createLowPlayerGeometries } from "./player-lod-geometry";
-import { anatomicalLimb, fittedLimbCover, footballBoot } from "./rig-geometry";
+import { anatomicalLimb, footballThigh, footballBoot } from "./rig-geometry";
 
 const triangles = (geometry: THREE.BufferGeometry) =>
   (geometry.index?.count ?? geometry.getAttribute("position").count) / 3;
@@ -52,7 +52,7 @@ describe("distant player geometry", () => {
   it("preserves thigh openings, ankle ends and muscle volume while removing intermediate rings", () => {
     const geometries = createLowPlayerGeometries();
     const reference = {
-      thighs: fittedLimbCover("thigh", 1, 0.5, 8, 0.43, 0).translate(0, 0.5, 0),
+      thighs: footballThigh(1, 0.5, 8).translate(0, 0.5, 0),
       shins: anatomicalLimb("calf", 1, 0.5, 8, true).translate(0, 0.5, 0),
       boots: footballBoot(1, 0.5, 8),
     };
@@ -68,7 +68,7 @@ describe("distant player geometry", () => {
           ).toBeLessThan(0.015);
       original.dispose();
     }
-    expect(geometries["thighs"]!.boundingBox!.max.y).toBeCloseTo(0.07, 5);
+    expect(geometries["thighs"]!.boundingBox!.max.y).toBeCloseTo(0.5, 5);
     for (const geometry of Object.values(geometries)) geometry.dispose();
   });
 });

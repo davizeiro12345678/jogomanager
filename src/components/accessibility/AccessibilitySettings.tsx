@@ -20,7 +20,7 @@ const loadAccessibilityDialog = () => {
   return dialogPromise;
 };
 
-export function AccessibilitySettings({
+export default function AccessibilitySettings({
   children,
   className = "preference-launcher",
 }: {

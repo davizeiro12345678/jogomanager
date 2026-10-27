@@ -1,4 +1,5 @@
 import { RuntimeBudget } from "@/components/game/RuntimeBudget";
+import { MobileFramebufferBudget } from "./MobileFramebufferBudget";
 import {
   QualityPressure,
   RuntimeSceneBudgetContext,
@@ -35,6 +36,7 @@ import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/component
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 
 import { StadiumProps } from "@/components/game/stadium/Props";
+import { StaticBatch } from "./stadium/StaticBatch";
 import { Ball } from "./stadium/StadiumBall";
 import {
   framingFor,
@@ -53,7 +55,7 @@ import { Floodlights } from "./stadium/StadiumFloodlights";
 import { Scoreboard } from "./stadium/StadiumScoreboard";
 
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
-import { dprFor } from "@/game/device";
+import { dprFor, isCoarsePointer } from "@/game/device";
 
 import { AmbientLife } from "@/components/game/stadium/AmbientLife";
 import { Atmosphere } from "@/components/game/stadium/Atmosphere";
@@ -769,7 +771,6 @@ function Scene({
       <BenchLife sim={sim} quality={quality} goalPulse={goalPulse} />
 
       <AdBoards homeColor={sim.home.primary} awayColor={sim.away.primary} />
-      <Floodlights time={time} quality={quality} />
       {/* Feixes volumétricos, poeira e brilho das lâmpadas (custo fixo e baixo) */}
       <Atmosphere
         time={time}
@@ -777,17 +778,36 @@ function Scene({
         weather={look.weather}
         webgl2={backend === "webgl2"}
       />
-      <Stands
-        sim={sim}
-        homeColor={sim.home.primary}
-        awayColor={sim.away.primary}
-        quality={quality}
-        goalPulse={goalPulse}
-        night={time !== "dia"}
-        supporters={supporters}
-        webgl2={backend === "webgl2"}
-      />
-      {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
+      {/* Batch only fixed scenery. Players, ball, officials, weather and
+          reactions retain their existing independent animation ownership. */}
+      <StaticBatch
+        enabled={quality !== "alta"}
+        bucket="static"
+        shadows={budget.shadows}
+        signature={`fixed:${quality}:${time}:${budget.stage}:${sim.home.primary}:${sim.away.primary}:${supporters?.occupancy}`}
+      >
+        <Floodlights time={time} quality={quality} />
+        <Stands
+          sim={sim}
+          homeColor={sim.home.primary}
+          awayColor={sim.away.primary}
+          quality={quality}
+          goalPulse={goalPulse}
+          night={time !== "dia"}
+          supporters={supporters}
+          webgl2={backend === "webgl2"}
+        />
+        {/* O que a arquibancada faz em cada lance: gol, chance, falta, protesto */}
+        <StadiumProps
+          rings={budget.propRings}
+          quality={quality}
+          homeColor={sim.home.primary}
+          awayColor={sim.away.primary}
+          sim={sim}
+        />
+        <Scoreboard sim={sim} replay={replay} goalPulse={goalPulse} />
+        <SidelineLife goalPulse={goalPulse} />
+      </StaticBatch>
       <CrowdReaction
         sim={sim}
         quality={quality}
@@ -795,15 +815,6 @@ function Scene({
         color={sim.home.primary}
         supporters={supporters}
       />
-      <StadiumProps
-        rings={budget.propRings}
-        quality={quality}
-        homeColor={sim.home.primary}
-        awayColor={sim.away.primary}
-        sim={sim}
-      />
-      <Scoreboard sim={sim} replay={replay} goalPulse={goalPulse} />
-      <SidelineLife goalPulse={goalPulse} />
       <AmbientLife time={time} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
       <MatchSurfaceProvider
@@ -965,7 +976,7 @@ function Stadium3DImpl({
   const [fps, setFps] = useState<FpsSample | null>(null);
   const sceneTier = vis.quality === "cinema" ? "cinema" : quality;
   const sceneBudget = useMemo(
-    () => resolveRuntimeSceneBudget(sceneTier, pressure),
+    () => resolveRuntimeSceneBudget(sceneTier, pressure, isCoarsePointer()),
     [sceneTier, pressure],
   );
 
@@ -983,6 +994,11 @@ function Stadium3DImpl({
       ? ([Math.min(cap, base[0] * s), Math.min(cap, base[1] * s)] as [number, number])
       : Math.min(cap, base * s);
   }, [eff, vis.resolutionScale, sceneBudget.resolutionScale, sceneTier]);
+
+  const requestedDpr =
+    pixelRatio === undefined
+      ? dpr
+      : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio));
 
   // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
   // A detecção acontece uma vez, antes de montar o palco, para não recriar
@@ -1044,11 +1060,7 @@ function Stadium3DImpl({
           key={backend}
           shadows={shadowsOn ? SHADOW_SETTINGS : false}
           frameloop={visible && !paused ? "always" : "demand"}
-          dpr={
-            pixelRatio === undefined
-              ? dpr
-              : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio))
-          }
+          dpr={requestedDpr}
           camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
           gl={glProp}
           performance={{ min: 0.5 }}
@@ -1093,6 +1105,7 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}
             quality={quality}

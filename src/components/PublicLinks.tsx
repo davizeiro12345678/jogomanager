@@ -1,4 +1,3 @@
-import "@/public-styles.css";
 import { PUBLIC_PAGES } from "@/lib/public-pages";
 import { Link } from "@tanstack/react-router";
 
