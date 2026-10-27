@@ -5,6 +5,7 @@ import { ShieldCheck, Trophy, Zap } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 import { StorePanel } from "@/components/game/StorePanel";
+import { VipPlansPreview } from "@/components/store/VipPlansPreview";
 
 import storeHero from "@/assets/hero-stadium.jpg?format=webp&w=1600&quality=60&as=url";
 
@@ -43,6 +44,7 @@ export function LojaPage() {
           </div>
         </header>
         <StorePanel next="/loja" columns={2} />
+        <VipPlansPreview />
       </div>
     </div>
   );
