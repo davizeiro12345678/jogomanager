@@ -29,6 +29,10 @@
 
 Gzip já economiza mais de 83% dos bytes JSON do catálogo de 50 clubes. Subir `gzip_comp_level` de 2 para 9 pode economizar alguns bytes, mas custa CPU em cada resposta. Não há suporte Brotli carregado no Nginx inspecionado. Portanto, a prioridade é **evitar repetição do trabalho** com caching isolado e projeções menores, não aumentar cegamente a compressão.
 
+## Otimização SQL adicional identificada
+
+Na produção, `EXPLAIN (ANALYZE, BUFFERS)` da última página com `LIMIT 1000 OFFSET 38000` levou **420,29 ms** e fez index scan em 38.854 linhas; a comparação **pontual**, com cursor já conhecido (`WHERE id >= <last-page-cursor>`), levou **5,086 ms** e percorreu apenas os 854 registros restantes. **Não dividir esses tempos para prometer ganho 82x**: estado de cache e custo de obtenção do cursor diferem. O uso de offsets grandes continua como gargalo mesmo com menos páginas. Próxima versão precisa de snapshot de cursores e/ou paginação `id > cursor`, com testes de paridade, mudança de catálogo entre páginas e fallback integral. Nenhum índice novo foi instalado.
+
 ## Pendências fora deste PR
 
 - Terceira camada real (VPS + Auth/RLS + compras Stripe em test mode + persistência): staging sintético com métricas comparáveis, sem dados ou cobranças de produção.
