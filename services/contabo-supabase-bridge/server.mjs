@@ -51,11 +51,7 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && req.url === "/v1/verify-user") {
     const auth = req.headers.authorization;
-    if (
-      typeof auth !== "string" ||
-      !/^Bearer [a-zA-Z0-9._~-]+$/.test(auth) ||
-      auth.length > 4096
-    ) {
+    if (typeof auth !== "string" || !/^Bearer [a-zA-Z0-9._~-]+$/.test(auth) || auth.length > 4096) {
       return respond(res, 401, { authenticated: false });
     }
     // The Supabase Auth server checks token signature, expiry and session status.
@@ -81,7 +77,9 @@ server.headersTimeout = 10_000;
 server.requestTimeout = 10_000;
 server.keepAliveTimeout = 2500;
 server.maxRequestsPerSocket = 60;
-server.listen(port, host, () => console.info(`Supabase bridge listening locally on ${host}:${port}`));
+server.listen(port, host, () =>
+  console.info(`Supabase bridge listening locally on ${host}:${port}`),
+);
 const shutdown = () => server.close(() => process.exit(0));
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
