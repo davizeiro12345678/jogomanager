@@ -35,7 +35,7 @@ export function LojaPage() {
               <ShieldCheck size={14} /> Pagamento seguro
             </span>
             <span className="store-chip">
-              <Zap size={14} /> Entrega imediata
+              <Zap size={14} /> Entrega após confirmação do pagamento
             </span>
             <span className="store-chip">
               <Trophy size={14} /> Benefícios informados antes da compra
