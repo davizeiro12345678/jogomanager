@@ -56,17 +56,15 @@ describe("server checkout commercial validation", () => {
         contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] },
       }),
     ];
-    const list = vi
-      .fn()
-      .mockImplementation(async ({ lookup_keys }) => ({
-        data: [
-          {
-            lookup_key: lookup_keys[0],
-            unit_amount: products.find((p) => p.stripeLookupKey === lookup_keys[0])?.priceCents,
-            currency: "brl",
-          },
-        ],
-      }));
+    const list = vi.fn().mockImplementation(async ({ lookup_keys }) => ({
+      data: [
+        {
+          lookup_key: lookup_keys[0],
+          unit_amount: products.find((p) => p.stripeLookupKey === lookup_keys[0])?.priceCents,
+          currency: "brl",
+        },
+      ],
+    }));
     const stripe = { prices: { list } } as never;
     for (const p of products)
       await expect(resolveValidatedStripePrice(stripe, p)).resolves.toMatchObject({
