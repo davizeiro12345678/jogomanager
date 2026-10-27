@@ -42,6 +42,7 @@ const ICONS: Record<PackKind, React.ReactNode> = {
   training: <Dumbbell size={14} />,
   cosmetic: <Palette size={14} />,
   pass: <Crown size={14} />,
+  bundle: <Package size={14} />,
 };
 
 const KIND_LABEL: Record<PackKind, string> = {
@@ -50,9 +51,10 @@ const KIND_LABEL: Record<PackKind, string> = {
   training: "Treino",
   cosmetic: "Visual",
   pass: "Assinatura",
+  bundle: "Combos",
 };
 
-const PACK_KINDS: readonly PackKind[] = ["coins", "scout", "training", "cosmetic", "pass"];
+const PACK_KINDS: readonly PackKind[] = ["coins", "scout", "training", "cosmetic", "pass", "bundle"];
 
 function asPackKind(kind: string): PackKind | null {
   return PACK_KINDS.includes(kind as PackKind) ? (kind as PackKind) : null;
