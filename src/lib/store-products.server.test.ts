@@ -18,11 +18,12 @@ describe("server checkout commercial validation", () => {
       product({ key: "scout_pack", stripeLookupKey: "scout_pack", kind: "scout", priceCents: 990, contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] } }),
       product({ key: "training_pack", stripeLookupKey: "training_pack", kind: "training", priceCents: 990, contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] } }),
       product({ key: "season_pass", stripeLookupKey: "season_pass_monthly", kind: "pass", priceCents: 2490, contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] } }),
+      product({ key: "bundle_starter", stripeLookupKey: "bundle_starter", kind: "bundle", priceCents: 990, contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] } }),
     ];
     const list = vi.fn().mockImplementation(async ({ lookup_keys }) => ({ data: [{ lookup_key: lookup_keys[0], unit_amount: products.find(p => p.stripeLookupKey === lookup_keys[0])?.priceCents, currency: "brl" }] }));
     const stripe = { prices: { list } } as never;
     for (const p of products) await expect(resolveValidatedStripePrice(stripe, p)).resolves.toMatchObject({ lookup_key: p.stripeLookupKey });
-    expect(list).toHaveBeenCalledTimes(4);
+    expect(list).toHaveBeenCalledTimes(5);
   });
 
   it("rejects invalid SKU shapes before contacting Stripe", async () => {
