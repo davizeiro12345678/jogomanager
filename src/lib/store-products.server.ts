@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { assertCheckoutProductNonPayToWin } from "@/lib/entitlement-contract";
+import { assertCheckoutProductValid } from "@/lib/entitlement-contract";
 
 /**
  * Dados comerciais que somente o servidor pode transformar em uma sessão de
@@ -161,9 +161,9 @@ export async function resolveValidatedStripePrice(
   stripe: Stripe,
   product: ServerStoreProduct,
 ): Promise<Stripe.Price> {
-  // This is the shared, last server gate before either authenticated or guest
-  // checkout queries Stripe. It is deliberately before any provider request.
-  assertCheckoutProductNonPayToWin(product);
+  // Validate the SKU data before asking Stripe. Commercial amount, currency,
+  // lookup key and account ownership remain server-authoritative.
+  assertCheckoutProductValid(product);
   const prices = await stripe.prices.list({
     lookup_keys: [product.stripeLookupKey],
     active: true,
