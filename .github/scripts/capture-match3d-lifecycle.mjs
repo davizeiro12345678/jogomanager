@@ -164,10 +164,7 @@ try {
     await toggle(false);
     const sample = await page.evaluate(() => structuredClone(window.__life));
     report.warmup.push({ cycle: i + 1, live: sample.live });
-    if (
-      warm &&
-      Object.keys(sample.live).every((kind) => sample.live[kind] === warm.live[kind])
-    ) {
+    if (warm && Object.keys(sample.live).every((kind) => sample.live[kind] === warm.live[kind])) {
       stableRounds++;
     } else {
       stableRounds = 0;
@@ -176,7 +173,9 @@ try {
     if (stableRounds >= 2) break;
   }
   if (stableRounds < 2)
-    throw Error(`GPU resource counts never stabilized during bounded warmup: ${JSON.stringify(report.warmup)}`);
+    throw Error(
+      `GPU resource counts never stabilized during bounded warmup: ${JSON.stringify(report.warmup)}`,
+    );
   report.warm = warm;
   await page.screenshot({ path: path.join(output, "before-cycles.png") });
   for (let cycle = 1; cycle <= 5; cycle++) {
