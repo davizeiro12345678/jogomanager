@@ -40,7 +40,7 @@ describe("VPS catalog canary", () => {
     const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
       expect(url.hostname).toBe("catalog.jogomanager.com");
-      expect(url.pathname).toBe("/v1/public/clubs");
+      expect(url.pathname).toBe("/v1/public/crests");
       expect(init?.credentials).toBe("omit");
       expect(init?.redirect).toBe("error");
       expect(init?.method).toBe("GET");
