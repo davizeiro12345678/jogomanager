@@ -84,7 +84,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function PurchaseLine({ purchase, productName }: { purchase: PurchaseRow; productName?: string }) {
+function PurchaseLine({ purchase, productName }: { purchase: PurchaseRow; productName?: string | undefined }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/50 surface-card px-4 py-3">
       <div className="flex min-w-0 items-center gap-3">
