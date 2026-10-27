@@ -226,9 +226,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           </p>
         ) : isGuest ? (
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>
-              Veja os pacotes e preços. Entre para vincular sua compra à carreira.
-            </p>
+            <p>Veja os pacotes e preços. Entre para vincular sua compra à carreira.</p>
             <Link
               to="/auth"
               search={{ next }}
@@ -432,7 +430,6 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           )}
         </>
       )}
-
     </div>
   );
 }

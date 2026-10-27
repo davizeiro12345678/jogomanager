@@ -14,7 +14,6 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
-
 import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +51,14 @@ const KIND_LABEL: Record<PackKind, string> = {
   bundle: "Combos",
 };
 
-const PACK_KINDS: readonly PackKind[] = ["coins", "scout", "training", "cosmetic", "pass", "bundle"];
+const PACK_KINDS: readonly PackKind[] = [
+  "coins",
+  "scout",
+  "training",
+  "cosmetic",
+  "pass",
+  "bundle",
+];
 
 function asPackKind(kind: string): PackKind | null {
   return PACK_KINDS.includes(kind as PackKind) ? (kind as PackKind) : null;
@@ -109,8 +115,8 @@ export function ProdutosPage() {
             className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
           >
             <p className="text-muted-foreground">
-              Compare os itens e preços à vontade. Entre para vincular as compras
-              diretamente à sua carreira.
+              Compare os itens e preços à vontade. Entre para vincular as compras diretamente à sua
+              carreira.
             </p>
             <Button asChild variant="outline" className="shrink-0">
               <Link to="/auth" search={{ next: PATH }}>
@@ -292,8 +298,8 @@ export function ProdutosPage() {
           </p>
           <p>
             Se você já tem uma conta, entre antes da compra para vincular o pedido à sua carreira.
-            Para comprar, é necessário autenticar sua conta. Guarde a confirmação do
-            pagamento e consulte o histórico de compras para acompanhar a entrega.
+            Para comprar, é necessário autenticar sua conta. Guarde a confirmação do pagamento e
+            consulte o histórico de compras para acompanhar a entrega.
           </p>
           <p>
             Após o pagamento, aguarde a confirmação e consulte o resultado apresentado na tela.
@@ -335,7 +341,6 @@ export function ProdutosPage() {
             </div>
           ) : null}
         </div>
-
 
         <p className="mt-8 text-sm text-muted-foreground">
           Já tem carreira em andamento? Os itens comprados aparecem direto na{" "}

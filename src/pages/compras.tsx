@@ -98,19 +98,21 @@ function PurchaseLine({ purchase, productName }: { purchase: PurchaseRow; produc
           className="h-16 w-16 shrink-0 rounded-lg object-cover"
         />
         <div className="min-w-0">
-        <p className="font-display text-sm uppercase tracking-wide">
-          {productName ?? PRODUCT_NAMES[purchase.productKey] ?? purchase.productKey}
-        </p>
-        <p className="text-xs text-muted-foreground">{when(purchase.createdAt)}</p>
-        {purchase.error ? <p className="mt-1 text-xs text-destructive">{purchase.error}</p> : null}
-        {purchase.paymentReview === "refund_review" ? (
-          <p className="mt-2 max-w-lg text-xs text-muted-foreground">
-            Reembolso registrado para revisão
-            {purchase.refundedAmountCents ? `: ${money(purchase.refundedAmountCents)}` : ""}. Os
-            benefícios já entregues permanecem na sua conta.
+          <p className="font-display text-sm uppercase tracking-wide">
+            {productName ?? PRODUCT_NAMES[purchase.productKey] ?? purchase.productKey}
           </p>
-        ) : null}
-      </div>
+          <p className="text-xs text-muted-foreground">{when(purchase.createdAt)}</p>
+          {purchase.error ? (
+            <p className="mt-1 text-xs text-destructive">{purchase.error}</p>
+          ) : null}
+          {purchase.paymentReview === "refund_review" ? (
+            <p className="mt-2 max-w-lg text-xs text-muted-foreground">
+              Reembolso registrado para revisão
+              {purchase.refundedAmountCents ? `: ${money(purchase.refundedAmountCents)}` : ""}. Os
+              benefícios já entregues permanecem na sua conta.
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className="flex items-center gap-3">
         <span className="font-display text-sm">{money(purchase.amountCents)}</span>

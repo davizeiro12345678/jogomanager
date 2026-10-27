@@ -15,8 +15,8 @@ export function VipPlansPreview() {
           Planos VIP em preparação
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Dois planos mensais planejados. Os preços são indicativos e nenhuma assinatura
-          pode ser iniciada até a entrega de todos os benefícios ser testada.
+          Dois planos mensais planejados. Os preços são indicativos e nenhuma assinatura pode ser
+          iniciada até a entrega de todos os benefícios ser testada.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -47,7 +47,9 @@ export function VipPlansPreview() {
               <div className="p-5">
                 <p className="font-display text-2xl">
                   {formatPrice(offer.displayPriceCents, offer.currency)}
-                  <span className="ml-1 text-xs font-normal text-muted-foreground">/mês (previsto)</span>
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    /mês (previsto)
+                  </span>
                 </p>
                 <p className="mt-3 text-sm text-muted-foreground">
                   {premium
