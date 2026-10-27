@@ -14,10 +14,6 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
-import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
 
 import { Button } from "@/components/ui/button";
 
@@ -67,7 +63,6 @@ export function ProdutosPage() {
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [opening, setOpening] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
   function buy(productKey: string) {
     // A sessão autenticada preserva o fluxo de conta já existente.
@@ -112,8 +107,8 @@ export function ProdutosPage() {
             className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
           >
             <p className="text-muted-foreground">
-              Compare os itens e preços à vontade. Você pode comprar com e-mail ou entrar para
-              vincular a compra diretamente à sua carreira.
+              Compare os itens e preços à vontade. Entre para vincular as compras
+              diretamente à sua carreira.
             </p>
             <Button asChild variant="outline" className="shrink-0">
               <Link to="/auth" search={{ next: PATH }}>
@@ -212,18 +207,10 @@ export function ProdutosPage() {
                           {opening === product.key ? "Abrindo…" : "Comprar agora"}
                         </Button>
                       ) : signedIn === false ? (
-                        <Button
-                          data-testid="guest-checkout-start"
-                          onClick={() =>
-                            setGuestProduct({
-                              key: product.key,
-                              name: product.name,
-                              priceCents: product.price_cents,
-                              currency: product.currency,
-                            })
-                          }
-                        >
-                          Comprar como visitante
+                        <Button asChild>
+                          <Link to="/auth" search={{ next: PATH }}>
+                            Entrar para comprar
+                          </Link>
                         </Button>
                       ) : (
                         <Button disabled>Verificando conta…</Button>
@@ -299,9 +286,8 @@ export function ProdutosPage() {
           </p>
           <p>
             Se você já tem uma conta, entre antes da compra para vincular o pedido à sua carreira.
-            Também é possível iniciar uma compra como visitante com e-mail. Use um endereço ao qual
-            tenha acesso e guarde a confirmação recebida para acompanhar o pedido e vincular os
-            itens quando necessário.
+            Para comprar, é necessário autenticar sua conta. Guarde a confirmação do
+            pagamento e consulte o histórico de compras para acompanhar a entrega.
           </p>
           <p>
             Após o pagamento, aguarde a confirmação e consulte o resultado apresentado na tela.
@@ -344,13 +330,6 @@ export function ProdutosPage() {
           ) : null}
         </div>
 
-        <GuestCheckoutDialog
-          product={guestProduct}
-          open={guestProduct !== null}
-          onOpenChange={(open) => {
-            if (!open) setGuestProduct(null);
-          }}
-        />
 
         <p className="mt-8 text-sm text-muted-foreground">
           Já tem carreira em andamento? Os itens comprados aparecem direto na{" "}
