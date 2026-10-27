@@ -1,3 +1,8 @@
+-- Support independent replay before the featured-digest migration is merged.
+-- This schema is internal and never exposed to anonymous clients.
+CREATE SCHEMA IF NOT EXISTS private_performance;
+REVOKE ALL ON SCHEMA private_performance FROM PUBLIC, anon, authenticated;
+
 -- Batch-only helper; returns NULL for any non-uniform batch.
 CREATE OR REPLACE FUNCTION private_performance.bulk_upsert_football_rows(p_rows jsonb)
 RETURNS integer[] LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $func$
