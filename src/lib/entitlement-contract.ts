@@ -435,7 +435,7 @@ export function assertNonPayToWin(benefits: readonly CommercialBenefit[]): void 
  */
 export function assertCheckoutProductValid(product: CheckoutProductPolicyInput): void {
   const { coins, scoutReports, trainingBoosts, themes } = product.contents;
-  const allowedKinds = ["coins", "scout", "training", "cosmetic", "pass"];
+  const allowedKinds = ["coins", "scout", "training", "cosmetic", "pass", "bundle"];
   if (
     !validCosmeticKey(product.key) ||
     !allowedKinds.includes(product.kind) ||
@@ -447,7 +447,8 @@ export function assertCheckoutProductValid(product: CheckoutProductPolicyInput):
     (product.kind === "coins" && coins === 0) ||
     (product.kind === "scout" && scoutReports === 0) ||
     (product.kind === "training" && trainingBoosts === 0) ||
-    (product.kind === "cosmetic" && themes.length === 0)
+    (product.kind === "cosmetic" && themes.length === 0) ||
+    (product.kind === "bundle" && coins + scoutReports + trainingBoosts + themes.length === 0)
   ) {
     throw new Error("O produto comercial não atende ao contrato seguro de checkout.");
   }
