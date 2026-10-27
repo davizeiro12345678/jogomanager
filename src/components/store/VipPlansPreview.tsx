@@ -1,5 +1,5 @@
 import { Crown, LockKeyhole, Sparkles } from "lucide-react";
-import { LOCAL_VIP_OFFERS } from "@/lib/entitlement-contract";
+import { LOCAL_VIP_OFFERS } from "@/lib/vip-offers";
 import { formatPrice } from "@/game/store-catalog";
 import { STORE_KIND_IMAGE } from "@/lib/store-product-artwork";
 
