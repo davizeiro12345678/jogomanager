@@ -156,9 +156,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const subscriptionActive = isSubscriptionActive(subscriptionQuery.data);
   const isGuest = signedIn === false;
   const isSessionLoading = signedIn === null;
-  // Competitive legacy offers cannot reach checkout; keep the same policy
-  // visible in the shop so players are not invited into a rejected purchase.
-  const products = (productsQuery.data ?? []).filter((p) => p.kind === "cosmetic" && p.coins === 0);
+  // Every active SKU returned by the canonical public catalog belongs in the shop.
+  // Eligibility, price and fulfillment are verified by the payment server.
+  const products = productsQuery.data ?? [];
 
   // Destaca o pacote de moedas com mais moedas por real, para o jogador
   // comparar sem fazer conta de cabeça.
