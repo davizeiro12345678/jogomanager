@@ -180,19 +180,55 @@ describe("VIP entitlement contract", () => {
 
   it("allows all catalog-backed legacy benefits without bypassing validation", () => {
     for (const product of [
-      { key: "theme_pack", kind: "cosmetic", contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] } },
-      { key: "coins_small", kind: "coins", contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] } },
-      { key: "scout_pack", kind: "scout", contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] } },
-      { key: "training_pack", kind: "training", contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] } },
-      { key: "season_pass", kind: "pass", contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] } },
-      { key: "bundle_starter", kind: "bundle", contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] } },
+      {
+        key: "theme_pack",
+        kind: "cosmetic",
+        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
+      },
+      {
+        key: "coins_small",
+        kind: "coins",
+        contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "scout_pack",
+        kind: "scout",
+        contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "training_pack",
+        kind: "training",
+        contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
+      },
+      {
+        key: "season_pass",
+        kind: "pass",
+        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "bundle_starter",
+        kind: "bundle",
+        contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] },
+      },
     ]) {
       expect(() => assertCheckoutProductValid(product)).not.toThrow();
     }
     for (const invalid of [
-      { key: "hacked", kind: "unknown", contents: { coins: 1, scoutReports: 0, trainingBoosts: 0, themes: [] } },
-      { key: "coins_none", kind: "coins", contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] } },
-      { key: "scout_negative", kind: "scout", contents: { coins: 0, scoutReports: -1, trainingBoosts: 0, themes: [] } },
+      {
+        key: "hacked",
+        kind: "unknown",
+        contents: { coins: 1, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "coins_none",
+        kind: "coins",
+        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "scout_negative",
+        kind: "scout",
+        contents: { coins: 0, scoutReports: -1, trainingBoosts: 0, themes: [] },
+      },
     ]) {
       expect(() => assertCheckoutProductValid(invalid)).toThrow(/contrato seguro/);
     }

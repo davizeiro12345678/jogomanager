@@ -324,8 +324,8 @@ export function FootballHome() {
             </div>
           </dl>
           <p className="home-hero-note">
-            Contagens verificadas no banco em 27/10/2026. São registros catalogados,
-            não uma promessa de que todos estejam jogáveis ou carregados nesta sessão.
+            Contagens verificadas no banco em 27/10/2026. São registros catalogados, não uma
+            promessa de que todos estejam jogáveis ou carregados nesta sessão.
           </p>
           {resume ? (
             <Link to="/dashboard" className="home-resume">

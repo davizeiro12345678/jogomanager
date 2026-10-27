@@ -439,10 +439,17 @@ export function assertCheckoutProductValid(product: CheckoutProductPolicyInput):
   if (
     !validCosmeticKey(product.key) ||
     !allowedKinds.includes(product.kind) ||
-    !Number.isSafeInteger(coins) || coins < 0 || coins > 2_147_483_647 ||
-    !Number.isSafeInteger(scoutReports) || scoutReports < 0 || scoutReports > 2_147_483_647 ||
-    !Number.isSafeInteger(trainingBoosts) || trainingBoosts < 0 || trainingBoosts > 2_147_483_647 ||
-    !Array.isArray(themes) || themes.length > 100 ||
+    !Number.isSafeInteger(coins) ||
+    coins < 0 ||
+    coins > 2_147_483_647 ||
+    !Number.isSafeInteger(scoutReports) ||
+    scoutReports < 0 ||
+    scoutReports > 2_147_483_647 ||
+    !Number.isSafeInteger(trainingBoosts) ||
+    trainingBoosts < 0 ||
+    trainingBoosts > 2_147_483_647 ||
+    !Array.isArray(themes) ||
+    themes.length > 100 ||
     themes.some((theme) => !validCosmeticKey(theme)) ||
     (product.kind === "coins" && coins === 0) ||
     (product.kind === "scout" && scoutReports === 0) ||

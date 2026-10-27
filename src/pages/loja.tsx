@@ -27,8 +27,8 @@ export function LojaPage() {
           </Link>
           <h1 className="mt-2 font-display text-4xl uppercase tracking-wide sm:text-5xl">Loja</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Escolha moedas, relatórios de olheiros, treinos, personalizações e passes.
-            Cada benefício e preço é confirmado antes do pagamento.
+            Escolha moedas, relatórios de olheiros, treinos, personalizações e passes. Cada
+            benefício e preço é confirmado antes do pagamento.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="store-chip">
