@@ -7,8 +7,8 @@ for cmd in wrk curl sysbench sort awk sha256sum docker; do
   command -v "$cmd" >/dev/null || { echo "missing $cmd" >&2; exit 2; }
 done
 OUT=$(mktemp -d /tmp/jm-perf-XXXXXXXX)
-PURE=http://127.0.0.1:19444/v1/public/clubs?limit=1000
-CACHE=http://127.0.0.1:19445/v1/public/clubs?limit=1000
+PURE=http://127.0.0.1:19444/v1/public/crests?limit=1000
+CACHE=http://127.0.0.1:19445/v1/public/crests?limit=1000
 echo "Results: $OUT"
 for name in pure cache; do
   if [[ "$name" == pure ]]; then url=$PURE; else url=$CACHE; fi
