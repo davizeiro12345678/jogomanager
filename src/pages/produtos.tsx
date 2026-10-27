@@ -96,9 +96,7 @@ export function ProdutosPage() {
   const previewPresentation = previewProduct
     ? storePresentation(previewProduct.key, previewProduct.kind)
     : undefined;
-  const previewKind = previewProduct
-    ? (asPackKind(previewProduct.kind) ?? "coins")
-    : "coins";
+  const previewKind = previewProduct ? (asPackKind(previewProduct.kind) ?? "coins") : "coins";
 
   return (
     <div className="pitch-bg min-h-screen">
