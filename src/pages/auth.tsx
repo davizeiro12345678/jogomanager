@@ -75,9 +75,7 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
-  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
+  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] === "lovable";
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
