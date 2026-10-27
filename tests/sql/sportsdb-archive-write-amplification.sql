@@ -13,11 +13,11 @@ BEGIN
     jsonb_build_array(jsonb_build_object('source_updated_at',source_time,
       'payload',jsonb_build_object('archiveKey',row_key))));
   ASSERT saved = 1, 'Should preserve return value';
-  SELECT xmin::text INTO v_before FROM public.sportsdb_archives WHERE archive_key=row_key;
+  SELECT ctid::text INTO v_before FROM public.sportsdb_archives WHERE archive_key=row_key;
   saved := public.sportsdb_save_records(
     jsonb_build_array(jsonb_build_object('source_updated_at',source_time,
       'payload',jsonb_build_object('archiveKey',row_key))));
-  SELECT xmin::text INTO v_after FROM public.sportsdb_archives WHERE archive_key=row_key;
+  SELECT ctid::text INTO v_after FROM public.sportsdb_archives WHERE archive_key=row_key;
   ASSERT v_before=v_after, 'Identical archive must NOT be rewritten';
   saved := public.sportsdb_save_records(
     jsonb_build_array(jsonb_build_object('source_updated_at',source_time + interval '1 day',
