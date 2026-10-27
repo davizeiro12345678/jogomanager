@@ -185,6 +185,7 @@ describe("VIP entitlement contract", () => {
       { key: "scout_pack", kind: "scout", contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] } },
       { key: "training_pack", kind: "training", contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] } },
       { key: "season_pass", kind: "pass", contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] } },
+      { key: "bundle_starter", kind: "bundle", contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] } },
     ]) {
       expect(() => assertCheckoutProductValid(product)).not.toThrow();
     }
