@@ -93,7 +93,6 @@ describe("server checkout commercial validation", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-
   it("rejects an inactive SKU before querying Stripe", async () => {
     const list = vi.fn();
     await expect(
@@ -137,15 +136,21 @@ describe("server checkout commercial validation", () => {
     for (const price of [
       { type: "one_time", recurring: null },
       { type: "recurring", recurring: { interval: "year", interval_count: 1 } },
-      { type: "recurring", recurring: { interval: "month", interval_count: 1, usage_type: "metered" } },
-      { type: "recurring", recurring: { interval: "month", interval_count: 2, usage_type: "licensed" } },
+      {
+        type: "recurring",
+        recurring: { interval: "month", interval_count: 1, usage_type: "metered" },
+      },
+      {
+        type: "recurring",
+        recurring: { interval: "month", interval_count: 2, usage_type: "licensed" },
+      },
     ]) {
       const list = vi.fn().mockResolvedValue({
         data: [{ lookup_key: pass.stripeLookupKey, unit_amount: 2490, currency: "brl", ...price }],
       });
-      await expect(resolveValidatedStripePrice({ prices: { list } } as never, pass)).rejects.toThrow(
-        /modalidade de cobrança/,
-      );
+      await expect(
+        resolveValidatedStripePrice({ prices: { list } } as never, pass),
+      ).rejects.toThrow(/modalidade de cobrança/);
     }
   });
 
