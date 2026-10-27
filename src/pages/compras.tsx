@@ -31,9 +31,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { withPaymentTimeout } from "@/lib/embedded-checkout";
+import { useStoreCatalog } from "@/hooks/useStoreCatalog";
+import { storeArtworkForProduct } from "@/lib/store-product-artwork";
 
 const PRODUCT_NAMES: Record<string, string> = {
-  coins_starter: "Punhado de moedas",
+  coins_starter: "Moedas iniciais",
   coins_small: "Bolsa de moedas",
   coins_medium: "Cofre de moedas",
   coins_large: "Baú de moedas",
@@ -82,12 +84,22 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
+function PurchaseLine({ purchase, productName }: { purchase: PurchaseRow; productName?: string }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/50 surface-card px-4 py-3">
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <img
+          src={storeArtworkForProduct(purchase.productKey)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          width={72}
+          height={72}
+          className="h-16 w-16 shrink-0 rounded-lg object-cover"
+        />
+        <div className="min-w-0">
         <p className="font-display text-sm uppercase tracking-wide">
-          {PRODUCT_NAMES[purchase.productKey] ?? purchase.productKey}
+          {productName ?? PRODUCT_NAMES[purchase.productKey] ?? purchase.productKey}
         </p>
         <p className="text-xs text-muted-foreground">{when(purchase.createdAt)}</p>
         {purchase.error ? <p className="mt-1 text-xs text-destructive">{purchase.error}</p> : null}
@@ -98,6 +110,7 @@ function PurchaseLine({ purchase }: { purchase: PurchaseRow }) {
             benefícios já entregues permanecem na sua conta.
           </p>
         ) : null}
+      </div>
       </div>
       <div className="flex items-center gap-3">
         <span className="font-display text-sm">{money(purchase.amountCents)}</span>
@@ -112,6 +125,8 @@ export function ComprasPage() {
   const signedIn = userId === undefined ? null : userId !== null;
   const { career } = useCareer();
   const fetchPurchases = useServerFn(getPurchases);
+  const catalog = useStoreCatalog();
+  const catalogNames = Object.fromEntries((catalog.data ?? []).map((p) => [p.key, p.name]));
 
   const query = useQuery({
     queryKey: ["purchases", userId],
@@ -188,7 +203,7 @@ export function ComprasPage() {
             {data && data.purchases.length > 0 ? (
               <ul className="mt-3 flex flex-col gap-2">
                 {data.purchases.map((p) => (
-                  <PurchaseLine key={p.id} purchase={p} />
+                  <PurchaseLine key={p.id} purchase={p} productName={catalogNames[p.productKey]} />
                 ))}
               </ul>
             ) : (
