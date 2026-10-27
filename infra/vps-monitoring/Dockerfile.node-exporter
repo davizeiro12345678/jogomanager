@@ -13,3 +13,4 @@ RUN go build -p 2 -trimpath -ldflags "-X github.com/prometheus/common/version.Ve
 
 FROM prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
 COPY --from=build /out/node_exporter /bin/node_exporter
+USER 65534:65534
