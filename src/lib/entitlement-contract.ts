@@ -1,3 +1,5 @@
+import { LOCAL_VIP_OFFERS } from "./vip-offers";
+
 /**
  * Provider-agnostic commerce rules for VIP access and cosmetic ownership.
  *
@@ -165,7 +167,6 @@ const ALLOWED_BENEFITS: ReadonlySet<CommercialBenefitKind> = new Set([
  * Draft-only local catalog. There are deliberately no Stripe Price IDs here,
  * and no code in this module can start a checkout.
  */
-import { LOCAL_VIP_OFFERS } from "./vip-offers";
 export { LOCAL_VIP_OFFERS };
 
 
