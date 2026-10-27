@@ -7,7 +7,16 @@
     var(--background);
 }
 
+/* Implicit grid tracks otherwise expand to the OAuth button group's min-content
+ * width on narrow screens, clipping login controls and cookie preferences. */
+.auth-stage {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .auth-card {
+  min-width: 0;
+  max-width: 100%;
   animation: auth-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   box-shadow:
     0 30px 80px -30px color-mix(in oklab, var(--primary) 45%, transparent),
@@ -29,6 +38,12 @@
   );
 }
 
+.auth-card > section,
+.auth-card form,
+.auth-card input {
+  min-width: 0;
+}
+
 .auth-card input {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -37,6 +52,9 @@
 }
 
 .auth-social {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .auth-social:hover {
