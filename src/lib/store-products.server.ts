@@ -163,6 +163,7 @@ export async function resolveValidatedStripePrice(
 ): Promise<Stripe.Price> {
   // Validate the SKU data before asking Stripe. Commercial amount, currency,
   // lookup key and account ownership remain server-authoritative.
+  if (!product.active) throw new Error("Este item não está disponível.");
   assertCheckoutProductValid(product);
   const prices = await stripe.prices.list({
     lookup_keys: [product.stripeLookupKey],
@@ -176,6 +177,19 @@ export async function resolveValidatedStripePrice(
     price.currency.toLowerCase() !== product.currency
   ) {
     throw new Error("O preço do checkout não confere com o catálogo oficial.");
+  }
+  // Never turn a one-off consumable into an ongoing charge because a Stripe
+  // price was accidentally configured as recurring (or vice versa).
+  const recurring = product.kind === "pass";
+  if (
+    (recurring &&
+      (price.type !== "recurring" ||
+        price.recurring?.interval !== "month" ||
+        price.recurring.interval_count !== 1 ||
+        price.recurring.usage_type === "metered")) ||
+    (!recurring && price.type !== "one_time")
+  ) {
+    throw new Error("A modalidade de cobrança não confere com o produto anunciado.");
   }
   return price;
 }
