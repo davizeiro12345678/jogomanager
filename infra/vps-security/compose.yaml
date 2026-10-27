@@ -1,0 +1,33 @@
+services:
+  trivy:
+    image: aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+    profiles: [scan]
+    user: "65532:65532"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 1.0
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=512m,mode=1777
+    volumes:
+      - ./trivy-cache:/cache
+    command:
+      - --cache-dir
+      - /cache
+      - image
+      - --image-src
+      - remote
+      - --no-progress
+      - --scanners
+      - vuln
+      - --severity
+      - HIGH,CRITICAL
+      - --exit-code
+      - "1"
+      - --timeout
+      - 5m
+      - ${SCAN_IMAGE:-prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0}
+    logging:
+      options: {max-size: "5m", max-file: "2"}
