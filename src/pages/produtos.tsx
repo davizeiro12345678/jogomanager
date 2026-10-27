@@ -24,7 +24,8 @@ import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
-import { formatPrice, PACK_BY_KEY, type PackKind } from "@/game/store-catalog";
+import type { PackKind } from "@/game/store-catalog";
+import { formatStoreCurrency, storePresentation } from "@/lib/store-presentation";
 import { PRODUTOS_PATH as PATH } from "@/lib/public-route-paths";
 import { storeArtworkForProduct } from "@/lib/store-product-artwork";
 import { VipPlansPreview } from "@/components/store/VipPlansPreview";
@@ -92,9 +93,11 @@ export function ProdutosPage() {
   }
 
   const previewProduct = products.find((product) => product.key === previewKey) ?? null;
-  const previewPresentation = previewProduct ? PACK_BY_KEY[previewProduct.key] : undefined;
+  const previewPresentation = previewProduct
+    ? storePresentation(previewProduct.key, previewProduct.kind)
+    : undefined;
   const previewKind = previewProduct
-    ? (asPackKind(previewProduct.kind) ?? previewPresentation?.kind ?? "coins")
+    ? (asPackKind(previewProduct.kind) ?? "coins")
     : "coins";
 
   return (
@@ -163,7 +166,7 @@ export function ProdutosPage() {
           ) : (
             products.map((product) => {
               const kind = asPackKind(product.kind);
-              const presentation = PACK_BY_KEY[product.key];
+              const presentation = storePresentation(product.key, product.kind);
 
               return (
                 <article
@@ -206,7 +209,7 @@ export function ProdutosPage() {
                     <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <span className="font-display text-2xl">
-                          {formatPrice(product.price_cents, product.currency)}
+                          {formatStoreCurrency(product.price_cents, product.currency)}
                         </span>
                         <p className="mt-1 max-w-[14rem] text-[11px] text-muted-foreground">
                           Preço de catálogo; o checkout confirma total e disponibilidade.
