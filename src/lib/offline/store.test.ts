@@ -92,6 +92,14 @@ describe("offline career owner boundary", () => {
     expect(await loadLocalCareer()).toEqual(guest);
   });
 
+  it("recovers a signed-in account mirror when IndexedDB is empty, without leaking across users", async () => {
+    const alice = career("Alice recovered");
+    storage.setItem("manager3d.career.v2.account-alice-id", JSON.stringify(alice));
+
+    expect(await loadLocalCareer("alice-id")).toEqual(alice);
+    expect(await loadLocalCareer("bruno-id")).toBeNull();
+  });
+
   it("acknowledges only the uploaded account's queued revision", async () => {
     const alice = await queueSync(career("Alice"), "alice-id");
     await queueSync(career("Bruno"), "bruno-id");

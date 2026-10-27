@@ -26,6 +26,8 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
 import { formatPrice, PACK_BY_KEY, type PackKind } from "@/game/store-catalog";
 import { PRODUTOS_PATH as PATH } from "@/lib/public-route-paths";
+import { storeArtworkForProduct } from "@/lib/store-product-artwork";
+import { VipPlansPreview } from "@/components/store/VipPlansPreview";
 
 const PackScene = lazy(() =>
   import("@/components/store/PackScene").then((m) => ({ default: m.PackScene })),
@@ -175,14 +177,16 @@ export function ProdutosPage() {
                       background: `radial-gradient(120% 100% at 50% 20%, ${presentation?.accent ?? "#60a5fa"}22, transparent 70%)`,
                     }}
                   >
-                    <div className="grid h-full place-items-center">
-                      <div className="grid h-24 w-24 place-items-center rounded-[2rem] border border-primary/30 bg-background/30 text-primary shadow-[0_0_50px_color-mix(in_srgb,var(--primary)_20%,transparent)]">
-                        {kind ? ICONS[kind] : <Package size={32} />}
-                      </div>
-                      <span className="-mt-9 text-[10px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                        Visual do pacote
-                      </span>
-                    </div>
+                    <img
+                      src={storeArtworkForProduct(product.key, product.kind)}
+                      alt={`Ilustração do produto ${product.name}`}
+                      loading="lazy"
+                      decoding="async"
+                      width={640}
+                      height={320}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
                     <Badge variant="secondary" className="absolute left-3 top-3 gap-1">
                       {kind ? ICONS[kind] : <Package size={14} />}
                       {kind ? KIND_LABEL[kind] : "Item da loja"}
@@ -236,6 +240,8 @@ export function ProdutosPage() {
             })
           )}
         </div>
+
+        <VipPlansPreview />
 
         {previewProduct ? (
           <section
