@@ -32,6 +32,7 @@ export function storeArtworkForProduct(key: string, kind?: string): string {
     key === "premium_max_monthly" ||
     key === "season_pass" ||
     key === "season_pass_monthly"
-  ) return artPass;
+  )
+    return artPass;
   return artCosmetic;
 }

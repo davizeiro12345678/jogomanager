@@ -169,7 +169,6 @@ const ALLOWED_BENEFITS: ReadonlySet<CommercialBenefitKind> = new Set([
  */
 export { LOCAL_VIP_OFFERS };
 
-
 export function emptyEntitlementState(): EntitlementState {
   return { tier: "none", validUntil: null, grants: [], equipped: [], ledger: [] };
 }
