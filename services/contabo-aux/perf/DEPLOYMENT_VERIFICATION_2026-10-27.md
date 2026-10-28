@@ -89,3 +89,26 @@ histórica de 9.232,17 eventos/s não foi superada de modo consistente.
 A verificação de segurança do cache via `curl.exe` sobre o domínio HTTPS
 confirmou resposta **400** para cabeçalho Cookie sintético. Cabeçalho
 Authorization sintético também foi recusado, sem atingir os outros endpoints.
+
+### Comparação correta com o primeiro Sysbench histórico (primos=20.000)
+O histórico de 26/10/2026 registra aproximadamente 3.303 eventos/s para
+8 threads e `--cpu-max-prime=20000` (tempo da rodada inicial não registrado).
+O valor 9.232,17 eventos/s de 27/10 usava `prime=10000` e não deve ser
+usado como comparação direta com as rodadas antigas.
+
+Repetimos **três vezes** no VPS atual, `sysbench cpu --threads=8
+--time=6 --cpu-max-prime=20000 run`:
+
+| Rodada | Eventos/s |
+|---|---:|
+| 1 | 3.032,30 |
+| 2 | 3.274,20 |
+| 3 | 3.283,93 |
+| **Mediana** | **3.274,20** |
+
+A mediana está **0,87% abaixo** do primeiro benchmark histórico de 3.303
+(mas a duração daquela rodada é desconhecida), e **10,75% acima** da
+mediana controlada de 2.956,42 eventos/s de 27/10 que também usou 20 mil
+primos, 8 threads e 6 segundos. Essa diferença não prova melhoria permanente.
+A meta solicitada de 39.484 eventos/s exigiria uma multiplicação de cerca de
+**12,1×** sobre esse benchmark mediano com primos=20.000.
