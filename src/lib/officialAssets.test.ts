@@ -113,6 +113,30 @@ describe("official asset browser cache", () => {
     expect(getOfficialAssets).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { at: Date.now() - 8 * 86_400_000, data },
+    { at: Date.now(), data: { crests: { club: 12 }, kits: {} } },
+  ])(
+    "falls back to a fresh local catalogue when IndexedDB is stale or invalid (%j)",
+    async (entry) => {
+      get.mockResolvedValue(entry);
+      stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now(), data }));
+      getOfficialAssets.mockRejectedValue(new Error("offline"));
+      await assets.loadOfficialAssets();
+      expect(assets.officialCrest("club")).toBe(data.crests.club);
+      expect(getOfficialAssets).not.toHaveBeenCalled();
+    },
+  );
+
+  it("prefers a fresh IndexedDB catalogue over the legacy local copy", async () => {
+    const newer = { crests: { club: "https://images.example/new.png" }, kits: {} };
+    get.mockResolvedValue({ at: Date.now(), data: newer });
+    stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now(), data }));
+    await assets.loadOfficialAssets();
+    expect(assets.officialCrest("club")).toBe(newer.crests.club);
+    expect(getOfficialAssets).not.toHaveBeenCalled();
+  });
+
   it("retains downloaded crests in memory if asynchronous persistence fails", async () => {
     set.mockRejectedValue(new Error("quota"));
     await assets.loadOfficialAssets();

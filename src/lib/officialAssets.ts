@@ -62,23 +62,27 @@ function reportCacheError(error: unknown, phase: "read" | "write" | "load") {
   });
 }
 async function readCache(): Promise<OfficialAssets | null> {
-  let parsed: { at: number; data: OfficialAssets } | null | undefined;
-  try {
-    parsed = await get(CACHE_KEY);
-  } catch {
-    // An existing offline catalogue remains usable if IndexedDB is denied.
-  }
-  try {
-    if (parsed == null && typeof localStorage !== "undefined")
-      parsed = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null");
-    return parsed &&
+  const validData = (value: unknown): OfficialAssets | null => {
+    if (!value || typeof value !== "object") return null;
+    const parsed = value as { at?: unknown; data?: Partial<OfficialAssets> };
+    return typeof parsed.at === "number" &&
       Number.isFinite(parsed.at) &&
       Date.now() - parsed.at <= TTL &&
       parsed.data &&
       stringRecord(parsed.data.crests) &&
       stringRecord(parsed.data.kits)
-      ? parsed.data
+      ? (parsed.data as OfficialAssets)
       : null;
+  };
+  try {
+    const indexed = validData(await get(CACHE_KEY));
+    if (indexed) return indexed;
+  } catch {
+    // An existing offline catalogue remains usable if IndexedDB is denied.
+  }
+  try {
+    if (typeof localStorage === "undefined") return null;
+    return validData(JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null"));
   } catch (error) {
     reportCacheError(error, "read");
     return null;

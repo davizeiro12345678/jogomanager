@@ -4,7 +4,7 @@ vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => {
     let validate = (value: unknown): unknown => value;
     const builder = {
-      inputValidator(next: (value: unknown) => unknown) {
+      validator(next: (value: unknown) => unknown) {
         validate = next;
         return builder;
       },
