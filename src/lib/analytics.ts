@@ -34,7 +34,13 @@ export async function initAnalytics(): Promise<PostHog | null> {
   if (!firebaseBootstrapStarted) {
     firebaseBootstrapStarted = true;
     void import("./firebase")
-      .then((m) => m.initFirebase({ analytics: true }))
+      .then((m) => {
+        if (!readConsent().analytics) {
+          firebaseBootstrapStarted = false;
+          return null;
+        }
+        return m.initFirebase({ analytics: true });
+      })
       .catch(() => { firebaseBootstrapStarted = false; });
   }
 
