@@ -107,7 +107,7 @@ function clean(rows: StandingRow[]): StandingRow[] {
 }
 
 export const getLeagueTable = createServerFn({ method: "GET" })
-  .validator((d: unknown) => z.object({ slug: z.string().max(60) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ slug: z.string().max(60) }).parse(d))
   .handler(async ({ data }): Promise<LeagueTable | null> => {
     const lg = FEATURED_LEAGUES.find((l) => l.slug === data.slug);
     if (!lg) return null;
@@ -249,7 +249,7 @@ type RawTransfer = {
 };
 
 export const getClubReal = createServerFn({ method: "GET" })
-  .validator((d: unknown) => z.object({ name: z.string().trim().min(2).max(80) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ name: z.string().trim().min(2).max(80) }).parse(d))
   .handler(async ({ data }): Promise<ClubReal> => {
     const { cachedPublicRead } = await import("./public-read-cache.server");
     return cachedPublicRead("club", data.name, async () => {

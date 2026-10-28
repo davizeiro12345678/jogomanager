@@ -21,7 +21,7 @@ jobs:
       - name: Install pinned main app dependencies
         run: npm ci
       - name: Install isolated MongoDB driver
-        run: npm install --prefix services/match-aux --ignore-scripts --no-audit --no-fund
+        run: npm ci --prefix services/match-aux --ignore-scripts --no-audit --no-fund
       - name: HMAC and replay contract tests
         run: npm test --prefix services/match-aux
       - name: Strict TypeScript
