@@ -74,3 +74,18 @@ upgrade de CPU física. O `sysbench cpu --threads=8 --time=3` mediu
 9.342,98 eventos/s em uma nova execução, contra 9.232,17 na primeira
 (+1,20%); um teste com --time=5 obteve 7.511,55 eventos/s, portanto não
 há prova de melhoria sustentada de CPU. Meta de 39.484 eventos/s não alcançada.
+
+### CPU sob carga: verificação de teto de hardware
+Após o rollout, repetido `sysbench cpu --threads=8 --cpu-max-prime=10000`:
+- `--time=3`: 9.342,98 eventos/s (uma execução), depois 7.404,53 eventos/s.
+- `--time=5`: 7.511,55 eventos/s.
+- `--time=6`: 8.427,17 eventos/s, 50.581 eventos totais.
+- Durante a última execução: **CPU busy 99,583%**, **CPU steal 0,000%**,
+  variação de `nr_throttled=0`, e `throttled_usec=0` no cgroup principal.
+Os resultados variam significativamente e **não** sustentam promessa de atingir
+39.484 eventos/s sem alteração de capacidade física/host. A primeira medição
+histórica de 9.232,17 eventos/s não foi superada de modo consistente.
+
+A verificação de segurança do cache via `curl.exe` sobre o domínio HTTPS
+confirmou resposta **400** para cabeçalho Cookie sintético. Cabeçalho
+Authorization sintético também foi recusado, sem atingir os outros endpoints.
