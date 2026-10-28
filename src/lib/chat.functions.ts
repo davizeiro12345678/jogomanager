@@ -26,6 +26,13 @@ export const sendChatMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) => SendMessageInput.parse(input))
   .handler(async ({ data, context }): Promise<SendMessageResult> => {
     if (containsProfanity(data.body)) return { ok: false, reason: "blocked" };
+    const { reviewChatBeforePublish } = await import("@/lib/context-moderation.server");
+    const review = await reviewChatBeforePublish(context.userId, data.body);
+    if (review !== "allow")
+      return {
+        ok: false,
+        reason: review === "block" ? "blocked" : review === "rate_limited" ? review : "error",
+      };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: id, error } = await supabaseAdmin.rpc("send_chat_message_for", {
       _user_id: context.userId,

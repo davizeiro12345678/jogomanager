@@ -19,6 +19,7 @@ export type MatchClosureReason = MatchReceiptV1["closureReason"];
 
 export interface AuthoritativeMatchEngine {
   advanceFixedStep(): void;
+  isFinished?(): boolean;
   publicState(): MatchPublicStateV1;
   presentationEvents(): PresentationEventV1[];
   applyTactics(seat: MatchSeat, payload: TacticalCommandPayloadV1): boolean;
@@ -79,6 +80,8 @@ export class AuthoritativeMatchSession {
   private tick = 0;
   private revision = 0;
   private receipt: MatchReceiptV1 | null = null;
+  private workQueue: Promise<void> = Promise.resolve();
+  private pendingWork = 0;
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
@@ -110,7 +113,15 @@ export class AuthoritativeMatchSession {
     this.phase = "reconnecting";
   }
 
-  async receive(
+  receive(
+    ticket: MatchTicketV1,
+    command: MatchCommandV1,
+    now: number,
+  ): Promise<MatchCommandOutcome> {
+    return this.serialize(() => this.receiveSerial(ticket, command, now));
+  }
+
+  private async receiveSerial(
     ticket: MatchTicketV1,
     command: MatchCommandV1,
     now: number,
@@ -143,7 +154,6 @@ export class AuthoritativeMatchSession {
         );
         break;
       case "forfeit":
-        await this.finalize("forfeit", now, seat);
         break;
       case "ready":
         this.readySeats.add(seat);
@@ -156,10 +166,14 @@ export class AuthoritativeMatchSession {
     if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     this.lastSequence.set(ticket.userId, command.sequence);
     this.commandHash = (await appendCommandHash(this.commandHash, command)).hash;
+    if (command.kind === "forfeit") await this.finalizeSerial("forfeit", now, seat);
     return { accepted: true };
   }
 
   advanceFixedTick(): void {
+    // Preserve a total ordering between accepted commands and engine ticks.
+    if (this.pendingWork > 0) return;
+    if (this.options.engine.isFinished?.()) return;
     if (this.phase !== "live" && this.phase !== "reconnecting") return;
     this.options.engine.advanceFixedStep();
     this.tick += 1;
@@ -190,7 +204,15 @@ export class AuthoritativeMatchSession {
     return null;
   }
 
-  async finalize(
+  finalize(
+    closureReason: MatchClosureReason,
+    now: number,
+    loser?: MatchSeat,
+  ): Promise<MatchReceiptV1> {
+    return this.serialize(() => this.finalizeSerial(closureReason, now, loser));
+  }
+
+  private async finalizeSerial(
     closureReason: MatchClosureReason,
     now: number,
     loser?: MatchSeat,
@@ -248,8 +270,21 @@ export class AuthoritativeMatchSession {
     reason: InvalidMatchCommand["reason"],
     at: number,
   ): MatchCommandOutcome {
+    if (this.invalidAttempts.length >= 256) this.invalidAttempts.shift();
     this.invalidAttempts.push({ userId, sequence, reason, at });
     return { accepted: false, reason };
+  }
+
+  private serialize<T>(operation: () => Promise<T>): Promise<T> {
+    this.pendingWork += 1;
+    const result = this.workQueue.then(operation);
+    this.workQueue = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result.finally(() => {
+      this.pendingWork -= 1;
+    });
   }
 
   private reserveRateWindow(userId: string, kind: MatchCommandKind, now: number): boolean {

@@ -14,6 +14,7 @@ import {
   type AuthoritativeMatchEngine,
   type MatchReceiptSigner,
 } from "./authoritative-match-session";
+import { GENESIS_SESSION_HASH, appendCommandHash } from "./session-hash";
 
 const roomId = "45fd1d08-4f81-44bc-9072-1e35ce9d1d94";
 const homeUserId = "7b40bcbe-a4ca-430c-9b49-61aa9c5118e9";
@@ -225,6 +226,36 @@ describe("AuthoritativeMatchSession", () => {
 
     expect(first).toEqual(repeated);
     expect(first.idempotencyKey).toBe("42711d45-34a3-4d6b-81bb-a67db8b7e4f0");
+    expect(signatureCount()).toBe(1);
+  });
+
+  it("serializes concurrent commands so the receipt contains the entire command chain", async () => {
+    const { session } = createSession();
+    const first = command(1, "set_tactics");
+    const second = command(2, "set_tactics");
+    const [one, two] = await Promise.all([
+      session.receive(ticket("home"), first, issuedAt + 1),
+      session.receive(ticket("home"), second, issuedAt + 2),
+    ]);
+    expect(one.accepted && two.accepted).toBe(true);
+    const h1 = await appendCommandHash(GENESIS_SESSION_HASH, first);
+    const h2 = await appendCommandHash(h1.hash, second);
+    const receipt = await session.finalize("completed", issuedAt + 3);
+    expect(receipt.commandHash).toBe(h2.hash);
+  });
+
+  it("records a forfeit before signing and signs just once under concurrent retries", async () => {
+    const { session, signatureCount } = createSession();
+    const forfeit = command(1, "forfeit");
+    const [first, second] = await Promise.all([
+      session.receive(ticket("home"), forfeit, issuedAt + 1),
+      session.receive(ticket("home"), forfeit, issuedAt + 1),
+    ]);
+    expect(first.accepted).toBe(true);
+    expect(second.accepted).toBe(false);
+    const receipt = await session.finalize("completed", issuedAt + 2);
+    expect(receipt.closureReason).toBe("forfeit");
+    expect(receipt.commandHash).toBe((await appendCommandHash(GENESIS_SESSION_HASH, forfeit)).hash);
     expect(signatureCount()).toBe(1);
   });
 

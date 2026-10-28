@@ -7,9 +7,11 @@ const deps = vi.hoisted(() => ({
   retrieveSession: vi.fn(),
   listSessions: vi.fn(),
   retrieveSubscription: vi.fn(),
+  retrieveDispute: vi.fn(),
   beginEvent: vi.fn(),
   finishEvent: vi.fn(),
   reconcileReview: vi.fn(),
+  reconcileDispute: vi.fn(),
   checkoutOffer: vi.fn(),
   isDelivered: vi.fn(),
   recordPending: vi.fn(),
@@ -37,6 +39,7 @@ vi.mock("@/lib/fulfillment.server", () => ({
   beginPaymentEvent: deps.beginEvent,
   finishPaymentEvent: deps.finishEvent,
   reconcilePaymentReview: deps.reconcileReview,
+  reconcileDisputeReview: deps.reconcileDispute,
   getAuthenticatedCheckoutOffer: deps.checkoutOffer,
   isPurchaseDelivered: deps.isDelivered,
 }));
@@ -108,10 +111,43 @@ beforeEach(() => {
   deps.stripe.mockReturnValue({
     checkout: { sessions: { retrieve: deps.retrieveSession, list: deps.listSessions } },
     subscriptions: { retrieve: deps.retrieveSubscription },
+    disputes: { retrieve: deps.retrieveDispute },
+  });
+  deps.retrieveDispute.mockResolvedValue({
+    id: "dp_test_one",
+    livemode: false,
+    payment_intent: "pi_test_one",
+    status: "needs_response",
+    amount: 500,
+    currency: "brl",
   });
 });
 
 describe("Stripe payment webhook lifecycle", () => {
+  it("records the current Stripe dispute state against its server-resolved checkout", async () => {
+    deps.event = sessionEvent("charge.dispute.created", { id: "dp_test_one" });
+    expect((await post({ request: request() })).status).toBe(200);
+    expect(deps.retrieveDispute).toHaveBeenCalledWith("dp_test_one");
+    expect(deps.listSessions).toHaveBeenCalledWith({ payment_intent: "pi_test_one", limit: 100 });
+    expect(deps.reconcileDispute).toHaveBeenCalledWith({
+      disputeId: "dp_test_one",
+      reference: "cs_test_review",
+      environment: "sandbox",
+      status: "needs_response",
+      amountCents: 500,
+      currency: "brl",
+      eventId: "evt_fixture",
+      eventCreated: 1791540000,
+    });
+    expect(deps.fulfill).not.toHaveBeenCalled();
+  });
+
+  it("retries a dispute if Stripe returns an object from the wrong environment", async () => {
+    deps.event = sessionEvent("charge.dispute.updated", { id: "dp_test_one" });
+    deps.retrieveDispute.mockResolvedValue({ id: "dp_test_one", livemode: true });
+    expect((await post({ request: request() })).status).toBe(503);
+    expect(deps.reconcileDispute).not.toHaveBeenCalled();
+  });
   it("fulfills a paid one-time checkout from the server-resolved Stripe session", async () => {
     deps.event = sessionEvent("checkout.session.completed", {
       id: "cs_test_paid",

@@ -21,7 +21,12 @@ import { buildTeamSetup } from "@/game/quickMatch";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 
 import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
-import { parseRoomChatMessage } from "@/game/room-chat-safety";
+import {
+  mergeRoomChatMessages,
+  parseRoomChatMessage,
+  parseRoomChatRow,
+  type RoomChatMessage,
+} from "@/game/room-chat-safety";
 
 import { useOnline } from "@/hooks/useOnline";
 
@@ -257,6 +262,7 @@ export function MultiplayerPage() {
       <LiveRoom
         room={room}
         isHost={room.host_id === userId}
+        userId={userId}
         online={online}
         onExit={() => {
           void leave();
@@ -539,30 +545,79 @@ function SideCard({
   );
 }
 
-/** Chat da sala por canal em tempo real (não fica salvo). */
+/** Only server-validated rows from the room's RLS-protected table are shown. */
 function RoomChat({ roomId, userId }: { roomId: string; userId: string | null }) {
-  const [msgs, setMsgs] = useState<{ id: string; from: string; text: string }[]>([]);
+  const [msgs, setMsgs] = useState<RoomChatMessage[]>([]);
   const [text, setText] = useState("");
   const [chatError, setChatError] = useState<string | null>(null);
-  const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [sending, setSending] = useState(false);
+  const refreshRoomChat = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
-    const ch = supabase.channel(`room-chat-${roomId}`, { config: { broadcast: { self: true } } });
-    ch.on("broadcast", { event: "msg" }, ({ payload }) => {
-      const message = parseRoomChatMessage(payload);
-      if (message) setMsgs((m) => [...m.slice(-40), message]);
-    }).subscribe();
-    chanRef.current = ch;
-    return () => {
-      void supabase.removeChannel(ch);
-      chanRef.current = null;
+    let alive = true;
+    let realtimeConnected = false;
+    setMsgs([]);
+    if (!userId)
+      return () => {
+        alive = false;
+      };
+    const refresh = async () => {
+      const { data, error } = await supabase
+        .from("match_room_messages")
+        .select("id, sender_id, body, created_at")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (!alive) return;
+      setLoadError(Boolean(error));
+      if (!error) {
+        const rows = (data ?? [])
+          .map(parseRoomChatRow)
+          .filter((row): row is RoomChatMessage => row !== null);
+        setMsgs((current) => mergeRoomChatMessages(current, rows));
+      }
     };
-  }, [roomId]);
+    refreshRoomChat.current = refresh;
+    const ch = supabase
+      .channel(`room-chat-${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "match_room_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          const message = parseRoomChatRow(payload.new);
+          if (alive && message) setMsgs((current) => mergeRoomChatMessages(current, [message]));
+        },
+      )
+      .subscribe((status) => {
+        realtimeConnected = status === "SUBSCRIBED";
+        if (realtimeConnected) void refresh();
+      });
+    void refresh();
+    const timer = window.setInterval(() => {
+      if (!realtimeConnected) void refresh();
+    }, 15_000);
+    return () => {
+      alive = false;
+      if (refreshRoomChat.current === refresh) refreshRoomChat.current = null;
+      window.clearInterval(timer);
+      void supabase.removeChannel(ch);
+    };
+  }, [roomId, userId]);
 
   return (
     <div className="mt-5 rounded-xl border border-border/50 bg-background/40 p-3">
       <div className="max-h-40 overflow-y-auto text-sm">
-        {msgs.length === 0 ? (
+        {loadError ? (
+          <p role="status" className="text-xs text-destructive">
+            Não foi possível atualizar o chat agora.
+          </p>
+        ) : msgs.length === 0 ? (
           <p className="text-xs text-muted-foreground">Converse com seu adversário aqui.</p>
         ) : (
           msgs.map((m, i) => (
@@ -581,20 +636,35 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
         </p>
       ) : null}
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
+          if (sending) return;
           const message = parseRoomChatMessage({ id: userId, from: userId, text });
           if (!message) {
             setChatError("A mensagem está vazia ou contém texto não permitido.");
             return;
           }
           setChatError(null);
-          void chanRef.current?.send({
-            type: "broadcast",
-            event: "msg",
-            payload: message,
-          });
-          setText("");
+          setSending(true);
+          try {
+            const { sendRoomChatMessage } = await import("@/lib/room-chat.functions");
+            const result = await sendRoomChatMessage({ data: { roomId, body: message.text } });
+            if (result.ok) {
+              setText("");
+              void refreshRoomChat.current?.();
+            } else
+              setChatError(
+                result.reason === "rate_limited"
+                  ? "Aguarde antes de enviar outra mensagem."
+                  : result.reason === "blocked"
+                    ? "Essa mensagem não é permitida."
+                    : "Não foi possível enviar a mensagem.",
+              );
+          } catch {
+            setChatError("Não foi possível enviar a mensagem.");
+          } finally {
+            setSending(false);
+          }
         }}
         className="mt-2 flex gap-2"
       >
@@ -608,6 +678,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
         <button
           type="submit"
           aria-label="Enviar mensagem"
+          disabled={sending || !userId}
           className="min-h-11 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground"
         >
           <Send size={14} />
@@ -624,14 +695,17 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
 function LiveRoom({
   room,
   isHost,
+  userId,
   online,
   onExit,
 }: {
   room: Room;
   isHost: boolean;
+  userId: string | null;
   online: boolean;
   onExit: () => void;
 }) {
+  const [showChat, setShowChat] = useState(false);
   const setups = useMemo(
     () => ({
       home: buildTeamSetup(room.host_club),
@@ -790,6 +864,21 @@ function LiveRoom({
           </div>
         </div>
       ) : null}
+      {showChat ? (
+        <section
+          aria-label="Chat da sala"
+          className="absolute bottom-20 right-3 z-20 w-[min(24rem,calc(100%-1.5rem))] rounded-2xl border border-white/15 bg-background/95 p-3 shadow-xl"
+        >
+          <button
+            type="button"
+            onClick={() => setShowChat(false)}
+            className="ml-auto block text-xs text-muted-foreground"
+          >
+            Fechar chat
+          </button>
+          <RoomChat roomId={room.id} userId={userId} />
+        </section>
+      ) : null}
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
         <button
           onClick={() =>
@@ -800,6 +889,13 @@ function LiveRoom({
           className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
         >
           Câmera
+        </button>
+        <button
+          onClick={() => setShowChat((value) => !value)}
+          aria-expanded={showChat}
+          className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
+        >
+          Chat
         </button>
         <button
           onClick={onExit}

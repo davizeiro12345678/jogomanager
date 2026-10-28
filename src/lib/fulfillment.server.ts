@@ -211,6 +211,30 @@ export async function reconcilePaymentReview(event: PaymentReviewEvent): Promise
   if (error) throw new Error("Não foi possível reconciliar o pagamento. O evento será repetido.");
 }
 
+/** Record disputes for human review; never revoke a purchase from an event alone. */
+export async function reconcileDisputeReview(event: {
+  disputeId: string;
+  reference: string;
+  environment: StripeEnv;
+  status: string;
+  amountCents: number;
+  currency: string;
+  eventId: string;
+  eventCreated: number;
+}): Promise<void> {
+  const { error } = await getStoreServiceSupabase().rpc("reconcile_purchase_dispute", {
+    _dispute_id: event.disputeId,
+    _reference: event.reference,
+    _environment: event.environment,
+    _status: event.status,
+    _amount_cents: event.amountCents,
+    _currency: event.currency,
+    _event_id: event.eventId,
+    _event_created: event.eventCreated,
+  });
+  if (error) throw new Error("Não foi possível registrar a contestação. O evento será repetido.");
+}
+
 export async function syncSubscriptionForUser(
   subscription: Stripe.Subscription,
   userId: string,

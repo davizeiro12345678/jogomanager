@@ -18,6 +18,7 @@ import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stad
 import { detectQuality } from "@/game/device";
 import type { NarrationEvent } from "@/game/narrator";
 import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
@@ -76,6 +77,7 @@ export default function QuickLive({
     };
   }, [myId, oppId, difficulty, seed]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
+  const userId = useAuthUserId();
 
   const { t } = useT();
   const [quality] = useState<Quality>(() => {
@@ -173,6 +175,35 @@ export default function QuickLive({
       controllerRef.current = null;
     };
   }, [setups, sim]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const controller = controllerRef.current;
+    if (!controller) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { requestAiTacticalPlan } = await import("@/lib/match-ai.functions");
+        const plan = await requestAiTacticalPlan({
+          data: { homeClub: myId, awayClub: oppId, difficulty },
+        });
+        if (
+          !plan ||
+          cancelled ||
+          controllerRef.current !== controller ||
+          sim.finished ||
+          sim.minute() > 10
+        )
+          return;
+        controller.setTactics("away", { ...setups.away.tactics, ...plan });
+      } catch {
+        // Offline and unavailable providers keep the game's ordinary AI.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, myId, oppId, difficulty, setups, sim]);
 
   useEffect(() => controllerRef.current?.pause(paused), [paused]);
   useEffect(() => controllerRef.current?.setSpeed(speed), [speed]);

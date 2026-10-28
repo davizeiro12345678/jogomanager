@@ -1097,6 +1097,56 @@ export type Database = {
           },
         ]
       }
+      match_room_chat_limits: {
+        Row: {
+          message_count: number
+          sender_id: string
+          window_started_at: string
+        }
+        Insert: {
+          message_count: number
+          sender_id: string
+          window_started_at?: string
+        }
+        Update: {
+          message_count?: number
+          sender_id?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
+      match_room_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          room_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          room_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          room_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_room_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_rooms: {
         Row: {
           code: string
@@ -3302,6 +3352,18 @@ export type Database = {
       send_chat_message_for: {
         Args: { _user_id: string; message_body: string }
         Returns: string
+      }
+      send_match_room_message_for: {
+        Args: { _body: string; _room_id: string; _user_id: string }
+        Returns: string
+      }
+      reserve_chat_moderation_for: {
+        Args: { _room_id?: string; _user_id: string }
+        Returns: string[]
+      }
+      reconcile_purchase_dispute: {
+        Args: { _dispute_id: string; _reference: string; _environment: string; _status: string; _amount_cents: number; _currency: string; _event_id: string; _event_created: number }
+        Returns: undefined
       }
       set_activity_ranking_preferences: {
         Args: { p_club_id: string; p_opted_in: boolean; p_public_name: string }

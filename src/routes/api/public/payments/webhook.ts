@@ -10,6 +10,7 @@ import {
   beginPaymentEvent,
   finishPaymentEvent,
   reconcilePaymentReview,
+  reconcileDisputeReview,
   getAuthenticatedCheckoutOffer,
   isPurchaseDelivered,
   markPurchaseFailed,
@@ -215,6 +216,38 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
       }
       if (sessions.has_more)
         throw new Error("Payment review needs additional checkout reconciliation");
+      break;
+    }
+    case "charge.dispute.created":
+    case "charge.dispute.updated":
+    case "charge.dispute.closed": {
+      const stripe = createStripeClient(env);
+      // Read the current object from Stripe, rather than trusting stale event
+      // details when delivery is delayed or arrives out of order.
+      const dispute = await stripe.disputes.retrieve(event.data.object.id);
+      if (dispute.livemode !== (env === "live")) throw new Error("Dispute environment mismatch");
+      const paymentIntent =
+        typeof dispute.payment_intent === "string"
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id;
+      if (!paymentIntent) throw new Error("Dispute has no payment intent");
+      const sessions = await stripe.checkout.sessions.list({
+        payment_intent: paymentIntent,
+        limit: 100,
+      });
+      if (sessions.has_more) throw new Error("Dispute needs additional checkout reconciliation");
+      for (const session of sessions.data) {
+        await reconcileDisputeReview({
+          disputeId: dispute.id,
+          reference: session.id,
+          environment: env,
+          status: dispute.status,
+          amountCents: dispute.amount,
+          currency: dispute.currency,
+          eventId: event.id,
+          eventCreated: event.created,
+        });
+      }
       break;
     }
     case "checkout.session.async_payment_failed": {
