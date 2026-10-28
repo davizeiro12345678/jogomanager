@@ -21,6 +21,7 @@ import { buildTeamSetup } from "@/game/quickMatch";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 
 import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
+import { parseRoomChatMessage } from "@/game/room-chat-safety";
 
 import { useOnline } from "@/hooks/useOnline";
 
@@ -126,6 +127,30 @@ export function MultiplayerPage() {
       window.clearInterval(timer);
     };
   }, [online, room?.id]);
+
+  useEffect(() => {
+    if (!online || room?.status !== "settling" || room.host_id !== userId) return;
+    const roomId = room.id;
+    let pending = false;
+    const timer = window.setInterval(() => {
+      if (pending) return;
+      pending = true;
+      void import("@/lib/multiplayer.functions")
+        .then(({ finishMatchRoom }) => finishMatchRoom({ data: { roomId } }))
+        .catch((error) => {
+          reportSilent("multiplayer.operation", error, {
+            classification: "fatal",
+            feature: "rooms",
+            phase: "settlement-retry",
+            dedupeKey: "room-settlement-retry",
+          });
+        })
+        .finally(() => {
+          pending = false;
+        });
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [online, room?.id, room?.status, room?.host_id, userId]);
 
   async function createRoom() {
     if (!userId) return setError("Entre na conta novamente para criar uma sala.");
@@ -518,12 +543,14 @@ function SideCard({
 function RoomChat({ roomId, userId }: { roomId: string; userId: string | null }) {
   const [msgs, setMsgs] = useState<{ id: string; from: string; text: string }[]>([]);
   const [text, setText] = useState("");
+  const [chatError, setChatError] = useState<string | null>(null);
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     const ch = supabase.channel(`room-chat-${roomId}`, { config: { broadcast: { self: true } } });
     ch.on("broadcast", { event: "msg" }, ({ payload }) => {
-      setMsgs((m) => [...m.slice(-40), payload as { id: string; from: string; text: string }]);
+      const message = parseRoomChatMessage(payload);
+      if (message) setMsgs((m) => [...m.slice(-40), message]);
     }).subscribe();
     chanRef.current = ch;
     return () => {
@@ -548,15 +575,24 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
           ))
         )}
       </div>
+      {chatError ? (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {chatError}
+        </p>
+      ) : null}
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const value = text.trim().slice(0, 200);
-          if (!value) return;
+          const message = parseRoomChatMessage({ id: userId, from: userId, text });
+          if (!message) {
+            setChatError("A mensagem está vazia ou contém texto não permitido.");
+            return;
+          }
+          setChatError(null);
           void chanRef.current?.send({
             type: "broadcast",
             event: "msg",
-            payload: { id: userId ?? "anon", from: userId ?? "anon", text: value },
+            payload: message,
           });
           setText("");
         }}
@@ -566,6 +602,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string | null })
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Mensagem…"
+          maxLength={200}
           className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
         />
         <button

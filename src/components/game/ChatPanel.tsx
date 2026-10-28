@@ -126,7 +126,10 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   }, [messages]);
 
   const visibleMessages = useMemo(
-    () => messages.filter((m) => !blockedUsers.has(m.user_id) && !reported.has(m.id)),
+    () =>
+      messages.filter(
+        (m) => !blockedUsers.has(m.user_id) && !reported.has(m.id) && !containsProfanity(m.body),
+      ),
     [messages, blockedUsers, reported],
   );
 
@@ -144,11 +147,13 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     setSending(false);
     if (!result || !result.ok) {
       toast.error(
-        result && result.reason === "rate_limited"
-          ? "Calma! Você está enviando mensagens rápido demais."
-          : result && result.reason === "invalid_length"
-            ? "A mensagem precisa ter entre 1 e 500 caracteres."
-            : "Não foi possível enviar a mensagem.",
+        result && result.reason === "blocked"
+          ? PROFANITY_BLOCKED_MESSAGE
+          : result && result.reason === "rate_limited"
+            ? "Calma! Você está enviando mensagens rápido demais."
+            : result && result.reason === "invalid_length"
+              ? "A mensagem precisa ter entre 1 e 500 caracteres."
+              : "Não foi possível enviar a mensagem.",
       );
       return;
     }
@@ -164,13 +169,13 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     setMessages((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
-  const reportMessage = useCallback((id: string) => {
+  const hideMessage = useCallback((id: string) => {
     setReported((prev) => {
       const nextIds = new Set(prev).add(id);
       writeIds(REPORTED_KEY, nextIds);
       return nextIds;
     });
-    toast.success("Mensagem denunciada e ocultada para você.");
+    toast.success("Mensagem ocultada para você neste aparelho.");
   }, []);
 
   const blockUser = useCallback((id: string) => {
@@ -224,7 +229,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
               <li key={m.id} className="group flex flex-col gap-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-display text-xs uppercase tracking-wide text-primary">
-                    {m.display_name}
+                    {containsProfanity(m.display_name) ? "Treinador" : m.display_name}
                   </span>
                   <span className="text-[10px] text-muted-foreground">
                     {relativeTime(m.created_at)}
@@ -242,10 +247,10 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
                   ) : (
                     <>
                       <button
-                        onClick={() => reportMessage(m.id)}
+                        onClick={() => hideMessage(m.id)}
                         className="text-[10px] uppercase tracking-wide text-muted-foreground hover:underline"
                       >
-                        Denunciar
+                        Ocultar mensagem
                       </button>
                       <button
                         onClick={() => blockUser(m.user_id)}

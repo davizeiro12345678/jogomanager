@@ -13,6 +13,9 @@ import {
 } from "@/game/sim";
 
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+// The remote simulator has an 18-second timeout. Leave ample time for local
+// replay and transient delays before another request may recover a lost claim.
+const SETTLEMENT_LEASE_MS = 120_000;
 
 export interface MultiplayerRoomRecord {
   id: string;
@@ -44,7 +47,7 @@ export const createMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({ hostClub: z.string().min(1).max(80) }).parse(input))
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.hostClub]) return { ok: false, reason: "invalid_club" };
+    if (!Object.hasOwn(CLUBS, data.hostClub)) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -84,7 +87,7 @@ export const joinMatchRoom = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.guestClub]) return { ok: false, reason: "invalid_club" };
+    if (!Object.hasOwn(CLUBS, data.guestClub)) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
@@ -121,8 +124,8 @@ export const startMatchRoom = createServerFn({ method: "POST" })
       currentRoom.status !== "ready" ||
       !currentRoom.server_seeded ||
       !currentRoom.guest_club ||
-      !CLUBS[currentRoom.host_club] ||
-      !CLUBS[currentRoom.guest_club]
+      !Object.hasOwn(CLUBS, currentRoom.host_club) ||
+      !Object.hasOwn(CLUBS, currentRoom.guest_club)
     ) {
       return { ok: false, reason: "room_not_ready" };
     }
@@ -173,12 +176,26 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
     // claim. Ending the room here would race the result publication and could
     // remove the private seed while it is in use.
     if (room.status === "settling") return { ok: false, reason: "settling" };
-    const { error } = await supabaseAdmin
+    const { data: closedRoom, error } = await supabaseAdmin
       .from("match_rooms")
       .update({ status: "done", state: {}, updated_at: new Date().toISOString() })
       .eq("id", data.roomId)
-      .eq("status", room.status);
+      .eq("status", room.status)
+      .select("id")
+      .maybeSingle();
     if (error) return { ok: false, reason: "leave_failed" };
+    if (!closedRoom) {
+      // A concurrent finish can claim the room after our read. Never erase its
+      // secret unless this request actually closed the observed state.
+      const { data: latest } = await supabaseAdmin
+        .from("match_rooms")
+        .select("status")
+        .eq("id", data.roomId)
+        .maybeSingle();
+      if (latest?.status === "settling") return { ok: false, reason: "settling" };
+      if (latest?.status === "done") return { ok: true };
+      return { ok: false, reason: "leave_failed" };
+    }
     await supabaseAdmin.from("match_room_secrets").delete().eq("room_id", data.roomId);
     return { ok: true };
   });
@@ -193,12 +210,13 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ roomId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }): Promise<FinishRoomResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: room, error } = await supabaseAdmin
+    const { data: selectedRoom, error } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_club, host_club, server_seeded, status, state")
+      .select("id, host_id, guest_club, host_club, server_seeded, status, state, updated_at")
       .eq("id", data.roomId)
       .maybeSingle();
-    if (error || !room) return { ok: false, reason: "not_found" };
+    if (error || !selectedRoom) return { ok: false, reason: "not_found" };
+    let room = selectedRoom;
     if (room.host_id !== context.userId) return { ok: false, reason: "not_host" };
     if (room.status === "done") {
       if (!room.server_seeded) return { ok: false, reason: "room_closed" };
@@ -207,21 +225,46 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         ? { ok: true }
         : { ok: false, reason: "room_closed" };
     }
-    if (room.status === "settling") return { ok: false, reason: "settling" };
+    if (room.status === "settling") {
+      const lastUpdate = Date.parse(room.updated_at);
+      if (!Number.isFinite(lastUpdate) || Date.now() - lastUpdate < SETTLEMENT_LEASE_MS) {
+        return { ok: false, reason: "settling" };
+      }
+      // Compare the observed timestamp so two recoveries cannot both claim the
+      // same stalled run. A new claim receives a new fencing token below.
+      const { data: recovered, error: recoveryError } = await supabaseAdmin
+        .from("match_rooms")
+        .update({ status: "live", state: {}, updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .eq("host_id", context.userId)
+        .eq("status", "settling")
+        .eq("updated_at", room.updated_at)
+        .eq("server_seeded", true)
+        .select("id, host_id, guest_club, host_club, server_seeded, status, state, updated_at")
+        .maybeSingle();
+      if (recoveryError) return { ok: false, reason: "update_failed" };
+      if (!recovered) return { ok: false, reason: "settling" };
+      room = recovered;
+    }
     if (room.status !== "live") return { ok: false, reason: "not_live" };
     if (!room.server_seeded || !room.guest_club) {
       return { ok: false, reason: "invalid_room" };
     }
-    if (!CLUBS[room.host_club] || !CLUBS[room.guest_club]) {
+    if (!Object.hasOwn(CLUBS, room.host_club) || !Object.hasOwn(CLUBS, room.guest_club)) {
       return { ok: false, reason: "invalid_room" };
     }
 
     // Claim publication before the expensive full replay. Repeated finish
     // clicks therefore observe "settling" instead of independently replaying
     // the same 90 minutes on the server.
+    const claimId = globalThis.crypto.randomUUID();
     const { data: claim, error: claimError } = await supabaseAdmin
       .from("match_rooms")
-      .update({ status: "settling", updated_at: new Date().toISOString() })
+      .update({
+        status: "settling",
+        state: { settling_claim: claimId },
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", room.id)
       .eq("host_id", context.userId)
       .eq("status", "live")
@@ -254,11 +297,12 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     const releaseClaim = async () => {
       await supabaseAdmin
         .from("match_rooms")
-        .update({ status: "live", updated_at: new Date().toISOString() })
+        .update({ status: "live", state: {}, updated_at: new Date().toISOString() })
         .eq("id", room.id)
         .eq("host_id", context.userId)
         .eq("status", "settling")
-        .eq("server_seeded", true);
+        .eq("server_seeded", true)
+        .contains("state", { settling_claim: claimId });
     };
 
     try {
@@ -312,6 +356,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         .eq("host_id", context.userId)
         .eq("status", "settling")
         .eq("server_seeded", true)
+        .contains("state", { settling_claim: claimId })
         .select("id")
         .maybeSingle();
       if (updateError) return { ok: false, reason: "update_failed" };

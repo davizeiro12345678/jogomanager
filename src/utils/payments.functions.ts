@@ -63,6 +63,25 @@ function isApprovedAppOrigin(url: URL) {
   );
 }
 
+/** Reuse the atomic, server-only checkout window for signed-in accounts.
+ * Domain separation keeps its opaque account key distinct from email hashes. */
+async function reserveAuthenticatedCheckoutAttempt(userId: string): Promise<void> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`authenticated-checkout:${userId}`),
+  );
+  const key = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
+  const { data, error } = await getStoreServiceSupabase().rpc("reserve_guest_checkout_attempt", {
+    _email_hash: key,
+  });
+  if (error) throw new Error("Não foi possível validar o limite de tentativas.");
+  if (data !== true) {
+    throw new Error("Muitas tentativas de checkout. Aguarde alguns minutos e tente novamente.");
+  }
+}
+
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -97,6 +116,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       // `store_products` selects the current active SKU first; Stripe only
       // confirms that its server-side amount and currency still match it.
       const product = await getServerStoreProduct(getStoreServiceSupabase(), data.productKey);
+      await reserveAuthenticatedCheckoutAttempt(context.userId);
       const stripe = createStripeClient(environment);
       const stripePrice = await resolveValidatedStripePrice(stripe, product);
       const isRecurring = stripePrice.type === "recurring";
