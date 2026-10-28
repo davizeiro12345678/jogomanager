@@ -4,8 +4,8 @@ Esta revisão não foi publicada. Ela parte de `codex/integracao-revisao-2026102
 que já reúne o código de 20 PRs listados em
 `verification/integracao-2026-10-28/README.md`. A integração do PR #94 e dos
 PRs com conflitos ainda precisa de revisão. O histórico das branches `k` e
-`feat/player-career-final-integration-20261015` pode ser incorporado sem
-alterar a árvore de arquivos.
+`feat/player-career-final-integration-20261015` foi incorporado sem alterar a
+árvore de arquivos.
 
 ## IA
 
