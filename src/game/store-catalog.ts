@@ -7,7 +7,7 @@
  * no checkout da loja.
  */
 
-export type PackKind = "coins" | "scout" | "training" | "cosmetic" | "pass";
+export type PackKind = "coins" | "scout" | "training" | "cosmetic" | "pass" | "bundle";
 
 export interface StorePack {
   key: string;

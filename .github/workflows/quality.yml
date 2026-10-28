@@ -32,6 +32,8 @@ jobs:
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - name: Verify public catalog Nginx configuration scripts
+        run: python3 -m unittest discover -s services/contabo-aux/perf -p 'test_*.py'
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
@@ -169,7 +171,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - run: node scripts/verify-game-assets.mjs
+      - run: |
+          node scripts/verify-game-assets.mjs
+          node scripts/verify-ktx2-mirror.mjs
 
   graphics-contract:
     name: Deterministic 3D benchmark contract

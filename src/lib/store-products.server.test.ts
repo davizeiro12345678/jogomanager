@@ -1,13 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-
 import { resolveValidatedStripePrice, type ServerStoreProduct } from "./store-products.server";
 
 function product(overrides: Partial<ServerStoreProduct> = {}): ServerStoreProduct {
   return {
     key: "theme_pack",
     name: "Pacote de temas",
-    description: "Cosméticos sem vantagem competitiva",
-    priceCents: 1990,
+    description: "Itens digitais",
+    priceCents: 1490,
     currency: "brl",
     kind: "cosmetic",
     active: true,
@@ -18,51 +17,149 @@ function product(overrides: Partial<ServerStoreProduct> = {}): ServerStoreProduc
   };
 }
 
-describe("server checkout anti-pay-to-win gate", () => {
-  it("blocks legacy currency, scouting, training and pass products before Stripe price lookup", async () => {
-    const list = vi.fn();
-    const stripe = { prices: { list } } as never;
-
-    for (const legacyProduct of [
+describe("server checkout commercial validation", () => {
+  it("accepts known consumables and passes only when Stripe matches the catalog", async () => {
+    const products = [
       product({
         key: "coins_small",
+        stripeLookupKey: "coins_small",
         kind: "coins",
+        priceCents: 490,
         contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
       }),
       product({
         key: "scout_pack",
+        stripeLookupKey: "scout_pack",
         kind: "scout",
+        priceCents: 990,
         contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
       }),
       product({
         key: "training_pack",
+        stripeLookupKey: "training_pack",
         kind: "training",
+        priceCents: 990,
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
       }),
       product({
         key: "season_pass",
+        stripeLookupKey: "season_pass_monthly",
         kind: "pass",
+        priceCents: 2490,
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
       }),
-    ]) {
-      await expect(resolveValidatedStripePrice(stripe, legacyProduct)).rejects.toThrow(
-        /anti-pay-to-win/i,
-      );
-    }
+      product({
+        key: "bundle_starter",
+        stripeLookupKey: "bundle_starter",
+        kind: "bundle",
+        priceCents: 990,
+        contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] },
+      }),
+    ];
+    const list = vi.fn().mockImplementation(async ({ lookup_keys }) => ({
+      data: [
+        {
+          lookup_key: lookup_keys[0],
+          unit_amount: products.find((p) => p.stripeLookupKey === lookup_keys[0])?.priceCents,
+          currency: "brl",
+          type: lookup_keys[0] === "season_pass_monthly" ? "recurring" : "one_time",
+          recurring:
+            lookup_keys[0] === "season_pass_monthly"
+              ? { interval: "month", interval_count: 1, usage_type: "licensed" }
+              : null,
+        },
+      ],
+    }));
+    const stripe = { prices: { list } } as never;
+    for (const p of products)
+      await expect(resolveValidatedStripePrice(stripe, p)).resolves.toMatchObject({
+        lookup_key: p.stripeLookupKey,
+      });
+    expect(list).toHaveBeenCalledTimes(5);
+  });
 
+  it("rejects invalid SKU shapes before contacting Stripe", async () => {
+    const list = vi.fn();
+    const stripe = { prices: { list } } as never;
+    await expect(
+      resolveValidatedStripePrice(
+        stripe,
+        product({
+          kind: "coins",
+          contents: { coins: -20, scoutReports: 0, trainingBoosts: 0, themes: [] },
+        }),
+      ),
+    ).rejects.toThrow(/contrato seguro/);
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("keeps a purely cosmetic product eligible for validated checkout price lookup", async () => {
-    const list = vi.fn().mockResolvedValue({
-      data: [{ lookup_key: "theme_pack", unit_amount: 1990, currency: "brl" }],
-    });
-    const stripe = { prices: { list } } as never;
+  it("rejects an inactive SKU before querying Stripe", async () => {
+    const list = vi.fn();
+    await expect(
+      resolveValidatedStripePrice({ prices: { list } } as never, product({ active: false })),
+    ).rejects.toThrow(/não está disponível/);
+    expect(list).not.toHaveBeenCalled();
+  });
 
-    await expect(resolveValidatedStripePrice(stripe, product())).resolves.toMatchObject({
-      lookup_key: "theme_pack",
-      unit_amount: 1990,
+  it("never creates a recurring charge for a one-time coins product", async () => {
+    const list = vi.fn().mockResolvedValue({
+      data: [
+        {
+          lookup_key: "coins_small",
+          unit_amount: 490,
+          currency: "brl",
+          type: "recurring",
+          recurring: { interval: "month", interval_count: 1, usage_type: "licensed" },
+        },
+      ],
     });
-    expect(list).toHaveBeenCalledWith({ lookup_keys: ["theme_pack"], active: true, limit: 2 });
+    const coins = product({
+      key: "coins_small",
+      stripeLookupKey: "coins_small",
+      kind: "coins",
+      priceCents: 490,
+      contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
+    });
+    await expect(resolveValidatedStripePrice({ prices: { list } } as never, coins)).rejects.toThrow(
+      /modalidade de cobrança/,
+    );
+  });
+
+  it("rejects annual, metered or one-time prices for a monthly pass", async () => {
+    const pass = product({
+      key: "season_pass",
+      stripeLookupKey: "season_pass_monthly",
+      kind: "pass",
+      priceCents: 2490,
+      contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
+    });
+    for (const price of [
+      { type: "one_time", recurring: null },
+      { type: "recurring", recurring: { interval: "year", interval_count: 1 } },
+      {
+        type: "recurring",
+        recurring: { interval: "month", interval_count: 1, usage_type: "metered" },
+      },
+      {
+        type: "recurring",
+        recurring: { interval: "month", interval_count: 2, usage_type: "licensed" },
+      },
+    ]) {
+      const list = vi.fn().mockResolvedValue({
+        data: [{ lookup_key: pass.stripeLookupKey, unit_amount: 2490, currency: "brl", ...price }],
+      });
+      await expect(
+        resolveValidatedStripePrice({ prices: { list } } as never, pass),
+      ).rejects.toThrow(/modalidade de cobrança/);
+    }
+  });
+
+  it("fails closed on a Stripe amount mismatch", async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValue({ data: [{ lookup_key: "theme_pack", unit_amount: 1, currency: "brl" }] });
+    await expect(
+      resolveValidatedStripePrice({ prices: { list } } as never, product()),
+    ).rejects.toThrow(/não confere/);
   });
 });

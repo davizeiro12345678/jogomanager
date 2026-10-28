@@ -1,0 +1,57 @@
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.12.1@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
+    restart: unless-stopped
+    user: "65534:65534"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.30
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.disable-defaults
+      - --collector.cpu
+      - --collector.meminfo
+      - --collector.loadavg
+      - --collector.diskstats
+      - --collector.netdev
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    networks: [monitoring]
+    logging:
+      options: {max-size: "5m", max-file: "2"}
+
+  prometheus:
+    image: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+    restart: unless-stopped
+    user: "65534:65534"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 384m
+    cpus: 0.50
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=512MB
+      - --web.listen-address=0.0.0.0:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - monitoring-data:/prometheus
+    networks: [monitoring]
+    depends_on: [node-exporter]
+    logging:
+      options: {max-size: "5m", max-file: "2"}
+
+networks:
+  monitoring:
+    internal: true
+
+volumes:
+  monitoring-data:

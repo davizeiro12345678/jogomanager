@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   LOCAL_VIP_OFFERS,
   applyEntitlementEvent,
-  assertCheckoutProductNonPayToWin,
+  assertCheckoutProductValid,
   assertLocalVipCatalogPolicy,
   assertNonPayToWin,
   effectiveEntitlementState,
@@ -178,16 +178,13 @@ describe("VIP entitlement contract", () => {
     );
   });
 
-  it("allows cosmetic checkout products while denying every competitive legacy product shape", () => {
-    expect(() =>
-      assertCheckoutProductNonPayToWin({
+  it("allows all catalog-backed legacy benefits without bypassing validation", () => {
+    for (const product of [
+      {
         key: "theme_pack",
         kind: "cosmetic",
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
-      }),
-    ).not.toThrow();
-
-    for (const product of [
+      },
       {
         key: "coins_small",
         kind: "coins",
@@ -208,8 +205,32 @@ describe("VIP entitlement contract", () => {
         kind: "pass",
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
       },
+      {
+        key: "bundle_starter",
+        kind: "bundle",
+        contents: { coins: 500, scoutReports: 5, trainingBoosts: 2, themes: [] },
+      },
     ]) {
-      expect(() => assertCheckoutProductNonPayToWin(product)).toThrow(/anti-pay-to-win/i);
+      expect(() => assertCheckoutProductValid(product)).not.toThrow();
+    }
+    for (const invalid of [
+      {
+        key: "hacked",
+        kind: "unknown",
+        contents: { coins: 1, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "coins_none",
+        kind: "coins",
+        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      },
+      {
+        key: "scout_negative",
+        kind: "scout",
+        contents: { coins: 0, scoutReports: -1, trainingBoosts: 0, themes: [] },
+      },
+    ]) {
+      expect(() => assertCheckoutProductValid(invalid)).toThrow(/contrato seguro/);
     }
   });
 });

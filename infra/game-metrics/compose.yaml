@@ -1,0 +1,29 @@
+services:
+  game-metrics:
+    image: node:24-alpine
+    container_name: pfm-game-metrics-exporter
+    command: ["node", "/app/server.mjs"]
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 48
+    mem_limit: 64m
+    cpus: 0.25
+    volumes:
+      - ./server.mjs:/app/server.mjs:ro
+    networks:
+      - metrics
+      - catalog
+    logging:
+      options:
+        max-size: "2m"
+        max-file: "2"
+networks:
+  metrics:
+    external: true
+    name: monitoring_monitoring
+  catalog:
+    external: true
+    name: public-gateway_default

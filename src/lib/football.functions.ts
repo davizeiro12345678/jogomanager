@@ -69,11 +69,27 @@ export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
             const fromVps = await fetchVpsPublicCrests();
             if (fromVps) return fromVps.map((club) => ({ ...club, website: null }));
           }
+          // The common no-token route only needs two fields. Do not transfer
+          // website metadata for 33k+ crests only to discard it in this handler.
+          if (!logoToken) {
+            const rows = await readPublicPages((cursor) => {
+              const query = db
+                .from("clubs")
+                .select("id, crest_url")
+                .not("crest_url", "is", null)
+                .order("id")
+                .limit(1_000);
+              return cursor ? query.gt("id", cursor) : query;
+            });
+            return rows.map((club) => ({ ...club, website: null }));
+          }
           return readPublicPages((cursor) => {
-            let query = db.from("clubs").select("id, crest_url, website").order("id").limit(1_000);
-            query = logoToken
-              ? query.or("crest_url.not.is.null,website.not.is.null")
-              : query.not("crest_url", "is", null);
+            const query = db
+              .from("clubs")
+              .select("id, crest_url, website")
+              .or("crest_url.not.is.null,website.not.is.null")
+              .order("id")
+              .limit(1_000);
             return cursor ? query.gt("id", cursor) : query;
           });
         })(),

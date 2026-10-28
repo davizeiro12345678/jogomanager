@@ -2,12 +2,29 @@
 .auth-stage,
 .store-stage {
   background:
-    radial-gradient(60rem 40rem at 10% -10%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 60%),
-    radial-gradient(50rem 30rem at 110% 110%, color-mix(in oklab, var(--accent, var(--primary)) 16%, transparent), transparent 60%),
+    radial-gradient(
+      60rem 40rem at 10% -10%,
+      color-mix(in oklab, var(--primary) 22%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      50rem 30rem at 110% 110%,
+      color-mix(in oklab, var(--accent, var(--primary)) 16%, transparent),
+      transparent 60%
+    ),
     var(--background);
 }
 
+/* Implicit grid tracks otherwise expand to the OAuth button group's min-content
+ * width on narrow screens, clipping login controls and cookie preferences. */
+.auth-stage {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .auth-card {
+  min-width: 0;
+  max-width: 100%;
   animation: auth-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   box-shadow:
     0 30px 80px -30px color-mix(in oklab, var(--primary) 45%, transparent),
@@ -29,15 +46,28 @@
   );
 }
 
+.auth-card > section,
+.auth-card form,
 .auth-card input {
-  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 0;
+}
+
+.auth-card input {
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .auth-card input:focus {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 30%, transparent);
 }
 
 .auth-social {
-  transition: transform 0.15s, box-shadow 0.15s;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 .auth-social:hover {
   transform: translateY(-1px);

@@ -5,6 +5,7 @@ import { ShieldCheck, Trophy, Zap } from "lucide-react";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 import { StorePanel } from "@/components/game/StorePanel";
+import { VipPlansPreview } from "@/components/store/VipPlansPreview";
 
 import storeHero from "@/assets/hero-stadium.jpg?format=webp&w=1600&quality=60&as=url";
 
@@ -27,22 +28,23 @@ export function LojaPage() {
           </Link>
           <h1 className="mt-2 font-display text-4xl uppercase tracking-wide sm:text-5xl">Loja</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Personalize a apresentação da sua carreira com cosméticos. Os itens disponíveis não
-            aumentam atributos, recursos de treino ou a força do time.
+            Escolha moedas, relatórios de olheiros, treinos, personalizações e passes. Cada
+            benefício e preço é confirmado antes do pagamento.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="store-chip">
               <ShieldCheck size={14} /> Pagamento seguro
             </span>
             <span className="store-chip">
-              <Zap size={14} /> Entrega imediata
+              <Zap size={14} /> Entrega após confirmação do pagamento
             </span>
             <span className="store-chip">
-              <Trophy size={14} /> Sem vantagem nas partidas
+              <Trophy size={14} /> Benefícios informados antes da compra
             </span>
           </div>
         </header>
         <StorePanel next="/loja" columns={2} />
+        <VipPlansPreview />
       </div>
     </div>
   );

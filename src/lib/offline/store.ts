@@ -112,7 +112,9 @@ export async function loadLocalCareer(
     /* IndexedDB indisponível — usa o espelho */
   }
 
-  if (!isGuest(owner)) return null;
+  // IndexedDB may be blocked or evicted while the account-scoped localStorage
+  // mirror survives. Restore only this signed-in owner's compartment.
+  if (!isGuest(owner)) return readLocalCareer(owner);
 
   // A migração de chaves sem dono termina no cofre visitante. Ela nunca roda
   // para uma conta autenticada, pois não há prova de que aquele save a pertence.

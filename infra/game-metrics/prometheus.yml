@@ -1,0 +1,18 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 5s
+  evaluation_interval: 30s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+  - job_name: vps-node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+  - job_name: game-cache-clicks
+    scrape_interval: 15s
+    scrape_timeout: 5s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["pfm-game-metrics-exporter:9199"]

@@ -13,6 +13,7 @@ import {
 
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { needsMfaChallenge } from "@/lib/mfa-session";
+import { requestExistingEmailOtp, verifyExistingEmailOtp } from "@/lib/auth-email-otp";
 
 import { Button } from "@/components/ui/button";
 
@@ -75,9 +76,7 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
-  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
+  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] === "lovable";
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
@@ -192,24 +191,10 @@ export function AuthPage() {
     try {
       if (mode === "magic") {
         if (otpSent) {
-          const result = await supabase.auth.verifyOtp({
-            email: magicEmail,
-            token: emailOtp.trim(),
-            type: "email",
-          });
-          if (result.error) throw result.error;
-          if (!result.data.session) throw new Error("No verified session");
+          await verifyExistingEmailOtp(supabase.auth, magicEmail, emailOtp);
           await continueSession();
         } else {
-          const submittedEmail = email.trim();
-          const result = await supabase.auth.signInWithOtp({
-            email: submittedEmail,
-            options: {
-              emailRedirectTo: callback(),
-              shouldCreateUser: false,
-            },
-          });
-          if (result.error) throw result.error;
+          const submittedEmail = await requestExistingEmailOtp(supabase.auth, email, callback());
           setMagicEmail(submittedEmail);
           setOtpSent(true);
           setNotice(
