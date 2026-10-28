@@ -61,6 +61,10 @@ describe("public football queries", () => {
       const cursor = url.searchParams.get("id")?.replace(/^gt\./, "") ?? "";
       const rows = url.pathname.endsWith("/clubs") ? clubs : kits;
       expect(url.searchParams.get("order")).toBe("id.asc");
+      if (url.pathname.endsWith("/clubs")) {
+        // Public crest fallback must not fetch unused website metadata.
+        expect(url.searchParams.get("select")).toBe("id,crest_url");
+      }
       return ok(rows.filter((row) => row.id > cursor).slice(0, 2));
     });
 

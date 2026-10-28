@@ -13,9 +13,11 @@ export interface VpsCatalogOptions {
   fetchImpl?: typeof fetch;
 }
 
-const PAGE_SIZE = 100;
+// Larger bounded pages drastically reduce roundtrips for ~39k public clubs.
+const PAGE_SIZE = 1_000;
 const PAGE_BATCH = 6;
-const MAX_PAGES = 72;
+// Cover 48k rows while still rejecting incomplete/truncated catalogs.
+const MAX_PAGES = 48;
 const REQUEST_BUDGET_MS = 4_500;
 const CATALOG_HOST = "catalog.jogomanager.com";
 
@@ -66,7 +68,7 @@ export async function fetchVpsPublicCrests(
       );
       const responses = await Promise.all(
         pages.map(async (page): Promise<PublicCrest[]> => {
-          const url = new URL("/v1/public/clubs", origin);
+          const url = new URL("/v1/public/crests", origin);
           url.searchParams.set("limit", String(PAGE_SIZE));
           url.searchParams.set("page", String(page));
           const response = await fetchImpl(url, {
