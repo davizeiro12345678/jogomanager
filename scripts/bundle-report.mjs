@@ -1,6 +1,7 @@
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { gzipSync, brotliCompressSync, constants } from "node:zlib";
+import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 // Measure Brotli as a CDN transport estimate; this does not enable the
 // Content-Encoding header on the host. Verify the live response separately.
@@ -188,7 +189,8 @@ if (process.argv.includes("--check")) {
   const newCareer = entries.find((e) => e.surface === "new");
   const playerCareer = entries.find((e) => e.name.startsWith("jogador.painel-"));
   const editor = entries.find((e) => e.name.startsWith("editor-"));
-  const match = entries.find((e) => e.name.startsWith("match-"));
+  const matchEntries = entries.filter(isMatchRouteEntry);
+  const match = matchEntries.length === 1 ? matchEntries[0] : undefined;
   const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
   const deferredEditorTabs = /^(?:roster-|clubs-|competitions-|import-export-)/;
   if (

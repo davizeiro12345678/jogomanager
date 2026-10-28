@@ -31,7 +31,7 @@ const surfaces = [
   { name: "index-home.js", surface: "home" },
   { name: "new-career.js", surface: "new" },
   { name: "partida-rapida-route.js" },
-  { name: "match-route.js" },
+  { name: "match-12ab34cd.js" },
   { name: "CinematicStage3D-stage.js" },
   { name: "editor-route.js" },
   { name: "match.worker-runtime.js" },
@@ -81,6 +81,49 @@ test("bundle gate rejects even a small Match 3D startup regression", () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.report.violations.join("\n"), /Match 3D.*Brotli/);
+});
+
+test("bundle gate measures the Match route when a similarly named AI chunk appears first", () => {
+  const result = compare((candidate) => {
+    candidate.entries[3].startupBrotliBytes += 1;
+    candidate.entries.unshift({
+      name: "match-ai.functions-BrUxBJi8.js",
+      startupGzipBytes: 5000,
+      startupBrotliBytes: 4000,
+    });
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.report.violations.join("\n"), /Match 3D.*Brotli/);
+});
+
+test("bundle gate rejects ambiguous Match route measurements", () => {
+  const result = compare((candidate) => {
+    candidate.entries.push({ ...candidate.entries[3], name: "match-ab12cd34.js" });
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.report.violations.join("\n"), /Match 3D.*ambiguous/i);
+});
+
+test("absolute bundle check inspects the Match route rather than a similarly named AI chunk", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "match-route-gate-"));
+  try {
+    writeFileSync(path.join(cwd, "editor-test.js"), "export const editor = 1;");
+    writeFileSync(path.join(cwd, "match-ai.functions-abcdefgh.js"), "export const api = 1;");
+    writeFileSync(
+      path.join(cwd, "match-zzzzzzzz.js"),
+      'import "./MatchReport-abcdefgh.js"; export const route = 1;',
+    );
+    writeFileSync(path.join(cwd, "MatchReport-abcdefgh.js"), "export const report = 1;");
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd, "--check"],
+      { cwd, encoding: "utf8" },
+    );
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Match report must remain an on-demand chunk/);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
 });
 
 test("bundle gate cannot pass by dropping a required route", () => {

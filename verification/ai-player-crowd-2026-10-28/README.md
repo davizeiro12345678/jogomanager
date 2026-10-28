@@ -1,5 +1,9 @@
 # Avaliação local das orientações para atletas e torcida
 
+> A seleção da rota Match 3D em comparações de bundle anteriores pode ter
+> confundido módulos com nomes semelhantes. Os números dessa rota devem ser
+> reavaliados com o seletor corrigido antes de fundamentar uma publicação.
+
 Esta avaliação não chama a OpenAI. O plano usado é um conjunto fixo de
 orientações para posições, para verificar o caminho entre plano e simulador;
 não é uma resposta real do GPT-6.1 Terra.

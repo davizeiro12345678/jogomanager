@@ -47,6 +47,7 @@ jobs:
       - name: Preserve analyzer and install one dependency graph for both revisions
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+          cp scripts/bundle-report-comparison.mjs "$RUNNER_TEMP/bundle-report-comparison.mjs"
           cp package.json "$RUNNER_TEMP/bundle-package.json"
           cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
           sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
@@ -64,9 +65,15 @@ jobs:
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
+          cp "$RUNNER_TEMP/bundle-report-comparison.mjs" scripts/bundle-report-comparison.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
           git restore scripts/bundle-report.mjs package.json package-lock.json
+          if git cat-file -e HEAD:scripts/bundle-report-comparison.mjs 2>/dev/null; then
+            git restore scripts/bundle-report-comparison.mjs
+          else
+            rm scripts/bundle-report-comparison.mjs
+          fi
       - name: Build proposed commit on the same runner
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}

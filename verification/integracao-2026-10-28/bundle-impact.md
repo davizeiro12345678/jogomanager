@@ -1,5 +1,10 @@
 # Bundle impact: baseline vs candidate
 
+> **Correção posterior:** a linha de Match 3D nesta medição selecionou um módulo
+> da API de IA em vez da rota da partida. A redução de 72% indicada abaixo não
+> é válida. Para a comparação corrigida com as mesmas medições, consulte
+> [bundle-impact-corrigido.md](../ai-providers-2026-10-28/bundle-impact-corrigido.md).
+
 Comparação de builds com a mesma máquina e configurações. **Números de código transferido estimado**, não LCP, INP, FPS ou tempo real de carregamento. Total inclui chunks lazy e não representa o download inicial.
 
 | Métrica | Antes | Depois | Redução |

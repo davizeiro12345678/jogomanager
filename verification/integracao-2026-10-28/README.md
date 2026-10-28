@@ -57,7 +57,10 @@ Python dos scripts do cache e a verificação local do histórico de migrações
 passaram novamente nesta combinação. A comparação de bundles atual
 contra a mesma base reprovou: total +3.402 bytes gzip e +2.959 bytes Brotli;
 detalhes e aumentos por rota
-estão em [bundle-impact.md](bundle-impact.md). Os limites não foram alterados.
+estão em [bundle-impact-corrigido.md](../ai-providers-2026-10-28/bundle-impact-corrigido.md).
+A linha de Match 3D do relatório original selecionou outro módulo por engano;
+a comparação corrigida também identificou aumento de 470 bytes gzip e 351 bytes
+Brotli no startup dessa rota. Os limites não foram alterados.
 
 Outras verificações locais passaram: 35 testes dos contratos de cotas,
 deploy e fontes; seis testes de API auxiliar; 18 testes dos próprios gates de

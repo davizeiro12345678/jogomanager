@@ -43,10 +43,16 @@ add("JS emitido total (inclui lazy)", before.totalBytes, after.totalBytes);
 add("JS emitido total (gzip)", before.totalGzipBytes, after.totalGzipBytes, true);
 add("JS emitido total (Brotli Q6)", before.totalBrotliBytes, after.totalBrotliBytes, true);
 for (const [name, predicate] of keys) {
-  const b = before.entries?.find(predicate);
-  const a = after.entries?.find(predicate);
+  const baselineMatches = before.entries?.filter(predicate) ?? [];
+  const candidateMatches = after.entries?.filter(predicate) ?? [];
+  const b = baselineMatches[0];
+  const a = candidateMatches[0];
   if (!b || !a) {
     violations.push(`${name}: missing required route in ${!b ? "baseline" : "candidate"}`);
+    continue;
+  }
+  if (name === "Match 3D" && (baselineMatches.length !== 1 || candidateMatches.length !== 1)) {
+    violations.push(`${name}: ambiguous route measurement in baseline or candidate`);
     continue;
   }
   add(name + " startup (gzip)", b.startupGzipBytes, a.startupGzipBytes, true);

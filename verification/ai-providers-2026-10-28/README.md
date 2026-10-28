@@ -1,6 +1,6 @@
 # Revisão dos provedores de IA — 28 de outubro de 2026
 
-Esta revisão não foi publicada. Ela parte de `codex/integracao-revisao-20261028`,
+Esta revisão não foi implantada em produção. Ela parte de `codex/integracao-revisao-20261028`,
 que já reúne o código de 20 PRs listados em
 `verification/integracao-2026-10-28/README.md`. A integração do PR #94 e dos
 PRs com conflitos ainda precisa de revisão. O histórico das branches `k` e
@@ -26,11 +26,18 @@ Não houve chamada real às APIs nem avaliação da qualidade de respostas reais
 - `npm run test:stress`: 200 partidas e seus replays independentes passaram.
 - `npm run lint`, verificação TypeScript e build: aprovados; o build registrou
   avisos de dependências e depreciação existentes.
-- `npm run test:performance-gates`: 18 testes aprovados.
-- `npm run bundle:check`: orçamento absoluto aprovado.
+- `npm run test:performance-gates`: 21 testes aprovados, inclusive regressões
+  para seleção correta e não ambígua da rota Match 3D.
+- `npm run bundle:check`: orçamento absoluto aprovado com o seletor corrigido.
 - A comparação de bundles com `main` no mesmo ambiente e dependências falhou:
-  +3.402 bytes gzip e +2.959 bytes Brotli no total, além de aumentos nas rotas
-  registradas em `verification/integracao-2026-10-28/bundle-impact.md`.
+  +3.221 bytes gzip e +2.855 bytes Brotli no total, além de aumentos nas rotas
+  registradas em [bundle-impact-snapshot-atual.md](bundle-impact-snapshot-atual.md).
+  O build usa o SHA da revisão de trabalho, portanto o commit final ainda exige
+  sua própria comparação canônica no CI.
+- O seletor anterior confundia `match-ai.functions-*` com a rota Match 3D;
+  a redução de 72% atribuída à rota na medição anterior é inválida. O seletor
+  corrigido mede aumento de 501 bytes gzip e 352 bytes Brotli nessa rota no
+  snapshot atual.
 - Os testes dos novos provedores usaram respostas simuladas. Os nomes das
   variáveis sensíveis e os limites estão em `docs/openai-secure-setup.md`.
 
