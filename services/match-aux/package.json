@@ -10,6 +10,6 @@
   },
   "scripts": {
     "start": "node --import tsx ./server.mjs",
-    "test": "node --import tsx --test signature.test.mjs engine.test.mjs job-store.test.mjs"
+    "test": "node --import tsx --test signature.test.mjs engine.test.mjs job-store.test.mjs readiness.test.mjs"
   }
 }

@@ -4,6 +4,7 @@ import { MongoClient } from "mongodb";
 import { simulateAuthoritativeRoom } from "./engine.mjs";
 import { verifyRequest } from "./signature.mjs";
 import { completeMatchJob, failMatchJob } from "./job-store.mjs";
+import { signedReadiness } from "./readiness.mjs";
 
 const port = Number(process.env.MATCH_AUX_PORT ?? 3090);
 const host = process.env.MATCH_AUX_BIND ?? "127.0.0.1";
@@ -66,7 +67,7 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/healthz") {
     return write(res, 200, { ok: true, busy }); // no secrets or databases exposed
   }
-  if (req.method !== "POST" || req.url !== "/v1/simulate") {
+  if (req.method !== "POST" || !["/v1/simulate", "/v1/readiness"].includes(req.url)) {
     return write(res, 404, { error: "not_found" });
   }
   let body;
@@ -74,6 +75,17 @@ const server = createServer(async (req, res) => {
     body = await readBody(req);
   } catch {
     return write(res, 413, { error: "payload_too_large" });
+  }
+  if (req.url === "/v1/readiness") {
+    const result = await signedReadiness(
+      body,
+      req.headers["x-pfm-timestamp"] ?? "",
+      req.headers["x-pfm-signature"] ?? "",
+      key,
+      () => mongo.db("admin").command({ ping: 1 }, { timeoutMS: 2000 }),
+      () => busy,
+    );
+    return write(res, result.status, result.body);
   }
   if (
     !verifyRequest(
