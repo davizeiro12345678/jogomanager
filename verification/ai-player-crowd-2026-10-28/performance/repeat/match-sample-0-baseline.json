@@ -1,0 +1,247 @@
+{
+  "root": "/workspace/scratch/be8f3de64802/jogomanager-ai-baseline",
+  "environment": {
+    "node": "v24.22.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "kernel": "6.18.55",
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+  "warmup": 3000,
+  "iterations": 1000,
+  "checksum": 6256000,
+  "checkpoints": [
+    {
+      "seed": "bench-setup",
+      "tick": 0,
+      "sha256": "0236b8c7688d253429183a55948527e765553777b3ba5594ea455c9496d17d37"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 300,
+      "sha256": "7e4e98da0299954f12c2cd78c9eb0641ba6ca843963ae4e06bbae4e5e28f1317"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 600,
+      "sha256": "1a541d9c593ef418c228410ea2a7ec7c025efcefacab173abfbfe394751e1db4"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 900,
+      "sha256": "20c6364e5b74c3e8dc90df1861ece032584d017ebeb5b2ec4ecaf1854a1b0bca"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1200,
+      "sha256": "6bbd15047297fafc07cd690bf8de2e9224fe7dea22b8e27b12093a17b08c825e"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1500,
+      "sha256": "044c3ebd8534719732eea7d0b733d893421e555ebfaa783be6c192d13262e986"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1800,
+      "sha256": "35c5793bfaf7caaaf4ab4022f81284b2a52b0a1e81557fb729814458c9c31859"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 0,
+      "sha256": "124bb748f674740a9d9fd61d45132d4ec0dde2041504a0e0540deea769f30702"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 300,
+      "sha256": "8b477905670f4e452585f36b55a0e6f49fdc8faf4f940271aca129a551318082"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 600,
+      "sha256": "2e1f6302fd0a7f6de5825886a41f0ec12762e088fe07f5d5e9195e8d3c018b82"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 900,
+      "sha256": "55930fe1ed4834130bd593417c77d48a6c0e3a470ccea1d873d1bbf9a59489ce"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1200,
+      "sha256": "0c65ec9dc471bdc049b3a0b079050271c0d3fc9447066ffb6dec09e33b942018"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1500,
+      "sha256": "0082486d682cea30ecd1a275afc7d6302d5d33a38d10605d878efebff78b8b82"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1800,
+      "sha256": "ecac599e2422e688394d3fcb5881a1e2723d0e42130a1ca38ef606d9f8d38506"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 0,
+      "sha256": "e91c793926b22d0397eca129719135cc1391195ee34029bb2238b2529d63ab1b"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 300,
+      "sha256": "c4e66972fe2284d5fb9acdb1eeb20c76a472ad6d100bd60f2d50f396acf001f2"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 600,
+      "sha256": "e75a509fac0e9d64c0a754b1c29c60c05f233fc1a3f014d77dcc13acf95e20c6"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 900,
+      "sha256": "fbf0b6862c40ed3d68b8fa615076815bc1598b120183c70d3e3973ce0dc598db"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1200,
+      "sha256": "61753587da55bcf96c57db8c17a93974f8254f574c565fd1222e55eb7e1e1d36"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1500,
+      "sha256": "c8e4f7dafe9ff70b4aa71ef51dd86bdc575b4dbdbc69cfbb977653800520a14a"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1800,
+      "sha256": "4551e84b0877766ce2e3a547bfa9cf692cd02b36cbd83eac31ab345eda119a6f"
+    }
+  ],
+  "samples": [
+    {
+      "wallMs": 0.22866086499999994,
+      "cpuMs": 0.246885
+    },
+    {
+      "wallMs": 0.2730258550000001,
+      "cpuMs": 0.275673
+    },
+    {
+      "wallMs": 0.21356057800000008,
+      "cpuMs": 0.216107
+    },
+    {
+      "wallMs": 0.2024676159999999,
+      "cpuMs": 0.219054
+    },
+    {
+      "wallMs": 0.2227792199999999,
+      "cpuMs": 0.225096
+    },
+    {
+      "wallMs": 0.20892849499999966,
+      "cpuMs": 0.211013
+    },
+    {
+      "wallMs": 0.2071600760000001,
+      "cpuMs": 0.21854400000000002
+    },
+    {
+      "wallMs": 0.21675863899999967,
+      "cpuMs": 0.235859
+    },
+    {
+      "wallMs": 0.2072953050000001,
+      "cpuMs": 0.20854499999999998
+    },
+    {
+      "wallMs": 0.19480005100000017,
+      "cpuMs": 0.195912
+    },
+    {
+      "wallMs": 0.20122348200000034,
+      "cpuMs": 0.205626
+    },
+    {
+      "wallMs": 0.18746068999999987,
+      "cpuMs": 0.189119
+    },
+    {
+      "wallMs": 0.17866336300000013,
+      "cpuMs": 0.179905
+    },
+    {
+      "wallMs": 0.1889122460000003,
+      "cpuMs": 0.19053399999999998
+    },
+    {
+      "wallMs": 0.19722430099999974,
+      "cpuMs": 0.19956000000000002
+    },
+    {
+      "wallMs": 0.21485344499999973,
+      "cpuMs": 0.216584
+    },
+    {
+      "wallMs": 0.20269344600000022,
+      "cpuMs": 0.204789
+    },
+    {
+      "wallMs": 0.1865634890000001,
+      "cpuMs": 0.18929300000000002
+    },
+    {
+      "wallMs": 0.17835627199999998,
+      "cpuMs": 0.18007599999999999
+    },
+    {
+      "wallMs": 0.18452636100000017,
+      "cpuMs": 0.18619999999999998
+    },
+    {
+      "wallMs": 0.2063523009999999,
+      "cpuMs": 0.20862
+    },
+    {
+      "wallMs": 0.2139800299999997,
+      "cpuMs": 0.216774
+    },
+    {
+      "wallMs": 0.18835066000000006,
+      "cpuMs": 0.19041
+    },
+    {
+      "wallMs": 0.19377802199999952,
+      "cpuMs": 0.195959
+    },
+    {
+      "wallMs": 0.18843666399999984,
+      "cpuMs": 0.19642199999999999
+    },
+    {
+      "wallMs": 0.1760136929999999,
+      "cpuMs": 0.177053
+    },
+    {
+      "wallMs": 0.17581019699999978,
+      "cpuMs": 0.176863
+    },
+    {
+      "wallMs": 0.18050965199999974,
+      "cpuMs": 0.182067
+    },
+    {
+      "wallMs": 0.1802079479999993,
+      "cpuMs": 0.181521
+    },
+    {
+      "wallMs": 0.17198095100000046,
+      "cpuMs": 0.173012
+    },
+    {
+      "wallMs": 0.1753980160000001,
+      "cpuMs": 0.176423
+    }
+  ]
+}

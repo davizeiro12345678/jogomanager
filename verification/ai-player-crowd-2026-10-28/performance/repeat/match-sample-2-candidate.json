@@ -1,0 +1,247 @@
+{
+  "root": "/workspace/scratch/be8f3de64802/jogomanager",
+  "environment": {
+    "node": "v24.22.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "kernel": "6.18.55",
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+  "warmup": 3000,
+  "iterations": 1000,
+  "checksum": 6256000,
+  "checkpoints": [
+    {
+      "seed": "bench-setup",
+      "tick": 0,
+      "sha256": "0236b8c7688d253429183a55948527e765553777b3ba5594ea455c9496d17d37"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 300,
+      "sha256": "7e4e98da0299954f12c2cd78c9eb0641ba6ca843963ae4e06bbae4e5e28f1317"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 600,
+      "sha256": "1a541d9c593ef418c228410ea2a7ec7c025efcefacab173abfbfe394751e1db4"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 900,
+      "sha256": "20c6364e5b74c3e8dc90df1861ece032584d017ebeb5b2ec4ecaf1854a1b0bca"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1200,
+      "sha256": "6bbd15047297fafc07cd690bf8de2e9224fe7dea22b8e27b12093a17b08c825e"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1500,
+      "sha256": "044c3ebd8534719732eea7d0b733d893421e555ebfaa783be6c192d13262e986"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1800,
+      "sha256": "35c5793bfaf7caaaf4ab4022f81284b2a52b0a1e81557fb729814458c9c31859"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 0,
+      "sha256": "124bb748f674740a9d9fd61d45132d4ec0dde2041504a0e0540deea769f30702"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 300,
+      "sha256": "8b477905670f4e452585f36b55a0e6f49fdc8faf4f940271aca129a551318082"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 600,
+      "sha256": "2e1f6302fd0a7f6de5825886a41f0ec12762e088fe07f5d5e9195e8d3c018b82"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 900,
+      "sha256": "55930fe1ed4834130bd593417c77d48a6c0e3a470ccea1d873d1bbf9a59489ce"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1200,
+      "sha256": "0c65ec9dc471bdc049b3a0b079050271c0d3fc9447066ffb6dec09e33b942018"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1500,
+      "sha256": "0082486d682cea30ecd1a275afc7d6302d5d33a38d10605d878efebff78b8b82"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1800,
+      "sha256": "ecac599e2422e688394d3fcb5881a1e2723d0e42130a1ca38ef606d9f8d38506"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 0,
+      "sha256": "e91c793926b22d0397eca129719135cc1391195ee34029bb2238b2529d63ab1b"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 300,
+      "sha256": "c4e66972fe2284d5fb9acdb1eeb20c76a472ad6d100bd60f2d50f396acf001f2"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 600,
+      "sha256": "e75a509fac0e9d64c0a754b1c29c60c05f233fc1a3f014d77dcc13acf95e20c6"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 900,
+      "sha256": "fbf0b6862c40ed3d68b8fa615076815bc1598b120183c70d3e3973ce0dc598db"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1200,
+      "sha256": "61753587da55bcf96c57db8c17a93974f8254f574c565fd1222e55eb7e1e1d36"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1500,
+      "sha256": "c8e4f7dafe9ff70b4aa71ef51dd86bdc575b4dbdbc69cfbb977653800520a14a"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1800,
+      "sha256": "4551e84b0877766ce2e3a547bfa9cf692cd02b36cbd83eac31ab345eda119a6f"
+    }
+  ],
+  "samples": [
+    {
+      "wallMs": 0.185658545,
+      "cpuMs": 0.197859
+    },
+    {
+      "wallMs": 0.2011502270000001,
+      "cpuMs": 0.20306100000000002
+    },
+    {
+      "wallMs": 0.2089266100000002,
+      "cpuMs": 0.21091900000000002
+    },
+    {
+      "wallMs": 0.1995837019999999,
+      "cpuMs": 0.21165799999999999
+    },
+    {
+      "wallMs": 0.21356175299999972,
+      "cpuMs": 0.21569999999999998
+    },
+    {
+      "wallMs": 0.23932152500000028,
+      "cpuMs": 0.24180000000000001
+    },
+    {
+      "wallMs": 0.21325347499999997,
+      "cpuMs": 0.22564599999999999
+    },
+    {
+      "wallMs": 0.2138406890000001,
+      "cpuMs": 0.237068
+    },
+    {
+      "wallMs": 0.24088193899999988,
+      "cpuMs": 0.243113
+    },
+    {
+      "wallMs": 0.23161130000000002,
+      "cpuMs": 0.23359100000000002
+    },
+    {
+      "wallMs": 0.2123469799999998,
+      "cpuMs": 0.219092
+    },
+    {
+      "wallMs": 0.20029341599999997,
+      "cpuMs": 0.20219
+    },
+    {
+      "wallMs": 0.18793783699999994,
+      "cpuMs": 0.18937700000000002
+    },
+    {
+      "wallMs": 0.18823349699999972,
+      "cpuMs": 0.189547
+    },
+    {
+      "wallMs": 0.1834343859999999,
+      "cpuMs": 0.184807
+    },
+    {
+      "wallMs": 0.18374527499999932,
+      "cpuMs": 0.18492
+    },
+    {
+      "wallMs": 0.19349680799999988,
+      "cpuMs": 0.195192
+    },
+    {
+      "wallMs": 0.2019712019999997,
+      "cpuMs": 0.203426
+    },
+    {
+      "wallMs": 0.18419635299999937,
+      "cpuMs": 0.18584299999999998
+    },
+    {
+      "wallMs": 0.17533887700000014,
+      "cpuMs": 0.17652600000000002
+    },
+    {
+      "wallMs": 0.181037096,
+      "cpuMs": 0.183692
+    },
+    {
+      "wallMs": 0.18006960099999925,
+      "cpuMs": 0.181695
+    },
+    {
+      "wallMs": 0.1762270639999997,
+      "cpuMs": 0.177649
+    },
+    {
+      "wallMs": 0.182710951,
+      "cpuMs": 0.184065
+    },
+    {
+      "wallMs": 0.21516623000000074,
+      "cpuMs": 0.22458799999999998
+    },
+    {
+      "wallMs": 0.23699224799999957,
+      "cpuMs": 0.239431
+    },
+    {
+      "wallMs": 0.19939475700000003,
+      "cpuMs": 0.201019
+    },
+    {
+      "wallMs": 0.20662235099999998,
+      "cpuMs": 0.208007
+    },
+    {
+      "wallMs": 0.21390064900000016,
+      "cpuMs": 0.21515199999999998
+    },
+    {
+      "wallMs": 0.2010637200000001,
+      "cpuMs": 0.20254499999999998
+    },
+    {
+      "wallMs": 0.19270132900000045,
+      "cpuMs": 0.193828
+    }
+  ]
+}

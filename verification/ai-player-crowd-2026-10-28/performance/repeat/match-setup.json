@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-10-28T18:54:36.284Z",
+  "protocol": "same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass",
+  "baseline": "/workspace/scratch/be8f3de64802/jogomanager-ai-baseline",
+  "candidate": "/workspace/scratch/be8f3de64802/jogomanager",
+  "environment": {
+    "node": "v24.22.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "kernel": "6.18.55",
+    "cpu": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "dependencyLockSha256": "2a3ef045eda83e421f68fdf60649d3f73c8d55ed77bd9b7fcbfd572264efe97d",
+  "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+  "samplesPerRevision": 62,
+  "deterministicCheckpoints": 21,
+  "budget": {
+    "baselineCpuMs": 0.205102,
+    "candidateCpuMs": 0.196092,
+    "durationChangePercent": -4.392936197599251,
+    "materialRegressionPercent": 10,
+    "confidence": 0.99,
+    "lowerRatio": 0.8987091438639387,
+    "upperRatio": 1.004610275542051,
+    "failed": false
+  },
+  "violations": []
+}

@@ -18,6 +18,17 @@ completas de cada partida estão em `results.json`.
   orientação de um atacante altera sua decisão de chutar. Outros testes
   rejeitam instruções malformadas e verificam o mapeamento da torcida para o
   sistema de reação existente.
+- O comparativo ABBA de construção, com Node 24.22.0, 62 amostras por revisão
+  e 21 checkpoints idênticos, teve resultados divergentes. Na primeira rodada,
+  a candidata ficou 21,9% mais lenta e o limite inferior do intervalo de 99%
+  apontou regressão acima de 10%, reprovando o gate. Na repetição, a candidata
+  ficou 4,4% mais rápida e o gate passou. As amostras brutas das duas rodadas
+  estão em `performance/`; a divergência impede concluir que o desempenho foi
+  melhorado ou que a primeira regressão esteja resolvida. A primeira medição
+  coincidiu parcialmente com uma operação de busca no Git.
+- O comparativo de bundles da proposta completa contra `main` falhou: total
+  +3.273 bytes gzip e +2.940 bytes Brotli. Também houve aumentos nas rotas
+  verificadas de carreira, Match 3D e worker. Os limites não foram alterados.
 
 A integração é limitada à partida rápida local autenticada e começa desativada.
 Ainda faltam chamada real à API, avaliação com respostas reais, teste visual de
