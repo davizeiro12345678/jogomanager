@@ -63,9 +63,8 @@ function reportCacheError(error: unknown, phase: "read" | "write" | "load") {
 }
 async function readCache(): Promise<OfficialAssets | null> {
   const validData = (value: unknown): OfficialAssets | null => {
-    if (!value || typeof value !== "object") return null;
-    const parsed = value as { at?: unknown; data?: Partial<OfficialAssets> };
-    return typeof parsed.at === "number" &&
+    const parsed = value as { at: number; data?: Partial<OfficialAssets> } | null;
+    return parsed &&
       Number.isFinite(parsed.at) &&
       Date.now() - parsed.at <= TTL &&
       parsed.data &&
