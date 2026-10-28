@@ -1,12 +1,25 @@
 import { z } from "zod";
 import type { Difficulty } from "@/game/quickMatch";
 
+const PlayerApproach = z.enum(["cautious", "balanced", "attacking"]);
 const TacticalPlan = z
   .object({
     mentality: z.number().int().min(0).max(4),
     pressing: z.number().int().min(0).max(2),
     width: z.number().int().min(0).max(2),
     tempo: z.number().int().min(0).max(2),
+    players: z
+      .object({ GK: PlayerApproach, DF: PlayerApproach, MF: PlayerApproach, FW: PlayerApproach })
+      .strict(),
+    homePlayers: z
+      .object({ GK: PlayerApproach, DF: PlayerApproach, MF: PlayerApproach, FW: PlayerApproach })
+      .strict(),
+    crowd: z
+      .object({
+        climate: z.enum(["apoio", "cobranca"]),
+        intensity: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+      })
+      .strict(),
   })
   .strict();
 
@@ -17,6 +30,8 @@ export interface MatchAiSummary {
   difficulty: Difficulty;
   homeAttributes?: number[];
   awayAttributes?: number[];
+  homeRoles?: Array<{ position: string; attributes: number[] }>;
+  awayRoles?: Array<{ position: string; attributes: number[] }>;
 }
 
 /** Data is produced from the server's catalog, never from player-authored text. */
@@ -37,7 +52,7 @@ export async function requestMatchTactics(
           {
             role: "developer",
             content:
-              "Choose the away team's football tactics against the home team for a simulator. Inputs are catalog-derived ratings 0-100 and difficulty. Attribute arrays are averages in order pace, shooting, passing, defending, physical. The controls are mentality 0-4 and pressing, width and tempo 0-2. Return only the requested structured plan.",
+              "Choose the away team's football tactics and both teams' player approaches by position for a simulator. Inputs are catalog-derived ratings 0-100 and difficulty. Team and position attribute arrays are averages in order pace, shooting, passing, defending, physical. The controls are mentality 0-4 and pressing, width and tempo 0-2. For each position choose cautious, balanced or attacking; players are away and homePlayers are home. Also choose a plausible home crowd climate and intensity; crowd reactions remain driven by match events. Return only the requested structured plan.",
           },
           { role: "user", content: JSON.stringify(summary) },
         ],
@@ -54,8 +69,47 @@ export async function requestMatchTactics(
                 pressing: { type: "integer", enum: [0, 1, 2] },
                 width: { type: "integer", enum: [0, 1, 2] },
                 tempo: { type: "integer", enum: [0, 1, 2] },
+                players: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    GK: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                    DF: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                    MF: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                    FW: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                  },
+                  required: ["GK", "DF", "MF", "FW"],
+                },
+                homePlayers: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    GK: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                    DF: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                    MF: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                    FW: { type: "string", enum: ["cautious", "balanced", "attacking"] },
+                  },
+                  required: ["GK", "DF", "MF", "FW"],
+                },
+                crowd: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    climate: { type: "string", enum: ["apoio", "cobranca"] },
+                    intensity: { type: "integer", enum: [0, 1, 2] },
+                  },
+                  required: ["climate", "intensity"],
+                },
               },
-              required: ["mentality", "pressing", "width", "tempo"],
+              required: [
+                "mentality",
+                "pressing",
+                "width",
+                "tempo",
+                "players",
+                "homePlayers",
+                "crowd",
+              ],
             },
           },
         },

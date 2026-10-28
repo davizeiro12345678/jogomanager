@@ -38,23 +38,34 @@ export const requestAiTacticalPlan = createServerFn({ method: "POST" })
       // not an OpenAI invoice or a hard currency cap.
       if (!(await reserveAiBudget("text", 200))) return null;
       const { buildTeamSetup } = await import("@/game/quickMatch");
-      const attributes = (club: string) => {
+      const summarize = (club: string) => {
         const players = buildTeamSetup(club).players;
-        return (["pace", "shooting", "passing", "defending", "physical"] as const).map(
-          (attribute) =>
+        const attributes = (members: typeof players) =>
+          (["pace", "shooting", "passing", "defending", "physical"] as const).map((attribute) =>
             Math.round(
-              players.reduce((sum, player) => sum + player[attribute], 0) /
-                Math.max(1, players.length),
+              members.reduce((sum, player) => sum + player[attribute], 0) /
+                Math.max(1, members.length),
             ),
-        );
+          );
+        return {
+          attributes: attributes(players),
+          roles: (["GK", "DF", "MF", "FW"] as const).flatMap((position) => {
+            const members = players.filter((player) => player.pos === position);
+            return members.length ? [{ position, attributes: attributes(members) }] : [];
+          }),
+        };
       };
+      const home = summarize(data.homeClub);
+      const away = summarize(data.awayClub);
       const { requestMatchTactics } = await import("@/lib/match-ai.server");
       return requestMatchTactics(key, {
         homeStrength: CLUBS[data.homeClub]!.strength,
         awayStrength: CLUBS[data.awayClub]!.strength,
         difficulty: data.difficulty,
-        homeAttributes: attributes(data.homeClub),
-        awayAttributes: attributes(data.awayClub),
+        homeAttributes: home.attributes,
+        awayAttributes: away.attributes,
+        homeRoles: home.roles,
+        awayRoles: away.roles,
       });
     } catch {
       return null;

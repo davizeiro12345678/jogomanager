@@ -43,6 +43,35 @@ describe("untrusted match command boundary", () => {
       }),
     ).toBe(true);
   });
+  it("allows bounded player instructions and rejects forged or unsupported roles", () => {
+    const players = { GK: "cautious", DF: "balanced", MF: "attacking", FW: "attacking" };
+    const command = {
+      id: 9,
+      type: "tacticsLive",
+      side: "away",
+      expiresAt: Date.now() + 1_000,
+      tactics: { ...away.tactics, playerInstructions: players },
+    };
+    expect(validMatchCommand(command)).toBe(true);
+    expect(
+      validMatchCommand({
+        ...command,
+        tactics: { ...command.tactics, playerInstructions: { ...players, FW: "teleport" } },
+      }),
+    ).toBe(false);
+    expect(
+      validMatchCommand({
+        ...command,
+        tactics: { ...command.tactics, playerInstructions: { ...players, COACH: "attacking" } },
+      }),
+    ).toBe(false);
+    expect(
+      validMatchCommand({
+        ...command,
+        tactics: { ...command.tactics, playerInstructions: { GK: "cautious" } },
+      }),
+    ).toBe(false);
+  });
   it("refuses sparse roster and career arrays without throwing", () => {
     for (const key of ["players", "bench"] as const) {
       const message = { ...start, home: { ...home, [key]: Array(1) } };

@@ -16,7 +16,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc: 
 vi.mock("@/game/data/leagues", () => ({ CLUBS: { fla: { strength: 85 }, pal: { strength: 84 } } }));
 vi.mock("@/game/quickMatch", () => ({
   buildTeamSetup: () => ({
-    players: [{ pace: 80, shooting: 80, passing: 80, defending: 80, physical: 80 }],
+    players: [{ pos: "FW", pace: 80, shooting: 80, passing: 80, defending: 80, physical: 80 }],
   }),
 }));
 vi.mock("@/lib/ai-budget.server", () => ({ reserveAiBudget: mocks.budget }));
@@ -38,7 +38,15 @@ beforeEach(() => {
   vi.stubEnv("OPENAI_API_KEY", "test-secret");
   mocks.rpc.mockResolvedValue({ data: true, error: null });
   mocks.budget.mockResolvedValue(true);
-  mocks.model.mockResolvedValue({ mentality: 3, pressing: 2, width: 1, tempo: 2 });
+  mocks.model.mockResolvedValue({
+    mentality: 3,
+    pressing: 2,
+    width: 1,
+    tempo: 2,
+    players: { GK: "cautious", DF: "balanced", MF: "attacking", FW: "attacking" },
+    homePlayers: { GK: "cautious", DF: "balanced", MF: "balanced", FW: "attacking" },
+    crowd: { climate: "cobranca", intensity: 2 },
+  });
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -49,6 +57,9 @@ describe("tactical AI server admission", () => {
       pressing: 2,
       width: 1,
       tempo: 2,
+      players: { GK: "cautious", DF: "balanced", MF: "attacking", FW: "attacking" },
+      homePlayers: { GK: "cautious", DF: "balanced", MF: "balanced", FW: "attacking" },
+      crowd: { climate: "cobranca", intensity: 2 },
     });
     expect(mocks.rpc).toHaveBeenCalledWith("reserve_guest_checkout_attempt", {
       _email_hash: expect.stringMatching(/^[0-9a-f]{64}$/),
@@ -56,7 +67,11 @@ describe("tactical AI server admission", () => {
     expect(mocks.budget).toHaveBeenCalledWith("text", 200);
     expect(mocks.model).toHaveBeenCalledWith(
       "test-secret",
-      expect.objectContaining({ homeStrength: 85, awayStrength: 84 }),
+      expect.objectContaining({
+        homeStrength: 85,
+        awayStrength: 84,
+        awayRoles: [{ position: "FW", attributes: [80, 80, 80, 80, 80] }],
+      }),
     );
   });
   it("never calls the model when quota, budget or configuration rejects the request", async () => {

@@ -2545,7 +2545,9 @@ export class MatchSim {
     const goalX = dir * FIELD_X;
     const distGoal = Math.hypot(goalX - holder.x, holder.z);
     const { dist: pressDist } = this.nearestOpponent(holder);
-    const mentality = this.setup(holder.side).tactics.mentality;
+    const tactics = this.setup(holder.side).tactics;
+    const mentality = tactics.mentality;
+    const approach = tactics.playerInstructions?.[holder.pos as Player["pos"]];
 
     // Take an open chance before dribbling into the keeper and a crowded goalmouth.
     const chance = xgForShot({
@@ -2555,12 +2557,17 @@ export class MatchSim {
       pressDist,
       onRun: Math.hypot(holder.vx, holder.vz) > 5,
     });
-    const shootUrge =
+    let shootUrge =
       distGoal < 30
         ? Math.min(0.72, chance * 2.4 + (distGoal < 9 ? 0.08 : 0)) *
           (0.8 + holder.shooting / 500) *
           (0.9 + mentality * 0.05)
         : 0;
+
+    // A bounded role instruction adjusts choices; the simulator still owns
+    // physics, probabilities and all random outcomes.
+    if (approach === "attacking") shootUrge *= 1.2;
+    else if (approach === "cautious") shootUrge *= 0.8;
 
     if (holder.pos !== "GK" && this.rnd() < shootUrge) {
       this.shoot(holder, distGoal);
@@ -2610,8 +2617,10 @@ export class MatchSim {
       const forward = (m.x - holder.x) * dir;
       const cover = lanes[index * 3 + 1]!;
       const laneRisk = lanes[index * 3 + 2]!;
-      const score =
+      let score =
         forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
+      if (approach === "attacking") score += forward * 0.12 + laneRisk * 0.1;
+      else if (approach === "cautious") score -= forward * 0.12 + laneRisk * 0.1;
       if (score > bestScore) {
         bestScore = score;
         best = m;

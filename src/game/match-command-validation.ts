@@ -31,6 +31,19 @@ const side = (v: unknown) => v === "home" || v === "away";
 const validControlExpiry = (value: unknown) =>
   validCareerEvaluationTime(value) && value <= Date.now() + LIVE_CONTROL_RESPONSE_TIMEOUT_MS;
 
+function validPlayerInstructions(value: unknown): boolean {
+  if (!object(value)) return false;
+  const roles = ["GK", "DF", "MF", "FW"];
+  return (
+    Object.keys(value).length === roles.length &&
+    roles.every(
+      (role) =>
+        Object.hasOwn(value, role) &&
+        ["cautious", "balanced", "attacking"].includes(value[role] as string),
+    )
+  );
+}
+
 export function validMatchTactics(v: unknown): boolean {
   return (
     object(v) &&
@@ -38,7 +51,8 @@ export function validMatchTactics(v: unknown): boolean {
     integer(v["mentality"], 0, 4) &&
     integer(v["pressing"], 0, 2) &&
     integer(v["width"], 0, 2) &&
-    integer(v["tempo"], 0, 2)
+    integer(v["tempo"], 0, 2) &&
+    (v["playerInstructions"] === undefined || validPlayerInstructions(v["playerInstructions"]))
   );
 }
 

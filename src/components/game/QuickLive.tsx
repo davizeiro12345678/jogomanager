@@ -26,6 +26,8 @@ import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { safeClub } from "@/game/squad";
 import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { supportersFromAiPlan } from "@/game/match-ai-crowd";
+import type { SupporterMatchday } from "@/game/career-world-types";
 import { useT } from "@/i18n/provider";
 import "./career-interface.css";
 
@@ -95,6 +97,8 @@ export default function QuickLive({
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(sim, paused);
   const [showEvents, setShowEvents] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [fanPlan, setFanPlan] = useState<{ sim: MatchRuntime; supporters: SupporterMatchday }>();
+  const supporters = fanPlan?.sim === sim ? fanPlan.supporters : undefined;
   const toolsTrigger = useRef<HTMLButtonElement>(null);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const controllerRef = useRef<LiveMatchController | null>(null);
@@ -195,7 +199,14 @@ export default function QuickLive({
           sim.minute() > 10
         )
           return;
-        controller.setTactics("away", { ...setups.away.tactics, ...plan });
+        const { players, homePlayers, crowd, ...tactics } = plan;
+        controller.setTactics("away", {
+          ...setups.away.tactics,
+          ...tactics,
+          playerInstructions: players,
+        });
+        controller.setTactics("home", { ...setups.home.tactics, playerInstructions: homePlayers });
+        setFanPlan({ sim, supporters: supportersFromAiPlan(crowd) });
       } catch {
         // Offline and unavailable providers keep the game's ordinary AI.
       }
@@ -255,7 +266,13 @@ export default function QuickLive({
 
   return (
     <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} paused={paused || done} />
+      <Stadium3D
+        sim={sim}
+        mode={camera}
+        quality={quality}
+        paused={paused || done}
+        supporters={supporters}
+      />
       <button
         type="button"
         onClick={() => {

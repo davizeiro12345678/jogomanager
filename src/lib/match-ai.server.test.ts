@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { requestMatchTactics } from "./match-ai.server";
 
-const valid = { mentality: 3, pressing: 2, width: 1, tempo: 2 };
+const valid = {
+  mentality: 3,
+  pressing: 2,
+  width: 1,
+  tempo: 2,
+  players: { GK: "cautious", DF: "balanced", MF: "attacking", FW: "attacking" },
+  homePlayers: { GK: "cautious", DF: "balanced", MF: "balanced", FW: "attacking" },
+  crowd: { climate: "cobranca", intensity: 2 },
+};
 const summary = { homeStrength: 83, awayStrength: 82, difficulty: "dificil" as const };
 const response = (value: unknown) => new Response(JSON.stringify(value), { status: 200 });
 
@@ -49,6 +57,34 @@ describe("server tactical model", () => {
         {
           type: "message",
           content: [{ type: "output_text", text: JSON.stringify({ ...valid, score: 99 }) }],
+        },
+      ],
+    },
+    {
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          content: [
+            {
+              type: "output_text",
+              text: JSON.stringify({ ...valid, players: { ...valid.players, FW: "teleport" } }),
+            },
+          ],
+        },
+      ],
+    },
+    {
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          content: [
+            {
+              type: "output_text",
+              text: JSON.stringify({ ...valid, crowd: { ...valid.crowd, intensity: 99 } }),
+            },
+          ],
         },
       ],
     },

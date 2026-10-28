@@ -85,12 +85,17 @@ export interface Player {
 
 export type FormationKey = "4-3-3" | "4-4-2" | "3-5-2" | "4-2-3-1";
 
+export type PlayerAiApproach = "cautious" | "balanced" | "attacking";
+export type PlayerAiInstructions = Record<Position, PlayerAiApproach>;
+
 export interface Tactics {
   formation: FormationKey;
   mentality: number; // 0 = ultra defensivo, 4 = all out attack
   pressing: number; // 0..2
   width: number; // 0..2
   tempo: number; // 0..2
+  /** Optional role-specific instructions; absent keeps the original simulation. */
+  playerInstructions?: PlayerAiInstructions;
 }
 
 export interface Fixture {
