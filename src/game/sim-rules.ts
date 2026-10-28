@@ -104,12 +104,20 @@ export interface OffsideLineInput {
  * linha no sistema absoluto; quem ataca compara com o próprio `dir`.
  */
 export function defensiveLineX(players: OffsideLineInput[], attacking: Side): number {
-  const foes = players
-    .filter((p) => p.side !== attacking && !p.sentOff)
-    .map((p) => p.x)
-    .sort((a, b) => (attacking === "home" ? a - b : b - a));
-  if (foes.length < 2) return attacking === "home" ? -FIELD_X : FIELD_X;
-  return foes[1]!;
+  const direction = attacking === "home" ? 1 : -1;
+  let first = -Infinity;
+  let second = -Infinity;
+  for (const player of players) {
+    if (player.side === attacking || player.sentOff) continue;
+    const distance = player.x * direction;
+    if (distance > first) {
+      second = first;
+      first = distance;
+    } else if (distance > second) {
+      second = distance;
+    }
+  }
+  return Number.isFinite(second) ? second * direction : FIELD_X * direction;
 }
 
 /**

@@ -15,8 +15,16 @@ vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth:
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { rpc: mocks.rpc } }));
 vi.mock("@/game/data/leagues", () => ({ CLUBS: { fla: { strength: 85 }, pal: { strength: 84 } } }));
 vi.mock("@/game/quickMatch", () => ({
-  buildTeamSetup: () => ({
-    players: [{ pos: "FW", pace: 80, shooting: 80, passing: 80, defending: 80, physical: 80 }],
+  QUICK_MATCH_HOME_FORMATION: "4-3-3",
+  QUICK_MATCH_AWAY_FORMATION: "4-4-2",
+  buildTeamSetup: (_club: string, formation = "4-3-3") => ({
+    players:
+      formation === "4-4-2"
+        ? [
+            { pos: "FW", pace: 70, shooting: 70, passing: 70, defending: 70, physical: 70 },
+            { pos: "FW", pace: 80, shooting: 80, passing: 80, defending: 80, physical: 80 },
+          ]
+        : [{ pos: "FW", pace: 80, shooting: 80, passing: 80, defending: 80, physical: 80 }],
   }),
 }));
 vi.mock("@/lib/ai-budget.server", () => ({ reserveAiBudget: mocks.budget }));
@@ -70,7 +78,10 @@ describe("tactical AI server admission", () => {
       expect.objectContaining({
         homeStrength: 85,
         awayStrength: 84,
-        awayRoles: [{ position: "FW", attributes: [80, 80, 80, 80, 80] }],
+        homeFormation: "4-3-3",
+        awayFormation: "4-4-2",
+        homeRoles: [{ position: "FW", count: 1, attributes: [80, 80, 80, 80, 80] }],
+        awayRoles: [{ position: "FW", count: 2, attributes: [75, 75, 75, 75, 75] }],
       }),
     );
   });

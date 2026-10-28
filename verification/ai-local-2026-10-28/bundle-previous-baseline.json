@@ -1,0 +1,6604 @@
+{
+  "label": "previous",
+  "generatedAt": "2026-10-28T21:21:37.142Z",
+  "assets": "/workspace/scratch/be8f3de64802/jogomanager-ai-reference/.output/public/assets",
+  "totalBytes": 6905143,
+  "totalGzipBytes": 2237347,
+  "totalBrotliBytes": 2108288,
+  "wasmAssets": [
+    {
+      "name": "basis_transcoder-VXdx5NbI.wasm",
+      "bytes": 527333,
+      "gzipBytes": 247535,
+      "brotliBytes": 229495
+    },
+    {
+      "name": "crowd_visibility_wasm_bg-BwBV_PC0.wasm",
+      "bytes": 90209,
+      "gzipBytes": 30131,
+      "brotliBytes": 28267
+    },
+    {
+      "name": "rapier_wasm3d_bg-C6GCbKVJ.wasm",
+      "bytes": 3082103,
+      "gzipBytes": 1175669,
+      "brotliBytes": 1007567
+    }
+  ],
+  "cinematicStage": {
+    "name": "CinematicStage3D-DbotxfD8.js",
+    "staticDependencies": [
+      "CinematicStage3D-DbotxfD8.js",
+      "rolldown-runtime-qXqUbbKo.js",
+      "vite-preload-DjzSQ1t3.js",
+      "browser-react-3MeFRtu1.js",
+      "browser-shared-data-BhCyFdPZ.js",
+      "rng-CzXaq355.js",
+      "three.core-CqqFKHSV.js",
+      "react-three-fiber.esm-C9rBIdwL.js",
+      "Lightformer-BLFEF6ov.js",
+      "extends-CvVTau-c.js",
+      "athlete-posture-DgFL-WIN.js",
+      "player-model-BQCZhflo.js",
+      "kits-DvwbcFIm.js",
+      "customStyle-B55yYDvc.js",
+      "visual-settings-CCJpfqsS.js",
+      "BufferGeometryUtils-CIOtIMgY.js",
+      "presentation-lanes-ba9gThZ4.js",
+      "cinematic-cue-BfnPKyqC.js",
+      "cinematic-surfaces-ClRjwNKA.js",
+      "cinematic-runtime-DorQpG42.js",
+      "graphics-renderer-metadata-BM_DB4rR.js",
+      "athlete-cloth-C9MmG9O8.js",
+      "physics-quality-Dd_k5PQD.js",
+      "cinematic-set-BMkI2mlY.js",
+      "static-stadium-batch-DHJkiTo4.js",
+      "scene-census-D2wiI4F1.js",
+      "Ktx2CanvasAssets-KemZNCXK.js",
+      "GraphicsBoundary-BNRmO58Y.js",
+      "cinematic-artwork--HRs0BpL.js",
+      "registry-K7hgcj1k.js",
+      "device--sdEPQNt.js"
+    ],
+    "dynamicDependencies": [
+      "CinematicLens-CkusuNiw.js",
+      "LockerRoom-FiJGKMYi.js",
+      "Tunnel-B4Q6F-_o.js",
+      "PressRoom-DwLr73id.js",
+      "PitchEntry-D1QySysb.js",
+      "Stands-D4nrRvhA.js",
+      "Office-D7SQAbcK.js",
+      "BusArrival-Cv-foP0w.js",
+      "detect-gpu.esm-Bj-Kifyj.js"
+    ]
+  },
+  "cinematicSetChunks": [
+    {
+      "set": "locker",
+      "name": "LockerRoom-FiJGKMYi.js",
+      "bytes": 3078,
+      "gzipBytes": 1046,
+      "brotliBytes": 975
+    },
+    {
+      "set": "tunnel",
+      "name": "Tunnel-B4Q6F-_o.js",
+      "bytes": 2219,
+      "gzipBytes": 799,
+      "brotliBytes": 739
+    },
+    {
+      "set": "press",
+      "name": "PressRoom-DwLr73id.js",
+      "bytes": 2000,
+      "gzipBytes": 852,
+      "brotliBytes": 794
+    },
+    {
+      "set": "pitch",
+      "name": "PitchEntry-D1QySysb.js",
+      "bytes": 4562,
+      "gzipBytes": 1611,
+      "brotliBytes": 1534
+    },
+    {
+      "set": "stands",
+      "name": "Stands-D4nrRvhA.js",
+      "bytes": 1394,
+      "gzipBytes": 670,
+      "brotliBytes": 621
+    },
+    {
+      "set": "office",
+      "name": "Office-D7SQAbcK.js",
+      "bytes": 2032,
+      "gzipBytes": 765,
+      "brotliBytes": 698
+    },
+    {
+      "set": "arrival",
+      "name": "BusArrival-Cv-foP0w.js",
+      "bytes": 6231,
+      "gzipBytes": 2149,
+      "brotliBytes": 2054
+    }
+  ],
+  "entries": [
+    {
+      "name": "CinematicStage3D-DbotxfD8.js",
+      "surface": null,
+      "bytes": 65590,
+      "gzipBytes": 18590,
+      "brotliBytes": 17583,
+      "staticBytes": 1347047,
+      "staticGzipBytes": 398352,
+      "staticBrotliBytes": 373041,
+      "dependencies": [
+        "CinematicStage3D-DbotxfD8.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "rng-CzXaq355.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "Lightformer-BLFEF6ov.js",
+        "extends-CvVTau-c.js",
+        "athlete-posture-DgFL-WIN.js",
+        "player-model-BQCZhflo.js",
+        "kits-DvwbcFIm.js",
+        "customStyle-B55yYDvc.js",
+        "visual-settings-CCJpfqsS.js",
+        "BufferGeometryUtils-CIOtIMgY.js",
+        "presentation-lanes-ba9gThZ4.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-runtime-DorQpG42.js",
+        "graphics-renderer-metadata-BM_DB4rR.js",
+        "athlete-cloth-C9MmG9O8.js",
+        "physics-quality-Dd_k5PQD.js",
+        "cinematic-set-BMkI2mlY.js",
+        "static-stadium-batch-DHJkiTo4.js",
+        "scene-census-D2wiI4F1.js",
+        "Ktx2CanvasAssets-KemZNCXK.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "cinematic-artwork--HRs0BpL.js",
+        "registry-K7hgcj1k.js",
+        "device--sdEPQNt.js"
+      ],
+      "startupBytes": 1775294,
+      "startupGzipBytes": 535093,
+      "startupBrotliBytes": 502358,
+      "startupDependencies": [
+        "CinematicStage3D-DbotxfD8.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "rng-CzXaq355.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "Lightformer-BLFEF6ov.js",
+        "extends-CvVTau-c.js",
+        "athlete-posture-DgFL-WIN.js",
+        "player-model-BQCZhflo.js",
+        "kits-DvwbcFIm.js",
+        "customStyle-B55yYDvc.js",
+        "visual-settings-CCJpfqsS.js",
+        "BufferGeometryUtils-CIOtIMgY.js",
+        "presentation-lanes-ba9gThZ4.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-runtime-DorQpG42.js",
+        "graphics-renderer-metadata-BM_DB4rR.js",
+        "athlete-cloth-C9MmG9O8.js",
+        "physics-quality-Dd_k5PQD.js",
+        "cinematic-set-BMkI2mlY.js",
+        "static-stadium-batch-DHJkiTo4.js",
+        "scene-census-D2wiI4F1.js",
+        "Ktx2CanvasAssets-KemZNCXK.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "cinematic-artwork--HRs0BpL.js",
+        "registry-K7hgcj1k.js",
+        "device--sdEPQNt.js",
+        "hydrate-app-UIy64cs0.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "client-xI0P71wx.js",
+      "surface": null,
+      "bytes": 218806,
+      "gzipBytes": 55902,
+      "brotliBytes": 51675,
+      "staticBytes": 220648,
+      "staticGzipBytes": 56878,
+      "staticBrotliBytes": 52571,
+      "dependencies": [
+        "client-xI0P71wx.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "tslib.es6-Tae09705.js"
+      ],
+      "startupBytes": 699173,
+      "startupGzipBytes": 212754,
+      "startupBrotliBytes": 200201,
+      "startupDependencies": [
+        "client-xI0P71wx.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "tslib.es6-Tae09705.js",
+        "hydrate-app-UIy64cs0.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "dashboard-DVUqrHaX.js",
+      "surface": null,
+      "bytes": 18740,
+      "gzipBytes": 5532,
+      "brotliBytes": 5348,
+      "staticBytes": 1153059,
+      "staticGzipBytes": 395121,
+      "staticBrotliBytes": 373773,
+      "dependencies": [
+        "dashboard-DVUqrHaX.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "screen-kit-Bu1UNdne.js",
+        "vite-preload-DjzSQ1t3.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "silent-errors-BgCdvtAb.js",
+        "sheet-BHwaiHHj.js",
+        "x-u7X62wNQ.js",
+        "utils-DNAXmrp5.js",
+        "dialog-CIGkIYfq.js",
+        "dist-BaCxnX00.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js",
+        "tslib.es6-Tae09705.js",
+        "dist-B6ZD_LOR2.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "clapperboard-BfskWSyv.js",
+        "coins-zveIcBqA.js",
+        "dumbbell-BkPkghfJ.js",
+        "career-interface-BrQ4T3oN.js",
+        "menu-CsmJaBHt.js",
+        "play-CstBHgAz.js",
+        "refresh-cw-IbHzmrIu.js",
+        "search-BnYj-Bzc.js",
+        "settings-2-BoX_7z-4.js",
+        "sliders-horizontal-DvGVNAlD.js",
+        "sparkles-DM_A3kLz.js",
+        "trophy-wEQ4sq2M.js",
+        "user-round-CVwvDqdh.js",
+        "users-BCDkbSiZ.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "useNavigate-CpHirhku.js",
+        "useLocation-DvDCmHvQ.js",
+        "useMatch-DDp5vVXL.js",
+        "redirect-QphzVAUU.js",
+        "dist-BPdXmjEN.js",
+        "tabs-ZH4luZlo.js",
+        "useCareer-CBwxDVev.js",
+        "createClientRpc-I1BCrvhR.js",
+        "qss-JC7fkHHg.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "career-BpzX_JHn.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "useAuthUserId-CndU2kJr.js",
+        "client-xI0P71wx.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "dist-gW0amlhb.js",
+        "dist-DtRcm6e6.js",
+        "dist-CkvIzGHo.js",
+        "Crest-D5B0sAnZ.js",
+        "arrow-right-BHn_Rxf6.js",
+        "ClubHeritagePanel-CJr-fJ5J.js",
+        "building-complex-Bvd1xciR.js",
+        "hud-Laq5_OX8.js",
+        "circle-check-D38uG1kl.js",
+        "heart-pulse-Blqy07yo.js",
+        "training-drills-DN-d9Bgy.js"
+      ],
+      "startupBytes": 1513666,
+      "startupGzipBytes": 507347,
+      "startupBrotliBytes": 479559,
+      "startupDependencies": [
+        "dashboard-DVUqrHaX.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "screen-kit-Bu1UNdne.js",
+        "vite-preload-DjzSQ1t3.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "silent-errors-BgCdvtAb.js",
+        "sheet-BHwaiHHj.js",
+        "x-u7X62wNQ.js",
+        "utils-DNAXmrp5.js",
+        "dialog-CIGkIYfq.js",
+        "dist-BaCxnX00.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js",
+        "tslib.es6-Tae09705.js",
+        "dist-B6ZD_LOR2.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "clapperboard-BfskWSyv.js",
+        "coins-zveIcBqA.js",
+        "dumbbell-BkPkghfJ.js",
+        "career-interface-BrQ4T3oN.js",
+        "menu-CsmJaBHt.js",
+        "play-CstBHgAz.js",
+        "refresh-cw-IbHzmrIu.js",
+        "search-BnYj-Bzc.js",
+        "settings-2-BoX_7z-4.js",
+        "sliders-horizontal-DvGVNAlD.js",
+        "sparkles-DM_A3kLz.js",
+        "trophy-wEQ4sq2M.js",
+        "user-round-CVwvDqdh.js",
+        "users-BCDkbSiZ.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "useNavigate-CpHirhku.js",
+        "useLocation-DvDCmHvQ.js",
+        "useMatch-DDp5vVXL.js",
+        "redirect-QphzVAUU.js",
+        "dist-BPdXmjEN.js",
+        "tabs-ZH4luZlo.js",
+        "useCareer-CBwxDVev.js",
+        "createClientRpc-I1BCrvhR.js",
+        "qss-JC7fkHHg.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "career-BpzX_JHn.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "useAuthUserId-CndU2kJr.js",
+        "client-xI0P71wx.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "dist-gW0amlhb.js",
+        "dist-DtRcm6e6.js",
+        "dist-CkvIzGHo.js",
+        "Crest-D5B0sAnZ.js",
+        "arrow-right-BHn_Rxf6.js",
+        "ClubHeritagePanel-CJr-fJ5J.js",
+        "building-complex-Bvd1xciR.js",
+        "hud-Laq5_OX8.js",
+        "circle-check-D38uG1kl.js",
+        "heart-pulse-Blqy07yo.js",
+        "training-drills-DN-d9Bgy.js",
+        "hydrate-app-UIy64cs0.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "route-CArwA0ay.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "editor-HnpSpGPl.js",
+      "surface": null,
+      "bytes": 3245,
+      "gzipBytes": 1372,
+      "brotliBytes": 1298,
+      "staticBytes": 109536,
+      "staticGzipBytes": 40878,
+      "staticBrotliBytes": 38797,
+      "dependencies": [
+        "editor-HnpSpGPl.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "tabs-ZH4luZlo.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "dist-BPdXmjEN.js",
+        "custom-data-storage-DljiYLDG.js",
+        "world-scope-h-EL1iu3.js"
+      ],
+      "startupBytes": 537783,
+      "startupGzipBytes": 177619,
+      "startupBrotliBytes": 168114,
+      "startupDependencies": [
+        "editor-HnpSpGPl.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "tabs-ZH4luZlo.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "dist-BPdXmjEN.js",
+        "custom-data-storage-DljiYLDG.js",
+        "world-scope-h-EL1iu3.js",
+        "hydrate-app-UIy64cs0.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "index-CKCjZXXF.js",
+      "surface": null,
+      "bytes": 1185,
+      "gzipBytes": 688,
+      "brotliBytes": 640,
+      "staticBytes": 2568,
+      "staticGzipBytes": 1437,
+      "staticBrotliBytes": 1320,
+      "dependencies": [
+        "index-CKCjZXXF.js",
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "startupBytes": 479298,
+      "startupGzipBytes": 156325,
+      "startupBrotliBytes": 148047,
+      "startupDependencies": [
+        "index-CKCjZXXF.js",
+        "vite-preload-DjzSQ1t3.js",
+        "hydrate-app-UIy64cs0.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js"
+      ]
+    },
+    {
+      "name": "jogador.index-Cabksoqi.js",
+      "surface": null,
+      "bytes": 4027,
+      "gzipBytes": 1533,
+      "brotliBytes": 1462,
+      "staticBytes": 1183101,
+      "staticGzipBytes": 365665,
+      "staticBrotliBytes": 342841,
+      "dependencies": [
+        "jogador.index-Cabksoqi.js",
+        "browser-react-3MeFRtu1.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-left-BFQ4zIm7.js",
+        "plus-BILwza2f.js",
+        "trash-8_EnI2Io.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "leagues-BR5n06uY.js",
+        "useAuthUserId-CndU2kJr.js",
+        "silent-errors-BgCdvtAb.js",
+        "client-xI0P71wx.js",
+        "tslib.es6-Tae09705.js",
+        "button-BxUGWsLQ.js",
+        "utils-DNAXmrp5.js",
+        "dist-B6ZD_LOR2.js",
+        "Crest-D5B0sAnZ.js",
+        "vite-preload-DjzSQ1t3.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js",
+        "engine-KNvEKZfg.js",
+        "athlete-D6-zYmaE.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "appearance-BsCUm_rJ.js",
+        "player-model-BQCZhflo.js",
+        "kits-DvwbcFIm.js",
+        "three.core-CqqFKHSV.js",
+        "visual-settings-CCJpfqsS.js",
+        "player-career-export-qKudrpEm.js"
+      ],
+      "startupBytes": 1563282,
+      "startupGzipBytes": 484998,
+      "startupBrotliBytes": 455410,
+      "startupDependencies": [
+        "jogador.index-Cabksoqi.js",
+        "browser-react-3MeFRtu1.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-left-BFQ4zIm7.js",
+        "plus-BILwza2f.js",
+        "trash-8_EnI2Io.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "leagues-BR5n06uY.js",
+        "useAuthUserId-CndU2kJr.js",
+        "silent-errors-BgCdvtAb.js",
+        "client-xI0P71wx.js",
+        "tslib.es6-Tae09705.js",
+        "button-BxUGWsLQ.js",
+        "utils-DNAXmrp5.js",
+        "dist-B6ZD_LOR2.js",
+        "Crest-D5B0sAnZ.js",
+        "vite-preload-DjzSQ1t3.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js",
+        "engine-KNvEKZfg.js",
+        "athlete-D6-zYmaE.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "appearance-BsCUm_rJ.js",
+        "player-model-BQCZhflo.js",
+        "kits-DvwbcFIm.js",
+        "three.core-CqqFKHSV.js",
+        "visual-settings-CCJpfqsS.js",
+        "player-career-export-qKudrpEm.js",
+        "hydrate-app-UIy64cs0.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "jogador.painel-BWMw-vAT.js",
+      "surface": null,
+      "bytes": 16956,
+      "gzipBytes": 5557,
+      "brotliBytes": 5375,
+      "staticBytes": 1202211,
+      "staticGzipBytes": 372256,
+      "staticBrotliBytes": 349112,
+      "dependencies": [
+        "jogador.painel-BWMw-vAT.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-left-BFQ4zIm7.js",
+        "flag-YkIzRTbx.js",
+        "heart-pulse-Blqy07yo.js",
+        "sparkles-DM_A3kLz.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "route-CArwA0ay.js",
+        "redirect-QphzVAUU.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "utils-DNAXmrp5.js",
+        "dist-B6ZD_LOR2.js",
+        "Crest-D5B0sAnZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js",
+        "engine-KNvEKZfg.js",
+        "PlayerStats-T2DZWc4O.js",
+        "athlete-D6-zYmaE.js",
+        "createClientRpc-I1BCrvhR.js",
+        "qss-JC7fkHHg.js",
+        "useAuthUserId-CndU2kJr.js",
+        "client-xI0P71wx.js",
+        "tslib.es6-Tae09705.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "appearance-BsCUm_rJ.js",
+        "player-model-BQCZhflo.js",
+        "kits-DvwbcFIm.js",
+        "three.core-CqqFKHSV.js",
+        "visual-settings-CCJpfqsS.js",
+        "player-career-export-qKudrpEm.js"
+      ],
+      "startupBytes": 1577481,
+      "startupGzipBytes": 489723,
+      "startupBrotliBytes": 459954,
+      "startupDependencies": [
+        "jogador.painel-BWMw-vAT.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-left-BFQ4zIm7.js",
+        "flag-YkIzRTbx.js",
+        "heart-pulse-Blqy07yo.js",
+        "sparkles-DM_A3kLz.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "route-CArwA0ay.js",
+        "redirect-QphzVAUU.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "utils-DNAXmrp5.js",
+        "dist-B6ZD_LOR2.js",
+        "Crest-D5B0sAnZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js",
+        "engine-KNvEKZfg.js",
+        "PlayerStats-T2DZWc4O.js",
+        "athlete-D6-zYmaE.js",
+        "createClientRpc-I1BCrvhR.js",
+        "qss-JC7fkHHg.js",
+        "useAuthUserId-CndU2kJr.js",
+        "client-xI0P71wx.js",
+        "tslib.es6-Tae09705.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "appearance-BsCUm_rJ.js",
+        "player-model-BQCZhflo.js",
+        "kits-DvwbcFIm.js",
+        "three.core-CqqFKHSV.js",
+        "visual-settings-CCJpfqsS.js",
+        "player-career-export-qKudrpEm.js",
+        "hydrate-app-UIy64cs0.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "match-DgPVbBiW.js",
+      "surface": null,
+      "bytes": 53318,
+      "gzipBytes": 16165,
+      "brotliBytes": 15552,
+      "staticBytes": 1301816,
+      "staticGzipBytes": 450451,
+      "staticBrotliBytes": 426196,
+      "dependencies": [
+        "match-DgPVbBiW.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "activity-CZG9_V-B.js",
+        "sheet-BHwaiHHj.js",
+        "x-u7X62wNQ.js",
+        "utils-DNAXmrp5.js",
+        "dialog-CIGkIYfq.js",
+        "dist-BaCxnX00.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js",
+        "tslib.es6-Tae09705.js",
+        "dist-B6ZD_LOR2.js",
+        "check-B6y03FfI.js",
+        "chevron-down-DpiyMz9N.js",
+        "clapperboard-BfskWSyv.js",
+        "copy-CKgMlZYA.js",
+        "pause-DyCMUnYU.js",
+        "play-CstBHgAz.js",
+        "NarrationSettings-l0OAMSeM.js",
+        "settings-2-BoX_7z-4.js",
+        "narrator-B2YoCpeo.js",
+        "audio-cache-DqhgVBlY.js",
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js",
+        "useCareer-CBwxDVev.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "useRouter-CCu-mIhD.js",
+        "career-BpzX_JHn.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "useAuthUserId-CndU2kJr.js",
+        "client-xI0P71wx.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "sparkles-DM_A3kLz.js",
+        "star-CDzyGxV-.js",
+        "volume-2-k9X7lGX7.js",
+        "volume-x-BOKF57_t.js",
+        "link-CDwz6dAR.js",
+        "useNavigate-CpHirhku.js",
+        "dist-BcsMEpLv.js",
+        "Crest-D5B0sAnZ.js",
+        "visual-settings-CCJpfqsS.js",
+        "CutsceneStage-D3imyCvY.js",
+        "chevron-right-BqEuhW4a.js",
+        "sliders-horizontal-DvGVNAlD.js",
+        "button-BxUGWsLQ.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-set-BMkI2mlY.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "device--sdEPQNt.js",
+        "cast-Cmg2DYi8.js",
+        "cinematic-overlay-5if_X0Fw.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "Cutscene-Br9e-M1V.js",
+        "ceremony-prefs-CTfMFcZt.js",
+        "simWorkerClient-CEsyoJYv.js",
+        "physics-quality-Dd_k5PQD.js",
+        "visual-context-C2DW2Wjt.js",
+        "match-command-validation-Bny8eMN_.js",
+        "ball-climate-DHOwz29K.js",
+        "live-match-buffer-B8xmf43q.js",
+        "live-match-DXbQRxY4.js",
+        "autoplay-C0xmy2ZB.js",
+        "quickMatch-0JGmF6eY.js",
+        "stadium-loading-D7sJVUNa.js",
+        "MatchLoading-uwXwIiLo.js",
+        "replay-TYDIIRcm.js"
+      ],
+      "startupBytes": 1663274,
+      "startupGzipBytes": 563250,
+      "startupBrotliBytes": 532488,
+      "startupDependencies": [
+        "match-DgPVbBiW.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "activity-CZG9_V-B.js",
+        "sheet-BHwaiHHj.js",
+        "x-u7X62wNQ.js",
+        "utils-DNAXmrp5.js",
+        "dialog-CIGkIYfq.js",
+        "dist-BaCxnX00.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js",
+        "tslib.es6-Tae09705.js",
+        "dist-B6ZD_LOR2.js",
+        "check-B6y03FfI.js",
+        "chevron-down-DpiyMz9N.js",
+        "clapperboard-BfskWSyv.js",
+        "copy-CKgMlZYA.js",
+        "pause-DyCMUnYU.js",
+        "play-CstBHgAz.js",
+        "NarrationSettings-l0OAMSeM.js",
+        "settings-2-BoX_7z-4.js",
+        "narrator-B2YoCpeo.js",
+        "audio-cache-DqhgVBlY.js",
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js",
+        "useCareer-CBwxDVev.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "useRouter-CCu-mIhD.js",
+        "career-BpzX_JHn.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "useAuthUserId-CndU2kJr.js",
+        "client-xI0P71wx.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "sparkles-DM_A3kLz.js",
+        "star-CDzyGxV-.js",
+        "volume-2-k9X7lGX7.js",
+        "volume-x-BOKF57_t.js",
+        "link-CDwz6dAR.js",
+        "useNavigate-CpHirhku.js",
+        "dist-BcsMEpLv.js",
+        "Crest-D5B0sAnZ.js",
+        "visual-settings-CCJpfqsS.js",
+        "CutsceneStage-D3imyCvY.js",
+        "chevron-right-BqEuhW4a.js",
+        "sliders-horizontal-DvGVNAlD.js",
+        "button-BxUGWsLQ.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-set-BMkI2mlY.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "device--sdEPQNt.js",
+        "cast-Cmg2DYi8.js",
+        "cinematic-overlay-5if_X0Fw.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "Cutscene-Br9e-M1V.js",
+        "ceremony-prefs-CTfMFcZt.js",
+        "simWorkerClient-CEsyoJYv.js",
+        "physics-quality-Dd_k5PQD.js",
+        "visual-context-C2DW2Wjt.js",
+        "match-command-validation-Bny8eMN_.js",
+        "ball-climate-DHOwz29K.js",
+        "live-match-buffer-B8xmf43q.js",
+        "live-match-DXbQRxY4.js",
+        "autoplay-C0xmy2ZB.js",
+        "quickMatch-0JGmF6eY.js",
+        "stadium-loading-D7sJVUNa.js",
+        "MatchLoading-uwXwIiLo.js",
+        "replay-TYDIIRcm.js",
+        "hydrate-app-UIy64cs0.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useLocation-DvDCmHvQ.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "match-ai.functions-BrUxBJi8.js",
+      "surface": null,
+      "bytes": 257,
+      "gzipBytes": 224,
+      "brotliBytes": 196,
+      "staticBytes": 37681,
+      "staticGzipBytes": 12650,
+      "staticBrotliBytes": 12148,
+      "dependencies": [
+        "match-ai.functions-BrUxBJi8.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js"
+      ],
+      "startupBytes": 479643,
+      "startupGzipBytes": 156653,
+      "startupBrotliBytes": 148325,
+      "startupDependencies": [
+        "match-ai.functions-BrUxBJi8.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "hydrate-app-UIy64cs0.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "match-command-validation-Bny8eMN_.js",
+      "surface": null,
+      "bytes": 3570,
+      "gzipBytes": 1467,
+      "brotliBytes": 1399,
+      "staticBytes": 3570,
+      "staticGzipBytes": 1467,
+      "staticBrotliBytes": 1399,
+      "dependencies": [
+        "match-command-validation-Bny8eMN_.js"
+      ],
+      "startupBytes": 482868,
+      "startupGzipBytes": 157792,
+      "startupBrotliBytes": 149446,
+      "startupDependencies": [
+        "match-command-validation-Bny8eMN_.js",
+        "hydrate-app-UIy64cs0.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "match.worker-CUsQdcqC.js",
+      "surface": null,
+      "bytes": 87484,
+      "gzipBytes": 28560,
+      "brotliBytes": 27495,
+      "staticBytes": 87484,
+      "staticGzipBytes": 28560,
+      "staticBrotliBytes": 27495,
+      "dependencies": [
+        "match.worker-CUsQdcqC.js"
+      ],
+      "startupBytes": 87484,
+      "startupGzipBytes": 28560,
+      "startupBrotliBytes": 27495,
+      "startupDependencies": [
+        "match.worker-CUsQdcqC.js"
+      ]
+    },
+    {
+      "name": "new-BSPTINNR.js",
+      "surface": "new",
+      "bytes": 19340,
+      "gzipBytes": 6654,
+      "brotliBytes": 6438,
+      "staticBytes": 954975,
+      "staticGzipBytes": 325025,
+      "staticBrotliBytes": 307332,
+      "dependencies": [
+        "new-BSPTINNR.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-left-BFQ4zIm7.js",
+        "arrow-right-BHn_Rxf6.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "loader-circle-BctptV3I.js",
+        "lock-CyI3-b-x.js",
+        "search-BnYj-Bzc.js",
+        "shield-wrOmLYqf.js",
+        "star-CDzyGxV-.js",
+        "trophy-wEQ4sq2M.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "useNavigate-CpHirhku.js",
+        "useCareer-CBwxDVev.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "career-BpzX_JHn.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "useAuthUserId-CndU2kJr.js",
+        "silent-errors-BgCdvtAb.js",
+        "client-xI0P71wx.js",
+        "tslib.es6-Tae09705.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "dist-gW0amlhb.js",
+        "Crest-D5B0sAnZ.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "world-CecPuOY0.js",
+        "my-club-storage-C-jvUuTX.js",
+        "ManagerPortrait-p9Gpmy0x.js",
+        "manager-profile-9-iH8MyO.js",
+        "Flag-Ch7Efzh7.js"
+      ],
+      "startupBytes": 1316433,
+      "startupGzipBytes": 437824,
+      "startupBrotliBytes": 413624,
+      "startupDependencies": [
+        "new-BSPTINNR.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-left-BFQ4zIm7.js",
+        "arrow-right-BHn_Rxf6.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "loader-circle-BctptV3I.js",
+        "lock-CyI3-b-x.js",
+        "search-BnYj-Bzc.js",
+        "shield-wrOmLYqf.js",
+        "star-CDzyGxV-.js",
+        "trophy-wEQ4sq2M.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "useNavigate-CpHirhku.js",
+        "useCareer-CBwxDVev.js",
+        "createClientRpc-I1BCrvhR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "career-BpzX_JHn.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "useAuthUserId-CndU2kJr.js",
+        "silent-errors-BgCdvtAb.js",
+        "client-xI0P71wx.js",
+        "tslib.es6-Tae09705.js",
+        "auth-middleware-jScsstZa.js",
+        "createMiddleware-DQnh37QV.js",
+        "store-DVpsUuoB.js",
+        "dist-gW0amlhb.js",
+        "Crest-D5B0sAnZ.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "world-CecPuOY0.js",
+        "my-club-storage-C-jvUuTX.js",
+        "ManagerPortrait-p9Gpmy0x.js",
+        "manager-profile-9-iH8MyO.js",
+        "Flag-Ch7Efzh7.js",
+        "hydrate-app-UIy64cs0.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useLocation-DvDCmHvQ.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "partida-rapida-BQNU7-SS.js",
+      "surface": null,
+      "bytes": 8510,
+      "gzipBytes": 3619,
+      "brotliBytes": 3438,
+      "staticBytes": 468344,
+      "staticGzipBytes": 167889,
+      "staticBrotliBytes": 159302,
+      "dependencies": [
+        "partida-rapida-BQNU7-SS.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "silent-errors-BgCdvtAb.js",
+        "shuffle-2ETc73vF.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "leagues-BR5n06uY.js",
+        "club-reference-ciXdP64N.js",
+        "Crest-D5B0sAnZ.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js",
+        "Flag-Ch7Efzh7.js",
+        "MatchLoading-uwXwIiLo.js"
+      ],
+      "startupBytes": 885861,
+      "startupGzipBytes": 299544,
+      "startupBrotliBytes": 283741,
+      "startupDependencies": [
+        "partida-rapida-BQNU7-SS.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "silent-errors-BgCdvtAb.js",
+        "shuffle-2ETc73vF.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "leagues-BR5n06uY.js",
+        "club-reference-ciXdP64N.js",
+        "Crest-D5B0sAnZ.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js",
+        "Flag-Ch7Efzh7.js",
+        "MatchLoading-uwXwIiLo.js",
+        "hydrate-app-UIy64cs0.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    },
+    {
+      "name": "routes-CB8Nct9G.js",
+      "surface": "home",
+      "bytes": 15594,
+      "gzipBytes": 5463,
+      "brotliBytes": 5290,
+      "staticBytes": 145950,
+      "staticGzipBytes": 55831,
+      "staticBrotliBytes": 53620,
+      "dependencies": [
+        "routes-CB8Nct9G.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-right-BHn_Rxf6.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "gamepad-2-NW0rqlc7.js",
+        "menu-CsmJaBHt.js",
+        "play-CstBHgAz.js",
+        "shield-wrOmLYqf.js",
+        "trophy-wEQ4sq2M.js",
+        "users-BCDkbSiZ.js",
+        "x-u7X62wNQ.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "SiteFooter-DP1GE67I.js",
+        "share-BWNHBJhL.js",
+        "creator-pvFOfpGx.js"
+      ],
+      "startupBytes": 503605,
+      "startupGzipBytes": 166286,
+      "startupBrotliBytes": 157431,
+      "startupDependencies": [
+        "routes-CB8Nct9G.js",
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "arrow-right-BHn_Rxf6.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "gamepad-2-NW0rqlc7.js",
+        "menu-CsmJaBHt.js",
+        "play-CstBHgAz.js",
+        "shield-wrOmLYqf.js",
+        "trophy-wEQ4sq2M.js",
+        "users-BCDkbSiZ.js",
+        "x-u7X62wNQ.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js",
+        "SiteFooter-DP1GE67I.js",
+        "share-BWNHBJhL.js",
+        "creator-pvFOfpGx.js",
+        "hydrate-app-UIy64cs0.js",
+        "silent-errors-BgCdvtAb.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js",
+        "index-CKCjZXXF.js"
+      ]
+    }
+  ],
+  "chunks": [
+    {
+      "name": "three.webgpu-V5MP-uBd.js",
+      "bytes": 704952,
+      "gzipBytes": 195352,
+      "brotliBytes": 176560,
+      "surface": null,
+      "imports": [
+        "three.core-CqqFKHSV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "react-three-fiber.esm-C9rBIdwL.js",
+      "bytes": 536457,
+      "gzipBytes": 142452,
+      "brotliBytes": 133327,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "career-DsjT3uRI.js",
+      "bytes": 470754,
+      "gzipBytes": 168198,
+      "brotliBytes": 159688,
+      "surface": null,
+      "imports": [
+        "match.worker-CUsQdcqC.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "three.core-CqqFKHSV.js",
+      "bytes": 379000,
+      "gzipBytes": 100266,
+      "brotliBytes": 91987,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "leagues-BR5n06uY.js",
+      "bytes": 372852,
+      "gzipBytes": 129991,
+      "brotliBytes": 123194,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "hydrate-app-UIy64cs0.js",
+      "bytes": 300310,
+      "gzipBytes": 90847,
+      "brotliBytes": 84945,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "redirect-QphzVAUU.js",
+        "route-CArwA0ay.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useRouter-CCu-mIhD.js",
+        "useMatch-DDp5vVXL.js",
+        "useLocation-DvDCmHvQ.js",
+        "query-lLpoz96r.js",
+        "mutation-DIFu5ONP.js",
+        "createMiddleware-DQnh37QV.js",
+        "real-football.functions-CjEuxJLF.js"
+      ],
+      "dynamicImports": [
+        "messages-C-y0w4gx.js",
+        "client-xI0P71wx.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "world-CecPuOY0.js",
+        "analytics-Cr4rwx02.js",
+        "game-page-metadata-CvKCxzRf.js",
+        "routes-CB8Nct9G.js",
+        "analise-de-partida-de-futebol-CQ0pD281.js",
+        "assistente-DjlJsJFT.js",
+        "auth-DTJ2E_q9.js",
+        "board-DiucgRvW.js",
+        "cadastro-CAVIb05v.js",
+        "carreira-C0zqhi9j.js",
+        "carreiras-DcwmJfs0.js",
+        "chat-B0uyftt6.js",
+        "game-page-metadata-CvKCxzRf.js",
+        "club-B4C5OFsk.js",
+        "coletiva-BCjQ8gYy.js",
+        "comparativo-jogos-manager-BE1Cm02s.js",
+        "compartilhar-DGOyC-F_.js",
+        "compras-DFOq_5El.js",
+        "conquistas-BlNhro9v.js",
+        "contato-CykJk82b.js",
+        "criador-D40XED0u.js",
+        "cup-BiqkNfMq.js",
+        "dashboard-DVUqrHaX.js",
+        "dicas-de-gestao-CcOtOSu7.js",
+        "editor-HnpSpGPl.js",
+        "finances-DYmBVo-2.js",
+        "glossario-do-futebol-CkMCgHvo.js",
+        "guia-de-scouting-BUc42g-y.js",
+        "guias-B5NztI9C.js",
+        "history-B94FpHiM.js",
+        "jogar-offline-DafVMvW_.js",
+        "jogo-de-manager-de-futebol-c7vnXNIH.js",
+        "league-LiIG1DmA.js",
+        "loja-CX2kbG2P.js",
+        "match-DgPVbBiW.js",
+        "melhores-formacoes-DqvSRO3R.js",
+        "mercado-de-transferencias-xA3j8TGF.js",
+        "modo-carreira-de-jogador-CLTPPXY4.js",
+        "multiplayer-Blez9pwV.js",
+        "new-BSPTINNR.js",
+        "news-X_LHshe9.js",
+        "partida-rapida-BQNU7-SS.js",
+        "perfil-M48Ly5A4.js",
+        "perguntas-frequentes-DDWuHVxP.js",
+        "planejamento-de-elenco-BEMEZ_sG.js",
+        "pre-jogo-B0saYkyg.js",
+        "privacidade-bfHrUpZB.js",
+        "produtos-DV9Pi7cx.js",
+        "regras-DsO7WHbX.js",
+        "replays-CVWXGfea.js",
+        "scouting-Cn-7uvXX.js",
+        "sobre-B9tKvzMH.js",
+        "squad-DQNQWVmx.js",
+        "stats-Bgt56o7s.js",
+        "tactics-BVhWmFU6.js",
+        "temporada-automatica-CtfivBSx.js",
+        "termos-DZinuxQw.js",
+        "training-wZ62dUhS.js",
+        "transfers-CAlRaW0N.js",
+        "visual-BHqlenfO.js",
+        "claim-BLtyTLn3.js",
+        "guest-T7ffZk6P.js",
+        "return-FQGKptCr.js",
+        "clube.novo-DzulM4fx.js",
+        "jogador.index-Cabksoqi.js",
+        "jogador.novo-DoY5e7xw.js",
+        "jogador.painel-BWMw-vAT.js",
+        "tabelas.index-q-QJZE2k.js",
+        "tabelas._slug-CMFbBB-U.js",
+        "tabelas._slug-B_gq3E2B.js",
+        "tabelas._slug-VOemC-5s.js",
+        "client-xI0P71wx.js",
+        "client-xI0P71wx.js",
+        "_._lovable.oauth.consent-BLDkgeIo.js",
+        "_._lovable.oauth.consent-LZ6q79Yi.js"
+      ]
+    },
+    {
+      "name": "module-bp0EXzkw.js",
+      "bytes": 292830,
+      "gzipBytes": 95998,
+      "brotliBytes": 89011,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-CYvtR1W7.js",
+      "bytes": 288107,
+      "gzipBytes": 113662,
+      "brotliBytes": 109373,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "maath.esm-B7GwMZVn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "client-xI0P71wx.js",
+      "bytes": 218806,
+      "gzipBytes": 55902,
+      "brotliBytes": 51675,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "tslib.es6-Tae09705.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "Stadium3D-Bt1f330H.js",
+      "bytes": 194538,
+      "gzipBytes": 64628,
+      "brotliBytes": 60277,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "silent-errors-BgCdvtAb.js",
+        "sim-rules-BH8K42Xz.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "maath.esm-B7GwMZVn.js",
+        "Lightformer-BLFEF6ov.js",
+        "athlete-posture-DgFL-WIN.js",
+        "kits-DvwbcFIm.js",
+        "visual-settings-CCJpfqsS.js",
+        "player-model-BQCZhflo.js",
+        "graphics-renderer-metadata-BM_DB4rR.js",
+        "BufferGeometryUtils-CIOtIMgY.js",
+        "presentation-lanes-ba9gThZ4.js",
+        "static-stadium-batch-DHJkiTo4.js",
+        "scene-census-D2wiI4F1.js",
+        "Ktx2CanvasAssets-KemZNCXK.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "device--sdEPQNt.js",
+        "CanvasLifecycle-B-67y2tT.js",
+        "surface-context-state-BEcjfpBV.js",
+        "grass-C6lPCygN.js",
+        "useDisposable-C51BL44o.js"
+      ],
+      "dynamicImports": [
+        "telemetry-client-Lc3EDtWO.js",
+        "PlayerRig-DeeAwJXB.js",
+        "PostFX-uWCArD4R.js"
+      ]
+    },
+    {
+      "name": "athlete-posture-DgFL-WIN.js",
+      "bytes": 170158,
+      "gzipBytes": 60931,
+      "brotliBytes": 57364,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "player-model-BQCZhflo.js",
+        "BufferGeometryUtils-CIOtIMgY.js",
+        "presentation-lanes-ba9gThZ4.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "career-BpzX_JHn.js",
+      "bytes": 137947,
+      "gzipBytes": 52729,
+      "brotliBytes": 49987,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "customData-BqRFWjPJ.js",
+        "football.functions-CGY-P0KO.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "rapier-bindings-0662abc031a65bdd.js",
+      "bytes": 122578,
+      "gzipBytes": 18055,
+      "brotliBytes": 16734,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "rapier-ball-authority-BL0_WJWx.js",
+      "bytes": 96721,
+      "gzipBytes": 20114,
+      "brotliBytes": 18689,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "physics-quality-Dd_k5PQD.js",
+        "ball-climate-DHOwz29K.js",
+        "rapier-bindings-0662abc031a65bdd.js",
+        "rapier-bindings-0662abc031a65bdd.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "_pfm-rapier-source-By09ajC3.js",
+      "bytes": 91903,
+      "gzipBytes": 18559,
+      "brotliBytes": 17202,
+      "surface": null,
+      "imports": [
+        "rapier-bindings-0662abc031a65bdd.js",
+        "rapier-bindings-0662abc031a65bdd.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "match.worker-CUsQdcqC.js",
+      "bytes": 87484,
+      "gzipBytes": 28560,
+      "brotliBytes": 27495,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": [
+        "crowd_visibility_wasm-9l9rN_DD.js",
+        "rapier-ball-authority-CvFG63kJ.js",
+        "rapier-ball-visual-DIt8fc8r.js",
+        "career-DsjT3uRI.js",
+        "autoplay-BHNIkE1X.js"
+      ]
+    },
+    {
+      "name": "screen-kit-Bu1UNdne.js",
+      "bytes": 82883,
+      "gzipBytes": 26152,
+      "brotliBytes": 24781,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "sheet-BHwaiHHj.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "clapperboard-BfskWSyv.js",
+        "coins-zveIcBqA.js",
+        "dumbbell-BkPkghfJ.js",
+        "career-interface-BrQ4T3oN.js",
+        "menu-CsmJaBHt.js",
+        "play-CstBHgAz.js",
+        "refresh-cw-IbHzmrIu.js",
+        "search-BnYj-Bzc.js",
+        "settings-2-BoX_7z-4.js",
+        "sliders-horizontal-DvGVNAlD.js",
+        "sparkles-DM_A3kLz.js",
+        "trophy-wEQ4sq2M.js",
+        "user-round-CVwvDqdh.js",
+        "users-BCDkbSiZ.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js",
+        "dialog-CIGkIYfq.js",
+        "link-CDwz6dAR.js",
+        "useNavigate-CpHirhku.js",
+        "useLocation-DvDCmHvQ.js",
+        "dist-BPdXmjEN.js",
+        "tabs-ZH4luZlo.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "client-xI0P71wx.js",
+        "dist-DtRcm6e6.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": [
+        "stadium-loading-D7sJVUNa.js",
+        "logout-BFZ2ydtk.js"
+      ]
+    },
+    {
+      "name": "surface-context-state-BEcjfpBV.js",
+      "bytes": 72536,
+      "gzipBytes": 19535,
+      "brotliBytes": 18773,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "sim-rules-BH8K42Xz.js",
+        "three.core-CqqFKHSV.js",
+        "athlete-posture-DgFL-WIN.js",
+        "player-model-BQCZhflo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "simWorkerClient-CEsyoJYv.js",
+      "bytes": 72350,
+      "gzipBytes": 23585,
+      "brotliBytes": 22684,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "career-BpzX_JHn.js",
+        "sim-rules-BH8K42Xz.js",
+        "physics-quality-Dd_k5PQD.js",
+        "visual-context-C2DW2Wjt.js",
+        "match-command-validation-Bny8eMN_.js",
+        "ball-climate-DHOwz29K.js",
+        "live-match-buffer-B8xmf43q.js",
+        "live-match-DXbQRxY4.js",
+        "autoplay-C0xmy2ZB.js"
+      ],
+      "dynamicImports": [
+        "crowd_visibility_wasm-DdvtmzbY.js",
+        "rapier-ball-authority-BL0_WJWx.js",
+        "rapier-ball-authority-BL0_WJWx.js"
+      ]
+    },
+    {
+      "name": "CutsceneStage-D3imyCvY.js",
+      "bytes": 70678,
+      "gzipBytes": 23499,
+      "brotliBytes": 22800,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "chevron-right-BqEuhW4a.js",
+        "pause-DyCMUnYU.js",
+        "play-CstBHgAz.js",
+        "sliders-horizontal-DvGVNAlD.js",
+        "silent-errors-BgCdvtAb.js",
+        "audio-cache-DqhgVBlY.js",
+        "button-BxUGWsLQ.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-set-BMkI2mlY.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "device--sdEPQNt.js",
+        "cast-Cmg2DYi8.js",
+        "cinematic-overlay-5if_X0Fw.js",
+        "cinematic-loading-BmkE0BG8.js"
+      ],
+      "dynamicImports": [
+        "CutsceneBackdrop-CkepiJj_.js",
+        "CutsceneSettings-CgQW61Lc.js"
+      ]
+    },
+    {
+      "name": "CinematicStage3D-DbotxfD8.js",
+      "bytes": 65590,
+      "gzipBytes": 18590,
+      "brotliBytes": 17583,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "rng-CzXaq355.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "Lightformer-BLFEF6ov.js",
+        "athlete-posture-DgFL-WIN.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-set-BMkI2mlY.js",
+        "cinematic-runtime-DorQpG42.js",
+        "graphics-renderer-metadata-BM_DB4rR.js",
+        "static-stadium-batch-DHJkiTo4.js",
+        "scene-census-D2wiI4F1.js",
+        "Ktx2CanvasAssets-KemZNCXK.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "cinematic-artwork--HRs0BpL.js",
+        "registry-K7hgcj1k.js",
+        "device--sdEPQNt.js"
+      ],
+      "dynamicImports": [
+        "CinematicLens-CkusuNiw.js"
+      ]
+    },
+    {
+      "name": "messages-C-y0w4gx.js",
+      "bytes": 61213,
+      "gzipBytes": 25232,
+      "brotliBytes": 22727,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "basis_transcoder-o4Hde_L7.js",
+      "bytes": 57529,
+      "gzipBytes": 15143,
+      "brotliBytes": 14640,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "hero-stadium-7yoz3Sd-.js",
+      "bytes": 54754,
+      "gzipBytes": 19184,
+      "brotliBytes": 18776,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js",
+        "route-CArwA0ay.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "match-DgPVbBiW.js",
+      "bytes": 53318,
+      "gzipBytes": 16165,
+      "brotliBytes": 15552,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "activity-CZG9_V-B.js",
+        "sheet-BHwaiHHj.js",
+        "check-B6y03FfI.js",
+        "chevron-down-DpiyMz9N.js",
+        "clapperboard-BfskWSyv.js",
+        "copy-CKgMlZYA.js",
+        "pause-DyCMUnYU.js",
+        "play-CstBHgAz.js",
+        "NarrationSettings-l0OAMSeM.js",
+        "sparkles-DM_A3kLz.js",
+        "star-CDzyGxV-.js",
+        "volume-2-k9X7lGX7.js",
+        "volume-x-BOKF57_t.js",
+        "x-u7X62wNQ.js",
+        "link-CDwz6dAR.js",
+        "useNavigate-CpHirhku.js",
+        "useCareer-CBwxDVev.js",
+        "career-BpzX_JHn.js",
+        "club-reference-ciXdP64N.js",
+        "sim-rules-BH8K42Xz.js",
+        "dist-BcsMEpLv.js",
+        "Crest-D5B0sAnZ.js",
+        "visual-settings-CCJpfqsS.js",
+        "CutsceneStage-D3imyCvY.js",
+        "device--sdEPQNt.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "Cutscene-Br9e-M1V.js",
+        "ceremony-prefs-CTfMFcZt.js",
+        "simWorkerClient-CEsyoJYv.js",
+        "quickMatch-0JGmF6eY.js",
+        "live-match-DXbQRxY4.js",
+        "stadium-loading-D7sJVUNa.js",
+        "MatchLoading-uwXwIiLo.js",
+        "replay-TYDIIRcm.js"
+      ],
+      "dynamicImports": [
+        "screen-kit-Bu1UNdne.js",
+        "PrematchCeremony-NMBr5w0s.js",
+        "StorePanel-B0JCOBOe.js",
+        "ChatPanel-Dgwrl2M_.js",
+        "MatchReport-N1pEysYi.js"
+      ]
+    },
+    {
+      "name": "Lightformer-BLFEF6ov.js",
+      "bytes": 51725,
+      "gzipBytes": 18329,
+      "brotliBytes": 17554,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "extends-CvVTau-c.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "narrator-B2YoCpeo.js",
+      "bytes": 49923,
+      "gzipBytes": 23319,
+      "brotliBytes": 21368,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "audio-cache-DqhgVBlY.js"
+      ],
+      "dynamicImports": [
+        "tts.functions-9PxAp5Lj.js"
+      ]
+    },
+    {
+      "name": "PlayerStudio-CPPfrivR.js",
+      "bytes": 49465,
+      "gzipBytes": 16128,
+      "brotliBytes": 15725,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "activity-CZG9_V-B.js",
+        "arrow-left-BFQ4zIm7.js",
+        "arrow-right-BHn_Rxf6.js",
+        "pause-DyCMUnYU.js",
+        "play-CstBHgAz.js",
+        "rotate-ccw-v2puOglr.js",
+        "shuffle-2ETc73vF.js",
+        "user-round-CVwvDqdh.js",
+        "tabs-ZH4luZlo.js",
+        "club-reference-ciXdP64N.js",
+        "extends-CvVTau-c.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "Lightformer-BLFEF6ov.js",
+        "ContactShadows-BX-iR8Ab.js",
+        "athlete-posture-DgFL-WIN.js",
+        "kits-DvwbcFIm.js",
+        "player-model-BQCZhflo.js",
+        "Ktx2CanvasAssets-KemZNCXK.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "device--sdEPQNt.js",
+        "cinematic-overlay-5if_X0Fw.js",
+        "CanvasLifecycle-B-67y2tT.js",
+        "surface-context-state-BEcjfpBV.js",
+        "live-match-DXbQRxY4.js",
+        "appearance-BsCUm_rJ.js",
+        "PlayerRig-DeeAwJXB.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "browser-react-3MeFRtu1.js",
+      "bytes": 38294,
+      "gzipBytes": 13847,
+      "brotliBytes": 13307,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-shared-data-BhCyFdPZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "createClientRpc-I1BCrvhR.js",
+      "bytes": 36063,
+      "gzipBytes": 11546,
+      "brotliBytes": 11183,
+      "surface": null,
+      "imports": [
+        "redirect-QphzVAUU.js",
+        "qss-JC7fkHHg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "utils-DNAXmrp5.js",
+      "bytes": 30852,
+      "gzipBytes": 9944,
+      "brotliBytes": 9418,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "carreira-C0zqhi9j.js",
+      "bytes": 30553,
+      "gzipBytes": 10824,
+      "brotliBytes": 10507,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "book-open-C_noO_7X.js",
+        "clapperboard-BfskWSyv.js",
+        "sparkles-DM_A3kLz.js",
+        "users-BCDkbSiZ.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "CutsceneStage-D3imyCvY.js",
+        "device--sdEPQNt.js",
+        "cast-Cmg2DYi8.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "Cutscene-Br9e-M1V.js",
+        "autoplay-C0xmy2ZB.js",
+        "choice-effects-B6ddEld0.js",
+        "unhappy-DqJxioAV.js"
+      ],
+      "dynamicImports": [
+        "simWorkerClient-CEsyoJYv.js"
+      ]
+    },
+    {
+      "name": "cinematic-surfaces-ClRjwNKA.js",
+      "bytes": 28627,
+      "gzipBytes": 11021,
+      "brotliBytes": 10690,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "athlete-posture-DgFL-WIN.js",
+        "kits-DvwbcFIm.js",
+        "player-model-BQCZhflo.js",
+        "cinematic-cue-BfnPKyqC.js",
+        "cinematic-runtime-DorQpG42.js",
+        "graphics-renderer-metadata-BM_DB4rR.js",
+        "athlete-cloth-C9MmG9O8.js",
+        "BufferGeometryUtils-CIOtIMgY.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "transfers-CAlRaW0N.js",
+      "bytes": 25901,
+      "gzipBytes": 8720,
+      "brotliBytes": 8504,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useQuery-BWoAj7iA.js",
+        "useCareer-CBwxDVev.js",
+        "useServerFn-DkCGuCoI.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "career-BpzX_JHn.js",
+        "football.functions-CGY-P0KO.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-DtRcm6e6.js",
+      "bytes": 25729,
+      "gzipBytes": 9919,
+      "brotliBytes": 9588,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "dist-CkvIzGHo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "engine-KNvEKZfg.js",
+      "bytes": 24457,
+      "gzipBytes": 9022,
+      "brotliBytes": 8799,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "index.esm-DK2PWSuD.js",
+      "bytes": 24259,
+      "gzipBytes": 7876,
+      "brotliBytes": 7634,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "shared-BJge5ZuQ.js",
+      "bytes": 23670,
+      "gzipBytes": 8167,
+      "brotliBytes": 7814,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "check-B6y03FfI.js",
+        "chevron-down-DpiyMz9N.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js",
+        "dist-BPdXmjEN.js",
+        "dist-DtRcm6e6.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "multiplayer-Blez9pwV.js",
+      "bytes": 22606,
+      "gzipBytes": 7002,
+      "brotliBytes": 6726,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "copy-CKgMlZYA.js",
+        "play-CstBHgAz.js",
+        "refresh-cw-IbHzmrIu.js",
+        "users-BCDkbSiZ.js",
+        "silent-errors-BgCdvtAb.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "client-xI0P71wx.js",
+        "moderation-DFP8U5xr.js",
+        "Crest-D5B0sAnZ.js",
+        "Stadium3D-Bt1f330H.js",
+        "device--sdEPQNt.js",
+        "simWorkerClient-CEsyoJYv.js",
+        "quickMatch-0JGmF6eY.js",
+        "live-match-DXbQRxY4.js",
+        "untrusted-json-Dbu4rudp.js"
+      ],
+      "dynamicImports": [
+        "multiplayer.functions-BJXr7BbK.js",
+        "multiplayer.functions-BJXr7BbK.js",
+        "multiplayer.functions-BJXr7BbK.js",
+        "multiplayer.functions-BJXr7BbK.js",
+        "multiplayer.functions-BJXr7BbK.js",
+        "room-chat.functions-s2ZiNZTQ.js",
+        "multiplayer.functions-BJXr7BbK.js"
+      ]
+    },
+    {
+      "name": "es2015-B76mEVsC.js",
+      "bytes": 22564,
+      "gzipBytes": 8032,
+      "brotliBytes": 7788,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "tslib.es6-Tae09705.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerRig-DeeAwJXB.js",
+      "bytes": 20628,
+      "gzipBytes": 8030,
+      "brotliBytes": 7752,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "athlete-posture-DgFL-WIN.js",
+        "kits-DvwbcFIm.js",
+        "visual-settings-CCJpfqsS.js",
+        "player-model-BQCZhflo.js",
+        "athlete-cloth-C9MmG9O8.js",
+        "scene-census-D2wiI4F1.js",
+        "device--sdEPQNt.js",
+        "surface-context-state-BEcjfpBV.js",
+        "visual-context-C2DW2Wjt.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "squad-DQNQWVmx.js",
+      "bytes": 20354,
+      "gzipBytes": 6144,
+      "brotliBytes": 5880,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "player-model-BQCZhflo.js",
+        "PlayerPortrait-Dq_-kviN.js",
+        "unhappy-DqJxioAV.js",
+        "hud-Laq5_OX8.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-BcsMEpLv.js",
+      "bytes": 19649,
+      "gzipBytes": 4527,
+      "brotliBytes": 4244,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PrematchCeremony-NMBr5w0s.js",
+      "bytes": 19445,
+      "gzipBytes": 5830,
+      "brotliBytes": 5566,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "BufferGeometryUtils-CIOtIMgY.js",
+        "device--sdEPQNt.js",
+        "ceremony-prefs-CTfMFcZt.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "auth-DTJ2E_q9.js",
+      "bytes": 19342,
+      "gzipBytes": 6616,
+      "brotliBytes": 6423,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "circle-check-D38uG1kl.js",
+        "cloud-MvYatQM5.js",
+        "eye-Cxq7uZRZ.js",
+        "passkey-auth-B4R6txom.js",
+        "gamepad-2-NW0rqlc7.js",
+        "mail-nL7eY3Bx.js",
+        "shield-check-iXU6Cfll.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "useNavigate-CpHirhku.js",
+        "client-xI0P71wx.js",
+        "button-BxUGWsLQ.js",
+        "mfa-session-1m0rNkVv.js"
+      ],
+      "dynamicImports": [
+        "PhoneAuthPanel-CKP4uC60.js",
+        "MfaChallenge-JYMMAqZC.js",
+        "lovable-DrJmVR6I.js",
+        "logout-BFZ2ydtk.js"
+      ]
+    },
+    {
+      "name": "new-BSPTINNR.js",
+      "bytes": 19340,
+      "gzipBytes": 6654,
+      "brotliBytes": 6438,
+      "surface": "new",
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "arrow-left-BFQ4zIm7.js",
+        "arrow-right-BHn_Rxf6.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "loader-circle-BctptV3I.js",
+        "lock-CyI3-b-x.js",
+        "search-BnYj-Bzc.js",
+        "shield-wrOmLYqf.js",
+        "star-CDzyGxV-.js",
+        "trophy-wEQ4sq2M.js",
+        "link-CDwz6dAR.js",
+        "useNavigate-CpHirhku.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "world-CecPuOY0.js",
+        "ManagerPortrait-p9Gpmy0x.js",
+        "manager-profile-9-iH8MyO.js",
+        "Flag-Ch7Efzh7.js"
+      ],
+      "dynamicImports": [
+        "Cutscene-Br9e-M1V.js"
+      ]
+    },
+    {
+      "name": "clube.novo-DzulM4fx.js",
+      "bytes": 19126,
+      "gzipBytes": 5811,
+      "brotliBytes": 5566,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useNavigate-CpHirhku.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "CrestBuilder-DvyiaYVm.js",
+        "crest-options-C23DH5lY.js",
+        "my-club-storage-C-jvUuTX.js",
+        "world-CecPuOY0.js",
+        "ManagerPortrait-p9Gpmy0x.js",
+        "manager-profile-9-iH8MyO.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dashboard-DVUqrHaX.js",
+      "bytes": 18740,
+      "gzipBytes": 5532,
+      "brotliBytes": 5348,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "arrow-right-BHn_Rxf6.js",
+        "ClubHeritagePanel-CJr-fJ5J.js",
+        "circle-check-D38uG1kl.js",
+        "coins-zveIcBqA.js",
+        "dumbbell-BkPkghfJ.js",
+        "heart-pulse-Blqy07yo.js",
+        "play-CstBHgAz.js",
+        "trophy-wEQ4sq2M.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "hud-Laq5_OX8.js",
+        "training-drills-DN-d9Bgy.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "index.esm-BlO81b7Y.js",
+      "bytes": 18498,
+      "gzipBytes": 5834,
+      "brotliBytes": 5577,
+      "surface": null,
+      "imports": [
+        "index.esm-DK2PWSuD.js",
+        "index.esm-DFriaTyf.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "attributes-CskHUWzT.js",
+      "bytes": 17770,
+      "gzipBytes": 6762,
+      "brotliBytes": 6577,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js",
+        "rng-CzXaq355.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "perfil-M48Ly5A4.js",
+      "bytes": 17398,
+      "gzipBytes": 6125,
+      "brotliBytes": 5920,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "ClubHeritagePanel-CJr-fJ5J.js",
+        "sheet-BHwaiHHj.js",
+        "download-CnivVLms.js",
+        "passkey-auth-B4R6txom.js",
+        "AdZones-anenPp93.js",
+        "shield-check-iXU6Cfll.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "client-xI0P71wx.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "GuestCloudPrompt-BBznuOuk.js",
+        "ad-manager-YfGhi1zm.js",
+        "hud-Laq5_OX8.js",
+        "ManagerPortrait-p9Gpmy0x.js",
+        "untrusted-json-Dbu4rudp.js"
+      ],
+      "dynamicImports": [
+        "AuthenticatorSettings-XmADBPqV.js",
+        "PhoneMFASettings-vTA1k8CY.js",
+        "VerifiedPhoneSettings-BIkJacel.js"
+      ]
+    },
+    {
+      "name": "dicas-de-gestao-CcOtOSu7.js",
+      "bytes": 17234,
+      "gzipBytes": 5994,
+      "brotliBytes": 5921,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "ArticleShell-Ba4i5SPa.js",
+        "LeagueDataInsights-sem_cdPQ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "CutsceneBackdrop-CkepiJj_.js",
+      "bytes": 17036,
+      "gzipBytes": 4076,
+      "brotliBytes": 3854,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "jogador.painel-BWMw-vAT.js",
+      "bytes": 16956,
+      "gzipBytes": 5557,
+      "brotliBytes": 5375,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "arrow-left-BFQ4zIm7.js",
+        "flag-YkIzRTbx.js",
+        "heart-pulse-Blqy07yo.js",
+        "sparkles-DM_A3kLz.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "engine-KNvEKZfg.js",
+        "PlayerStats-T2DZWc4O.js",
+        "athlete-D6-zYmaE.js",
+        "player-career-export-qKudrpEm.js"
+      ],
+      "dynamicImports": [
+        "AthleteHero3D-c1vGZDCY.js",
+        "PlayerCalendarTab-Cwje39YU.js",
+        "PlayerHealthTab-i68Lnmxe.js",
+        "PlayerNationalTab-CRAyOF_J.js",
+        "PlayerContractTab-CeA9eot0.js",
+        "PlayerHistoryTab-CTOy3gCH.js"
+      ]
+    },
+    {
+      "name": "CanvasLifecycle-B-67y2tT.js",
+      "bytes": 16936,
+      "gzipBytes": 6899,
+      "brotliBytes": 6678,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "athlete-posture-DgFL-WIN.js",
+        "player-model-BQCZhflo.js",
+        "scene-census-D2wiI4F1.js",
+        "Ktx2CanvasAssets-KemZNCXK.js",
+        "device--sdEPQNt.js",
+        "surface-context-state-BEcjfpBV.js",
+        "visual-context-C2DW2Wjt.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "visual-BHqlenfO.js",
+      "bytes": 16521,
+      "gzipBytes": 5408,
+      "brotliBytes": 5222,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "sheet-BHwaiHHj.js",
+        "check-B6y03FfI.js",
+        "clapperboard-BfskWSyv.js",
+        "rotate-ccw-v2puOglr.js",
+        "sparkles-DM_A3kLz.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "visual-settings-CCJpfqsS.js",
+        "grass-C6lPCygN.js",
+        "CrestBuilder-DvyiaYVm.js"
+      ],
+      "dynamicImports": [
+        "PlayerStudio-CPPfrivR.js",
+        "CinematicStudio-c3bBTONN.js"
+      ]
+    },
+    {
+      "name": "guia-de-scouting-BUc42g-y.js",
+      "bytes": 16086,
+      "gzipBytes": 5169,
+      "brotliBytes": 5090,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "ArticleShell-Ba4i5SPa.js",
+        "LeagueDataInsights-sem_cdPQ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "routes-CB8Nct9G.js",
+      "bytes": 15594,
+      "gzipBytes": 5463,
+      "brotliBytes": 5290,
+      "surface": "home",
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "arrow-right-BHn_Rxf6.js",
+        "check-B6y03FfI.js",
+        "chevron-right-BqEuhW4a.js",
+        "gamepad-2-NW0rqlc7.js",
+        "menu-CsmJaBHt.js",
+        "play-CstBHgAz.js",
+        "shield-wrOmLYqf.js",
+        "trophy-wEQ4sq2M.js",
+        "users-BCDkbSiZ.js",
+        "x-u7X62wNQ.js",
+        "hero-stadium-7yoz3Sd-.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "SiteFooter-DP1GE67I.js"
+      ],
+      "dynamicImports": [
+        "HomeDetails-DWFNApwD.js",
+        "TacticalPreview-CJCSaxh_.js",
+        "careerStorage-B-TvagIz.js",
+        "leagues-BR5n06uY.js",
+        "my-club-storage-C-jvUuTX.js",
+        "custom-data-storage-DljiYLDG.js"
+      ]
+    },
+    {
+      "name": "jogo-de-manager-de-futebol-c7vnXNIH.js",
+      "bytes": 15469,
+      "gzipBytes": 4552,
+      "brotliBytes": 4479,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "guias-B5NztI9C.js",
+      "bytes": 15369,
+      "gzipBytes": 5446,
+      "brotliBytes": 5355,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "tabelas._slug-VOemC-5s.js",
+      "bytes": 15093,
+      "gzipBytes": 4176,
+      "brotliBytes": 4033,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "PublicLinks-D5uImyDh.js",
+        "StickyPlayCta-ZmIUAhTg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "query-lLpoz96r.js",
+      "bytes": 15008,
+      "gzipBytes": 5180,
+      "brotliBytes": 5024,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "privacidade-bfHrUpZB.js",
+      "bytes": 14952,
+      "gzipBytes": 6018,
+      "brotliBytes": 5795,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "download-CnivVLms.js",
+        "lock-CyI3-b-x.js",
+        "shield-check-iXU6Cfll.js",
+        "trash-8_EnI2Io.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-T6KMMEOt.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "client-xI0P71wx.js",
+        "button-BxUGWsLQ.js",
+        "dist-CkvIzGHo.js",
+        "firebase-config.functions-CYeLGGGR.js",
+        "firebase-push-Db_rEnGC.js",
+        "PublicLinks-D5uImyDh.js",
+        "SiteFooter-DP1GE67I.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "StorePanel-B0JCOBOe.js",
+      "bytes": 14857,
+      "gzipBytes": 5506,
+      "brotliBytes": 5290,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "coins-zveIcBqA.js",
+        "useStripeCheckout-BZQzkoS-.js",
+        "dumbbell-BkPkghfJ.js",
+        "search-BnYj-Bzc.js",
+        "sparkles-DM_A3kLz.js",
+        "utils-DNAXmrp5.js",
+        "dist-T6KMMEOt.js",
+        "silent-errors-BgCdvtAb.js",
+        "link-CDwz6dAR.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useLocation-DvDCmHvQ.js",
+        "useQuery-BWoAj7iA.js",
+        "useServerFn-DkCGuCoI.js",
+        "client-xI0P71wx.js",
+        "useAuthUserId-CndU2kJr.js",
+        "auth-middleware-jScsstZa.js",
+        "dist-BcsMEpLv.js",
+        "button-BxUGWsLQ.js",
+        "ad-manager-YfGhi1zm.js",
+        "badge-C6bwQrI-.js",
+        "embedded-checkout-BNqb1ylJ.js",
+        "input-BNiU4iYa.js"
+      ],
+      "dynamicImports": [
+        "analytics-Cr4rwx02.js"
+      ]
+    },
+    {
+      "name": "athlete-cloth-C9MmG9O8.js",
+      "bytes": 14164,
+      "gzipBytes": 5331,
+      "brotliBytes": 5173,
+      "surface": null,
+      "imports": [
+        "three.core-CqqFKHSV.js",
+        "athlete-posture-DgFL-WIN.js",
+        "kits-DvwbcFIm.js",
+        "player-model-BQCZhflo.js",
+        "physics-quality-Dd_k5PQD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "athlete-D6-zYmaE.js",
+      "bytes": 13844,
+      "gzipBytes": 4749,
+      "brotliBytes": 4598,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useAuthUserId-CndU2kJr.js",
+        "auth-middleware-jScsstZa.js",
+        "store-DVpsUuoB.js",
+        "appearance-BsCUm_rJ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "league-LiIG1DmA.js",
+      "bytes": 13598,
+      "gzipBytes": 4445,
+      "brotliBytes": 4321,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "chevron-down-DpiyMz9N.js",
+        "search-BnYj-Bzc.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "hud-Laq5_OX8.js",
+        "CompetitionRules-BKlFpJMg.js",
+        "Flag-Ch7Efzh7.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "jogador.novo-DoY5e7xw.js",
+      "bytes": 13217,
+      "gzipBytes": 4575,
+      "brotliBytes": 4434,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "arrow-left-BFQ4zIm7.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "useNavigate-CpHirhku.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "engine-KNvEKZfg.js",
+        "appearance-BsCUm_rJ.js",
+        "athlete-D6-zYmaE.js"
+      ],
+      "dynamicImports": [
+        "AthleteHero3D-c1vGZDCY.js"
+      ]
+    },
+    {
+      "name": "melhores-formacoes-DqvSRO3R.js",
+      "bytes": 13198,
+      "gzipBytes": 4557,
+      "brotliBytes": 4475,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cadastro-CAVIb05v.js",
+      "bytes": 11829,
+      "gzipBytes": 3165,
+      "brotliBytes": 2997,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "link-CDwz6dAR.js",
+        "leagues-BR5n06uY.js",
+        "custom-data-storage-DljiYLDG.js",
+        "customData-BqRFWjPJ.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "club-B4C5OFsk.js",
+      "bytes": 11433,
+      "gzipBytes": 3515,
+      "brotliBytes": 3357,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "ClubHeritagePanel-CJr-fJ5J.js",
+        "link-CDwz6dAR.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useQuery-BWoAj7iA.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "RealClubInfo-hHouxkV4.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "Flag-Ch7Efzh7.js",
+      "bytes": 11372,
+      "gzipBytes": 3332,
+      "brotliBytes": 3184,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "planejamento-de-elenco-BEMEZ_sG.js",
+      "bytes": 11332,
+      "gzipBytes": 3944,
+      "brotliBytes": 3883,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "produtos-DV9Pi7cx.js",
+      "bytes": 11324,
+      "gzipBytes": 4257,
+      "brotliBytes": 4084,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "coins-zveIcBqA.js",
+        "useStripeCheckout-BZQzkoS-.js",
+        "dumbbell-BkPkghfJ.js",
+        "VipPlansPreview-CaeGBXv9.js",
+        "search-BnYj-Bzc.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js",
+        "dist-BcsMEpLv.js",
+        "button-BxUGWsLQ.js",
+        "badge-C6bwQrI-.js",
+        "PublicLinks-D5uImyDh.js",
+        "store-product-artwork-1drEvD3k.js"
+      ],
+      "dynamicImports": [
+        "PackScene-D2KGhJWq.js"
+      ]
+    },
+    {
+      "name": "QuickLive-B67xuoVU.js",
+      "bytes": 11211,
+      "gzipBytes": 4181,
+      "brotliBytes": 3997,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "arrow-left-BFQ4zIm7.js",
+        "career-interface-BrQ4T3oN.js",
+        "pause-DyCMUnYU.js",
+        "play-CstBHgAz.js",
+        "NarrationSettings-l0OAMSeM.js",
+        "volume-2-k9X7lGX7.js",
+        "volume-x-BOKF57_t.js",
+        "x-u7X62wNQ.js",
+        "club-reference-ciXdP64N.js",
+        "useAuthUserId-CndU2kJr.js",
+        "Crest-D5B0sAnZ.js",
+        "Stadium3D-Bt1f330H.js",
+        "visual-settings-CCJpfqsS.js",
+        "device--sdEPQNt.js",
+        "MatchReport-N1pEysYi.js",
+        "simWorkerClient-CEsyoJYv.js",
+        "quickMatch-0JGmF6eY.js",
+        "live-match-DXbQRxY4.js"
+      ],
+      "dynamicImports": [
+        "match-ai.functions-BrUxBJi8.js"
+      ]
+    },
+    {
+      "name": "comparativo-jogos-manager-BE1Cm02s.js",
+      "bytes": 10951,
+      "gzipBytes": 3851,
+      "brotliBytes": 3740,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "browser-shared-data-BhCyFdPZ.js",
+      "bytes": 10601,
+      "gzipBytes": 4539,
+      "brotliBytes": 4326,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "assistente-DjlJsJFT.js",
+      "bytes": 10356,
+      "gzipBytes": 3615,
+      "brotliBytes": 3463,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useCareer-CBwxDVev.js",
+        "useServerFn-DkCGuCoI.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "grass-C6lPCygN.js",
+      "bytes": 10283,
+      "gzipBytes": 4614,
+      "brotliBytes": 4451,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js",
+        "silent-errors-BgCdvtAb.js",
+        "three.core-CqqFKHSV.js",
+        "presentation-lanes-ba9gThZ4.js"
+      ],
+      "dynamicImports": [
+        "three.webgpu-V5MP-uBd.js",
+        "react-three-fiber.esm-C9rBIdwL.js"
+      ]
+    },
+    {
+      "name": "analise-de-partida-de-futebol-CQ0pD281.js",
+      "bytes": 10137,
+      "gzipBytes": 3602,
+      "brotliBytes": 3519,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "index.esm-C_6aqt5y.js",
+      "bytes": 9951,
+      "gzipBytes": 3755,
+      "brotliBytes": 3543,
+      "surface": null,
+      "imports": [
+        "index.esm-DK2PWSuD.js",
+        "index.esm-DFriaTyf.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "link-CDwz6dAR.js",
+      "bytes": 9764,
+      "gzipBytes": 4468,
+      "brotliBytes": 4320,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "useRouter-CCu-mIhD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "training-wZ62dUhS.js",
+      "bytes": 9755,
+      "gzipBytes": 2892,
+      "brotliBytes": 2781,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "training-drills-DN-d9Bgy.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "carreiras-DcwmJfs0.js",
+      "bytes": 9613,
+      "gzipBytes": 3125,
+      "brotliBytes": 3025,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "arrow-left-BFQ4zIm7.js",
+        "arrow-right-BHn_Rxf6.js",
+        "cloud-MvYatQM5.js",
+        "plus-BILwza2f.js",
+        "trophy-wEQ4sq2M.js",
+        "user-round-CVwvDqdh.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "engine-KNvEKZfg.js",
+        "athlete-D6-zYmaE.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "coletiva-BCjQ8gYy.js",
+      "bytes": 9461,
+      "gzipBytes": 3862,
+      "brotliBytes": 3750,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "cast-Cmg2DYi8.js",
+        "choice-effects-B6ddEld0.js",
+        "unhappy-DqJxioAV.js",
+        "ManagerPortrait-p9Gpmy0x.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "perguntas-frequentes-DDWuHVxP.js",
+      "bytes": 9164,
+      "gzipBytes": 3596,
+      "brotliBytes": 3550,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "CommunityInvite-BSATKJG6.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "kits-DvwbcFIm.js",
+      "bytes": 8868,
+      "gzipBytes": 3227,
+      "brotliBytes": 3120,
+      "surface": null,
+      "imports": [
+        "customStyle-B55yYDvc.js",
+        "three.core-CqqFKHSV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "Crest-D5B0sAnZ.js",
+      "bytes": 8699,
+      "gzipBytes": 3531,
+      "brotliBytes": 3376,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js",
+        "customStyle-B55yYDvc.js"
+      ],
+      "dynamicImports": [
+        "football.functions-CGY-P0KO.js"
+      ]
+    },
+    {
+      "name": "crowd-visibility.worker-Da0JD5WA.js",
+      "bytes": 8620,
+      "gzipBytes": 3128,
+      "brotliBytes": 3042,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": [
+        "crowd_visibility_wasm-9l9rN_DD.js"
+      ]
+    },
+    {
+      "name": "partida-rapida-BQNU7-SS.js",
+      "bytes": 8510,
+      "gzipBytes": 3619,
+      "brotliBytes": 3438,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "AccessibilitySettings-BdHUjPys.js",
+        "shuffle-2ETc73vF.js",
+        "link-CDwz6dAR.js",
+        "leagues-BR5n06uY.js",
+        "club-reference-ciXdP64N.js",
+        "Crest-D5B0sAnZ.js",
+        "Flag-Ch7Efzh7.js",
+        "MatchLoading-uwXwIiLo.js"
+      ],
+      "dynamicImports": [
+        "QuickLive-B67xuoVU.js",
+        "world-CecPuOY0.js"
+      ]
+    },
+    {
+      "name": "maath.esm-B7GwMZVn.js",
+      "bytes": 8347,
+      "gzipBytes": 3416,
+      "brotliBytes": 3172,
+      "surface": null,
+      "imports": [
+        "three.core-CqqFKHSV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "roster-mdV7LaoR.js",
+      "bytes": 8325,
+      "gzipBytes": 2519,
+      "brotliBytes": 2394,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "shared-BJge5ZuQ.js",
+        "dialog-CIGkIYfq.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "customData-BqRFWjPJ.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "input-BNiU4iYa.js",
+        "table-V87C6qxf.js",
+        "PlayerPortrait-Dq_-kviN.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "replay-TYDIIRcm.js",
+      "bytes": 8312,
+      "gzipBytes": 3278,
+      "brotliBytes": 3165,
+      "surface": null,
+      "imports": [
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js",
+        "visual-context-C2DW2Wjt.js",
+        "match-command-validation-Bny8eMN_.js",
+        "live-match-buffer-B8xmf43q.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useStripeCheckout-BZQzkoS-.js",
+      "bytes": 8282,
+      "gzipBytes": 3946,
+      "brotliBytes": 3788,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useServerFn-DkCGuCoI.js",
+        "auth-middleware-jScsstZa.js",
+        "button-BxUGWsLQ.js",
+        "embedded-checkout-BNqb1ylJ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "tactics-BVhWmFU6.js",
+      "bytes": 8057,
+      "gzipBytes": 3064,
+      "brotliBytes": 2896,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "hud-Laq5_OX8.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useQuery-BWoAj7iA.js",
+      "bytes": 8007,
+      "gzipBytes": 2931,
+      "brotliBytes": 2849,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "query-lLpoz96r.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "clubs-CCm44THe.js",
+      "bytes": 7989,
+      "gzipBytes": 2458,
+      "brotliBytes": 2318,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "shared-BJge5ZuQ.js",
+        "leagues-BR5n06uY.js",
+        "customData-BqRFWjPJ.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "input-BNiU4iYa.js",
+        "CrestBuilder-DvyiaYVm.js",
+        "crest-options-C23DH5lY.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "CinematicStudio-c3bBTONN.js",
+      "bytes": 7875,
+      "gzipBytes": 3121,
+      "brotliBytes": 2969,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "activity-CZG9_V-B.js",
+        "building-complex-Bvd1xciR.js",
+        "clapperboard-BfskWSyv.js",
+        "dumbbell-BkPkghfJ.js",
+        "heart-pulse-Blqy07yo.js",
+        "play-CstBHgAz.js",
+        "search-BnYj-Bzc.js",
+        "trophy-wEQ4sq2M.js",
+        "club-reference-ciXdP64N.js",
+        "CutsceneStage-D3imyCvY.js",
+        "cinematic-loading-BmkE0BG8.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "tabs-ZH4luZlo.js",
+      "bytes": 7809,
+      "gzipBytes": 3063,
+      "brotliBytes": 2892,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "dist-BPdXmjEN.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "mercado-de-transferencias-xA3j8TGF.js",
+      "bytes": 7804,
+      "gzipBytes": 3063,
+      "brotliBytes": 3000,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "index.esm-DFriaTyf.js",
+      "bytes": 7766,
+      "gzipBytes": 2832,
+      "brotliBytes": 2705,
+      "surface": null,
+      "imports": [
+        "index.esm-DK2PWSuD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "modo-carreira-de-jogador-CLTPPXY4.js",
+      "bytes": 7718,
+      "gzipBytes": 2918,
+      "brotliBytes": 2855,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "sobre-B9tKvzMH.js",
+      "bytes": 7705,
+      "gzipBytes": 2697,
+      "brotliBytes": 2621,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "CommunityInvite-BSATKJG6.js",
+        "creator-pvFOfpGx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "jogar-offline-DafVMvW_.js",
+      "bytes": 7684,
+      "gzipBytes": 2900,
+      "brotliBytes": 2849,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "CompetitionRules-BKlFpJMg.js",
+      "bytes": 7632,
+      "gzipBytes": 3093,
+      "brotliBytes": 2996,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "arrow-right-BHn_Rxf6.js",
+        "book-open-C_noO_7X.js",
+        "trophy-wEQ4sq2M.js",
+        "link-CDwz6dAR.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dialog-CIGkIYfq.js",
+      "bytes": 7470,
+      "gzipBytes": 2739,
+      "brotliBytes": 2600,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "x-u7X62wNQ.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js",
+        "dist-CsTpSkeY.js",
+        "dist-T6KMMEOt.js",
+        "es2015-B76mEVsC.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-BPdXmjEN.js",
+      "bytes": 7386,
+      "gzipBytes": 2694,
+      "brotliBytes": 2583,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dist-BaCxnX00.js",
+        "utils-DNAXmrp5.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "guest-T7ffZk6P.js",
+      "bytes": 7260,
+      "gzipBytes": 2632,
+      "brotliBytes": 2517,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "circle-check-D38uG1kl.js",
+        "circle-x-C4XiSS1B.js",
+        "loader-circle-BctptV3I.js",
+        "mail-nL7eY3Bx.js",
+        "refresh-cw-IbHzmrIu.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "useServerFn-DkCGuCoI.js",
+        "client-xI0P71wx.js",
+        "button-BxUGWsLQ.js",
+        "guest-checkout.functions-DiI7Q4hl.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "glossario-do-futebol-CkMCgHvo.js",
+      "bytes": 7189,
+      "gzipBytes": 3093,
+      "brotliBytes": 3069,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "passkey-auth-B4R6txom.js",
+      "bytes": 6872,
+      "gzipBytes": 2683,
+      "brotliBytes": 2576,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "silent-errors-BgCdvtAb.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "finances-DYmBVo-2.js",
+      "bytes": 6659,
+      "gzipBytes": 2504,
+      "brotliBytes": 2391,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "world-CecPuOY0.js",
+      "bytes": 6558,
+      "gzipBytes": 2941,
+      "brotliBytes": 2819,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "leagues-BR5n06uY.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "customData-BqRFWjPJ.js",
+        "my-club-storage-C-jvUuTX.js"
+      ],
+      "dynamicImports": [
+        "client-xI0P71wx.js"
+      ]
+    },
+    {
+      "name": "visual-settings-CCJpfqsS.js",
+      "bytes": 6529,
+      "gzipBytes": 2381,
+      "brotliBytes": 2255,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "game-page-metadata-CvKCxzRf.js",
+      "bytes": 6507,
+      "gzipBytes": 2720,
+      "brotliBytes": 2589,
+      "surface": null,
+      "imports": [
+        "browser-shared-data-BhCyFdPZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "detect-gpu.esm-Bj-Kifyj.js",
+      "bytes": 6495,
+      "gzipBytes": 3139,
+      "brotliBytes": 3005,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "PostFX-uWCArD4R.js",
+      "bytes": 6310,
+      "gzipBytes": 2524,
+      "brotliBytes": 2426,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "dist-CYvtR1W7.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ChatPanel-Dgwrl2M_.js",
+      "bytes": 6308,
+      "gzipBytes": 2796,
+      "brotliBytes": 2621,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "utils-DNAXmrp5.js",
+        "link-CDwz6dAR.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useCareer-CBwxDVev.js",
+        "client-xI0P71wx.js",
+        "auth-middleware-jScsstZa.js",
+        "dist-BcsMEpLv.js",
+        "moderation-DFP8U5xr.js",
+        "button-BxUGWsLQ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useCareer-CBwxDVev.js",
+      "bytes": 6269,
+      "gzipBytes": 2470,
+      "brotliBytes": 2381,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "createClientRpc-I1BCrvhR.js",
+        "query-lLpoz96r.js",
+        "useQuery-BWoAj7iA.js",
+        "mutation-DIFu5ONP.js",
+        "useServerFn-DkCGuCoI.js",
+        "career-BpzX_JHn.js",
+        "useAuthUserId-CndU2kJr.js",
+        "auth-middleware-jScsstZa.js",
+        "store-DVpsUuoB.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "MatchReport-N1pEysYi.js",
+      "bytes": 6254,
+      "gzipBytes": 2215,
+      "brotliBytes": 2109,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "AdZones-anenPp93.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "GuestCloudPrompt-BBznuOuk.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "BusArrival-Cv-foP0w.js",
+      "bytes": 6231,
+      "gzipBytes": 2149,
+      "brotliBytes": 2054,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "extends-CvVTau-c.js",
+        "three.core-CqqFKHSV.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-runtime-DorQpG42.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "contato-CykJk82b.js",
+      "bytes": 6211,
+      "gzipBytes": 2393,
+      "brotliBytes": 2333,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "creator-pvFOfpGx.js",
+        "SiteFooter-DP1GE67I.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "pre-jogo-B0saYkyg.js",
+      "bytes": 6134,
+      "gzipBytes": 2350,
+      "brotliBytes": 2263,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "play-CstBHgAz.js",
+        "users-BCDkbSiZ.js",
+        "volume-2-k9X7lGX7.js",
+        "volume-x-BOKF57_t.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "cinematic-loading-BmkE0BG8.js",
+        "RealClubInfo-hHouxkV4.js"
+      ],
+      "dynamicImports": [
+        "tts.functions-9PxAp5Lj.js"
+      ]
+    },
+    {
+      "name": "training-drills-DN-d9Bgy.js",
+      "bytes": 6107,
+      "gzipBytes": 2783,
+      "brotliBytes": 2691,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "career-BpzX_JHn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "LanguagePicker-D2Oi2IRN.js",
+      "bytes": 6081,
+      "gzipBytes": 3092,
+      "brotliBytes": 2721,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "search-BnYj-Bzc.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "silent-errors-BgCdvtAb.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "hud-Laq5_OX8.js",
+      "bytes": 6018,
+      "gzipBytes": 2276,
+      "brotliBytes": 2139,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "utils-DNAXmrp5.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "compras-DFOq_5El.js",
+      "bytes": 6012,
+      "gzipBytes": 2542,
+      "brotliBytes": 2431,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "circle-check-D38uG1kl.js",
+        "link-CDwz6dAR.js",
+        "useQuery-BWoAj7iA.js",
+        "useCareer-CBwxDVev.js",
+        "useServerFn-DkCGuCoI.js",
+        "useAuthUserId-CndU2kJr.js",
+        "button-BxUGWsLQ.js",
+        "badge-C6bwQrI-.js",
+        "embedded-checkout-BNqb1ylJ.js",
+        "analytics-Cr4rwx02.js",
+        "purchases.functions-DhYPUUeD.js",
+        "store-product-artwork-1drEvD3k.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "live-match-DXbQRxY4.js",
+      "bytes": 5980,
+      "gzipBytes": 1925,
+      "brotliBytes": 1827,
+      "surface": null,
+      "imports": [
+        "live-match-buffer-B8xmf43q.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ClubHeritagePanel-CJr-fJ5J.js",
+      "bytes": 5777,
+      "gzipBytes": 2121,
+      "brotliBytes": 2022,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "building-complex-Bvd1xciR.js",
+        "trophy-wEQ4sq2M.js",
+        "useQuery-BWoAj7iA.js",
+        "client-xI0P71wx.js",
+        "hud-Laq5_OX8.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PackScene-D2KGhJWq.js",
+      "bytes": 5760,
+      "gzipBytes": 1715,
+      "brotliBytes": 1622,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "Lightformer-BLFEF6ov.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ManagerPortrait-p9Gpmy0x.js",
+      "bytes": 5630,
+      "gzipBytes": 1667,
+      "brotliBytes": 1574,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "LeagueDataInsights-sem_cdPQ.js",
+      "bytes": 5549,
+      "gzipBytes": 2083,
+      "brotliBytes": 2016,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "crowd_visibility_wasm-DdvtmzbY.js",
+      "bytes": 5512,
+      "gzipBytes": 2022,
+      "brotliBytes": 1883,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "crowd_visibility_wasm-9l9rN_DD.js",
+      "bytes": 5510,
+      "gzipBytes": 2018,
+      "brotliBytes": 1880,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "replays-CVWXGfea.js",
+      "bytes": 5451,
+      "gzipBytes": 2119,
+      "brotliBytes": 2009,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "Stadium3D-Bt1f330H.js",
+        "device--sdEPQNt.js",
+        "replay-TYDIIRcm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "stats-Bgt56o7s.js",
+      "bytes": 5421,
+      "gzipBytes": 1958,
+      "brotliBytes": 1860,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "rapier-ball-authority-CvFG63kJ.js",
+      "bytes": 5349,
+      "gzipBytes": 1974,
+      "brotliBytes": 1909,
+      "surface": null,
+      "imports": [
+        "_pfm-rapier-source-By09ajC3.js",
+        "match.worker-CUsQdcqC.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "board-DiucgRvW.js",
+      "bytes": 5344,
+      "gzipBytes": 1674,
+      "brotliBytes": 1574,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cup-BiqkNfMq.js",
+      "bytes": 5230,
+      "gzipBytes": 1957,
+      "brotliBytes": 1890,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "trophy-wEQ4sq2M.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js",
+        "CompetitionRules-BKlFpJMg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "regras-DsO7WHbX.js",
+      "bytes": 5195,
+      "gzipBytes": 2126,
+      "brotliBytes": 2072,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "ArticleShell-Ba4i5SPa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "VipPlansPreview-CaeGBXv9.js",
+      "bytes": 5082,
+      "gzipBytes": 2292,
+      "brotliBytes": 2186,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "useStripeCheckout-BZQzkoS-.js",
+        "sparkles-DM_A3kLz.js",
+        "store-product-artwork-1drEvD3k.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "sim-rules-BH8K42Xz.js",
+      "bytes": 4997,
+      "gzipBytes": 2131,
+      "brotliBytes": 2053,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "conquistas-BlNhro9v.js",
+      "bytes": 4931,
+      "gzipBytes": 1937,
+      "brotliBytes": 1821,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useCareer-CBwxDVev.js",
+        "useServerFn-DkCGuCoI.js",
+        "career-BpzX_JHn.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "player-model-BQCZhflo.js",
+      "bytes": 4888,
+      "gzipBytes": 2409,
+      "brotliBytes": 2304,
+      "surface": null,
+      "imports": [
+        "kits-DvwbcFIm.js",
+        "visual-settings-CCJpfqsS.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerPortrait-Dq_-kviN.js",
+      "bytes": 4859,
+      "gzipBytes": 1793,
+      "brotliBytes": 1686,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "rng-CzXaq355.js",
+        "kits-DvwbcFIm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "competitions-CT4U_YY5.js",
+      "bytes": 4841,
+      "gzipBytes": 1728,
+      "brotliBytes": 1618,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "shared-BJge5ZuQ.js",
+        "dialog-CIGkIYfq.js",
+        "leagues-BR5n06uY.js",
+        "customData-BqRFWjPJ.js",
+        "button-BxUGWsLQ.js",
+        "input-BNiU4iYa.js",
+        "table-V87C6qxf.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "return-FQGKptCr.js",
+      "bytes": 4839,
+      "gzipBytes": 1993,
+      "brotliBytes": 1925,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "circle-x-C4XiSS1B.js",
+        "coins-zveIcBqA.js",
+        "loader-circle-BctptV3I.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "createClientRpc-I1BCrvhR.js",
+        "useServerFn-DkCGuCoI.js",
+        "useAuthUserId-CndU2kJr.js",
+        "auth-middleware-jScsstZa.js",
+        "button-BxUGWsLQ.js",
+        "embedded-checkout-BNqb1ylJ.js",
+        "analytics-Cr4rwx02.js",
+        "purchases.functions-DhYPUUeD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "criador-D40XED0u.js",
+      "bytes": 4772,
+      "gzipBytes": 1729,
+      "brotliBytes": 1672,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "creator-pvFOfpGx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "AuthenticatorSettings-XmADBPqV.js",
+      "bytes": 4657,
+      "gzipBytes": 1918,
+      "brotliBytes": 1827,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "client-xI0P71wx.js",
+        "mfa-session-1m0rNkVv.js",
+        "MfaChallenge-JYMMAqZC.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PitchEntry-D1QySysb.js",
+      "bytes": 4562,
+      "gzipBytes": 1611,
+      "brotliBytes": 1534,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-runtime-DorQpG42.js",
+        "cinematic-artwork--HRs0BpL.js",
+        "CinematicCrowd-BHFqStoS.js",
+        "shared-DzLoMdEm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "analytics-Cr4rwx02.js",
+      "bytes": 4528,
+      "gzipBytes": 1425,
+      "brotliBytes": 1321,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "browser-shared-data-BhCyFdPZ.js",
+        "firebase-CQl5n1bn.js",
+        "module-bp0EXzkw.js"
+      ]
+    },
+    {
+      "name": "customData-BqRFWjPJ.js",
+      "bytes": 4510,
+      "gzipBytes": 1845,
+      "brotliBytes": 1739,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js",
+        "customStyle-B55yYDvc.js",
+        "world-scope-h-EL1iu3.js",
+        "custom-data-storage-DljiYLDG.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-BaCxnX00.js",
+      "bytes": 4399,
+      "gzipBytes": 1814,
+      "brotliBytes": 1685,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ContactShadows-BX-iR8Ab.js",
+      "bytes": 4327,
+      "gzipBytes": 1467,
+      "brotliBytes": 1385,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "extends-CvVTau-c.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "SiteFooter-DP1GE67I.js",
+      "bytes": 4186,
+      "gzipBytes": 1394,
+      "brotliBytes": 1315,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "share-BWNHBJhL.js",
+        "creator-pvFOfpGx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "temporada-automatica-CtfivBSx.js",
+      "bytes": 4179,
+      "gzipBytes": 1748,
+      "brotliBytes": 1658,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "sheet-BHwaiHHj.js",
+        "play-CstBHgAz.js",
+        "rotate-ccw-v2puOglr.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "career-BpzX_JHn.js",
+        "dist-BcsMEpLv.js",
+        "Crest-D5B0sAnZ.js",
+        "device--sdEPQNt.js",
+        "simWorkerClient-CEsyoJYv.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "AthleteHero3D-c1vGZDCY.js",
+      "bytes": 4153,
+      "gzipBytes": 1971,
+      "brotliBytes": 1903,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "club-reference-ciXdP64N.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "Lightformer-BLFEF6ov.js",
+        "ContactShadows-BX-iR8Ab.js",
+        "kits-DvwbcFIm.js",
+        "GraphicsBoundary-BNRmO58Y.js",
+        "live-match-DXbQRxY4.js",
+        "appearance-BsCUm_rJ.js",
+        "PlayerRig-DeeAwJXB.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cinematic-cue-BfnPKyqC.js",
+      "bytes": 4087,
+      "gzipBytes": 2030,
+      "brotliBytes": 1948,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "rig-geometry.worker-CUtt2QYE.js",
+      "bytes": 4068,
+      "gzipBytes": 1894,
+      "brotliBytes": 1823,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": [
+        "crowd_visibility_wasm-9l9rN_DD.js"
+      ]
+    },
+    {
+      "name": "rapier-ball-visual-DIt8fc8r.js",
+      "bytes": 4045,
+      "gzipBytes": 1581,
+      "brotliBytes": 1520,
+      "surface": null,
+      "imports": [
+        "_pfm-rapier-source-By09ajC3.js",
+        "match.worker-CUsQdcqC.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "MfaChallenge-JYMMAqZC.js",
+      "bytes": 4036,
+      "gzipBytes": 1892,
+      "brotliBytes": 1792,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "client-xI0P71wx.js",
+        "mfa-session-1m0rNkVv.js"
+      ],
+      "dynamicImports": [
+        "logout-BFZ2ydtk.js"
+      ]
+    },
+    {
+      "name": "jogador.index-Cabksoqi.js",
+      "bytes": 4027,
+      "gzipBytes": 1533,
+      "brotliBytes": 1462,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "arrow-left-BFQ4zIm7.js",
+        "plus-BILwza2f.js",
+        "trash-8_EnI2Io.js",
+        "link-CDwz6dAR.js",
+        "leagues-BR5n06uY.js",
+        "useAuthUserId-CndU2kJr.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "engine-KNvEKZfg.js",
+        "athlete-D6-zYmaE.js",
+        "player-career-export-qKudrpEm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "route-CArwA0ay.js",
+      "bytes": 3976,
+      "gzipBytes": 1236,
+      "brotliBytes": 1179,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "redirect-QphzVAUU.js",
+        "useRouter-CCu-mIhD.js",
+        "useMatch-DDp5vVXL.js",
+        "useNavigate-CpHirhku.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "static-stadium-batch-DHJkiTo4.js",
+      "bytes": 3909,
+      "gzipBytes": 1826,
+      "brotliBytes": 1741,
+      "surface": null,
+      "imports": [
+        "three.core-CqqFKHSV.js",
+        "BufferGeometryUtils-CIOtIMgY.js",
+        "scene-census-D2wiI4F1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "BufferGeometryUtils-CIOtIMgY.js",
+      "bytes": 3781,
+      "gzipBytes": 1099,
+      "brotliBytes": 1029,
+      "surface": null,
+      "imports": [
+        "three.core-CqqFKHSV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "HomeDetails-DWFNApwD.js",
+      "bytes": 3775,
+      "gzipBytes": 1655,
+      "brotliBytes": 1626,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "arrow-right-BHn_Rxf6.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "scene-census-D2wiI4F1.js",
+      "bytes": 3690,
+      "gzipBytes": 1569,
+      "brotliBytes": 1501,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "termos-DZinuxQw.js",
+      "bytes": 3623,
+      "gzipBytes": 1765,
+      "brotliBytes": 1729,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "SiteFooter-DP1GE67I.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cinematic-artwork--HRs0BpL.js",
+      "bytes": 3611,
+      "gzipBytes": 1668,
+      "brotliBytes": 1594,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "AdZones-anenPp93.js",
+      "bytes": 3583,
+      "gzipBytes": 1397,
+      "brotliBytes": 1282,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "sparkles-DM_A3kLz.js",
+        "x-u7X62wNQ.js",
+        "utils-DNAXmrp5.js",
+        "link-CDwz6dAR.js",
+        "button-BxUGWsLQ.js",
+        "ad-manager-YfGhi1zm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "match-command-validation-Bny8eMN_.js",
+      "bytes": 3570,
+      "gzipBytes": 1467,
+      "brotliBytes": 1399,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "NarrationPreferences-CTeahNqz.js",
+      "bytes": 3548,
+      "gzipBytes": 1357,
+      "brotliBytes": 1255,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "LanguagePicker-D2Oi2IRN.js",
+        "volume-2-k9X7lGX7.js",
+        "tabs-ZH4luZlo.js",
+        "narrator-B2YoCpeo.js",
+        "useCareer-CBwxDVev.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "sheet-BHwaiHHj.js",
+      "bytes": 3447,
+      "gzipBytes": 1396,
+      "brotliBytes": 1286,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "x-u7X62wNQ.js",
+        "utils-DNAXmrp5.js",
+        "dialog-CIGkIYfq.js",
+        "dist-B6ZD_LOR2.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "mutation-DIFu5ONP.js",
+      "bytes": 3441,
+      "gzipBytes": 1135,
+      "brotliBytes": 1074,
+      "surface": null,
+      "imports": [
+        "query-lLpoz96r.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "lovable-DrJmVR6I.js",
+      "bytes": 3356,
+      "gzipBytes": 1585,
+      "brotliBytes": 1465,
+      "surface": null,
+      "imports": [
+        "client-xI0P71wx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "CinematicCrowd-BHFqStoS.js",
+      "bytes": 3324,
+      "gzipBytes": 1438,
+      "brotliBytes": 1375,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "cinematic-runtime-DorQpG42.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "editor-HnpSpGPl.js",
+      "bytes": 3245,
+      "gzipBytes": 1372,
+      "brotliBytes": 1298,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "tabs-ZH4luZlo.js",
+        "custom-data-storage-DljiYLDG.js"
+      ],
+      "dynamicImports": [
+        "roster-mdV7LaoR.js",
+        "clubs-CCm44THe.js",
+        "competitions-CT4U_YY5.js",
+        "import-export-CAmbY_Y5.js"
+      ]
+    },
+    {
+      "name": "ad-manager-YfGhi1zm.js",
+      "bytes": 3241,
+      "gzipBytes": 1454,
+      "brotliBytes": 1378,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "analytics-Cr4rwx02.js"
+      ]
+    },
+    {
+      "name": "live-match-buffer-B8xmf43q.js",
+      "bytes": 3233,
+      "gzipBytes": 1327,
+      "brotliBytes": 1248,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-CsTpSkeY.js",
+      "bytes": 3227,
+      "gzipBytes": 1354,
+      "brotliBytes": 1267,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dist-BaCxnX00.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ArticleShell-Ba4i5SPa.js",
+      "bytes": 3189,
+      "gzipBytes": 1155,
+      "brotliBytes": 1077,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "CommunityInvite-BSATKJG6.js",
+        "StickyPlayCta-ZmIUAhTg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "unhappy-DqJxioAV.js",
+      "bytes": 3168,
+      "gzipBytes": 1577,
+      "brotliBytes": 1496,
+      "surface": null,
+      "imports": [
+        "rng-CzXaq355.js",
+        "career-BpzX_JHn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "compartilhar-DGOyC-F_.js",
+      "bytes": 3146,
+      "gzipBytes": 1324,
+      "brotliBytes": 1231,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "check-B6y03FfI.js",
+        "copy-CKgMlZYA.js",
+        "link-CDwz6dAR.js",
+        "button-BxUGWsLQ.js",
+        "share-BWNHBJhL.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "claim-BLtyTLn3.js",
+      "bytes": 3137,
+      "gzipBytes": 1230,
+      "brotliBytes": 1167,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "circle-check-D38uG1kl.js",
+        "circle-x-C4XiSS1B.js",
+        "loader-circle-BctptV3I.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js",
+        "useServerFn-DkCGuCoI.js",
+        "client-xI0P71wx.js",
+        "button-BxUGWsLQ.js",
+        "guest-checkout.functions-DiI7Q4hl.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "LockerRoom-FiJGKMYi.js",
+      "bytes": 3078,
+      "gzipBytes": 1046,
+      "brotliBytes": 975,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-runtime-DorQpG42.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PhoneAuthPanel-CKP4uC60.js",
+      "bytes": 3060,
+      "gzipBytes": 1355,
+      "brotliBytes": 1269,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "client-xI0P71wx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "VerifiedPhoneSettings-BIkJacel.js",
+      "bytes": 2980,
+      "gzipBytes": 1413,
+      "brotliBytes": 1316,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "client-xI0P71wx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "career-interface-BrQ4T3oN.js",
+      "bytes": 2974,
+      "gzipBytes": 1284,
+      "brotliBytes": 1183,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dialog-CIGkIYfq.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerNationalTab-CRAyOF_J.js",
+      "bytes": 2965,
+      "gzipBytes": 942,
+      "brotliBytes": 877,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "flag-YkIzRTbx.js",
+        "shield-check-iXU6Cfll.js",
+        "trophy-wEQ4sq2M.js",
+        "PlayerStats-T2DZWc4O.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "firebase-push-Db_rEnGC.js",
+      "bytes": 2939,
+      "gzipBytes": 1169,
+      "brotliBytes": 1092,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "client-xI0P71wx.js",
+        "firebase-config.functions-CYeLGGGR.js",
+        "firebase-CQl5n1bn.js"
+      ],
+      "dynamicImports": [
+        "index.esm-BlO81b7Y.js",
+        "index.esm-BlO81b7Y.js"
+      ]
+    },
+    {
+      "name": "registry-K7hgcj1k.js",
+      "bytes": 2904,
+      "gzipBytes": 1137,
+      "brotliBytes": 1076,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "LockerRoom-FiJGKMYi.js",
+        "Tunnel-B4Q6F-_o.js",
+        "PressRoom-DwLr73id.js",
+        "PitchEntry-D1QySysb.js",
+        "Stands-D4nrRvhA.js",
+        "Office-D7SQAbcK.js",
+        "BusArrival-Cv-foP0w.js"
+      ]
+    },
+    {
+      "name": "history-B94FpHiM.js",
+      "bytes": 2809,
+      "gzipBytes": 1021,
+      "brotliBytes": 949,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "ClubHeritagePanel-CJr-fJ5J.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "AccessibilitySettings-BdHUjPys.js",
+      "bytes": 2799,
+      "gzipBytes": 1333,
+      "brotliBytes": 1255,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "silent-errors-BgCdvtAb.js"
+      ],
+      "dynamicImports": [
+        "AccessibilityDialog-DdNah1ad.js"
+      ]
+    },
+    {
+      "name": "appearance-BsCUm_rJ.js",
+      "bytes": 2749,
+      "gzipBytes": 1215,
+      "brotliBytes": 1156,
+      "surface": null,
+      "imports": [
+        "player-model-BQCZhflo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PublicLinks-D5uImyDh.js",
+      "bytes": 2730,
+      "gzipBytes": 1010,
+      "brotliBytes": 964,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "NarrationSettings-l0OAMSeM.js",
+      "bytes": 2715,
+      "gzipBytes": 1353,
+      "brotliBytes": 1268,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "settings-2-BoX_7z-4.js",
+        "dialog-CIGkIYfq.js",
+        "narrator-B2YoCpeo.js",
+        "useCareer-CBwxDVev.js"
+      ],
+      "dynamicImports": [
+        "NarrationPreferences-CTeahNqz.js"
+      ]
+    },
+    {
+      "name": "PlayerContractTab-CeA9eot0.js",
+      "bytes": 2697,
+      "gzipBytes": 1126,
+      "brotliBytes": 1064,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "Crest-D5B0sAnZ.js",
+        "engine-KNvEKZfg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "shared-DzLoMdEm.js",
+      "bytes": 2696,
+      "gzipBytes": 1234,
+      "brotliBytes": 1153,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "cinematic-runtime-DorQpG42.js",
+        "useDisposable-C51BL44o.js",
+        "hash-XwsJ2yy9.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cinematic-loading-BmkE0BG8.js",
+      "bytes": 2518,
+      "gzipBytes": 1330,
+      "brotliBytes": 1248,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "silent-errors-BgCdvtAb.js"
+      ],
+      "dynamicImports": [
+        "registry-K7hgcj1k.js",
+        "CinematicStage3D-DbotxfD8.js"
+      ]
+    },
+    {
+      "name": "_._lovable.oauth.consent-BLDkgeIo.js",
+      "bytes": 2497,
+      "gzipBytes": 1221,
+      "brotliBytes": 1145,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "route-CArwA0ay.js"
+      ],
+      "dynamicImports": [
+        "client-xI0P71wx.js"
+      ]
+    },
+    {
+      "name": "TacticalPreview-CJCSaxh_.js",
+      "bytes": 2339,
+      "gzipBytes": 1139,
+      "brotliBytes": 1064,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "RealClubInfo-hHouxkV4.js",
+      "bytes": 2338,
+      "gzipBytes": 923,
+      "brotliBytes": 864,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "useQuery-BWoAj7iA.js",
+        "real-football.functions-CjEuxJLF.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "store-DVpsUuoB.js",
+      "bytes": 2297,
+      "gzipBytes": 911,
+      "brotliBytes": 835,
+      "surface": null,
+      "imports": [
+        "dist-gW0amlhb.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "Tunnel-B4Q6F-_o.js",
+      "bytes": 2219,
+      "gzipBytes": 799,
+      "brotliBytes": 739,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-artwork--HRs0BpL.js",
+        "shared-DzLoMdEm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "CommunityInvite-BSATKJG6.js",
+      "bytes": 2142,
+      "gzipBytes": 1031,
+      "brotliBytes": 969,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "users-BCDkbSiZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "import-export-CAmbY_Y5.js",
+      "bytes": 2114,
+      "gzipBytes": 973,
+      "brotliBytes": 892,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "customData-BqRFWjPJ.js",
+        "button-BxUGWsLQ.js",
+        "input-BNiU4iYa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerHistoryTab-CTOy3gCH.js",
+      "bytes": 2113,
+      "gzipBytes": 783,
+      "brotliBytes": 716,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "leagues-BR5n06uY.js",
+        "button-BxUGWsLQ.js",
+        "engine-KNvEKZfg.js",
+        "PlayerStats-T2DZWc4O.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cast-Cmg2DYi8.js",
+      "bytes": 2050,
+      "gzipBytes": 1085,
+      "brotliBytes": 1066,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "Office-D7SQAbcK.js",
+      "bytes": 2032,
+      "gzipBytes": 765,
+      "brotliBytes": 698,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "cinematic-artwork--HRs0BpL.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "news-X_LHshe9.js",
+      "bytes": 2012,
+      "gzipBytes": 953,
+      "brotliBytes": 893,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "AdZones-anenPp93.js",
+        "useCareer-CBwxDVev.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerCalendarTab-Cwje39YU.js",
+      "bytes": 2011,
+      "gzipBytes": 854,
+      "brotliBytes": 802,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "leagues-BR5n06uY.js",
+        "engine-KNvEKZfg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PressRoom-DwLr73id.js",
+      "bytes": 2000,
+      "gzipBytes": 852,
+      "brotliBytes": 794,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "cinematic-surfaces-ClRjwNKA.js",
+        "shared-DzLoMdEm.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "turf-detail.worker-Cck2vLd1.js",
+      "bytes": 1977,
+      "gzipBytes": 1070,
+      "brotliBytes": 1018,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": [
+        "crowd_visibility_wasm-9l9rN_DD.js"
+      ]
+    },
+    {
+      "name": "autoplay-BHNIkE1X.js",
+      "bytes": 1915,
+      "gzipBytes": 1007,
+      "brotliBytes": 952,
+      "surface": null,
+      "imports": [
+        "match.worker-CUsQdcqC.js",
+        "career-DsjT3uRI.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "choice-effects-B6ddEld0.js",
+      "bytes": 1905,
+      "gzipBytes": 1003,
+      "brotliBytes": 950,
+      "surface": null,
+      "imports": [
+        "career-BpzX_JHn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerHealthTab-i68Lnmxe.js",
+      "bytes": 1876,
+      "gzipBytes": 730,
+      "brotliBytes": 685,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "engine-KNvEKZfg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "loja-CX2kbG2P.js",
+      "bytes": 1871,
+      "gzipBytes": 945,
+      "brotliBytes": 869,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "VipPlansPreview-CaeGBXv9.js",
+        "shield-check-iXU6Cfll.js",
+        "StorePanel-B0JCOBOe.js",
+        "trophy-wEQ4sq2M.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "autoplay-C0xmy2ZB.js",
+      "bytes": 1797,
+      "gzipBytes": 943,
+      "brotliBytes": 888,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "rng-CzXaq355.js",
+        "career-BpzX_JHn.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "badge-C6bwQrI-.js",
+      "bytes": 1776,
+      "gzipBytes": 923,
+      "brotliBytes": 835,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "utils-DNAXmrp5.js",
+        "useQuery-BWoAj7iA.js",
+        "client-xI0P71wx.js",
+        "dist-B6ZD_LOR2.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "scouting-Cn-7uvXX.js",
+      "bytes": 1713,
+      "gzipBytes": 787,
+      "brotliBytes": 724,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "leagues-BR5n06uY.js",
+        "attributes-CskHUWzT.js",
+        "career-BpzX_JHn.js",
+        "Crest-D5B0sAnZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "table-V87C6qxf.js",
+      "bytes": 1690,
+      "gzipBytes": 604,
+      "brotliBytes": 539,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "utils-DNAXmrp5.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "embedded-checkout-BNqb1ylJ.js",
+      "bytes": 1664,
+      "gzipBytes": 830,
+      "brotliBytes": 784,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "CinematicLens-CkusuNiw.js",
+      "bytes": 1634,
+      "gzipBytes": 877,
+      "brotliBytes": 825,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "cinematic-runtime-DorQpG42.js",
+        "dist-CYvtR1W7.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "firebase-CQl5n1bn.js",
+      "bytes": 1540,
+      "gzipBytes": 704,
+      "brotliBytes": 656,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "firebase-config.functions-CYeLGGGR.js",
+        "index.esm-DDoHq4tN.js",
+        "index.esm-C_6aqt5y.js"
+      ]
+    },
+    {
+      "name": "tabelas.index-q-QJZE2k.js",
+      "bytes": 1535,
+      "gzipBytes": 797,
+      "brotliBytes": 737,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js",
+        "link-CDwz6dAR.js",
+        "PublicLinks-D5uImyDh.js",
+        "StickyPlayCta-ZmIUAhTg.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "audio-cache-DqhgVBlY.js",
+      "bytes": 1472,
+      "gzipBytes": 775,
+      "brotliBytes": 718,
+      "surface": null,
+      "imports": [
+        "silent-errors-BgCdvtAb.js",
+        "dist-gW0amlhb.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "untrusted-json-Dbu4rudp.js",
+      "bytes": 1447,
+      "gzipBytes": 687,
+      "brotliBytes": 633,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "Ktx2CanvasAssets-KemZNCXK.js",
+      "bytes": 1424,
+      "gzipBytes": 710,
+      "brotliBytes": 655,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "react-three-fiber.esm-C9rBIdwL.js",
+        "athlete-posture-DgFL-WIN.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "button-BxUGWsLQ.js",
+      "bytes": 1424,
+      "gzipBytes": 694,
+      "brotliBytes": 618,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "utils-DNAXmrp5.js",
+        "dist-B6ZD_LOR2.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "stadium-loading-D7sJVUNa.js",
+      "bytes": 1419,
+      "gzipBytes": 807,
+      "brotliBytes": 754,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "Stadium3D-Bt1f330H.js"
+      ]
+    },
+    {
+      "name": "CutsceneSettings-CgQW61Lc.js",
+      "bytes": 1409,
+      "gzipBytes": 573,
+      "brotliBytes": 507,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "eye-Cxq7uZRZ.js",
+        "volume-2-k9X7lGX7.js",
+        "volume-x-BOKF57_t.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "Stands-D4nrRvhA.js",
+      "bytes": 1394,
+      "gzipBytes": 670,
+      "brotliBytes": 621,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "cinematic-artwork--HRs0BpL.js",
+        "CinematicCrowd-BHFqStoS.js",
+        "hash-XwsJ2yy9.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "vite-preload-DjzSQ1t3.js",
+      "bytes": 1383,
+      "gzipBytes": 749,
+      "brotliBytes": 680,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "device--sdEPQNt.js",
+      "bytes": 1380,
+      "gzipBytes": 683,
+      "brotliBytes": 618,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "detect-gpu.esm-Bj-Kifyj.js"
+      ]
+    },
+    {
+      "name": "GuestCloudPrompt-BBznuOuk.js",
+      "bytes": 1339,
+      "gzipBytes": 667,
+      "brotliBytes": 607,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "cloud-MvYatQM5.js",
+        "shield-check-iXU6Cfll.js",
+        "link-CDwz6dAR.js",
+        "useCareer-CBwxDVev.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "moderation-DFP8U5xr.js",
+      "bytes": 1335,
+      "gzipBytes": 851,
+      "brotliBytes": 826,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "GraphicsBoundary-BNRmO58Y.js",
+      "bytes": 1194,
+      "gzipBytes": 660,
+      "brotliBytes": 612,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "browser-shared-data-BhCyFdPZ.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "index-CKCjZXXF.js",
+      "bytes": 1185,
+      "gzipBytes": 688,
+      "brotliBytes": 640,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js"
+      ],
+      "dynamicImports": [
+        "hydrate-app-UIy64cs0.js"
+      ]
+    },
+    {
+      "name": "presentation-lanes-ba9gThZ4.js",
+      "bytes": 1173,
+      "gzipBytes": 610,
+      "brotliBytes": 553,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "manager-profile-9-iH8MyO.js",
+      "bytes": 1168,
+      "gzipBytes": 628,
+      "brotliBytes": 592,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "tslib.es6-Tae09705.js",
+      "bytes": 1069,
+      "gzipBytes": 527,
+      "brotliBytes": 479,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "share-BWNHBJhL.js",
+      "bytes": 1049,
+      "gzipBytes": 526,
+      "brotliBytes": 495,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "visual-context-C2DW2Wjt.js",
+      "bytes": 1031,
+      "gzipBytes": 512,
+      "brotliBytes": 460,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "shared-seat-transforms.worker-CuDiZVvD.js",
+      "bytes": 1028,
+      "gzipBytes": 589,
+      "brotliBytes": 544,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "telemetry-client-Lc3EDtWO.js",
+      "bytes": 965,
+      "gzipBytes": 621,
+      "brotliBytes": 555,
+      "surface": null,
+      "imports": [
+        "browser-shared-data-BhCyFdPZ.js",
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "graphics-renderer-metadata-BM_DB4rR.js",
+      "bytes": 937,
+      "gzipBytes": 509,
+      "brotliBytes": 468,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "Cutscene-Br9e-M1V.js",
+      "bytes": 926,
+      "gzipBytes": 542,
+      "brotliBytes": 504,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-3MeFRtu1.js",
+        "Crest-D5B0sAnZ.js",
+        "CutsceneStage-D3imyCvY.js"
+      ],
+      "dynamicImports": [
+        "tts.functions-9PxAp5Lj.js"
+      ]
+    },
+    {
+      "name": "grass-instances.worker-3P7Gj9s9.js",
+      "bytes": 874,
+      "gzipBytes": 560,
+      "brotliBytes": 542,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-gW0amlhb.js",
+      "bytes": 866,
+      "gzipBytes": 420,
+      "brotliBytes": 380,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "multiplayer.functions-BJXr7BbK.js",
+      "bytes": 795,
+      "gzipBytes": 431,
+      "brotliBytes": 388,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-CkvIzGHo.js",
+      "bytes": 790,
+      "gzipBytes": 479,
+      "brotliBytes": 420,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "dist-BaCxnX00.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "rolldown-runtime-qXqUbbKo.js",
+      "bytes": 773,
+      "gzipBytes": 449,
+      "brotliBytes": 417,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "AccessibilityDialog-DdNah1ad.js",
+      "bytes": 772,
+      "gzipBytes": 448,
+      "brotliBytes": 383,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "check-B6y03FfI.js",
+        "LanguagePicker-D2Oi2IRN.js",
+        "dialog-CIGkIYfq.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "silent-errors-BgCdvtAb.js",
+      "bytes": 769,
+      "gzipBytes": 450,
+      "brotliBytes": 418,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-T6KMMEOt.js",
+      "bytes": 712,
+      "gzipBytes": 488,
+      "brotliBytes": 441,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "utils-DNAXmrp5.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "eye-Cxq7uZRZ.js",
+      "bytes": 695,
+      "gzipBytes": 370,
+      "brotliBytes": 346,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "quickMatch-0JGmF6eY.js",
+      "bytes": 694,
+      "gzipBytes": 449,
+      "brotliBytes": 412,
+      "surface": null,
+      "imports": [
+        "career-BpzX_JHn.js",
+        "club-reference-ciXdP64N.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "logout-BFZ2ydtk.js",
+      "bytes": 681,
+      "gzipBytes": 437,
+      "brotliBytes": 397,
+      "surface": null,
+      "imports": [
+        "vite-preload-DjzSQ1t3.js",
+        "client-xI0P71wx.js"
+      ],
+      "dynamicImports": [
+        "firebase-push-Db_rEnGC.js"
+      ]
+    },
+    {
+      "name": "input-BNiU4iYa.js",
+      "bytes": 672,
+      "gzipBytes": 415,
+      "brotliBytes": 362,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "utils-DNAXmrp5.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useMatch-DDp5vVXL.js",
+      "bytes": 661,
+      "gzipBytes": 411,
+      "brotliBytes": 369,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js",
+        "redirect-QphzVAUU.js",
+        "useRouter-CCu-mIhD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "gamepad-2-NW0rqlc7.js",
+      "bytes": 658,
+      "gzipBytes": 408,
+      "brotliBytes": 369,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useAuthUserId-CndU2kJr.js",
+      "bytes": 654,
+      "gzipBytes": 415,
+      "brotliBytes": 377,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "silent-errors-BgCdvtAb.js",
+        "client-xI0P71wx.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dist-B6ZD_LOR2.js",
+      "bytes": 641,
+      "gzipBytes": 391,
+      "brotliBytes": 358,
+      "surface": null,
+      "imports": [
+        "utils-DNAXmrp5.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ball-climate-DHOwz29K.js",
+      "bytes": 640,
+      "gzipBytes": 346,
+      "brotliBytes": 315,
+      "surface": null,
+      "imports": [
+        "rng-CzXaq355.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PlayerStats-T2DZWc4O.js",
+      "bytes": 633,
+      "gzipBytes": 292,
+      "brotliBytes": 248,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "CrestBuilder-DvyiaYVm.js",
+      "bytes": 602,
+      "gzipBytes": 376,
+      "brotliBytes": 324,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "MatchLoading-uwXwIiLo.js",
+      "bytes": 600,
+      "gzipBytes": 388,
+      "brotliBytes": 339,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "dumbbell-BkPkghfJ.js",
+      "bytes": 597,
+      "gzipBytes": 315,
+      "brotliBytes": 283,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "chat-B0uyftt6.js",
+      "bytes": 590,
+      "gzipBytes": 368,
+      "brotliBytes": 336,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "screen-kit-Bu1UNdne.js",
+        "useCareer-CBwxDVev.js",
+        "ChatPanel-Dgwrl2M_.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "redirect-QphzVAUU.js",
+      "bytes": 560,
+      "gzipBytes": 325,
+      "brotliBytes": 289,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "useDisposable-C51BL44o.js",
+      "bytes": 553,
+      "gzipBytes": 356,
+      "brotliBytes": 318,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "sparkles-DM_A3kLz.js",
+      "bytes": 549,
+      "gzipBytes": 316,
+      "brotliBytes": 293,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "trophy-wEQ4sq2M.js",
+      "bytes": 542,
+      "gzipBytes": 311,
+      "brotliBytes": 281,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "tabelas._slug-B_gq3E2B.js",
+      "bytes": 531,
+      "gzipBytes": 353,
+      "brotliBytes": 323,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "_._lovable.oauth.consent-LZ6q79Yi.js",
+      "bytes": 527,
+      "gzipBytes": 352,
+      "brotliBytes": 309,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "tts.functions-9PxAp5Lj.js",
+      "bytes": 519,
+      "gzipBytes": 330,
+      "brotliBytes": 299,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "football.functions-CGY-P0KO.js",
+      "bytes": 512,
+      "gzipBytes": 359,
+      "brotliBytes": 324,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "createClientRpc-I1BCrvhR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "star-CDzyGxV-.js",
+      "bytes": 509,
+      "gzipBytes": 313,
+      "brotliBytes": 290,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "crest-options-C23DH5lY.js",
+      "bytes": 474,
+      "gzipBytes": 298,
+      "brotliBytes": 281,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "StickyPlayCta-ZmIUAhTg.js",
+      "bytes": 462,
+      "gzipBytes": 335,
+      "brotliBytes": 284,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "sliders-horizontal-DvGVNAlD.js",
+      "bytes": 461,
+      "gzipBytes": 261,
+      "brotliBytes": 229,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "guest-checkout.functions-DiI7Q4hl.js",
+      "bytes": 458,
+      "gzipBytes": 313,
+      "brotliBytes": 281,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useServerFn-DkCGuCoI.js",
+      "bytes": 454,
+      "gzipBytes": 306,
+      "brotliBytes": 264,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "redirect-QphzVAUU.js",
+        "useRouter-CCu-mIhD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "creator-pvFOfpGx.js",
+      "bytes": 452,
+      "gzipBytes": 302,
+      "brotliBytes": 274,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "building-complex-Bvd1xciR.js",
+      "bytes": 449,
+      "gzipBytes": 278,
+      "brotliBytes": 249,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cinematic-runtime-DorQpG42.js",
+      "bytes": 444,
+      "gzipBytes": 308,
+      "brotliBytes": 272,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "three.core-CqqFKHSV.js",
+        "react-three-fiber.esm-C9rBIdwL.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "world-scope-h-EL1iu3.js",
+      "bytes": 430,
+      "gzipBytes": 269,
+      "brotliBytes": 237,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "volume-2-k9X7lGX7.js",
+      "bytes": 427,
+      "gzipBytes": 294,
+      "brotliBytes": 265,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "custom-data-storage-DljiYLDG.js",
+      "bytes": 425,
+      "gzipBytes": 296,
+      "brotliBytes": 246,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "world-scope-h-EL1iu3.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "shuffle-2ETc73vF.js",
+      "bytes": 420,
+      "gzipBytes": 264,
+      "brotliBytes": 241,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "tabelas._slug-CMFbBB-U.js",
+      "bytes": 416,
+      "gzipBytes": 300,
+      "brotliBytes": 267,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js",
+        "link-CDwz6dAR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "PhoneMFASettings-vTA1k8CY.js",
+      "bytes": 413,
+      "gzipBytes": 247,
+      "brotliBytes": 216,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "qss-JC7fkHHg.js",
+      "bytes": 406,
+      "gzipBytes": 275,
+      "brotliBytes": 254,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "rng-CzXaq355.js",
+      "bytes": 400,
+      "gzipBytes": 306,
+      "brotliBytes": 277,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "clapperboard-BfskWSyv.js",
+      "bytes": 397,
+      "gzipBytes": 285,
+      "brotliBytes": 254,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "volume-x-BOKF57_t.js",
+      "bytes": 394,
+      "gzipBytes": 278,
+      "brotliBytes": 253,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "store-product-artwork-1drEvD3k.js",
+      "bytes": 389,
+      "gzipBytes": 249,
+      "brotliBytes": 214,
+      "surface": null,
+      "imports": [
+        "badge-C6bwQrI-.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "trash-8_EnI2Io.js",
+      "bytes": 383,
+      "gzipBytes": 250,
+      "brotliBytes": 228,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "real-football.functions-CjEuxJLF.js",
+      "bytes": 382,
+      "gzipBytes": 271,
+      "brotliBytes": 246,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cinematic-set-BMkI2mlY.js",
+      "bytes": 371,
+      "gzipBytes": 214,
+      "brotliBytes": 188,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "heart-pulse-Blqy07yo.js",
+      "bytes": 370,
+      "gzipBytes": 281,
+      "brotliBytes": 258,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "refresh-cw-IbHzmrIu.js",
+      "bytes": 358,
+      "gzipBytes": 249,
+      "brotliBytes": 216,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "shield-check-iXU6Cfll.js",
+      "bytes": 357,
+      "gzipBytes": 274,
+      "brotliBytes": 249,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "users-BCDkbSiZ.js",
+      "bytes": 343,
+      "gzipBytes": 246,
+      "brotliBytes": 220,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "player-career-export-qKudrpEm.js",
+      "bytes": 338,
+      "gzipBytes": 272,
+      "brotliBytes": 214,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "book-open-C_noO_7X.js",
+      "bytes": 326,
+      "gzipBytes": 247,
+      "brotliBytes": 223,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "coins-zveIcBqA.js",
+      "bytes": 322,
+      "gzipBytes": 248,
+      "brotliBytes": 224,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "shield-wrOmLYqf.js",
+      "bytes": 309,
+      "gzipBytes": 250,
+      "brotliBytes": 227,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "createMiddleware-DQnh37QV.js",
+      "bytes": 307,
+      "gzipBytes": 176,
+      "brotliBytes": 144,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "my-club-storage-C-jvUuTX.js",
+      "bytes": 304,
+      "gzipBytes": 243,
+      "brotliBytes": 201,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "world-scope-h-EL1iu3.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "flag-YkIzRTbx.js",
+      "bytes": 291,
+      "gzipBytes": 234,
+      "brotliBytes": 207,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "settings-2-BoX_7z-4.js",
+      "bytes": 289,
+      "gzipBytes": 219,
+      "brotliBytes": 191,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useNavigate-CpHirhku.js",
+      "bytes": 274,
+      "gzipBytes": 219,
+      "brotliBytes": 179,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js",
+        "useRouter-CCu-mIhD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "copy-CKgMlZYA.js",
+      "bytes": 273,
+      "gzipBytes": 233,
+      "brotliBytes": 205,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "activity-CZG9_V-B.js",
+      "bytes": 271,
+      "gzipBytes": 225,
+      "brotliBytes": 201,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "download-CnivVLms.js",
+      "bytes": 269,
+      "gzipBytes": 218,
+      "brotliBytes": 190,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "firebase-config.functions-CYeLGGGR.js",
+      "bytes": 267,
+      "gzipBytes": 233,
+      "brotliBytes": 205,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "createClientRpc-I1BCrvhR.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "circle-x-C4XiSS1B.js",
+      "bytes": 265,
+      "gzipBytes": 214,
+      "brotliBytes": 189,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "customStyle-B55yYDvc.js",
+      "bytes": 261,
+      "gzipBytes": 164,
+      "brotliBytes": 144,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "match-ai.functions-BrUxBJi8.js",
+      "bytes": 257,
+      "gzipBytes": 224,
+      "brotliBytes": 196,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "room-chat.functions-s2ZiNZTQ.js",
+      "bytes": 255,
+      "gzipBytes": 224,
+      "brotliBytes": 190,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "mail-nL7eY3Bx.js",
+      "bytes": 250,
+      "gzipBytes": 222,
+      "brotliBytes": 198,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "pause-DyCMUnYU.js",
+      "bytes": 248,
+      "gzipBytes": 187,
+      "brotliBytes": 163,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "circle-check-D38uG1kl.js",
+      "bytes": 247,
+      "gzipBytes": 211,
+      "brotliBytes": 184,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "lock-CyI3-b-x.js",
+      "bytes": 243,
+      "gzipBytes": 216,
+      "brotliBytes": 184,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "user-round-CVwvDqdh.js",
+      "bytes": 238,
+      "gzipBytes": 211,
+      "brotliBytes": 186,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "rotate-ccw-v2puOglr.js",
+      "bytes": 237,
+      "gzipBytes": 208,
+      "brotliBytes": 181,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "purchases.functions-DhYPUUeD.js",
+      "bytes": 236,
+      "gzipBytes": 211,
+      "brotliBytes": 185,
+      "surface": null,
+      "imports": [
+        "createClientRpc-I1BCrvhR.js",
+        "auth-middleware-jScsstZa.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "extends-CvVTau-c.js",
+      "bytes": 231,
+      "gzipBytes": 182,
+      "brotliBytes": 149,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "play-CstBHgAz.js",
+      "bytes": 227,
+      "gzipBytes": 201,
+      "brotliBytes": 179,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "menu-CsmJaBHt.js",
+      "bytes": 226,
+      "gzipBytes": 178,
+      "brotliBytes": 153,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cinematic-overlay-5if_X0Fw.js",
+      "bytes": 211,
+      "gzipBytes": 166,
+      "brotliBytes": 149,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "search-BnYj-Bzc.js",
+      "bytes": 211,
+      "gzipBytes": 190,
+      "brotliBytes": 167,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "arrow-left-BFQ4zIm7.js",
+      "bytes": 202,
+      "gzipBytes": 183,
+      "brotliBytes": 157,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "arrow-right-BHn_Rxf6.js",
+      "bytes": 202,
+      "gzipBytes": 183,
+      "brotliBytes": 157,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "loader-circle-BctptV3I.js",
+      "bytes": 202,
+      "gzipBytes": 187,
+      "brotliBytes": 164,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "cloud-MvYatQM5.js",
+      "bytes": 197,
+      "gzipBytes": 186,
+      "brotliBytes": 160,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useRouter-CCu-mIhD.js",
+      "bytes": 197,
+      "gzipBytes": 168,
+      "brotliBytes": 140,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "physics-quality-Dd_k5PQD.js",
+      "bytes": 193,
+      "gzipBytes": 156,
+      "brotliBytes": 129,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "x-u7X62wNQ.js",
+      "bytes": 191,
+      "gzipBytes": 174,
+      "brotliBytes": 149,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "plus-BILwza2f.js",
+      "bytes": 190,
+      "gzipBytes": 172,
+      "brotliBytes": 147,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "useLocation-DvDCmHvQ.js",
+      "bytes": 190,
+      "gzipBytes": 162,
+      "brotliBytes": 137,
+      "surface": null,
+      "imports": [
+        "link-CDwz6dAR.js",
+        "useRouter-CCu-mIhD.js",
+        "useMatch-DDp5vVXL.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "club-reference-ciXdP64N.js",
+      "bytes": 184,
+      "gzipBytes": 177,
+      "brotliBytes": 143,
+      "surface": null,
+      "imports": [
+        "leagues-BR5n06uY.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "ceremony-prefs-CTfMFcZt.js",
+      "bytes": 174,
+      "gzipBytes": 142,
+      "brotliBytes": 117,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "chevron-right-BqEuhW4a.js",
+      "bytes": 167,
+      "gzipBytes": 162,
+      "brotliBytes": 140,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "chevron-down-DpiyMz9N.js",
+      "bytes": 165,
+      "gzipBytes": 162,
+      "brotliBytes": 139,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "check-B6y03FfI.js",
+      "bytes": 161,
+      "gzipBytes": 163,
+      "brotliBytes": 135,
+      "surface": null,
+      "imports": [
+        "browser-react-3MeFRtu1.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "index.esm-DDoHq4tN.js",
+      "bytes": 127,
+      "gzipBytes": 133,
+      "brotliBytes": 106,
+      "surface": null,
+      "imports": [
+        "index.esm-DK2PWSuD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "auth-middleware-jScsstZa.js",
+      "bytes": 88,
+      "gzipBytes": 104,
+      "brotliBytes": 82,
+      "surface": null,
+      "imports": [
+        "createMiddleware-DQnh37QV.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "hash-XwsJ2yy9.js",
+      "bytes": 87,
+      "gzipBytes": 103,
+      "brotliBytes": 75,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "mfa-session-1m0rNkVv.js",
+      "bytes": 82,
+      "gzipBytes": 91,
+      "brotliBytes": 69,
+      "surface": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "name": "careerStorage-B-TvagIz.js",
+      "bytes": 69,
+      "gzipBytes": 84,
+      "brotliBytes": 71,
+      "surface": null,
+      "imports": [
+        "store-DVpsUuoB.js"
+      ],
+      "dynamicImports": []
+    }
+  ]
+}

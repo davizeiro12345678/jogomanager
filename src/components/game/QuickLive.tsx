@@ -21,7 +21,13 @@ import { useMatchNarration } from "@/hooks/useMatchNarration";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
 import { ShortcutsDialog } from "./ShortcutsDialog";
-import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import {
+  aiTactics,
+  buildTeamSetup,
+  QUICK_MATCH_HOME_FORMATION,
+  QUICK_MATCH_AWAY_FORMATION,
+  type Difficulty,
+} from "@/game/quickMatch";
 import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { safeClub } from "@/game/squad";
@@ -73,8 +79,8 @@ export default function QuickLive({
   const setups = useMemo(() => {
     const ai = aiTactics(difficulty);
     return {
-      home: buildTeamSetup(myId),
-      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
+      home: buildTeamSetup(myId, QUICK_MATCH_HOME_FORMATION),
+      away: buildTeamSetup(oppId, QUICK_MATCH_AWAY_FORMATION, ai.mentality, ai.pressing),
       seed,
     };
   }, [myId, oppId, difficulty, seed]);

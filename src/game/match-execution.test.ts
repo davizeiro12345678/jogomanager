@@ -77,7 +77,7 @@ describe("fixed match execution contract", () => {
     expect(() => sim.setPassLaneIntoKernel(evaluatePassLanesIntoFallback, "wasm")).toThrow(/fixed/);
     expect(late.reset).not.toHaveBeenCalled();
     expect(sim.executionContract()).toEqual({
-      revision: 2,
+      revision: 3,
       physics: "compat",
       perception: "compat",
     });
@@ -104,13 +104,26 @@ describe("fixed match execution contract", () => {
     expect(() =>
       sim.restoreCheckpoint({
         ...before,
-        execution: { revision: 2, physics: "rapier", perception: "compat" },
+        execution: { revision: 3, physics: "rapier", perception: "compat" },
       }),
     ).toThrow(/checkpoint/);
     expect(sim.checkpoint()).toEqual(before);
     expect(validExecutionContract({ revision: 999, physics: "compat", perception: "compat" })).toBe(
       false,
     );
+    sim.dispose();
+  });
+  it("rejects older or unversioned rules rather than resuming with different decisions", () => {
+    const sim = match();
+    const checkpoint = sim.checkpoint();
+    const previous = {
+      ...checkpoint,
+      execution: { revision: 2, physics: "compat", perception: "compat" },
+    } as unknown as typeof checkpoint;
+    const legacy = { ...checkpoint, version: 1 as const };
+    delete legacy.execution;
+    expect(() => sim.restoreCheckpoint(previous)).toThrow(/checkpoint/);
+    expect(() => sim.restoreCheckpoint(legacy)).toThrow(/checkpoint/);
     sim.dispose();
   });
   it("preserves state when speed groups the same fixed ticks", () => {

@@ -150,11 +150,10 @@ export class MatchSim {
     if (
       !checkpoint ||
       !checkpoint.state ||
-      (checkpoint.version !== 1 && checkpoint.version !== 2) ||
-      (checkpoint.version === 2 &&
-        (!validExecutionContract(checkpoint.execution) ||
-          checkpoint.execution.physics !== (checkpoint.physics ? "rapier" : "compat") ||
-          checkpoint.execution.perception !== checkpoint.perception)) ||
+      checkpoint.version !== 2 ||
+      !validExecutionContract(checkpoint.execution) ||
+      checkpoint.execution.physics !== (checkpoint.physics ? "rapier" : "compat") ||
+      checkpoint.execution.perception !== checkpoint.perception ||
       checkpoint.seed !== this.matchSeed ||
       typeof checkpoint.state["time"] !== "number" ||
       !Number.isFinite(checkpoint.state["time"]) ||
@@ -205,14 +204,7 @@ export class MatchSim {
       restoreAthleteRemainder(player, checkpoint.athleteRemainders[index]!),
     );
     this.ballPhysics = authority ?? null;
-    this.#execution =
-      checkpoint.version === 2
-        ? { ...checkpoint.execution! }
-        : {
-            revision: MATCH_EXECUTION_REVISION,
-            physics: checkpoint.physics ? "rapier" : "compat",
-            perception: checkpoint.perception,
-          };
+    this.#execution = { ...checkpoint.execution! };
     this.#physicsFault = false;
   }
   time = 0; // segundos de jogo
@@ -275,9 +267,8 @@ export class MatchSim {
     to: string;
     from: string;
     until: number;
-    fromX: number;
-    dir: 1 | -1;
     side: Side;
+    offsideAtKick: boolean;
   } | null = null;
 
   /* ---------------- estrutura da partida (Ciclo 2) ---------------- */
@@ -2092,28 +2083,25 @@ export class MatchSim {
       p.interceptions++;
       this.stats[p.side].interceptions++;
     }
-    // impedimento: recebe à frente da linha num passe para frente (sem isenção)
-    if (this.pass && isReceiver && this.time > this.exemptUntil) {
-      const forward = (p.x - this.pass.fromX) * this.pass.dir > 1;
-      if (forward && isOffside(p.x, defensiveLineX(this.players, p.side), this.pass.dir)) {
-        p.offsides++;
-        this.stats[p.side].offsides++;
-        this.pass = null;
-        this.ball.vx = 0;
-        this.ball.vz = 0;
-        this.ballVy = 0;
-        this.ball.height = 0.12;
-        this.trigger(p, "protest", 1.2);
-        this.pushEvent({
-          minute: this.minute(),
-          type: "offside",
-          side: p.side,
-          text: `Impedimento de ${p.name}.`,
-        });
-        // infração: a defesa fica com a bola no local
-        this.restartFor(p.side === "home" ? "away" : "home", "throwIn");
-        return;
-      }
+    // A posição e a isenção são avaliadas na hora do passe, não no domínio.
+    if (this.pass && isReceiver && this.pass.offsideAtKick) {
+      p.offsides++;
+      this.stats[p.side].offsides++;
+      this.pass = null;
+      this.ball.vx = 0;
+      this.ball.vz = 0;
+      this.ballVy = 0;
+      this.ball.height = 0.12;
+      this.trigger(p, "protest", 1.2);
+      this.pushEvent({
+        minute: this.minute(),
+        type: "offside",
+        side: p.side,
+        text: `Impedimento de ${p.name}.`,
+      });
+      // infração: a defesa fica com a bola no local
+      this.restartFor(p.side === "home" ? "away" : "home", "throwIn");
+      return;
     }
     const skill = (p.passing * 0.5 + p.physical * 0.3 + p.defending * 0.2) / 100;
     const difficulty = ballSpeed / 34 + (h > 0.9 ? 0.28 : 0) + controlFailAdd(this.weather);
@@ -2580,6 +2568,8 @@ export class MatchSim {
     const mates = this.players.filter(
       (p) => p.side === holder.side && p.id !== holder.id && !p.sentOff,
     );
+    const offsideLine =
+      this.time > this.exemptUntil ? defensiveLineX(this.players, holder.side) : null;
     let best: SimPlayer | null = null;
     let bestScore = -Infinity;
     const defenders = this.players.filter((p) => p.side !== holder.side && !p.sentOff);
@@ -2618,6 +2608,15 @@ export class MatchSim {
       const dist = lanes[index * 3]!;
       if (dist < 4 || dist > 42) continue;
       const forward = (m.x - holder.x) * dir;
+      // Avoid clear infractions, while retaining a small perception margin:
+      // close calls may still be misjudged and are adjudicated at the kick.
+      if (
+        offsideLine !== null &&
+        forward > 0.4 &&
+        isOffside(m.x, offsideLine, dir) &&
+        (m.x - offsideLine) * dir > 1.4
+      )
+        continue;
       const cover = lanes[index * 3 + 1]!;
       const laneRisk = lanes[index * 3 + 2]!;
       let score =
@@ -2665,9 +2664,11 @@ export class MatchSim {
       to: best.id,
       from: holder.id,
       until: this.time + 0.45,
-      fromX: holder.x,
-      dir,
       side: holder.side,
+      offsideAtKick:
+        offsideLine !== null &&
+        (best.x - holder.x) * dir > 0.4 &&
+        isOffside(best.x, offsideLine, dir),
     };
     this.ball.vx = (dx / d) * power + err * 0.18;
     this.ball.vz = (dz / d) * power + err;

@@ -35,6 +35,31 @@ describe("xgForShot", () => {
 });
 
 describe("impedimento", () => {
+  it("usa o penúltimo defensor mais próximo do gol nos dois sentidos", () => {
+    const players = [
+      { x: 50, side: "away" as const, pos: "GK", sentOff: false },
+      { x: 37, side: "away" as const, pos: "DF", sentOff: false },
+      { x: 20, side: "away" as const, pos: "DF", sentOff: false },
+      { x: 11, side: "away" as const, pos: "MF", sentOff: false },
+      { x: -50, side: "home" as const, pos: "GK", sentOff: false },
+      { x: -37, side: "home" as const, pos: "DF", sentOff: false },
+      { x: -20, side: "home" as const, pos: "DF", sentOff: false },
+      { x: -11, side: "home" as const, pos: "MF", sentOff: false },
+    ];
+    expect(defensiveLineX(players, "home")).toBe(37);
+    expect(defensiveLineX(players, "away")).toBe(-37);
+  });
+
+  it("desconsidera jogadores expulsos ao formar a linha", () => {
+    const foes = [
+      { x: 50, side: "away" as const, pos: "GK", sentOff: false },
+      { x: 40, side: "away" as const, pos: "DF", sentOff: true },
+      { x: 30, side: "away" as const, pos: "DF", sentOff: false },
+      { x: 10, side: "away" as const, pos: "MF", sentOff: false },
+    ];
+    expect(defensiveLineX(foes, "home")).toBe(30);
+  });
+
   it("marca além da linha só no campo de ataque", () => {
     const line = defensiveLineX(
       [

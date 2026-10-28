@@ -5,6 +5,8 @@ import type { TeamSetup } from "./sim";
 import type { FormationKey, Player } from "./types";
 
 export type Difficulty = "facil" | "normal" | "dificil";
+export const QUICK_MATCH_HOME_FORMATION: FormationKey = "4-3-3";
+export const QUICK_MATCH_AWAY_FORMATION: FormationKey = "4-4-2";
 
 export function buildTeamSetup(
   clubId: string,

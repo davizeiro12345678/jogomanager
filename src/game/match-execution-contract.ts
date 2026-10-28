@@ -1,4 +1,4 @@
-export const MATCH_EXECUTION_REVISION = 2 as const;
+export const MATCH_EXECUTION_REVISION = 3 as const;
 export interface MatchExecutionContract {
   revision: typeof MATCH_EXECUTION_REVISION;
   physics: "compat" | "rapier";

@@ -37,9 +37,10 @@ export const requestAiTacticalPlan = createServerFn({ method: "POST" })
       // Conservative reservation for 25k output tokens; this remains an estimate,
       // not an OpenAI invoice or a hard currency cap.
       if (!(await reserveAiBudget("text", 200))) return null;
-      const { buildTeamSetup } = await import("@/game/quickMatch");
-      const summarize = (club: string) => {
-        const players = buildTeamSetup(club).players;
+      const { buildTeamSetup, QUICK_MATCH_HOME_FORMATION, QUICK_MATCH_AWAY_FORMATION } =
+        await import("@/game/quickMatch");
+      const summarize = (club: string, formation: typeof QUICK_MATCH_HOME_FORMATION) => {
+        const players = buildTeamSetup(club, formation).players;
         const attributes = (members: typeof players) =>
           (["pace", "shooting", "passing", "defending", "physical"] as const).map((attribute) =>
             Math.round(
@@ -51,17 +52,21 @@ export const requestAiTacticalPlan = createServerFn({ method: "POST" })
           attributes: attributes(players),
           roles: (["GK", "DF", "MF", "FW"] as const).flatMap((position) => {
             const members = players.filter((player) => player.pos === position);
-            return members.length ? [{ position, attributes: attributes(members) }] : [];
+            return members.length
+              ? [{ position, count: members.length, attributes: attributes(members) }]
+              : [];
           }),
         };
       };
-      const home = summarize(data.homeClub);
-      const away = summarize(data.awayClub);
+      const home = summarize(data.homeClub, QUICK_MATCH_HOME_FORMATION);
+      const away = summarize(data.awayClub, QUICK_MATCH_AWAY_FORMATION);
       const { requestMatchTactics } = await import("@/lib/match-ai.server");
       return requestMatchTactics(key, {
         homeStrength: CLUBS[data.homeClub]!.strength,
         awayStrength: CLUBS[data.awayClub]!.strength,
         difficulty: data.difficulty,
+        homeFormation: QUICK_MATCH_HOME_FORMATION,
+        awayFormation: QUICK_MATCH_AWAY_FORMATION,
         homeAttributes: home.attributes,
         awayAttributes: away.attributes,
         homeRoles: home.roles,

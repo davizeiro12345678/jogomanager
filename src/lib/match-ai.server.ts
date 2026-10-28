@@ -28,10 +28,12 @@ export interface MatchAiSummary {
   homeStrength: number;
   awayStrength: number;
   difficulty: Difficulty;
+  homeFormation?: string;
+  awayFormation?: string;
   homeAttributes?: number[];
   awayAttributes?: number[];
-  homeRoles?: Array<{ position: string; attributes: number[] }>;
-  awayRoles?: Array<{ position: string; attributes: number[] }>;
+  homeRoles?: Array<{ position: string; count: number; attributes: number[] }>;
+  awayRoles?: Array<{ position: string; count: number; attributes: number[] }>;
 }
 
 /** Data is produced from the server's catalog, never from player-authored text. */
@@ -52,7 +54,7 @@ export async function requestMatchTactics(
           {
             role: "developer",
             content:
-              "Choose the away team's football tactics and both teams' player approaches by position for a simulator. Inputs are catalog-derived ratings 0-100 and difficulty. Team and position attribute arrays are averages in order pace, shooting, passing, defending, physical. The controls are mentality 0-4 and pressing, width and tempo 0-2. For each position choose cautious, balanced or attacking; players are away and homePlayers are home. Also choose a plausible home crowd climate and intensity; crowd reactions remain driven by match events. Return only the requested structured plan.",
+              "Choose the away team's football tactics and both teams' player approaches by position for a simulator. Inputs are catalog-derived ratings 0-100 and difficulty. The homeFormation and awayFormation describe the actual lineups; each role includes the number of starters. Team and role attribute arrays are averages in order pace, shooting, passing, defending, physical. The controls are mentality 0-4 and pressing, width and tempo 0-2. For each position choose cautious, balanced or attacking; players are away and homePlayers are home. Also choose a plausible home crowd climate and intensity; crowd reactions remain driven by match events. Return only the requested structured plan.",
           },
           { role: "user", content: JSON.stringify(summary) },
         ],

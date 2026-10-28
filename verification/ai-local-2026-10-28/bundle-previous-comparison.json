@@ -1,0 +1,123 @@
+{
+  "before": "previous",
+  "after": "candidate",
+  "comparisonDate": "2026-10-28T21:21:37.225Z",
+  "rows": [
+    {
+      "label": "JS emitido total (inclui lazy)",
+      "before": 6905143,
+      "after": 6905153,
+      "reductionPercent": "-0.00%"
+    },
+    {
+      "label": "JS emitido total (gzip)",
+      "before": 2237347,
+      "after": 2237512,
+      "reductionPercent": "-0.01%"
+    },
+    {
+      "label": "JS emitido total (Brotli Q6)",
+      "before": 2108288,
+      "after": 2108548,
+      "reductionPercent": "-0.01%"
+    },
+    {
+      "label": "Página inicial startup (gzip)",
+      "before": 166286,
+      "after": 166286,
+      "reductionPercent": "0.00%"
+    },
+    {
+      "label": "Página inicial startup (Brotli Q6)",
+      "before": 157431,
+      "after": 157540,
+      "reductionPercent": "-0.07%"
+    },
+    {
+      "label": "Nova carreira startup (gzip)",
+      "before": 437824,
+      "after": 437866,
+      "reductionPercent": "-0.01%"
+    },
+    {
+      "label": "Nova carreira startup (Brotli Q6)",
+      "before": 413624,
+      "after": 413780,
+      "reductionPercent": "-0.04%"
+    },
+    {
+      "label": "Partida rápida startup (gzip)",
+      "before": 299544,
+      "after": 299541,
+      "reductionPercent": "0.00%"
+    },
+    {
+      "label": "Partida rápida startup (Brotli Q6)",
+      "before": 283741,
+      "after": 283851,
+      "reductionPercent": "-0.04%"
+    },
+    {
+      "label": "Match 3D startup (gzip)",
+      "before": 563250,
+      "after": 563310,
+      "reductionPercent": "-0.01%"
+    },
+    {
+      "label": "Match 3D startup (Brotli Q6)",
+      "before": 532488,
+      "after": 532663,
+      "reductionPercent": "-0.03%"
+    },
+    {
+      "label": "Palco cinematográfico startup (gzip)",
+      "before": 535093,
+      "after": 535093,
+      "reductionPercent": "0.00%"
+    },
+    {
+      "label": "Palco cinematográfico startup (Brotli Q6)",
+      "before": 502358,
+      "after": 502467,
+      "reductionPercent": "-0.02%"
+    },
+    {
+      "label": "Editor startup (gzip)",
+      "before": 177619,
+      "after": 177619,
+      "reductionPercent": "0.00%"
+    },
+    {
+      "label": "Editor startup (Brotli Q6)",
+      "before": 168114,
+      "after": 168223,
+      "reductionPercent": "-0.06%"
+    },
+    {
+      "label": "Simulação Worker startup (gzip)",
+      "before": 28560,
+      "after": 28605,
+      "reductionPercent": "-0.16%"
+    },
+    {
+      "label": "Simulação Worker startup (Brotli Q6)",
+      "before": 27495,
+      "after": 27514,
+      "reductionPercent": "-0.07%"
+    }
+  ],
+  "violations": [
+    "JS emitido total (gzip): 2237512 exceeds baseline 2237347 by 165 bytes",
+    "JS emitido total (Brotli Q6): 2108548 exceeds baseline 2108288 by 260 bytes",
+    "Página inicial startup (Brotli Q6): 157540 exceeds baseline 157431 by 109 bytes",
+    "Nova carreira startup (gzip): 437866 exceeds baseline 437824 by 42 bytes",
+    "Nova carreira startup (Brotli Q6): 413780 exceeds baseline 413624 by 156 bytes",
+    "Partida rápida startup (Brotli Q6): 283851 exceeds baseline 283741 by 110 bytes",
+    "Match 3D startup (gzip): 563310 exceeds baseline 563250 by 60 bytes",
+    "Match 3D startup (Brotli Q6): 532663 exceeds baseline 532488 by 175 bytes",
+    "Palco cinematográfico startup (Brotli Q6): 502467 exceeds baseline 502358 by 109 bytes",
+    "Editor startup (Brotli Q6): 168223 exceeds baseline 168114 by 109 bytes",
+    "Simulação Worker startup (gzip): 28605 exceeds baseline 28560 by 45 bytes",
+    "Simulação Worker startup (Brotli Q6): 27514 exceeds baseline 27495 by 19 bytes"
+  ]
+}
