@@ -8,7 +8,9 @@
 import type { PostHog } from "posthog-js";
 
 let client: PostHog | null = null;
-let starting = false;
+let initTask: Promise<PostHog | null> | null = null;
+let firebaseBootstrapStarted = false;
+let analyticsAllowed = false;
 
 function apiHost() {
   const region = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_REGION"] || "eu";
@@ -17,17 +19,37 @@ function apiHost() {
 
 export async function initAnalytics(): Promise<PostHog | null> {
   if (typeof window === "undefined") return null;
-  // Analytics é opcional: só carrega depois do consentimento explícito.
+  // Analytics only starts after explicit consent. Revoking consent stops the
+  // existing SDK without re-importing its bundle or initializing it again.
   const { readConsent } = await import("./consent");
-  if (!readConsent().analytics) return null;
+  analyticsAllowed = readConsent().analytics;
+  if (!analyticsAllowed) {
+    client?.opt_out_capturing();
+    return null;
+  }
+
   initGoogleAnalytics();
-  void import("./firebase").then((m) => m.initFirebase({ analytics: true }));
-  if (client) return client;
+  // consent-changed and the idle callback may fire together. Import Firebase
+  // only once so repeated consent notifications cannot duplicate startup work.
+  if (!firebaseBootstrapStarted) {
+    firebaseBootstrapStarted = true;
+    void import("./firebase")
+      .then((m) => m.initFirebase({ analytics: true }))
+      .catch(() => { firebaseBootstrapStarted = false; });
+  }
+
+  if (client) {
+    if (client.has_opted_out_capturing()) client.opt_in_capturing();
+    return client;
+  }
   const token = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY"];
-  if (!token || starting) return null;
-  starting = true;
-  try {
+  if (!token) return null;
+  if (initTask) return initTask;
+
+  initTask = (async (): Promise<PostHog | null> => {
     const { default: posthog } = await import("posthog-js");
+    // Consent could be revoked while the dynamic import was downloading.
+    if (!readConsent().analytics) return null;
     posthog.init(token, {
       api_host: apiHost(),
       capture_pageview: true,
@@ -38,11 +60,10 @@ export async function initAnalytics(): Promise<PostHog | null> {
     });
     client = posthog;
     return posthog;
-  } catch {
-    return null;
-  } finally {
-    starting = false;
-  }
+  })()
+    .catch(() => null)
+    .finally(() => { initTask = null; });
+  return initTask;
 }
 
 /** Google Analytics 4 (gtag.js) — carregado apenas no navegador. */
@@ -77,6 +98,7 @@ function initGoogleAnalytics() {
 
 /** Registra uma nova tela (SPA) no Google Analytics. */
 export function trackPageView(path: string) {
+  if (!analyticsAllowed) return;
   try {
     if (gaId) window.gtag?.("event", "page_view", { page_path: path });
   } catch {
@@ -86,6 +108,7 @@ export function trackPageView(path: string) {
 
 /** Registra um evento do jogo. Nunca lança: análise não pode quebrar a partida. */
 export function track(event: string, props?: Record<string, string | number | boolean>) {
+  if (!analyticsAllowed) return;
   try {
     client?.capture(event, props);
   } catch {
