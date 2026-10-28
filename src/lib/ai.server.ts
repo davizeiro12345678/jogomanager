@@ -361,12 +361,119 @@ function responseError(status: number) {
   return new AiError("unknown", "A IA não conseguiu responder agora. Tente novamente.");
 }
 
+/** A second provider is only attempted after an infrastructure failure. */
+class TemporaryProviderError extends Error {}
+
+const RESPONSES_RESERVATION_CENTS = 200;
+const RESPONSES_MAX_OUTPUT_TOKENS = 8_192;
+
+async function requestResponsesText(
+  provider: "openai" | "deepseek",
+  apiKey: string,
+  messages: ChatMessage[],
+): Promise<string> {
+  const { reserveAiBudget } = await import("@/lib/ai-budget.server");
+  // Each attempt can be billed, including a failed primary request.
+  if (!(await reserveAiBudget("text", RESPONSES_RESERVATION_CENTS))) {
+    throw new AiError("no_credits", "O limite de IA deste mês foi atingido. Volte no mês que vem.");
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(
+      provider === "openai"
+        ? "https://api.openai.com/v1/responses"
+        : "https://api.deepseek.com/responses",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: provider === "openai" ? "gpt-6.1-terra" : "deepseek-flash",
+          reasoning: { effort: "max" },
+          max_output_tokens: RESPONSES_MAX_OUTPUT_TOKENS,
+          ...(provider === "openai" ? { store: false } : {}),
+          input: messages,
+        }),
+        signal: AbortSignal.timeout(45_000),
+      },
+    );
+  } catch {
+    throw new TemporaryProviderError();
+  }
+  if (response.status === 429 || response.status >= 500) throw new TemporaryProviderError();
+  if (!response.ok) throw responseError(response.status);
+
+  const envelope = await readBoundedAnthropicJson(response);
+  if (!envelope || typeof envelope !== "object") {
+    throw new AiError("unknown", "A IA não conseguiu responder agora. Tente novamente.");
+  }
+  const value = envelope as { status?: unknown; output?: unknown };
+  if (value.status !== "completed" || !Array.isArray(value.output)) {
+    throw new AiError("unknown", "A IA não conseguiu responder agora. Tente novamente.");
+  }
+  let text = "";
+  for (const item of value.output) {
+    if (!item || typeof item !== "object") continue;
+    const message = item as { type?: unknown; content?: unknown };
+    if (message.type !== "message" || !Array.isArray(message.content)) continue;
+    for (const part of message.content) {
+      if (!part || typeof part !== "object") continue;
+      const block = part as { type?: unknown; text?: unknown };
+      // A refusal must not be bypassed through a second provider.
+      if (block.type === "refusal") {
+        throw new AiError("unknown", "A IA não conseguiu responder a esse pedido.");
+      }
+      if (block.type === "output_text" && typeof block.text === "string") text += block.text;
+      if (text.length > MAX_AI_VISIBLE_RESPONSE_CHARS) {
+        throw new AiError("unknown", "A IA respondeu além do limite seguro. Tente novamente.");
+      }
+    }
+  }
+  const answer = text.trim();
+  if (!answer) throw new AiError("unknown", "A IA respondeu vazio. Tente novamente.");
+  return answer;
+}
+
+async function callResponsesModel(messages: ChatMessage[]): Promise<string> {
+  assertAiMessageBudget(messages);
+  const primaryKey = process.env["OPENAI_API_KEY"]?.trim();
+  if (!primaryKey)
+    throw new AiError("unavailable", "IA indisponível no momento. Tente novamente mais tarde.");
+  try {
+    return await requestResponsesText("openai", primaryKey, messages);
+  } catch (error) {
+    if (!(error instanceof TemporaryProviderError)) throw error;
+    const auxiliaryKey = process.env["DEEPSEEK_API_KEY"]?.trim();
+    if (process.env["AI_DEEPSEEK_FALLBACK_ENABLED"] !== "true" || !auxiliaryKey) {
+      throw new AiError("unavailable", "IA indisponível no momento. Tente novamente mais tarde.");
+    }
+    try {
+      return await requestResponsesText("deepseek", auxiliaryKey, messages);
+    } catch (fallbackError) {
+      if (fallbackError instanceof TemporaryProviderError) {
+        throw new AiError("unavailable", "IA indisponível no momento. Tente novamente mais tarde.");
+      }
+      throw fallbackError;
+    }
+  }
+}
+
 /**
- * Native streaming transport. Consumers that can render deltas may consume this
- * generator directly; existing server functions still aggregate it through
- * callModel so their public response contract remains stable.
+ * Claude can emit incremental text; Responses providers return one validated
+ * visible answer. Existing server functions aggregate either through callModel.
  */
 export async function* callModelStream(messages: ChatMessage[]): AsyncGenerator<string> {
+  const provider = process.env["AI_TEXT_PROVIDER"]?.trim() || "anthropic";
+  if (provider === "openai") {
+    yield await callResponsesModel(messages);
+    return;
+  }
+  if (provider !== "anthropic") {
+    throw new AiError(
+      "unavailable",
+      "A configuração da IA está incompleta. Tente novamente mais tarde.",
+    );
+  }
   const config = resolveAnthropicConfig();
   const request = buildAnthropicMessagesRequest(messages, config);
 

@@ -69,10 +69,117 @@ function restoreEnvironment(name: keyof typeof originalAnthropicEnvironment) {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
   restoreEnvironment("apiKey");
   restoreEnvironment("url");
   restoreEnvironment("model");
   restoreEnvironment("version");
+});
+
+describe("Responses provider routing", () => {
+  const answer = (text: string) =>
+    new Response(
+      JSON.stringify({
+        id: "resp_test",
+        object: "response",
+        status: "completed",
+        output: [
+          { type: "reasoning", content: [{ type: "reasoning_text", text: "never expose" }] },
+          { type: "message", role: "assistant", content: [{ type: "output_text", text }] },
+        ],
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+
+  function useOpenAi() {
+    vi.stubEnv("AI_TEXT_PROVIDER", "openai");
+    vi.stubEnv("OPENAI_API_KEY", "primary-test-key");
+    vi.stubEnv("AI_DEEPSEEK_FALLBACK_ENABLED", "false");
+    vi.mocked(reserveAiBudget).mockResolvedValue(true);
+  }
+
+  it("uses GPT-6.1 Terra for the game assistant when explicitly selected", async () => {
+    useOpenAi();
+    const fetcher = vi.fn().mockResolvedValue(answer("Use pressão moderada."));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(callModel([{ role: "user", content: "Como jogar?" }])).resolves.toBe(
+      "Use pressão moderada.",
+    );
+    const [url, request] = fetcher.mock.calls[0]!;
+    expect(url).toBe("https://api.openai.com/v1/responses");
+    expect(JSON.parse(request.body)).toMatchObject({ model: "gpt-6.1-terra", store: false });
+  });
+
+  it("uses DeepSeek at maximum effort after a temporary OpenAI failure and a second budget reservation", async () => {
+    useOpenAi();
+    vi.stubEnv("AI_DEEPSEEK_FALLBACK_ENABLED", "true");
+    vi.stubEnv("DEEPSEEK_API_KEY", "secondary-test-key");
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+      .mockResolvedValueOnce(answer("Proteja as laterais."));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(callModel([{ role: "user", content: "Como defender?" }])).resolves.toBe(
+      "Proteja as laterais.",
+    );
+    expect(vi.mocked(reserveAiBudget)).toHaveBeenCalledTimes(2);
+    const [url, request] = fetcher.mock.calls[1]!;
+    expect(url).toBe("https://api.deepseek.com/responses");
+    expect(JSON.parse(request.body)).toMatchObject({
+      model: "deepseek-flash",
+      reasoning: { effort: "max" },
+    });
+    expect(request.headers.authorization).toBe("Bearer secondary-test-key");
+  });
+
+  it("does not use the auxiliary provider when the primary response is a refusal", async () => {
+    useOpenAi();
+    vi.stubEnv("AI_DEEPSEEK_FALLBACK_ENABLED", "true");
+    vi.stubEnv("DEEPSEEK_API_KEY", "secondary-test-key");
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: "completed",
+          output: [{ type: "message", content: [{ type: "refusal", refusal: "no" }] }],
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    await expect(callModel([{ role: "user", content: "Pergunta" }])).rejects.toThrow();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call DeepSeek if a second budget reservation is refused", async () => {
+    useOpenAi();
+    vi.stubEnv("AI_DEEPSEEK_FALLBACK_ENABLED", "true");
+    vi.stubEnv("DEEPSEEK_API_KEY", "secondary-test-key");
+    vi.mocked(reserveAiBudget).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    const fetcher = vi.fn().mockResolvedValue(new Response("unavailable", { status: 503 }));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(callModel([{ role: "user", content: "Pergunta" }])).rejects.toThrow();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not send data to DeepSeek unless the fallback is explicitly enabled", async () => {
+    useOpenAi();
+    vi.stubEnv("DEEPSEEK_API_KEY", "secondary-test-key");
+    const fetcher = vi.fn().mockResolvedValue(new Response("unavailable", { status: 503 }));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(callModel([{ role: "user", content: "Pergunta" }])).rejects.toThrow();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(reserveAiBudget)).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not send data to DeepSeek after a permanent primary authorization failure", async () => {
+    useOpenAi();
+    vi.stubEnv("AI_DEEPSEEK_FALLBACK_ENABLED", "true");
+    vi.stubEnv("DEEPSEEK_API_KEY", "secondary-test-key");
+    const fetcher = vi.fn().mockResolvedValue(new Response("unauthorized", { status: 401 }));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(callModel([{ role: "user", content: "Pergunta" }])).rejects.toThrow();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("native Claude Messages client", () => {
