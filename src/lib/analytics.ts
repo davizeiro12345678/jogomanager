@@ -64,6 +64,8 @@ export async function initAnalytics(): Promise<PostHog | null> {
       autocapture: false,
       disable_session_recording: true,
     });
+    // A previously saved PostHog opt-out must not override renewed consent.
+    if (posthog.has_opted_out_capturing()) posthog.opt_in_capturing();
     client = posthog;
     return posthog;
   })()
