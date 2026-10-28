@@ -11,6 +11,18 @@ function create(seed = "engine-regression") {
 }
 
 describe("MatchSim", () => {
+  it("substitutes an injured player before halftime during the coach check", () => {
+    const sim = create("early-injury-substitution");
+    sim.time = 15 * 60;
+    const replacement = sim.home.bench!.find((p) => p.pos === "FW")!;
+    const injured = sim.players.find((p) => p.side === "home" && p.pos === replacement.pos)!;
+    injured.injuryWeeks = 2;
+    (sim as unknown as { aiManage: (side: "home" | "away") => void }).aiManage("home");
+    expect(sim.subsUsed.home).toBe(1);
+    expect(sim.players.some((p) => p.pid === injured.pid)).toBe(false);
+    expect(sim.players.some((p) => p.pid === replacement.id)).toBe(true);
+  });
+
   it("carries profile physique through worker snapshots and substitutes", () => {
     const home = buildTeamSetup("fla");
     const away = buildTeamSetup("pal");

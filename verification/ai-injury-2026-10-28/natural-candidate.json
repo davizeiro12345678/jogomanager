@@ -1,0 +1,288 @@
+{
+  "clubPair": [
+    "fla",
+    "pal"
+  ],
+  "matches": [
+    {
+      "seed": "injury-natural-eval-0",
+      "finished": true,
+      "score": [
+        2,
+        1
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        3,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-1",
+      "finished": true,
+      "score": [
+        1,
+        3
+      ],
+      "earlyInjuries": 1,
+      "earlyInjurySubs": 1,
+      "subs": [
+        5,
+        2
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-2",
+      "finished": true,
+      "score": [
+        0,
+        0
+      ],
+      "earlyInjuries": 1,
+      "earlyInjurySubs": 1,
+      "subs": [
+        0,
+        1
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-3",
+      "finished": true,
+      "score": [
+        0,
+        2
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        3,
+        3
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-4",
+      "finished": true,
+      "score": [
+        3,
+        5
+      ],
+      "earlyInjuries": 2,
+      "earlyInjurySubs": 2,
+      "subs": [
+        5,
+        3
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-5",
+      "finished": true,
+      "score": [
+        1,
+        2
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        3,
+        3
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-6",
+      "finished": true,
+      "score": [
+        2,
+        2
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        4,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-7",
+      "finished": true,
+      "score": [
+        1,
+        1
+      ],
+      "earlyInjuries": 1,
+      "earlyInjurySubs": 1,
+      "subs": [
+        3,
+        3
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-8",
+      "finished": true,
+      "score": [
+        0,
+        2
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        4,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-9",
+      "finished": true,
+      "score": [
+        0,
+        2
+      ],
+      "earlyInjuries": 1,
+      "earlyInjurySubs": 1,
+      "subs": [
+        4,
+        3
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-10",
+      "finished": true,
+      "score": [
+        0,
+        1
+      ],
+      "earlyInjuries": 1,
+      "earlyInjurySubs": 1,
+      "subs": [
+        4,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-11",
+      "finished": true,
+      "score": [
+        0,
+        0
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        0,
+        0
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-12",
+      "finished": true,
+      "score": [
+        1,
+        0
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        3,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-13",
+      "finished": true,
+      "score": [
+        1,
+        1
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        0,
+        1
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-14",
+      "finished": true,
+      "score": [
+        1,
+        0
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        3,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-15",
+      "finished": true,
+      "score": [
+        1,
+        2
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        4,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-16",
+      "finished": true,
+      "score": [
+        3,
+        0
+      ],
+      "earlyInjuries": 2,
+      "earlyInjurySubs": 2,
+      "subs": [
+        5,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-17",
+      "finished": true,
+      "score": [
+        1,
+        0
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        3,
+        4
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-18",
+      "finished": true,
+      "score": [
+        2,
+        1
+      ],
+      "earlyInjuries": 0,
+      "earlyInjurySubs": 0,
+      "subs": [
+        4,
+        5
+      ]
+    },
+    {
+      "seed": "injury-natural-eval-19",
+      "finished": true,
+      "score": [
+        2,
+        0
+      ],
+      "earlyInjuries": 2,
+      "earlyInjurySubs": 2,
+      "subs": [
+        4,
+        5
+      ]
+    }
+  ]
+}

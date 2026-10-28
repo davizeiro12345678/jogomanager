@@ -170,6 +170,15 @@ describe("IA do treinador", () => {
     expect(pick?.outPid).toBe("p9");
   });
 
+  it("substitui um lesionado antes dos 50 minutos quando há reserva apto", () => {
+    const hurt = lineup();
+    hurt[9]!.injuryWeeks = 2;
+    const pick = aiSubPick(hurt, bench(), 0, 15, 0, () => 0.5);
+    expect(pick).toEqual({ outPid: "p9", inId: "b1", reason: "lesão" });
+    expect(aiSubPick(hurt, bench(), 0, 15, 5, () => 0.5)).toBeNull();
+    expect(aiSubPick(hurt, [], 0, 15, 0, () => 0.5)).toBeNull();
+  });
+
   it("perdendo põe atacante, com 10 fecha o time", () => {
     const rnd = makeRng("ai2");
     const pick = aiSubPick(lineup(), bench(), -1, 70, 1, () => 0.1);
@@ -223,14 +232,25 @@ describe("integração do motor (Ciclo 2)", () => {
   });
 
   it("mata-mata empatado vai à prorrogação ou aos pênaltis", () => {
-    let sawET = false;
     for (let i = 0; i < 6; i++) {
       const sim = play(`ko-${i}`, true);
       expect(sim.finished).toBe(true);
-      if (sim.shootout.length > 0 || sim.events.some((e) => e.text.includes("prorrogação")))
-        sawET = true;
     }
-    expect(sawET).toBe(true);
+    // A fixed set of naturally played seeds need not contain a regulation
+    // draw. Set one up explicitly so this checks the rule, not luck.
+    const tied = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "ko-tied", {
+      knockout: true,
+    });
+    tied.phase = "second";
+    tied.time = 100 * 60;
+    tied.stats.home.goals = 1;
+    tied.stats.away.goals = 1;
+    tied.ball.holder = null;
+    tied.ball.vx = 0;
+    tied.ball.vz = 0;
+    tied.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+    expect(tied.phase).toBe("et1");
+    expect(tied.events.some((event) => event.text.includes("prorrogação"))).toBe(true);
   });
 
   it("disputa forçada sempre encontra um vencedor", () => {

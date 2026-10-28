@@ -346,7 +346,7 @@ export function aiSubPick(
   subsUsed: number,
   rnd: () => number,
 ): { outPid: string; inId: string; reason: string } | null {
-  if (subsUsed >= 5 || minute < 50) return null;
+  if (subsUsed >= 5) return null;
   const avail = bench.filter((b) => b.injuryWeeks === 0 && !b.suspended && b.condition > 40);
   if (!avail.length) return null;
   const field = lineup.filter((p) => !p.sentOff);
@@ -359,6 +359,9 @@ export function aiSubPick(
       .sort((a, b) => b.ovr - a.ovr)[0];
     if (repo) return { outPid: hurt.pid, inId: repo.id, reason: "lesão" };
   }
+  // Tactical and fatigue substitutions remain restricted to the second half;
+  // an injury is exceptional and must not wait for that threshold.
+  if (minute < 50) return null;
   // 2) fadiga extrema depois dos 60'
   if (minute >= 60) {
     const dead = field

@@ -1,11 +1,10 @@
 /**
- * Small client-side profanity/abuse filter for chat messages.
- * This is intentionally lightweight — a best-effort deterrent, not a
- * substitute for server-side moderation of the `chat_messages` table.
+ * A bounded, deterministic first layer for chat. The server runs this before
+ * inserting a message; the browser also uses it for immediate feedback. It is
+ * not a substitute for contextual moderation or human review.
  */
 
 const BLOCKED_TERMS = [
-  // pt-BR
   "arrombado",
   "babaca",
   "bicha",
@@ -15,25 +14,19 @@ const BLOCKED_TERMS = [
   "caralho",
   "corno",
   "cuzao",
-  "cuzão",
-  "desgraça",
-  "filho da puta",
+  "desgraca",
   "fdp",
-  "foda-se",
-  "gay" /* used as slur context */,
+  "foda",
   "idiota",
   "imbecil",
   "merda",
   "otario",
-  "otário",
-  "pau no cu",
   "porra",
   "puta",
   "retardado",
   "vadia",
   "viado",
   "vsf",
-  // en
   "asshole",
   "bastard",
   "bitch",
@@ -52,19 +45,67 @@ const BLOCKED_TERMS = [
   "whore",
 ];
 
+const LEET: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t" };
+const CONFUSABLE: Record<string, string> = {
+  а: "a",
+  е: "e",
+  о: "o",
+  р: "p",
+  с: "c",
+  у: "y",
+  х: "x",
+  і: "i",
+};
+
 function normalize(text: string): string {
   return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[\u200b-\u200d\u2060\ufeff]/g, "")
+    .toLowerCase()
+    .replace(
+      /[013457аеорсухі]/g,
+      (character) => LEET[character] ?? CONFUSABLE[character] ?? character,
+    );
 }
 
-/** Returns true when the given text contains a term from the block list. */
+function collapseRepetitions(word: string): string {
+  return word.replace(/(.)\1+/g, "$1");
+}
+
+const BLOCKED_WORDS = new Set(
+  BLOCKED_TERMS.flatMap((term) => normalize(term).match(/[\p{L}\p{N}]+/gu) ?? []).map(
+    collapseRepetitions,
+  ),
+);
+
+/**
+ * Exact words avoid blocking substrings such as "disputa" and Scunthorpe.
+ * Single-letter runs catch common punctuation/spacing evasion. Identity
+ * terms alone are not considered abusive; selected explicit threats and
+ * incitements are checked as phrases.
+ */
 export function containsProfanity(text: string): boolean {
-  const normalized = normalize(text);
-  return BLOCKED_TERMS.some((term) => normalized.includes(normalize(term)));
+  const words = normalize(text).match(/[\p{L}\p{N}]+/gu) ?? [];
+  if (words.some((word) => BLOCKED_WORDS.has(collapseRepetitions(word)))) return true;
+
+  let letters = "";
+  for (const word of [...words, ""]) {
+    if (word.length === 1) letters += word;
+    else {
+      if (letters.length >= 3 && BLOCKED_WORDS.has(collapseRepetitions(letters))) return true;
+      letters = "";
+    }
+  }
+
+  const phrase = words.join(" ");
+  if (/\bpau no cu\b/.test(phrase)) return true;
+  const threat =
+    /\b(?:vou|vamos|irei) (?:te (?:matar|esfaquear|atirar)|(?:matar|esfaquear) (?:voce|voces|vc))\b|\b(?:i will|ill|im going to) (?:kill|stab|shoot) you\b/;
+  const incitement =
+    /\b(?:gays?|negros?|negras?|judeus?|muculmanos?|imigrantes?) (?:merecem|devem|precisam) morrer\b|\bkill all (?:gays|black people|jews|muslims|immigrants)\b/;
+  return threat.test(phrase) || incitement.test(phrase);
 }
 
-/** Human-friendly pt-BR message to show when a message is blocked. */
 export const PROFANITY_BLOCKED_MESSAGE =
   "Sua mensagem contém termos não permitidos no chat. Ajuste o texto e tente novamente.";

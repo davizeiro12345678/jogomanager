@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizePublicText, hasVisibleText } from "./untrusted-json";
-import { containsProfanity, PROFANITY_BLOCKED_MESSAGE } from "./moderation";
+import { containsProfanity } from "./moderation";
 
 const SendMessageInput = z.object({
   body: z
@@ -14,7 +14,8 @@ const SendMessageInput = z.object({
 });
 
 export type SendMessageResult =
-  { ok: true; id: string } | { ok: false; reason: "rate_limited" | "invalid_length" | "error" };
+  | { ok: true; id: string }
+  | { ok: false; reason: "blocked" | "rate_limited" | "invalid_length" | "error" };
 
 /**
  * Envio de mensagem no chat global. Só quem está logado consegue chamar:
@@ -24,7 +25,7 @@ export const sendChatMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => SendMessageInput.parse(input))
   .handler(async ({ data, context }): Promise<SendMessageResult> => {
-    if (containsProfanity(data.body)) throw new Error(PROFANITY_BLOCKED_MESSAGE);
+    if (containsProfanity(data.body)) return { ok: false, reason: "blocked" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: id, error } = await supabaseAdmin.rpc("send_chat_message_for", {
       _user_id: context.userId,
