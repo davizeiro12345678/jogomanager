@@ -40,6 +40,13 @@ npm ci
 npm run dev
 ```
 
+Os padrões em `config/public-settings.json` são públicos e chegam ao navegador;
+não coloque segredos neles nem em variáveis `VITE_*`. Para ajustes locais use
+arquivos `.env.local` ou `.dev.vars`, ignorados pelo Git, ciente de que eles
+não são criptografados. No servidor, forneça credenciais pelo gerenciador de
+segredos do provedor. Consulte `docs/openai-secure-setup.md` antes de configurar
+a chave da OpenAI.
+
 ## Qualidade, segurança e documentação pública
 
 A definição de CI está em `.github/workflows/quality.yml`. Antes de publicar mudanças, execute:

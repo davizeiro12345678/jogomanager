@@ -1,21 +1,8 @@
 name: Public environment and MCP safety
 on:
   pull_request:
-    paths:
-      - ".env"
-      - ".env.development"
-      - ".env.production"
-      - ".mcp.json"
-      - "scripts/validate-public-env.mjs"
-      - ".github/workflows/validate-public-env.yml"
   push:
     branches: [main]
-    paths:
-      - ".env"
-      - ".env.development"
-      - ".env.production"
-      - ".mcp.json"
-      - "scripts/validate-public-env.mjs"
 permissions:
   contents: read
 jobs:
@@ -28,7 +15,10 @@ jobs:
         with:
           node-version: 24
       - name: Verify env variables and reject server-side secrets
-        run: node scripts/validate-public-env.mjs
+        run: |
+          node scripts/validate-public-env.mjs
+          node scripts/check-secrets.mjs
+          node --test scripts/public-settings.test.mjs scripts/check-secrets.test.mjs
       - name: Validate MCP manifest syntax, read-only Supabase and absent credentials
         run: |
           node --input-type=module <<'JS'

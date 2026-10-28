@@ -1,11 +1,17 @@
 # Configuração segura da chave OpenAI
 
-Esta alteração é uma proposta em revisão, não uma publicação. A chave existente
+Esta alteração é uma proposta em revisão, não uma publicação. Uma chave restrita
 da organização Davi deve ser inserida diretamente no Cloudflare; não cole o valor
 no chat, em arquivos versionados, capturas de tela ou argumentos do terminal.
-O nome da chave, por si só, não permite recuperar seu valor. Se o valor original
-não estiver mais disponível, consulte o painel OpenAI; não é possível recuperá-lo
-por este repositório.
+Se uma chave foi compartilhada, exclua-a no painel OpenAI, confira o uso e crie
+outra. Restrinja a substituta aos recursos necessários, como Responses e
+Moderations. O nome da chave, por si só, não recupera o valor.
+
+O Cloudflare armazena os valores dos Worker secrets de forma criptografada. Os
+arquivos `.env.local` e `.dev.vars` locais ignorados pelo Git, por outro lado,
+não são criptografados automaticamente. `config/public-settings.json` é apenas
+para dados que podem ser públicos; nenhuma criptografia nele protegeria valores
+entregues ao navegador.
 
 O Worker existente chama-se `jogomanager-web`. Em um terminal autenticado na
 conta Cloudflare correta, a opção abaixo solicita o valor de forma interativa e
@@ -27,10 +33,10 @@ chave secreta.
 Ambos os recursos ficam desligados por padrão e só devem ser ativados em uma
 versão testada, usando variáveis de ambiente do servidor:
 
-| Variável | Efeito quando `true` |
-| --- | --- |
-| `OPENAI_CHAT_MODERATION_ENABLED` | Envia a mensagem ao modelo de moderação. No chat da sala, até três mensagens anteriores da mesma sala são enviadas como contexto; no chat global, apenas a mensagem atual. Se a verificação estiver indisponível, a mensagem não é publicada. |
-| `MATCH_AI_OPENAI_ENABLED` | Para uma pessoa autenticada em partida rápida, solicita ao `gpt-6.1-terra` com esforço `max` táticas para o adversário, orientações por posição para ambos os times e um perfil visual para a torcida mandante. Se falhar ou chegar tarde, o jogo mantém o comportamento habitual. |
+| Variável                         | Efeito quando `true`                                                                                                                                                                                                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENAI_CHAT_MODERATION_ENABLED` | Envia a mensagem ao modelo de moderação. No chat da sala, até três mensagens anteriores da mesma sala são enviadas como contexto; no chat global, apenas a mensagem atual. Se a verificação estiver indisponível, a mensagem não é publicada.                                      |
+| `MATCH_AI_OPENAI_ENABLED`        | Para uma pessoa autenticada em partida rápida, solicita ao `gpt-6.1-terra` com esforço `max` táticas para o adversário, orientações por posição para ambos os times e um perfil visual para a torcida mandante. Se falhar ou chegar tarde, o jogo mantém o comportamento habitual. |
 
 O limite é de 20 tentativas de moderação por conta por minuto, antes da chamada
 ao provedor. A IA tática usa um limite adicional de cinco tentativas por conta

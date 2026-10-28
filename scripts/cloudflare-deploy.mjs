@@ -3,10 +3,16 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { loadEnv } from "vite";
+import { loadPublicSettings, validateBrowserEnv } from "./public-settings.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const configPath = path.join(root, ".cloudflare/production/server/wrangler.json");
-const settings = { ...loadEnv("production", root, ""), ...process.env };
+const settings = {
+  ...loadPublicSettings("production", root),
+  ...loadEnv("production", root, ""),
+  ...process.env,
+};
+validateBrowserEnv(settings);
 const taskEnv = {
   ...process.env,
   WRANGLER_LOG_PATH: path.join(root, ".wrangler/logs"),

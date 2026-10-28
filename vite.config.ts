@@ -17,11 +17,7 @@ import { postfxLookupAssets } from "./scripts/postfx-lookup-assets.ts";
 import { modulePreloadPlan } from "./scripts/module-preload-plan.ts";
 import { compactShaderSource } from "./scripts/compact-shader-source.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
-
-// Load non-VITE_ env vars into process.env for server routes (email, webhooks).
-// These are NOT injected into the client bundle.
-const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
-Object.assign(process.env, serverEnv);
+import { loadPublicSettings, validateBrowserEnv } from "./scripts/public-settings.mjs";
 
 let gitCommit: string | null = null;
 let dirtyCheckout = false;
@@ -185,4 +181,11 @@ const projectConfig = defineConfig({
   },
 });
 
-export default async (env: ConfigEnv) => protectThreeSourceTags(await projectConfig(env));
+export default async (env: ConfigEnv) => {
+  // Only public defaults are tracked. Local/server overrides always win.
+  const defaults = loadPublicSettings(env.mode);
+  const localEnv = loadEnv(env.mode, process.cwd(), "");
+  Object.assign(process.env, defaults, localEnv);
+  validateBrowserEnv(process.env);
+  return protectThreeSourceTags(await projectConfig(env));
+};

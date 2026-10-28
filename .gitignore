@@ -24,10 +24,17 @@ dist-benchmark
 .wrangler/
 .cloudflare/
 .dev.vars
+.dev.vars.*
 supabase/.temp/
 .env
 .env.*
 !.env.example
+.envrc
+.envrc.*
+*.env
+*.env.*
+!*.env.example
+!.dev.vars.example
 
 # Editor directories and files
 .vscode/*

@@ -1,0 +1,29 @@
+{
+  "shared": {
+    "SUPABASE_PROJECT_ID": "lguqnwvsfeefxamzeyos",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_s0bwuyf0npv-z3pHyJLOVQ_QMxW5ToT",
+    "SUPABASE_URL": "https://lguqnwvsfeefxamzeyos.supabase.co",
+    "VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY": "G-V9NRHZEMY4",
+    "VITE_LOVABLE_CONNECTOR_LOGO_DEV_API_KEY": "pk_THxopbuzTfCzv9ntoEDr-g",
+    "VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY": "phc_psJ8BFNch4rR3rytryvQSsgHVfsR64scJrA8YFJGbw4N",
+    "VITE_LOVABLE_CONNECTOR_POSTHOG_PROJECT_ID": "603692",
+    "VITE_LOVABLE_CONNECTOR_POSTHOG_REGION": "us",
+    "VITE_SUPABASE_PROJECT_ID": "lguqnwvsfeefxamzeyos",
+    "VITE_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_s0bwuyf0npv-z3pHyJLOVQ_QMxW5ToT",
+    "VITE_SUPABASE_URL": "https://lguqnwvsfeefxamzeyos.supabase.co"
+  },
+  "development": {
+    "VITE_PAYMENTS_CLIENT_TOKEN": "pk_test_51UCoO24f5HwE4lTW0SSDLmiW7htuijiwEnIjhcnTVTSTrzW20Ipq3mYGePkA9wH0mM3WYY1KLR672s8AfaQPZmqG00xyEuKRkS",
+    "VITE_AUTH_MODE": "supabase",
+    "PAYMENTS_ENVIRONMENT": "sandbox",
+    "GUEST_CHECKOUT_ENVIRONMENT": "sandbox",
+    "GUEST_CHECKOUT_SANDBOX_ENABLED": "false"
+  },
+  "production": {
+    "VITE_PAYMENTS_CLIENT_TOKEN": "pk_live_51UCpy65Co1CQ7ndicKZDYw2WQASAKXFNvonDC2FDMNrzu03MVWYMfFG6kOB9rMNPCx2ZwdIqdnHXEZ2aW6tGXMCv00sI6bbNoL",
+    "VITE_AUTH_MODE": "supabase",
+    "PAYMENTS_ENVIRONMENT": "live",
+    "GUEST_CHECKOUT_ENVIRONMENT": "live",
+    "GUEST_CHECKOUT_LIVE_ENABLED": "false"
+  }
+}
