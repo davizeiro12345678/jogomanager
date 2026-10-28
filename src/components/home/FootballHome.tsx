@@ -11,10 +11,10 @@ import {
   Play,
   Shield,
   Trophy,
-  Users,
   X,
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
+import { GameModeCards } from "@/features/home/components/GameModeCards";
 import { DiscordLink } from "@/components/DiscordLink";
 import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;450&aspect=1:2&fit=cover&position=centre&quality=44&as=srcset";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
@@ -24,6 +24,11 @@ import "./home.css";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
+const TacticalPreview = lazy(() =>
+  import("@/features/home/components/TacticalPreview").then((m) => ({
+    default: m.TacticalPreview,
+  })),
+);
 const SYSTEMS = [
   {
     id: "tactics",
@@ -50,115 +55,6 @@ const SYSTEMS = [
     to: "/guias",
   },
 ] as const;
-const FORMATIONS = {
-  "4-3-3": [
-    [50, 87],
-    [15, 68],
-    [38, 72],
-    [62, 72],
-    [85, 68],
-    [50, 52],
-    [30, 40],
-    [70, 40],
-    [17, 20],
-    [50, 14],
-    [83, 20],
-  ],
-  "4-4-2": [
-    [50, 87],
-    [15, 69],
-    [38, 73],
-    [62, 73],
-    [85, 69],
-    [16, 42],
-    [38, 48],
-    [62, 48],
-    [84, 42],
-    [36, 19],
-    [64, 19],
-  ],
-  "3-5-2": [
-    [50, 87],
-    [26, 70],
-    [50, 75],
-    [74, 70],
-    [10, 40],
-    [35, 47],
-    [50, 53],
-    [65, 47],
-    [90, 40],
-    [36, 19],
-    [64, 19],
-  ],
-} as const;
-type Formation = keyof typeof FORMATIONS;
-
-/** A lightweight SVG teaches the interaction; the actual 3D engine loads
- * through the game routes only. No league catalogue, simulation or Canvas. */
-function TacticalPreview() {
-  const [formation, setFormation] = useState<Formation>("4-3-3");
-  return (
-    <div className="home-tactics" aria-label="Prévia das formações">
-      <div className="home-tactics-top">
-        <span>PRANCHETA DO TREINADOR</span>
-        <span>PRÉVIA</span>
-      </div>
-      <svg viewBox="0 0 240 300" role="img" aria-label={`Onze jogadores na formação ${formation}`}>
-        <defs>
-          <pattern id="home-mow" width="240" height="50" patternUnits="userSpaceOnUse">
-            <rect width="240" height="25" fill="#17382c" />
-            <rect y="25" width="240" height="25" fill="#1a3e30" />
-          </pattern>
-        </defs>
-        <rect x="8" y="8" width="224" height="284" rx="5" fill="url(#home-mow)" />
-        <g fill="none" stroke="#b6d2bd" strokeOpacity=".35" strokeWidth="1.2">
-          <rect x="19" y="18" width="202" height="264" />
-          <path d="M19 150h202M69 18v42h102V18M69 282v-42h102v42M97 18v15h46V18M97 282v-15h46v15" />
-          <circle cx="120" cy="150" r="28" />
-          <circle cx="120" cy="150" r="2" fill="#b6d2bd" />
-        </g>
-        {FORMATIONS[formation].map(([x, y], i) => (
-          <g
-            key={i}
-            className="home-player"
-            style={{ transform: `translate(${x * 2 + 20}px,${y * 2.64 + 18}px)` }}
-          >
-            <circle
-              r="12"
-              fill={i === 0 ? "#d9b967" : "#b4ec6b"}
-              stroke="#081510"
-              strokeWidth="3"
-            />
-            <text
-              y="3.5"
-              textAnchor="middle"
-              fontSize="10"
-              fontFamily="sans-serif"
-              fontWeight="700"
-              fill="#102416"
-            >
-              {i + 1}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="home-formation-buttons" role="group" aria-label="Experimentar formação">
-        {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={formation === f}
-            onClick={() => setFormation(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-      <p className="home-tactics-caption">Mude o desenho. Imagine a próxima jogada.</p>
-    </div>
-  );
-}
-
 export function FootballHome() {
   const { leagues } = getRouteApi("/").useLoaderData();
   const [menu, setMenu] = useState(false);
@@ -373,72 +269,7 @@ export function FootballHome() {
               Uma carreira para fazer história.
             </p>
           </div>
-          <div className="home-mode-grid">
-            <Link to="/new" className="home-mode home-mode-career">
-              <div className="home-mode-art" aria-hidden="true">
-                <span>01</span>
-                <Trophy size={86} />
-              </div>
-              <p className="home-kicker">O SEU PROJETO</p>
-              <h3>Modo carreira</h3>
-              <p>
-                Escolha o clube, crie o treinador e conduza a próxima temporada. Elenco, tática,
-                finanças e a torcida esperam por você.
-              </p>
-              <span className="home-mode-link">
-                Assumir um clube
-                <ArrowRight size={19} />
-              </span>
-            </Link>
-            <Link to="/partida-rapida" className="home-mode">
-              <div className="home-mode-art home-mode-art-match" aria-hidden="true">
-                <span>02</span>
-                <Gamepad2 size={76} />
-              </div>
-              <p className="home-kicker">O PRIMEIRO APITO</p>
-              <h3>Partida rápida</h3>
-              <p>
-                Escolha dois times e vá para o estádio. Conheça os controles, as câmeras e o ritmo
-                do jogo antes da sua carreira.
-              </p>
-              <span className="home-mode-link">
-                Jogar uma partida
-                <ArrowRight size={19} />
-              </span>
-            </Link>
-            <Link to="/jogador" className="home-mode">
-              <div className="home-mode-art home-mode-art-match" aria-hidden="true">
-                <span>★</span>
-                <Users size={76} />
-              </div>
-              <p className="home-kicker">DA BASE AO AUGE</p>
-              <h3>Carreira de jogador</h3>
-              <p>
-                Crie seu atleta, treine, ganhe a vaga de titular, negocie contratos e chegue à
-                seleção.
-              </p>
-              <span className="home-mode-link">
-                Criar meu atleta
-                <ArrowRight size={19} />
-              </span>
-            </Link>
-            <Link to="/multiplayer" className="home-mode">
-              <div className="home-mode-art home-mode-art-friends" aria-hidden="true">
-                <span>03</span>
-                <Users size={76} />
-              </div>
-              <p className="home-kicker">A RIVALIDADE CONTINUA</p>
-              <h3>Com amigos</h3>
-              <p>
-                Abra uma sala, compartilhe o código e combine o próximo confronto. Cada treinador
-                com o seu plano de jogo.
-              </p>
-              <span className="home-mode-link">
-                Abrir multiplayer
-                <ArrowRight size={19} />
-              </span>
-            </Link>
-          </div>
+          <GameModeCards />
         </section>
         <section className="home-manager-section home-section" aria-labelledby="home-manager-title">
           <div className="home-manager-copy">
@@ -470,7 +301,16 @@ export function FootballHome() {
               </Link>
             </div>
           </div>
-          <TacticalPreview />
+          <Suspense
+            fallback={
+              <div
+                className="mx-auto aspect-[4/5] w-full max-w-[375px] rounded-xl border border-white/10 bg-[#111e18]"
+                aria-hidden="true"
+              />
+            }
+          >
+            <TacticalPreview />
+          </Suspense>
         </section>
         <section className="home-first-season" aria-labelledby="home-first-title">
           <p className="home-kicker">SEU PRIMEIRO DIA NO CLUBE</p>

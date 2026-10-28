@@ -421,55 +421,6 @@
   font-size: 13px;
   margin-top: 12px;
 }
-.home-tactics {
-  max-width: 375px;
-  width: 100%;
-  justify-self: center;
-  border: 1px solid #accbad24;
-  border-radius: 12px;
-  background: #111e18;
-  padding: 19px;
-  box-shadow: 0 30px 80px #0004;
-}
-.home-tactics-top {
-  display: flex;
-  justify-content: space-between;
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  color: #88a38d;
-}
-.home-tactics svg {
-  display: block;
-  width: 100%;
-  max-height: 335px;
-  margin: 10px auto;
-}
-.home-player {
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-.home-formation-buttons {
-  display: flex;
-  gap: 8px;
-}
-.home-formation-buttons button {
-  flex: 1;
-  min-height: 44px;
-  border: 1px solid #aac4ae24;
-  border-radius: 5px;
-  font-size: 12px;
-  color: #a8bdad;
-}
-.home-formation-buttons button[aria-pressed="true"] {
-  background: var(--home-lime);
-  color: #112410;
-  border-color: var(--home-lime);
-}
-.home-tactics-caption {
-  font-size: 11px;
-  color: #8da191;
-  text-align: center;
-  margin-top: 14px;
-}
 .home-first-season {
   margin-top: 85px;
   padding: 35px;
