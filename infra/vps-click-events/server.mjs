@@ -4,7 +4,13 @@ import { timingSafeEqual } from "node:crypto";
 
 const TOKEN = process.env.CACHE_EVENTS_TOKEN ?? "";
 if (!/^[0-9a-f]{64}$/.test(TOKEN)) throw new Error("invalid_ingest_token");
-const EVENTS = new Set(["open_club", "open_market", "open_career", "start_match", "open_dashboard"]);
+const EVENTS = new Set([
+  "open_club",
+  "open_market",
+  "open_career",
+  "start_match",
+  "open_dashboard",
+]);
 const counters = { accepted: 0, rejected: 0, redisErrors: 0, rateLimited: 0 };
 let inflight = 0;
 let tokens = 400;
@@ -28,15 +34,22 @@ function reply(res, status, data) {
 function authed(req) {
   const value = req.headers["x-pfm-event-token"];
   return (
-    typeof value === "string" && /^[a-f0-9]{64}$/.test(value) &&
+    typeof value === "string" &&
+    /^[a-f0-9]{64}$/.test(value) &&
     timingSafeEqual(Buffer.from(value, "hex"), Buffer.from(TOKEN, "hex"))
   );
 }
 function redisRequest(args) {
-  const request = "*" + args.length + "\r\n" + args.map((x) => {
-    const s = String(x);
-    return "$" + Buffer.byteLength(s) + "\r\n" + s + "\r\n";
-  }).join("");
+  const request =
+    "*" +
+    args.length +
+    "\r\n" +
+    args
+      .map((x) => {
+        const s = String(x);
+        return "$" + Buffer.byteLength(s) + "\r\n" + s + "\r\n";
+      })
+      .join("");
   return new Promise((resolve, reject) => {
     const socket = createConnection({ host: "pfm-click-events-redis", port: 6379 });
     let complete = false;
@@ -49,7 +62,9 @@ function redisRequest(args) {
     };
     socket.setTimeout(1100, () => done(new Error("redis_timeout")));
     socket.on("error", (err) => done(err));
-    socket.on("close", () => { if (!complete) done(new Error("redis_closed")); });
+    socket.on("close", () => {
+      if (!complete) done(new Error("redis_closed"));
+    });
     socket.on("connect", () => socket.write(request));
     socket.on("data", (chunk) => {
       received = Buffer.concat([received, chunk]);
@@ -61,8 +76,10 @@ function redisRequest(args) {
       if (header.startsWith("+") || header.startsWith(":")) return done(null, header.slice(1));
       if (!header.startsWith("$")) return done(new Error("redis_protocol"));
       const bytes = Number(header.slice(1));
-      if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > 512) return done(new Error("redis_invalid_bulk"));
-      if (received.length >= end + 2 + bytes + 2) done(null, received.subarray(end + 2, end + 2 + bytes).toString("utf8"));
+      if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > 512)
+        return done(new Error("redis_invalid_bulk"));
+      if (received.length >= end + 2 + bytes + 2)
+        done(null, received.subarray(end + 2, end + 2 + bytes).toString("utf8"));
     });
   });
 }
@@ -81,13 +98,16 @@ const server = createServer(async (req, res) => {
     try {
       const ping = await redisRequest(["PING"]);
       return reply(res, ping === "PONG" ? 200 : 503, { healthy: ping === "PONG" });
-    } catch { return reply(res, 503, { healthy: false }); }
+    } catch {
+      return reply(res, 503, { healthy: false });
+    }
   }
   if (req.method === "GET" && req.url === "/metrics") {
     if (!authed(req)) return reply(res, 401, { error: "unauthorized" });
     return reply(res, 200, { ...counters, inflight });
   }
-  if (req.method !== "POST" || req.url !== "/v1/events/click") return reply(res, 404, { error: "not_found" });
+  if (req.method !== "POST" || req.url !== "/v1/events/click")
+    return reply(res, 404, { error: "not_found" });
   if (!authed(req)) {
     counters.rejected++;
     return reply(res, 401, { error: "unauthorized" });
@@ -103,27 +123,45 @@ const server = createServer(async (req, res) => {
   inflight++;
   try {
     let payload;
-    try { payload = await readJson(req); }
-    catch (error) {
+    try {
+      payload = await readJson(req);
+    } catch (error) {
       counters.rejected++;
       return reply(res, error.message === "too_large" ? 413 : 400, { error: "invalid_json" });
     }
-    if (payload === null || typeof payload !== "object" || Array.isArray(payload) ||
-        payload.consent !== true || !EVENTS.has(payload.event) ||
-        Object.keys(payload).sort().join(",") !== "consent,event") {
+    if (
+      payload === null ||
+      typeof payload !== "object" ||
+      Array.isArray(payload) ||
+      payload.consent !== true ||
+      !EVENTS.has(payload.event) ||
+      Object.keys(payload).sort().join(",") !== "consent,event"
+    ) {
       counters.rejected++;
       return reply(res, 400, { error: "invalid_event_or_consent" });
     }
     try {
-      await redisRequest(["XADD", "pfm:events:clicks", "MAXLEN", "~", "10000", "*",
-        "event", payload.event, "timestamp", String(Date.now())]);
+      await redisRequest([
+        "XADD",
+        "pfm:events:clicks",
+        "MAXLEN",
+        "~",
+        "10000",
+        "*",
+        "event",
+        payload.event,
+        "timestamp",
+        String(Date.now()),
+      ]);
       counters.accepted++;
       return reply(res, 202, { accepted: true });
     } catch {
       counters.redisErrors++;
       return reply(res, 503, { error: "event_queue_unavailable" });
     }
-  } finally { inflight--; }
+  } finally {
+    inflight--;
+  }
 });
 server.requestTimeout = 5000;
 server.headersTimeout = 3000;
