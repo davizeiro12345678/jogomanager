@@ -4,9 +4,11 @@ import {
   MATCH_PROTOCOL_VERSION,
   parseMatchCommandV1,
   parseMatchTicketV1,
+  type MatchCommandV1,
   type MatchPublicStateV1,
   type MatchReceiptV1,
   type MatchSeat,
+  type MatchTicketV1,
   type PresentationEventV1,
 } from "./match-protocol";
 import {
@@ -159,6 +161,45 @@ describe("AuthoritativeMatchSession", () => {
     ).toThrow(/room/i);
   });
 
+  it("rejects a human match whose two seats belong to the same account", () => {
+    const home = ticket("home");
+    const away = { ...ticket("away"), userId: home.userId };
+    expect(
+      () =>
+        new AuthoritativeMatchSession({
+          roomId,
+          homeTicket: home,
+          awayTicket: away,
+          engine: new FakeEngine(),
+          signer: { sign: async () => "authoritative-server-receipt-signature" },
+          simulationVersion: "match-sim/1",
+          idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+        }),
+    ).toThrow();
+  });
+
+  it("does not accept a forged extension of an expired signed ticket", () => {
+    const { session } = createSession();
+    const original = ticket("home");
+    const forged = { ...original, expiresAt: original.expiresAt + 120_000 };
+
+    expect(() => session.connect(forged, original.expiresAt + 1)).toThrow();
+  });
+
+  it("does not accept a changed issue time with the original signature", () => {
+    const { session } = createSession();
+    const original = ticket("home");
+    const forged = { ...original, issuedAt: original.issuedAt - 10_000 };
+
+    expect(() => session.connect(forged, original.issuedAt)).toThrow();
+  });
+
+  it("rejects an unsupported ticket version at the session boundary", () => {
+    const { session } = createSession();
+    const forged = { ...ticket("home"), version: 2 } as unknown as MatchTicketV1;
+    expect(() => session.connect(forged, issuedAt)).toThrow();
+  });
+
   it("rejects repeated or stale command sequence without mutating the engine", async () => {
     const { session, engine } = createSession();
     const home = ticket("home");
@@ -172,6 +213,20 @@ describe("AuthoritativeMatchSession", () => {
     expect(stale).toMatchObject({ accepted: false, reason: "sequence_not_monotonic" });
     expect(engine.tacticalChanges).toHaveLength(1);
     expect(session.invalidAttempts).toHaveLength(2);
+  });
+
+  it("rejects malformed command payloads before they reach the engine", async () => {
+    const { session, engine } = createSession();
+    const malformed = {
+      ...command(1, "set_tactics"),
+      payload: { formation: "4-3-3", score: { home: 99, away: 0 } },
+    } as unknown as MatchCommandV1;
+
+    expect(await session.receive(ticket("home"), malformed, issuedAt)).toMatchObject({
+      accepted: false,
+      reason: "command_rejected",
+    });
+    expect(engine.tacticalChanges).toHaveLength(0);
   });
 
   it("applies an independent rate window for each command category", async () => {
@@ -190,6 +245,60 @@ describe("AuthoritativeMatchSession", () => {
     expect(engine.tacticalChanges).toHaveLength(1);
   });
 
+  it("limits tactical command floods even without custom limits", async () => {
+    const { session, engine } = createSession();
+    let rejected = 0;
+    for (let sequence = 1; sequence <= 30; sequence++) {
+      const result = await session.receive(
+        ticket("home"),
+        command(sequence, "set_tactics"),
+        issuedAt,
+      );
+      if (result.reason === "rate_limited") rejected++;
+    }
+    expect(rejected).toBeGreaterThan(0);
+    expect(engine.tacticalChanges.length).toBeLessThan(30);
+    expect(
+      (await session.receive(ticket("home"), command(31, "set_tactics"), issuedAt + 60_001))
+        .accepted,
+    ).toBe(true);
+  });
+
+  it("rejects excess queued commands while a match operation is stalled", async () => {
+    let release = () => {};
+    let started = () => {};
+    const signingStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const session = new AuthoritativeMatchSession({
+      roomId,
+      homeTicket: ticket("home"),
+      awayTicket: ticket("away"),
+      engine: new FakeEngine(),
+      signer: {
+        sign: async () => {
+          started();
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          return "authoritative-server-receipt-signature";
+        },
+      },
+      simulationVersion: "match-sim/1",
+      idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+    });
+    const finalizing = session.finalize("completed", issuedAt + 1);
+    await signingStarted;
+    const queued = Array.from({ length: 100 }, (_, i) =>
+      session.receive(ticket("home"), command(i + 1, "ready"), issuedAt + 2),
+    );
+    const result = await Promise.race([queued[99]!, Promise.resolve(null)]);
+    release();
+    await Promise.all([finalizing, ...queued]);
+
+    expect(result).toMatchObject({ accepted: false, reason: "rate_limited" });
+  });
+
   it("keeps the last tactical plan during the 60-second reconnection window", async () => {
     const { session } = createSession();
     const home = ticket("home");
@@ -204,6 +313,33 @@ describe("AuthoritativeMatchSession", () => {
     session.connect(home, issuedAt + 60_099);
     expect(session.phase).toBe("waiting");
     expect(session.lastTacticsFor("home")?.formation).toBe("4-3-3");
+  });
+
+  it("does not finalize a queued expiration after the player has reconnected", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    await session.receive(home, command(1, "ready"), issuedAt);
+    await session.receive(ticket("away"), command(1, "ready"), issuedAt);
+    session.disconnect(home.userId, issuedAt + 1);
+
+    const expiration = session.expireReconnects(issuedAt + 60_002);
+    session.connect(home, issuedAt + 60_000);
+
+    expect(await expiration).toBeNull();
+    expect(session.phase).toBe("live");
+  });
+
+  it("does not let a player rejoin after the reconnection window expired", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    session.connect(home, issuedAt);
+    session.disconnect(home.userId, issuedAt + 1);
+
+    expect(() => session.connect(home, issuedAt + 60_001)).toThrow();
+    expect(await session.expireReconnects(issuedAt + 60_001)).toMatchObject({
+      closureReason: "abandoned",
+      result: { winner: "away" },
+    });
   });
 
   it("closes as abandoned after the reconnection window and emits a signed receipt", async () => {

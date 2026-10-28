@@ -44,6 +44,11 @@ describe("Match protocol V1", () => {
     expect(() => assertCurrentTicket(parsed, 1_700_000_000_002)).toThrow(/expired/i);
   });
 
+  it("rejects a signed ticket before its issue time", () => {
+    const parsed = parseMatchTicketV1(ticket());
+    expect(() => assertCurrentTicket(parsed, parsed.issuedAt - 1)).toThrow();
+  });
+
   it("rejects a ticket with an incompatible protocol version", () => {
     expect(() => parseMatchTicketV1(ticket({ version: 2 }))).toThrow();
   });

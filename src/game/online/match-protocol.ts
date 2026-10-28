@@ -284,6 +284,9 @@ export function assertCurrentTicket(ticket: MatchTicketV1, now: number): MatchTi
   if (!Number.isSafeInteger(now) || now < 0) {
     throw new Error("ticket validation requires a non-negative epoch timestamp");
   }
+  if (ticket.issuedAt > now) {
+    throw new Error("match ticket not yet valid");
+  }
   if (ticket.expiresAt <= now) {
     throw new Error("match ticket expired");
   }

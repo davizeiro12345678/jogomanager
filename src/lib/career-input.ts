@@ -2,12 +2,9 @@ import { z } from "zod";
 
 // Normalize manager names without letting control characters reach persisted data.
 const normalizePublicText = (value: string) =>
-  [...value.normalize("NFKC")]
-    .map((char) => {
-      const code = char.charCodeAt(0);
-      return code < 32 || code === 127 ? " " : char;
-    })
-    .join("")
+  value
+    .normalize("NFKC")
+    .replace(/[\p{Cc}\p{Cf}]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 const hasVisibleText = (value: string) => /[\p{L}\p{N}]/u.test(value);

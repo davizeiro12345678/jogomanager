@@ -1,6 +1,8 @@
 import {
   MATCH_PROTOCOL_VERSION,
+  MatchCommandV1Schema,
   assertCurrentTicket,
+  parseMatchTicketV1,
   parseMatchReceiptV1,
   type MatchCommandKind,
   type MatchCommandV1,
@@ -48,10 +50,9 @@ export interface MatchCommandOutcome {
   reason?: InvalidMatchCommand["reason"];
 }
 
-export interface AuthoritativeMatchSessionOptions {
+interface AuthoritativeMatchSessionCommonOptions {
   roomId: string;
   homeTicket: MatchTicketV1;
-  awayTicket: MatchTicketV1;
   engine: AuthoritativeMatchEngine;
   signer: MatchReceiptSigner;
   simulationVersion: string;
@@ -59,7 +60,18 @@ export interface AuthoritativeMatchSessionOptions {
   commandLimits?: Partial<Record<MatchCommandKind, CommandRateLimit>> | undefined;
 }
 
+export type AuthoritativeMatchSessionOptions = AuthoritativeMatchSessionCommonOptions &
+  ({ awayIsAi: true; awayTicket?: never } | { awayIsAi?: false; awayTicket: MatchTicketV1 });
+
 const RECONNECT_WINDOW_MS = 60_000;
+const MAX_PENDING_COMMANDS = 64;
+const DEFAULT_COMMAND_LIMITS: Record<MatchCommandKind, CommandRateLimit> = {
+  ready: { limit: 5, windowMs: 10_000 },
+  set_tactics: { limit: 12, windowMs: 10_000 },
+  substitute: { limit: 6, windowMs: 60_000 },
+  forfeit: { limit: 3, windowMs: 10_000 },
+  ack_snapshot: { limit: 120, windowMs: 10_000 },
+};
 
 /**
  * Server-only match coordinator. It accepts narrow, signed commands and
@@ -69,7 +81,7 @@ const RECONNECT_WINDOW_MS = 60_000;
 export class AuthoritativeMatchSession {
   readonly invalidAttempts: InvalidMatchCommand[] = [];
 
-  private readonly tickets: Record<MatchSeat, MatchTicketV1>;
+  private readonly tickets: { home: MatchTicketV1; away: MatchTicketV1 | null };
   private readonly connected = new Set<string>();
   private readonly readySeats = new Set<MatchSeat>();
   private readonly lastSequence = new Map<string, number>();
@@ -85,20 +97,34 @@ export class AuthoritativeMatchSession {
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
+    if ((options.awayIsAi && options.awayTicket) || (!options.awayIsAi && !options.awayTicket)) {
+      throw new Error("match must have either an AI opponent or an away ticket");
+    }
     if (
       options.homeTicket.roomId !== options.roomId ||
-      options.awayTicket.roomId !== options.roomId
+      (options.awayTicket && options.awayTicket.roomId !== options.roomId)
     ) {
       throw new Error("match tickets must belong to the session room");
     }
-    if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
+    if (
+      options.homeTicket.seat !== "home" ||
+      (options.awayTicket && options.awayTicket.seat !== "away")
+    ) {
       throw new Error("match tickets must be assigned to their matching seats");
     }
-    this.tickets = { home: options.homeTicket, away: options.awayTicket };
+    if (options.awayTicket?.userId === options.homeTicket.userId) {
+      throw new Error("human match seats must belong to distinct accounts");
+    }
+    this.tickets = { home: options.homeTicket, away: options.awayTicket ?? null };
+    if (options.awayIsAi) this.readySeats.add("away");
   }
 
   connect(ticket: MatchTicketV1, now: number): MatchSeat {
     this.assertBoundTicket(ticket, now);
+    const reconnectDeadline = this.reconnectDeadlines.get(ticket.seat);
+    if (reconnectDeadline !== undefined && now >= reconnectDeadline) {
+      throw new Error("match reconnection window expired");
+    }
     this.connected.add(ticket.userId);
     this.reconnectDeadlines.delete(ticket.seat);
     this.refreshPhase();
@@ -118,15 +144,21 @@ export class AuthoritativeMatchSession {
     command: MatchCommandV1,
     now: number,
   ): Promise<MatchCommandOutcome> {
+    if (this.pendingWork >= MAX_PENDING_COMMANDS) {
+      return Promise.resolve({ accepted: false, reason: "rate_limited" });
+    }
     return this.serialize(() => this.receiveSerial(ticket, command, now));
   }
 
   private async receiveSerial(
     ticket: MatchTicketV1,
-    command: MatchCommandV1,
+    input: MatchCommandV1,
     now: number,
   ): Promise<MatchCommandOutcome> {
     const seat = this.connect(ticket, now);
+    const parsed = MatchCommandV1Schema.safeParse(input);
+    if (!parsed.success) return this.reject(ticket.userId, 0, "command_rejected", now);
+    const command = parsed.data;
     if (this.receipt) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     if (command.roomId !== this.options.roomId) {
       return this.reject(ticket.userId, command.sequence, "command_rejected", now);
@@ -196,12 +228,14 @@ export class AuthoritativeMatchSession {
     return this.tactics.get(seat);
   }
 
-  async expireReconnects(now: number): Promise<MatchReceiptV1 | null> {
-    if (this.phase === "finalized") return this.receipt;
-    for (const [seat, deadline] of this.reconnectDeadlines) {
-      if (now >= deadline) return this.finalize("abandoned", now, seat);
-    }
-    return null;
+  expireReconnects(now: number): Promise<MatchReceiptV1 | null> {
+    return this.serialize(async () => {
+      if (this.phase === "finalized") return this.receipt;
+      for (const [seat, deadline] of this.reconnectDeadlines) {
+        if (now >= deadline) return this.finalizeSerial("abandoned", now, seat);
+      }
+      return null;
+    });
   }
 
   finalize(
@@ -235,14 +269,17 @@ export class AuthoritativeMatchSession {
   }
 
   private assertBoundTicket(ticket: MatchTicketV1, now: number): void {
-    assertCurrentTicket(ticket, now);
+    assertCurrentTicket(parseMatchTicketV1(ticket), now);
     if (ticket.roomId !== this.options.roomId) {
       throw new Error("ticket room does not match this authoritative match session");
     }
     const expected = this.tickets[ticket.seat];
     if (
+      !expected ||
       ticket.userId !== expected.userId ||
       ticket.nonce !== expected.nonce ||
+      ticket.issuedAt !== expected.issuedAt ||
+      ticket.expiresAt !== expected.expiresAt ||
       ticket.signature !== expected.signature
     ) {
       throw new Error("ticket does not belong to this authoritative match session");
@@ -251,13 +288,13 @@ export class AuthoritativeMatchSession {
 
   private seatForUser(userId: string): MatchSeat | null {
     if (this.tickets.home.userId === userId) return "home";
-    if (this.tickets.away.userId === userId) return "away";
+    if (this.tickets.away?.userId === userId) return "away";
     return null;
   }
 
   private refreshPhase(): void {
     if (this.phase === "finalized") return;
-    if (this.connected.size === 2 && this.readySeats.size === 2) {
+    if (this.connected.size === (this.tickets.away ? 2 : 1) && this.readySeats.size === 2) {
       this.phase = "live";
       return;
     }
@@ -288,8 +325,7 @@ export class AuthoritativeMatchSession {
   }
 
   private reserveRateWindow(userId: string, kind: MatchCommandKind, now: number): boolean {
-    const limit = this.options.commandLimits?.[kind];
-    if (!limit) return true;
+    const limit = this.options.commandLimits?.[kind] ?? DEFAULT_COMMAND_LIMITS[kind];
     if (limit.limit < 1 || limit.windowMs < 1) return false;
     const key = `${userId}:${kind}`;
     const liveEntries = (this.rateWindows.get(key) ?? []).filter((at) => now - at < limit.windowMs);

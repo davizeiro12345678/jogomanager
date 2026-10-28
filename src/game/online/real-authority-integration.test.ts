@@ -64,3 +64,23 @@ describe.each([false, true])("real simulation with away AI = %s", (awayIsAi) => 
     await expect(session.receive(forged, ready(2), now + 2)).rejects.toThrow();
   });
 });
+
+it("starts a server-owned AI match after only the human is ready", async () => {
+  const home = await ticket("home");
+  const engine = new MatchSimAuthority("fla", "pal", "local-private-seed-123456", true);
+  const session = new AuthoritativeMatchSession({
+    roomId,
+    homeTicket: home,
+    awayIsAi: true,
+    engine,
+    signer: { sign: async () => "local-receipt-signature-12345" },
+    simulationVersion: "match-sim/1",
+    idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+  });
+
+  expect((await session.receive(home, ready(1), now + 1)).accepted).toBe(true);
+  expect(session.phase).toBe("live");
+  for (let i = 0; i < 30; i++) session.advanceFixedTick();
+  expect(session.snapshot().tick).toBe(30);
+  expect(engine.visualSnapshot().players).toHaveLength(22);
+});
