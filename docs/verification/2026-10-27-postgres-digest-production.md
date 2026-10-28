@@ -51,3 +51,26 @@ Os quatro registros retornaram exatamente as mesmas contagens (39: 16.956, 78: 1
 2. Cancelar o job com `SELECT cron.unschedule('jm_refresh_featured_injury_counts_15m')`.
 3. Só após verificar ausência de uso, remover a view e seu schema privado.
    Não fazer o rollback sem necessidade em ambiente com tráfego.
+
+## 28/10/2026: confirmação pelos logs do erro crítico no Supabase
+A análise dos logs PostgreSQL das últimas 24h encontrou **848** ocorrências
+`ERROR SQLSTATE 57014` (statement cancelado), todas na chamada PostgREST à
+`public.get_public_league_digest_source`, queryid `4149581782446921425`.
+Distribuição pré-correção: entre 17h e 21h UTC eram aproximadamente 159–164
+timeouts/hora. O último timeout registrado foi **27/10/2026 22:02:39 UTC**.
+A consulta agregada por janela mostrou **0 ocorrências a partir das 22:03 UTC**
+até o horário da verificação (~28/10 00h UTC). Esse dado apoia a hipótese de
+que a otimização anterior eliminou o erro recorrente; não garante que erros
+futuros sejam impossíveis.
+
+A repetição de `EXPLAIN (ANALYZE,BUFFERS)` de quatro ligas
+`[39,140,135,78]` levou **14,127 ms**, com 14.114 blocos hit e nenhuma
+leitura física reportada nesse plano. O resultado antigo documentado chegou
+à ordem de 14,7 s sob condições diferentes, portanto o fator de melhoria
+é indicativo, não benchmark controlado.
+
+Outros avisos do Supabase: `pg_graphql_anon_table_exposed` (26 WARN),
+`pg_graphql_authenticated_table_exposed` (48 WARN), um
+`authenticated_security_definer_function_executable` WARN. Os objetos
+públicos são intencionalmente legíveis; sem auditoria de permissões por
+objeto não revogar acesso de forma indiscriminada.
