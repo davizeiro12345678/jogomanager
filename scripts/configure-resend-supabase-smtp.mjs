@@ -6,18 +6,40 @@ if (!/^[a-z0-9._%+-]+@jogomanager\.com$/i.test(sender))
   throw new Error("Sender must use the verified jogomanager.com domain");
 
 const isApply = process.argv.includes("--apply");
-if (!isApply) {
+const isVerify = process.argv.includes("--verify");
+if (isApply && isVerify) throw new Error("Choose --apply or --verify");
+if (!isApply && !isVerify) {
   console.log("DRY RUN: SMTP provider Resend; custom SMTP enabled only with --apply.");
   console.log("Project:", project, "Sender:", sender, "Host: smtp.resend.com; port: 465.");
   process.exit(0);
 }
 const token = process.env.SUPABASE_ACCESS_TOKEN;
 const password = process.env.RESEND_API_KEY;
-if (!token || !password) throw new Error("Provide the management token and Resend key securely");
-const result = await fetch(`https://api.supabase.com/v1/projects/${project}/config/auth`, {
+if (!token || (isApply && !password))
+  throw new Error("Provide the management token and (when applying) Resend key securely");
+const configUrl = `https://api.supabase.com/v1/projects/${project}/config/auth`;
+const authHeaders = { authorization: `Bearer ${token}` };
+if (isVerify) {
+  const response = await fetch(configUrl, {
+    headers: authHeaders,
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`SMTP verification failed: HTTP ${response.status}`);
+  const config = await response.json();
+  if (
+    config?.smtp_host !== "smtp.resend.com" ||
+    Number(config?.smtp_port) !== 465 ||
+    config?.smtp_admin_email !== sender
+  )
+    throw new Error("SMTP configuration mismatch");
+  console.log("SMTP settings match the expected provider and sender.");
+  console.log("Inbox receipt, SPF/DKIM and delivery still require separate checks.");
+  process.exit(0);
+}
+const result = await fetch(configUrl, {
   method: "PATCH",
   headers: {
-    authorization: `Bearer ${token}`,
+    ...authHeaders,
     "content-type": "application/json",
   },
   body: JSON.stringify({
