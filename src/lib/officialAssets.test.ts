@@ -31,6 +31,17 @@ beforeEach(async () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("official asset browser cache", () => {
+  it("does not fetch the catalog while official appearance is disabled, and loads it when enabled", async () => {
+    stored.set("manager3d.officialLook", "off");
+    await assets.loadOfficialAssets();
+    expect(getOfficialAssets).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
+
+    assets.setOfficialLook(true);
+    await vi.waitFor(() => expect(assets.officialCrest("club")).toBe(data.crests.club));
+    expect(getOfficialAssets).toHaveBeenCalledTimes(1);
+  });
+
   it("serves a fresh complete catalog without making a redundant server request", async () => {
     stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now(), data }));
     await assets.loadOfficialAssets();

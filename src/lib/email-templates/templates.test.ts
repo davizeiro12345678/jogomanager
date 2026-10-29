@@ -20,4 +20,15 @@ describe("transactional email templates", () => {
       expect(html, name).toContain("https://jogomanager.com");
     }
   });
+
+  it("retains links in the plain-text version sent to email clients", async () => {
+    for (const [name, entry] of Object.entries(TEMPLATES)) {
+      const text = await render(React.createElement(entry.component, entry.previewData as never), {
+        plainText: true,
+      });
+      expect(text, name).toContain("https://jogomanager.com");
+      if (name === "signup")
+        expect(text).toContain("https://jogomanager.com/confirm?token=preview");
+    }
+  });
 });

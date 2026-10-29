@@ -64,5 +64,7 @@ describe("analytics consent", () => {
     expect(mocks.init).not.toHaveBeenCalled();
     expect(mocks.capture).not.toHaveBeenCalled();
     expect(fakeWindow.dataLayer).toBeUndefined();
+    await vi.dynamicImportSettled();
+    expect(mocks.disableFirebaseAnalytics).not.toHaveBeenCalled();
   });
 });
