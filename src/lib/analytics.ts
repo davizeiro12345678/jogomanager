@@ -10,6 +10,7 @@ import { readConsent } from "./consent";
 
 let client: PostHog | null = null;
 let initializing: Promise<PostHog | null> | null = null;
+let firebaseAnalyticsRequested = false;
 
 const MANAGED_POSTHOG_PROXY = "https://e.jogomanager.com";
 
@@ -29,11 +30,23 @@ export async function initAnalytics(): Promise<PostHog | null> {
   if (!readConsent().analytics) {
     client?.opt_out_capturing();
     if (gaId) window[`ga-disable-${gaId}`] = true;
-    void import("./firebase").then((m) => m.disableFirebaseAnalytics()).catch(() => undefined);
+    // Do not download the Firebase analytics bundle on browsers that never
+    // consented to analytics. Disable it only if it was initialized before.
+    if (firebaseAnalyticsRequested) {
+      firebaseAnalyticsRequested = false;
+      void import("./firebase").then((m) => m.disableFirebaseAnalytics()).catch(() => undefined);
+    }
     return null;
   }
   initGoogleAnalytics();
-  void import("./firebase").then((m) => m.initFirebase({ analytics: true })).catch(() => undefined);
+  // One Firebase SDK/config initialization per consent grant, not one per
+  // consent-changed notification or repeated analytics initialization call.
+  if (!firebaseAnalyticsRequested) {
+    firebaseAnalyticsRequested = true;
+    void import("./firebase")
+      .then((m) => (readConsent().analytics ? m.initFirebase({ analytics: true }) : null))
+      .catch(() => undefined);
+  }
   if (client) {
     if (client.has_opted_out_capturing()) client.opt_in_capturing();
     return client;
