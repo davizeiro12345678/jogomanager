@@ -60,6 +60,8 @@ O diagnóstico de startup compara a base real do PR e o candidato com as mesmas 
 
 Cada amostra abre um processo novo do Chrome, pois apenas trocar o contexto ainda pode reutilizar caches de compilação do processo.
 
+Na revisão `5682f0d4`, todos os jobs de Quality passaram, exceto o Lighthouse móvel da home: o pior LCP foi 2.769 ms, com performance 94. A imagem já tem preload responsivo e prioridade alta; o relatório atribui a maior parcela ao atraso de renderização. A entrada do cliente passa a importar e avaliar o runtime depois de duas animações do documento público servido pelo SSR, em vez de atrasar somente `hydrateRoot`. Rotas privadas e documentos ocultos iniciam imediatamente; uma mudança de visibilidade não deixa a hidratação presa. Não há espera arbitrária nem alteração dos limites. Os testes cobrem as cinco combinações de pintura/visibilidade e a execução única. O efeito no gate móvel ainda precisa ser medido no novo commit.
+
 Antes do primeiro envio desta revisão: instalação npm limpa, árvore npm válida, Bun frozen-lockfile, build, TypeScript 6, lint sem avisos, orçamento absoluto de bundles, 20 testes focados, 33 contratos Node e 12 testes auxiliares passaram. A auditoria npm completa reportou zero vulnerabilidades conhecidas. A suíte completa e os gates do commit final ainda precisam ser confirmados no CI, incluindo o novo contrato MongoDB e o Lighthouse móvel que reprovou a revisão anterior.
 
 Publicação exige também backend pronto e SHA compilado de `/api/health` idêntico ao release aprovado. Nenhum segredo ou serviço de produção foi alterado nesta etapa.
