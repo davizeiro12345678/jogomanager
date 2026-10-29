@@ -89,7 +89,7 @@ BEGIN
     )
     UPDATE notification_private.outbox o
     SET status='processing', attempts=o.attempts+1,
-        lease_token=gen_random_uuid(), lease_until=now()+interval '90 seconds',
+        lease_token=gen_random_uuid(), lease_until=now()+interval '5 minutes',
         updated_at=now()
     FROM candidates c WHERE o.id=c.id
     RETURNING o.id, o.dedupe_key, o.payload, o.trace_id, o.lease_token;
