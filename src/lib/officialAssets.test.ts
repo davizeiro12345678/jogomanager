@@ -32,7 +32,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 function persisted() {
   expect(set.mock.calls[0]?.[0]).toBe("manager3d.official.v3");
-  return JSON.parse(set.mock.calls[0]![1]);
+  return set.mock.calls[0]![1];
 }
 
 describe("official asset browser cache", () => {
@@ -154,16 +154,10 @@ describe("official asset browser cache", () => {
     });
   });
 
-  it("restores the new string representation after reload without fetching the catalogue", async () => {
+  it("can read a string cache left by an earlier preview without fetching the catalogue", async () => {
+    get.mockResolvedValue(JSON.stringify({ at: Date.now(), data }));
     await assets.loadOfficialAssets();
-    const written = set.mock.calls[0]![1];
-    expect(typeof written).toBe("string");
-    get.mockResolvedValue(written);
-    getOfficialAssets.mockClear();
-    vi.resetModules();
-    const reloaded = await import("./officialAssets");
-    await reloaded.loadOfficialAssets();
-    expect(reloaded.officialCrest("club")).toBe(data.crests.club);
+    expect(assets.officialCrest("club")).toBe(data.crests.club);
     expect(getOfficialAssets).not.toHaveBeenCalled();
   });
 

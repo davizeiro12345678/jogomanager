@@ -37,13 +37,13 @@ export function subscribeOfficial(fn: () => void) {
 }
 
 export function officialCrest(clubId: string): string | undefined {
-  if (!officialLookEnabled()) return undefined;
-  return cache.crests[clubId];
+  const url = cache.crests[clubId];
+  return url && officialLookEnabled() ? url : undefined;
 }
 
 export function officialKit(clubId: string): string | undefined {
-  if (!officialLookEnabled()) return undefined;
-  return cache.kits[clubId];
+  const url = cache.kits[clubId];
+  return url && officialLookEnabled() ? url : undefined;
 }
 
 function stringRecord(value: unknown): value is Record<string, string> {
@@ -89,9 +89,8 @@ async function readCache(): Promise<OfficialAssets | null> {
 
 /** Kick off the load; safe to call from anywhere, runs at most once. */
 export function loadOfficialAssets(): Promise<void> {
-  if (!officialLookEnabled()) return Promise.resolve();
-  if (loaded) return Promise.resolve();
   if (inflight) return inflight;
+  if (loaded || !officialLookEnabled()) return Promise.resolve();
 
   inflight = (async () => {
     try {
@@ -103,10 +102,9 @@ export function loadOfficialAssets(): Promise<void> {
         const data = await getOfficialAssets();
         if (data && (Object.keys(data.crests).length || Object.keys(data.kits).length)) {
           cache = data;
-          // A string avoids IndexedDB's expensive synchronous structured clone
-          // of thousands of named properties. Disk persistence stays asynchronous;
-          // readCache also accepts the preceding object representation.
-          void set(CACHE_KEY, JSON.stringify({ at: Date.now(), data })).catch((error) => {
+          // Full JSON encoding cost more than structured clone in Chrome.
+          // Keep the object representation and asynchronous disk persistence.
+          void set(CACHE_KEY, { at: Date.now(), data }).catch((error) => {
             reportCacheError(error, "write");
           });
         }
