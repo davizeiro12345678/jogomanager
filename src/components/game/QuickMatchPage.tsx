@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
@@ -16,6 +16,13 @@ const QuickLive = lazy(loadQuickLive);
 const preloadQuickLive = () => loadQuickLive().catch(() => undefined);
 
 const DIFFS: Difficulty[] = ["facil", "normal", "dificil"];
+// Group immutable leagues once, not on each team or difficulty selection.
+const LEAGUES_BY_COUNTRY = Object.entries(
+  LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, league) => {
+    (acc[league.country] ??= []).push(league);
+    return acc;
+  }, {}),
+);
 
 export function QuickMatchPage() {
   const { t, lang } = useT();
@@ -63,7 +70,12 @@ export function QuickMatchPage() {
 
   // localeCompare with an explicit locale constructs ICU collation work for
   // every sort comparison. Share one comparator without caching mutable leagues.
-  const countryCompare = new Intl.Collator(lang).compare;
+  const groupedLeagues = useMemo(() => {
+    const countryCompare = new Intl.Collator(lang).compare;
+    return [...LEAGUES_BY_COUNTRY].sort(([a], [b]) =>
+      a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b),
+    );
+  }, [lang]);
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
@@ -89,14 +101,7 @@ export function QuickMatchPage() {
             onChange={(e) => chooseLeague(e.target.value)}
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
           >
-            {Object.entries(
-              LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, l) => {
-                (acc[l.country] ??= []).push(l);
-                return acc;
-              }, {}),
-            )
-              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
-              .map(([country, ls]) => (
+            {groupedLeagues.map(([country, ls]) => (
                 <optgroup key={country} label={country}>
                   {ls.map((l) => (
                     <option key={l.id} value={l.id}>
