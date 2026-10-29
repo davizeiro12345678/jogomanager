@@ -42,6 +42,18 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   const output = new Float32Array(rigSectionVertexCount(input) * 5);
   const bottom = rings[0]!;
   const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
+  // Angles depend on the radial segment and roundness, not on the ring.
+  // Compute the expensive trigonometric/power terms once per segment while
+  // retaining float64 precision until the packed Float32 output is written.
+  const shapedSine = new Float64Array(radial + 1);
+  const shapedCosine = new Float64Array(radial + 1);
+  for (let side = 0; side <= radial; side++) {
+    const angle = (side / radial) * Math.PI * 2;
+    const sine = Math.sin(angle);
+    const cosine = Math.cos(angle);
+    shapedSine[side] = Math.sign(sine) * Math.abs(sine) ** roundness;
+    shapedCosine[side] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
+  }
   let cursor = 0;
   // Write to the owned typed buffer directly. Allocating a temporary five-
   // element array for every 3D vertex creates unnecessary GC pressure.
@@ -56,13 +68,10 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
     const offset = row * 4;
     for (let side = 0; side <= radial; side++) {
       const u = side / radial;
-      const angle = u * Math.PI * 2;
-      const sine = Math.sin(angle);
-      const cosine = Math.cos(angle);
       write(
-        Math.sign(sine) * Math.abs(sine) ** roundness * rings[offset + 1]!,
+        shapedSine[side]! * rings[offset + 1]!,
         rings[offset]!,
-        Math.sign(cosine) * Math.abs(cosine) ** roundness * rings[offset + 2]! + rings[offset + 3]!,
+        shapedCosine[side]! * rings[offset + 2]! + rings[offset + 3]!,
         u,
         (rings[offset]! - bottom) / span,
       );
