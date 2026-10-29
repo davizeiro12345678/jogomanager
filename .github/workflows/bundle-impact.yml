@@ -69,7 +69,7 @@ jobs:
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
           git restore scripts/bundle-report.mjs package.json package-lock.json
-          git restore src/lib/real-football.functions.ts src/lib/email-templates
+          git restore src/lib/real-football.functions.ts src/lib/email-templates vite.config.ts
       - name: Build proposed commit on the same runner
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
