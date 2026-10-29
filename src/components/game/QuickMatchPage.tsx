@@ -33,6 +33,12 @@ export function QuickMatchPage() {
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [started, setStarted] = useState(false);
   const [seed, setSeed] = useState(() => `quick-${Date.now()}`);
+  const groupedLeagues = useMemo(() => {
+    const countryCompare = new Intl.Collator(lang).compare;
+    return [...LEAGUES_BY_COUNTRY].sort(([a], [b]) =>
+      a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b),
+    );
+  }, [lang]);
 
   function chooseLeague(id: string) {
     setLeagueId(id);
@@ -70,12 +76,6 @@ export function QuickMatchPage() {
 
   // localeCompare with an explicit locale constructs ICU collation work for
   // every sort comparison. Share one comparator without caching mutable leagues.
-  const groupedLeagues = useMemo(() => {
-    const countryCompare = new Intl.Collator(lang).compare;
-    return [...LEAGUES_BY_COUNTRY].sort(([a], [b]) =>
-      a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b),
-    );
-  }, [lang]);
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
