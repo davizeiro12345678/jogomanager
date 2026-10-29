@@ -59,14 +59,17 @@ export function advanceAthlete(
   if (useFixedSlices)
     liveRemainder.set(p, Math.max(0, accumulated - steps * HIGH_FIDELITY_PHYSICS_STEP));
   else liveRemainder.delete(p);
+  // The integration duration is constant across every substep. Avoid
+  // recalculating its exponential and division for every player substep.
+  const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
+  const response = 1 - Math.exp(-6 * h);
+  const speedLimit = Math.max(0, maxSpeed);
   for (let i = 0; i < steps; i++) {
-    const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
-    const response = 1 - Math.exp(-6 * h);
     const dx = tx - p.x,
       dz = tz - p.z,
       distance = Math.hypot(dx, dz);
     const desiredSpeed = Math.min(
-      Math.max(0, maxSpeed),
+      speedLimit,
       Math.sqrt(2 * braking * Math.max(0, distance - 0.08)),
     );
     const ux = distance > 0.00001 ? (dx / distance) * desiredSpeed : 0;
