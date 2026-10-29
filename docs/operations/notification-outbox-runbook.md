@@ -68,3 +68,29 @@ confirmation and password reset continue to use the separate direct SMTP path.
 - Trace correlation across the notification pipeline is not a full APM
   collector. Extend trace propagation to game gateway and payment spans
   separately after verifying privacy, latency and cardinality budgets.
+
+## VPS systemd deployment after the machine reconnects
+
+The repository contains staged templates in `deploy/systemd/`. They are NOT
+installed on the VPS by this PR. In an authorized root shell on the actual VPS,
+after verifying the runtime path and a working Node installation:
+
+- Create a dedicated unprivileged `jogomanager` system account with no login.
+- Deploy the approved SHA to `/opt/jogomanager/current`, or adapt the paths
+  in the service unit to the *actual* deployment directory.
+- Provision `/etc/jogomanager/notification-outbox.env` with strictly root-only
+  access (mode 0600), using the secure secrets manager. Populate
+  `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `RESEND_API_KEY` without
+  pasting their contents into chat, commits or world-readable shell history.
+- Only after migration replay, a controlled test delivery, and green release
+  gates, copy both units to `/etc/systemd/system/`; run `systemctl daemon-reload`
+  and `systemctl enable --now jogomanager-notification-outbox.timer`.
+- Observe `systemctl list-timers`, `systemctl status
+  jogomanager-notification-outbox.service` and `journalctl -u
+  jogomanager-notification-outbox.service`. No email body, address or secret
+  should appear in journal messages.
+
+The service uses an unprivileged user, read-only system protection, no new
+privileges, and a one-batch run. The timer avoids duplicate runs of the same
+unit. PostgreSQL lease tokens provide additional protection against a second
+scheduler or a stale worker on another server.
