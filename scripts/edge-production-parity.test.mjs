@@ -1,4 +1,5 @@
 import test from "node:test";
+import { readLimitedWebhookBody } from "../supabase/functions/_shared/read-webhook-body.mjs";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -385,4 +386,70 @@ test("API-Football cache persistence failure prevents returning a page for catal
     returned = true;
   }, /database_cache_failure/);
   assert.equal(returned, false);
+});
+
+test("signed webhook body reader bounds chunked requests before buffering", async () => {
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(8));
+      controller.enqueue(new Uint8Array(8));
+      controller.close();
+    },
+  });
+  const req = new Request("https://project.example.test/webhook", {
+    method: "POST",
+    body: stream,
+    duplex: "half",
+  });
+  assert.equal((await readLimitedWebhookBody(req, 10)).kind, "too_large");
+});
+
+test("signed webhook body reader preserves multibyte payloads and refuses malformed byte length", async () => {
+  const valid = new Request("https://project.example.test/webhook", {
+    method: "POST",
+    body: "ação ✅",
+  });
+  assert.deepEqual(await readLimitedWebhookBody(valid, 12), {
+    kind: "ok",
+    text: "ação ✅",
+  });
+  const declared = new Request("https://project.example.test/webhook", {
+    method: "POST",
+    headers: { "content-length": "10000000" },
+    body: "x",
+  });
+  assert.equal((await readLimitedWebhookBody(declared, 100)).kind, "too_large");
+  const bad = new Request("https://project.example.test/webhook", {
+    method: "POST",
+    headers: { "content-length": "not-an-integer" },
+    body: "x",
+  });
+  assert.equal((await readLimitedWebhookBody(bad, 100)).kind, "invalid");
+});
+
+test("Resend webhook rejects oversized streamed payload without reading signing secrets", async () => {
+  let networkCalls = 0;
+  const handler = await loadHandler("resend-delivery-events/index.ts", {
+    fetch: async () => {
+      networkCalls++;
+      assert.fail("Oversized webhook must never reach the privileged RPC");
+    },
+  });
+  const bigRequest = new Request("https://project.example.test/functions/v1/resend-delivery-events", {
+    method: "POST",
+    headers: {
+      "svix-id": "msg_bigpayload",
+      "svix-timestamp": String(Math.floor(Date.now() / 1000)),
+      "svix-signature": "v1,invalid-test-signature",
+    },
+    body: new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array(140_000));
+        controller.close();
+      },
+    }),
+    duplex: "half",
+  });
+  assert.equal((await handler(bigRequest)).status, 413);
+  assert.equal(networkCalls, 0);
 });
