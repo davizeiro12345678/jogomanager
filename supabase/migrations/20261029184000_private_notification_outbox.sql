@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS notification_private.outbox (
   dedupe_key text NOT NULL UNIQUE CHECK (length(dedupe_key) BETWEEN 12 AND 128),
   template text NOT NULL CHECK (template IN ('welcome', 'season-start', 'career-milestone')),
   payload jsonb NOT NULL,
-  payload_fingerprint text NOT NULL CHECK (payload_fingerprint ~ '^[0-9a-f]{32} CHECK (trace_id IS NULL OR trace_id ~ '^[0-9a-f]{32}$'),
+  payload_fingerprint text NOT NULL CHECK (payload_fingerprint ~ '^[0-9a-f]{32}$'),
+  trace_id text CHECK (trace_id IS NULL OR trace_id ~ '^[0-9a-f]{32}$'),
   status text NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'processing', 'delivered', 'dead')),
   attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 8),
