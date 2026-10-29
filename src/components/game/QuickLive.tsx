@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ScreenAwakeControl } from "@/components/game/ScreenAwakeControl";
 import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
@@ -425,6 +426,7 @@ export default function QuickLive({
             if (open) setPaused(true);
           }}
         />
+        <ScreenAwakeControl running={!paused && !done} className="match-tool-action" />
         <ShortcutsDialog
           quick
           showLabel

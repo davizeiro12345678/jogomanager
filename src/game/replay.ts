@@ -385,34 +385,4 @@ export async function deleteReplay(id: string) {
  * Exportação de vídeo
  * ---------------------------------------------------------------- */
 
-export function canExportVideo() {
-  return (
-    typeof window !== "undefined" &&
-    typeof MediaRecorder !== "undefined" &&
-    typeof HTMLCanvasElement.prototype.captureStream === "function"
-  );
-}
-
-/** Grava o que está sendo desenhado no canvas e devolve um arquivo .webm. */
-export function recordCanvas(canvas: HTMLCanvasElement, fps = 30) {
-  const stream = canvas.captureStream(fps);
-  const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((m) =>
-    MediaRecorder.isTypeSupported(m),
-  );
-  const rec = new MediaRecorder(
-    stream,
-    mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined,
-  );
-  const chunks: BlobPart[] = [];
-  rec.ondataavailable = (e) => {
-    if (e.data.size) chunks.push(e.data);
-  };
-  rec.start(250);
-  return {
-    stop: () =>
-      new Promise<Blob>((resolve) => {
-        rec.onstop = () => resolve(new Blob(chunks, { type: "video/webm" }));
-        rec.stop();
-      }),
-  };
-}
+export { canExportVideo, recordCanvas } from "@/lib/replay-video";

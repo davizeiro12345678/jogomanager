@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      BASE_SHA: "5a75fef3662e3750917df1c2259169e4ed9f24d3"
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4

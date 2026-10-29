@@ -68,6 +68,7 @@ import { ReplayRecorder, saveReplay } from "@/game/replay";
 import type { NarrationEvent } from "@/game/narrator";
 
 import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { ScreenAwakeControl } from "@/components/game/ScreenAwakeControl";
 
 import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
 
@@ -893,6 +894,9 @@ function LiveMatch({
             <X size={18} aria-hidden="true" />
           </button>
         </div>
+        <ScreenAwakeControl
+          running={!paused && !done && !introActive && !ceremonyActive && !halfHeld}
+        />
         <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => setPaused((p) => !p)}

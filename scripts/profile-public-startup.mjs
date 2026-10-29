@@ -65,6 +65,7 @@ try {
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
     headless: true,
   });
+  report.browser = browser.version();
   for (const route of [
     "/",
     "/guias",
@@ -86,6 +87,7 @@ try {
       page.on("pageerror", (error) => errors.push(error.message));
       await page.addInitScript(() => {
         window.__startupTasks = [];
+        window.__startupLcp = [];
         new PerformanceObserver((list) => {
           for (const entry of list.getEntries())
             window.__startupTasks.push({
@@ -94,6 +96,21 @@ try {
               name: entry.name,
             });
         }).observe({ type: "longtask", buffered: true });
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries())
+            window.__startupLcp.push({
+              start: entry.startTime,
+              size: entry.size,
+              tag: entry.element?.tagName,
+              text: entry.element?.textContent?.slice(0, 200),
+            });
+        }).observe({ type: "largest-contentful-paint", buffered: true });
+      });
+      const traceEvents = [];
+      session.on("Tracing.dataCollected", ({ value }) => traceEvents.push(...value));
+      await session.send("Tracing.start", {
+        categories: "devtools.timeline,v8,blink.user_timing,loading",
+        options: "record-as-much-as-possible",
       });
       await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
       await session.send("Profiler.enable");
@@ -102,8 +119,18 @@ try {
       await page.goto(`http://127.0.0.1:${port}${route}`, { waitUntil: "load", timeout: 60000 });
       await page.waitForTimeout(6000);
       const { profile } = await session.send("Profiler.stop");
+      const tracingComplete = new Promise((resolve) =>
+        session.once("Tracing.tracingComplete", resolve),
+      );
+      await session.send("Tracing.end");
+      await tracingComplete;
       const id = `${route === "/" ? "home" : route.slice(1)}-${run}`;
       await writeFile(path.join(output, `${id}.cpuprofile`), JSON.stringify(profile));
+      await writeFile(path.join(output, `${id}.trace.json`), JSON.stringify({ traceEvents }));
+      if (run === 1) {
+        await page.screenshot({ path: path.join(output, `${id}.png`) });
+        await writeFile(path.join(output, `${id}.html`), await page.content());
+      }
       const nodes = new Map(profile.nodes.map((node) => [node.id, node]));
       const self = new Map();
       profile.samples.forEach((sample, index) =>
@@ -117,6 +144,7 @@ try {
         navigation: performance.getEntriesByType("navigation").map((entry) => entry.toJSON()),
         paint: performance.getEntriesByType("paint").map((entry) => entry.toJSON()),
         tasks: window.__startupTasks,
+        lcp: window.__startupLcp,
         resources: performance.getEntriesByType("resource").map((entry) => ({
           name: entry.name,
           start: entry.startTime,

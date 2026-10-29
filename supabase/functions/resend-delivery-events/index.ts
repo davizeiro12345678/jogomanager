@@ -79,18 +79,25 @@ Deno.serve(async (req: Request) => {
     return response(503, "Webhook signing configuration unavailable");
   }
   if (!verified) return response(401, "Invalid signature");
-  let event: { type?: string; data?: { email_id?: string } };
+  let event: unknown;
   try {
     event = JSON.parse(raw);
   } catch {
     return response(400, "Invalid JSON");
   }
-  if (!event.type || !ALLOWED.has(event.type)) return response(200, "Event ignored");
-  const emailId = typeof event.data?.email_id === "string" ? event.data.email_id : null;
+  if (!event || typeof event !== "object" || Array.isArray(event))
+    return response(400, "Invalid event");
+  const payload = event as { type?: unknown; data?: { email_id?: unknown } | null };
+  if (typeof payload.type !== "string") return response(400, "Invalid event type");
+  if (!ALLOWED.has(payload.type)) return response(200, "Event ignored");
+  const rawEmailId = payload.data?.email_id;
+  if (rawEmailId != null && (typeof rawEmailId !== "string" || rawEmailId.length > 200))
+    return response(400, "Invalid email id");
+  const emailId = typeof rawEmailId === "string" ? rawEmailId : null;
   try {
     await rpc<boolean>("jm_store_resend_delivery_event", {
       p_event_id: id,
-      p_event_type: event.type,
+      p_event_type: payload.type,
       p_email_id: emailId,
     });
   } catch {

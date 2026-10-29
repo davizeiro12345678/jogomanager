@@ -25,6 +25,13 @@ import {
 } from "@/game/replay";
 
 import { useCareer } from "@/hooks/useCareer";
+import { ScreenAwakeControl } from "@/components/game/ScreenAwakeControl";
+import {
+  downloadReplayVideo,
+  replayVideoFile,
+  shareReplayVideo,
+  type CanvasRecording,
+} from "@/lib/replay-video";
 
 const CAMERAS: [CameraMode, string][] = [
   ["broadcast", "Transmissão"],
@@ -137,8 +144,22 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
   const [speed, setSpeed] = useState(1);
   const [t, setT] = useState(0);
   const [recording, setRecording] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [video, setVideo] = useState<File | null>(null);
+  const [videoMessage, setVideoMessage] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const stopRef = useRef<null | (() => Promise<Blob>)>(null);
+  const recordingRef = useRef<CanvasRecording | null>(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      recordingRef.current?.cancel();
+      recordingRef.current = null;
+    };
+  }, []);
 
   sim.speed = speed;
 
@@ -161,22 +182,50 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
   const exportVideo = useCallback(async () => {
     const canvas = wrapRef.current?.querySelector("canvas");
     if (!canvas) return;
-    if (recording && stopRef.current) {
-      const blob = await stopRef.current();
-      stopRef.current = null;
+    setVideoMessage(null);
+    if (recordingRef.current) {
+      const capture = recordingRef.current;
+      recordingRef.current = null;
       setRecording(false);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${replay.title.replace(/\s+/g, "-").toLowerCase()}.webm`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setPreparing(true);
+      try {
+        const blob = await capture.stop();
+        if (mounted.current) setVideo(replayVideoFile(blob, replay.title));
+      } catch {
+        if (mounted.current)
+          setVideoMessage("Não foi possível concluir o vídeo. Tente uma nova gravação.");
+      } finally {
+        if (mounted.current) setPreparing(false);
+      }
       return;
     }
-    const rec = recordCanvas(canvas);
-    stopRef.current = rec.stop;
-    setRecording(true);
-  }, [recording, replay.title]);
+    try {
+      recordingRef.current = recordCanvas(canvas);
+      setVideo(null);
+      setRecording(true);
+    } catch {
+      setVideoMessage("A gravação não está disponível neste navegador.");
+    }
+  }, [replay.title]);
+
+  useEffect(() => {
+    if (!recording) return;
+    const timer = window.setTimeout(() => void exportVideo(), 60_000);
+    return () => window.clearTimeout(timer);
+  }, [recording, exportVideo]);
+
+  const shareVideo = async () => {
+    if (!video || sharing) return;
+    setSharing(true);
+    const result = await shareReplayVideo(video);
+    if (!mounted.current) return;
+    setSharing(false);
+    setVideoMessage(
+      result === "unsupported" || result === "unavailable"
+        ? "Não foi possível compartilhar este formato. Use Baixar vídeo e envie o arquivo pelo aplicativo desejado."
+        : null,
+    );
+  };
 
   const dur = sim.duration || 1;
 
@@ -236,15 +285,49 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
           <button
             type="button"
             onClick={() => void exportVideo()}
+            disabled={preparing}
             className="rounded-lg border border-border/60 px-3 py-1.5 font-display text-xs uppercase tracking-wider"
           >
-            {recording ? "Encerrar e baixar" : "Gravar vídeo"}
+            {preparing ? "Preparando vídeo…" : recording ? "Encerrar gravação" : "Gravar vídeo"}
           </button>
         ) : null}
+        <ScreenAwakeControl running={playing && !sim.finished} />
         <span className="ml-auto text-xs text-muted-foreground">
           {Math.floor(t / 60)}' de {Math.floor(dur / 60)}'
         </span>
       </div>
+      {video ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => downloadReplayVideo(video)}
+            className="rounded-lg border border-border/60 px-3 py-2 text-xs"
+          >
+            Baixar vídeo
+          </button>
+          <button
+            type="button"
+            disabled={sharing}
+            onClick={() => void shareVideo()}
+            className="rounded-lg border border-border/60 px-3 py-2 text-xs"
+          >
+            {sharing ? "Compartilhando…" : "Compartilhar vídeo"}
+          </button>
+          <span className="text-xs text-muted-foreground">
+            O arquivo só é enviado quando você escolhe compartilhar.
+          </span>
+        </div>
+      ) : null}
+      {videoMessage ? (
+        <p role="status" className="mt-2 text-sm text-muted-foreground">
+          {videoMessage}
+        </p>
+      ) : null}
+      {recording ? (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          Gravando um clipe de até 60 segundos. Encerre para baixar ou compartilhar.
+        </p>
+      ) : null}
 
       <input
         type="range"
