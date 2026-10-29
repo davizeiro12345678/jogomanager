@@ -3,9 +3,10 @@ import { safeAuthNext } from "./auth-next";
 import { guestCheckoutAuthRedirect } from "./guest-checkout-redirect";
 
 describe("guest checkout authentication callback", () => {
-  it("uses the allowed auth route and retains the exact claim identifiers", () => {
-    const intent = "intent/a?&+%";
-    const session = "cs_test_a/b?&+%";
+  it.each([
+    ["intent/a?&+%", "cs_test_a/b?&+%"],
+    ["a b-😀", "cs test ü"],
+  ])("uses the allowed auth route and retains the exact claim identifiers", (intent, session) => {
     const redirect = new URL(guestCheckoutAuthRedirect("https://jogomanager.com", intent, session));
     expect(redirect.origin).toBe("https://jogomanager.com");
     expect(redirect.pathname).toBe("/auth");

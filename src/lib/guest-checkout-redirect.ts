@@ -4,10 +4,6 @@ export function guestCheckoutAuthRedirect(
   intent: string,
   sessionId: string,
 ): string {
-  const claim =
-    "/checkout/claim?intent=" +
-    encodeURIComponent(intent) +
-    "&session_id=" +
-    encodeURIComponent(sessionId);
+  const claim = `/checkout/claim?${new URLSearchParams({ intent, session_id: sessionId })}`;
   return `${origin}/auth?next=${encodeURIComponent(claim)}`;
 }
