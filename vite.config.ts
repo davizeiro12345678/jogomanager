@@ -131,6 +131,13 @@ const projectConfig = defineConfig({
                 test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts|i18n[\\/]context\.ts|hooks[\\/]useAccessibility\.ts|lib[\\/]accessibility-preferences\.ts)$|[\\/]node_modules[\\/](?:scheduler[\\/]|use-sync-external-store[\\/]|react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?))/,
               },
               {
+                // These hooks already share every browser startup closure.
+                // Transport them together without pulling in more router code.
+                name: "browser-router-hooks",
+                test: /[\\/]node_modules[\\/]@tanstack[\\/]react-router[\\/]dist[\\/]esm[\\/](?:useRouter|useLocation|useNavigate)\.js$/,
+                includeDependenciesRecursively: false,
+              },
+              {
                 // Lazy routes share Vite's preload helper. If it lives in the
                 // app entry, each dynamic import pulls the entire entry back in.
                 name: "vite-preload",
