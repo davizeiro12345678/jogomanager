@@ -40,15 +40,18 @@ jobs:
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
-      - name: Profile baseline then candidate with identical public fixtures
+      - name: Profile candidate then baseline with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright
         run: |
           export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/startup-chrome-path")"
-          (cd "$RUNNER_TEMP/startup-base" && PFM_LOCAL_VERIFY=1 npm run build)
-          node scripts/profile-public-startup.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline" 4175 "$BASE_SHA"
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/profile-public-startup.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/startup-evidence/candidate" 4176 "$CANDIDATE_SHA"
+          # Preserve candidate evidence even if the historical source cannot
+          # start with the current dependency graph. The baseline still must
+          # run successfully; its failure must not become a timing comparison.
+          (cd "$RUNNER_TEMP/startup-base" && PFM_LOCAL_VERIFY=1 npm run build)
+          node scripts/profile-public-startup.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline" 4175 "$BASE_SHA"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

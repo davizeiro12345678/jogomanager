@@ -9,8 +9,7 @@ export async function readLimitedWebhookBody(request, maxBytes) {
   if (declared !== null) {
     if (!/^\d+$/.test(declared)) return { kind: "invalid" };
     const advertised = Number(declared);
-    if (!Number.isSafeInteger(advertised) || advertised > maxBytes)
-      return { kind: "too_large" };
+    if (!Number.isSafeInteger(advertised) || advertised > maxBytes) return { kind: "too_large" };
   }
 
   if (!request.body) return { kind: "ok", text: "" };

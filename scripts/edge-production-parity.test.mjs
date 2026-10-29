@@ -435,21 +435,24 @@ test("Resend webhook rejects oversized streamed payload without reading signing 
       assert.fail("Oversized webhook must never reach the privileged RPC");
     },
   });
-  const bigRequest = new Request("https://project.example.test/functions/v1/resend-delivery-events", {
-    method: "POST",
-    headers: {
-      "svix-id": "msg_bigpayload",
-      "svix-timestamp": String(Math.floor(Date.now() / 1000)),
-      "svix-signature": "v1,invalid-test-signature",
-    },
-    body: new ReadableStream({
-      start(controller) {
-        controller.enqueue(new Uint8Array(140_000));
-        controller.close();
+  const bigRequest = new Request(
+    "https://project.example.test/functions/v1/resend-delivery-events",
+    {
+      method: "POST",
+      headers: {
+        "svix-id": "msg_bigpayload",
+        "svix-timestamp": String(Math.floor(Date.now() / 1000)),
+        "svix-signature": "v1,invalid-test-signature",
       },
-    }),
-    duplex: "half",
-  });
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new Uint8Array(140_000));
+          controller.close();
+        },
+      }),
+      duplex: "half",
+    },
+  );
   assert.equal((await handler(bigRequest)).status, 413);
   assert.equal(networkCalls, 0);
 });
