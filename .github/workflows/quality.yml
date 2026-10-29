@@ -31,6 +31,7 @@ jobs:
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
+      - run: node --test scripts/notification-outbox-worker.test.mjs
       - run: node --test scripts/font-loading.test.mjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
