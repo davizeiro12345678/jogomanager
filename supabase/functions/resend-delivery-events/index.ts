@@ -91,10 +91,7 @@ Deno.serve(async (req: Request) => {
   if (typeof payload.type !== "string") return response(400, "Invalid event type");
   if (!ALLOWED.has(payload.type)) return response(200, "Event ignored");
   const rawEmailId = payload.data?.email_id;
-  if (
-    rawEmailId != null &&
-    (typeof rawEmailId !== "string" || rawEmailId.length > 200)
-  )
+  if (rawEmailId != null && (typeof rawEmailId !== "string" || rawEmailId.length > 200))
     return response(400, "Invalid email id");
   const emailId = typeof rawEmailId === "string" ? rawEmailId : null;
   try {
