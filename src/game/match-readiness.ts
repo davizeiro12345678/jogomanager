@@ -4,13 +4,13 @@ import type { Player } from "./types";
 import { matchProfileAttributes } from "./player-match-attributes";
 import type { AttributeSource } from "./player-development";
 import { effectivePlayer } from "./player-effective";
-import { normalizedPlayerRatings } from "./player-rating-inputs";
+import { normalizedPlayerRatings, ratingValue } from "./player-rating-inputs";
 
 /** Select fit starters without turning recent results into permanent overall changes. */
 export function selectionRating(p: Player, source?: AttributeSource): number {
-  p = normalizedPlayerRatings(effectivePlayer(p, source));
+  p = effectivePlayer(p, source);
   return (
-    p.ovr +
+    ratingValue(p.ovr) +
     (bounded(p.form, 60, 0, 100) - 60) * 0.035 -
     Math.max(0, 85 - bounded(p.condition, 100, 0, 100)) * 0.18
   );
@@ -22,6 +22,7 @@ export function matchAttributes(
   seed: string,
   side: "home" | "away",
   source?: AttributeSource,
+  teamVariation?: number,
 ) {
   p = normalizedPlayerRatings(effectivePlayer(p, source));
   const rnd = makeRng(`player-day:${seed}:${side}:${p.id}`);
@@ -29,7 +30,8 @@ export function matchAttributes(
   const consistency =
     p.personality === "temperamental" ? 1.4 : p.personality === "profissional" ? 0.7 : 1;
   const regularity = Math.max(0.8, Math.min(1.2, 1 - (detailed.consistency - 65) * 0.005));
-  const variation = teamDay(seed, side) + (rnd() + rnd() - 1) * 3 * consistency * regularity;
+  const variation =
+    (teamVariation ?? teamDay(seed, side)) + (rnd() + rnd() - 1) * 3 * consistency * regularity;
   const readiness =
     (bounded(p.form, 60, 0, 100) - 60) * 0.045 +
     (bounded(p.morale, 70, 0, 100) - 70) * 0.02 -
