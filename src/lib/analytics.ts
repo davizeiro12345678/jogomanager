@@ -64,9 +64,7 @@ export async function initAnalytics(): Promise<PostHog | null> {
       const host = apiHost();
       posthog.init(token, {
         api_host: host,
-        ...(host === MANAGED_POSTHOG_PROXY
-          ? { ui_host: "https://us.posthog.com" }
-          : {}),
+        ...(host === MANAGED_POSTHOG_PROXY ? { ui_host: "https://us.posthog.com" } : {}),
         capture_pageview: true,
         capture_pageleave: true,
         person_profiles: "identified_only",
