@@ -45,7 +45,9 @@ export async function initAnalytics(): Promise<PostHog | null> {
     firebaseAnalyticsRequested = true;
     void import("./firebase")
       .then((m) => (readConsent().analytics ? m.initFirebase({ analytics: true }) : null))
-      .catch(() => { firebaseAnalyticsRequested = false; });
+      .catch(() => {
+        firebaseAnalyticsRequested = false;
+      });
   }
   if (client) {
     if (client.has_opted_out_capturing()) client.opt_in_capturing();
