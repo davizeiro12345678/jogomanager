@@ -380,9 +380,3 @@ export async function deleteReplay(id: string) {
     /* falha de quota/cache não impede a partida */
   }
 }
-
-/* ---------------------------------------------------------------- *
- * Exportação de vídeo
- * ---------------------------------------------------------------- */
-
-export { canExportVideo, recordCanvas } from "@/lib/replay-video";

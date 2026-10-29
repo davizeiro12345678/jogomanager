@@ -15,18 +15,13 @@ import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stad
 
 import { detectQuality } from "@/game/device";
 
-import {
-  canExportVideo,
-  deleteReplay,
-  listReplays,
-  recordCanvas,
-  ReplaySim,
-  type Replay,
-} from "@/game/replay";
+import { deleteReplay, listReplays, ReplaySim, type Replay } from "@/game/replay";
 
 import { useCareer } from "@/hooks/useCareer";
 import { ScreenAwakeControl } from "@/components/game/ScreenAwakeControl";
 import {
+  canExportVideo,
+  recordCanvas,
   downloadReplayVideo,
   replayVideoFile,
   shareReplayVideo,
@@ -222,7 +217,7 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
     setSharing(false);
     setVideoMessage(
       result === "unsupported" || result === "unavailable"
-        ? "Não foi possível compartilhar este formato. Use Baixar vídeo e envie o arquivo pelo aplicativo desejado."
+        ? "Compartilhamento indisponível. Use Baixar vídeo."
         : null,
     );
   };
@@ -313,9 +308,6 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
           >
             {sharing ? "Compartilhando…" : "Compartilhar vídeo"}
           </button>
-          <span className="text-xs text-muted-foreground">
-            O arquivo só é enviado quando você escolhe compartilhar.
-          </span>
         </div>
       ) : null}
       {videoMessage ? (
@@ -325,7 +317,7 @@ function ReplayPlayer({ replay, onClose }: { replay: Replay; onClose: () => void
       ) : null}
       {recording ? (
         <p role="status" className="mt-2 text-xs text-muted-foreground">
-          Gravando um clipe de até 60 segundos. Encerre para baixar ou compartilhar.
+          Gravando um clipe de até 60 segundos.
         </p>
       ) : null}
 

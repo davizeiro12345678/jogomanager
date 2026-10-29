@@ -32,7 +32,6 @@ export function ScreenAwakeControl({
       type="button"
       className={className ?? "rounded-lg border border-border/60 px-3 py-1.5 text-xs"}
       aria-pressed={enabled}
-      title="Evita o bloqueio automático durante a reprodução. O aparelho pode recusar para economizar bateria."
       onClick={() => setEnabled((value) => !value)}
     >
       {label}

@@ -24,6 +24,23 @@ As datas de publicação dos pacotes alterados foram conferidas. PostHog 1.441.2
 
 O agregador de e-mail ainda puxa componentes individuais marcados como deprecated pelo publicador; instalação sem avisos de depreciação não foi comprovada. Eles não aparecem como vulnerabilidades conhecidas na auditoria atual.
 
+## Minificação de produção
+
+O primeiro gate mediu aumento de 2.001 bytes gzip no total e até 680 bytes no startup da partida. O teste de Terser apenas no cliente aumentou o total em cerca de 25 KB gzip e foi descartado; Oxc permanece, sem nova dependência de minificação. O Vite oferece essa integração nativamente: [opções do build](https://vite.dev/config/build-options). Os limites de transferência permanecem iguais, e a comparação com a base deve continuar no mesmo runner e com as mesmas dependências.
+
+A configuração reúne o fechamento estático do construtor QueryClient e os módulos core/WebGL já usados em conjunto do Three.js, sem incluir outro motor. A configuração de nonce do router é eliminada explicitamente do cliente e preservada no SSR. O controle de tela da carreira carrega ao abrir a gestão da partida e continua montado depois de fechar o painel. A exportação de vídeo saiu do módulo de replay/simulação e é importada diretamente pela interface.
+
+Com instalação idêntica e dois builds limpos na mesma máquina, a comparação obrigatória passou para todos os caminhos, gzip total e Brotli total. Essa comparação isolada não aprova o Lighthouse móvel nem substitui os checks do commit publicado.
+
+Avaliação pontual de 29/10/2026, contra um concorrente real sugerido pela ferramenta. Wrappers exclusivos de Webpack foram descartados porque o projeto usa Vite.
+
+| Candidato                                         | Downloads semanais / tendência | Popularidade / manutenção            | Deprecated | Vulnerabilidades conhecidas | Tipos TS | Estrelas GitHub | Risco de scripts                     |
+| ------------------------------------------------- | ------------------------------ | ------------------------------------ | ---------- | --------------------------- | -------- | --------------- | ------------------------------------ |
+| [Terser](https://npmscan.com/package/terser)      | 112.085.448 / +46,7%           | Muito alta / ativa                   | Não        | Nenhuma                     | Sim      | 9.356           | Nenhum sinal no comando de lifecycle |
+| [UglifyJS](https://npmscan.com/package/uglify-js) | 61.746.044 / +33,8%            | Muito alta / sem release há 791 dias | Não        | Nenhuma                     | Não      | 13.368          | Nenhum sinal no comando de lifecycle |
+
+Resultado da ferramenta: `pick: terser`, `runnerUp: uglify-js`, `confidence: high`. Rationale: "terser: widely used (112,085,448 weekly downloads); actively maintained (published 63d ago); ships built-in TypeScript types; no known vulnerabilities in its latest version." Essa pontuação não mede tamanho ou comportamento do jogo; o resultado real deste projeto foi melhor com Oxc e prevaleceu sobre a recomendação genérica. A análise de scripts aqui cobre os comandos de lifecycle, não uma inspeção do tarball.
+
 ## Integrações e fronteiras
 
 - Screen Wake Lock opcional nas partidas rápida e de carreira e nos replays. Só solicita ao habilitar, durante reprodução visível; libera ao pausar, ocultar ou sair. Grants atrasados são liberados, e recusas por bateria ou política não causam loop de tentativas nem alteram a simulação.
@@ -35,7 +52,13 @@ O agregador de e-mail ainda puxa componentes individuais marcados como deprecate
 
 O workflow auxiliar usa banco MongoDB descartável em loopback para verificar corrida de claims, rejeição de escrita por processos antigos, persistência lida por outra conexão e índices de expiração. O teste recusa a URI de produção e nunca usa `MONGODB_URI`.
 
+A imagem MongoDB 8 foi fixada por digest, e o job usa Ubuntu 22.04: no runner mais novo, o próprio MongoDB recusou o kernel por [SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912). A suíte continua obrigatória no workflow auxiliar e não considera o startup recusado como aprovação.
+
+Na fila durável herdada da base, o grant do ACK foi corrigido para a assinatura de cinco argumentos. Um digest SHA-256 retém a identidade do conteúdo após a exclusão do corpo entregue, permitindo repetir o mesmo evento sem colisão falsa. O contrato SQL testa grants privados, deduplicação antes/depois da entrega, colisões de conteúdo/template, tokens de lease, backoff, dead letters e expiração. A falha da assinatura antiga foi reproduzida; a migração corrigida e o contrato passaram em PostgreSQL embarcado, e o replay Supabase completo continua obrigatório no CI.
+
 O diagnóstico de startup compara a base real do PR e o candidato com as mesmas dependências. Preserva CPU profiles, timeline do Chrome, LCP observado, screenshots e HTML. O throttling real desse diagnóstico é diferente da simulação do Lighthouse; seus resultados não substituem o gate móvel nem certificam FPS físico.
+
+Cada amostra abre um processo novo do Chrome, pois apenas trocar o contexto ainda pode reutilizar caches de compilação do processo.
 
 Antes do primeiro envio desta revisão: instalação npm limpa, árvore npm válida, Bun frozen-lockfile, build, TypeScript 6, lint sem avisos, orçamento absoluto de bundles, 20 testes focados, 33 contratos Node e 12 testes auxiliares passaram. A auditoria npm completa reportou zero vulnerabilidades conhecidas. A suíte completa e os gates do commit final ainda precisam ser confirmados no CI, incluindo o novo contrato MongoDB e o Lighthouse móvel que reprovou a revisão anterior.
 

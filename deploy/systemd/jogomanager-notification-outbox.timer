@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule JogoManager durable notification delivery
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=1min
+AccuracySec=10s
+RandomizedDelaySec=10s
+Unit=jogomanager-notification-outbox.service
+
+[Install]
+WantedBy=timers.target

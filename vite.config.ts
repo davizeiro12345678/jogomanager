@@ -117,6 +117,21 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
+                // R3F's WebGL renderer loads core and module together. One
+                // transport avoids repeating their large cross-module bridge.
+                name: "three-webgl-runtime",
+                test: /[\\/]node_modules[\\/]three[\\/]build[\\/]three\.(?:core|module)\.js$/,
+                includeDependenciesRecursively: false,
+              },
+              {
+                // Every router creates a QueryClient. Keep its constructor's
+                // existing static closure together, without pulling observers
+                // and optional React query tools into public startup.
+                name: "query-client-runtime",
+                test: /[\\/]node_modules[\\/]@tanstack[\\/]query-core[\\/]build[\\/]modern[\\/](?:queryClient|queryCache|query|mutationCache|mutation|utils|retryer|notifyManager|focusManager|onlineManager|environmentManager|removable|subscribable|timeoutManager|infiniteQueryBehavior)\.js$/,
+                includeDependenciesRecursively: false,
+              },
+              {
                 // Pure helpers already used by every route share one transport.
                 // Avoid tiny shared chunks without importing gameplay or UI.
                 name: "browser-shared-data",

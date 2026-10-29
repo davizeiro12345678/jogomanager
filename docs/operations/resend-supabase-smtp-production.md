@@ -10,6 +10,16 @@ Status: **not yet activated by this PR**. Keep this change in the PR as an opera
 - The webhook's existence **does not** mean Supabase Auth uses Resend SMTP. Existing Resend API key metadata cannot reveal its password, and this PR does not create or rotate a credential.
 - There were no Resend transactional sends or webhook deliveries observed in the examined period (20–29 October 2026). That is **not proof** of SMTP failure or success.
 
+## Supported automated configuration (operator, never in a public client)
+
+Use `node scripts/configure-resend-supabase-smtp.mjs` to inspect the proposed
+settings without a network write. After loading `SUPABASE_ACCESS_TOKEN` and
+`RESEND_API_KEY` into a trusted, private shell/session, run the same command
+with `--apply` to make an authenticated Supabase Management API PATCH. It
+prints neither secret nor provider response. The script is staged only:
+**it has not been executed against production and does not prove delivery**.
+An authorized sender can be supplied with `SMTP_FROM`.
+
 ## Secrets and configuration (authorized operator, dashboard only)
 
 1. In Resend, use a domain-restricted, sending-only API key, stored only in the Supabase Auth SMTP secret field. If one must be created, capture it through an authorized secret-handling path and do not paste it into a GitHub PR or a browser console.

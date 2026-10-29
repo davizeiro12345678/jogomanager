@@ -35,7 +35,7 @@ for (const stream of [server.stdout, server.stderr])
 const report = {
   sha,
   node: process.version,
-  basis: "CDP CPU sampling, 4x actual CPU slowdown, unthrottled network",
+  basis: "Fresh Chrome per sample, CDP CPU sampling, 4x actual CPU slowdown, unthrottled network",
   releaseCertification: false,
   runs: [],
 };
@@ -61,11 +61,6 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   if (!ready) throw new Error(`Preview did not become ready: ${serverLog}`);
-  browser = await chromium.launch({
-    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
-    headless: true,
-  });
-  report.browser = browser.version();
   for (const route of [
     "/",
     "/guias",
@@ -74,6 +69,13 @@ try {
     "/partida-rapida",
   ])
     for (let run = 1; run <= 3; run++) {
+      // A new context can still reuse browser-process compilation caches.
+      // Cold public startup needs a fresh process for every measured sample.
+      browser = await chromium.launch({
+        executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
+        headless: true,
+      });
+      report.browser = browser.version();
       const context = await browser.newContext({
         viewport: { width: 390, height: 844 },
         deviceScaleFactor: 2.75,
@@ -157,6 +159,8 @@ try {
       await writeFile(path.join(output, "summary.json"), JSON.stringify(report, null, 2));
       console.log(JSON.stringify({ checkpoint: id, errors: errors.length, top: hot.slice(0, 5) }));
       await context.close();
+      await browser.close();
+      browser = undefined;
     }
 } finally {
   await browser?.close();

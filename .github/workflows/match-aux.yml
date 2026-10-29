@@ -30,11 +30,13 @@ jobs:
         run: npm run lint
   mongodb-contract:
     name: MongoDB driver persistence and claim fencing
-    runs-on: ubuntu-latest
+    # MongoDB 8 refuses kernels 6.19–7.0.13 (SERVER-121912). Use the supported
+    # LTS runner; changing the container image cannot fix its host kernel.
+    runs-on: ubuntu-22.04
     timeout-minutes: 6
     services:
       mongo:
-        image: mongo:8.0
+        image: mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142
         ports:
           - 27017:27017
         options: >-
