@@ -125,7 +125,7 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.jm_ack_notification(uuid,uuid,boolean,text,boolean)
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.jm_ack_notification(uuid,uuid,boolean,text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.jm_ack_notification(uuid,uuid,boolean,text,boolean) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.jm_reap_notifications()
 RETURNS TABLE(expired integer, removed integer)
