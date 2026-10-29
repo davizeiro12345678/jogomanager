@@ -33,7 +33,6 @@ const result = await fetch(`https://api.supabase.com/v1/projects/${project}/conf
   }),
   signal: AbortSignal.timeout(15000),
 });
-if (!result.ok)
-  throw new Error(`SMTP activation failed: HTTP ${result.status} (response hidden)`);
+if (!result.ok) throw new Error(`SMTP activation failed: HTTP ${result.status} (response hidden)`);
 console.log("Auth SMTP setting was accepted by Management API.");
 console.log("Still required: signup/reset/OTP inbox tests and delivery monitoring.");
