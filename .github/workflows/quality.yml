@@ -32,6 +32,8 @@ jobs:
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - run: node --test scripts/prepare-startup-baseline.test.mjs
+      - run: node --test scripts/notification-outbox-worker.test.mjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
@@ -155,6 +157,8 @@ jobs:
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-profile-fixtures.sql
       - name: Verify future tables require explicit API grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/explicit-public-grants.sql
+      - name: Verify private notification leases and post-delivery idempotency
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/notification-outbox-contract.sql
 
   game-assets:
     name: 3D asset compression contract

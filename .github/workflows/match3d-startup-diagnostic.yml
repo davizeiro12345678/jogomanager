@@ -5,6 +5,7 @@ on:
     paths:
       - "src/**"
       - "scripts/profile-public-startup.mjs"
+      - "scripts/prepare-startup-baseline.mjs"
       - ".github/workflows/match3d-startup-diagnostic.yml"
   workflow_dispatch:
 
@@ -39,9 +40,9 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
-          # Baseline must use its OWN lockfile. Sharing the candidate node_modules
-          # breaks the older TanStack createServerFn validator at runtime (HTTP 500).
-          npm ci --prefix "$RUNNER_TEMP/startup-base" --no-audit --no-fund
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          node --test scripts/prepare-startup-baseline.test.mjs
+          node scripts/prepare-startup-baseline.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline-compatibility.json"
       - name: Profile baseline then candidate with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright

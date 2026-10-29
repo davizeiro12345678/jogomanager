@@ -47,6 +47,7 @@ jobs:
       - name: Preserve analyzer and install one dependency graph for both revisions
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+          cp scripts/prepare-startup-baseline.mjs "$RUNNER_TEMP/baseline-compatibility.mjs"
           cp package.json "$RUNNER_TEMP/bundle-package.json"
           cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
           sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
@@ -61,12 +62,14 @@ jobs:
           # keep their own source files and identical installed dependencies.
           cp "$RUNNER_TEMP/bundle-package.json" package.json
           cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
+          node "$RUNNER_TEMP/baseline-compatibility.mjs" . "$RUNNER_TEMP/baseline-compatibility.json"
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
           git restore scripts/bundle-report.mjs package.json package-lock.json
+          git restore src/lib/real-football.functions.ts src/lib/email-templates
       - name: Build proposed commit on the same runner
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
@@ -79,6 +82,7 @@ jobs:
           node scripts/bundle-report.mjs candidate .output/public/assets
           cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
           cp "$RUNNER_TEMP/bundle-dependency-lock.sha256" verification/bundle-2026-10-01/dependency-lock.sha256
+          cp "$RUNNER_TEMP/baseline-compatibility.json" verification/bundle-2026-10-01/baseline-compatibility.json
           node scripts/compare-bundle-reports.mjs \
             verification/bundle-2026-10-01/baseline.json \
             verification/bundle-2026-10-01/candidate.json --check
@@ -93,4 +97,5 @@ jobs:
             verification/bundle-2026-10-01/baseline.json
             verification/bundle-2026-10-01/candidate.json
             verification/bundle-2026-10-01/dependency-lock.sha256
+            verification/bundle-2026-10-01/baseline-compatibility.json
           if-no-files-found: error
