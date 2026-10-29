@@ -37,6 +37,8 @@ vi.mock("posthog-js", () => ({
 }));
 
 it("deduplicates PostHog initialization, guards consent and uses the gated proxy", async () => {
+  // Vitest runs in Node by default; no jsdom dependency is needed here.
+  vi.stubGlobal("window", {});
   vi.stubEnv("VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY", "phc_test_only");
   vi.stubEnv("VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY", "");
   vi.stubEnv("VITE_POSTHOG_PROXY_HOST", "https://e.jogomanager.com");
@@ -69,4 +71,5 @@ it("deduplicates PostHog initialization, guards consent and uses the gated proxy
   expect(mocks.optIn).toHaveBeenCalledTimes(1);
   expect(mocks.init).toHaveBeenCalledTimes(1);
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
