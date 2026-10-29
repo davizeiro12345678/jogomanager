@@ -18,7 +18,7 @@ concurrency:
 jobs:
   profile:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -39,6 +39,8 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
+          # Compare the current PR base with one identical dependency graph.
+          # Unlike the historical fixed SHA, this base uses the supported API.
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
       - name: Profile candidate then baseline with identical public fixtures
         env:

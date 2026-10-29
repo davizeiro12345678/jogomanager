@@ -49,6 +49,12 @@ const MfaChallenge = lazy(() =>
   import("@/components/security/MfaChallenge").then((m) => ({ default: m.MfaChallenge })),
 );
 
+const AuthenticatorSettings = lazy(() =>
+  import("@/components/security/AuthenticatorSettings").then((m) => ({
+    default: m.AuthenticatorSettings,
+  })),
+);
+
 export function AuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -374,6 +380,9 @@ export function AuthPage() {
               Sair e entrar com outra conta
             </Button>
           </div>
+          <Suspense fallback={<p className="mt-5 text-sm">Carregando segurança da conta…</p>}>
+            <AuthenticatorSettings />
+          </Suspense>
         </div>
       </main>
     );

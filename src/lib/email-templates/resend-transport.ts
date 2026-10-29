@@ -24,16 +24,25 @@ export async function deliverViaResend(message: ResendTransactionalMessage): Pro
     ...(message.replyTo ? { reply_to: message.replyTo } : {}),
   });
   for (let attempt = 0; attempt < 2; attempt++) {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${message.key}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": message.idempotencyKey,
-      },
-      body,
-      signal: AbortSignal.timeout(15_000),
-    });
+    let response: Response;
+    try {
+      response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${message.key}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": message.idempotencyKey,
+        },
+        body,
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (error) {
+      // A transport disconnect may happen after the provider accepted the
+      // message. Retry once, using the exact same idempotency key and body.
+      if (attempt === 1) throw error;
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      continue;
+    }
     if (response.ok) return;
     // Invalid configuration, blocked recipients and bad API requests must
     // never be retried automatically.
