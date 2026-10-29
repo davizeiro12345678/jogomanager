@@ -28,8 +28,11 @@ export async function processBatch({ rpc, deliver, log = () => {} }) {
     const ack = await rpc(
       "jm_ack_notification",
       {
-        p_id: item.id, p_lease_token: item.lease_token,
-        p_success: success, p_terminal: terminal, p_error: errorText,
+        p_id: item.id,
+        p_lease_token: item.lease_token,
+        p_success: success,
+        p_terminal: terminal,
+        p_error: errorText,
       },
       trace,
     );
@@ -48,11 +51,15 @@ export function createTransport({ baseUrl, authToken, emailToken, fetcher = fetc
   return {
     rpc: async (name, body, trace) => {
       const result = await fetcher(new URL(`/rest/v1/rpc/${name}`, base), {
-        method: "POST", headers: {
-          apikey: authToken, authorization: `Bearer ${authToken}`,
-          "content-type": "application/json", traceparent: trace,
+        method: "POST",
+        headers: {
+          apikey: authToken,
+          authorization: `Bearer ${authToken}`,
+          "content-type": "application/json",
+          traceparent: trace,
         },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(8000),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(8000),
       });
       if (!result.ok) throw new Error(`Queue RPC ${name} HTTP ${result.status}`);
       return result.json();
@@ -61,17 +68,27 @@ export function createTransport({ baseUrl, authToken, emailToken, fetcher = fetc
       if (!/^[a-f0-9]{64}$/.test(job.dedupe_key))
         throw Object.assign(new Error("Invalid deduplication key"), { permanent: true });
       const p = job.payload;
-      if (!p || ![p.to, p.from, p.subject, p.html, p.text].every(
-        (s) => typeof s === "string" && s.length > 0,
-      )) throw Object.assign(new Error("Invalid notification payload"), { permanent: true });
+      if (
+        !p ||
+        ![p.to, p.from, p.subject, p.html, p.text].every(
+          (s) => typeof s === "string" && s.length > 0,
+        )
+      )
+        throw Object.assign(new Error("Invalid notification payload"), { permanent: true });
       const result = await fetcher("https://api.resend.com/emails", {
-        method: "POST", headers: {
-          authorization: `Bearer ${emailToken}`, "content-type": "application/json",
-          "Idempotency-Key": job.dedupe_key, traceparent: trace,
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${emailToken}`,
+          "content-type": "application/json",
+          "Idempotency-Key": job.dedupe_key,
+          traceparent: trace,
         },
         body: JSON.stringify({
-          from: p.from, to: [p.to], subject: p.subject,
-          html: p.html, text: p.text,
+          from: p.from,
+          to: [p.to],
+          subject: p.subject,
+          html: p.html,
+          text: p.text,
         }),
         signal: AbortSignal.timeout(15000),
       });
@@ -94,10 +111,14 @@ async function main() {
     authToken: required("SUPABASE_SERVICE_ROLE_KEY"),
     emailToken: required("RESEND_API_KEY"),
   });
-  console.log(JSON.stringify(await processBatch({
-    ...transport,
-    log: (event) => console.log(JSON.stringify(event)),
-  })));
+  console.log(
+    JSON.stringify(
+      await processBatch({
+        ...transport,
+        log: (event) => console.log(JSON.stringify(event)),
+      }),
+    ),
+  );
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url))
   main().catch((err) => {
