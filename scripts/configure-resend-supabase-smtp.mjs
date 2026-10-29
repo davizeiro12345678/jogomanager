@@ -21,9 +21,7 @@ const result = await fetch(`https://api.supabase.com/v1/projects/${project}/conf
     "content-type": "application/json",
   },
   body: JSON.stringify({
-    external_email_enabled: true,
-    mailer_secure_email_change_enabled: true,
-    mailer_autoconfirm: false,
+    // Change only SMTP transport fields; preserve existing signup and email policies.
     smtp_admin_email: sender,
     smtp_host: "smtp.resend.com",
     smtp_port: 465,
