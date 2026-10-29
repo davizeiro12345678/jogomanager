@@ -1,3 +1,5 @@
+import { readLimitedWebhookBody } from "../_shared/read-webhook-body.mjs";
+
 // Resend delivery events. HTTPS endpoint is public; access requires a fresh,
 // valid Svix/Standard-Webhooks HMAC verified over the unmodified request body.
 const ORIGIN = Deno.env.get("SUPABASE_URL") ?? "";
@@ -44,11 +46,10 @@ Deno.serve(async (req: Request) => {
   const seconds = Number(timestamp);
   if (!Number.isSafeInteger(seconds) || Math.abs(Date.now() / 1000 - seconds) > 300)
     return response(400, "Webhook expired");
-  const advertised = Number(req.headers.get("content-length") ?? "0");
-  if (advertised > 131072) return response(413, "Payload too large");
-  const raw = await req.text().catch(() => null);
-  if (raw === null) return response(400, "Invalid body");
-  if (new TextEncoder().encode(raw).length > 131072) return response(413, "Payload too large");
+  const body = await readLimitedWebhookBody(req, 131072);
+  if (body.kind === "too_large") return response(413, "Payload too large");
+  if (body.kind !== "ok") return response(400, "Invalid body");
+  const raw = body.text;
   let verified = false;
   try {
     const secret = await rpc<string>("jm_resend_webhook_signing_key", {});
