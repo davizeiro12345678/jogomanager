@@ -56,7 +56,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   const hasVisual = frames.some((frame) => frame.v !== undefined);
   const visual = hasVisual ? frames.map((frame) => frame.v ?? null) : undefined;
 
-  frames.forEach((frame, frameIndex) => {
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex += 1) {
+    const frame = frames[frameIndex]!;
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
@@ -74,7 +75,7 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
       positions[target + 3] = integer(frame.p[source + 3] ?? 0 / 1);
       actions[frameIndex * playerCount + playerIndex] = actionCode(frame.a[playerIndex] ?? null);
     }
-  });
+  }
 
   return {
     version: REPLAY_FORMAT_V3,
