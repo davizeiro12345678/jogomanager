@@ -7,8 +7,13 @@ const lease = {
   dedupe_key: "a".repeat(64),
   lease_token: "22222222-2222-4222-8222-222222222222",
   trace_id: "b".repeat(32),
-  payload: { to: "test@example.test", from: "no-reply@example.test",
-    subject: "Hello", html: "<p>Hello</p>", text: "Hello" },
+  payload: {
+    to: "test@example.test",
+    from: "no-reply@example.test",
+    subject: "Hello",
+    html: "<p>Hello</p>",
+    text: "Hello",
+  },
 };
 test("passes the same idempotency key and trace to the provider", async () => {
   const requests = [];
@@ -18,9 +23,7 @@ test("passes the same idempotency key and trace to the provider", async () => {
     emailToken: "test-only",
     fetcher: async (url, options) => {
       requests.push({ url: String(url), options });
-      return String(url).includes("/emails")
-        ? Response.json({ id: "sent" })
-        : Response.json(true);
+      return String(url).includes("/emails") ? Response.json({ id: "sent" }) : Response.json(true);
     },
   });
   await client.deliver(lease, traceparent(lease.trace_id));
@@ -34,10 +37,15 @@ test("acknowledges only after provider confirmation", async () => {
       calls.push(name);
       return name === "jm_claim_notifications" ? [lease] : true;
     },
-    deliver: async () => { calls.push("send"); },
+    deliver: async () => {
+      calls.push("send");
+    },
   });
   assert.deepEqual(calls, [
-    "jm_reap_notifications", "jm_claim_notifications", "send", "jm_ack_notification",
+    "jm_reap_notifications",
+    "jm_claim_notifications",
+    "send",
+    "jm_ack_notification",
   ]);
   assert.equal(outcome.delivered, 1);
 });
@@ -50,7 +58,9 @@ test("temporary failures are retried and permanent failures go to dead letters",
         if (name === "jm_ack_notification") ack = args;
         return true;
       },
-      deliver: async () => { throw Object.assign(new Error("simulated"), { permanent }); },
+      deliver: async () => {
+        throw Object.assign(new Error("simulated"), { permanent });
+      },
     });
     assert.equal(ack.p_success, false);
     assert.equal(ack.p_terminal, permanent);
@@ -58,11 +68,17 @@ test("temporary failures are retried and permanent failures go to dead letters",
   }
 });
 test("rejects an unsafe project origin and malformed jobs", async () => {
-  assert.throws(() => createTransport({
-    baseUrl: "http://example.test", authToken: "test", emailToken: "test",
-  }));
+  assert.throws(() =>
+    createTransport({
+      baseUrl: "http://example.test",
+      authToken: "test",
+      emailToken: "test",
+    }),
+  );
   const worker = createTransport({
-    baseUrl: "https://sample.supabase.co", authToken: "test", emailToken: "test",
+    baseUrl: "https://sample.supabase.co",
+    authToken: "test",
+    emailToken: "test",
   });
   await assert.rejects(worker.deliver({ ...lease, dedupe_key: "x" }, traceparent()));
 });
