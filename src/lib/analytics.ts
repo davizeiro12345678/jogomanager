@@ -9,11 +9,18 @@ import type { PostHog } from "posthog-js";
 import { readConsent } from "./consent";
 
 let client: PostHog | null = null;
-let starting = false;
+let initializing: Promise<PostHog | null> | null = null;
+
+const MANAGED_POSTHOG_PROXY = "https://e.jogomanager.com";
 
 function apiHost() {
-  const region = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_REGION"] || "eu";
-  return region === "us" ? "https://us.i.posthog.com" : "https://eu.i.posthog.com";
+  // Activate only after DNS + TLS readiness is verified. Until then use the
+  // original PostHog ingestion host, so analytics keeps working during rollout.
+  if (import.meta.env["VITE_POSTHOG_PROXY_HOST"] === MANAGED_POSTHOG_PROXY) {
+    return MANAGED_POSTHOG_PROXY;
+  }
+  const region = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_REGION"] || "us";
+  return region === "eu" ? "https://eu.i.posthog.com" : "https://us.i.posthog.com";
 }
 
 export async function initAnalytics(): Promise<PostHog | null> {
@@ -32,27 +39,37 @@ export async function initAnalytics(): Promise<PostHog | null> {
     return client;
   }
   const token = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY"];
-  if (!token || starting) return null;
-  starting = true;
-  try {
-    const { default: posthog } = await import("posthog-js");
-    if (!readConsent().analytics) return null;
-    posthog.init(token, {
-      api_host: apiHost(),
-      capture_pageview: true,
-      capture_pageleave: true,
-      person_profiles: "identified_only",
-      autocapture: false,
-      disable_session_recording: true,
-    });
-    client = posthog;
-    if (client.has_opted_out_capturing()) client.opt_in_capturing();
-    return posthog;
-  } catch {
-    return null;
-  } finally {
-    starting = false;
-  }
+  if (!token) return null;
+  // Share the same asynchronous SDK initialization between concurrent callers.
+  // The previous "starting" boolean returned null and dropped early callers.
+  if (initializing) return initializing;
+  initializing = (async (): Promise<PostHog | null> => {
+    try {
+      const { default: posthog } = await import("posthog-js");
+      // Consent may have been revoked while the SDK chunk was downloading.
+      if (!readConsent().analytics) return null;
+      const host = apiHost();
+      posthog.init(token, {
+        api_host: host,
+        ...(host === MANAGED_POSTHOG_PROXY
+          ? { ui_host: "https://us.posthog.com" }
+          : {}),
+        capture_pageview: true,
+        capture_pageleave: true,
+        person_profiles: "identified_only",
+        autocapture: false,
+        disable_session_recording: true,
+      });
+      client = posthog;
+      if (client.has_opted_out_capturing()) client.opt_in_capturing();
+      return posthog;
+    } catch {
+      return null;
+    } finally {
+      initializing = null;
+    }
+  })();
+  return initializing;
 }
 
 /** Google Analytics 4 (gtag.js) — carregado apenas no navegador. */
