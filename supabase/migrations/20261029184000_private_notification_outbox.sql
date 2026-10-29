@@ -98,7 +98,7 @@ REVOKE ALL ON FUNCTION public.jm_claim_notifications(integer) FROM PUBLIC, anon,
 GRANT EXECUTE ON FUNCTION public.jm_claim_notifications(integer) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.jm_ack_notification(
-  p_id uuid, p_lease_token uuid, p_success boolean, p_error text DEFAULT NULL
+  p_id uuid, p_lease_token uuid, p_success boolean, p_error text DEFAULT NULL, p_terminal boolean DEFAULT false
 ) RETURNS boolean
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog AS $$
 DECLARE v_changed integer;
@@ -108,7 +108,7 @@ BEGIN
   END IF;
   UPDATE notification_private.outbox o
   SET status = CASE WHEN p_success THEN 'delivered'
-                  WHEN o.attempts >= 8 THEN 'dead' ELSE 'pending' END,
+                  WHEN o.attempts >= 8 OR p_terminal THEN 'dead' ELSE 'pending' END,
       completed_at = CASE WHEN p_success THEN now() ELSE NULL END,
       lease_until = NULL, lease_token = NULL,
       run_after = CASE WHEN p_success THEN o.run_after ELSE
@@ -123,7 +123,7 @@ BEGIN
   GET DIAGNOSTICS v_changed = ROW_COUNT;
   RETURN v_changed=1;
 END $$;
-REVOKE ALL ON FUNCTION public.jm_ack_notification(uuid,uuid,boolean,text)
+REVOKE ALL ON FUNCTION public.jm_ack_notification(uuid,uuid,boolean,text,boolean)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.jm_ack_notification(uuid,uuid,boolean,text) TO service_role;
 
