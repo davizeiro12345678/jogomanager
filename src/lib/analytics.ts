@@ -6,6 +6,7 @@
  * (partida iniciada, carreira criada, compra concluída) e navegação.
  */
 import type { PostHog } from "posthog-js";
+import { readConsent } from "./consent";
 
 let client: PostHog | null = null;
 let starting = false;
@@ -18,16 +19,24 @@ function apiHost() {
 export async function initAnalytics(): Promise<PostHog | null> {
   if (typeof window === "undefined") return null;
   // Analytics é opcional: só carrega depois do consentimento explícito.
-  const { readConsent } = await import("./consent");
-  if (!readConsent().analytics) return null;
+  if (!readConsent().analytics) {
+    client?.opt_out_capturing();
+    if (gaId) window[`ga-disable-${gaId}`] = true;
+    void import("./firebase").then((m) => m.disableFirebaseAnalytics()).catch(() => undefined);
+    return null;
+  }
   initGoogleAnalytics();
-  void import("./firebase").then((m) => m.initFirebase({ analytics: true }));
-  if (client) return client;
+  void import("./firebase").then((m) => m.initFirebase({ analytics: true })).catch(() => undefined);
+  if (client) {
+    if (client.has_opted_out_capturing()) client.opt_in_capturing();
+    return client;
+  }
   const token = import.meta.env["VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY"];
   if (!token || starting) return null;
   starting = true;
   try {
     const { default: posthog } = await import("posthog-js");
+    if (!readConsent().analytics) return null;
     posthog.init(token, {
       api_host: apiHost(),
       capture_pageview: true,
@@ -37,6 +46,7 @@ export async function initAnalytics(): Promise<PostHog | null> {
       disable_session_recording: true,
     });
     client = posthog;
+    if (client.has_opted_out_capturing()) client.opt_in_capturing();
     return posthog;
   } catch {
     return null;
@@ -52,13 +62,18 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: GtagFn;
+    [key: `ga-disable-${string}`]: boolean | undefined;
   }
 }
 
 let gaId: string | null = null;
 
 function initGoogleAnalytics() {
-  if (typeof window === "undefined" || gaId) return;
+  if (typeof window === "undefined") return;
+  if (gaId) {
+    window[`ga-disable-${gaId}`] = false;
+    return;
+  }
   const id = import.meta.env["VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY"];
   if (!id) return;
   gaId = id;
@@ -78,7 +93,7 @@ function initGoogleAnalytics() {
 /** Registra uma nova tela (SPA) no Google Analytics. */
 export function trackPageView(path: string) {
   try {
-    if (gaId) window.gtag?.("event", "page_view", { page_path: path });
+    if (gaId && readConsent().analytics) window.gtag?.("event", "page_view", { page_path: path });
   } catch {
     /* ignora: telemetria é best-effort */
   }
@@ -86,6 +101,7 @@ export function trackPageView(path: string) {
 
 /** Registra um evento do jogo. Nunca lança: análise não pode quebrar a partida. */
 export function track(event: string, props?: Record<string, string | number | boolean>) {
+  if (!readConsent().analytics) return;
   try {
     client?.capture(event, props);
   } catch {
