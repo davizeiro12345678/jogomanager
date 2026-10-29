@@ -1127,9 +1127,13 @@ export const LEGACY_LEAGUES: League[] = BASE_LEAGUES.map((l) => ({
   clubs: applyLeagueFill(l.id, l.clubs),
 }));
 
-const legacyClubs: Record<string, Club> = Object.fromEntries(
-  LEGACY_LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c]),
-);
+// Index directly: flattening and allocating an entry tuple for every club
+// creates tens of thousands of temporary objects during selection startup.
+function indexClubs(leagues: readonly League[], index: Record<string, Club> = {}) {
+  for (const league of leagues) for (const club of league.clubs) index[club.id] = club;
+  return index;
+}
+const legacyClubs = indexClubs(LEGACY_LEAGUES);
 const current = LEGACY_LEAGUES.filter((l) => !CATALOG_ALIASES[l.id]).map((l) =>
   applyMembership(l, legacyClubs),
 );
@@ -1163,10 +1167,9 @@ export const BUNDLED_LEAGUES: readonly League[] = Object.freeze(
 );
 
 export const LEAGUES: League[] = current;
-export const CLUBS: Record<string, Club> = {
-  ...legacyClubs,
-  ...Object.fromEntries(LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c])),
-};
+// Membership construction has finished; reuse its private index rather than
+// copying the entire registry before overwriting the current club identities.
+export const CLUBS: Record<string, Club> = indexClubs(LEAGUES, legacyClubs);
 
 export function getLeague(id: string): League {
   return LEAGUES.find((l) => l.id === id) ?? LEGACY_LEAGUES.find((l) => l.id === id) ?? LEAGUES[0]!;

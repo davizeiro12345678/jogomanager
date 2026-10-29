@@ -65,7 +65,8 @@ function reportCacheError(error: unknown, phase: "read" | "write" | "load") {
 async function readCache(): Promise<OfficialAssets | null> {
   let parsed: { at: number; data: OfficialAssets } | null | undefined;
   try {
-    parsed = await get(CACHE_KEY);
+    const stored = await get(CACHE_KEY);
+    parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
   } catch {
     // An existing offline catalogue remains usable if IndexedDB is denied.
   }
@@ -102,9 +103,10 @@ export function loadOfficialAssets(): Promise<void> {
         const data = await getOfficialAssets();
         if (data && (Object.keys(data.crests).length || Object.keys(data.kits).length)) {
           cache = data;
-          // Persist the structured catalogue asynchronously. Synchronous JSON +
-          // localStorage writes stalled the selection UI on slower devices.
-          void set(CACHE_KEY, { at: Date.now(), data }).catch((error) => {
+          // A string avoids IndexedDB's expensive synchronous structured clone
+          // of thousands of named properties. Disk persistence stays asynchronous;
+          // readCache also accepts the preceding object representation.
+          void set(CACHE_KEY, JSON.stringify({ at: Date.now(), data })).catch((error) => {
             reportCacheError(error, "write");
           });
         }

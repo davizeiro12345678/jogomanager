@@ -124,11 +124,11 @@ const projectConfig = defineConfig({
                 includeDependenciesRecursively: false,
               },
               {
-                // Every router creates a QueryClient. Keep its constructor's
-                // existing static closure together, without pulling observers
-                // and optional React query tools into public startup.
+                // Every router creates a QueryClient and mounts its provider.
+                // Keep those already co-loaded modules in one transport;
+                // optional query observers remain outside public startup.
                 name: "query-client-runtime",
-                test: /[\\/]node_modules[\\/]@tanstack[\\/]query-core[\\/]build[\\/]modern[\\/](?:queryClient|queryCache|query|mutationCache|mutation|utils|retryer|notifyManager|focusManager|onlineManager|environmentManager|removable|subscribable|timeoutManager|infiniteQueryBehavior)\.js$/,
+                test: /[\\/]node_modules[\\/]@tanstack[\\/](?:query-core[\\/]build[\\/]modern[\\/](?:queryClient|queryCache|query|mutationCache|mutation|utils|retryer|notifyManager|focusManager|onlineManager|environmentManager|removable|subscribable|timeoutManager|infiniteQueryBehavior)|react-query[\\/]build[\\/]modern[\\/]QueryClientProvider)\.js$/,
                 includeDependenciesRecursively: false,
               },
               {

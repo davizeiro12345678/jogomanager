@@ -30,6 +30,11 @@ beforeEach(async () => {
 
 afterEach(() => vi.unstubAllGlobals());
 
+function persisted() {
+  expect(set.mock.calls[0]?.[0]).toBe("manager3d.official.v3");
+  return JSON.parse(set.mock.calls[0]![1]);
+}
+
 describe("official asset browser cache", () => {
   it("does not fetch the catalog while official appearance is disabled, and loads it when enabled", async () => {
     stored.set("manager3d.officialLook", "off");
@@ -57,7 +62,7 @@ describe("official asset browser cache", () => {
     );
     await assets.loadOfficialAssets();
     expect(getOfficialAssets).toHaveBeenCalledTimes(1);
-    expect(set).toHaveBeenCalledWith("manager3d.official.v3", {
+    expect(persisted()).toEqual({
       at: expect.any(Number),
       data,
     });
@@ -74,8 +79,7 @@ describe("official asset browser cache", () => {
     stored.set("manager3d.official.v3", JSON.stringify({ at: Date.now() - 8 * 86_400_000, data }));
     await assets.loadOfficialAssets();
     expect(getOfficialAssets).toHaveBeenCalledTimes(1);
-    const [key, written] = set.mock.calls[0]!;
-    expect(key).toBe("manager3d.official.v3");
+    const written = persisted();
     expect(written.at).toBeGreaterThan(Date.now() - 1_000);
     expect(written.data).toEqual(data);
   });
@@ -89,7 +93,7 @@ describe("official asset browser cache", () => {
     expect(getOfficialAssets).toHaveBeenCalledTimes(2);
   });
 
-  it("publishes downloaded crests without a synchronous catalogue write or waiting for persistence", async () => {
+  it("publishes downloaded crests without writing localStorage or waiting for persistence", async () => {
     set.mockImplementation(() => new Promise(() => {}));
     const listener = vi.fn();
     assets.subscribeOfficial(listener);
@@ -97,7 +101,7 @@ describe("official asset browser cache", () => {
     expect(assets.officialCrest("club")).toBe(data.crests.club);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(stored.has("manager3d.official.v3")).toBe(false);
-    expect(set).toHaveBeenCalledWith("manager3d.official.v3", {
+    expect(persisted()).toEqual({
       at: expect.any(Number),
       data,
     });
@@ -144,9 +148,29 @@ describe("official asset browser cache", () => {
     await assets.loadOfficialAssets();
     expect(getOfficialAssets).toHaveBeenCalledTimes(1);
     expect(assets.officialCrest("club")).toBe(data.crests.club);
-    expect(set).toHaveBeenCalledWith("manager3d.official.v3", {
+    expect(persisted()).toEqual({
       at: expect.any(Number),
       data,
     });
+  });
+
+  it("restores the new string representation after reload without fetching the catalogue", async () => {
+    await assets.loadOfficialAssets();
+    const written = set.mock.calls[0]![1];
+    expect(typeof written).toBe("string");
+    get.mockResolvedValue(written);
+    getOfficialAssets.mockClear();
+    vi.resetModules();
+    const reloaded = await import("./officialAssets");
+    await reloaded.loadOfficialAssets();
+    expect(reloaded.officialCrest("club")).toBe(data.crests.club);
+    expect(getOfficialAssets).not.toHaveBeenCalled();
+  });
+
+  it("recovers from malformed strings in IndexedDB", async () => {
+    get.mockResolvedValue("{broken");
+    await assets.loadOfficialAssets();
+    expect(getOfficialAssets).toHaveBeenCalledOnce();
+    expect(assets.officialCrest("club")).toBe(data.crests.club);
   });
 });

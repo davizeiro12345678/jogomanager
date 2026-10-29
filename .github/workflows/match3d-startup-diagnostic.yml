@@ -47,6 +47,7 @@ jobs:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright
         run: |
           export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/startup-chrome-path")"
+          node .github/scripts/benchmark-public-cache.mjs "$RUNNER_TEMP/startup-evidence/cache-encoding.json"
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/profile-public-startup.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/startup-evidence/candidate" 4176 "$CANDIDATE_SHA"
           # Preserve candidate evidence even if the historical source cannot
