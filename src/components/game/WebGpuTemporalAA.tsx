@@ -5,7 +5,10 @@ import {
   hasExternalViewOffset,
   temporalAAOptedIn,
   temporalUpscaleOptedIn,
+  webgpuHiZOptedIn,
 } from "@/game/graphics/temporal-settings";
+import type { GpuDepthPyramid } from "@/game/graphics/webgpu-hiz";
+import * as THREE from "three";
 import { hasNativeWebGPUBackend } from "./renderer";
 
 /**
@@ -29,6 +32,7 @@ export function WebGpuTemporalAA() {
   const pipeline = useRef<TemporalPipeline | null>(null);
   const failed = useRef(false);
   const antialias = useRef<TemporalNode | null>(null);
+  const depthPyramid = useRef<GpuDepthPyramid | null>(null);
   const history = useRef(new TemporalCameraHistory());
   const hadExternalView = useRef(false);
   const recreatePipeline = useRef<(() => void) | null>(null);
@@ -44,8 +48,9 @@ export function WebGpuTemporalAA() {
       import("three/tsl"),
       import("three/addons/tsl/display/TRAANode.js"),
       import("three/addons/tsl/display/TAAUNode.js"),
+      import("@/game/graphics/webgpu-hiz"),
     ])
-      .then(([webgpu, tsl, nodes, upscaling]) => {
+      .then(([webgpu, tsl, nodes, upscaling, hiZ]) => {
         if (!live) return;
         const renderer = gl as unknown as InstanceType<typeof webgpu.WebGPURenderer>;
         const create = () => {
@@ -70,7 +75,24 @@ export function WebGpuTemporalAA() {
           graph.outputNode = effect;
           pipeline.current = graph;
           antialias.current = effect;
+          if (webgpuHiZOptedIn()) {
+            try {
+              const pixels = renderer.getDrawingBufferSize(new THREE.Vector2());
+              const scale = upscale ? 0.75 : 1;
+              depthPyramid.current = hiZ.createWebGpuDepthPyramid(
+                renderer,
+                pass.getTextureNode("depth"),
+                Math.max(1, Math.round(pixels.x * scale)),
+                Math.max(1, Math.round(pixels.y * scale)),
+              );
+            } catch {
+              // Failed optional Hi-Z allocations must not disable temporal AA.
+              depthPyramid.current = null;
+            }
+          }
           releasePipeline.current = () => {
+            depthPyramid.current?.dispose();
+            depthPyramid.current = null;
             if (pipeline.current === graph) pipeline.current = null;
             if (antialias.current === effect) antialias.current = null;
             effect.dispose();
@@ -127,6 +149,14 @@ export function WebGpuTemporalAA() {
       return;
     }
     pipeline.current.render();
+    if (depthPyramid.current) {
+      try {
+        depthPyramid.current.compute();
+      } catch {
+        depthPyramid.current.dispose();
+        depthPyramid.current = null;
+      }
+    }
   }, 1);
 
   return null;
