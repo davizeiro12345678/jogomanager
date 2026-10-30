@@ -146,7 +146,7 @@ export function bakeVertexRadiosityBvh(
         ray.direction.copy(direction);
         const hit = bvh.raycastFirst(ray, THREE.DoubleSide, 0, maxDistance);
         rays++;
-        if (!hit || hit.faceIndex == null) continue;
+        if (!hit || typeof hit.faceIndex !== "number") continue;
         const first = hit.faceIndex * 3;
         a.fromBufferAttribute(vertices, first);
         b.fromBufferAttribute(vertices, first + 1);
