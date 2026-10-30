@@ -258,21 +258,36 @@ export type Database = {
       }
       checkout_session_owners: {
         Row: {
+          contents_snapshot: Json | null
           created_at: string
+          currency: string | null
           environment: string
+          price_cents: number | null
+          product_key: string | null
           session_id: string
+          stripe_price_id: string | null
           user_id: string
         }
         Insert: {
+          contents_snapshot?: Json | null
           created_at?: string
+          currency?: string | null
           environment: string
+          price_cents?: number | null
+          product_key?: string | null
           session_id: string
+          stripe_price_id?: string | null
           user_id: string
         }
         Update: {
+          contents_snapshot?: Json | null
           created_at?: string
+          currency?: string | null
           environment?: string
+          price_cents?: number | null
+          product_key?: string | null
           session_id?: string
+          stripe_price_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1180,6 +1195,33 @@ export type Database = {
           },
         ]
       }
+      payment_webhook_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_id: string
+          event_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_id: string
+          event_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       player_career_clubs: {
         Row: {
           appearances: number | null
@@ -1236,27 +1278,33 @@ export type Database = {
       player_careers: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           slot: number
           state: Json
+          sync_revision: number
           updated_at: string
           user_id: string
           verified_progress: boolean
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           slot: number
           state: Json
+          sync_revision?: number
           updated_at?: string
           user_id: string
           verified_progress?: boolean
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           slot?: number
           state?: Json
+          sync_revision?: number
           updated_at?: string
           user_id?: string
           verified_progress?: boolean
@@ -1544,6 +1592,33 @@ export type Database = {
           preferences?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      purchase_payment_reviews: {
+        Row: {
+          event_created: number
+          event_id: string
+          reference: string
+          refunded_amount_cents: number
+          review_status: string
+          updated_at: string
+        }
+        Insert: {
+          event_created: number
+          event_id: string
+          reference: string
+          refunded_amount_cents?: number
+          review_status: string
+          updated_at?: string
+        }
+        Update: {
+          event_created?: number
+          event_id?: string
+          reference?: string
+          refunded_amount_cents?: number
+          review_status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1931,6 +2006,10 @@ export type Database = {
           training_until: string
         }[]
       }
+      begin_payment_webhook_event: {
+        Args: { _event_id: string; _event_type: string }
+        Returns: boolean
+      }
       claim_api_football_import_phase: {
         Args: never
         Returns: {
@@ -1956,6 +2035,10 @@ export type Database = {
           scout_reports: number
           training_boosts: number
         }[]
+      }
+      finish_payment_webhook_event: {
+        Args: { _event_id: string; _succeeded: boolean }
+        Returns: undefined
       }
       fulfill_store_purchase: {
         Args: {
@@ -1997,6 +2080,32 @@ export type Database = {
       }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
+      mutate_player_career: {
+        Args: {
+          p_expected_revision: number
+          p_operation: string
+          p_slot: number
+          p_state?: Json
+        }
+        Returns: {
+          new_revision: number
+          status: string
+        }[]
+      }
+      reconcile_purchase_payment_review: {
+        Args: {
+          _event_created: number
+          _event_id: string
+          _event_type: string
+          _reference: string
+          _refunded_amount_cents?: number
+        }
+        Returns: undefined
+      }
+      reconcile_subscription_wallet: {
+        Args: { _environment: string; _user_id: string }
         Returns: boolean
       }
       record_active_time: {
