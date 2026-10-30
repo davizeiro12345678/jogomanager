@@ -22,6 +22,30 @@ and saved career snapshots must remain backwards compatible.
   reconstruction of stadium materials and static merge groups.
 - **Geometry cleanup:** temporary shell/pylon geometries are disposed after
   their contents are copied to the baked exterior geometry.
+- **TRAA guard:** the opt-in WebGPU pipeline now discards color/velocity/depth
+  history on cinematic cuts, zoom discontinuities and teleports. External
+  view offsets bypass r186's destructive temporal jitter; on returning to a
+  normal projection the history is rebuilt. This is not the upstream r188
+  fix for previous-depth or instanced-velocity buffers.
+- **Probe GI:** opt-in indoor cutscenes use the native GPU-resident
+  `LightProbeGrid` on WebGPU (with bounded falloff), or
+  `LightProbeGridWebGL` on WebGL2. Both bake only once per set and retain
+  the original lighting on unsupported drivers. Neither backend implements
+  the upstream unmerged Chebyshev DDGI visibility weighing.
+- **FP16 volumes:** preallocated exponent/shift tables convert 32-bit HDR
+  voxels to 16-bit payloads directly from typed-array bit patterns, including
+  negative-zero preservation and unusual-value fallback to the official Three
+  converter. A 32k-value equivalence test and CodSpeed benchmark were added.
+- **PMREM budget:** the static stadium environment now uses power-of-two
+  capture sizes (64/128/256), scaled by quality budget rather than oversized
+  arbitrary 192/384 resolutions. This reduces capture allocations but is
+  not compute-shader PMREM.
+- **CSM option:** the opt-in native WebGPU 3-cascade shadow node from r186
+  is enabled on high quality with camera-projection-dependent frustum updates.
+  Shadow GPU write counts have not been measured.
+- **CodSpeed visibility:** graphics preparation benchmarks now cover
+  batched-versus-independent beams and FP16 conversion against scalar Three,
+  in addition to all previous game-engine benchmarks.
 
 ## Not included in the game renderer yet
 
@@ -31,15 +55,15 @@ Do not insert patches from unmerged PRs into a paid production application.
 
 | Request | Correct adoption gate |
 | --- | --- |
-| TAA depth history and velocity across multiple passes | Compare #35235, #35236, #35239 against a released, tested Three.js version; integrate with WebGPU render graph and measure ghosting on 1k+ moving instances. |
-| Temporal jitter and custom projection | Validate projection restore, reverse depth, camera cuts, aspect changes and LOD teleport reset against native TRAA/TAAU. Never stack jitter on top of R3F camera updates without view-offset testing. |
-| DDGI probe light-leak reduction | Evaluate #35174 visibility weighting and #35187 influence bounds only after benchmarked probe layout, depth data and gameplay memory budgets. |
-| GPU compute PMREM | Evaluate #35130 after release and compare on the player's own adapter. Avoid dynamic PMREM for a stadium with static environment until evidence justifies it. |
-| Half-float conversion improvements | Use the upstream released loader path and validate sRGB versus linear data, NaN handling and mobile GPU formats; do not reinterpret HDR bytes manually. |
-| Cascaded shadow GPU write reduction | The match currently uses directional shadow maps, not the cited experimental CSM graph. Introduce only with shadow quality parity and a GPU timestamp/query. |
-| GPU-driven meshlets / LOD and occlusion | Requires preprocessed clusters, a WebGPU compute pipeline, indirect draws, and a robust WebGL2 CPU fallback. Do not mislabel ordinary BatchedMesh as meshlets. |
-| Full shared-geometry draw ranges | Consider #35112 after its target release, and validate mesh bounds against multi-draw positions and raycasting. |
-| Material invalidation -98% | Microtask coalescing is implemented but the exact 98% must be benchmarked from material rebuild and shader compile counters. |
+| TAA depth history / motion across passes | Camera-cut invalidation and view-offset safe fallback implemented. Upstream #35235/#35236/#35239 are still required for fully correct depth/velocity history and thousands of moving instances. |
+| Temporal jitter and custom projection | External view offsets use the stable render path to prevent r186 TRAA from overwriting the projection; true jitter-preserving TAA awaits upstream. |
+| DDGI light leaking | Bounded room-local WebGPU probe volumes implemented; true DDGI visibility weighting across walls awaits #35174/#35187. |
+| GPU compute PMREM | Power-of-two budget implemented; compute kernel #35130 remains an upstream open experimental PR. |
+| Half-float 5.2× conversion | Fast bit-pattern converter implemented with parity tests. No target-device 5.2× speedup has been measured yet. |
+| CSM from 302 to 7 GPU writes | Native CSM opt-in and frustum update throttling implemented. This exact reduction has not been profiled and must not be claimed. |
+| GPU-driven meshlets, GPU occlusion, indirect draws | **Not shipped.** Requires meshlet preprocessing, GPU visibility buffers, indirect-draw integration and multi-device validation; unrelated to ordinary BatchedMesh. |
+| Full shared-geometry draw ranges | BatchedMesh implemented for exterior cones; upstream #35112 still pending for arbitrary mesh draw ranges. |
+| Material invalidation 98% | Same-turn KTX2 coalescing implemented; exact 98% remains unmeasured. |
 
 ## Required release evidence
 
