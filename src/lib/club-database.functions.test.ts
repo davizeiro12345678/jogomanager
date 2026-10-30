@@ -67,7 +67,7 @@ describe("public club data integration", () => {
           photo_url: "https://images.example/venue.png",
         });
       }
-      if (url.pathname.endsWith("/official_events_catalog"))
+      if (url.pathname.endsWith("/official_events"))
         return Response.json([
           {
             source_id: "af:1",
