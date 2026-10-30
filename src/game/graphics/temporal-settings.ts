@@ -19,6 +19,16 @@ export function temporalUpscaleOptedIn(): boolean {
   }
 }
 
+/** Enables the actual GPU compute depth pyramid for native WebGPU only.
+ * The depth data never crosses the CPU boundary. */
+export function webgpuHiZOptedIn(): boolean {
+  try {
+    return globalThis.localStorage?.getItem("manager3d.webgpu.hiz") === "on";
+  } catch {
+    return false;
+  }
+}
+
 /** r186 TRAANode replaces a camera's pre-existing view offset during its
  * jitter pass. Until the upstream projection-preservation patch is released,
  * use the ordinary renderer for viewports/cameras that specify one. */
