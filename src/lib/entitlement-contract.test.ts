@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   LOCAL_VIP_OFFERS,
   applyEntitlementEvent,
-  assertCheckoutProductNonPayToWin,
+  assertCheckoutProductAllowed,
   assertLocalVipCatalogPolicy,
   assertNonPayToWin,
   effectiveEntitlementState,
@@ -180,7 +180,7 @@ describe("VIP entitlement contract", () => {
 
   it("allows cosmetic checkout products while denying every competitive legacy product shape", () => {
     expect(() =>
-      assertCheckoutProductNonPayToWin({
+      assertCheckoutProductAllowed({
         key: "theme_pack",
         kind: "cosmetic",
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
@@ -209,7 +209,7 @@ describe("VIP entitlement contract", () => {
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
       },
     ]) {
-      expect(() => assertCheckoutProductNonPayToWin(product)).toThrow(/anti-pay-to-win/i);
+      expect(() => assertCheckoutProductAllowed(product)).toThrow(/anti-pay-to-win/i);
     }
   });
 });
