@@ -2,6 +2,11 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
+import { nearestCrowdPoolDepth } from "@/game/graphics/crowd-pool-occlusion";
+import {
+  projectionsNearlyEqual,
+  webGpuDepthSnapshot,
+} from "@/game/graphics/webgpu-depth-registry";
 import { supporterGeometry } from "@/game/crowd-geometry";
 import { crowdLodMaterial } from "@/game/crowd-lod-material";
 
@@ -189,7 +194,10 @@ export function CrowdLod({
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
   const renderer = useThree((state) => state.gl);
   const indirect = useRef<{
-    dispatch(counts: readonly number[]): void;
+    dispatch(
+      counts: readonly number[],
+      occlusion?: Readonly<{ texture: THREE.Texture; nearestDepths: readonly number[] }>,
+    ): void;
     dispose(): void;
   } | null>(null);
   const meshRefs = useMemo(
@@ -561,7 +569,31 @@ export function CrowdLod({
       // periodic CPU spike in the original global crowd pass.
       mesh.frustumCulled = false;
     });
-    indirect.current?.dispatch(data.counts);
+    const indirectDraws = indirect.current;
+    if (indirectDraws) {
+      // Hi-Z belongs to the PREVIOUS completed scene pass. Do not reuse it
+      // after a camera cut, zoom, viewport change or projection jitter.
+      const snapshot = webGpuDepthSnapshot(renderer);
+      if (
+        snapshot &&
+        projectionsNearlyEqual(snapshot.viewProjection, data.projection)
+      ) {
+        const nearest = data.seats.map((seats, tier) =>
+          nearestCrowdPoolDepth(
+            seats,
+            data.counts[tier]!,
+            seatUpload.matrices,
+            data.projection,
+          ),
+        );
+        indirectDraws.dispatch(data.counts, {
+          texture: snapshot.texture,
+          nearestDepths: nearest,
+        });
+      } else {
+        indirectDraws.dispatch(data.counts);
+      }
+    }
   });
 
   return (
