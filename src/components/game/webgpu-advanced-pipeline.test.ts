@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clusteredLightingBudget } from "./webgpu-advanced-pipeline";
+import { clusteredLightingBudget } from "./webgpu-cluster-budget";
 
 describe("clustered GPU light list budgets", () => {
   it("bounds per-cluster storage and scales the tile grid by device quality", () => {
