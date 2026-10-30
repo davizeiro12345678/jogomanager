@@ -2163,6 +2163,7 @@ export type Database = {
       user_wallet: {
         Row: {
           coins: number
+          pass_coins_claimed_at: string | null
           scout_reports: number
           season_pass: boolean
           season_pass_until: string | null
@@ -2173,6 +2174,7 @@ export type Database = {
         }
         Insert: {
           coins?: number
+          pass_coins_claimed_at?: string | null
           scout_reports?: number
           season_pass?: boolean
           season_pass_until?: string | null
@@ -2183,6 +2185,7 @@ export type Database = {
         }
         Update: {
           coins?: number
+          pass_coins_claimed_at?: string | null
           scout_reports?: number
           season_pass?: boolean
           season_pass_until?: string | null
@@ -2242,6 +2245,14 @@ export type Database = {
           out_token: string
         }[]
       }
+      claim_season_pass_coins: {
+        Args: { _user_id: string }
+        Returns: {
+          claimed: boolean
+          coins: number
+          next_claim_at: string
+        }[]
+      }
       complete_api_football_import_phase: {
         Args: {
           p_error?: string
@@ -2264,6 +2275,15 @@ export type Database = {
         Returns: number
       }
       enrich_football_venues: { Args: { p_venues: Json }; Returns: number }
+      exchange_coins_for_item: {
+        Args: { _item: string; _user_id: string }
+        Returns: {
+          coins: number
+          ok: boolean
+          scout_reports: number
+          training_boosts: number
+        }[]
+      }
       finish_payment_webhook_event: {
         Args: { _event_id: string; _succeeded: boolean }
         Returns: undefined
@@ -2405,6 +2425,14 @@ export type Database = {
       store_product_contents_valid: {
         Args: { _contents: Json }
         Returns: boolean
+      }
+      use_scout_report: {
+        Args: { _user_id: string }
+        Returns: {
+          free_with_pass: boolean
+          scout_reports: number
+          used: boolean
+        }[]
       }
     }
     Enums: {

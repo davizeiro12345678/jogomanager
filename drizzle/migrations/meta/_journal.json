@@ -281,6 +281,13 @@
       "when": 1793384959981,
       "tag": "0039_restore_football_catalog_links",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793385908888,
+      "tag": "0040_wallet_item_uses",
+      "breakpoints": true
     }
   ]
 }

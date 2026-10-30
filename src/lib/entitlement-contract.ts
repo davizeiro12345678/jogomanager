@@ -428,44 +428,34 @@ export function assertNonPayToWin(benefits: readonly CommercialBenefit[]): void 
   }
 }
 
+/** Store package kinds approved for sale. Unknown kinds stay blocked until reviewed. */
+export const CHECKOUT_PRODUCT_KINDS = ["cosmetic", "coins", "scout", "training", "pass"] as const;
+const CHECKOUT_KIND_SET = new Set<string>(CHECKOUT_PRODUCT_KINDS);
+/** Upper bounds per package keep a mistyped catalog row from granting absurd amounts. */
+export const CHECKOUT_CONTENT_LIMITS = { coins: 20_000, scoutReports: 100, trainingBoosts: 100 };
+
 /**
- * Deny competitive legacy catalog rows before a payment provider is queried.
- * Only a zero-advantage cosmetic product may proceed; all new commercial
- * kinds are denied until they receive a deliberate policy review.
+ * Validates a catalog row before a payment provider is queried: the kind must
+ * be an approved package type and every counter a bounded non-negative integer.
  */
-export function assertCheckoutProductNonPayToWin(product: CheckoutProductPolicyInput): void {
+export function assertCheckoutProductAllowed(product: CheckoutProductPolicyInput): void {
   const { coins, scoutReports, trainingBoosts, themes } = product.contents;
+  const counterOk = (value: number, max: number) =>
+    Number.isSafeInteger(value) && value >= 0 && value <= max;
   if (
     !validCosmeticKey(product.key) ||
     typeof product.kind !== "string" ||
-    product.kind.length === 0 ||
-    !Number.isSafeInteger(coins) ||
-    coins < 0 ||
-    !Number.isSafeInteger(scoutReports) ||
-    scoutReports < 0 ||
-    !Number.isSafeInteger(trainingBoosts) ||
-    trainingBoosts < 0 ||
+    !counterOk(coins, CHECKOUT_CONTENT_LIMITS.coins) ||
+    !counterOk(scoutReports, CHECKOUT_CONTENT_LIMITS.scoutReports) ||
+    !counterOk(trainingBoosts, CHECKOUT_CONTENT_LIMITS.trainingBoosts) ||
     !Array.isArray(themes) ||
     themes.some((theme) => !validCosmeticKey(theme))
   ) {
     throw new Error("O produto comercial não atende ao contrato seguro de checkout.");
   }
-
-  const benefits: CommercialBenefit[] = [];
-  // The legacy pass gives monthly competitive resources even though its old
-  // contents snapshot contains zeros, so it must be denied by identity too.
-  if (product.key === "season_pass" || product.kind === "pass") {
-    benefits.push({ kind: "competitive_subscription", id: "legacy_season_pass" });
+  if (!CHECKOUT_KIND_SET.has(product.kind)) {
+    throw new Error("Este tipo de pacote ainda não está liberado para venda.");
   }
-  if (coins > 0) benefits.push({ kind: "competitive_currency", id: "competitive_currency" });
-  if (scoutReports > 0) benefits.push({ kind: "scouting_competitive", id: "scouting_reports" });
-  if (trainingBoosts > 0) benefits.push({ kind: "training_competitive", id: "training_boosts" });
-  // The active safe surface is intentionally narrow. An unrecognized catalog
-  // kind cannot become purchasable merely because its current counters are 0.
-  if (product.kind !== "cosmetic") {
-    benefits.push({ kind: "unclassified_commercial_product", id: "unclassified_product" });
-  }
-  assertNonPayToWin(benefits);
 }
 
 /** Ensures the draft catalog remains non-competitive and inactive until explicitly activated elsewhere. */
