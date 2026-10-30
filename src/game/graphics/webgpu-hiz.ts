@@ -3,6 +3,7 @@ import { StorageTexture, type WebGPURenderer } from "three/webgpu";
 import {
   Fn,
   NodeAccess,
+  float,
   instanceIndex,
   int,
   ivec2,
@@ -51,7 +52,7 @@ export function createWebGpuDepthPyramid(
 ): GpuDepthPyramid {
   const sizes = depthPyramidDimensions(width, height);
   const textures: StorageTexture[] = [];
-  const passes: Array<ReturnType<ReturnType<typeof Fn>["compute"]>> = [];
+  const passes: Array<Parameters<WebGPURenderer["compute"]>[0]> = [];
   let input: DepthTextureSource = sourceDepth;
   let inputWidth = width;
   let inputHeight = height;
@@ -75,8 +76,8 @@ export function createWebGpuDepthPyramid(
         textureLoad(
           previous,
           ivec2(
-            int(min(originX.add(dx), prevWidth - 1)),
-            int(min(originY.add(dy), prevHeight - 1)),
+            int(min(float(originX).add(dx), prevWidth - 1)),
+            int(min(float(originY).add(dy), prevHeight - 1)),
           ),
         ).r;
       const conservative = max(
