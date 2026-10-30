@@ -5,10 +5,7 @@ import { stadiumEnvironmentResolution } from "../graphics/pmrem-budget";
 import { createPylonBeamBatch } from "../stadium-pylon-beams";
 
 export function registerGraphicsBenchmarks(bench: Bench): void {
-  const hdr = Float32Array.from(
-    { length: 32768 },
-    (_, i) => Math.sin(i * 0.18) * (1 + (i % 300)),
-  );
+  const hdr = Float32Array.from({ length: 32768 }, (_, i) => Math.sin(i * 0.18) * (1 + (i % 300)));
   bench
     .add("graphics HDR: fp16 batch 32k", () => {
       return packHalfFloatTexture(hdr, 4);
