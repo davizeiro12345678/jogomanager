@@ -38,11 +38,8 @@ export function WebGpuClusteredLighting({
 }) {
   const gl = useThree((state) => state.gl);
   useEffect(() => {
-    if (
-      !enabled ||
-      !hasNativeWebGPUBackend(gl) ||
-      !optedIn("manager3d.webgpu.clusteredLighting")
-    ) return;
+    if (!enabled || !hasNativeWebGPUBackend(gl) || !optedIn("manager3d.webgpu.clusteredLighting"))
+      return;
     const renderer = gl as typeof gl & { lighting?: unknown };
     const previous = renderer.lighting;
     let current: unknown;
@@ -51,12 +48,7 @@ export function WebGpuClusteredLighting({
       .then(({ ClusteredLighting }) => {
         if (!live) return;
         const b = clusteredLightingBudget(quality);
-        current = new ClusteredLighting(
-          b.maxLights,
-          b.tileSize,
-          b.zSlices,
-          b.maxLightsPerCluster,
-        );
+        current = new ClusteredLighting(b.maxLights, b.tileSize, b.zSlices, b.maxLightsPerCluster);
         renderer.lighting = current;
       })
       .catch(() => {
@@ -77,11 +69,7 @@ export function WebGpuPipelinePrewarm({ enabled }: { enabled: boolean }) {
   const scene = useThree((state) => state.scene);
   const camera = useThree((state) => state.camera);
   useEffect(() => {
-    if (
-      !enabled ||
-      !hasNativeWebGPUBackend(gl) ||
-      !optedIn("manager3d.webgpu.psoPrewarm")
-    ) return;
+    if (!enabled || !hasNativeWebGPUBackend(gl) || !optedIn("manager3d.webgpu.psoPrewarm")) return;
     const renderer = gl as typeof gl & {
       compileAsync?: (scene: typeof scene, camera: typeof camera) => Promise<void>;
     };

@@ -13,6 +13,7 @@ export function animationPoseInterval(
 ): number {
   if (lod === 0) return 0;
   const overloaded = framePressure >= 2;
-  if (lod === 1) return 1 / (overloaded ? 20 : quality === "baixa" ? 24 : quality === "media" ? 30 : 36);
+  if (lod === 1)
+    return 1 / (overloaded ? 20 : quality === "baixa" ? 24 : quality === "media" ? 30 : 36);
   return 1 / (overloaded ? 10 : quality === "baixa" ? 12 : 16);
 }
