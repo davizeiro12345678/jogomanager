@@ -1,6 +1,10 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { TemporalCameraHistory, temporalAAOptedIn } from "@/game/graphics/temporal-settings";
+import {
+  TemporalCameraHistory,
+  hasExternalViewOffset,
+  temporalAAOptedIn,
+} from "@/game/graphics/temporal-settings";
 import { hasNativeWebGPUBackend } from "./renderer";
 
 /**
@@ -25,6 +29,7 @@ export function WebGpuTemporalAA() {
   const failed = useRef(false);
   const antialias = useRef<TemporalNode | null>(null);
   const history = useRef(new TemporalCameraHistory());
+  const hadExternalView = useRef(false);
   const recreatePipeline = useRef<(() => void) | null>(null);
   const releasePipeline = useRef<(() => void) | null>(null);
 
@@ -92,7 +97,14 @@ export function WebGpuTemporalAA() {
     // Three r186 TRAANode has no public reset(). Recreate color/depth
     // histories only for real camera cuts or projection discontinuities.
     camera.updateMatrixWorld();
-    if (history.current.discontinuity(camera)) {
+    if (hasExternalViewOffset(camera)) {
+      hadExternalView.current = true;
+      history.current.reset();
+      gl.render(scene, camera);
+      return;
+    }
+    if (hadExternalView.current || history.current.discontinuity(camera)) {
+      hadExternalView.current = false;
       releasePipeline.current?.();
       try {
         recreatePipeline.current?.();
