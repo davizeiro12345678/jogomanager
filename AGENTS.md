@@ -33,3 +33,4 @@
 - Performance comparisons must use identical fixtures, seeds, runtime, dependencies, viewport and measurement protocol. Keep baseline and candidate evidence and check deterministic state as well as timing. Never describe skipped tests, software-rendered browser timings, or structural graphics tests as physical-device FPS certification.
 - Production verification must compare the compile-time Git commit in `/api/health` with the exact approved release SHA, in addition to checking backend readiness and public access. Do not publish an obsolete revision after `main` has advanced.
 - See `docs/critical-performance.md` for the limits and evidence required to assess a change.
+- The connected backend did not run the recovered history in `supabase/migrations/` (it belongs to another backend); apply schema changes as new forward migrations under `drizzle/migrations/` and never replay those historical files, because they assume an empty database.
