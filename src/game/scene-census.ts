@@ -143,11 +143,7 @@ function trianglesOf(geometry: THREE.BufferGeometry | undefined, instances: numb
  * than attributing only the first subgeometry to the scene budget. */
 function batchedTrianglesOf(mesh: THREE.BatchedMesh): number {
   let triangles = 0;
-  const range: {
-    count?: number;
-    indexCount?: number;
-    vertexCount?: number;
-  } = {};
+  const range = {} as Parameters<THREE.BatchedMesh["getGeometryRangeAt"]>[1];
   for (let id = 0; id < mesh.instanceCount; id++) {
     if (!mesh.getVisibleAt(id)) continue;
     const geometryId = mesh.getGeometryIdAt(id);
