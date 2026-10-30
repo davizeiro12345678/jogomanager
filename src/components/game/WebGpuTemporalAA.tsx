@@ -21,7 +21,7 @@ type TemporalPipeline = {
 };
 type TemporalNode = {
   dispose(): void;
-  setSize(width: number, height: number): void;
+  setSize?(width: number, height: number): void;
 };
 
 export function WebGpuTemporalAA() {
@@ -81,7 +81,7 @@ export function WebGpuTemporalAA() {
   useEffect(() => {
     // Three's temporal effect owns its own jitter and restores its camera
     // view-offset. Do not add a second Halton jitter or override user FOV.
-    antialias.current?.setSize(Math.max(1, size.width), Math.max(1, size.height));
+    antialias.current?.setSize?.(Math.max(1, size.width), Math.max(1, size.height));
   }, [size.width, size.height]);
 
   // Positive priority takes over R3F's final render, preventing a second
