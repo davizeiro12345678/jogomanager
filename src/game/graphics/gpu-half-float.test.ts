@@ -5,8 +5,7 @@ import { createHalfFloatVolume, packHalfFloatTexture } from "./gpu-half-float";
 describe("optional half-float volume uploads", () => {
   it("matches Three's scalar conversion and preserves input bytes", () => {
     const input = Float32Array.from([
-      0, 1, -1, 0.5, 0.0001, 2.25, 15.875, 65504,
-      0, 0, 1, 1, -0.0001, 0.12, 3.9, 0,
+      0, 1, -1, 0.5, 0.0001, 2.25, 15.875, 65504, 0, 0, 1, 1, -0.0001, 0.12, 3.9, 0,
     ]);
     const before = input.slice();
     const output = packHalfFloatTexture(input, 4);
@@ -18,7 +17,14 @@ describe("optional half-float volume uploads", () => {
   });
   it("preserves signed zero, subnormals and high-dynamic-range input", () => {
     const source = new Float32Array([
-      0, -0, 2 ** -23, -(2 ** -23), 0.00006103515625, -65504, 65504, 1,
+      0,
+      -0,
+      2 ** -23,
+      -(2 ** -23),
+      0.00006103515625,
+      -65504,
+      65504,
+      1,
     ]);
     const packed = packHalfFloatTexture(source, 4);
     expect(packed[0]).toBe(0x0000);
