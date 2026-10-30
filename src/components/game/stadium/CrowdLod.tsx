@@ -2,6 +2,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
+import { hasNativeWebGPUBackend } from "@/components/game/renderer";
 import { nearestCrowdPoolDepth } from "@/game/graphics/crowd-pool-occlusion";
 import { projectionsNearlyEqual, webGpuDepthSnapshot } from "@/game/graphics/webgpu-depth-registry";
 import { supporterGeometry } from "@/game/crowd-geometry";
@@ -395,7 +396,7 @@ export function CrowdLod({
     }>
   >([]);
   useEffect(() => {
-    if (webgl2) return;
+    if (webgl2 || !hasNativeWebGPUBackend(renderer)) return;
     let live = true;
     // Lazy-load TSL only for native WebGPU. Keeping these imports out of the
     // WebGL2 bundle avoids loading the heavy node compiler on mobile.
@@ -422,10 +423,10 @@ export function CrowdLod({
       live = false;
       nativeUniforms.current = [];
     };
-  }, [webgl2, data]);
+  }, [webgl2, renderer, data]);
 
   useEffect(() => {
-    if (webgl2 || !("backend" in renderer)) return;
+    if (webgl2 || !hasNativeWebGPUBackend(renderer)) return;
     let enabled = false;
     try {
       enabled = globalThis.localStorage?.getItem("manager3d.webgpu.crowdIndirect") === "on";
@@ -438,7 +439,6 @@ export function CrowdLod({
       .then(({ createCrowdGpuIndirectCommands }) => {
         if (!live) return;
         const gpu = renderer as unknown as import("three/webgpu").WebGPURenderer;
-        if (!("isWebGPUBackend" in gpu.backend) || !gpu.backend.isWebGPUBackend) return;
         const controller = createCrowdGpuIndirectCommands(gpu, data.geometries);
         indirect.current = controller;
         controller.dispatch(data.counts);
