@@ -25,6 +25,7 @@ import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { rendererMetadata } from "@/game/graphics-renderer-metadata";
+import { stadiumEnvironmentResolution } from "@/game/graphics/pmrem-budget";
 import { CanvasLifecycle } from "./CanvasLifecycle";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 import { subscribeRenderedFrames } from "./graphics-probe";
@@ -653,7 +654,7 @@ function Scene({
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       {quality !== "baixa" ? (
         <Environment
-          resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)}
+          resolution={stadiumEnvironmentResolution(quality, budget.textureScale)}
           frames={1}
         >
           <color attach="background" args={[lighting.sky]} />
