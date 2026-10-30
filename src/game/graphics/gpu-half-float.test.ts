@@ -17,7 +17,9 @@ describe("optional half-float volume uploads", () => {
     }
   });
   it("preserves signed zero, subnormals and high-dynamic-range input", () => {
-    const source = new Float32Array([0, -0, 2 ** -23, -(2 ** -23), 0.00006103515625, -65504, 65504, 1]);
+    const source = new Float32Array([
+      0, -0, 2 ** -23, -(2 ** -23), 0.00006103515625, -65504, 65504, 1,
+    ]);
     const packed = packHalfFloatTexture(source, 4);
     expect(packed[0]).toBe(0x0000);
     expect(packed[1]).toBe(0x8000);
