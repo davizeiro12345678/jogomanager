@@ -96,7 +96,6 @@ export function bakeVertexRadiosityBvh(
   const bvh = new MeshBVH(geometry);
   const n = vertices.count;
   const direct = new Float32Array(n);
-  const total = new Float32Array(n);
   const outgoing = new Float32Array(n * 3);
   const next = new Float32Array(n * 3);
   const origin = new THREE.Vector3();
@@ -121,7 +120,6 @@ export function bakeVertexRadiosityBvh(
       rays++;
     }
     direct[i] = ambient + (visible ? sunlight * cosine : 0);
-    total[i] = direct[i]!;
     const index = i * 3;
     outgoing[index] = direct[i]! * albedo.r * (colors?.getX(i) ?? 1);
     outgoing[index + 1] = direct[i]! * albedo.g * (colors?.getY(i) ?? 1);
@@ -143,7 +141,7 @@ export function bakeVertexRadiosityBvh(
         a.fromBufferAttribute(vertices, first);
         b.fromBufferAttribute(vertices, first + 1);
         c.fromBufferAttribute(vertices, first + 2);
-        THREE.Triangle.getBarycoord(hit.point, a, b, c, bary);
+        if (!THREE.Triangle.getBarycoord(hit.point, a, b, c, bary)) continue;
         for (let k = 0; k < 3; k++) {
           const weight = bary.getComponent(k) / samples;
           const offset = (first + k) * 3;
@@ -161,10 +159,6 @@ export function bakeVertexRadiosityBvh(
       next[p] = ir * albedo.r * (colors?.getX(i) ?? 1);
       next[p + 1] = ig * albedo.g * (colors?.getY(i) ?? 1);
       next[p + 2] = ib * albedo.b * (colors?.getZ(i) ?? 1);
-      if (bounce === bounces - 1) {
-        // Store final bounced irradiance for baking (R/G/B independently).
-        total[i] = 1; // RGB resides in next; the original vertex color is included.
-      }
     }
     outgoing.set(next);
   }
