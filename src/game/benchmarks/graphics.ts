@@ -21,7 +21,7 @@ export function registerGraphicsBenchmarks(bench: Bench): void {
     .add("graphics animation: 1k adaptive pose decisions", () => {
       let total = 0;
       for (let index = 0; index < 1_000; index++)
-        total += animationPoseInterval(index % 3 as 0 | 1 | 2, "media");
+        total += animationPoseInterval((index % 3) as 0 | 1 | 2, "media");
       return total;
     })
     .add("graphics HDR: fp16 batch 32k", () => {
