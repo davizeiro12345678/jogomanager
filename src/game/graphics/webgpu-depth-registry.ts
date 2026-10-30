@@ -32,8 +32,7 @@ export function webGpuDepthSnapshot(renderer: object): WebGpuDepthSnapshot | nul
 }
 
 export function clearWebGpuDepthSnapshot(renderer: object, texture?: THREE.Texture): void {
-  if (!texture || snapshots.get(renderer)?.texture === texture)
-    snapshots.delete(renderer);
+  if (!texture || snapshots.get(renderer)?.texture === texture) snapshots.delete(renderer);
 }
 
 export function projectionsNearlyEqual(
