@@ -13,6 +13,7 @@ import {
   step,
   uniform,
   vec3,
+  texture,
 } from "three/tsl";
 
 /** One set of GPU uniforms serves all instances of one crowd tier. The
@@ -82,6 +83,8 @@ export function createNativeCrowdMotionMaterial(
       local.z.add(swayZ),
     );
     const head = step(0.7, attribute("uv", "vec2").y);
+    // colorNode bypasses the map color; retain billboard alpha explicitly.
+    material.opacityNode = texture(card).a;
     material.colorNode = mix(shirt, skin, head);
   }
   return { material, uniforms: { clock, pulse, wave, agitation } };
