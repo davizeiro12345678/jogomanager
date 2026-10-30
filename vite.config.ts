@@ -117,6 +117,28 @@ const projectConfig = defineConfig({
           codeSplitting: {
             groups: [
               {
+                // R3F's WebGL renderer loads core and module together. One
+                // transport avoids repeating their large cross-module bridge.
+                name: "three-webgl-runtime",
+                test: /[\\/]node_modules[\\/]three[\\/]build[\\/]three\.(?:core|module)\.js$/,
+                includeDependenciesRecursively: false,
+              },
+              {
+                // Every router creates a QueryClient and mounts its provider.
+                // Keep those already co-loaded modules in one transport;
+                // optional query observers remain outside public startup.
+                name: "query-client-runtime",
+                test: /[\\/]node_modules[\\/]@tanstack[\\/](?:query-core[\\/]build[\\/]modern[\\/](?:queryClient|queryCache|query|mutationCache|mutation|utils|retryer|notifyManager|focusManager|onlineManager|environmentManager|removable|subscribable|timeoutManager|infiniteQueryBehavior)|react-query[\\/]build[\\/]modern[\\/]QueryClientProvider)\.js$/,
+                includeDependenciesRecursively: false,
+              },
+              {
+                // These navigation hooks and Link are already in every router
+                // startup graph. Share their transport without adding routes.
+                name: "router-runtime",
+                test: /[\\/]node_modules[\\/]@tanstack[\\/]react-router[\\/]dist[\\/]esm[\\/](?:link|useRouter|useMatch)\.js$/,
+                includeDependenciesRecursively: true,
+              },
+              {
                 // Pure helpers already used by every route share one transport.
                 // Avoid tiny shared chunks without importing gameplay or UI.
                 name: "browser-shared-data",
@@ -128,6 +150,9 @@ const projectConfig = defineConfig({
                 // contexts are used together. Share one transport instead of
                 // many tiny requests. The client renderer remains deferred.
                 name: "browser-react",
+                // Assign shared React APIs before the router's static closure;
+                // otherwise cross-chunk ownership can pull hydration into it.
+                priority: 10,
                 test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts|i18n[\\/]context\.ts|hooks[\\/]useAccessibility\.ts|lib[\\/]accessibility-preferences\.ts)$|[\\/]node_modules[\\/](?:scheduler[\\/]|use-sync-external-store[\\/]|react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?))/,
               },
               {

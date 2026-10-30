@@ -68,6 +68,11 @@ import { ReplayRecorder, saveReplay } from "@/game/replay";
 import type { NarrationEvent } from "@/game/narrator";
 
 import { useMatchNarration } from "@/hooks/useMatchNarration";
+const ScreenAwakeControl = lazy(() =>
+  import("@/components/game/ScreenAwakeControl").then((module) => ({
+    default: module.ScreenAwakeControl,
+  })),
+);
 
 import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
 
@@ -240,6 +245,7 @@ function LiveMatch({
   const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [screenControlRequested, setScreenControlRequested] = useState(false);
   const panelTrigger = useRef<HTMLButtonElement>(null);
   const panelClose = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -824,6 +830,7 @@ function LiveMatch({
         <button
           ref={panelTrigger}
           onClick={() => {
+            setScreenControlRequested(true);
             setPanelOpen((v) => !v);
             setShowStats(false);
           }}
@@ -893,6 +900,13 @@ function LiveMatch({
             <X size={18} aria-hidden="true" />
           </button>
         </div>
+        {screenControlRequested ? (
+          <Suspense fallback={null}>
+            <ScreenAwakeControl
+              running={!paused && !done && !introActive && !ceremonyActive && !halfHeld}
+            />
+          </Suspense>
+        ) : null}
         <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => setPaused((p) => !p)}

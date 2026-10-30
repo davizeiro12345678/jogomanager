@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      BASE_SHA: "5a75fef3662e3750917df1c2259169e4ed9f24d3"
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -39,18 +39,22 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
-          # Baseline must use its OWN lockfile. Sharing the candidate node_modules
-          # breaks the older TanStack createServerFn validator at runtime (HTTP 500).
-          npm ci --prefix "$RUNNER_TEMP/startup-base" --no-audit --no-fund
-      - name: Profile baseline then candidate with identical public fixtures
+          # Compare the current PR base with one identical dependency graph.
+          # Unlike the historical fixed SHA, this base uses the supported API.
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+      - name: Profile candidate then baseline with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright
         run: |
           export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(cat "$RUNNER_TEMP/startup-chrome-path")"
-          (cd "$RUNNER_TEMP/startup-base" && PFM_LOCAL_VERIFY=1 npm run build)
-          node scripts/profile-public-startup.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline" 4175 "$BASE_SHA"
+          node .github/scripts/benchmark-public-cache.mjs "$RUNNER_TEMP/startup-evidence/cache-encoding.json"
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/profile-public-startup.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/startup-evidence/candidate" 4176 "$CANDIDATE_SHA"
+          # Preserve candidate evidence even if the historical source cannot
+          # start with the current dependency graph. The baseline still must
+          # run successfully; its failure must not become a timing comparison.
+          (cd "$RUNNER_TEMP/startup-base" && PFM_LOCAL_VERIFY=1 npm run build)
+          node scripts/profile-public-startup.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline" 4175 "$BASE_SHA"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
