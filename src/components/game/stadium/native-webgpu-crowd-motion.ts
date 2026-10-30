@@ -4,6 +4,7 @@ import {
   attribute,
   float,
   instanceIndex,
+  instanceColor,
   mix,
   positionLocal,
   sin,
@@ -33,7 +34,7 @@ export function createNativeCrowdMotionMaterial(tier: number, card: THREE.Textur
   const region = attribute("crowdRegion", "float");
   const limb = attribute("crowdLimb", "vec2");
   const skin = attribute("crowdSkin", "vec3");
-  const shirt = attribute("instanceColor", "vec3");
+  const shirt = instanceColor;
   // A seat's pooled slot supplies a stable phase for the current selection.
   const phase = float(instanceIndex).mul(0.6180339);
   const energy = pulse.clamp(0, 1);
