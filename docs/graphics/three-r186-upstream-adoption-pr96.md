@@ -46,6 +46,12 @@ and saved career snapshots must remain backwards compatible.
 - **CodSpeed visibility:** graphics preparation benchmarks now cover
   batched-versus-independent beams and FP16 conversion against scalar Three,
   in addition to all previous game-engine benchmarks.
+- **Meshlet preparation:** `meshoptimizer` partitions indexed static meshes
+  into bounded 64-vertex / 126-triangle clusters and exposes world-space
+  bounding spheres with a conservative CPU frustum fallback. The tests verify
+  triangle coverage and rejection of distant clusters. This prepares the
+  cluster data; GPU compute occlusion and indirect draws still require the
+  upstream renderer path and are NOT active in the match.
 
 ## Not included in the game renderer yet
 
@@ -61,7 +67,7 @@ Do not insert patches from unmerged PRs into a paid production application.
 | GPU compute PMREM | Power-of-two budget implemented; compute kernel #35130 remains an upstream open experimental PR. |
 | Half-float 5.2× conversion | Fast bit-pattern converter implemented with parity tests. No target-device 5.2× speedup has been measured yet. |
 | CSM from 302 to 7 GPU writes | Native CSM opt-in and frustum update throttling implemented. This exact reduction has not been profiled and must not be claimed. |
-| GPU-driven meshlets, GPU occlusion, indirect draws | **Not shipped.** Requires meshlet preprocessing, GPU visibility buffers, indirect-draw integration and multi-device validation; unrelated to ordinary BatchedMesh. |
+| GPU-driven meshlets, GPU occlusion, indirect draws | **Preprocessing implemented, GPU renderer pending.** Bounded meshopt clusters and CPU frustum fallback are tested. GPU visibility buffers, indirect-draw integration and real GPU occlusion remain unshipped. |
 | Full shared-geometry draw ranges | BatchedMesh implemented for exterior cones; upstream #35112 still pending for arbitrary mesh draw ranges. |
 | Material invalidation 98% | Same-turn KTX2 coalescing implemented; exact 98% remains unmeasured. |
 
