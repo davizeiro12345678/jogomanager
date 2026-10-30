@@ -26,7 +26,8 @@ export async function buildMeshletClusters(
     !Number.isInteger(maxTriangles) ||
     maxTriangles < 1 ||
     maxTriangles > 512
-  ) throw new RangeError("Invalid meshlet vertex or triangle limit");
+  )
+    throw new RangeError("Invalid meshlet vertex or triangle limit");
   const attribute = geometry.getAttribute("position");
   if (!attribute || attribute.itemSize < 3)
     throw new TypeError("Indexed triangle geometry needs xyz positions");
@@ -34,8 +35,7 @@ export async function buildMeshletClusters(
   const count = index?.count ?? attribute.count;
   if (count % 3 !== 0) throw new RangeError("Meshlets require triangle indices");
   const indices = new Uint32Array(count);
-  for (let i = 0; i < count; i++)
-    indices[i] = index ? index.getX(i) : i;
+  for (let i = 0; i < count; i++) indices[i] = index ? index.getX(i) : i;
   const positions = new Float32Array(attribute.count * 3);
   for (let i = 0; i < attribute.count; i++) {
     positions[i * 3] = attribute.getX(i);
