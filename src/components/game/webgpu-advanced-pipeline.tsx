@@ -2,23 +2,7 @@ import { useThree } from "@react-three/fiber";
 import type * as THREE from "three";
 import { useEffect } from "react";
 import { hasNativeWebGPUBackend } from "./renderer";
-
-export type ClusterBudget = Readonly<{
-  maxLights: number;
-  tileSize: number;
-  zSlices: number;
-  maxLightsPerCluster: number;
-}>;
-
-/** 3D light lists are useful only for many local point lights, not for the
- * three directional lights already used in the normal stadium renderer. */
-export function clusteredLightingBudget(quality: "alta" | "media" | "baixa"): ClusterBudget {
-  if (quality === "alta")
-    return { maxLights: 96, tileSize: 32, zSlices: 16, maxLightsPerCluster: 12 };
-  if (quality === "media")
-    return { maxLights: 48, tileSize: 48, zSlices: 12, maxLightsPerCluster: 8 };
-  return { maxLights: 16, tileSize: 64, zSlices: 8, maxLightsPerCluster: 4 };
-}
+import { clusteredLightingBudget } from "./webgpu-cluster-budget";
 
 function optedIn(name: string): boolean {
   try {
