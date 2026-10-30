@@ -42,6 +42,7 @@ const SHAPE: Position[] = [
 ];
 
 const POSITIONS = new Set<Position>(["GK", "DF", "MF", "FW"]);
+const RESERVE_POSITIONS: readonly Position[] = ["DF", "MF", "FW"];
 
 /** Profundidade mínima para calendário, lesões e suspensões; não é uma lista oficial. */
 export const SQUAD_SIZE = 26;
@@ -344,9 +345,9 @@ function appendReserves(club: Club, existing: Player[], minimum: number): Player
   while (squad.length < minimum || counts.GK < MIN_GOALKEEPERS) {
     const id = `${clubId}-reserve-${index++}`;
     if (ids.has(id)) continue;
-    const pos = (Object.keys(targets) as Position[]).sort(
-      (a, b) => targets[b] - counts[b] - (targets[a] - counts[a]),
-    )[0]!;
+    let pos: Position = "GK";
+    for (const candidate of RESERVE_POSITIONS)
+      if (targets[candidate] - counts[candidate] > targets[pos] - counts[pos]) pos = candidate;
     let name = `${pool.first[Math.floor(rnd() * pool.first.length)]} ${pool.last[Math.floor(rnd() * pool.last.length)]}`;
     if (names.has(name)) name = `${name} ${index}`;
     const d: DraftPlayer = {
