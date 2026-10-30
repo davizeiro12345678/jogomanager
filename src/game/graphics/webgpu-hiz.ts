@@ -24,8 +24,12 @@ export function depthPyramidDimensions(width: number, height: number) {
   if (
     !Number.isSafeInteger(width) ||
     !Number.isSafeInteger(height) ||
-    width < 1 || height < 1 || width > 8192 || height > 8192
-  ) throw new RangeError("Invalid GPU depth resolution");
+    width < 1 ||
+    height < 1 ||
+    width > 8192 ||
+    height > 8192
+  )
+    throw new RangeError("Invalid GPU depth resolution");
   const sizes: Array<readonly [number, number]> = [];
   while (width > 1 || height > 1) {
     width = Math.max(1, Math.ceil(width / 2));
@@ -80,10 +84,7 @@ export function createWebGpuDepthPyramid(
             int(min(float(originY).add(dy), prevHeight - 1)),
           ),
         ).r;
-      const conservative = max(
-        max(load(0, 0), load(1, 0)),
-        max(load(0, 1), load(1, 1)),
-      );
+      const conservative = max(max(load(0, 0), load(1, 0)), max(load(0, 1), load(1, 1)));
       textureStore(output, ivec2(int(x), int(y)), vec4(conservative, 0, 0, 1));
     })().compute(w * h);
     textures.push(texture);
