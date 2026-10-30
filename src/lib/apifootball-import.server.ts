@@ -37,7 +37,11 @@ type LeagueTarget = {
   coverage: unknown;
   local_competition_id: string | null;
 };
-type TeamTarget = { source_id: string; local_club_id: string | null; league_source_id: string | null };
+type TeamTarget = {
+  source_id: string;
+  local_club_id: string | null;
+  league_source_id: string | null;
+};
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
