@@ -376,6 +376,44 @@ export function CrowdLod({
     [data],
   );
 
+  const nativeUniforms = useRef<
+    Array<{
+      clock: { value: number };
+      pulse: { value: number };
+      wave: { value: number };
+      agitation: { value: number };
+    }>
+  >([]);
+  useEffect(() => {
+    if (webgl2) return;
+    let live = true;
+    // Lazy-load TSL only for native WebGPU. Keeping these imports out of the
+    // WebGL2 bundle avoids loading the heavy node compiler on mobile.
+    void import("./native-webgpu-crowd-motion")
+      .then(({ createNativeCrowdMotionMaterial }) => {
+        if (!live) return;
+        const replacements = data.geometries.map((_, tier) =>
+          createNativeCrowdMotionMaterial(tier, data.card),
+        );
+        const materials = data.materials as THREE.Material[];
+        replacements.forEach(({ material }, tier) => {
+          const previous = materials[tier];
+          materials[tier] = material;
+          const mesh = refs.current[tier];
+          if (mesh) mesh.material = material;
+          previous?.dispose();
+        });
+        nativeUniforms.current = replacements.map((replacement) => replacement.uniforms);
+      })
+      .catch(() => {
+        // The existing static native WebGPU audience remains visible.
+      });
+    return () => {
+      live = false;
+      nativeUniforms.current = [];
+    };
+  }, [webgl2, data]);
+
   const elapsed = useRef(Number.POSITIVE_INFINITY);
   useEffect(() => {
     // Another match can reuse the same seat numbers with different club colours.
@@ -394,6 +432,12 @@ export function CrowdLod({
           ? supporters.intensity * 0.4
           : 0;
     data.uniforms.wave.value = (clock.elapsedTime * 0.22) % (Math.PI * 2);
+    for (const nodes of nativeUniforms.current) {
+      nodes.clock.value = data.uniforms.time.value;
+      nodes.pulse.value = data.uniforms.pulse.value;
+      nodes.wave.value = data.uniforms.wave.value;
+      nodes.agitation.value = data.uniforms.agitation.value;
+    }
     elapsed.current += dt;
     if (elapsed.current < budget.crowdUpdateSeconds) return;
     elapsed.current = 0;
