@@ -27,3 +27,16 @@ it("keeps close-up and action camera fits finite, with room for a taller pose", 
   );
   expect(Object.values(studioCameraFit(NaN, 0, 0, "body")).every(Number.isFinite)).toBe(true);
 });
+
+it("compensates camera zoom in world-space subject bounds", () => {
+  const normal = studioCameraFit(1.8, 1.4, 32, "body", false, false, 1);
+  const zoomedIn = studioCameraFit(1.8, 1.4, 32, "body", false, false, 2);
+  const zoomedOut = studioCameraFit(1.8, 1.4, 32, "body", false, false, 0.5);
+  expect(zoomedIn.distance).toBeCloseTo(normal.distance * 2);
+  expect(zoomedOut.distance).toBeCloseTo(normal.distance * 0.5);
+  expect(zoomedIn.minDistance).toBeLessThan(zoomedIn.distance);
+  expect(zoomedIn.maxDistance).toBeGreaterThan(zoomedIn.distance);
+  expect(studioCameraFit(1.8, 1, 32, "body", false, false, NaN).distance).toBeCloseTo(
+    studioCameraFit(1.8, 1, 32, "body").distance,
+  );
+});
