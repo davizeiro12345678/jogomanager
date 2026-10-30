@@ -33,6 +33,7 @@ import { onTurfDetailReady } from "./stadium/textures/turf-detail";
 
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
+import { WebGpuClusteredLighting, WebGpuPipelinePrewarm } from "./webgpu-advanced-pipeline";
 import { useWebGpuCsmShadow } from "@/components/game/webgpu-csm-shadow";
 import { WebGpuTemporalAA } from "@/components/game/WebGpuTemporalAA";
 import { temporalAAOptedIn } from "@/game/graphics/temporal-settings";
@@ -1114,6 +1115,8 @@ function Stadium3DImpl({
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
           {backend === "webgpu" && temporalAAOptedIn() ? <WebGpuTemporalAA /> : null}
+          <WebGpuClusteredLighting enabled={backend === "webgpu"} quality={eff} />
+          <WebGpuPipelinePrewarm enabled={backend === "webgpu" && quality === "alta"} />
           <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}
