@@ -16,7 +16,7 @@ export function createCrowdGpuIndirectCommands(
     geometry: THREE.BufferGeometry;
     buffer: IndirectStorageBufferAttribute;
     count: ReturnType<typeof uniform>;
-    shader: ReturnType<ReturnType<typeof Fn>["compute"]>;
+    shader: Parameters<WebGPURenderer["compute"]>[0];
   }> = [];
   for (const geometry of geometries) {
     if (geometry.indirect) throw new Error("Geometry already owns an indirect command buffer");
