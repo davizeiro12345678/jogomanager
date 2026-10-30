@@ -31,11 +31,7 @@ describe("GPU-ready meshlet preprocessing", () => {
     );
     expect(meshletInsideFrustum(cluster!, frustum, new THREE.Matrix4())).toBe(true);
     expect(
-      meshletInsideFrustum(
-        cluster!,
-        frustum,
-        new THREE.Matrix4().makeTranslation(0, 0, -300),
-      ),
+      meshletInsideFrustum(cluster!, frustum, new THREE.Matrix4().makeTranslation(0, 0, -300)),
     ).toBe(false);
     geometry.dispose();
   });
