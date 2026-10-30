@@ -16,6 +16,10 @@ describe("photographer flash uploads", () => {
     ];
     const write = vi.spyOn(mesh, "setMatrixAt");
     batch.paint(mesh, flashes);
+    expect(mesh.instanceMatrix.updateRanges).toEqual([
+      { start: 0, count: 16 },
+      { start: 16, count: 16 },
+    ]);
     expect(mesh.visible).toBe(false);
     expect(mesh.instanceMatrix.usage).toBe(THREE.DynamicDrawUsage);
     const idleVersion = mesh.instanceMatrix.version;
@@ -30,6 +34,7 @@ describe("photographer flash uploads", () => {
       write.mockClear();
       const version = mesh.instanceMatrix.version;
       batch.paint(mesh, flashes);
+      expect(mesh.instanceMatrix.updateRanges).toEqual([{ start: 16, count: 16 }]);
       expect(write).toHaveBeenCalledOnce();
       expect(mesh.instanceMatrix.version).toBe(version + 1);
       expect(mesh.visible).toBe(heat > 0);
