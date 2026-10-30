@@ -1,20 +1,12 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import * as THREE from "three";
+import { temporalAAOptedIn } from "@/game/graphics/temporal-settings";
 import { hasNativeWebGPUBackend } from "./renderer";
 
 /**
  * Explicit WebGPU experiment; WebGL2 and ordinary WebGPU use the existing
  * stable render path. TRAA relies on Three r186's MRT velocity and depth.
  */
-export function temporalAAOptedIn(): boolean {
-  try {
-    return globalThis.localStorage?.getItem("manager3d.webgpu.traa") === "on";
-  } catch {
-    return false;
-  }
-}
-
 type TemporalPipeline = {
   render(): void;
   dispose(): void;
@@ -95,21 +87,4 @@ export function WebGpuTemporalAA() {
   }, 1);
 
   return null;
-}
-
-/** Store a camera snapshot without mutating projection/view-offset matrices. */
-export class TemporalCameraHistory {
-  readonly previousWorldInverse = new THREE.Matrix4();
-  readonly previousProjection = new THREE.Matrix4();
-  valid = false;
-
-  capture(camera: THREE.Camera): void {
-    this.previousWorldInverse.copy(camera.matrixWorldInverse);
-    this.previousProjection.copy(camera.projectionMatrix);
-    this.valid = true;
-  }
-
-  reset(): void {
-    this.valid = false;
-  }
 }
