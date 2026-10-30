@@ -32,7 +32,7 @@ export function CinematicProbeGI({ enabled }: { enabled: boolean }) {
     const timer = setTimeout(() => {
       void import("three/addons/lighting/LightProbeGridWebGL.js")
         .then(({ LightProbeGridWebGL }) => {
-          if (!active || !renderer.isWebGLRenderer) return;
+          if (!active) return;
           const settings = CINEMATIC_PROBE_BOUNDS;
           const volume = new LightProbeGridWebGL(
             settings.width,
@@ -43,7 +43,9 @@ export function CinematicProbeGI({ enabled }: { enabled: boolean }) {
             settings.resolution,
           );
           volume.position.set(0, settings.height / 2, 0);
-          volume.falloff = settings.falloff;
+          // In r186 each cutscene has its own scene, so probes cannot
+          // illuminate a neighboring set. Shader-space falloff is not yet
+          // available in the pinned LightProbeGridWebGL version.
           try {
             volume.bake(renderer, scene, { cubemapSize: 16, near: 0.08, far: 10 });
             if (!active) {
