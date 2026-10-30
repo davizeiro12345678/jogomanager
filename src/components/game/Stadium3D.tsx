@@ -33,7 +33,8 @@ import { onTurfDetailReady } from "./stadium/textures/turf-detail";
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
 import { useWebGpuCsmShadow } from "@/components/game/webgpu-csm-shadow";
-import { WebGpuTemporalAA, temporalAAOptedIn } from "@/components/game/WebGpuTemporalAA";
+import { WebGpuTemporalAA } from "@/components/game/WebGpuTemporalAA";
+import { temporalAAOptedIn } from "@/game/graphics/temporal-settings";
 
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 
