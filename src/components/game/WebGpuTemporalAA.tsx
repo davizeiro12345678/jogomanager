@@ -1,6 +1,6 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { temporalAAOptedIn } from "@/game/graphics/temporal-settings";
+import { TemporalCameraHistory, temporalAAOptedIn } from "@/game/graphics/temporal-settings";
 import { hasNativeWebGPUBackend } from "./renderer";
 
 /**
@@ -24,11 +24,14 @@ export function WebGpuTemporalAA() {
   const pipeline = useRef<TemporalPipeline | null>(null);
   const failed = useRef(false);
   const antialias = useRef<TemporalNode | null>(null);
+  const history = useRef(new TemporalCameraHistory());
+  const recreatePipeline = useRef<(() => void) | null>(null);
+  const releasePipeline = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!hasNativeWebGPUBackend(gl) || !temporalAAOptedIn()) return;
     let live = true;
-    let disposePipeline: (() => void) | null = null;
+    history.current.reset();
     void Promise.all([
       import("three/webgpu"),
       import("three/tsl"),
@@ -37,7 +40,8 @@ export function WebGpuTemporalAA() {
       .then(([webgpu, tsl, nodes]) => {
         if (!live) return;
         const renderer = gl as unknown as InstanceType<typeof webgpu.WebGPURenderer>;
-        const pass = tsl.pass(scene, camera);
+        const create = () => {
+          const pass = tsl.pass(scene, camera);
         pass.setMRT(tsl.mrt({ output: tsl.output, velocity: tsl.velocity }));
         const effect = nodes.traa(
           pass.getTextureNode("output"),
@@ -53,12 +57,15 @@ export function WebGpuTemporalAA() {
         graph.outputNode = effect;
         pipeline.current = graph;
         antialias.current = effect;
-        disposePipeline = () => {
+        releasePipeline.current = () => {
           if (pipeline.current === graph) pipeline.current = null;
           if (antialias.current === effect) antialias.current = null;
           effect.dispose();
           graph.dispose();
         };
+        };
+        recreatePipeline.current = create;
+        create();
       })
       .catch(() => {
         failed.current = true;
@@ -66,7 +73,10 @@ export function WebGpuTemporalAA() {
       });
     return () => {
       live = false;
-      disposePipeline?.();
+      releasePipeline.current?.();
+      releasePipeline.current = null;
+      recreatePipeline.current = null;
+      history.current.reset();
     };
   }, [gl, scene, camera]);
 
@@ -79,6 +89,19 @@ export function WebGpuTemporalAA() {
   // Positive priority takes over R3F's final render, preventing a second
   // full-scene pass. React updates/simulation/camera hooks still run normally.
   useFrame(() => {
+    // Three r186 TRAANode has no public reset(). Recreate color/depth
+    // histories only for real camera cuts or projection discontinuities.
+    camera.updateMatrixWorld();
+    if (history.current.discontinuity(camera)) {
+      releasePipeline.current?.();
+      try {
+        recreatePipeline.current?.();
+      } catch {
+        failed.current = true;
+      }
+      history.current.reset();
+    }
+    history.current.capture(camera);
     if (failed.current || !pipeline.current) {
       gl.render(scene, camera);
       return;
