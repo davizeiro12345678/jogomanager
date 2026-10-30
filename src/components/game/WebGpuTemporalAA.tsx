@@ -42,27 +42,27 @@ export function WebGpuTemporalAA() {
         const renderer = gl as unknown as InstanceType<typeof webgpu.WebGPURenderer>;
         const create = () => {
           const pass = tsl.pass(scene, camera);
-        pass.setMRT(tsl.mrt({ output: tsl.output, velocity: tsl.velocity }));
-        const effect = nodes.traa(
-          pass.getTextureNode("output"),
-          pass.getTextureNode("depth"),
-          pass.getTextureNode("velocity"),
-          camera,
-        );
-        // Reprojection rejects mismatching previous depth and large motion
-        // instead of accumulating outdated silhouettes after player movement.
-        effect.depthThreshold = 0.0005;
-        effect.maxVelocityLength = 64;
-        const graph = new webgpu.RenderPipeline(renderer);
-        graph.outputNode = effect;
-        pipeline.current = graph;
-        antialias.current = effect;
-        releasePipeline.current = () => {
-          if (pipeline.current === graph) pipeline.current = null;
-          if (antialias.current === effect) antialias.current = null;
-          effect.dispose();
-          graph.dispose();
-        };
+          pass.setMRT(tsl.mrt({ output: tsl.output, velocity: tsl.velocity }));
+          const effect = nodes.traa(
+            pass.getTextureNode("output"),
+            pass.getTextureNode("depth"),
+            pass.getTextureNode("velocity"),
+            camera,
+          );
+          // Reprojection rejects mismatching previous depth and large motion
+          // instead of accumulating outdated silhouettes after player movement.
+          effect.depthThreshold = 0.0005;
+          effect.maxVelocityLength = 64;
+          const graph = new webgpu.RenderPipeline(renderer);
+          graph.outputNode = effect;
+          pipeline.current = graph;
+          antialias.current = effect;
+          releasePipeline.current = () => {
+            if (pipeline.current === graph) pipeline.current = null;
+            if (antialias.current === effect) antialias.current = null;
+            effect.dispose();
+            graph.dispose();
+          };
         };
         recreatePipeline.current = create;
         create();
