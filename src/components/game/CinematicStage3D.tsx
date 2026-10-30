@@ -56,6 +56,7 @@ import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
 import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
+import { CinematicProbeGI } from "./cinematic/CinematicProbeGI";
 import { resolveCinematicSetLoader } from "./cinematic/sets/registry";
 
 import {
@@ -186,6 +187,7 @@ function Stage({
           indoor ? 34 : 70,
         ]}
       />
+      <CinematicProbeGI enabled={indoor && quality === "alta" && enhanced} />
       <ambientLight intensity={amb} color={warm} />
       <hemisphereLight intensity={indoor ? 0.4 : 0.45} color="#dce8f4" groundColor="#30333a" />
       {indoor ? (
