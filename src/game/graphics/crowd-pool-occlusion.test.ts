@@ -12,13 +12,14 @@ describe("conservative crowd-pool Hi-Z bound", () => {
     matrices[28] = 0;
     matrices[29] = 0;
     matrices[30] = 0.6;
-    expect(nearestCrowdPoolDepth(seats, 2, matrices, new THREE.Matrix4()))
-      .toBeCloseTo(0.55);
+    expect(nearestCrowdPoolDepth(seats, 2, matrices, new THREE.Matrix4())).toBeCloseTo(0.55);
   });
   it("disables occlusion for malformed or empty candidate pools", () => {
-    expect(nearestCrowdPoolDepth(new Int32Array(), 0, new Float32Array(), new THREE.Matrix4()))
-      .toBe(0);
-    expect(nearestCrowdPoolDepth(new Int32Array([-1]), 1, new Float32Array(), new THREE.Matrix4()))
-      .toBe(0);
+    expect(
+      nearestCrowdPoolDepth(new Int32Array(), 0, new Float32Array(), new THREE.Matrix4()),
+    ).toBe(0);
+    expect(
+      nearestCrowdPoolDepth(new Int32Array([-1]), 1, new Float32Array(), new THREE.Matrix4()),
+    ).toBe(0);
   });
 });
