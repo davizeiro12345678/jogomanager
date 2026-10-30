@@ -47,7 +47,8 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
         .limit(5);
       if (teamResult.error) throw new Error("Não foi possível resolver o clube na base oficial.");
       const ids = (teamResult.data ?? []).map((team) => team.source_id);
-      let stadium = club.stadiums;
+      type Stadium = { name: string; capacity: number | null; photo_url: string | null } | null;
+      let stadium = (Array.isArray(club.stadiums) ? (club.stadiums[0] ?? null) : club.stadiums) as Stadium;
       if (!stadium) {
         const venueIds = (teamResult.data ?? []).flatMap((team) =>
           team.venue_source_id ? [team.venue_source_id] : [],
@@ -61,7 +62,7 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
             .limit(1)
             .maybeSingle();
           if (venue.error) throw new Error("Não foi possível carregar o estádio oficial.");
-          stadium = venue.data;
+          stadium = venue.data as Stadium;
         }
       }
       const matches = [];

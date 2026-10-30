@@ -1,3 +1,4 @@
+import { untypedDb, type UntypedDb } from "@/lib/untyped-db";
 import type Stripe from "stripe";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -51,7 +52,7 @@ let serviceSupabase: SupabaseClient<Database> | null = null;
  * product cards use explicit column grants and never see Stripe lookup keys or
  * fulfillment contents.
  */
-export function getStoreServiceSupabase() {
+export function getStoreServiceSupabase(): UntypedDb {
   if (!serviceSupabase) {
     const url = process.env["SUPABASE_URL"];
     const serviceRole = process.env["SUPABASE_SERVICE_ROLE_KEY"];
@@ -60,7 +61,7 @@ export function getStoreServiceSupabase() {
     }
     serviceSupabase = createClient<Database>(url, serviceRole);
   }
-  return serviceSupabase;
+  return untypedDb(serviceSupabase);
 }
 
 export function assertStoreProductKey(value: unknown): asserts value is string {

@@ -36,6 +36,7 @@ import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/p
 import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as=url";
 
 import "@/components/auth-store.css";
+import "@lovable.dev/cloud-auth-js/styles.css";
 import { getRouteApi } from "@tanstack/react-router";
 const Route = getRouteApi("/auth");
 
@@ -291,6 +292,23 @@ export function AuthPage() {
     }
   }
 
+  async function signInWithLovable() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const { lovable } = await import("@/integrations/lovable/index");
+      const result = await lovable.auth.signInWithOAuth("lovable", { redirect_uri: callback() });
+      if (result.error) throw result.error;
+      if (!result.redirected) await continueSession();
+    } catch (cause) {
+      setError(authErrorMessage(cause, mode));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function signInWithPasskey() {
     if (busy || !methods?.passkeys || !passkeysSupported) return;
     setBusy(true);
@@ -455,6 +473,16 @@ export function AuthPage() {
                 Tentar novamente
               </Button>
             </div>
+          )}
+          {(mode === "in" || mode === "up") && (
+            <button
+              type="button"
+              disabled={busy}
+              className="lovable-auth-button mt-5 w-full"
+              onClick={signInWithLovable}
+            >
+              Continue with Lovable
+            </button>
           )}
           {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
             <div className="mt-5 space-y-2">

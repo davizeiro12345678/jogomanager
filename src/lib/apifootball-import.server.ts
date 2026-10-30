@@ -33,9 +33,17 @@ export type AfImportResult = {
 
 // Import tables/RPCs from the restore migration are absent from the generated
 // types on this backend, so this server-only importer uses an untyped client.
-async function admin(): Promise<import("@supabase/supabase-js").SupabaseClient> {
+type LeagueTarget = {
+  source_id: string;
+  current_season: string | null;
+  coverage: unknown;
+  local_competition_id: string | null;
+};
+type TeamTarget = { source_id: string; local_club_id: string | null; league_source_id: string | null };
+
+async function admin(): Promise<import("@/lib/untyped-db").UntypedDb> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as import("@supabase/supabase-js").SupabaseClient;
+  return supabaseAdmin as unknown as import("@/lib/untyped-db").UntypedDb;
 }
 
 const importScope = new AsyncLocalStorage<{
@@ -307,7 +315,7 @@ async function importTeams(
 
   let created = 0;
   let linked = 0;
-  const batch = await pool(leagues ?? [], 4, deadline, async (lg) => {
+  const batch = await pool((leagues ?? []) as LeagueTarget[], 4, deadline, async (lg) => {
     if (!lg.current_season) return false;
     const id = lg.source_id.slice(3);
     let teams: AfTeam[];
@@ -335,7 +343,7 @@ async function importTeams(
     const known = new Map((already ?? []).map((r) => [r.source_id, r.local_club_id]));
 
     const newClubs: TablesInsert<"clubs">[] = [];
-    const maps: TablesInsert<"official_teams">[] = [];
+    const maps: (TablesInsert<"official_teams"> & { sport?: string })[] = [];
     for (const t of teams) {
       const sid = `af:${t.team.id}`;
       let local = known.get(sid) ?? byName.get(norm(t.team.name)) ?? null;
@@ -426,7 +434,7 @@ async function importSquads(
   if (error) throw new Error(error.message);
 
   let created = 0;
-  const batch = await pool(teams ?? [], 4, deadline, async (t) => {
+  const batch = await pool((teams ?? []) as TeamTarget[], 4, deadline, async (t) => {
     let squad: AfSquad[];
     try {
       squad = await af<AfSquad>(`/players/squads?team=${t.source_id.slice(3)}`);
@@ -508,7 +516,7 @@ async function leaguePage(offset: number, limit: number) {
     p_limit: limit,
   });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as LeagueTarget[];
 }
 
 async function saveRaw(kind: string, rows: { ref: string; payload: unknown }[]) {
@@ -849,7 +857,7 @@ async function teamPage(offset: number, limit: number) {
     p_squads_only: false,
   });
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as TeamTarget[];
 }
 
 async function perTeam(
