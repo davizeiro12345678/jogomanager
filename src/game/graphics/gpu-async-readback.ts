@@ -16,7 +16,10 @@ export type AsyncPixelReader = {
 export class BoundedAsyncGpuReadback {
   private busy = false;
   private nextAt = 0;
-  constructor(readonly minIntervalMs = 500, readonly maxPixels = 64 * 64) {}
+  constructor(
+    readonly minIntervalMs = 500,
+    readonly maxPixels = 64 * 64,
+  ) {}
 
   async tryRead(
     reader: AsyncPixelReader,
@@ -34,7 +37,8 @@ export class BoundedAsyncGpuReadback {
       width <= 0 ||
       height <= 0 ||
       width * height > this.maxPixels
-    ) return null;
+    )
+      return null;
     this.busy = true;
     this.nextAt = now + Math.max(0, this.minIntervalMs);
     try {

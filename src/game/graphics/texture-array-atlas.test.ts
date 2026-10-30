@@ -15,7 +15,12 @@ describe("GPU texture array atlas", () => {
   });
   it("rejects different layer dimensions and excessive GPU storage", () => {
     expect(() => makeRgbaTextureArray([new Uint8Array(3)], 1, 1)).toThrow(RangeError);
-    expect(() => makeRgbaTextureArray(Array.from({ length: 65 }, () => new Uint8Array(4)), 1, 1))
-      .toThrow(RangeError);
+    expect(() =>
+      makeRgbaTextureArray(
+        Array.from({ length: 65 }, () => new Uint8Array(4)),
+        1,
+        1,
+      ),
+    ).toThrow(RangeError);
   });
 });

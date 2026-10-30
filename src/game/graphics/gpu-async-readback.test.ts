@@ -6,7 +6,9 @@ describe("nonblocking GPU readback", () => {
   it("drops overlapping read requests and enforces a bounded frequency", async () => {
     const target = new THREE.RenderTarget(2, 2);
     let release!: (pixels: Uint8Array) => void;
-    const pending = new Promise<Uint8Array>((resolve) => { release = resolve; });
+    const pending = new Promise<Uint8Array>((resolve) => {
+      release = resolve;
+    });
     const reader = { readRenderTargetPixelsAsync: vi.fn().mockReturnValueOnce(pending) };
     const pipeline = new BoundedAsyncGpuReadback(100, 16);
     const first = pipeline.tryRead(reader, target, 2, 2, 1000);

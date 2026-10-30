@@ -15,10 +15,13 @@ export function buildConservativeDepthPyramid(
   height: number,
 ): DepthLevel[] {
   if (
-    !Number.isSafeInteger(width) || width < 1 ||
-    !Number.isSafeInteger(height) || height < 1 ||
+    !Number.isSafeInteger(width) ||
+    width < 1 ||
+    !Number.isSafeInteger(height) ||
+    height < 1 ||
     depth.length !== width * height
-  ) throw new RangeError("Invalid depth buffer dimensions");
+  )
+    throw new RangeError("Invalid depth buffer dimensions");
   const first = new Float32Array(depth.length);
   for (let i = 0; i < depth.length; i++) {
     const sample = depth[i]!;
@@ -33,12 +36,13 @@ export function buildConservativeDepthPyramid(
     for (let y = 0; y < nextHeight; y++) {
       for (let x = 0; x < nextWidth; x++) {
         let farthest = 0;
-        for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
-          const px = 2 * x + dx;
-          const py = 2 * y + dy;
-          if (px < width && py < height)
-            farthest = Math.max(farthest, previous.values[py * width + px]!);
-        }
+        for (let dy = 0; dy < 2; dy++)
+          for (let dx = 0; dx < 2; dx++) {
+            const px = 2 * x + dx;
+            const py = 2 * y + dy;
+            if (px < width && py < height)
+              farthest = Math.max(farthest, previous.values[py * width + px]!);
+          }
         values[y * nextWidth + x] = farthest;
       }
     }
@@ -57,8 +61,14 @@ export function certainlyOccluded(
   tolerance = 0.002,
 ): boolean {
   if (
-    !Number.isFinite(nearestDepth) || nearestDepth <= 0 || nearestDepth > 1 ||
-    x < 0 || y < 0 || x >= level.width || y >= level.height
-  ) return false;
+    !Number.isFinite(nearestDepth) ||
+    nearestDepth <= 0 ||
+    nearestDepth > 1 ||
+    x < 0 ||
+    y < 0 ||
+    x >= level.width ||
+    y >= level.height
+  )
+    return false;
   return nearestDepth > level.values[Math.floor(y) * level.width + Math.floor(x)]! + tolerance;
 }
