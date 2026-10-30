@@ -338,12 +338,12 @@ function appendReserves(club: Club, existing: Player[], minimum: number): Player
   const names = new Set(squad.map((p) => p.name));
   const numbers = new Set(squad.map((p) => p.number));
   const targets: Record<Position, number> = { GK: 3, DF: 8, MF: 8, FW: 7 };
+  const counts: Record<Position, number> = { GK: 0, DF: 0, MF: 0, FW: 0 };
+  squad.forEach((p) => counts[p.pos]++);
   let index = 0;
-  while (squad.length < minimum || squad.filter((p) => p.pos === "GK").length < MIN_GOALKEEPERS) {
+  while (squad.length < minimum || counts.GK < MIN_GOALKEEPERS) {
     const id = `${clubId}-reserve-${index++}`;
     if (ids.has(id)) continue;
-    const counts = { GK: 0, DF: 0, MF: 0, FW: 0 };
-    squad.forEach((p) => counts[p.pos]++);
     const pos = (Object.keys(targets) as Position[]).sort(
       (a, b) => targets[b] - counts[b] - (targets[a] - counts[a]),
     )[0]!;
@@ -356,10 +356,12 @@ function appendReserves(club: Club, existing: Player[], minimum: number): Player
       ovr: clamp(club.strength - 10 - Math.floor(rnd() * 9), 40, 85),
       named: false,
     };
-    const number = Array.from({ length: 99 }, (_, i) => i + 1).find((n) => !numbers.has(n));
-    if (!number) break;
+    let number = 1;
+    while (number <= 99 && numbers.has(number)) number++;
+    if (number > 99) break;
     const player = { ...makePlayer(club, [d], 0, number, rnd), id };
     squad.push(player);
+    counts[pos]++;
     ids.add(id);
     names.add(name);
     numbers.add(number);
