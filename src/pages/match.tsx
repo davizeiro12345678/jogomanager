@@ -55,7 +55,8 @@ import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loadi
 
 import { ceremonyEnabled } from "@/game/ceremony-prefs";
 
-import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
+import { CUTSCENES, POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
+import { cinematicSetFor } from "@/game/cinematic-set";
 
 import { MENTALITIES, PRESSING } from "@/game/formations";
 
@@ -265,6 +266,9 @@ function LiveMatch({
   /** sequência imersiva (vestiário → camisas → túnel → apito) antes do pontapé */
   const [introStep, setIntroStep] = useState(() => (prematchIntroEnabled() ? 0 : -1));
   const introActive = introStep >= 0 && introStep < PREMATCH_SCENE_IDS.length;
+  const nextIntroId = introActive ? PREMATCH_SCENE_IDS[introStep + 1] : undefined;
+  const nextIntro = nextIntroId ? CUTSCENES[nextIntroId] : undefined;
+  useCinematicPreload(Boolean(nextIntro), nextIntro ? cinematicSetFor(nextIntro.art) : undefined);
   /** cerimônia 3D (entorno → túnel → hino → mosaico → sorteio) após as cutscenes */
   const [ceremony, setCeremony] = useState(() => ceremonyEnabled());
   const ceremonyActive = ceremony && !introActive;

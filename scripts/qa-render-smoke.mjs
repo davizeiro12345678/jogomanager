@@ -65,6 +65,11 @@ try {
     deviceScaleFactor: 1,
   });
   page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.addEventListener("graphics-ready", (event) => {
+      window.__matchGraphicsReady = event.detail;
+    });
+  });
   let releaseSet;
   const waitForSet = new Promise((resolve) => {
     releaseSet = resolve;
@@ -115,25 +120,41 @@ try {
     timeout: 120000,
   });
   await assertImageNotBlack(cinematic, "cutscene");
+  const sceneTiming = await page
+    .locator('[role="dialog"][data-scene-loading]')
+    .evaluate((element) => ({
+      loadMs: element.dataset.sceneLoadMs,
+      backdropMs: element.dataset.sceneBackdropVisibleMs,
+    }));
 
   await page.goto(`${base}/graphics-benchmark.html?scenario=broadcast&manual=1`, {
     waitUntil: "domcontentloaded",
   });
   const match = page.locator("canvas").first();
   await match.waitFor({ timeout: 120000 });
-  await page.waitForTimeout(8000);
+  await page.waitForFunction(() => window.__matchGraphicsReady, null, { timeout: 120000 });
   if (await page.getByText("O estádio não foi exibido", { exact: false }).count())
     throw new Error("Match fell back to the black-frame warning");
   const matchImage = await match.screenshot({
     path: path.join(output, "match-ready.png"),
     timeout: 120000,
   });
-  await assertImageNotBlack(matchImage, "match");
-  if (errors.length) throw new Error(errors.join("\n"));
+  const matchTiming = await page.evaluate(() => window.__matchGraphicsReady);
   await writeFile(
     path.join(output, "result.json"),
-    JSON.stringify({ ok: true, renderer: "SwiftShader", errors }, null, 2),
+    JSON.stringify(
+      {
+        renderer: "SwiftShader",
+        sceneTiming,
+        matchTiming,
+        errors,
+      },
+      null,
+      2,
+    ),
   );
+  await assertImageNotBlack(matchImage, "match");
+  if (errors.length) throw new Error(errors.join("\n"));
 } finally {
   await browser?.close();
   server.kill();

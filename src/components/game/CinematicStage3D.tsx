@@ -428,22 +428,19 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     onReady?.();
   }, [onReady]);
   const enhancedAllowed =
-    ready &&
-    !paused &&
-    !reduced &&
-    !hidden &&
-    presentation.lens !== "off" &&
-    quality !== "baixa" &&
-    !contextLost;
+    ready && !reduced && presentation.lens !== "off" && quality !== "baixa" && !contextLost;
   const showEnhanced = enhanced && enhancedAllowed;
   useEffect(() => {
     if (!enhancedAllowed) {
       setEnhanced(false);
       return;
     }
+    // Keep the warm environment and lens during pause/background; the demand
+    // frame loop already sleeps and resume must not rebuild the composer.
+    if (enhanced || paused || hidden) return;
     const timer = window.setTimeout(() => startTransition(() => setEnhanced(true)), 200);
     return () => window.clearTimeout(timer);
-  }, [enhancedAllowed]);
+  }, [enhancedAllowed, enhanced, paused, hidden]);
   const host = useRef<HTMLDivElement>(null);
   const openedAt = useRef(performance.now());
   const onBatch = useCallback(({ sources, batches, visibleSources }: CinematicBatchSnapshot) => {
