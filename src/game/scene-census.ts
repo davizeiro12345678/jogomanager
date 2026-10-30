@@ -138,6 +138,27 @@ function trianglesOf(geometry: THREE.BufferGeometry | undefined, instances: numb
   return Math.floor(vertices / 3) * instances;
 }
 
+/** BatchedMesh has one combined GPU geometry, but each visible instance
+ * contributes its own triangles. Count public per-geometry ranges rather
+ * than attributing only the first subgeometry to the scene budget. */
+function batchedTrianglesOf(mesh: THREE.BatchedMesh): number {
+  let triangles = 0;
+  const range: {
+    count?: number;
+    indexCount?: number;
+    vertexCount?: number;
+  } = {};
+  for (let id = 0; id < mesh.instanceCount; id++) {
+    if (!mesh.getVisibleAt(id)) continue;
+    const geometryId = mesh.getGeometryIdAt(id);
+    const info = mesh.getGeometryRangeAt(geometryId, range);
+    if (!info) continue;
+    const elements = mesh.geometry.index ? range.indexCount : range.vertexCount;
+    triangles += Math.floor((elements ?? range.count ?? 0) / 3);
+  }
+  return triangles;
+}
+
 function geometryBufferBytes(geometry: THREE.BufferGeometry): number {
   const buffers = new Set<ArrayBufferLike>();
   const add = (attribute: unknown) => {
@@ -239,7 +260,9 @@ export function censusScene(scene: THREE.Object3D): SceneCensus {
           : 1;
       entry.meshes += 1;
       entry.draws += 1;
-      entry.triangles += trianglesOf(mesh.geometry, instances);
+      entry.triangles += (mesh as THREE.BatchedMesh).isBatchedMesh
+        ? batchedTrianglesOf(mesh as THREE.BatchedMesh)
+        : trianglesOf(mesh.geometry, instances);
       if (mesh.castShadow) entry.shadowCasters += 1;
       if (mesh.geometry && !geometries.has(mesh.geometry)) {
         geometries.add(mesh.geometry);
