@@ -57,9 +57,8 @@ export function CinematicProbeGI({ enabled }: { enabled: boolean }) {
         // The WebGL-only probe calls WebGLRenderer methods during its bake;
         // a WebGPURenderer using an internal WebGL backend is NOT equivalent.
         if (!(renderer as THREE.WebGLRenderer).isWebGLRenderer) return;
-        const { LightProbeGridWebGL } = await import(
-          "three/addons/lighting/LightProbeGridWebGL.js"
-        );
+        const { LightProbeGridWebGL } =
+          await import("three/addons/lighting/LightProbeGridWebGL.js");
         if (!active) return;
         const volume = new LightProbeGridWebGL(
           settings.width,
