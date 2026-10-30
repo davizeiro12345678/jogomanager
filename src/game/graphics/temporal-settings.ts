@@ -9,6 +9,14 @@ export function temporalAAOptedIn(): boolean {
   }
 }
 
+/** r186 TRAANode replaces a camera's pre-existing view offset during its
+ * jitter pass. Until the upstream projection-preservation patch is released,
+ * use the ordinary renderer for viewports/cameras that specify one. */
+export function hasExternalViewOffset(camera: THREE.Camera): boolean {
+  const viewCamera = camera as THREE.PerspectiveCamera | THREE.OrthographicCamera;
+  return viewCamera.view?.enabled === true;
+}
+
 /** Independent previous camera matrices remain stable across multi-pass draws. */
 export class TemporalCameraHistory {
   readonly previousWorldInverse = new THREE.Matrix4();
