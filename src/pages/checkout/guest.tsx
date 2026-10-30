@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { getGuestCheckoutStatus } from "@/lib/guest-checkout.functions";
+import { guestCheckoutAuthRedirect } from "@/lib/guest-checkout-redirect";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getRouteApi } from "@tanstack/react-router";
@@ -137,12 +138,7 @@ export function GuestCheckoutReturn() {
 
     setSending(true);
     setMessage("");
-    const redirectTo =
-      window.location.origin +
-      "/checkout/claim?intent=" +
-      encodeURIComponent(intent) +
-      "&session_id=" +
-      encodeURIComponent(sessionId);
+    const redirectTo = guestCheckoutAuthRedirect(window.location.origin, intent, sessionId);
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,

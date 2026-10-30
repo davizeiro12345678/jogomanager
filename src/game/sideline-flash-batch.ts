@@ -7,6 +7,7 @@ export type SidelineFlash = Readonly<{ x: number; z: number; heat: number }>;
 export class SidelineFlashBatch {
   private readonly previousHeat: Float64Array;
   private readonly transform = new THREE.Object3D();
+  private readonly dirtySlots: number[] = [];
   private mesh: THREE.InstancedMesh | null = null;
 
   constructor(capacity: number) {
@@ -19,7 +20,7 @@ export class SidelineFlashBatch {
       this.previousHeat.fill(Number.NaN);
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     }
-    let changed = false;
+    this.dirtySlots.length = 0;
     let visible = false;
     for (let index = 0; index < flashes.length; index++) {
       const flash = flashes[index]!;
@@ -30,11 +31,16 @@ export class SidelineFlashBatch {
       this.transform.scale.setScalar(Math.max(0.0001, flash.heat * 1.6));
       this.transform.updateMatrix();
       mesh.setMatrixAt(index, this.transform.matrix);
-      changed = true;
+      this.dirtySlots.push(index);
     }
     mesh.visible = visible;
-    // Six small matrices remain a single bounded upload. Keep the full buffer
-    // so a flash that expired while invisible is zeroed on the next visible draw.
-    if (changed) mesh.instanceMatrix.needsUpdate = true;
+    // Upload only the matrices whose flashes actually changed (16 floats
+    // each), instead of copying the full instance buffer for a single pulse.
+    // The renderer consumes/clears these ranges after each GPU upload.
+    if (this.dirtySlots.length) {
+      mesh.instanceMatrix.clearUpdateRanges();
+      for (const slot of this.dirtySlots) mesh.instanceMatrix.addUpdateRange(slot * 16, 16);
+      mesh.instanceMatrix.needsUpdate = true;
+    }
   }
 }

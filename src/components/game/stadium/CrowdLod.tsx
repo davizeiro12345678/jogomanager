@@ -1,7 +1,10 @@
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
+import { hasNativeWebGPUBackend } from "@/components/game/renderer";
+import { nearestCrowdPoolDepth } from "@/game/graphics/crowd-pool-occlusion";
+import { projectionsNearlyEqual, webGpuDepthSnapshot } from "@/game/graphics/webgpu-depth-registry";
 import { supporterGeometry } from "@/game/crowd-geometry";
 import { crowdLodMaterial } from "@/game/crowd-lod-material";
 
@@ -187,6 +190,14 @@ export function CrowdLod({
     resolveRuntimeSceneBudget(budget.tier).crowdInstances,
   );
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
+  const renderer = useThree((state) => state.gl);
+  const indirect = useRef<{
+    dispatch(
+      counts: readonly number[],
+      occlusion?: Readonly<{ texture: THREE.Texture; nearestDepths: readonly number[] }>,
+    ): void;
+    dispose(): void;
+  } | null>(null);
   const meshRefs = useMemo(
     () =>
       [0, 1, 2].map((tier) => (mesh: THREE.InstancedMesh | null) => {
@@ -376,6 +387,72 @@ export function CrowdLod({
     [data],
   );
 
+  const nativeUniforms = useRef<
+    Array<{
+      clock: { value: number };
+      pulse: { value: number };
+      wave: { value: number };
+      agitation: { value: number };
+    }>
+  >([]);
+  useEffect(() => {
+    if (webgl2 || !hasNativeWebGPUBackend(renderer)) return;
+    let live = true;
+    // Lazy-load TSL only for native WebGPU. Keeping these imports out of the
+    // WebGL2 bundle avoids loading the heavy node compiler on mobile.
+    void import("./native-webgpu-crowd-motion")
+      .then(({ createNativeCrowdMotionMaterial }) => {
+        if (!live) return;
+        const replacements = data.geometries.map((_, tier) =>
+          createNativeCrowdMotionMaterial(tier, data.card),
+        );
+        const materials = data.materials as THREE.Material[];
+        replacements.forEach(({ material }, tier) => {
+          const previous = materials[tier];
+          materials[tier] = material;
+          const mesh = refs.current[tier];
+          if (mesh) mesh.material = material;
+          previous?.dispose();
+        });
+        nativeUniforms.current = replacements.map((replacement) => replacement.uniforms);
+      })
+      .catch(() => {
+        // The existing static native WebGPU audience remains visible.
+      });
+    return () => {
+      live = false;
+      nativeUniforms.current = [];
+    };
+  }, [webgl2, renderer, data]);
+
+  useEffect(() => {
+    if (webgl2 || !hasNativeWebGPUBackend(renderer)) return;
+    let enabled = false;
+    try {
+      enabled = globalThis.localStorage?.getItem("manager3d.webgpu.crowdIndirect") === "on";
+    } catch {
+      // Private browsing and embedded matches retain ordinary InstancedMesh.
+    }
+    if (!enabled) return;
+    let live = true;
+    void import("@/game/graphics/webgpu-crowd-indirect")
+      .then(({ createCrowdGpuIndirectCommands }) => {
+        if (!live) return;
+        const gpu = renderer as unknown as import("three/webgpu").WebGPURenderer;
+        const controller = createCrowdGpuIndirectCommands(gpu, data.geometries);
+        indirect.current = controller;
+        controller.dispatch(data.counts);
+      })
+      .catch(() => {
+        // The conventional CPU-selected draw count remains authoritative.
+      });
+    return () => {
+      live = false;
+      indirect.current?.dispose();
+      indirect.current = null;
+    };
+  }, [webgl2, renderer, data]);
+
   const elapsed = useRef(Number.POSITIVE_INFINITY);
   useEffect(() => {
     // Another match can reuse the same seat numbers with different club colours.
@@ -394,6 +471,12 @@ export function CrowdLod({
           ? supporters.intensity * 0.4
           : 0;
     data.uniforms.wave.value = (clock.elapsedTime * 0.22) % (Math.PI * 2);
+    for (const nodes of nativeUniforms.current) {
+      nodes.clock.value = data.uniforms.time.value;
+      nodes.pulse.value = data.uniforms.pulse.value;
+      nodes.wave.value = data.uniforms.wave.value;
+      nodes.agitation.value = data.uniforms.agitation.value;
+    }
     elapsed.current += dt;
     if (elapsed.current < budget.crowdUpdateSeconds) return;
     elapsed.current = 0;
@@ -483,6 +566,23 @@ export function CrowdLod({
       // periodic CPU spike in the original global crowd pass.
       mesh.frustumCulled = false;
     });
+    const indirectDraws = indirect.current;
+    if (indirectDraws) {
+      // Hi-Z belongs to the PREVIOUS completed scene pass. Do not reuse it
+      // after a camera cut, zoom, viewport change or projection jitter.
+      const snapshot = webGpuDepthSnapshot(renderer);
+      if (snapshot && projectionsNearlyEqual(snapshot.viewProjection, data.projection)) {
+        const nearest = data.seats.map((seats, tier) =>
+          nearestCrowdPoolDepth(seats, data.counts[tier]!, seatUpload.matrices, data.projection),
+        );
+        indirectDraws.dispatch(data.counts, {
+          texture: snapshot.texture,
+          nearestDepths: nearest,
+        });
+      } else {
+        indirectDraws.dispatch(data.counts);
+      }
+    }
   });
 
   return (

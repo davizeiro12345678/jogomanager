@@ -7,12 +7,13 @@
 //  ônibus (1 grupo) e torcedores (1 InstancedMesh).
 // ============================================================================
 
-import { memo, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import type { ClubColors } from "./ClubIdentity";
+import { createPylonBeamBatch } from "@/game/stadium-pylon-beams";
 
 function paint(g: THREE.BufferGeometry, c: string, emissive = 0): THREE.BufferGeometry {
   const tmp = new THREE.Color(c);
@@ -26,6 +27,16 @@ function paint(g: THREE.BufferGeometry, c: string, emissive = 0): THREE.BufferGe
     g.setAttribute("emissive", new THREE.BufferAttribute(e, 1));
   }
   return g;
+}
+
+/** Release the temporary source buffers after their vertices have been copied
+ * into the merged stadium mesh. Otherwise every ceremony recreates the complete
+ * set of disconnected Box/CylinderGeometry CPU allocations. */
+function mergeAndRelease(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const merged = mergeGeometries(geometries, false);
+  for (const geometry of geometries) geometry.dispose();
+  if (!merged) throw new Error("Incompatible exterior geometry attributes");
+  return merged;
 }
 
 /** Torcedores caminhando até os portões: instância única, vai-e-vem em loop. */
@@ -148,7 +159,7 @@ export const StadiumExterior = memo(function StadiumExterior({
     // praça + rua
     put(new THREE.BoxGeometry(90, 0.2, 60), 0, -0.1, 8, night ? "#11161f" : "#2a3342");
     put(new THREE.BoxGeometry(90, 0.22, 7), 0, -0.09, 24, "#0a0e14");
-    return mergeGeometries(geos, false)!;
+    return mergeAndRelease(geos);
   }, [club.primary, night]);
 
   const pylons = useMemo(() => {
@@ -166,12 +177,21 @@ export const StadiumExterior = memo(function StadiumExterior({
       head.translate(x, 26.5, z);
       geos.push(paint(head, "#f4f8ff"));
     }
-    return mergeGeometries(geos, false)!;
+    return mergeAndRelease(geos);
   }, []);
 
   const cloth = useMemo(
     () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }),
     [],
+  );
+  const beams = useMemo(() => createPylonBeamBatch(), []);
+  useEffect(
+    () => () => {
+      beams.geometry.dispose();
+      (beams.material as THREE.Material).dispose();
+      beams.dispose();
+    },
+    [beams],
   );
 
   return (
@@ -183,26 +203,8 @@ export const StadiumExterior = memo(function StadiumExterior({
         <torusGeometry args={[27.2, 0.22, 8, 64]} />
         <meshBasicMaterial color={club.primary} />
       </mesh>
-      {/* fachos dos refletores */}
-      {(
-        [
-          [-30, -38],
-          [30, -38],
-          [-30, 2],
-          [30, 2],
-        ] as Array<[number, number]>
-      ).map(([x, z], k) => (
-        <mesh key={k} position={[x, 20, z]} rotation={[0.35, 0, x > 0 ? -0.3 : 0.3]}>
-          <coneGeometry args={[4.5, 14, 12, 1, true]} />
-          <meshBasicMaterial
-            color="#dcebff"
-            transparent
-            opacity={0.1}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
+      {/* Four beams share one geometry, material and BatchedMesh draw. */}
+      <primitive object={beams} />
       <TeamBus color={club.secondary} />
       <Fans />
       {/* letreiro do jogo */}
