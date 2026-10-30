@@ -396,7 +396,8 @@ function GoalFx({
     for (let i = 0; i < COUNT; i++) {
       const p = parts[i]!;
       // Static/settled confetti must not upload all instance matrices again.
-      if (p.y > 0.05) {
+      const wasMoving = p.y > 0.05;
+      if (wasMoving) {
         particleTransformsChanged = true;
         p.vy -= dt * 2.2;
         p.x += (p.vx + Math.sin(clock.elapsedTime * 2 + i) * 0.4) * dt;
@@ -407,7 +408,7 @@ function GoalFx({
       dummy.position.set(p.x, p.y, p.z);
       dummy.rotation.set(p.r, p.r * 0.7, p.r * 0.4);
       dummy.scale.setScalar(p.y > 0.05 ? 1 : 0.0001);
-      if (particleTransformsChanged && p.y >= 0.03) {
+      if (wasMoving) {
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       }
