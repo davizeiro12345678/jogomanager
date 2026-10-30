@@ -340,6 +340,58 @@ export type Database = {
         }
         Relationships: []
       }
+      club_catalog_links: {
+        Row: {
+          club_id: string
+          match_rule: string
+          metadata_before: Json
+          reviewed_at: string
+          source: string
+          source_club_id: string
+          source_team_id: string | null
+        }
+        Insert: {
+          club_id: string
+          match_rule?: string
+          metadata_before?: Json
+          reviewed_at?: string
+          source: string
+          source_club_id: string
+          source_team_id?: string | null
+        }
+        Update: {
+          club_id?: string
+          match_rule?: string
+          metadata_before?: Json
+          reviewed_at?: string
+          source?: string
+          source_club_id?: string
+          source_team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_catalog_links_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_catalog_links_source_club_id_fkey"
+            columns: ["source_club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_catalog_links_source_team_id_fkey"
+            columns: ["source_team_id"]
+            isOneToOne: false
+            referencedRelation: "official_teams"
+            referencedColumns: ["source_id"]
+          },
+        ]
+      }
       club_external_ids: {
         Row: {
           club_id: string
@@ -1214,6 +1266,7 @@ export type Database = {
           local_club_id: string | null
           name: string
           source_id: string
+          sport: string
           updated_at: string
           venue_source_id: string | null
         }
@@ -1222,6 +1275,7 @@ export type Database = {
           local_club_id?: string | null
           name: string
           source_id: string
+          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1230,6 +1284,7 @@ export type Database = {
           local_club_id?: string | null
           name?: string
           source_id?: string
+          sport?: string
           updated_at?: string
           venue_source_id?: string | null
         }
@@ -1242,6 +1297,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      official_venues: {
+        Row: {
+          capacity: number | null
+          city: string | null
+          country: string | null
+          name: string
+          photo_url: string | null
+          source_id: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          city?: string | null
+          country?: string | null
+          name: string
+          photo_url?: string | null
+          source_id: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          city?: string | null
+          country?: string | null
+          name?: string
+          photo_url?: string | null
+          source_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       payment_webhook_events: {
         Row: {
@@ -1438,6 +1523,48 @@ export type Database = {
           },
         ]
       }
+      player_identity_aliases: {
+        Row: {
+          canonical_player_id: string
+          match_rule: string
+          player_id: string
+          reviewed_at: string
+          source: string | null
+          source_id: string | null
+        }
+        Insert: {
+          canonical_player_id: string
+          match_rule?: string
+          player_id: string
+          reviewed_at?: string
+          source?: string | null
+          source_id?: string | null
+        }
+        Update: {
+          canonical_player_id?: string
+          match_rule?: string
+          player_id?: string
+          reviewed_at?: string
+          source?: string | null
+          source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_identity_aliases_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_identity_aliases_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_profiles: {
         Row: {
           birth_year: number | null
@@ -1572,6 +1699,7 @@ export type Database = {
         Row: {
           age: number
           birth_date: string | null
+          canonical_player_id: string | null
           club_id: string
           created_at: string
           data_version: number
@@ -1589,6 +1717,7 @@ export type Database = {
           shirt_number: number | null
           source: string | null
           source_id: string | null
+          source_kind: string
           source_updated_at: string | null
           sync_status: string
           updated_at: string
@@ -1596,6 +1725,7 @@ export type Database = {
         Insert: {
           age?: number
           birth_date?: string | null
+          canonical_player_id?: string | null
           club_id: string
           created_at?: string
           data_version?: number
@@ -1613,6 +1743,7 @@ export type Database = {
           shirt_number?: number | null
           source?: string | null
           source_id?: string | null
+          source_kind?: string
           source_updated_at?: string | null
           sync_status?: string
           updated_at?: string
@@ -1620,6 +1751,7 @@ export type Database = {
         Update: {
           age?: number
           birth_date?: string | null
+          canonical_player_id?: string | null
           club_id?: string
           created_at?: string
           data_version?: number
@@ -1637,11 +1769,19 @@ export type Database = {
           shirt_number?: number | null
           source?: string | null
           source_id?: string | null
+          source_kind?: string
           source_updated_at?: string | null
           sync_status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "players_canonical_player_id_fkey"
+            columns: ["canonical_player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "players_club_id_fkey"
             columns: ["club_id"]
@@ -2119,6 +2259,11 @@ export type Database = {
           training_boosts: number
         }[]
       }
+      enrich_existing_football_profiles: {
+        Args: { p_profiles: Json }
+        Returns: number
+      }
+      enrich_football_venues: { Args: { p_venues: Json }; Returns: number }
       finish_payment_webhook_event: {
         Args: { _event_id: string; _succeeded: boolean }
         Returns: undefined
@@ -2159,6 +2304,14 @@ export type Database = {
           rank: number
           weekly_active_seconds: number
           wins: number
+        }[]
+      }
+      get_public_league_digest_source: {
+        Args: { p_league_ids: number[] }
+        Returns: {
+          injury_count: number
+          league_id: number
+          payload: Json
         }[]
       }
       has_active_subscription: {
