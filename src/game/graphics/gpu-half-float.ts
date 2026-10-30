@@ -60,7 +60,8 @@ export function createHalfFloatVolume(
   if (
     ![width, height, depth].every((size) => Number.isSafeInteger(size) && size > 0) ||
     data.length !== width * height * depth * 4
-  ) throw new RangeError("Invalid HDR volume dimensions");
+  )
+    throw new RangeError("Invalid HDR volume dimensions");
   const packed = packHalfFloatTexture(data, 4);
   const texture = new THREE.Data3DTexture(packed, width, height, depth);
   texture.type = THREE.HalfFloatType;
