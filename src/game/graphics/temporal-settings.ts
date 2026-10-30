@@ -9,6 +9,16 @@ export function temporalAAOptedIn(): boolean {
   }
 }
 
+/** Temporal upscaling is explicitly opt-in and requires native WebGPU.
+ * No lower-resolution history is allocated on WebGL2 or by default. */
+export function temporalUpscaleOptedIn(): boolean {
+  try {
+    return globalThis.localStorage?.getItem("manager3d.webgpu.taau") === "on";
+  } catch {
+    return false;
+  }
+}
+
 /** r186 TRAANode replaces a camera's pre-existing view offset during its
  * jitter pass. Until the upstream projection-preservation patch is released,
  * use the ordinary renderer for viewports/cameras that specify one. */
