@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import {
-  TemporalCameraHistory,
-  hasExternalViewOffset,
-} from "@/game/graphics/temporal-settings";
+import { TemporalCameraHistory, hasExternalViewOffset } from "@/game/graphics/temporal-settings";
 
 describe("temporal camera matrices", () => {
   it("keeps separate previous view/projection values during multiple passes", () => {
