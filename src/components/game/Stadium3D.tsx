@@ -1026,7 +1026,7 @@ function Stadium3DImpl({
 
   const glProp = useMemo(() => {
     const base = {
-      antialias: eff === "media" && !(backend === "webgpu" && temporalAAOptedIn()),
+      antialias: eff === "media" && !(backend === "webgpu" && (temporalAAOptedIn() || temporalUpscaleOptedIn())),
       powerPreference: "high-performance" as const,
       stencil: false,
     };
