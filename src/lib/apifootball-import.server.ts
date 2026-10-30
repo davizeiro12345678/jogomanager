@@ -31,8 +31,6 @@ export type AfImportResult = {
   error?: string;
 };
 
-// Import tables/RPCs from the restore migration are absent from the generated
-// types on this backend, so this server-only importer uses an untyped client.
 type LeagueTarget = {
   source_id: string;
   current_season: string | null;
@@ -41,9 +39,9 @@ type LeagueTarget = {
 };
 type TeamTarget = { source_id: string; local_club_id: string | null; league_source_id: string | null };
 
-async function admin(): Promise<import("@/lib/untyped-db").UntypedDb> {
+async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as import("@/lib/untyped-db").UntypedDb;
+  return supabaseAdmin;
 }
 
 const importScope = new AsyncLocalStorage<{

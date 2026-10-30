@@ -1,4 +1,3 @@
-import { untypedDb } from "@/lib/untyped-db";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { LEAGUE_LABELS } from "@/lib/league-labels";
@@ -90,7 +89,7 @@ type RawInjury = {
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return untypedDb(supabaseAdmin);
+  return supabaseAdmin;
 }
 
 function clean(rows: StandingRow[]): StandingRow[] {

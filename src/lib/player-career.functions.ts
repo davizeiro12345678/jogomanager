@@ -1,4 +1,4 @@
-import { untypedDb, type UntypedDb } from "@/lib/untyped-db";
+import type { AppDb } from "@/lib/app-db";
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -13,7 +13,7 @@ type AthleteMutation = { status: "applied" | "conflict"; revision: number };
 
 /** A revision is assigned by PostgreSQL, never by a browser clock or a local save. */
 async function mutateAthleteCloud(
-  supabase: UntypedDb,
+  supabase: AppDb,
   slot: number,
   expectedRevision: number,
   operation: "save" | "delete",
@@ -42,7 +42,7 @@ export const saveAthleteCloud = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     if (JSON.stringify(data.state).length > 400_000) throw new Error("Save grande demais.");
     return mutateAthleteCloud(
-      untypedDb(context.supabase),
+      context.supabase,
       data.slot,
       data.expectedRevision,
       "save",
@@ -53,7 +53,7 @@ export const saveAthleteCloud = createServerFn({ method: "POST" })
 export const loadAthletesCloud = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await untypedDb(context.supabase)
+    const { data, error } = await context.supabase
       .from("player_careers")
       .select("slot, state, updated_at, sync_revision, deleted_at")
       .eq("user_id", context.userId);
@@ -72,5 +72,5 @@ export const deleteAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => AthleteDeleteSchema.parse(input))
   .handler(async ({ data, context }) =>
-    mutateAthleteCloud(untypedDb(context.supabase), data.slot, data.expectedRevision, "delete", null),
+    mutateAthleteCloud(context.supabase, data.slot, data.expectedRevision, "delete", null),
   );

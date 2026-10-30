@@ -1,11 +1,10 @@
-import { untypedDb } from "@/lib/untyped-db";
-import type { UntypedDb } from "@/lib/untyped-db";
+import type { AppDb } from "@/lib/app-db";
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 
-function publicClient(): UntypedDb {
+function publicClient(): AppDb {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   const url = process.env["SUPABASE_URL"];
   if (!key || !url) throw new Error("Os dados públicos de futebol estão indisponíveis.");
@@ -222,7 +221,7 @@ export const searchRealPlayers = createServerFn({ method: "GET" })
       // name trigram index with ILIKE. This server-only client keeps exactly
       // that public row predicate and a fixed public projection in every query.
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const db = untypedDb(supabaseAdmin);
+      const db = supabaseAdmin;
       const page = data.page ?? 0;
       const list: MarketRow[] = [];
       // Most requests need one read. A custom API cap below PAGE + 1 must not
