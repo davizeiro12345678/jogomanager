@@ -18,10 +18,7 @@ import {
 
 /** One set of GPU uniforms serves all instances of one crowd tier. The
  * native TSL vertex program is evaluated on the GPU, never by a CPU loop. */
-export function createNativeCrowdMotionMaterial(
-  tier: number,
-  card: THREE.Texture,
-) {
+export function createNativeCrowdMotionMaterial(tier: number, card: THREE.Texture) {
   const clock = uniform(0);
   const pulse = uniform(0);
   const wave = uniform(0);
@@ -42,25 +39,34 @@ export function createNativeCrowdMotionMaterial(
   const energy = pulse.clamp(0, 1);
   const local = positionLocal;
   const swayX = sin(clock.mul(1.7).add(phase))
-    .mul(0.035).mul(max(0, local.y.add(0.6)));
+    .mul(0.035)
+    .mul(max(0, local.y.add(0.6)));
   const swayZ = sin(clock.mul(5.2).add(phase))
-    .mul(agitation.mul(0.05)).mul(max(0, local.y.add(0.6)));
-  const bounce = abs(sin(clock.mul(float(5.8).add(style.x)).add(phase)))
-    .mul(energy.mul(0.24));
-  const waveLift = sin(wave.add(phase.mul(0.08))).mul(0.04).mul(energy);
+    .mul(agitation.mul(0.05))
+    .mul(max(0, local.y.add(0.6)));
+  const bounce = abs(sin(clock.mul(float(5.8).add(style.x)).add(phase))).mul(energy.mul(0.24));
+  const waveLift = sin(wave.add(phase.mul(0.08)))
+    .mul(0.04)
+    .mul(energy);
   if (tier < 2) {
     const clap = step(0.34, style.y).sub(step(0.68, style.y));
     const raised = energy.mul(float(0.72).add(sin(clock.mul(2).add(phase)).mul(0.28)));
     const turn = limb.x.mul(
-      float(0.08).mul(sin(clock.mul(1.1).add(phase)))
+      float(0.08)
+        .mul(sin(clock.mul(1.1).add(phase)))
         .add(raised.mul(mix(2.55, 0.2, clap))),
     );
     // Two arm sections use separate pivots; tier-2 cards do not.
     const isArm = step(0.5, limb.y);
     const upper = vec3(local.x.sub(limb.x.mul(0.21)), local.y.sub(0.25), local.z);
-    const rotatedX = upper.x.mul(cos(turn)).sub(upper.y.mul(sin(turn)))
+    const rotatedX = upper.x
+      .mul(cos(turn))
+      .sub(upper.y.mul(sin(turn)))
       .add(limb.x.mul(0.21));
-    const rotatedY = upper.x.mul(sin(turn)).add(upper.y.mul(cos(turn))).add(0.25);
+    const rotatedY = upper.x
+      .mul(sin(turn))
+      .add(upper.y.mul(cos(turn)))
+      .add(0.25);
     const articulated = mix(local, vec3(rotatedX, rotatedY, local.z), isArm);
     material.positionNode = vec3(
       articulated.x.add(swayX),
