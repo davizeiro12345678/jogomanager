@@ -333,7 +333,7 @@ function StudioScene({
         groundAction,
         (camera as THREE.PerspectiveCamera).zoom,
       ),
-    [height, size.width, size.height, framing, overhead, groundAction, camera.zoom],
+    [height, size.width, size.height, framing, overhead, groundAction, camera, camera.zoom],
   );
   // A real wide studio viewport left the hero visually small, with unused
   // floor and side space. Preserve the camera-fit envelope for actions and
