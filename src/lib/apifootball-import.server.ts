@@ -41,9 +41,9 @@ type LeagueTarget = {
 };
 type TeamTarget = { source_id: string; local_club_id: string | null; league_source_id: string | null };
 
-async function admin(): Promise<import("@/lib/untyped-db").UntypedDb> {
+async function admin(): Promise<import("@/lib/app-db").AppDb> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as import("@/lib/untyped-db").UntypedDb;
+  return supabaseAdmin as unknown as import("@/lib/app-db").AppDb;
 }
 
 const importScope = new AsyncLocalStorage<{
