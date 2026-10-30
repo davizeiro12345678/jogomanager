@@ -53,6 +53,7 @@ export function GrassChunks({
     [],
   );
   const activeChunks = useMemo(() => new Uint8Array(chunks.length), [chunks]);
+  const previousChunks = useMemo(() => new Uint8Array(chunks.length), [chunks]);
   const closestIndices = useMemo(() => new Int32Array(chunks.length), [chunks]);
   const closestDistances = useMemo(() => new Float64Array(chunks.length), [chunks]);
   const distancesByChunk = useMemo(() => new Float64Array(chunks.length), [chunks]);
@@ -150,6 +151,7 @@ export function GrassChunks({
     elapsed.current += dt;
     if (elapsed.current < 0.2) return;
     elapsed.current = 0;
+    previousChunks.set(activeChunks);
     markNearestGrassChunks(
       chunks,
       camera.position,
@@ -160,6 +162,8 @@ export function GrassChunks({
       closestIndices,
       closestDistances,
       distancesByChunk,
+      previousChunks,
+      2.5,
     );
     refs.current.forEach((mesh, index) => {
       if (!mesh) return;
