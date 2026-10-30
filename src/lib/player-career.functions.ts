@@ -1,4 +1,4 @@
-import { untypedDb } from "@/lib/untyped-db";
+import { untypedDb, type UntypedDb } from "@/lib/untyped-db";
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -13,7 +13,7 @@ type AthleteMutation = { status: "applied" | "conflict"; revision: number };
 
 /** A revision is assigned by PostgreSQL, never by a browser clock or a local save. */
 async function mutateAthleteCloud(
-  supabase: SupabaseClient<Database>,
+  supabase: UntypedDb,
   slot: number,
   expectedRevision: number,
   operation: "save" | "delete",
