@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { withDevelopmentBase } from "./attributes";
-import { buildReadySquad, pickLineup } from "./career";
+import { buildReadySquad, enrichPlayer, pickLineup } from "./career";
+import { valueFor } from "./economy";
 import { matchAttributes, selectionRating } from "./match-readiness";
 import { effectivePlayer } from "./player-effective";
 import { normalizedPlayerRatings } from "./player-rating-inputs";
@@ -62,6 +63,30 @@ describe("match setup boundaries", () => {
       MIN_GOALKEEPERS,
     );
     expect(new Set(result.map((player) => player.number)).size).toBe(result.length);
+  });
+
+  it("keeps reserve tie priority when several positions are equally short", () => {
+    const reserves = completeSquad("pal", [], 5);
+    expect(reserves.slice(0, 5).map((player) => player.pos)).toEqual([
+      "DF",
+      "MF",
+      "DF",
+      "MF",
+      "FW",
+    ]);
+    expect(reserves.filter((player) => player.pos === "GK").length).toBeGreaterThanOrEqual(
+      MIN_GOALKEEPERS,
+    );
+  });
+
+  it("derives the release clause from calculated value even when a custom value exists", () => {
+    const player = { ...buildReadySquad("fla")[0]! };
+    delete player.releaseClause;
+    const generated = enrichPlayer({ ...player, value: 0 });
+    const custom = enrichPlayer({ ...player, value: 999 });
+    expect(generated.value).toBe(valueFor(player.ovr, player.age));
+    expect(custom.value).toBe(999);
+    expect(custom.releaseClause).toBe(generated.releaseClause);
   });
 
   it("stops safely when all 99 shirt numbers are occupied", () => {

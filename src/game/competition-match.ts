@@ -30,6 +30,12 @@ export function competitionPlayoff(home: string, away: string, seed: string): Co
   const hg = first.hg + second.ag,
     ag = first.ag + second.hg;
   const penalties = hg === ag;
-  const winner = hg > ag ? home : hg < ag ? away : makeRng(`${seed}-pens`)() < 0.5 ? home : away;
+  const winner = penalties
+    ? makeRng(`${seed}-pens`)() < 0.5
+      ? home
+      : away
+    : hg > ag
+      ? home
+      : away;
   return { home, away, first, second, winner, penalties };
 }
