@@ -104,7 +104,9 @@ export function bakeVertexRadiosityBvh(
   const tangent = new THREE.Vector3();
   const bitangent = new THREE.Vector3();
   const ray = new THREE.Ray();
-  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const a = new THREE.Vector3(),
+    b = new THREE.Vector3(),
+    c = new THREE.Vector3();
   const bary = new THREE.Vector3();
   let rays = 0;
 
@@ -129,9 +131,17 @@ export function bakeVertexRadiosityBvh(
     for (let i = 0; i < n; i++) {
       origin.fromBufferAttribute(vertices, i);
       normal.fromBufferAttribute(normals, i).normalize();
-      let indirectR = 0, indirectG = 0, indirectB = 0;
+      let indirectR = 0,
+        indirectG = 0,
+        indirectB = 0;
       for (let j = 0; j < samples; j++) {
-        hemisphere(normal, seed + i * 65537 + bounce * 104729 + j * 97, direction, tangent, bitangent);
+        hemisphere(
+          normal,
+          seed + i * 65537 + bounce * 104729 + j * 97,
+          direction,
+          tangent,
+          bitangent,
+        );
         ray.origin.copy(origin).addScaledVector(normal, 0.002);
         ray.direction.copy(direction);
         const hit = bvh.raycastFirst(ray, THREE.DoubleSide, 0, maxDistance);
