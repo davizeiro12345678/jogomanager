@@ -21,7 +21,7 @@ describe("optional half-float volume uploads", () => {
     const texture = createHalfFloatVolume(voxels, 2, 2, 2);
     expect(texture.type).toBe(THREE.HalfFloatType);
     expect(texture.image.data).toBeInstanceOf(Uint16Array);
-    expect(texture.image.data.byteLength).toBe(64);
+    expect(texture.image.data?.byteLength).toBe(64);
     expect(texture.generateMipmaps).toBe(false);
     texture.dispose();
     expect(() => createHalfFloatVolume(voxels, 4, 4, 4)).toThrow(RangeError);
