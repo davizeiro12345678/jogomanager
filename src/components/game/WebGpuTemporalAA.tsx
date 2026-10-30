@@ -36,7 +36,8 @@ export function WebGpuTemporalAA() {
   useEffect(() => {
     if (!hasNativeWebGPUBackend(gl) || !temporalAAOptedIn()) return;
     let live = true;
-    history.current.reset();
+    const currentHistory = history.current;
+    currentHistory.reset();
     void Promise.all([
       import("three/webgpu"),
       import("three/tsl"),
@@ -81,7 +82,7 @@ export function WebGpuTemporalAA() {
       releasePipeline.current?.();
       releasePipeline.current = null;
       recreatePipeline.current = null;
-      history.current.reset();
+      currentHistory.reset();
     };
   }, [gl, scene, camera]);
 
