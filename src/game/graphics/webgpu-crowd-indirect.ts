@@ -1,6 +1,16 @@
 import * as THREE from "three";
 import { IndirectStorageBufferAttribute, type WebGPURenderer } from "three/webgpu";
-import { Fn, atomicStore, ivec2, select, storage, struct, textureLoad, uint, uniform } from "three/tsl";
+import {
+  Fn,
+  atomicStore,
+  ivec2,
+  select,
+  storage,
+  struct,
+  textureLoad,
+  uint,
+  uniform,
+} from "three/tsl";
 
 /**
  * Native WebGPU drawIndexedIndirect command words:
