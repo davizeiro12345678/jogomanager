@@ -3,10 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
 import { nearestCrowdPoolDepth } from "@/game/graphics/crowd-pool-occlusion";
-import {
-  projectionsNearlyEqual,
-  webGpuDepthSnapshot,
-} from "@/game/graphics/webgpu-depth-registry";
+import { projectionsNearlyEqual, webGpuDepthSnapshot } from "@/game/graphics/webgpu-depth-registry";
 import { supporterGeometry } from "@/game/crowd-geometry";
 import { crowdLodMaterial } from "@/game/crowd-lod-material";
 
@@ -574,17 +571,9 @@ export function CrowdLod({
       // Hi-Z belongs to the PREVIOUS completed scene pass. Do not reuse it
       // after a camera cut, zoom, viewport change or projection jitter.
       const snapshot = webGpuDepthSnapshot(renderer);
-      if (
-        snapshot &&
-        projectionsNearlyEqual(snapshot.viewProjection, data.projection)
-      ) {
+      if (snapshot && projectionsNearlyEqual(snapshot.viewProjection, data.projection)) {
         const nearest = data.seats.map((seats, tier) =>
-          nearestCrowdPoolDepth(
-            seats,
-            data.counts[tier]!,
-            seatUpload.matrices,
-            data.projection,
-          ),
+          nearestCrowdPoolDepth(seats, data.counts[tier]!, seatUpload.matrices, data.projection),
         );
         indirectDraws.dispatch(data.counts, {
           texture: snapshot.texture,
