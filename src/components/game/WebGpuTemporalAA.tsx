@@ -4,6 +4,7 @@ import {
   TemporalCameraHistory,
   hasExternalViewOffset,
   temporalAAOptedIn,
+  temporalUpscaleOptedIn,
 } from "@/game/graphics/temporal-settings";
 import { hasNativeWebGPUBackend } from "./renderer";
 
@@ -34,7 +35,7 @@ export function WebGpuTemporalAA() {
   const releasePipeline = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (!hasNativeWebGPUBackend(gl) || !temporalAAOptedIn()) return;
+    if (!hasNativeWebGPUBackend(gl) || (!temporalAAOptedIn() && !temporalUpscaleOptedIn())) return;
     let live = true;
     const currentHistory = history.current;
     currentHistory.reset();
@@ -42,23 +43,29 @@ export function WebGpuTemporalAA() {
       import("three/webgpu"),
       import("three/tsl"),
       import("three/addons/tsl/display/TRAANode.js"),
+      import("three/addons/tsl/display/TAAUNode.js"),
     ])
-      .then(([webgpu, tsl, nodes]) => {
+      .then(([webgpu, tsl, nodes, upscaling]) => {
         if (!live) return;
         const renderer = gl as unknown as InstanceType<typeof webgpu.WebGPURenderer>;
         const create = () => {
           const pass = tsl.pass(scene, camera);
+          const upscale = temporalUpscaleOptedIn();
+          // Native TAAU resolves the reduced render pass into output pixels.
+          // The stable TRAA route still renders at full scene resolution.
+          pass.setResolutionScale(upscale ? 0.75 : 1);
           pass.setMRT(tsl.mrt({ output: tsl.output, velocity: tsl.velocity }));
-          const effect = nodes.traa(
-            pass.getTextureNode("output"),
-            pass.getTextureNode("depth"),
-            pass.getTextureNode("velocity"),
-            camera,
-          );
-          // Reprojection rejects mismatching previous depth and large motion
-          // instead of accumulating outdated silhouettes after player movement.
-          effect.depthThreshold = 0.0005;
-          effect.maxVelocityLength = 64;
+          const color = pass.getTextureNode("output");
+          const depth = pass.getTextureNode("depth");
+          const velocity = pass.getTextureNode("velocity");
+          const effect = upscale
+            ? upscaling.taau(color, depth, velocity, camera)
+            : nodes.traa(color, depth, velocity, camera);
+          if (!upscale) {
+            const antialias = effect as ReturnType<typeof nodes.traa>;
+            antialias.depthThreshold = 0.0005;
+            antialias.maxVelocityLength = 64;
+          }
           const graph = new webgpu.RenderPipeline(renderer);
           graph.outputNode = effect;
           pipeline.current = graph;
