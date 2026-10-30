@@ -1,8 +1,16 @@
 /** Firebase app is opt-in. Analytics is initialized only after analytics consent. */
 import type { FirebaseApp } from "firebase/app";
+import type { Analytics } from "firebase/analytics";
+import { readConsent } from "./consent";
 
 let app: FirebaseApp | null = null;
-let analyticsStarted = false;
+let analytics: Analytics | null = null;
+let setCollectionEnabled: ((analytics: Analytics, enabled: boolean) => void) | null = null;
+
+export function disableFirebaseAnalytics() {
+  if (!readConsent().analytics && analytics && setCollectionEnabled)
+    setCollectionEnabled(analytics, false);
+}
 
 export async function initFirebase(
   opts: { analytics?: boolean } = {},
@@ -30,12 +38,14 @@ export async function initFirebase(
           "pfm3d",
         );
     }
-    if (opts.analytics && !analyticsStarted && config.measurementId) {
+    if (opts.analytics && readConsent().analytics && config.measurementId) {
       try {
-        const { getAnalytics, isSupported } = await import("firebase/analytics");
-        if (await isSupported()) {
-          getAnalytics(app);
-          analyticsStarted = true;
+        const { getAnalytics, isSupported, setAnalyticsCollectionEnabled } =
+          await import("firebase/analytics");
+        if ((await isSupported()) && readConsent().analytics) {
+          analytics ??= getAnalytics(app);
+          setCollectionEnabled = setAnalyticsCollectionEnabled;
+          setAnalyticsCollectionEnabled(analytics, true);
         }
       } catch {
         // Unsupported analytics must not prevent the app or push permissions.

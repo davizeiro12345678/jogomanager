@@ -24,4 +24,5 @@ export function exportLocalData(): Record<string, unknown> {
 
 export function clearLocalData() {
   gameDataKeys().forEach((key) => window.localStorage.removeItem(key));
+  window.dispatchEvent(new CustomEvent("consent-changed"));
 }

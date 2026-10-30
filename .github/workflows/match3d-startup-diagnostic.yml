@@ -5,6 +5,7 @@ on:
     paths:
       - "src/**"
       - "scripts/profile-public-startup.mjs"
+      - "scripts/prepare-startup-baseline.mjs"
       - ".github/workflows/match3d-startup-diagnostic.yml"
   workflow_dispatch:
 
@@ -18,7 +19,7 @@ concurrency:
 jobs:
   profile:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       BASE_SHA: "5a75fef3662e3750917df1c2259169e4ed9f24d3"
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -40,6 +41,8 @@ jobs:
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          node --test scripts/prepare-startup-baseline.test.mjs
+          node scripts/prepare-startup-baseline.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline-compatibility.json"
       - name: Profile baseline then candidate with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright

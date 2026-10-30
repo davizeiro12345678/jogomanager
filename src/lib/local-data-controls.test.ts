@@ -8,6 +8,7 @@ function storage() {
     ["sb-project-auth-token", "private-session"],
   ]);
   vi.stubGlobal("window", {
+    dispatchEvent: vi.fn(),
     localStorage: {
       get length() {
         return entries.size;
@@ -33,4 +34,7 @@ it("clears a stable snapshot of game keys while preserving the signed-in session
   const entries = storage();
   clearLocalData();
   expect([...entries]).toEqual([["sb-project-auth-token", "private-session"]]);
+  expect(window.dispatchEvent).toHaveBeenCalledWith(
+    expect.objectContaining({ type: "consent-changed" }),
+  );
 });

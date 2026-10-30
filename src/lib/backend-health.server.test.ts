@@ -73,4 +73,24 @@ describe("backend readiness", () => {
     expect(result.checks.auth).toBe(false);
     expect(JSON.stringify(result)).not.toContain("private-test-key");
   });
+
+  it.each([true, false])("requires a configured auxiliary service to be ready: %s", async (ok) => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ external: { email: true } }))
+      .mockResolvedValueOnce(Response.json({ users: [] }))
+      .mockResolvedValueOnce(Response.json([]))
+      .mockResolvedValueOnce(Response.json({ ok, busy: true }));
+    const result = await checkBackendHealth(
+      {
+        ...env,
+        MATCH_AUX_URL: "https://aux.example.test",
+        MATCH_AUX_SIGNING_KEY: "test-signing-key-with-at-least-32-characters",
+      },
+      fetcher,
+    );
+    expect(result.status).toBe(ok ? "ready" : "degraded");
+    expect(result.checks).toMatchObject({ auxiliaryMatch: ok });
+    expect(JSON.stringify(result)).not.toMatch(/aux\.example|test-signing/);
+  });
 });
