@@ -7,12 +7,13 @@
 //  ônibus (1 grupo) e torcedores (1 InstancedMesh).
 // ============================================================================
 
-import { memo, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 import type { ClubColors } from "./ClubIdentity";
+import { createPylonBeamBatch } from "@/game/stadium-pylon-beams";
 
 function paint(g: THREE.BufferGeometry, c: string, emissive = 0): THREE.BufferGeometry {
   const tmp = new THREE.Color(c);
@@ -173,6 +174,15 @@ export const StadiumExterior = memo(function StadiumExterior({
     () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }),
     [],
   );
+  const beams = useMemo(() => createPylonBeamBatch(), []);
+  useEffect(
+    () => () => {
+      beams.geometry.dispose();
+      (beams.material as THREE.Material).dispose();
+      beams.dispose();
+    },
+    [beams],
+  );
 
   return (
     <group name="stadium-exterior">
@@ -183,26 +193,8 @@ export const StadiumExterior = memo(function StadiumExterior({
         <torusGeometry args={[27.2, 0.22, 8, 64]} />
         <meshBasicMaterial color={club.primary} />
       </mesh>
-      {/* fachos dos refletores */}
-      {(
-        [
-          [-30, -38],
-          [30, -38],
-          [-30, 2],
-          [30, 2],
-        ] as Array<[number, number]>
-      ).map(([x, z], k) => (
-        <mesh key={k} position={[x, 20, z]} rotation={[0.35, 0, x > 0 ? -0.3 : 0.3]}>
-          <coneGeometry args={[4.5, 14, 12, 1, true]} />
-          <meshBasicMaterial
-            color="#dcebff"
-            transparent
-            opacity={0.1}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-          />
-        </mesh>
-      ))}
+      {/* Four beams share one geometry, material and BatchedMesh draw. */}
+      <primitive object={beams} />
       <TeamBus color={club.secondary} />
       <Fans />
       {/* letreiro do jogo */}
