@@ -36,7 +36,7 @@ import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/component
 import { WebGpuClusteredLighting, WebGpuPipelinePrewarm } from "./webgpu-advanced-pipeline";
 import { useWebGpuCsmShadow } from "@/components/game/webgpu-csm-shadow";
 import { WebGpuTemporalAA } from "@/components/game/WebGpuTemporalAA";
-import { temporalAAOptedIn } from "@/game/graphics/temporal-settings";
+import { temporalAAOptedIn, temporalUpscaleOptedIn } from "@/game/graphics/temporal-settings";
 
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 
@@ -1114,7 +1114,9 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
-          {backend === "webgpu" && temporalAAOptedIn() ? <WebGpuTemporalAA /> : null}
+          {backend === "webgpu" && (temporalAAOptedIn() || temporalUpscaleOptedIn()) ? (
+            <WebGpuTemporalAA />
+          ) : null}
           <WebGpuClusteredLighting enabled={backend === "webgpu"} quality={eff} />
           <WebGpuPipelinePrewarm enabled={backend === "webgpu" && quality === "alta"} />
           <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
