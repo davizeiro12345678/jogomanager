@@ -25,6 +25,7 @@ import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { rendererMetadata } from "@/game/graphics-renderer-metadata";
+import { stadiumEnvironmentResolution } from "@/game/graphics/pmrem-budget";
 import { CanvasLifecycle } from "./CanvasLifecycle";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 import { subscribeRenderedFrames } from "./graphics-probe";
@@ -32,6 +33,10 @@ import { onTurfDetailReady } from "./stadium/textures/turf-detail";
 
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
+import { WebGpuClusteredLighting, WebGpuPipelinePrewarm } from "./webgpu-advanced-pipeline";
+import { useWebGpuCsmShadow } from "@/components/game/webgpu-csm-shadow";
+import { WebGpuTemporalAA } from "@/components/game/WebGpuTemporalAA";
+import { temporalAAOptedIn, temporalUpscaleOptedIn } from "@/game/graphics/temporal-settings";
 
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 
@@ -594,6 +599,9 @@ function Scene({
   // direto do renderizador (tone mapping e exposição continuam ativos).
   const postOn = useVisual().postFx && backend === "webgl2";
 
+  const sunShadowRef = useRef<THREE.DirectionalLight>(null);
+  useWebGpuCsmShadow(sunShadowRef, backend === "webgpu" && quality === "alta" && shadows);
+
   const goalPulse = useRef(0);
   const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
   const goalFocus = useRef<GoalFocus | null>(null);
@@ -647,7 +655,7 @@ function Scene({
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       {quality !== "baixa" ? (
         <Environment
-          resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)}
+          resolution={stadiumEnvironmentResolution(quality, budget.textureScale)}
           frames={1}
         >
           <color attach="background" args={[lighting.sky]} />
@@ -704,6 +712,7 @@ function Scene({
         color={lighting.hemiColor}
       />
       <directionalLight
+        ref={sunShadowRef}
         position={lighting.keyPosition}
         intensity={lighting.keyIntensity}
         color={sunColor}
@@ -1017,7 +1026,9 @@ function Stadium3DImpl({
 
   const glProp = useMemo(() => {
     const base = {
-      antialias: eff === "media",
+      antialias:
+        eff === "media" &&
+        !(backend === "webgpu" && (temporalAAOptedIn() || temporalUpscaleOptedIn())),
       powerPreference: "high-performance" as const,
       stencil: false,
     };
@@ -1105,6 +1116,11 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          {backend === "webgpu" && (temporalAAOptedIn() || temporalUpscaleOptedIn()) ? (
+            <WebGpuTemporalAA />
+          ) : null}
+          <WebGpuClusteredLighting enabled={backend === "webgpu"} quality={eff} />
+          <WebGpuPipelinePrewarm enabled={backend === "webgpu" && quality === "alta"} />
           <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}

@@ -41,6 +41,7 @@ import {
   type Proportions,
 } from "@/game/player-model";
 import { type SimPlayer, type SimView } from "@/game/sim";
+import { animationPoseInterval } from "@/game/graphics/adaptive-animation-rate";
 import { type Quality } from "./player-rig-contract";
 import { applyRigFacialPresentation } from "./player-rig-face";
 import { resolvePlayerRigAnimationFrame } from "./player-rig-animation";
@@ -340,7 +341,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
     }
 
     // ---- passo de animação em taxa reduzida longe da câmera
-    const step = lod === 0 ? 0 : lod === 1 ? 1 / 36 : 1 / 16;
+    const step = animationPoseInterval(lod, quality);
     acc.current += dt;
     if (acc.current < step) return;
     const adt = acc.current;
