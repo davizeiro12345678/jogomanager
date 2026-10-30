@@ -19,6 +19,7 @@ import type { ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import { CutsceneStage as Cutscene } from "./CutsceneStage";
 import { preloadCinematicStage, useCinematicPreload } from "./cinematic-loading";
+import { cinematicSetFor } from "@/game/cinematic-set";
 import "./studio.css";
 
 const look: ManagerLook = { skin: 2, hair: 2, hairColor: "#30231d", beard: 1, outfit: 1 };
@@ -124,8 +125,16 @@ export default function CinematicStudio({ clubId = "fla" }: { clubId?: string })
           type="button"
           className="studio-button studio-button-primary self-end"
           disabled={filtered.length === 0}
-          onPointerEnter={() => void preloadCinematicStage().catch(() => undefined)}
-          onFocus={() => void preloadCinematicStage().catch(() => undefined)}
+          onPointerEnter={() =>
+            void preloadCinematicStage(
+              selectedScene ? cinematicSetFor(selectedScene.art) : undefined,
+            ).catch(() => undefined)
+          }
+          onFocus={() =>
+            void preloadCinematicStage(
+              selectedScene ? cinematicSetFor(selectedScene.art) : undefined,
+            ).catch(() => undefined)
+          }
           onClick={() => open(selected)}
         >
           <Play size={16} />

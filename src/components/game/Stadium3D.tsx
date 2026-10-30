@@ -16,7 +16,7 @@ import { AdaptiveEvents, Environment, Lightformer } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { easing } from "maath";
 import type React from "react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { FirstMatchFrame } from "@/components/game/FirstMatchFrame";
@@ -26,6 +26,7 @@ import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { rendererMetadata } from "@/game/graphics-renderer-metadata";
 import { CanvasLifecycle } from "./CanvasLifecycle";
+import { observeBlackMatchFrames } from "./black-match-frame";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 import { subscribeRenderedFrames } from "./graphics-probe";
 import { onTurfDetailReady } from "./stadium/textures/turf-detail";
@@ -572,6 +573,7 @@ function Scene({
   postIntensity,
   supporters,
   adaptive,
+  disablePost,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -582,6 +584,7 @@ function Scene({
   postIntensity: number;
   supporters?: SupporterMatchday | undefined;
   adaptive: boolean;
+  disablePost: boolean;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -592,7 +595,7 @@ function Scene({
   const budget = useRuntimeSceneBudget();
   // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
   // direto do renderizador (tone mapping e exposição continuam ativos).
-  const postOn = useVisual().postFx && backend === "webgl2";
+  const postOn = useVisual().postFx && backend === "webgl2" && !disablePost;
 
   const goalPulse = useRef(0);
   const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
@@ -916,6 +919,12 @@ function PausedCameraFrames({
   return null;
 }
 
+function BlackFrameRecovery({ onBlack }: { onBlack: () => void }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => observeBlackMatchFrames(gl, performance.now(), onBlack), [gl, onBlack]);
+  return null;
+}
+
 function Stadium3DImpl({
   sim,
   mode,
@@ -1005,6 +1014,14 @@ function Stadium3DImpl({
   // o contexto (e perder todas as texturas) no meio da partida.
   const [backend, setBackend] = useState<GpuBackend | null>(null);
   const [rendererReady, setRendererReady] = useState(false);
+  const [disablePost, setDisablePost] = useState(false);
+  const [blackFrame, setBlackFrame] = useState(false);
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const postEnabled = backend === "webgl2" && vis.postFx && !disablePost;
+  const recoverBlackFrame = useCallback(() => {
+    if (postEnabled) setDisablePost(true);
+    else setBlackFrame(true);
+  }, [postEnabled]);
   useEffect(() => {
     let alive = true;
     void detectWebGPU().then((ok) => {
@@ -1057,7 +1074,7 @@ function Stadium3DImpl({
     >
       <GraphicsBoundary>
         <Canvas
-          key={backend}
+          key={`${backend}-${canvasGeneration}`}
           shadows={shadowsOn ? SHADOW_SETTINGS : false}
           frameloop={visible && !paused ? "always" : "demand"}
           dpr={requestedDpr}
@@ -1105,6 +1122,7 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          {backend === "webgl2" ? <BlackFrameRecovery onBlack={recoverBlackFrame} /> : null}
           <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}
@@ -1132,6 +1150,7 @@ function Stadium3DImpl({
                 postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
                 supporters={supporters}
                 adaptive={vis.adaptive}
+                disablePost={disablePost}
               />
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>
@@ -1140,6 +1159,27 @@ function Stadium3DImpl({
           ) : null}
         </Canvas>
       </GraphicsBoundary>
+      {blackFrame ? (
+        <div
+          role="alert"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a1420]/95 p-6 text-center text-white"
+        >
+          <div>
+            <p>O estádio não foi exibido. A partida continua preservada.</p>
+            <button
+              type="button"
+              className="mt-3 rounded-lg bg-primary px-5 py-3 font-semibold text-primary-foreground"
+              onClick={() => {
+                setBlackFrame(false);
+                setDisablePost(true);
+                setCanvasGeneration((generation) => generation + 1);
+              }}
+            >
+              Tentar gráficos novamente
+            </button>
+          </div>
+        </div>
+      ) : null}
       {vis.showFps && fps ? (
         <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
           <span className="text-white">{Math.round(fps.fps)} fps</span>

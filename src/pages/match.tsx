@@ -159,7 +159,7 @@ function buildOpponent(clubId: string): TeamSetup {
 }
 
 export function MatchPage() {
-  useCinematicPreload();
+  useCinematicPreload(true, "locker");
   const { career, update } = useCareer();
   const navigate = useNavigate();
 

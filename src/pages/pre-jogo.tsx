@@ -45,7 +45,7 @@ function formFor(career: CareerState, clubId: string): FormLetter[] {
 
 function PreMatch({ career }: { career: CareerState }) {
   // aquece o motor das cenas antes do clique em "Jogar"
-  useCinematicPreload();
+  useCinematicPreload(true, "locker");
   const fixture = nextFixture(career);
   const league = getLeague(career.leagueId);
   const table = computeTable(career);
