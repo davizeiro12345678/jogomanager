@@ -1,4 +1,5 @@
 import { useThree } from "@react-three/fiber";
+import type * as THREE from "three";
 import { useEffect } from "react";
 import { hasNativeWebGPUBackend } from "./renderer";
 
@@ -71,7 +72,7 @@ export function WebGpuPipelinePrewarm({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (!enabled || !hasNativeWebGPUBackend(gl) || !optedIn("manager3d.webgpu.psoPrewarm")) return;
     const renderer = gl as typeof gl & {
-      compileAsync?: (scene: typeof scene, camera: typeof camera) => Promise<void>;
+      compileAsync?: (scene: THREE.Scene, camera: THREE.Camera) => Promise<void>;
     };
     let active = true;
     let idleId: number | undefined;
