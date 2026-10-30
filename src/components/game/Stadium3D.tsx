@@ -998,3 +998,191 @@ function Stadium3DImpl({
   const dpr = useMemo(() => {
     const base = dprFor(eff);
     const s = vis.resolutionScale * sceneBudget.resolutionScale;
+    const cap = GRAPHICS_PROFILES[sceneTier].maxPixelRatio;
+    return Array.isArray(base)
+      ? ([Math.min(cap, base[0] * s), Math.min(cap, base[1] * s)] as [number, number])
+      : Math.min(cap, base * s);
+  }, [eff, vis.resolutionScale, sceneBudget.resolutionScale, sceneTier]);
+
+  const requestedDpr =
+    pixelRatio === undefined
+      ? dpr
+      : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio));
+
+  // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
+  // A detecção acontece uma vez, antes de montar o palco, para não recriar
+  // o contexto (e perder todas as texturas) no meio da partida.
+  const [backend, setBackend] = useState<GpuBackend | null>(null);
+  const [rendererReady, setRendererReady] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void detectWebGPU().then((ok) => {
+      if (alive) setBackend(ok ? "webgpu" : "webgl2");
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const glProp = useMemo(() => {
+    const base = {
+      antialias: eff === "media" && !(backend === "webgpu" && (temporalAAOptedIn() || temporalUpscaleOptedIn())),
+      powerPreference: "high-performance" as const,
+      stencil: false,
+    };
+    if (backend !== "webgpu") return base;
+    return async (props: Record<string, unknown>) => {
+      const renderer = await createWebGPURenderer({ ...props, ...base }, () =>
+        setBackend("webgl2"),
+      );
+
+      if (renderer) return renderer as never;
+      // Adaptador sumiu entre a detecção e a criação: volta para WebGL2.
+      setBackend("webgl2");
+      const { WebGLRenderer } = THREE;
+      return new WebGLRenderer({ ...(props as object), ...base }) as never;
+    };
+  }, [backend, eff]);
+
+  if (!backend)
+    return (
+      <div
+        role="status"
+        className="flex h-full min-h-64 w-full items-center justify-center gap-3 bg-background text-sm text-muted-foreground"
+      >
+        <span
+          className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"
+          aria-hidden
+        />
+        Preparando o estádio 3D…
+      </div>
+    );
+
+  return (
+    <div
+      className="relative h-full w-full"
+      data-supporter-climate={supporters?.climate}
+      data-supporter-occupancy={supporters?.occupancy.toFixed(3)}
+    >
+      <GraphicsBoundary>
+        <Canvas
+          key={backend}
+          shadows={shadowsOn ? SHADOW_SETTINGS : false}
+          frameloop={visible && !paused ? "always" : "demand"}
+          dpr={requestedDpr}
+          camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
+          gl={glProp}
+          performance={{ min: 0.5 }}
+          fallback={
+            <div
+              role={rendererReady ? undefined : "status"}
+              aria-hidden={rendererReady || undefined}
+              className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
+            >
+              Não foi possível iniciar os gráficos 3D. Os controles e o placar continuam
+              disponíveis.
+            </div>
+          }
+          onCreated={({ gl }) => {
+            setRendererReady(true);
+            const r = gl as unknown as {
+              toneMapping: THREE.ToneMapping;
+              toneMappingExposure: number;
+              outputColorSpace: string;
+              shadowMap?: { type?: THREE.ShadowMapType };
+              capabilities?: { getMaxAnisotropy?: () => number };
+            };
+            r.toneMapping = THREE.ACESFilmicToneMapping;
+            r.toneMappingExposure =
+              look.time === "dia" ? 0.9 : look.time === "entardecer" ? 1.0 : 1.1;
+            r.outputColorSpace = THREE.SRGBColorSpace;
+            // borda de sombra suave só na qualidade alta: o filtro extra custa
+            // pouco lá e é o que mais aproxima a imagem de uma transmissão
+            if (r.shadowMap) r.shadowMap.type = THREE.PCFShadowMap;
+            // Texturas nítidas em ângulos rasantes (linhas do campo, publicidade,
+            // faixas de corte) — o custo é baixo e o ganho de definição é grande.
+            const maxAniso = r.capabilities?.getMaxAnisotropy?.() ?? 16;
+            THREE.Texture.DEFAULT_ANISOTROPY = Math.min(
+              Math.max(
+                1,
+                Math.round(
+                  (eff === "alta" ? 16 : eff === "media" ? 8 : 4) * sceneBudget.textureScale,
+                ),
+              ),
+              maxAniso,
+            );
+          }}
+        >
+          <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          {backend === "webgpu" && (temporalAAOptedIn() || temporalUpscaleOptedIn()) ? (
+            <WebGpuTemporalAA />
+          ) : null}
+          <WebGpuClusteredLighting enabled={backend === "webgpu"} quality={eff} />
+          <WebGpuPipelinePrewarm enabled={backend === "webgpu" && quality === "alta"} />
+          <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
+          <FirstMatchFrame
+            startedAt={startedAt.current}
+            quality={quality}
+            backend={backend}
+            onFirstFrame={onFirstFrame}
+          />
+          <PausedCameraFrames paused={paused} visible={visible} mode={mode} />
+          <CompressedTextures enabled={quality === "alta"} />
+          <RuntimeBudget
+            tier={sceneTier}
+            enabled={vis.adaptive}
+            suspended={paused}
+            onChange={setPressure}
+          />
+          <QualityPressure.Provider value={pressure}>
+            <RuntimeSceneBudgetContext.Provider value={sceneBudget}>
+              <Scene
+                sim={sim}
+                mode={mode}
+                quality={eff}
+                look={look}
+                shadows={shadowsOn}
+                backend={backend}
+                postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
+                supporters={supporters}
+                adaptive={vis.adaptive}
+              />
+            </RuntimeSceneBudgetContext.Provider>
+          </QualityPressure.Provider>
+          {vis.showFps && !paused ? (
+            <FpsMeter onSample={setFps} backend={backend} quality={eff} />
+          ) : null}
+        </Canvas>
+      </GraphicsBoundary>
+      {vis.showFps && fps ? (
+        <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
+          <span className="text-white">{Math.round(fps.fps)} fps</span>
+          <span className="ml-2 text-white/60">med {Math.round(fps.avg)}</span>
+          <span className="ml-2 text-white/60">p95 {fps.p95FrameMs.toFixed(1)} ms</span>
+          <span className="ml-2 text-white/60">1% {Math.round(fps.onePercentLow)}</span>
+          <span className="ml-2 text-white/60">{fps.frameMs.toFixed(1)} ms</span>
+          <span className="ml-2 uppercase text-white/60">{fps.backend}</span>
+          <span className="ml-2 text-white/60">{fps.triangles.toLocaleString("pt-BR")} tri</span>
+          <span className="ml-2 text-white/60">{fps.drawCalls} draws</span>
+          {fps.memoryMb ? <span className="ml-2 text-white/60">{fps.memoryMb} MB</span> : null}
+        </div>
+      ) : null}
+      {quality === "baixa" ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.42) 100%)",
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Memoizado: o HUD da partida re-renderiza várias vezes por segundo e não deve
+ * reconstruir a árvore 3D. Só mudanças reais de sim/câmera/qualidade renderizam.
+ */
+export const Stadium3D = memo(Stadium3DImpl);
