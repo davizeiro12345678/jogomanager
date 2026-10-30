@@ -35,9 +35,10 @@ export function createPylonBeamBatch(): THREE.BatchedMesh {
     const id = batch.addInstance(geometryId);
     batch.setMatrixAt(id, pose.matrix);
   }
-  // Sorted transparent instances and explicit bounds preserve the previous
-  // cone appearance while allowing per-object culling where supported.
-  batch.sortObjects = true;
+  // These four isolated light shafts do not overlap. Disabling per-instance
+  // transparency sorting allows the renderer to group identical geometry
+  // ranges into one draw instead of splitting them by depth.
+  batch.sortObjects = false;
   batch.computeBoundingSphere();
   batch.name = "exterior-pylon-beams";
   return batch;
