@@ -262,15 +262,12 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   post({ id: message.id, ok: true, type: "ready" });
 }
 
-async function handleMessage(message: LiveWorkerRequest) {
+// Only commands that passed validMatchCommand enter this queue.
+async function handleMessage(message: Exclude<LiveWorkerRequest, { type: "recycleLive" }>) {
   // Admission can precede execution by optional WASM initialization. Expired
   // controls are refused before changing the match or its recovery journal.
   if ("expiresAt" in message && Date.now() >= message.expiresAt) {
     post({ id: message.id, ok: true, type: "command", result: false });
-    return;
-  }
-  if (message.type === "recycleLive") {
-    transport?.recycle(message.session, message.slot, message.buffer);
     return;
   }
   if (message.type === "resyncLive") {
@@ -296,8 +293,7 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "speedLive") {
-    if (!Number.isFinite(message.speed)) throw new Error("Velocidade de simulação inválida");
-    speed = Math.max(1, Math.min(8, message.speed));
+    speed = message.speed;
     post({ id: message.id, ok: true, type: "command" });
     return;
   }
@@ -413,12 +409,7 @@ self.onmessage = (event: MessageEvent<unknown>) => {
   // Recycling is session-checked and never advances state. It must not wait
   // behind optional compilation or a long sequential career command.
   if (message.type === "recycleLive") {
-    if (
-      message.buffer instanceof ArrayBuffer &&
-      Number.isSafeInteger(message.slot) &&
-      Number.isSafeInteger(message.session)
-    )
-      transport?.recycle(message.session, message.slot, message.buffer);
+    transport?.recycle(message.session, message.slot, message.buffer);
     return;
   }
   // `startLive` aguarda o WASM. A fila evita que pause, velocidade ou troca

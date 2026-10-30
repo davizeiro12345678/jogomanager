@@ -44,14 +44,6 @@ function stableValue(value: unknown): string {
     .join(",")}}`;
 }
 
-function isDevelopment() {
-  return Boolean(
-    (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV ??
-    (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env
-      ?.NODE_ENV === "development",
-  );
-}
-
 /** Reports a handled error, preserving the original cause and warning once per stable key in dev. */
 export function reportSilent(scope: string, error: unknown, context: SilentErrorContext): void {
   const cause = describeCause(error);
@@ -74,7 +66,11 @@ export function reportSilent(scope: string, error: unknown, context: SilentError
       firstContext: { ...context },
       lastContext: { ...context },
     });
-    if (isDevelopment())
+    if (
+      (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV ??
+      (globalThis as typeof globalThis & { process?: { env?: { NODE_ENV?: string } } }).process?.env
+        ?.NODE_ENV === "development"
+    )
       console.warn(`[silent:${context.classification}] ${scope}`, error, context);
   }
   // The recovery slot is consumed only by server.ts after h3 catches a throw.
