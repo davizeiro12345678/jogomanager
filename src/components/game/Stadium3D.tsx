@@ -32,6 +32,7 @@ import { onTurfDetailReady } from "./stadium/textures/turf-detail";
 
 import { PostFX } from "@/components/game/post/LazyPostFX";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "@/components/game/renderer";
+import { useWebGpuCsmShadow } from "@/components/game/webgpu-csm-shadow";
 
 import { skyTexture } from "@/components/game/stadium/textures/sky";
 
@@ -594,6 +595,9 @@ function Scene({
   // direto do renderizador (tone mapping e exposição continuam ativos).
   const postOn = useVisual().postFx && backend === "webgl2";
 
+  const sunShadowRef = useRef<THREE.DirectionalLight>(null);
+  useWebGpuCsmShadow(sunShadowRef, backend === "webgpu" && quality === "alta" && shadows);
+
   const goalPulse = useRef(0);
   const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
   const goalFocus = useRef<GoalFocus | null>(null);
@@ -704,6 +708,7 @@ function Scene({
         color={lighting.hemiColor}
       />
       <directionalLight
+        ref={sunShadowRef}
         position={lighting.keyPosition}
         intensity={lighting.keyIntensity}
         color={sunColor}
