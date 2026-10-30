@@ -1,4 +1,4 @@
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { CROWD_MOTION_GLSL } from "@/game/crowd-motion";
@@ -187,6 +187,11 @@ export function CrowdLod({
     resolveRuntimeSceneBudget(budget.tier).crowdInstances,
   );
   const refs = useRef<(THREE.InstancedMesh | null)[]>([]);
+  const renderer = useThree((state) => state.gl);
+  const indirect = useRef<{
+    dispatch(counts: readonly number[]): void;
+    dispose(): void;
+  } | null>(null);
   const meshRefs = useMemo(
     () =>
       [0, 1, 2].map((tier) => (mesh: THREE.InstancedMesh | null) => {
@@ -414,6 +419,35 @@ export function CrowdLod({
     };
   }, [webgl2, data]);
 
+  useEffect(() => {
+    if (webgl2 || !("backend" in renderer)) return;
+    let enabled = false;
+    try {
+      enabled = globalThis.localStorage?.getItem("manager3d.webgpu.crowdIndirect") === "on";
+    } catch {
+      // Private browsing and embedded matches retain ordinary InstancedMesh.
+    }
+    if (!enabled) return;
+    let live = true;
+    void import("@/game/graphics/webgpu-crowd-indirect")
+      .then(({ createCrowdGpuIndirectCommands }) => {
+        if (!live) return;
+        const gpu = renderer as unknown as import("three/webgpu").WebGPURenderer;
+        if (!("isWebGPUBackend" in gpu.backend) || !gpu.backend.isWebGPUBackend) return;
+        const controller = createCrowdGpuIndirectCommands(gpu, data.geometries);
+        indirect.current = controller;
+        controller.dispatch(data.counts);
+      })
+      .catch(() => {
+        // The conventional CPU-selected draw count remains authoritative.
+      });
+    return () => {
+      live = false;
+      indirect.current?.dispose();
+      indirect.current = null;
+    };
+  }, [webgl2, renderer, data]);
+
   const elapsed = useRef(Number.POSITIVE_INFINITY);
   useEffect(() => {
     // Another match can reuse the same seat numbers with different club colours.
@@ -527,6 +561,7 @@ export function CrowdLod({
       // periodic CPU spike in the original global crowd pass.
       mesh.frustumCulled = false;
     });
+    indirect.current?.dispatch(data.counts);
   });
 
   return (
