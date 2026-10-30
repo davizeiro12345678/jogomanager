@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hashSeed, makeRng } from "./rng";
+import { teamDay } from "./match-probability";
 
 // Previous unsigned-state implementation, retained only as an independent
 // compatibility oracle for saved match checkpoints and existing seeds.
@@ -54,11 +55,27 @@ describe("deterministic match random stream", () => {
     }
   });
 
+  it("shares the same stream for fixed-length team-day draws, including a zero hash", () => {
+    const zeroHashSeed = String.fromCharCode(231, 141, 33, 453);
+    expect(hashSeed(`match-day:${zeroHashSeed}:home`)).toBe(0);
+    for (const seed of [
+      "",
+      "ação-😀",
+      zeroHashSeed,
+      ...Array.from({ length: 100 }, (_, i) => `seed-${i}`),
+    ]) {
+      for (const side of ["home", "away"] as const) {
+        const rnd = makeRng(`match-day:${seed}:${side}`);
+        expect(teamDay(seed, side)).toBe((rnd() + rnd() + rnd() - 1.5) * 4);
+      }
+    }
+  });
+
   it("rejects invalid checkpoints without modifying the active stream", () => {
-    for (const value of [-1, 0.5, 2 ** 32, NaN, Infinity]) {
+    for (const value of [-1, 0.5, 2 ** 32, NaN, Infinity, "1", null, undefined, 1n]) {
       const random = makeRng("checkpoint");
       const before = random.state();
-      expect(() => random.restore(value)).toThrow("Invalid PRNG state");
+      expect(() => random.restore(value as number)).toThrow("Invalid PRNG state");
       expect(random.state()).toBe(before);
     }
   });
