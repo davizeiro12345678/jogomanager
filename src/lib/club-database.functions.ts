@@ -68,7 +68,7 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
       if (ids.length) {
         const read = (side: "home_team_source_id" | "away_team_source_id") =>
           db
-            .from("official_events_catalog")
+            .from("official_events")
             .select(
               "source_id,starts_at,home_team_name,away_team_name,home_score,away_score,status",
             )

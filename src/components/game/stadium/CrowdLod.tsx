@@ -441,7 +441,7 @@ export function CrowdLod({
       hasSelection.current = true;
       for (let offset = 0; offset < selected.indices.length; offset += 1) {
         const index = selected.indices[offset]!;
-        const tier = selected.tiers[offset]!;
+        const tier: number = selected.tiers[offset]!;
         const mesh = refs.current[tier];
         if (!mesh || data.counts[tier]! >= capacity) continue;
         const instance = data.counts[tier]!++;

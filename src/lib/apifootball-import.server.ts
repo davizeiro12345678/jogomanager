@@ -31,9 +31,11 @@ export type AfImportResult = {
   error?: string;
 };
 
-async function admin() {
+// Import tables/RPCs from the restore migration are absent from the generated
+// types on this backend, so this server-only importer uses an untyped client.
+async function admin(): Promise<import("@supabase/supabase-js").SupabaseClient> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
+  return supabaseAdmin as unknown as import("@supabase/supabase-js").SupabaseClient;
 }
 
 const importScope = new AsyncLocalStorage<{
