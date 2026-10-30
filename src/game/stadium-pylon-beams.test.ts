@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createPylonBeamBatch } from "./stadium-pylon-beams";
-import { createNonHeroDrawCounter } from "./scene-census";
+import { censusScene, createNonHeroDrawCounter } from "./scene-census";
 
 describe("exterior pylon multi-draw batching", () => {
+  it("attributes every visible BatchedMesh triangle to the scene budget", () => {
+    const batch = createPylonBeamBatch();
+    const scene = new THREE.Scene();
+    scene.add(batch);
+    const perConeTriangles = (batch.geometry.index?.count ?? 0) / 3;
+    expect(censusScene(scene).total.triangles).toBe(perConeTriangles * 4);
+    batch.setVisibleAt(2, false);
+    expect(censusScene(scene).total.triangles).toBe(perConeTriangles * 3);
+    batch.geometry.dispose();
+    (batch.material as THREE.Material).dispose();
+    batch.dispose();
+  });
   it("reduces the isolated shaft group from four draw candidates to one", () => {
     const geometry = new THREE.ConeGeometry(4.5, 14, 12, 1, true);
     const material = new THREE.MeshBasicMaterial();
