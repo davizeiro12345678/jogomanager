@@ -10,10 +10,14 @@ export function makeRgbaTextureArray(
   srgb = true,
 ): THREE.DataArrayTexture {
   if (
-    !Number.isSafeInteger(width) || width <= 0 ||
-    !Number.isSafeInteger(height) || height <= 0 ||
-    !layers.length || layers.length > 64
-  ) throw new RangeError("Invalid texture-array dimensions or layer count");
+    !Number.isSafeInteger(width) ||
+    width <= 0 ||
+    !Number.isSafeInteger(height) ||
+    height <= 0 ||
+    !layers.length ||
+    layers.length > 64
+  )
+    throw new RangeError("Invalid texture-array dimensions or layer count");
   const layerBytes = width * height * 4;
   const storage = new Uint8Array(layerBytes * layers.length);
   layers.forEach((layer, index) => {

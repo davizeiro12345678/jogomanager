@@ -41,22 +41,49 @@ describe("grass chunk visibility", () => {
     const real = new Float64Array(chunks.length);
     // Initially, the first sector is closer than the middle one.
     markNearestGrassChunks(
-      chunks, { x: -7, y: 0, z: 0 }, 4, 4, 1,
-      active, indices, distances, real, previous, 2.5,
+      chunks,
+      { x: -7, y: 0, z: 0 },
+      4,
+      4,
+      1,
+      active,
+      indices,
+      distances,
+      real,
+      previous,
+      2.5,
     );
     expect([...active]).toEqual([1, 0, 0, 0]);
     previous.set(active);
     // The middle sector becomes slightly closer, but not by 2.5m.
     markNearestGrassChunks(
-      chunks, { x: -4.5, y: 0, z: 0 }, 4, 4, 1,
-      active, indices, distances, real, previous, 2.5,
+      chunks,
+      { x: -4.5, y: 0, z: 0 },
+      4,
+      4,
+      1,
+      active,
+      indices,
+      distances,
+      real,
+      previous,
+      2.5,
     );
     expect([...active]).toEqual([1, 0, 0, 0]);
     expect(real[1]).toBeLessThan(real[0]!);
     previous.set(active);
     markNearestGrassChunks(
-      chunks, { x: 0, y: 0, z: 0 }, 4, 4, 1,
-      active, indices, distances, real, previous, 2.5,
+      chunks,
+      { x: 0, y: 0, z: 0 },
+      4,
+      4,
+      1,
+      active,
+      indices,
+      distances,
+      real,
+      previous,
+      2.5,
     );
     expect([...active]).toEqual([0, 1, 0, 0]);
   });

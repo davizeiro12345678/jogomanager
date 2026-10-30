@@ -24,7 +24,8 @@ export class TransientRenderTargetPool {
     const { width, height, type = THREE.UnsignedByteType, depthBuffer = false } = spec;
     if (![width, height].every((n) => Number.isSafeInteger(n) && n > 0))
       throw new RangeError("Invalid render-target dimensions");
-    const bytes = width * height * (type === THREE.HalfFloatType ? 8 : 4) +
+    const bytes =
+      width * height * (type === THREE.HalfFloatType ? 8 : 4) +
       (depthBuffer ? width * height * 4 : 0);
     if (bytes > this.maxBytes) throw new RangeError("Target exceeds transient GPU memory budget");
     const key = [width, height, type, Number(depthBuffer)].join("/");
