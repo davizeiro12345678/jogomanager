@@ -29,6 +29,16 @@ function paint(g: THREE.BufferGeometry, c: string, emissive = 0): THREE.BufferGe
   return g;
 }
 
+/** Release the temporary source buffers after their vertices have been copied
+ * into the merged stadium mesh. Otherwise every ceremony recreates the complete
+ * set of disconnected Box/CylinderGeometry CPU allocations. */
+function mergeAndRelease(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  const merged = mergeGeometries(geometries, false);
+  for (const geometry of geometries) geometry.dispose();
+  if (!merged) throw new Error("Incompatible exterior geometry attributes");
+  return merged;
+}
+
 /** Torcedores caminhando até os portões: instância única, vai-e-vem em loop. */
 const Fans = memo(function Fans({ count = 42 }: { count?: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
@@ -149,7 +159,7 @@ export const StadiumExterior = memo(function StadiumExterior({
     // praça + rua
     put(new THREE.BoxGeometry(90, 0.2, 60), 0, -0.1, 8, night ? "#11161f" : "#2a3342");
     put(new THREE.BoxGeometry(90, 0.22, 7), 0, -0.09, 24, "#0a0e14");
-    return mergeGeometries(geos, false)!;
+    return mergeAndRelease(geos);
   }, [club.primary, night]);
 
   const pylons = useMemo(() => {
@@ -167,7 +177,7 @@ export const StadiumExterior = memo(function StadiumExterior({
       head.translate(x, 26.5, z);
       geos.push(paint(head, "#f4f8ff"));
     }
-    return mergeGeometries(geos, false)!;
+    return mergeAndRelease(geos);
   }, []);
 
   const cloth = useMemo(
