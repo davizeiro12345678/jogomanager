@@ -260,6 +260,20 @@
       "when": 1793384793285,
       "tag": "0036_restore_commerce_backend",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793384828288,
+      "tag": "0037_restore_api_football_targets",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793384844323,
+      "tag": "0038_restore_player_career_sync",
+      "breakpoints": true
     }
   ]
 }

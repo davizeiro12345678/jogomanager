@@ -119,6 +119,7 @@ export type Database = {
       api_football_import_progress: {
         Row: {
           batch_size: number
+          consecutive_failures: number
           error_message: string | null
           lease_token: string | null
           lease_until: string | null
@@ -130,6 +131,7 @@ export type Database = {
         }
         Insert: {
           batch_size?: number
+          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -141,6 +143,7 @@ export type Database = {
         }
         Update: {
           batch_size?: number
+          consecutive_failures?: number
           error_message?: string | null
           lease_token?: string | null
           lease_until?: string | null
@@ -148,6 +151,30 @@ export type Database = {
           phase?: string
           status?: string
           total_processed?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_football_page_progress: {
+        Row: {
+          next_page: number
+          phase: string
+          season: string
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          next_page?: number
+          phase: string
+          season: string
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          next_page?: number
+          phase?: string
+          season?: string
+          target_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -167,6 +194,27 @@ export type Database = {
           request_count?: number
           window_start?: string
           window_type?: string
+        }
+        Relationships: []
+      }
+      api_football_season_coverage: {
+        Row: {
+          coverage: Json
+          league_source_id: string
+          season: string
+          updated_at: string
+        }
+        Insert: {
+          coverage?: Json
+          league_source_id: string
+          season: string
+          updated_at?: string
+        }
+        Update: {
+          coverage?: Json
+          league_source_id?: string
+          season?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1275,6 +1323,41 @@ export type Database = {
           },
         ]
       }
+      player_career_revisions: {
+        Row: {
+          created_at: string
+          operation: string
+          revision: number
+          slot: number
+          state: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          operation: string
+          revision: number
+          slot: number
+          state: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          operation?: string
+          revision?: number
+          slot?: number
+          state?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_career_revisions_user_id_slot_fkey"
+            columns: ["user_id", "slot"]
+            isOneToOne: false
+            referencedRelation: "player_careers"
+            referencedColumns: ["user_id", "slot"]
+          },
+        ]
+      }
       player_careers: {
         Row: {
           created_at: string
@@ -2081,6 +2164,24 @@ export type Database = {
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
+      }
+      list_api_football_league_targets: {
+        Args: { p_limit: number; p_offset: number }
+        Returns: {
+          country: string
+          coverage: Json
+          current_season: string
+          local_competition_id: string
+          source_id: string
+        }[]
+      }
+      list_api_football_team_targets: {
+        Args: { p_limit: number; p_offset: number; p_squads_only?: boolean }
+        Returns: {
+          league_source_id: string
+          local_club_id: string
+          source_id: string
+        }[]
       }
       mutate_player_career: {
         Args: {
