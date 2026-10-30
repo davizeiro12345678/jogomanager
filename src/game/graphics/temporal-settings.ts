@@ -34,10 +34,17 @@ export class TemporalCameraHistory {
     const oldProjection = this.previousProjection.elements;
     // Scale the projection comparison to avoid classifying slight FOV
     // adjustments as camera cuts or floating point subpixel jitter.
-    const customProjection = Math.abs(projection[0]! - oldProjection[0]!) > 0.45 ||
+    const customProjection =
+      Math.abs(projection[0]! - oldProjection[0]!) > 0.45 ||
       Math.abs(projection[5]! - oldProjection[5]!) > 0.45;
-    return translation || rotation || customProjection ||
-      camera.near !== this.previousNear || camera.far !== this.previousFar;
+    const depthCamera = camera as THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    return (
+      translation ||
+      rotation ||
+      customProjection ||
+      depthCamera.near !== this.previousNear ||
+      depthCamera.far !== this.previousFar
+    );
   }
 
   capture(camera: THREE.Camera): void {
@@ -45,8 +52,9 @@ export class TemporalCameraHistory {
     this.previousProjection.copy(camera.projectionMatrix);
     this.previousPosition.setFromMatrixPosition(camera.matrixWorld);
     this.previousQuaternion.setFromRotationMatrix(camera.matrixWorld);
-    this.previousNear = camera.near;
-    this.previousFar = camera.far;
+    const depthCamera = camera as THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    this.previousNear = depthCamera.near;
+    this.previousFar = depthCamera.far;
     this.valid = true;
   }
 
