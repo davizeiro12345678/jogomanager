@@ -1,3 +1,4 @@
+import { untypedDb } from "@/lib/untyped-db";
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -41,7 +42,7 @@ export const saveAthleteCloud = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     if (JSON.stringify(data.state).length > 400_000) throw new Error("Save grande demais.");
     return mutateAthleteCloud(
-      context.supabase,
+      untypedDb(context.supabase),
       data.slot,
       data.expectedRevision,
       "save",
@@ -52,7 +53,7 @@ export const saveAthleteCloud = createServerFn({ method: "POST" })
 export const loadAthletesCloud = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const { data, error } = await untypedDb(context.supabase)
       .from("player_careers")
       .select("slot, state, updated_at, sync_revision, deleted_at")
       .eq("user_id", context.userId);
@@ -71,5 +72,5 @@ export const deleteAthleteCloud = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => AthleteDeleteSchema.parse(input))
   .handler(async ({ data, context }) =>
-    mutateAthleteCloud(context.supabase, data.slot, data.expectedRevision, "delete", null),
+    mutateAthleteCloud(untypedDb(context.supabase), data.slot, data.expectedRevision, "delete", null),
   );

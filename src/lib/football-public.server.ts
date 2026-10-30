@@ -1,8 +1,9 @@
+import type { UntypedDb } from "@/lib/untyped-db";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 /** Public projections keep caller RLS and never require a privileged key. */
-export function createFootballPublicClient() {
+export function createFootballPublicClient(): UntypedDb {
   const url = process.env["SUPABASE_URL"];
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   if (!url || !key) throw new Error("Os dados públicos de futebol estão indisponíveis.");

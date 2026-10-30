@@ -1,3 +1,4 @@
+import { untypedDb } from "@/lib/untyped-db";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -173,7 +174,7 @@ export const createPortalSession = createServerFn({ method: "POST" })
         }
         approvedReturnUrl = returnUrl.toString();
       }
-      const { data: sub, error: subError } = await context.supabase
+      const { data: sub, error: subError } = await untypedDb(context.supabase)
         .from("subscriptions")
         .select("stripe_customer_id")
         .eq("user_id", context.userId)

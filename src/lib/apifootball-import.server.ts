@@ -33,9 +33,9 @@ export type AfImportResult = {
 
 // Import tables/RPCs from the restore migration are absent from the generated
 // types on this backend, so this server-only importer uses an untyped client.
-async function admin(): Promise<import("@supabase/supabase-js").SupabaseClient> {
+async function admin(): Promise<import("@/lib/untyped-db").UntypedDb> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as import("@supabase/supabase-js").SupabaseClient;
+  return supabaseAdmin as unknown as import("@/lib/untyped-db").UntypedDb;
 }
 
 const importScope = new AsyncLocalStorage<{

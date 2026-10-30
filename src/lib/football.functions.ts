@@ -1,9 +1,10 @@
+import type { UntypedDb } from "@/lib/untyped-db";
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 
-function publicClient() {
+function publicClient(): UntypedDb {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
   const url = process.env["SUPABASE_URL"];
   if (!key || !url) throw new Error("Os dados públicos de futebol estão indisponíveis.");

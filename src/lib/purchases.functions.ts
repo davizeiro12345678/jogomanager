@@ -1,3 +1,4 @@
+import { untypedDb } from "@/lib/untyped-db";
 import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -28,13 +29,13 @@ export const getPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<PurchasesSummary> => {
     const [{ data: rows, error }, { data: wallet, error: walletError }] = await Promise.all([
-      context.supabase
+      untypedDb(context.supabase)
         .from("user_purchases")
         .select("id, product_key, amount_cents, status, error, reference, created_at")
         .eq("user_id", context.userId)
         .order("created_at", { ascending: false })
         .limit(100),
-      context.supabase
+      untypedDb(context.supabase)
         .from("user_wallet")
         .select("coins, season_pass")
         .eq("user_id", context.userId)
@@ -50,7 +51,7 @@ export const getPurchases = createServerFn({ method: "GET" })
       .map((row) => row.reference)
       .filter((reference): reference is string => reference !== null);
     const reviews = references.length
-      ? await context.supabase
+      ? await untypedDb(context.supabase)
           .from("purchase_payment_reviews")
           .select("reference, review_status, refunded_amount_cents")
           .in("reference", references)
