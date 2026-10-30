@@ -8,6 +8,10 @@ import {
   webgpuHiZOptedIn,
 } from "@/game/graphics/temporal-settings";
 import type { GpuDepthPyramid } from "@/game/graphics/webgpu-hiz";
+import {
+  clearWebGpuDepthSnapshot,
+  publishWebGpuDepthSnapshot,
+} from "@/game/graphics/webgpu-depth-registry";
 import * as THREE from "three";
 import { hasNativeWebGPUBackend } from "./renderer";
 
@@ -91,6 +95,8 @@ export function WebGpuTemporalAA() {
             }
           }
           releasePipeline.current = () => {
+            if (depthPyramid.current?.textures.at(-1))
+              clearWebGpuDepthSnapshot(gl, depthPyramid.current.textures.at(-1));
             depthPyramid.current?.dispose();
             depthPyramid.current = null;
             if (pipeline.current === graph) pipeline.current = null;
@@ -128,6 +134,7 @@ export function WebGpuTemporalAA() {
     // histories only for real camera cuts or projection discontinuities.
     camera.updateMatrixWorld();
     if (hasExternalViewOffset(camera)) {
+      clearWebGpuDepthSnapshot(gl);
       hadExternalView.current = true;
       history.current.reset();
       gl.render(scene, camera);
@@ -152,7 +159,10 @@ export function WebGpuTemporalAA() {
     if (depthPyramid.current) {
       try {
         depthPyramid.current.compute();
+        const coarseLevel = depthPyramid.current.textures.at(-1);
+        if (coarseLevel) publishWebGpuDepthSnapshot(gl, coarseLevel, camera);
       } catch {
+        clearWebGpuDepthSnapshot(gl);
         depthPyramid.current.dispose();
         depthPyramid.current = null;
       }
