@@ -201,10 +201,26 @@ export const gpuTextureStats = {
 const listeners = new Set<(reset?: boolean) => void>();
 let revision = 0;
 let disposing = false;
+let notificationQueued = false;
 
+// Many KTX2 decode completions can settle in a single microtask turn. React
+// materials and static stadium batches must rebuild once for that burst,
+// rather than disposing/recreating shaders after every individual texture.
 function notifyKtx2Change(reset = false) {
-  revision += 1;
-  for (const fn of listeners) fn(reset);
+  if (reset) {
+    notificationQueued = false;
+    revision += 1;
+    for (const fn of listeners) fn(true);
+    return;
+  }
+  if (notificationQueued) return;
+  notificationQueued = true;
+  queueMicrotask(() => {
+    if (!notificationQueued) return; // a renderer reset superseded this burst
+    notificationQueued = false;
+    revision += 1;
+    for (const fn of listeners) fn(false);
+  });
 }
 /** Re-render only when a compressed asset arrives; no per-frame checks. */
 export function useKtx2Revision(): number {
