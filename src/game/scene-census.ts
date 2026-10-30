@@ -149,8 +149,8 @@ function batchedTrianglesOf(mesh: THREE.BatchedMesh): number {
     const geometryId = mesh.getGeometryIdAt(id);
     const info = mesh.getGeometryRangeAt(geometryId, range);
     if (!info) continue;
-    const elements = mesh.geometry.index ? range.indexCount : range.vertexCount;
-    triangles += Math.floor((elements ?? range.count ?? 0) / 3);
+    const elements = mesh.geometry.index ? info.indexCount : info.vertexCount;
+    triangles += Math.floor((elements ?? info.count ?? 0) / 3);
   }
   return triangles;
 }
