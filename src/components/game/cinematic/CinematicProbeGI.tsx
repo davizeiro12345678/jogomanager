@@ -1,23 +1,6 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-
-/** Room-local irradiance baking is experimental and explicitly opt-in. */
-export function probeGIOptedIn(): boolean {
-  try {
-    return globalThis.localStorage?.getItem("manager3d.cinema.probeGI") === "on";
-  } catch {
-    return false;
-  }
-}
-
-/** Avoids sampling out-of-room probes that would color neighboring interiors. */
-export const CINEMATIC_PROBE_BOUNDS = {
-  width: 8,
-  height: 4,
-  depth: 8,
-  resolution: 2,
-  falloff: 0.35,
-} as const;
+import { CINEMATIC_PROBE_BOUNDS, probeGIOptedIn } from "@/game/graphics/cinematic-probe-settings";
 
 export function CinematicProbeGI({ enabled }: { enabled: boolean }) {
   const renderer = useThree((state) => state.gl);
