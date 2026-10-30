@@ -37,7 +37,7 @@ export function CinematicProbeGI({ enabled }: { enabled: boolean }) {
           volume.position.set(0, settings.height / 2, 0);
           volume.falloff = settings.falloff;
           try {
-            volume.bake(renderer as import("three/webgpu").WebGPURenderer, scene, {
+            volume.bake(renderer as unknown as import("three/webgpu").WebGPURenderer, scene, {
               cubemapSize: 16,
               near: 0.08,
               far: 10,
@@ -56,7 +56,7 @@ export function CinematicProbeGI({ enabled }: { enabled: boolean }) {
         }
         // The WebGL-only probe calls WebGLRenderer methods during its bake;
         // a WebGPURenderer using an internal WebGL backend is NOT equivalent.
-        if (!(renderer as THREE.WebGLRenderer).isWebGLRenderer) return;
+        if (!(renderer as THREE.WebGLRenderer & { isWebGLRenderer?: boolean }).isWebGLRenderer) return;
         const { LightProbeGridWebGL } =
           await import("three/addons/lighting/LightProbeGridWebGL.js");
         if (!active) return;
