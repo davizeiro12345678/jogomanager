@@ -8,7 +8,7 @@ describe("GPU texture array atlas", () => {
     const b = new Uint8Array([0, 0, 255, 255]);
     const atlas = makeRgbaTextureArray([a, b], 1, 1);
     expect(atlas.image.depth).toBe(2);
-    expect([...atlas.image.data]).toEqual([...a, ...b]);
+    expect(Array.from(atlas.image.data ?? new Uint8Array())).toEqual([...a, ...b]);
     expect(atlas.colorSpace).toBe(THREE.SRGBColorSpace);
     expect(atlas.generateMipmaps).toBe(false);
     atlas.dispose();
