@@ -4,6 +4,8 @@ import { GameShell } from "@/components/game/GameShell";
 
 import { NoCareer, ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 
+import { TrainingBoostCard } from "@/components/game/TrainingBoostCard";
+
 import { useCareer } from "@/hooks/useCareer";
 
 import { CLUBS, LEAGUES, getLeague } from "@/game/data/leagues";
@@ -71,6 +73,8 @@ export function TrainingPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         O que você escolhe aqui vale para cada rodada até você mudar.
       </p>
+
+      <TrainingBoostCard career={career} onApply={update} />
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <SectionCard className="rounded-2xl border border-border/60 surface-card p-5">

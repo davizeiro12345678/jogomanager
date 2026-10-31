@@ -17,6 +17,7 @@ import { getStripeEnvironment } from "@/lib/stripe";
 import { withPaymentTimeout } from "@/lib/embedded-checkout";
 import { salePrice, useStoreCatalog } from "@/hooks/useStoreCatalog";
 import { CouponRedeem } from "@/components/store/CouponRedeem";
+import { WalletActions } from "@/components/store/WalletActions";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
@@ -240,6 +241,13 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           </div>
         ) : (
           <>
+            {walletQuery.data ? (
+              <WalletActions
+                coins={walletQuery.data.coins}
+                passActive={subscriptionActive}
+                onChanged={() => void walletQuery.refetch()}
+              />
+            ) : null}
             {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">
                 Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
