@@ -257,7 +257,7 @@ export function AuthPage() {
             ? await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password,
-                options: needsCaptcha && captchaToken ? { captchaToken } : undefined,
+                ...(needsCaptcha && captchaToken ? { options: { captchaToken } } : {}),
               })
             : await supabase.auth.signUp({
                 email: email.trim(),
