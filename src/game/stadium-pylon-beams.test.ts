@@ -60,7 +60,10 @@ describe("exterior pylon multi-draw batching", () => {
       const expected = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(0.35, 0, x > 0 ? -0.3 : 0.3),
       );
-      expect(rotation.angleTo(expected)).toBeLessThan(1e-6);
+      // BatchedMesh stores instance matrices in Float32Array. Decomposition
+      // introduces a few microradians of rounding even for the correct pose.
+      // Keep this tolerance well below a visible angle (0.0012 degrees).
+      expect(rotation.angleTo(expected)).toBeLessThan(2e-5);
     }
     expect(batch.boundingSphere).not.toBeNull();
     expect((batch.material as THREE.MeshBasicMaterial).transparent).toBe(true);
