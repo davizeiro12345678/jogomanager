@@ -46,12 +46,12 @@ describe("resilient Resend transport", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("refuses header injection, malformed recipients and oversized bodies before network requests", async () => {
+  it("refuses injected headers and invalid payloads before network requests", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     for (const changed of [
-      { subject: "ok\\r\\nBcc: attacker@example.test" },
-      { replyTo: "valid@example.test\\nX-Extra: injected" },
+      { subject: "ok\r\nBcc: attacker@example.test" },
+      { replyTo: "valid@example.test\nX-Extra: injected" },
       { recipient: "bad@@example.test" },
       { recipient: "a b@example.test" },
       { html: "x".repeat(1_048_577) },
