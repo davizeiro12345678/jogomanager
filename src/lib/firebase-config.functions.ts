@@ -17,7 +17,9 @@ export const getFirebaseWebConfig = createServerFn({ method: "GET" }).handler(as
   vapidPublicKey: (process.env["FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY"] ?? "").trim(),
   pushDeliveryConfigured: Boolean(
     process.env["FIREBASE_PROJECT_ID"]?.trim() &&
-    process.env["FIREBASE_SERVICE_ACCOUNT_JSON"]?.trim(),
+    process.env["FIREBASE_SERVICE_ACCOUNT_JSON"]?.trim() &&
+    process.env["SUPABASE_URL"]?.trim() &&
+    process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim(),
   ),
   measurementId: (
     process.env["FIREBASE_MEASUREMENT_ID"] ??
