@@ -17,7 +17,7 @@ export type PassCoinsResult =
   | { ok: false; reason: "error" };
 
 /** Spends one stored scout report (free for active season pass holders). */
-export const useScoutReport = createServerFn({ method: "POST" })
+export const spendScoutReportFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<UseScoutReportResult> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

@@ -20,13 +20,13 @@ import { formatMoney } from "@/game/economy";
 
 import { useCareer } from "@/hooks/useCareer";
 
-import { useScoutReport } from "@/lib/wallet-items.functions";
+import { spendScoutReportFn } from "@/lib/wallet-items.functions";
 
 import { PREMIUM_SCOUT_REPORT_SIZE } from "@/lib/wallet-rules";
 
 export function ScoutingPage() {
   const { career, update } = useCareer();
-  const spendReport = useServerFn(useScoutReport);
+  const spendReport = useServerFn(spendScoutReportFn);
   const [isUsingReport, setIsUsingReport] = useState(false);
   if (!career) return <NoCareer />;
 
