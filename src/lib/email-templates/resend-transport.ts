@@ -37,10 +37,10 @@ function validateMessage(message: ResendTransactionalMessage): void {
   ) {
     throw new Error("Invalid transactional email: required fields are empty or too long.");
   }
-  if (!/^[^<>\\s@]+@[^<>\\s@]+\\.[^<>\\s@]+$/.test(message.recipient)) {
+  if (!/^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(message.recipient)) {
     throw new Error("Invalid transactional email recipient.");
   }
-  if (!/^[^<>\\s@]+@[^<>\\s@]+\\.[^<>\\s@]+$/.test(message.replyTo ?? message.recipient)) {
+  if (!/^[^<>\s@]+@[^<>\s@]+\.[^<>\s@]+$/.test(message.replyTo ?? message.recipient)) {
     throw new Error("Invalid transactional email reply address.");
   }
   // No attachments are supported by this transport; cap accidental huge renders
