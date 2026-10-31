@@ -104,7 +104,10 @@ export function TrainingBoostCard({
           </button>
         ) : null}
         {boostsLeft < 1 ? (
-          <Link to="/loja" className="self-center text-sm text-primary underline underline-offset-4">
+          <Link
+            to="/loja"
+            className="self-center text-sm text-primary underline underline-offset-4"
+          >
             Conseguir impulsos
           </Link>
         ) : null}

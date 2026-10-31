@@ -18,37 +18,21 @@ function product(overrides: Partial<ServerStoreProduct> = {}): ServerStoreProduc
   };
 }
 
-describe("server checkout anti-pay-to-win gate", () => {
-  it("blocks legacy currency, scouting, training and pass products before Stripe price lookup", async () => {
+describe("server checkout package policy gate", () => {
+  it("blocks an unreviewed package kind before Stripe price lookup", async () => {
     const list = vi.fn();
     const stripe = { prices: { list } } as never;
 
-    for (const legacyProduct of [
-      product({
-        key: "coins_small",
-        kind: "coins",
-        contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
-      }),
-      product({
-        key: "scout_pack",
-        kind: "scout",
-        contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
-      }),
-      product({
-        key: "training_pack",
-        kind: "training",
-        contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
-      }),
-      product({
-        key: "season_pass",
-        kind: "pass",
-        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
-      }),
-    ]) {
-      await expect(resolveValidatedStripePrice(stripe, legacyProduct)).rejects.toThrow(
-        /anti-pay-to-win/i,
-      );
-    }
+    await expect(
+      resolveValidatedStripePrice(
+        stripe,
+        product({
+          key: "mystery_box",
+          kind: "lootbox",
+          contents: { coins: 10, scoutReports: 0, trainingBoosts: 0, themes: [] },
+        }),
+      ),
+    ).rejects.toThrow(/não está liberado/);
 
     expect(list).not.toHaveBeenCalled();
   });

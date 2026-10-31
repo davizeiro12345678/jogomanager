@@ -178,30 +178,27 @@ describe("VIP entitlement contract", () => {
     );
   });
 
-  it("allows cosmetic checkout products while denying every competitive legacy product shape", () => {
-    expect(() =>
-      assertCheckoutProductAllowed({
+  it("allows every approved store package kind, including coins, scouting, training and the pass", () => {
+    for (const product of [
+      {
         key: "theme_pack",
         kind: "cosmetic",
-        contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
-      }),
-    ).not.toThrow();
-
-    for (const product of [
+        contents: { coins: 300, scoutReports: 0, trainingBoosts: 0, themes: ["premium_gold"] },
+      },
       {
         key: "coins_small",
         kind: "coins",
-        contents: { coins: 500, scoutReports: 0, trainingBoosts: 0, themes: [] },
+        contents: { coins: 600, scoutReports: 2, trainingBoosts: 0, themes: [] },
       },
       {
         key: "scout_pack",
         kind: "scout",
-        contents: { coins: 0, scoutReports: 10, trainingBoosts: 0, themes: [] },
+        contents: { coins: 0, scoutReports: 15, trainingBoosts: 1, themes: [] },
       },
       {
         key: "training_pack",
         kind: "training",
-        contents: { coins: 0, scoutReports: 0, trainingBoosts: 1, themes: [] },
+        contents: { coins: 0, scoutReports: 3, trainingBoosts: 10, themes: [] },
       },
       {
         key: "season_pass",
@@ -209,7 +206,24 @@ describe("VIP entitlement contract", () => {
         contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] },
       },
     ]) {
-      expect(() => assertCheckoutProductAllowed(product)).toThrow(/anti-pay-to-win/i);
+      expect(() => assertCheckoutProductAllowed(product)).not.toThrow();
     }
+  });
+
+  it("blocks unreviewed package kinds and absurd package amounts", () => {
+    expect(() =>
+      assertCheckoutProductAllowed({
+        key: "mystery_box",
+        kind: "lootbox",
+        contents: { coins: 10, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      }),
+    ).toThrow(/não está liberado/);
+    expect(() =>
+      assertCheckoutProductAllowed({
+        key: "coins_large",
+        kind: "coins",
+        contents: { coins: 20_001, scoutReports: 0, trainingBoosts: 0, themes: [] },
+      }),
+    ).toThrow(/contrato seguro/);
   });
 });
