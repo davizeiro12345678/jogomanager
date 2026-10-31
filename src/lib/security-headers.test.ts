@@ -21,6 +21,10 @@ describe("outer response protection", () => {
       expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
       expect(response.headers.get("x-content-type-options")).toBe("nosniff");
       expect(response.headers.get("content-security-policy")).toContain("object-src 'none'");
+      expect(response.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+      expect(response.headers.get("cross-origin-resource-policy")).toBe("same-origin");
+      expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'self'");
+      expect(response.headers.get("content-security-policy")).not.toContain("frame-ancestors 'self' https:");
     expect(response.headers.get("content-security-policy")).toContain(
       "https://challenges.cloudflare.com",
     );
