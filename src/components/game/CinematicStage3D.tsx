@@ -10,7 +10,7 @@
 
 import { Environment, Lightformer } from "@react-three/drei";
 import { CinematicDirector as Director } from "./CinematicDirector";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   Component,
   lazy,
@@ -20,9 +20,11 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
 import * as THREE from "three";
 
@@ -99,6 +101,19 @@ const LINE_TINT: Record<LineLight, { sky: string; rim: string; amb: number }> = 
   festa: { sky: "#fff3d6", rim: "#ffe066", amb: 1.25 },
 };
 
+/** The set's Suspense boundary has resolved and its meshes have committed. */
+function SetMounted({ ready }: { ready: RefObject<boolean> }) {
+  const invalidate = useThree((state) => state.invalidate);
+  useLayoutEffect(() => {
+    ready.current = true;
+    invalidate();
+    return () => {
+      ready.current = false;
+    };
+  }, [ready, invalidate]);
+  return null;
+}
+
 function Stage({
   business,
   language,
@@ -120,6 +135,7 @@ function Stage({
   enhanced = true,
   onBatch,
   onUnavailable,
+  setReady,
 }: {
   business?: Cutscene["business"];
   language?: string | undefined;
@@ -141,6 +157,7 @@ function Stage({
   enhanced?: boolean;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
   onUnavailable?: (() => void) | undefined;
+  setReady: RefObject<boolean>;
 }) {
   const { t } = useT();
   const SelectedSet = useMemo(() => {
@@ -168,6 +185,7 @@ function Stage({
         festive={festive}
         training={art === "training"}
       />
+      <SetMounted ready={setReady} />
     </Suspense>
   ) : (
     <group />
@@ -404,27 +422,25 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   const [enhanced, setEnhanced] = useState(false);
   const [contextLost, setContextLost] = useState(false);
   const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const setMounted = useRef(false);
   const stageReady = useCallback(() => {
     setReady(true);
     onReady?.();
   }, [onReady]);
   const enhancedAllowed =
-    ready &&
-    !paused &&
-    !reduced &&
-    !hidden &&
-    presentation.lens !== "off" &&
-    quality !== "baixa" &&
-    !contextLost;
+    ready && !reduced && presentation.lens !== "off" && quality !== "baixa" && !contextLost;
   const showEnhanced = enhanced && enhancedAllowed;
   useEffect(() => {
     if (!enhancedAllowed) {
       setEnhanced(false);
       return;
     }
+    // Keep the warm environment and lens during pause/background; the demand
+    // frame loop already sleeps and resume must not rebuild the composer.
+    if (enhanced || paused || hidden) return;
     const timer = window.setTimeout(() => startTransition(() => setEnhanced(true)), 200);
     return () => window.clearTimeout(timer);
-  }, [enhancedAllowed]);
+  }, [enhancedAllowed, enhanced, paused, hidden]);
   const host = useRef<HTMLDivElement>(null);
   const openedAt = useRef(performance.now());
   const onBatch = useCallback(({ sources, batches, visibleSources }: CinematicBatchSnapshot) => {
@@ -450,6 +466,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     pressure.current = new CinematicPressureController();
     setPressureStage(0);
     setReady(false);
+    setMounted.current = false;
     setEnhanced(false);
     setContextLost(false);
     setCanvasGeneration((generation) => generation + 1);
@@ -476,6 +493,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
         {webglAvailable && !contextLost ? (
           <Canvas
             key={canvasGeneration}
+            style={{ opacity: ready ? 1 : 0 }}
             frameloop={paused || reduced || hidden ? "demand" : "always"}
             shadows={quality === "baixa" ? false : { type: THREE.PCFShadowMap }}
             dpr={
@@ -541,6 +559,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 host={host}
                 openedAt={openedAt.current}
                 stopped={paused || reduced || hidden}
+                setReady={setMounted}
                 onVisible={onVisible}
                 onReady={stageReady}
                 onSample={samplePerformance}
@@ -566,6 +585,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 onBatch={onBatch}
                 enhanced={showEnhanced}
                 onUnavailable={onUnavailable}
+                setReady={setMounted}
               />
               {showEnhanced ? (
                 <Suspense fallback={null}>

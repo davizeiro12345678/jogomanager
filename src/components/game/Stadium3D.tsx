@@ -16,16 +16,18 @@ import { AdaptiveEvents, Environment, Lightformer } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { easing } from "maath";
 import type React from "react";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { FirstMatchFrame } from "@/components/game/FirstMatchFrame";
 import { FrameProbe } from "@/components/game/FrameProbe";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
+import { MatchLoading } from "@/components/game/MatchLoading";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { rendererMetadata } from "@/game/graphics-renderer-metadata";
 import { CanvasLifecycle } from "./CanvasLifecycle";
+import { observeBlackMatchFrames } from "./black-match-frame";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 import { subscribeRenderedFrames } from "./graphics-probe";
 import { onTurfDetailReady } from "./stadium/textures/turf-detail";
@@ -572,6 +574,7 @@ function Scene({
   postIntensity,
   supporters,
   adaptive,
+  disablePost,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -582,6 +585,7 @@ function Scene({
   postIntensity: number;
   supporters?: SupporterMatchday | undefined;
   adaptive: boolean;
+  disablePost: boolean;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -592,7 +596,7 @@ function Scene({
   const budget = useRuntimeSceneBudget();
   // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
   // direto do renderizador (tone mapping e exposição continuam ativos).
-  const postOn = useVisual().postFx && backend === "webgl2";
+  const postOn = useVisual().postFx && backend === "webgl2" && !disablePost;
 
   const goalPulse = useRef(0);
   const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
@@ -916,6 +920,24 @@ function PausedCameraFrames({
   return null;
 }
 
+function BlackFrameRecovery({ onBlack }: { onBlack: () => void }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => observeBlackMatchFrames(gl, performance.now(), onBlack), [gl, onBlack]);
+  return null;
+}
+
+function StadiumUnavailable({ onUnavailable }: { onUnavailable: () => void }) {
+  useEffect(onUnavailable, [onUnavailable]);
+  return (
+    <div
+      role="alert"
+      className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
+    >
+      Não foi possível iniciar os gráficos 3D. Os controles e o placar continuam disponíveis.
+    </div>
+  );
+}
+
 function Stadium3DImpl({
   sim,
   mode,
@@ -1005,6 +1027,16 @@ function Stadium3DImpl({
   // o contexto (e perder todas as texturas) no meio da partida.
   const [backend, setBackend] = useState<GpuBackend | null>(null);
   const [rendererReady, setRendererReady] = useState(false);
+  const [rendererUnavailable, setRendererUnavailable] = useState(false);
+  const onRendererUnavailable = useCallback(() => setRendererUnavailable(true), []);
+  const [disablePost, setDisablePost] = useState(false);
+  const [blackFrame, setBlackFrame] = useState(false);
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const postEnabled = backend === "webgl2" && vis.postFx && !disablePost;
+  const recoverBlackFrame = useCallback(() => {
+    if (postEnabled) setDisablePost(true);
+    else setBlackFrame(true);
+  }, [postEnabled]);
   useEffect(() => {
     let alive = true;
     void detectWebGPU().then((ok) => {
@@ -1057,25 +1089,15 @@ function Stadium3DImpl({
     >
       <GraphicsBoundary>
         <Canvas
-          key={backend}
+          key={`${backend}-${canvasGeneration}`}
           shadows={shadowsOn ? SHADOW_SETTINGS : false}
           frameloop={visible && !paused ? "always" : "demand"}
           dpr={requestedDpr}
           camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
           gl={glProp}
           performance={{ min: 0.5 }}
-          fallback={
-            <div
-              role={rendererReady ? undefined : "status"}
-              aria-hidden={rendererReady || undefined}
-              className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
-            >
-              Não foi possível iniciar os gráficos 3D. Os controles e o placar continuam
-              disponíveis.
-            </div>
-          }
+          fallback={<StadiumUnavailable onUnavailable={onRendererUnavailable} />}
           onCreated={({ gl }) => {
-            setRendererReady(true);
             const r = gl as unknown as {
               toneMapping: THREE.ToneMapping;
               toneMappingExposure: number;
@@ -1105,6 +1127,7 @@ function Stadium3DImpl({
           }}
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
+          {backend === "webgl2" ? <BlackFrameRecovery onBlack={recoverBlackFrame} /> : null}
           <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
           <FirstMatchFrame
             startedAt={startedAt.current}
@@ -1132,6 +1155,7 @@ function Stadium3DImpl({
                 postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
                 supporters={supporters}
                 adaptive={vis.adaptive}
+                disablePost={disablePost}
               />
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>
@@ -1139,7 +1163,34 @@ function Stadium3DImpl({
             <FpsMeter onSample={setFps} backend={backend} quality={eff} />
           ) : null}
         </Canvas>
+        {!rendererReady && !rendererUnavailable ? (
+          <div data-stadium-loading="true" className="pointer-events-none absolute inset-0">
+            <MatchLoading />
+          </div>
+        ) : null}
       </GraphicsBoundary>
+      {blackFrame ? (
+        <div
+          role="alert"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a1420]/95 p-6 text-center text-white"
+        >
+          <div>
+            <p>O estádio não foi exibido. A partida continua preservada.</p>
+            <button
+              type="button"
+              className="mt-3 rounded-lg bg-primary px-5 py-3 font-semibold text-primary-foreground"
+              onClick={() => {
+                setBlackFrame(false);
+                setDisablePost(true);
+                setRendererReady(false);
+                setCanvasGeneration((generation) => generation + 1);
+              }}
+            >
+              Tentar gráficos novamente
+            </button>
+          </div>
+        </div>
+      ) : null}
       {vis.showFps && fps ? (
         <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
           <span className="text-white">{Math.round(fps.fps)} fps</span>
