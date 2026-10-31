@@ -9,7 +9,7 @@ export function createCspNonce() {
 }
 
 const SCRIPT_SOURCES =
-  "'self' https://js.stripe.com https://*.posthog.com https://*.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://cdn.gpteng.co https://*.lovable.app https://*.lovable.dev";
+  "'self' https://js.stripe.com https://*.posthog.com https://*.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://cdn.gpteng.co https://*.lovable.app https://*.lovable.dev https://challenges.cloudflare.com";
 const COMMON_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -22,7 +22,7 @@ const COMMON_CSP = [
   "media-src 'self' data: blob: https:",
   "connect-src 'self' blob: data: https: wss:",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://challenges.cloudflare.com",
 ];
 
 const PRIVATE_PATH =
