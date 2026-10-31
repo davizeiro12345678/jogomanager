@@ -34,3 +34,4 @@
 - Production verification must compare the compile-time Git commit in `/api/health` with the exact approved release SHA, in addition to checking backend readiness and public access. Do not publish an obsolete revision after `main` has advanced.
 - See `docs/critical-performance.md` for the limits and evidence required to assess a change.
 - The connected backend did not run the recovered history in `supabase/migrations/` (it belongs to another backend); apply schema changes as new forward migrations under `drizzle/migrations/` and never replay those historical files, because they assume an empty database.
+- Wallet items are spent only through service-role database functions called from authenticated server functions, and their rates live in both those functions and `src/lib/wallet-rules.ts`; the database is the authority so clients cannot mint coins or items.
