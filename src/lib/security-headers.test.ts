@@ -21,6 +21,7 @@ describe("outer response protection", () => {
       expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
       expect(response.headers.get("x-content-type-options")).toBe("nosniff");
       expect(response.headers.get("content-security-policy")).toContain("object-src 'none'");
+    expect(response.headers.get("content-security-policy")).toContain("https://challenges.cloudflare.com");
       const html = await response.text();
       expect(html).toContain('lang="pt-BR"');
       expect(html).not.toContain("private details");
