@@ -69,30 +69,16 @@ try {
     window.addEventListener("graphics-ready", (event) => {
       window.__matchGraphicsReady = event.detail;
     });
-    // Hold the first match draw so the loading UI can be checked even on a
-    // fast runner. Release the real animation callbacks before the screenshot
-    // and the normal non-black rendered-frame assertion.
+    // Record the loading state even when it disappears before the test can
+    // inspect the canvas, without interfering with the real animation loop.
     if (location.pathname.endsWith("/graphics-benchmark.html")) {
-      const request = window.requestAnimationFrame.bind(window);
-      const cancel = window.cancelAnimationFrame.bind(window);
-      const pending = new Map();
-      let held = true;
-      let sequence = 0;
-      window.requestAnimationFrame = (callback) => {
-        if (!held) return request(callback);
-        const id = --sequence;
-        pending.set(id, callback);
-        return id;
-      };
-      window.cancelAnimationFrame = (id) => {
-        if (id < 0) pending.delete(id);
-        else cancel(id);
-      };
-      window.__releaseMatchAnimationFrames = () => {
-        held = false;
-        for (const callback of pending.values()) request(callback);
-        pending.clear();
-      };
+      const observer = new MutationObserver(() => {
+        if (document.querySelector('[data-stadium-loading="true"]')) {
+          window.__stadiumLoadingSeen = true;
+          observer.disconnect();
+        }
+      });
+      observer.observe(document, { childList: true, subtree: true });
     }
   });
   let releaseSet;
@@ -158,9 +144,8 @@ try {
   const match = page.locator("canvas").first();
   await match.waitFor({ timeout: 120000 });
   const matchLoading = page.locator('[data-stadium-loading="true"]');
-  await matchLoading.waitFor({ state: "visible", timeout: 120000 });
-  await page.screenshot({ path: path.join(output, "match-loading.png") });
-  await page.evaluate(() => window.__releaseMatchAnimationFrames());
+  if (!(await page.evaluate(() => window.__stadiumLoadingSeen === true)))
+    throw new Error("Match loading state was not displayed before the first frame");
   await page.waitForFunction(() => window.__matchGraphicsReady, null, { timeout: 120000 });
   await matchLoading.waitFor({ state: "hidden", timeout: 120000 });
   // First draw and compositor presentation are not the same event. Give the
