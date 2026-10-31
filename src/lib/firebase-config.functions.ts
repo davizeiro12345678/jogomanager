@@ -15,6 +15,10 @@ export const getFirebaseWebConfig = createServerFn({ method: "GET" }).handler(as
   messagingSenderId: (process.env["FIREBASE_MESSAGING_SENDER_ID"] ?? "122832770297").trim(),
   appId: (process.env["FIREBASE_WEB_APP_ID"] ?? "1:122832770297:web:e2f9bc68cca1b1f873be28").trim(),
   vapidPublicKey: (process.env["FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY"] ?? "").trim(),
+  pushDeliveryConfigured: Boolean(
+    process.env["FIREBASE_PROJECT_ID"]?.trim() &&
+    process.env["FIREBASE_SERVICE_ACCOUNT_JSON"]?.trim(),
+  ),
   measurementId: (
     process.env["FIREBASE_MEASUREMENT_ID"] ??
     process.env["GOOGLE_ANALYTICS_MEASUREMENT_ID"] ??
