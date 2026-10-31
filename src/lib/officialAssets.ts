@@ -27,6 +27,7 @@ export function officialLookEnabled(): boolean {
 export function setOfficialLook(on: boolean) {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(PREF_KEY, on ? "on" : "off");
+  if (on) void loadOfficialAssets();
   listeners.forEach((l) => l());
 }
 
@@ -87,6 +88,7 @@ async function readCache(): Promise<OfficialAssets | null> {
 
 /** Kick off the load; safe to call from anywhere, runs at most once. */
 export function loadOfficialAssets(): Promise<void> {
+  if (!officialLookEnabled()) return Promise.resolve();
   if (loaded) return Promise.resolve();
   if (inflight) return inflight;
 

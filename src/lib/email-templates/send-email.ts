@@ -3,6 +3,7 @@ import { render } from "@react-email/render";
 import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { TEMPLATES } from "./registry";
 import { deliverViaResend } from "./resend-transport";
+import { enqueueRenderedNotification } from "./queue-email";
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
@@ -16,7 +17,7 @@ const SENDER_DOMAIN = "notify.jogomanager.com";
 const FROM_DOMAIN = "jogomanager.com";
 
 export type SendTemplateEmailResult =
-  { sent: true } | { sent: false; reason: "recipient_suppressed" };
+  { sent: true } | { sent: false; reason: "recipient_suppressed" | "queued" };
 
 export interface SendTemplateEmailOptions {
   templateData?: Record<string, unknown>;
@@ -63,6 +64,32 @@ export async function sendTemplateEmail(
   const text = await render(element, { plainText: true });
   const subject =
     typeof template.subject === "function" ? template.subject(templateData) : template.subject;
+
+  // Delayed messages are opt-in; never queue password resets, OTPs or
+  // security mail. The user receives queued != delivered, not a false success.
+  const durable = process.env["TRANSACTIONAL_EMAIL_OUTBOX"] === "true";
+  if (
+    useResend &&
+    durable &&
+    (templateName === "welcome" ||
+      templateName === "season-start" ||
+      templateName === "career-milestone")
+  ) {
+    if (!options.idempotencyKey)
+      throw new Error("Durable notifications require an explicit idempotency key");
+    const from = process.env["TRANSACTIONAL_EMAIL_FROM"];
+    if (!from) throw new Error("TRANSACTIONAL_EMAIL_FROM is required");
+    await enqueueRenderedNotification({
+      template: templateName,
+      recipient,
+      from,
+      subject,
+      html,
+      text,
+      idempotencyKey: options.idempotencyKey,
+    });
+    return { sent: false, reason: "queued" };
+  }
 
   if (useResend) {
     const key = process.env["RESEND_API_KEY"];

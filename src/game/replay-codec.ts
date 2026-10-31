@@ -56,7 +56,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   const hasVisual = frames.some((frame) => frame.v !== undefined);
   const visual = hasVisual ? frames.map((frame) => frame.v ?? null) : undefined;
 
-  frames.forEach((frame, frameIndex) => {
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex += 1) {
+    const frame = frames[frameIndex]!;
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
@@ -65,16 +66,20 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
     score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
-    for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const source = playerIndex * 4;
-      const target = (frameIndex * playerCount + playerIndex) * 4;
-      positions[target] = integer(frame.p[source] ?? 0 / 1);
-      positions[target + 1] = integer(frame.p[source + 1] ?? 0 / 1);
-      positions[target + 2] = integer(frame.p[source + 2] ?? 0 / 1);
-      positions[target + 3] = integer(frame.p[source + 3] ?? 0 / 1);
-      actions[frameIndex * playerCount + playerIndex] = actionCode(frame.a[playerIndex] ?? null);
+    // Keep the typed-buffer write cursor sequential. Avoid computing the
+    // frame/player offset and looking up frame.p on every coordinate.
+    const sourcePositions = frame.p;
+    const sourceActions = frame.a;
+    const actionBase = frameIndex * playerCount;
+    let target = actionBase * 4;
+    for (let playerIndex = 0, source = 0; playerIndex < playerCount; playerIndex += 1) {
+      positions[target++] = integer(sourcePositions[source++] ?? 0);
+      positions[target++] = integer(sourcePositions[source++] ?? 0);
+      positions[target++] = integer(sourcePositions[source++] ?? 0);
+      positions[target++] = integer(sourcePositions[source++] ?? 0);
+      actions[actionBase + playerIndex] = actionCode(sourceActions[playerIndex] ?? null);
     }
-  });
+  }
 
   return {
     version: REPLAY_FORMAT_V3,

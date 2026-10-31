@@ -70,7 +70,7 @@ export function GuidesPage() {
     <ArticleShell
       kicker="Guias"
       title="Guias de manager de futebol"
-      intro="Tudo que você precisa para comandar um clube: escolha do time, escalação, tática, finanças e relação com a diretoria. Depois de ler, é só assumir um clube e jogar direto no navegador."
+      intro="Aprenda a escolher um clube, montar a escalação, ajustar táticas e planejar as finanças. Um guia prático para começar sua carreira."
       path={PATH}
       readMinutes={16}
       level="Iniciante"

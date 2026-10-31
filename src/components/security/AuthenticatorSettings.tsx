@@ -101,6 +101,23 @@ export function AuthenticatorSettings() {
       setBusy(false);
     }
   };
+  const endOtherSessions = async () => {
+    if (busy) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      if (!(await assertAssurance())) return;
+      const { error } = await supabase.auth.signOut({ scope: "others" });
+      if (error) throw error;
+      setNotice(
+        "Solicitamos a saída dos outros dispositivos. Sessões com acesso ainda válido podem permanecer ativas até o token expirar.",
+      );
+    } catch {
+      setNotice("Não foi possível encerrar as outras sessões. Tente novamente.");
+    } finally {
+      setBusy(false);
+    }
+  };
   if (stepUp) return <MfaChallenge onVerified={() => setStepUp(false)} />;
   return (
     <section className="surface-card mt-5 space-y-3 p-5" aria-labelledby="authenticator-title">
@@ -192,6 +209,20 @@ export function AuthenticatorSettings() {
           </button>
         </>
       )}
+      <div className="border-t border-border/60 pt-4">
+        <h3 className="font-display text-base">Sessões em outros aparelhos</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Revogue os acessos de outros dispositivos sem sair deste aparelho.
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void endOtherSessions()}
+          className="mt-2 min-h-11 rounded border border-input px-3 text-sm disabled:opacity-50"
+        >
+          Encerrar outras sessões
+        </button>
+      </div>
       {notice && (
         <p role="status" className="text-sm">
           {notice}

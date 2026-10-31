@@ -168,6 +168,18 @@ export function FootballHome() {
   );
   useEffect(() => {
     let active = true;
+    // Most visitors have no local career. Avoid downloading the offline store
+    // and its IndexedDB dependency on the critical path of first paint.
+    try {
+      if (
+        !window.localStorage.getItem("manager3d.career.v2.guest") &&
+        !window.localStorage.getItem("manager3d.career.v1")
+      ) {
+        return;
+      }
+    } catch {
+      return;
+    }
     // Returning players alone need the catalogue to resolve their club name.
     void import("@/lib/careerStorage")
       .then(async ({ readLocalCareer }) => {

@@ -251,7 +251,10 @@ function Tiers({
         geometry={concreteGeometry}
         material={concrete}
         placements={placements.concrete}
-        receiveShadow
+        // Broadcast LOD uses baked lighting on the terraces. Sampling the
+        // dynamic player shadow map here adds a shader permutation without
+        // useful pitch-contact detail; cinema/legacy retains the original.
+        receiveShadow={physical}
         batching={batching}
       />
       <TierInstances

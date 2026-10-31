@@ -1,3 +1,5 @@
+import { readLimitedWebhookBody } from "../_shared/read-webhook-body.mjs";
+
 // Supabase Auth Send SMS HTTP Hook, staged but deliberately disabled.
 // Requires a signed Standard Webhooks request, Twilio Verify CustomCode,
 // Fraud Guard and Geo Permissions configured at the Twilio service,
@@ -162,10 +164,10 @@ Deno.serve(async (request: Request) => {
   if (!id || id.length > 200 || !/^\d{9,12}$/.test(timestamp) || !signature)
     return reply(400, "{}");
   if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return reply(400, "{}");
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (!Number.isFinite(contentLength) || contentLength > MAX_BYTES) return reply(413, "{}");
-  const raw = await request.text().catch(() => null);
-  if (raw === null || new TextEncoder().encode(raw).byteLength > MAX_BYTES) return reply(413, "{}");
+  const body = await readLimitedWebhookBody(request, MAX_BYTES);
+  if (body.kind === "too_large") return reply(413, "{}");
+  if (body.kind !== "ok") return reply(400, "{}");
+  const raw = body.text;
   if (!(await checkSignature(raw, id, timestamp, signature))) return reply(401, "{}");
 
   let event: { user?: { phone?: string }; sms?: { otp?: string; channel?: string } };

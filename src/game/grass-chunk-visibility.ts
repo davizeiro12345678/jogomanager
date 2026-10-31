@@ -17,6 +17,8 @@ export function markNearestGrassChunks(
   closestIndices: Int32Array,
   closestDistances: Float64Array,
   distancesByChunk?: Float64Array,
+  previouslyActive?: Uint8Array,
+  hysteresisMeters = 0,
 ): void {
   active.fill(0);
   const limit = Math.min(chunks.length, Math.max(0, Math.floor(maxVisible)));
@@ -25,7 +27,8 @@ export function markNearestGrassChunks(
     active.length < chunks.length ||
     closestIndices.length < limit ||
     closestDistances.length < limit ||
-    (distancesByChunk !== undefined && distancesByChunk.length < chunks.length)
+    (distancesByChunk !== undefined && distancesByChunk.length < chunks.length) ||
+    (previouslyActive !== undefined && previouslyActive.length < chunks.length)
   )
     throw new RangeError("Grass chunk visibility buffers are too small");
 
@@ -40,11 +43,14 @@ export function markNearestGrassChunks(
     const dz = Math.max(0, Math.abs(camera.z - chunk.z) - halfDepth);
     const distance = Math.hypot(dx, camera.y, dz);
     if (distancesByChunk) distancesByChunk[index] = distance;
+    // Preserve a selected sector while the camera hovers near a boundary;
+    // the real physical distance remains unchanged for grass density/LOD.
+    const priority = distance - (previouslyActive?.[index] ? hysteresisMeters : 0);
     let insertion = limit;
     // Iteration order gives ties to the lower, stable chunk index — matching
     // Array#sort's stable ordering from the former implementation.
     for (let slot = 0; slot < limit; slot += 1) {
-      if (distance < closestDistances[slot]!) {
+      if (priority < closestDistances[slot]!) {
         insertion = slot;
         break;
       }
@@ -54,7 +60,7 @@ export function markNearestGrassChunks(
       closestDistances[slot] = closestDistances[slot - 1]!;
       closestIndices[slot] = closestIndices[slot - 1]!;
     }
-    closestDistances[insertion] = distance;
+    closestDistances[insertion] = priority;
     closestIndices[insertion] = index;
   }
 
