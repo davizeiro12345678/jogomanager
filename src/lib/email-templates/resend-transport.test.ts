@@ -45,4 +45,30 @@ describe("resilient Resend transport", () => {
     await expect(deliverViaResend(fixture)).rejects.toThrow("HTTP 422");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("refuses injected headers and invalid payloads before network requests", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    for (const changed of [
+      { subject: "ok\r\nBcc: attacker@example.test" },
+      { replyTo: "valid@example.test\nX-Extra: injected" },
+      { recipient: "bad@@example.test" },
+      { recipient: "a b@example.test" },
+      { html: "x".repeat(1_048_577) },
+    ]) {
+      await expect(deliverViaResend({ ...fixture, ...changed })).rejects.toThrow();
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("allows legitimate reply-to while passing exactly one recipient to the API", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await deliverViaResend({ ...fixture, replyTo: "contato@jogomanager.com" });
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      to: [fixture.recipient],
+      reply_to: "contato@jogomanager.com",
+    });
+  });
 });

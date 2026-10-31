@@ -68,11 +68,20 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   .validator(
     (data: {
       productKey: string;
+      attemptId?: string;
       quantity?: number;
       returnUrl: string;
       clientEnvironment: StripeEnv;
     }) => {
       assertStoreProductKey(data.productKey);
+      if (
+        data.attemptId !== undefined &&
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          data.attemptId,
+        )
+      ) {
+        throw new Error("Identificador de tentativa de checkout inválido.");
+      }
       if (data.quantity != null && data.quantity !== 1) throw new Error("Invalid quantity");
       if (typeof data.returnUrl !== "string") throw new Error("Invalid returnUrl");
       if (data.clientEnvironment !== "live" && data.clientEnvironment !== "sandbox") {
@@ -116,36 +125,50 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         productDescription = product.name;
       }
 
-      const session = await stripe.checkout.sessions.create({
-        line_items: [{ price: stripePrice.id, quantity: 1 }],
-        mode: isRecurring ? "subscription" : "payment",
-        ui_mode: "embedded_page",
-        return_url: data.returnUrl,
-        customer: customerId,
-        ...(await checkoutDiscountParams(stripe, product)),
-        ...(!isRecurring && {
-          payment_intent_data: { description: productDescription },
-        }),
-        metadata: { userId: context.userId, productKey: product.key },
-        ...(isRecurring && {
-          subscription_data: { metadata: { userId: context.userId } },
-        }),
-      } as Parameters<ReturnType<typeof createStripeClient>["checkout"]["sessions"]["create"]>[0]);
+      // The same user, product and attempt map to one Stripe session across retries.
+      // A different buyer or product cannot reuse this idempotency key.
+      const stripeIdempotencyKey = data.attemptId
+        ? `jgm-checkout:${environment}:${context.userId}:${product.key}:${data.attemptId}`
+        : undefined;
+      if (stripeIdempotencyKey && stripeIdempotencyKey.length > 255) {
+        throw new Error("Identificador de checkout muito longo.");
+      }
+      const session = await stripe.checkout.sessions.create(
+        {
+          line_items: [{ price: stripePrice.id, quantity: 1 }],
+          mode: isRecurring ? "subscription" : "payment",
+          ui_mode: "embedded_page",
+          return_url: data.returnUrl,
+          customer: customerId,
+          ...(await checkoutDiscountParams(stripe, product)),
+          ...(!isRecurring && {
+            payment_intent_data: { description: productDescription },
+          }),
+          metadata: { userId: context.userId, productKey: product.key },
+          ...(isRecurring && {
+            subscription_data: { metadata: { userId: context.userId } },
+          }),
+        } as Parameters<ReturnType<typeof createStripeClient>["checkout"]["sessions"]["create"]>[0],
+        stripeIdempotencyKey ? { idempotencyKey: stripeIdempotencyKey } : undefined,
+      );
 
       // Record ownership so the return page can verify a session before any Stripe lookup.
       const { error: ownerError } = await getStoreServiceSupabase()
         .from("checkout_session_owners")
-        .insert({
-          session_id: session.id,
-          user_id: context.userId,
-          environment,
-          product_key: product.key,
-          price_cents: product.priceCents,
-          currency: product.currency,
-          stripe_price_id: stripePrice.id,
-          contents_snapshot:
-            product.contents as unknown as import("@/integrations/supabase/types").Json,
-        });
+        .upsert(
+          {
+            session_id: session.id,
+            user_id: context.userId,
+            environment,
+            product_key: product.key,
+            price_cents: product.priceCents,
+            currency: product.currency,
+            stripe_price_id: stripePrice.id,
+            contents_snapshot:
+              product.contents as unknown as import("@/integrations/supabase/types").Json,
+          },
+          { onConflict: "session_id", ignoreDuplicates: true },
+        );
       if (ownerError) throw new Error("Não foi possível registrar a compra.");
 
       return { clientSecret: session.client_secret ?? "" };

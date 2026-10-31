@@ -9,20 +9,20 @@ export function createCspNonce() {
 }
 
 const SCRIPT_SOURCES =
-  "'self' https://js.stripe.com https://*.posthog.com https://*.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://cdn.gpteng.co https://*.lovable.app https://*.lovable.dev";
+  "'self' https://js.stripe.com https://*.posthog.com https://*.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://static.cloudflareinsights.com https://cdn.gpteng.co https://*.lovable.app https://*.lovable.dev https://challenges.cloudflare.com";
 const COMMON_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "form-action 'self' https://*.stripe.com",
-  "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev https://lovable.dev",
+  "frame-ancestors 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
   "connect-src 'self' blob: data: https: wss:",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://challenges.cloudflare.com",
 ];
 
 const PRIVATE_PATH =
@@ -43,6 +43,12 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()',
   );
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
+  // Non-sensitive popups (OAuth, payments) keep working, while public third-party
+  // embedding of the app is denied by CSP frame-ancestors and X-Frame-Options.
+  if (contentType.includes("text/html")) {
+    headers.set("x-frame-options", "SAMEORIGIN");
+    headers.set("cross-origin-resource-policy", "same-origin");
+  }
   if (url.protocol === "https:")
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   if (contentType.includes("text/html")) {
