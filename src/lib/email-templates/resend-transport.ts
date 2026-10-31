@@ -24,7 +24,7 @@ function validateMessage(message: ResendTransactionalMessage): void {
     ["replyTo", message.replyTo ?? ""],
     ["idempotencyKey", message.idempotencyKey],
   ] as const) {
-    if (/[\x00-\x1f\x7f]/.test(value)) {
+    if (/\p{Cc}/u.test(value)) {
       throw new Error(`Invalid transactional email ${field}: control characters are not allowed.`);
     }
   }
