@@ -1644,3 +1644,40 @@ export function runScouting(state: CareerState): CareerState {
   }
   return { ...state, scoutReports: reports };
 }
+
+/**
+ * Relatório premium (comprado na loja ou do passe): mapeia jovens de até 23
+ * anos com o maior potencial entre clubes sorteados e soma aos relatórios
+ * existentes, sem repetir jogador.
+ */
+export function runPremiumScouting(state: CareerState, nonce: string, size = 5): CareerState {
+  const rnd = makeRng(`premium-scout-${state.clubId}-${state.season}-${nonce}`);
+  const ids = Object.keys(CLUBS).filter((id) => id !== state.clubId);
+  const known = new Set(state.scoutReports.map((r) => r.playerId));
+  const candidates: ScoutReport[] = [];
+  for (let i = 0; i < size * 4 && ids.length > 0; i++) {
+    const clubId = ids[Math.floor(rnd() * ids.length)]!;
+    for (const p of buildSquad(clubId).map(enrichPlayer)) {
+      if (p.age > 23 || known.has(p.id)) continue;
+      candidates.push({
+        id: `psc-${p.id}-${state.season}-${nonce}`,
+        playerId: p.id,
+        name: p.name,
+        clubId,
+        pos: p.pos,
+        ovr: p.ovr,
+        potential: p.potential ?? p.ovr,
+        age: p.age,
+        value: p.value,
+        season: state.season,
+      });
+    }
+  }
+  const picked: ScoutReport[] = [];
+  for (const r of candidates.sort((a, b) => b.potential - a.potential)) {
+    if (picked.length >= size) break;
+    if (picked.some((x) => x.playerId === r.playerId)) continue;
+    picked.push(r);
+  }
+  return { ...state, scoutReports: [...picked, ...state.scoutReports].slice(0, 40) };
+}
