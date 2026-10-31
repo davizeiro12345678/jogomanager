@@ -63,6 +63,21 @@ export function ClubHeritagePanel({ clubId, compact = false, className }: ClubHe
                     ? ` · ${formatter.format(data.stadium.capacity)} lugares`
                     : ""}
                 </dd>
+                {data.stadium?.name.trim() ? (
+                  <a
+                    href={`https://www.google.com/maps/search/?${new URLSearchParams({
+                      api: "1",
+                      query: [data.stadium.name, data.stadium.city ?? data.city]
+                        .filter(Boolean)
+                        .join(", "),
+                    })}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
+                  >
+                    Pesquisar estádio no Google Maps (abre em outra aba)
+                  </a>
+                ) : null}
               </div>
             </div>
           </dl>
