@@ -22,6 +22,7 @@ import * as THREE from "three";
 import { FirstMatchFrame } from "@/components/game/FirstMatchFrame";
 import { FrameProbe } from "@/components/game/FrameProbe";
 import { GraphicsBoundary } from "@/components/game/GraphicsBoundary";
+import { MatchLoading } from "@/components/game/MatchLoading";
 import { MatchPlayers } from "@/components/game/players/MatchPlayers";
 import { OfficialRig } from "@/components/game/players/OfficialRig";
 import { rendererMetadata } from "@/game/graphics-renderer-metadata";
@@ -925,6 +926,18 @@ function BlackFrameRecovery({ onBlack }: { onBlack: () => void }) {
   return null;
 }
 
+function StadiumUnavailable({ onUnavailable }: { onUnavailable: () => void }) {
+  useEffect(onUnavailable, [onUnavailable]);
+  return (
+    <div
+      role="alert"
+      className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
+    >
+      Não foi possível iniciar os gráficos 3D. Os controles e o placar continuam disponíveis.
+    </div>
+  );
+}
+
 function Stadium3DImpl({
   sim,
   mode,
@@ -1014,6 +1027,8 @@ function Stadium3DImpl({
   // o contexto (e perder todas as texturas) no meio da partida.
   const [backend, setBackend] = useState<GpuBackend | null>(null);
   const [rendererReady, setRendererReady] = useState(false);
+  const [rendererUnavailable, setRendererUnavailable] = useState(false);
+  const onRendererUnavailable = useCallback(() => setRendererUnavailable(true), []);
   const [disablePost, setDisablePost] = useState(false);
   const [blackFrame, setBlackFrame] = useState(false);
   const [canvasGeneration, setCanvasGeneration] = useState(0);
@@ -1081,18 +1096,8 @@ function Stadium3DImpl({
           camera={{ position: [0, 46, FIELD_Z + 44], fov: 42 }}
           gl={glProp}
           performance={{ min: 0.5 }}
-          fallback={
-            <div
-              role={rendererReady ? undefined : "status"}
-              aria-hidden={rendererReady || undefined}
-              className="flex h-full min-h-64 items-center justify-center px-6 text-center text-sm text-muted-foreground"
-            >
-              Não foi possível iniciar os gráficos 3D. Os controles e o placar continuam
-              disponíveis.
-            </div>
-          }
+          fallback={<StadiumUnavailable onUnavailable={onRendererUnavailable} />}
           onCreated={({ gl }) => {
-            setRendererReady(true);
             const r = gl as unknown as {
               toneMapping: THREE.ToneMapping;
               toneMappingExposure: number;
@@ -1158,6 +1163,11 @@ function Stadium3DImpl({
             <FpsMeter onSample={setFps} backend={backend} quality={eff} />
           ) : null}
         </Canvas>
+        {!rendererReady && !rendererUnavailable ? (
+          <div data-stadium-loading="true" className="pointer-events-none absolute inset-0">
+            <MatchLoading />
+          </div>
+        ) : null}
       </GraphicsBoundary>
       {blackFrame ? (
         <div
@@ -1172,6 +1182,7 @@ function Stadium3DImpl({
               onClick={() => {
                 setBlackFrame(false);
                 setDisablePost(true);
+                setRendererReady(false);
                 setCanvasGeneration((generation) => generation + 1);
               }}
             >

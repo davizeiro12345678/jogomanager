@@ -69,6 +69,31 @@ try {
     window.addEventListener("graphics-ready", (event) => {
       window.__matchGraphicsReady = event.detail;
     });
+    // Hold the first match draw so the loading UI can be checked even on a
+    // fast runner. Release the real animation callbacks before the screenshot
+    // and the normal non-black rendered-frame assertion.
+    if (location.pathname.endsWith("/graphics-benchmark.html")) {
+      const request = window.requestAnimationFrame.bind(window);
+      const cancel = window.cancelAnimationFrame.bind(window);
+      const pending = new Map();
+      let held = true;
+      let sequence = 0;
+      window.requestAnimationFrame = (callback) => {
+        if (!held) return request(callback);
+        const id = --sequence;
+        pending.set(id, callback);
+        return id;
+      };
+      window.cancelAnimationFrame = (id) => {
+        if (id < 0) pending.delete(id);
+        else cancel(id);
+      };
+      window.__releaseMatchAnimationFrames = () => {
+        held = false;
+        for (const callback of pending.values()) request(callback);
+        pending.clear();
+      };
+    }
   });
   let releaseSet;
   const waitForSet = new Promise((resolve) => {
@@ -132,13 +157,35 @@ try {
   });
   const match = page.locator("canvas").first();
   await match.waitFor({ timeout: 120000 });
+  const matchLoading = page.locator('[data-stadium-loading="true"]');
+  await matchLoading.waitFor({ state: "visible", timeout: 120000 });
+  await page.screenshot({ path: path.join(output, "match-loading.png") });
+  await page.evaluate(() => window.__releaseMatchAnimationFrames());
   await page.waitForFunction(() => window.__matchGraphicsReady, null, { timeout: 120000 });
+  await matchLoading.waitFor({ state: "hidden", timeout: 120000 });
+  // First draw and compositor presentation are not the same event. Give the
+  // startup recovery a bounded opportunity to display a real frame, while
+  // keeping the original non-black assertion for every captured canvas.
+  const firstDrawAt = Date.now();
+  let matchImage;
+  let visualError;
+  do {
+    matchImage = await match.screenshot({
+      path: path.join(output, "match-ready.png"),
+      timeout: 120000,
+    });
+    try {
+      await assertImageNotBlack(matchImage, "match");
+      visualError = undefined;
+      break;
+    } catch (error) {
+      visualError = error;
+      if (Date.now() - firstDrawAt >= 30000) break;
+      await page.waitForTimeout(1000);
+    }
+  } while (true);
   if (await page.getByText("O estádio não foi exibido", { exact: false }).count())
     throw new Error("Match fell back to the black-frame warning");
-  const matchImage = await match.screenshot({
-    path: path.join(output, "match-ready.png"),
-    timeout: 120000,
-  });
   const matchTiming = await page.evaluate(() => window.__matchGraphicsReady);
   await writeFile(
     path.join(output, "result.json"),
@@ -147,13 +194,14 @@ try {
         renderer: "SwiftShader",
         sceneTiming,
         matchTiming,
+        presentationWaitMs: Date.now() - firstDrawAt,
         errors,
       },
       null,
       2,
     ),
   );
-  await assertImageNotBlack(matchImage, "match");
+  if (visualError) throw visualError;
   if (errors.length) throw new Error(errors.join("\n"));
 } finally {
   await browser?.close();
