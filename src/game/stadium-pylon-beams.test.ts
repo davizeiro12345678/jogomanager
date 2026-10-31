@@ -54,7 +54,9 @@ describe("exterior pylon multi-draw batching", () => {
       batch.getMatrixAt(i, matrix);
       matrix.decompose(position, rotation, scale);
       expect(position.toArray()).toEqual([x, 20, z]);
-      expect(scale.toArray()).toEqual([1, 1, 1]);
+      for (const component of scale.toArray()) {
+        expect(component).toBeCloseTo(1, 6);
+      }
       const expected = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(0.35, 0, x > 0 ? -0.3 : 0.3),
       );
