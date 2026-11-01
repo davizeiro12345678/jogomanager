@@ -66,10 +66,10 @@ export function secureResponse(
         );
       }
       const fonts = ["5aU69_a8oxmIdGl4BA", "HTxqL289NzCGg4MzN6KJ7eW6CYyF_g"];
-      // All three weights appear above the fold on home. Article pages do
-      // not need this extra download: keep their two existing critical fonts.
-      if (url.pathname === "/")
-        fonts.push("5aU19_a8oxmIfJpbERySjQ", "5aU19_a8oxmIfLZcERySjQ", "5aU19_a8oxmIfNJdERySjQ");
+      // Home's visible call to action uses bold Hind. Medium and semibold
+      // are discovered normally when needed instead of competing with the
+      // mobile hero image for the initial network connections.
+      if (url.pathname === "/") fonts.push("5aU19_a8oxmIfNJdERySjQ");
       for (const font of fonts) {
         const href = `/fonts/match3d/${font}.woff2`;
         if (!headers.get("link")?.includes(`<${href}>`))

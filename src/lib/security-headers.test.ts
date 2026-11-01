@@ -8,14 +8,14 @@ import server from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
-  it("discovers home's three additional above-fold weights without duplicating font hints", () => {
+  it("discovers home's bold action weight without duplicating font hints", () => {
     const request = new Request("https://jogomanager.com/");
     const once = secureResponse(
       new Response("home", { headers: { "content-type": "text/html" } }),
       request,
     );
     const link = secureResponse(once, request).headers.get("link")!;
-    expect(link.match(/as=font/g)).toHaveLength(5);
+    expect(link.match(/as=font/g)).toHaveLength(3);
     expect(link).toContain("5aU19_a8oxmIfNJdERySjQ.woff2");
   });
   it("preloads the server's exact public CSS asset once without replacing other hints", () => {
