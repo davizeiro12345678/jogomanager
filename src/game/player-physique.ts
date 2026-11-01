@@ -115,7 +115,10 @@ export function physiqueFor(player: Player): { height: number; weight: number } 
       weight: player.developmentBase.profile.weight,
     };
   const rnd = makeRng(`profile-${player.id}-${player.name}`);
-  buildAttrs(player, rnd);
+  // Full-profile generation consumes 29 draws before the dominant foot.
+  // Only the stream position matters here; constructing and discarding all
+  // detailed attributes for every match player does not affect the physique.
+  for (let index = 0; index < 29; index++) rnd();
   // O pé dominante consome uma ou duas amostras antes das medidas na ficha.
   if (rnd() >= 0.72) rnd();
   const tall = player.pos === "GK" ? 8 : player.pos === "DF" ? 4 : 0;

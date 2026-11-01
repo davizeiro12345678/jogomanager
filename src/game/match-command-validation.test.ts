@@ -12,6 +12,24 @@ describe("untrusted match command boundary", () => {
     expect(start).toEqual(before);
     expect(validMatchCommand({ ...start, weather: "heat", compact: true })).toBe(true);
   });
+  it("accepts only finite playback speeds within the worker's bounds", () => {
+    for (const speed of [1, 1.5, 8])
+      expect(validMatchCommand({ id: 9, type: "speedLive", speed })).toBe(true);
+    for (const speed of [0, 0.999, 8.001, 9, NaN, Infinity, -Infinity])
+      expect(validMatchCommand({ id: 9, type: "speedLive", speed })).toBe(false);
+  });
+  it("rejects invalid recycle buffers, sessions and slots at the worker boundary", () => {
+    const message = { id: 9, type: "recycleLive", session: 0, slot: 0, buffer: new ArrayBuffer(4) };
+    expect(validMatchCommand(message)).toBe(true);
+    for (const invalid of [
+      { ...message, session: -1 },
+      { ...message, session: Infinity },
+      { ...message, slot: -1 },
+      { ...message, slot: 16 },
+      { ...message, buffer: {} },
+    ])
+      expect(validMatchCommand(invalid)).toBe(false);
+  });
   it.each([
     null,
     "destroy",

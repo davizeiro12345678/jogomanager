@@ -37,6 +37,17 @@ describe("versioned replay codec", () => {
     const middle = replay.players.map((player) => [player.x, player.z]);
     expect(start).not.toEqual(middle);
     expect(decoded.frames.at(-1)?.t).toBeCloseTo(original.frames.at(-1)?.t ?? 0, 2);
+
+    // Quantization stays bounded even when an old or incomplete frame has
+    // missing or non-finite coordinates.
+    const malformed = {
+      ...original.frames[0]!,
+      b: [-1e9, 1e9, Number.NaN] as [number, number, number],
+      p: [-1e9, 1e9, Number.NaN],
+    };
+    const bounded = encodeReplay({ ...original, frames: [malformed] });
+    expect(Array.from(bounded.frames.ball)).toEqual([-32768, 32767, 0]);
+    expect(Array.from(bounded.frames.positions.slice(0, 4))).toEqual([-32768, 32767, 0, 0]);
   });
 
   it("accepts unversioned and v2-shaped stored data", () => {

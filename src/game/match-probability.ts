@@ -1,4 +1,4 @@
-import { makeRng } from "./rng";
+import { sumThreeRng } from "./rng";
 import type { Tactics } from "./types";
 
 export interface MatchConditions {
@@ -29,8 +29,7 @@ export function strengthEdge(home: number, away: number): number {
 
 /** Independent seed stream: a good/bad day cannot alter identity or consume the event RNG. */
 export function teamDay(seed: string, side: "home" | "away"): number {
-  const rnd = makeRng(`match-day:${seed}:${side}`);
-  return (rnd() + rnd() + rnd() - 1.5) * 4;
+  return (sumThreeRng(`match-day:${seed}:${side}`) - 1.5) * 4;
 }
 
 export function expectedGoals(home: number, away: number, seed: string, ctx: MatchConditions = {}) {
@@ -89,15 +88,19 @@ export function regulationScore(rates: { home: number; away: number }, rnd: () =
   for (let hg = 0; hg < hp.length; hg++) {
     for (let ag = 0; ag < ap.length; ag++) {
       const tau =
-        hg === 0 && ag === 0
-          ? 1 - home * away * rho
-          : hg === 0 && ag === 1
-            ? 1 + home * rho
-            : hg === 1 && ag === 0
+        hg === 0
+          ? ag === 0
+            ? 1 - home * away * rho
+            : ag === 1
+              ? 1 + home * rho
+              : 1
+          : hg === 1
+            ? ag === 0
               ? 1 + away * rho
-              : hg === 1 && ag === 1
+              : ag === 1
                 ? 1 - rho
-                : 1;
+                : 1
+            : 1;
       roll -= hp[hg]! * ap[ag]! * tau;
       if (roll <= 0) return { hg, ag };
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
-import { CLUBS, LEAGUES, getLeague } from "./data/leagues";
+import { CLUBS, LEAGUES, LEGACY_LEAGUES, getLeague } from "./data/leagues";
 import { SERIE_D_IDS } from "./data/serie-d";
 import { pyramidTiers } from "./pyramid";
 import { generateFixtures } from "./season";
@@ -11,6 +11,11 @@ import { updatedSeasonComposition } from "./catalog-season";
 import type { RealPlayer } from "../lib/realSquads";
 
 describe("catalog composition and full squads", () => {
+  it("does not use the object prototype key as a bundled club identifier", () => {
+    for (const league of [...LEAGUES, ...LEGACY_LEAGUES]) {
+      expect(league.clubs.some((club) => club.id === "__proto__")).toBe(false);
+    }
+  });
   it("preserves identities and random condition/morale when the roster grows", () => {
     // Original 18-player fingerprints exclude ratings, which are calibrated separately.
     // The migration test below verifies that existing saved attributes remain unchanged.

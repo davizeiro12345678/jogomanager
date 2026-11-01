@@ -8,9 +8,8 @@ import { tableFromFixtures } from "./standings";
 const BYE = "__bye__";
 
 export function generateFixtures(leagueId: string, seed: string, clubIds?: string[]): Fixture[] {
-  const clubs = clubIds?.length ? [...clubIds] : getLeague(leagueId).clubs.map((c) => c.id);
+  const list = clubIds?.length ? [...clubIds] : getLeague(leagueId).clubs.map((c) => c.id);
   const rnd = makeRng(`fix-${seed}`);
-  const list = [...clubs];
   for (let i = list.length - 1; i > 0; i--) {
     const j = Math.floor(rnd() * (i + 1));
     [list[i], list[j]] = [list[j]!, list[i]!];
@@ -37,22 +36,24 @@ export function generateFixtures(leagueId: string, seed: string, clubIds?: strin
         awayGoals: null,
       });
     }
-    const fixed = rotation[0]!;
-    const rest = rotation.slice(1);
-    rest.unshift(rest.pop()!);
-    rotation.splice(0, rotation.length, fixed, ...rest);
+    const last = rotation[n - 1]!;
+    for (let i = n - 1; i > 1; i--) rotation[i] = rotation[i - 1]!;
+    rotation[1] = last;
   }
 
-  const first = [...rounds];
-  const second = first.map((f) => ({
-    round: f.round + (n - 1),
-    home: f.away,
-    away: f.home,
-    homeGoals: null,
-    awayGoals: null,
-  }));
-
-  return leagueId === "x5686" ? first : [...first, ...second];
+  if (leagueId === "x5686") return rounds;
+  const firstLegLength = rounds.length;
+  for (let i = 0; i < firstLegLength; i++) {
+    const fixture = rounds[i]!;
+    rounds.push({
+      round: fixture.round + (n - 1),
+      home: fixture.away,
+      away: fixture.home,
+      homeGoals: null,
+      awayGoals: null,
+    });
+  }
+  return rounds;
 }
 
 export function computeTable(state: CareerState): TableRow[] {

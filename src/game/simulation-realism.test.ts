@@ -9,7 +9,7 @@ import {
 } from "./career";
 import { autoWeek } from "./autoplay";
 import { CLUBS } from "./data/leagues";
-import { competitionScore } from "./competition-match";
+import { competitionPlayoff, competitionScore } from "./competition-match";
 import { expectedGoals } from "./match-probability";
 import { matchAttributes } from "./match-readiness";
 import { buildTeamSetup } from "./quickMatch";
@@ -127,6 +127,33 @@ describe("match conditions and probability", () => {
       const quick = quickSimulate("flu", "bot", `shared-${i}`);
       expect(competitionScore("flu", "bot", `shared-${i}`)).toEqual({ hg: quick.hg, ag: quick.ag });
     }
+  });
+  it("preserves winners in home, away and penalty-decided playoffs", () => {
+    const cases = [
+      {
+        seed: "proof-0",
+        first: { hg: 4, ag: 0 },
+        second: { hg: 0, ag: 1 },
+        winner: "fla",
+        penalties: false,
+      },
+      {
+        seed: "proof-1",
+        first: { hg: 0, ag: 0 },
+        second: { hg: 2, ag: 2 },
+        winner: "pal",
+        penalties: true,
+      },
+      {
+        seed: "proof-2",
+        first: { hg: 1, ag: 2 },
+        second: { hg: 3, ag: 0 },
+        winner: "pal",
+        penalties: false,
+      },
+    ];
+    for (const { seed, ...expected } of cases)
+      expect(competitionPlayoff("fla", "pal", seed)).toMatchObject(expected);
   });
   it("limits bad input and never gives neutral venues a home advantage", () => {
     for (const seed of ["neutral-a", "neutral-b"]) {

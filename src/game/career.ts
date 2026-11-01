@@ -186,10 +186,11 @@ export function buildReadySquad(clubId: string): Player[] {
 
 export function enrichPlayer(p: Player): Player {
   const rnd = makeRng(`pl-${p.id}`);
+  let generatedValue: number | undefined;
   return {
     ...p,
     wage: p.wage > 0 ? p.wage : wageFor(p.ovr),
-    value: p.value > 0 ? p.value : valueFor(p.ovr, p.age),
+    value: p.value > 0 ? p.value : (generatedValue = valueFor(p.ovr, p.age)),
     yellows: p.yellows ?? 0,
     suspended: p.suspended ?? false,
     injuryWeeks: p.injuryWeeks ?? 0,
@@ -208,7 +209,8 @@ export function enrichPlayer(p: Player): Player {
     form: p.form ?? Math.round((p.morale + p.condition) / 2),
     contractYears: p.contractYears ?? 1 + Math.floor(rnd() * 4),
     releaseClause:
-      p.releaseClause ?? Math.round(valueFor(p.ovr, p.age) * (1.8 + rnd() * 1.4) * 10) / 10,
+      p.releaseClause ??
+      Math.round((generatedValue ?? valueFor(p.ovr, p.age)) * (1.8 + rnd() * 1.4) * 10) / 10,
     unhappy: p.unhappy ?? false,
   };
 }

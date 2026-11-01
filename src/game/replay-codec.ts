@@ -36,7 +36,8 @@ export type StoredReplayV2 = Replay & { version: typeof REPLAY_FORMAT_V2 };
 export type StoredReplay = StoredReplayV2 | StoredReplayV3;
 
 function integer(value: number) {
-  return Math.max(-32_768, Math.min(32_767, Math.round(value * QUANTIZE)));
+  const rounded = Math.round(value * QUANTIZE);
+  return rounded < -32_768 ? -32_768 : rounded > 32_767 ? 32_767 : rounded;
 }
 
 function numeric(values: Int16Array | Uint8Array | Uint16Array | Uint32Array, index: number) {
@@ -73,10 +74,12 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     const actionBase = frameIndex * playerCount;
     let target = actionBase * 4;
     for (let playerIndex = 0, source = 0; playerIndex < playerCount; playerIndex += 1) {
-      positions[target++] = integer(sourcePositions[source++] ?? 0);
-      positions[target++] = integer(sourcePositions[source++] ?? 0);
-      positions[target++] = integer(sourcePositions[source++] ?? 0);
-      positions[target++] = integer(sourcePositions[source++] ?? 0);
+      // Missing coordinates become NaN here and Int16Array writes them as 0,
+      // preserving the previous fallback without four nullish checks per player.
+      positions[target++] = integer(sourcePositions[source++]!);
+      positions[target++] = integer(sourcePositions[source++]!);
+      positions[target++] = integer(sourcePositions[source++]!);
+      positions[target++] = integer(sourcePositions[source++]!);
       actions[actionBase + playerIndex] = actionCode(sourceActions[playerIndex] ?? null);
     }
   }

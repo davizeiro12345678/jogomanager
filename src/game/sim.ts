@@ -18,6 +18,7 @@ import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
 import { matchAttributes } from "./match-readiness";
+import { teamDay } from "./match-probability";
 import { positionalOverall } from "./overall";
 import {
   BOX_DEPTH,
@@ -463,6 +464,7 @@ export class MatchSim {
   private buildTeam(setup: TeamSetup, side: Side): SimPlayer[] {
     const slots = FORMATIONS[setup.tactics.formation];
     const dir = side === "home" ? 1 : -1;
+    const teamVariation = teamDay(this.matchSeed, side);
     return setup.players.slice(0, 11).map((p, i) => {
       const slot = slots[Math.min(i, slots.length - 1)]!;
       const physique = physiqueFor(p);
@@ -482,7 +484,7 @@ export class MatchSim {
         vz: 0,
         slotX: slot.x * dir,
         slotZ: slot.z * dir,
-        ...matchAttributes(p, this.matchSeed, side),
+        ...matchAttributes(p, this.matchSeed, side, undefined, teamVariation),
         action: null,
         actionT: 0,
         actionDur: 0,
