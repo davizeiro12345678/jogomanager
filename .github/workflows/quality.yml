@@ -221,6 +221,15 @@ jobs:
           configPath: .lighthouserc.mobile.cjs
           uploadArtifacts: true
           temporaryPublicStorage: false
+      - name: Preserve mobile CPU traces for every measured run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-mobile-cpu-traces
+          path: |
+            *.trace.json
+            *.devtoolslog.json
+          if-no-files-found: error
 
   dependency-audit:
     name: Production dependency audit
