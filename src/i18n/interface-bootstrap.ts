@@ -81,6 +81,12 @@ const entries: readonly (readonly [string, string | null, string | null])[] = [
   ["quick.normal", "Normal", "Normal"],
   ["quick.hard", "Difícil", "Hard"],
   ["quick.random", "Sortear confronto", "Random matchup"],
+  ["quick.loadingTeams", "Carregando clubes…", "Loading clubs…"],
+  [
+    "quick.loadError",
+    "Não foi possível carregar os clubes. Tente novamente.",
+    "Could not load the clubs. Try again.",
+  ],
   ["quick.start", "Jogar", "Play"],
   ["quick.back", "Voltar ao início", "Back to home"],
   ["common.close", "Fechar", "Close"],
