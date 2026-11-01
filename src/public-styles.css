@@ -22,6 +22,7 @@
 @source "./components/ui/slider.tsx";
 @source "./components/ui/popover.tsx";
 @source "./components/ui/select.tsx";
+@source "./components/game/QuickMatchPage.tsx";
 @source "./pages/guias.tsx";
 @source "./pages/guia-de-scouting.tsx";
 @source "./pages/melhores-formacoes.tsx";
@@ -44,6 +45,13 @@
 @source "./pages/tabelas.index.tsx";
 @source "./pages/tabelas.$slug.tsx";
 @import "./design-system.css";
+
+/* The document glow varies only vertically and ends at 28rem. Reuse a narrow
+   strip instead of a page-sized gradient, retaining the same color function. */
+[data-public-shell] body {
+  background-size: 1px 28rem;
+  background-repeat: repeat-x;
+}
 
 /* Long guides retain searchable, accessible content while the browser skips
    layout/paint of sections outside the viewport. Unsupported browsers render
