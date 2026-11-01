@@ -53,6 +53,33 @@
   background-repeat: repeat-x;
 }
 
+/* Each light fades only its alpha, so sRGB avoids costly per-pixel OKLab
+   conversion in software rasterization. Keep hue, radius and stops; tile the
+   horizontal stripes independently of the height of long public articles. */
+[data-public-shell] .pitch-bg {
+  background-image:
+    radial-gradient(
+      120% 80% at 50% -10% in srgb,
+      oklch(0.79 0.19 148 / 0.16),
+      oklch(0.79 0.19 148 / 0) 60%
+    ),
+    radial-gradient(
+      90% 60% at 90% 10% in srgb,
+      oklch(0.83 0.17 88 / 0.1),
+      oklch(0.83 0.17 88 / 0) 65%
+    ),
+    repeating-linear-gradient(
+      90deg in srgb,
+      oklch(0.98 0.02 150 / 0.028) 0 60px,
+      oklch(0.98 0.02 150 / 0) 60px 120px
+    );
+  background-size:
+    auto,
+    auto,
+    120px 1px;
+  background-repeat: no-repeat, no-repeat, repeat;
+}
+
 /* Long guides retain searchable, accessible content while the browser skips
    layout/paint of sections outside the viewport. Unsupported browsers render
    the same content normally; anchor navigation reveals the target section. */
