@@ -52,9 +52,15 @@ function compactLiteral(shader: string): string | null {
   const value = shader
     .replace(/[ \t]+/g, " ")
     .replace(/^ | $/gm, "")
-    // These delimiters separate tokens themselves. Keep parentheses and
-    // operators untouched: '#define F (x)' and '- -x' require their spaces.
-    .replace(/[ \t]*([,;{}])[ \t]*/g, "$1");
+    // These delimiters separate tokens themselves. Keep operator whitespace:
+    // '- -x' must not become '--x'. Macro parentheses are handled below.
+    .replace(/[ \t]*([,;{}])[ \t]*/g, "$1")
+    .split("\n")
+    .map((line) =>
+      // Only preprocessor definitions distinguish 'F (x)' from 'F(x)'.
+      line.startsWith("#") ? line : line.replace(/[ \t]*([()])[ \t]*/g, "$1"),
+    )
+    .join("\n");
   return value === shader ? null : value;
 }
 
