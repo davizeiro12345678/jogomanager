@@ -11,8 +11,9 @@ import {
   DepthOfField,
   HueSaturation,
   Noise,
+  ToneMapping,
 } from "@react-three/postprocessing";
-import { BlendFunction, type DepthOfFieldEffect } from "postprocessing";
+import { BlendFunction, ToneMappingMode, type DepthOfFieldEffect } from "postprocessing";
 import * as THREE from "three";
 import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
@@ -78,6 +79,7 @@ export function PostFX({
           luminanceSmoothing={0.18}
           mipmapBlur
         />
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
         <HueSaturation saturation={p.saturation * 1.25} hue={p.hue} />
         <BrightnessContrast brightness={p.brightness + 0.012} contrast={p.contrast * 1.2} />
         <Vignette offset={0.3} darkness={p.vignette * 0.7} />
@@ -136,6 +138,7 @@ export function PostFX({
       ) : (
         <></>
       )}
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       {grading ? <></> : <HueSaturation saturation={p.saturation} hue={p.hue} />}
       {grading ? <></> : <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />}
       {cinema ? <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} /> : <></>}
@@ -146,7 +149,7 @@ export function PostFX({
         <></>
       )}
       <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
-      {/* O renderer já aplica ACES; uma segunda curva aqui esmagava médios e realces. */}
+      {/* The composer disables renderer tone mapping; ACES precedes display grading. */}
       {antialias ? <SMAA /> : <></>}
     </EffectComposer>
   );

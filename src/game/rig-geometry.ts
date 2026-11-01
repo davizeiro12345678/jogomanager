@@ -631,23 +631,6 @@ export function scalpGeometry(radius: number, radial = 14, rows = 10) {
 
 export type LimbProfile = "upperArm" | "forearm" | "thigh" | "calf";
 
-function smoothRingSeams(geometry: THREE.BufferGeometry, radial: number) {
-  const normal = geometry.getAttribute("normal");
-  const rows = Math.floor(geometry.getAttribute("position").count / (radial + 1));
-  const n = new THREE.Vector3();
-  for (let row = 0; row < rows; row++) {
-    const a = row * (radial + 1),
-      b = a + radial;
-    n.set(
-      normal.getX(a) + normal.getX(b),
-      normal.getY(a) + normal.getY(b),
-      normal.getZ(a) + normal.getZ(b),
-    ).normalize();
-    normal.setXYZ(a, n.x, n.y, n.z);
-    normal.setXYZ(b, n.x, n.y, n.z);
-  }
-}
-
 /** Shared tapered anatomy for both skinned and instanced players. The pivot
  * is at the proximal joint and the segment extends down to -length.
  * Skinned ends share blended rings. Rigid instances need rounded, overlapping
@@ -808,8 +791,11 @@ export function anatomicalLimb(
       );
   }
   geometry.setAttribute("color", new THREE.BufferAttribute(complexion, 3));
+  // Only the authored side seam pairs can be averaged. Counting capped
+  // vertices as additional rings mixes opposite cap normals into zero;
+  // normalizing those in the lighting shader produces NaN, which bloom
+  // spreads over the entire match frame.
   refreshSurfaceNormals(geometry);
-  smoothRingSeams(geometry, radial);
   if (rigidEnds) return geometry;
   // Matching ellipse, weights and radial normals on both sides of a joint.
   const normals = geometry.getAttribute("normal");
