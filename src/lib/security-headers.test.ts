@@ -8,6 +8,40 @@ import server from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
+  it("preloads article fonts once while preserving framework Link headers", () => {
+    const request = new Request("https://jogomanager.com/guias");
+    const response = secureResponse(
+      new Response("article", {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          link: "</assets/client.js>; rel=modulepreload; as=script",
+        },
+      }),
+      request,
+    );
+    const link = response.headers.get("link")!;
+    expect(link).toContain("</assets/client.js>; rel=modulepreload; as=script");
+    expect(link).toContain(
+      '</fonts/match3d/5aU69_a8oxmIdGl4BA.woff2>; rel=preload; as=font; type="font/woff2"; crossorigin',
+    );
+    expect(link.match(/as=font/g)).toHaveLength(2);
+    expect(link.match(/crossorigin/g)).toHaveLength(2);
+    expect(secureResponse(response, request).headers.get("link")).toBe(link);
+  });
+  it("does not preload article fonts for private pages, assets or unsuccessful responses", () => {
+    for (const [path, type, status] of [
+      ["/dashboard", "text/html", 200],
+      ["/guias", "application/json", 200],
+      ["/guias", "text/html", 500],
+      ["/guias", "text/html", 301],
+    ] as const) {
+      const response = secureResponse(
+        new Response("body", { status, headers: { "content-type": type } }),
+        new Request(`https://jogomanager.com${path}`),
+      );
+      expect(response.headers.get("link")).toBeNull();
+    }
+  });
   it("adds protections to recovered h3 failures and thrown failures", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const fail of [false, true]) {

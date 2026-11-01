@@ -1,4 +1,5 @@
 import { responseIndexingPolicy } from "./public-indexing";
+import { isLightweightCssPath } from "./public-content-routes";
 
 /** Supplied only by the outer server entry, never copied from an incoming header. */
 export const CSP_NONCE_HEADER = "x-manager-csp-nonce";
@@ -46,6 +47,16 @@ export function secureResponse(response: Response, request: Request, nonce?: str
   if (url.protocol === "https:")
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   if (contentType.includes("text/html")) {
+    // These two local fonts paint the heading and article introduction. Send
+    // hints with the document so they do not wait behind CSS discovery and
+    // application hydration. Keep existing framework Link entries intact.
+    if (response.status === 200 && isLightweightCssPath(url.pathname)) {
+      for (const font of ["5aU69_a8oxmIdGl4BA", "HTxqL289NzCGg4MzN6KJ7eW6CYyF_g"]) {
+        const href = `/fonts/match3d/${font}.woff2`;
+        if (!headers.get("link")?.includes(`<${href}>`))
+          headers.append("link", `<${href}>; rel=preload; as=font; type="font/woff2"; crossorigin`);
+      }
+    }
     // Keep the established integrations operational while the stricter nonce
     // policy is observed. Moving it to enforcement requires browser evidence.
     headers.set(

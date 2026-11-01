@@ -1,6 +1,7 @@
-// Discover mandatory runtime dependencies immediately instead of placing their
-// downloads behind two animation frames. Public SSR content still paints
-// before hydration; hidden tabs never depend on paused animation callbacks.
+// Public articles already contain their readable HTML and critical CSS. Let
+// that first paint finish before evaluating the application graph; parsing and
+// hydration must not compete with rendering the text on slower mobile CPUs.
+// Gameplay and hidden tabs never depend on paused animation callbacks.
 const painted =
   document.documentElement.dataset["publicShell"] === "true" && !document.hidden
     ? new Promise<void>((resolve) => {
@@ -12,6 +13,6 @@ const painted =
       })
     : Promise.resolve();
 
-void Promise.all([import("./hydrate-app"), painted]).then(([{ hydrateApp }]) => hydrateApp());
+void painted.then(() => import("./hydrate-app")).then(({ hydrateApp }) => hydrateApp());
 
 export {};

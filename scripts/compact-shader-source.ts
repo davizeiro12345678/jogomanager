@@ -1,7 +1,7 @@
 import type { Plugin } from "vite";
 import ts from "typescript";
 
-/** Compact registered GLSL indentation while preserving every token and line. */
+/** Compact registered GLSL whitespace while preserving every token and line. */
 export function compactThreeShader(source: string, id: string): string | null {
   if (/[\\/]node_modules[\\/]three[\\/]build[\\/]three\.(?:module|core)\.js$/.test(id)) {
     const file = ts.createSourceFile(id, source, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS);
@@ -49,7 +49,12 @@ export function compactThreeShader(source: string, id: string): string | null {
 function compactLiteral(shader: string): string | null {
   // Keep all tokens and line boundaries. Skip escaped/preprocessor text.
   if (/[\\"']/.test(shader)) return null;
-  const value = shader.replace(/\n[ \t]+/g, "\n");
+  const value = shader
+    .replace(/[ \t]+/g, " ")
+    .replace(/^ | $/gm, "")
+    // These delimiters separate tokens themselves. Keep parentheses and
+    // operators untouched: '#define F (x)' and '- -x' require their spaces.
+    .replace(/[ \t]*([,;{}])[ \t]*/g, "$1");
   return value === shader ? null : value;
 }
 
