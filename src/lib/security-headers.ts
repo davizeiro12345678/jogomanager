@@ -33,7 +33,12 @@ const HASHED_PATH =
 const PUBLIC_STATIC = /\.(?:png|jpe?g|webp|avif|gif|svg|ico|ttf|woff2?|webmanifest|txt)$/i;
 
 /** Works for SSR, JSON, redirects and errors, including immutable upstream headers. */
-export function secureResponse(response: Response, request: Request, nonce?: string): Response {
+export function secureResponse(
+  response: Response,
+  request: Request,
+  nonce?: string,
+  publicStyles?: string,
+): Response {
   const headers = new Headers(response.headers);
   const contentType = (headers.get("content-type") ?? "").toLowerCase();
   const url = new URL(request.url);
@@ -51,7 +56,21 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     // hints with the document so they do not wait behind CSS discovery and
     // application hydration. Keep existing framework Link entries intact.
     if (response.status === 200 && isLightweightCssPath(url.pathname)) {
-      for (const font of ["5aU69_a8oxmIdGl4BA", "HTxqL289NzCGg4MzN6KJ7eW6CYyF_g"]) {
+      // The server's Vite import supplies the same hashed URL used by the SSR
+      // link. Discover critical CSS with the response headers, before parsing.
+      if (publicStyles && !headers.get("link")?.includes(`<${publicStyles}>`)) {
+        const existing = headers.get("link");
+        headers.set(
+          "link",
+          `<${publicStyles}>; rel=preload; as=style${existing ? `, ${existing}` : ""}`,
+        );
+      }
+      const fonts = ["5aU69_a8oxmIdGl4BA", "HTxqL289NzCGg4MzN6KJ7eW6CYyF_g"];
+      // All three weights appear above the fold on home. Article pages do
+      // not need this extra download: keep their two existing critical fonts.
+      if (url.pathname === "/")
+        fonts.push("5aU19_a8oxmIfJpbERySjQ", "5aU19_a8oxmIfLZcERySjQ", "5aU19_a8oxmIfNJdERySjQ");
+      for (const font of fonts) {
         const href = `/fonts/match3d/${font}.woff2`;
         if (!headers.get("link")?.includes(`<${href}>`))
           headers.append("link", `<${href}>; rel=preload; as=font; type="font/woff2"; crossorigin`);
