@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/JogoManager.Engine.Core/JogoManager.Engine.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/JogoManager.Engine.Verification/JogoManager.Engine.Verification.csproj" />
+  </Folder>
+</Solution>
