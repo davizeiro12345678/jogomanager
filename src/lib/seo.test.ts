@@ -4,13 +4,44 @@ import {
   breadcrumbLd,
   canonical,
   gameLd,
+  homeLanguageLinks,
   OG_IMAGE,
   seoMeta,
   SITE_URL,
   websiteLd,
 } from "./seo";
+import { homeLocale } from "./home-locale";
+import { isPublicContentPath } from "./public-content-routes";
 
 describe("page metadata", () => {
+  it("links actual home language variants using absolute reciprocal targets", () => {
+    expect(homeLanguageLinks()).toEqual([
+      { rel: "alternate", hrefLang: "pt-BR", href: `${SITE_URL}/` },
+      { rel: "alternate", hrefLang: "en", href: `${SITE_URL}/en` },
+      { rel: "alternate", hrefLang: "es", href: `${SITE_URL}/es` },
+      { rel: "alternate", hrefLang: "x-default", href: `${SITE_URL}/` },
+    ]);
+    for (const [path, lang] of [
+      ["/en", "en"],
+      ["/es/", "es"],
+    ] as const) {
+      expect(homeLocale(path)).toBe(lang);
+      expect(isPublicContentPath(path)).toBe(true);
+    }
+    expect(homeLocale("/guias")).toBeNull();
+  });
+
+  it("uses the language-specific social locale without changing the canonical URL", () => {
+    const meta = seoMeta({
+      title: "Football manager",
+      description: "Play",
+      path: "/en",
+      locale: "en_US",
+    });
+    expect(meta.find((tag) => tag["property"] === "og:locale")?.["content"]).toBe("en_US");
+    expect(canonical("/en")[0]?.href).toBe(`${SITE_URL}/en`);
+  });
+
   it("shares one canonical identity and supplies accessible social images", () => {
     const meta = seoMeta({
       title: "Gráficos",

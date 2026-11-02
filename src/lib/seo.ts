@@ -1,8 +1,8 @@
 export const SITE_URL = "https://jogomanager.com";
 export const SITE_NAME = "Pro Football Manager 3D";
-export const SITE_TITLE = "Manager de Futebol 3D Grátis | Pro Football Manager 3D";
+export const SITE_TITLE = "Jogo de Técnico de Futebol Grátis | jogomanager";
 export const SITE_DESCRIPTION =
-  "Crie seu treinador, monte o elenco, defina táticas e acompanhe partidas em 3D. Jogue gratuitamente no navegador, no PC ou no celular.";
+  "Seja técnico no jogomanager: monte seu elenco, escolha táticas e acompanhe partidas em 3D. Comece grátis no navegador do celular ou computador.";
 export const OG_IMAGE = `${SITE_URL}/og-cover.jpg`;
 export const SITE_KEYWORDS = [
   "manager de futebol",
@@ -27,6 +27,7 @@ interface SeoInput {
   image?: string;
   imageAlt?: string;
   keywords?: readonly string[];
+  locale?: string;
 }
 
 /** Page identities exclude tracking parameters and fragments. */
@@ -62,7 +63,7 @@ export function seoMeta(input: SeoInput): Meta[] {
           { property: "og:image:height", content: "640" },
         ]
       : []),
-    { property: "og:locale", content: "pt_BR" },
+    { property: "og:locale", content: input.locale ?? "pt_BR" },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: input.ogTitle ?? input.title },
     { name: "twitter:description", content: input.ogDescription ?? input.description },
@@ -73,6 +74,16 @@ export function seoMeta(input: SeoInput): Meta[] {
 
 export function canonical(path: string) {
   return [{ rel: "canonical", href: pageUrl(path) }];
+}
+
+/** Only advertise real, mutually linked versions of the home page. */
+export function homeLanguageLinks() {
+  return [
+    { rel: "alternate", hrefLang: "pt-BR", href: pageUrl("/") },
+    { rel: "alternate", hrefLang: "en", href: pageUrl("/en") },
+    { rel: "alternate", hrefLang: "es", href: pageUrl("/es") },
+    { rel: "alternate", hrefLang: "x-default", href: pageUrl("/") },
+  ];
 }
 
 export const noindexMeta: Meta[] = [{ name: "robots", content: "noindex, follow" }];
@@ -128,6 +139,7 @@ export function websiteLd() {
         "@type": "WebSite",
         "@id": `${SITE_URL}/#website`,
         name: SITE_NAME,
+        alternateName: "jogomanager",
         url: SITE_URL,
         description: SITE_DESCRIPTION,
         inLanguage: "pt-BR",
@@ -153,6 +165,7 @@ export function gameLd() {
     "@type": "Game",
     "@id": `${SITE_URL}/#game`,
     name: SITE_NAME,
+    alternateName: "jogomanager",
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     image: OG_IMAGE,

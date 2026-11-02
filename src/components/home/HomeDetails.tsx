@@ -83,6 +83,26 @@ export function HomeDetails() {
           ))}
         </div>
       </section>
+      <section className="mt-14" aria-labelledby="home-tactical-example">
+        <h2 id="home-tactical-example" className="font-display text-2xl">
+          Como escolher uma formação para seu time
+        </h2>
+        <p className="mt-3 leading-relaxed text-muted-foreground">
+          Comece pelas características do elenco. No 4-4-2, duas linhas de quatro ajudam a organizar
+          os setores e há dois atacantes para dividir o espaço à frente. No 4-3-3, três jogadores
+          podem ocupar a linha de ataque, mas é preciso observar a cobertura dos lados quando o time
+          perde a bola.
+        </p>
+        <p className="mt-3 leading-relaxed text-muted-foreground">
+          Experimente as formações na prancheta acima e compare o que acontece em partidas
+          diferentes. A formação sozinha não garante resultado: condição física, jogadores,
+          instruções e adversário também fazem parte da decisão. No{" "}
+          <Link to="/melhores-formacoes" className="text-primary underline">
+            guia de formações
+          </Link>{" "}
+          você encontra mais orientações para preparar sua equipe.
+        </p>
+      </section>
       <section className="mt-14" aria-labelledby="home-faq">
         <h2 id="home-faq" className="font-display text-2xl">
           Antes do primeiro apito

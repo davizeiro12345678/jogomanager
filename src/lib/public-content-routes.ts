@@ -1,6 +1,8 @@
 /** Content routes never need a mutable career world, squads or game UI styles. */
 export const PUBLIC_CONTENT_PATHS = new Set([
   "/",
+  "/en",
+  "/es",
   "/guias",
   "/guia-de-scouting",
   "/melhores-formacoes",

@@ -272,7 +272,7 @@ export function FootballHome() {
           <img
             className="home-hero-image"
             src={heroFallback}
-            alt="Treinador à beira do gramado em um estádio iluminado"
+            alt="Estádio de futebol iluminado do jogomanager"
             width={1600}
             height={912}
             fetchPriority="high"
@@ -286,14 +286,13 @@ export function FootballHome() {
             FUTEBOL. DECISÕES. HISTÓRIAS.
           </p>
           <h1 id="home-title">
-            <span className="sr-only">Pro Football Manager 3D: jogo de gestão de futebol. </span>
-            SEU CLUBE.
+            JOGO DE TÉCNICO
             <br />
-            <em>SUA HISTÓRIA.</em>
+            <em>DE FUTEBOL 3D.</em>
           </h1>
           <p className="home-hero-copy">
-            Do primeiro treino ao último apito, você está no comando. Monte o time, viva a temporada
-            e veja suas decisões ganharem vida em 3D.
+            No jogomanager, você comanda um clube: monte o elenco, prepare a tática e acompanhe
+            partidas em 3D. Comece seu jogo grátis de futebol direto no navegador.
           </p>
           <div className="home-hero-actions">
             <Link to={resume ? "/dashboard" : "/new"} className="home-button">
@@ -309,18 +308,18 @@ export function FootballHome() {
             <Check size={14} />
             Grátis para começar<span>·</span>Direto no navegador<span>·</span>Sem cadastro inicial
           </p>
-          <dl className="home-hero-stats" aria-label="O jogo em números">
+          <dl className="home-hero-stats" aria-label="Características do jogo">
             <div>
-              <dt>Clubes</dt>
-              <dd>24 mil+</dd>
+              <dt>Seu clube</dt>
+              <dd>Carreira</dd>
             </div>
             <div>
-              <dt>Jogadores reais</dt>
-              <dd>200 mil</dd>
+              <dt>Partidas</dt>
+              <dd>3D</dd>
             </div>
             <div>
-              <dt>Ligas</dt>
-              <dd>1.900</dd>
+              <dt>Para começar</dt>
+              <dd>Grátis</dd>
             </div>
           </dl>
           {resume ? (
@@ -509,6 +508,15 @@ export function FootballHome() {
           </Link>
           <Link to="/visual">
             Ajustar gráficos e câmeras <ArrowRight size={15} />
+          </Link>
+        </nav>
+        <nav className="home-more-modes" aria-label="Idiomas da página inicial">
+          <span>Idiomas</span>
+          <Link to="/en" lang="en">
+            English
+          </Link>
+          <Link to="/es" lang="es">
+            Español
           </Link>
         </nav>
         <section className="home-final-cta">

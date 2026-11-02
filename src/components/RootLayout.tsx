@@ -15,6 +15,7 @@ import { I18nProvider, useT } from "../i18n/provider";
 import { isLightweightCssPath, isPublicContentPath } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { RouteHeadContent } from "@/components/RouteHeadContent";
+import { homeLocale } from "@/lib/home-locale";
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
 const AccessibilitySettings = lazy(
@@ -84,7 +85,7 @@ export function RootShell({ children }: { children: ReactNode }) {
   const pathname = useLocation({ select: (location) => location.pathname });
   return (
     <html
-      lang="pt-BR"
+      lang={homeLocale(pathname) ?? "pt-BR"}
       className="dark"
       data-public-shell={isLightweightCssPath(pathname) || undefined}
     >

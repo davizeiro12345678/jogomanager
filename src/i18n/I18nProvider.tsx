@@ -9,6 +9,7 @@ import { reportSilent } from "@/lib/silent-errors";
 import { I18nContext, I18nValue } from "@/i18n/context";
 import { useLocation } from "@tanstack/react-router";
 import { isPublicContentPath } from "@/lib/public-content-routes";
+import { homeLocale } from "@/lib/home-locale";
 
 // Preserve the synchronous, complete translation API for direct consumers.
 // Production UI consumes useT; its optional language pack stays a dynamic import.
@@ -81,7 +82,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const dir: "ltr" | "rtl" = RTL_LANGS.has(lang) ? "rtl" : "ltr";
   useEffect(() => {
     const isEditorial = isPublicContentPath(pathname);
-    document.documentElement.lang = isEditorial ? "pt-BR" : lang;
+    document.documentElement.lang = homeLocale(pathname) ?? (isEditorial ? "pt-BR" : lang);
     document.documentElement.dir = isEditorial ? "ltr" : dir;
   }, [lang, dir, pathname]);
   const value = useMemo<I18nValue>(
