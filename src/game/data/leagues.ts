@@ -1127,9 +1127,8 @@ export const LEGACY_LEAGUES: League[] = BASE_LEAGUES.map((l) => ({
   clubs: applyLeagueFill(l.id, l.clubs),
 }));
 
-const legacyClubs: Record<string, Club> = Object.fromEntries(
-  LEGACY_LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c]),
-);
+const legacyClubs: Record<string, Club> = Object.create(null);
+for (const league of LEGACY_LEAGUES) for (const club of league.clubs) legacyClubs[club.id] = club;
 const current = LEGACY_LEAGUES.filter((l) => !CATALOG_ALIASES[l.id]).map((l) =>
   applyMembership(l, legacyClubs),
 );
@@ -1155,10 +1154,10 @@ current.push(
 );
 
 export const LEAGUES: League[] = current;
-export const CLUBS: Record<string, Club> = {
-  ...legacyClubs,
-  ...Object.fromEntries(LEAGUES.flatMap((l) => l.clubs).map((c) => [c.id, c])),
-};
+// Membership construction has finished reading the legacy index. Reuse it
+// before exposing an ordinary owned record, avoiding tuple/flattened arrays.
+for (const league of LEAGUES) for (const club of league.clubs) legacyClubs[club.id] = club;
+export const CLUBS: Record<string, Club> = { ...legacyClubs };
 
 export function getLeague(id: string): League {
   return LEAGUES.find((l) => l.id === id) ?? LEGACY_LEAGUES.find((l) => l.id === id) ?? LEAGUES[0]!;

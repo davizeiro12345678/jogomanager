@@ -17,6 +17,8 @@ it("falls back to animation frames when paint observation is unavailable", async
     documentElement: { dataset: { publicShell: "true" } },
     hidden: false,
     readyState: "complete",
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   });
   vi.stubGlobal("requestAnimationFrame", (frame: FrameRequestCallback) => frames.push(frame));
   await import("./client");
@@ -26,7 +28,7 @@ it("falls back to animation frames when paint observation is unavailable", async
   frames.shift()!(0);
   frames.shift()!(16);
   await vi.dynamicImportSettled();
-  expect(state.hydrate).toHaveBeenCalledOnce();
+  await vi.waitFor(() => expect(state.hydrate).toHaveBeenCalledOnce());
 });
 
 it.each(["paint", "hidden"])(
@@ -65,7 +67,7 @@ it.each(["paint", "hidden"])(
       doc.addEventListener.mock.calls[0]![1]();
     }
     await vi.dynamicImportSettled();
-    expect(state.hydrate).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(state.hydrate).toHaveBeenCalledOnce());
     expect(disconnect).toHaveBeenCalledOnce();
     expect(doc.removeEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
   },
@@ -103,7 +105,7 @@ it.each(["missing-entry-types", "unsupported-observation"])(
     frames.shift()!(0);
     frames.shift()!(16);
     await vi.dynamicImportSettled();
-    expect(state.hydrate).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(state.hydrate).toHaveBeenCalledOnce());
     if (mode === "unsupported-observation") {
       expect(disconnect).toHaveBeenCalledOnce();
       expect(removeEventListener).toHaveBeenCalledOnce();
@@ -127,6 +129,6 @@ it.each([
     await import("./client");
     await vi.dynamicImportSettled();
     expect(frame).not.toHaveBeenCalled();
-    expect(state.hydrate).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(state.hydrate).toHaveBeenCalledOnce());
   },
 );

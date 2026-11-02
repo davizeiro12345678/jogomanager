@@ -1,5 +1,5 @@
 import { makeRng } from "./rng";
-import type { Player } from "./types";
+import type { Player, Position } from "./types";
 
 /** Mesma identidade física da ficha completa, sem carregar históricos ou o catálogo. */
 export function physiqueFor(player: Player): { height: number; weight: number } {
@@ -15,7 +15,12 @@ export function physiqueFor(player: Player): { height: number; weight: number } 
   for (let draw = 0; draw < 29; draw++) rnd();
   // O pé dominante consome uma ou duas amostras antes das medidas na ficha.
   if (rnd() >= 0.72) rnd();
-  const tall = player.pos === "GK" ? 8 : player.pos === "DF" ? 4 : 0;
+  return bodyMeasurements(player.pos, rnd);
+}
+
+/** Continue an identity stream after its foot draw without reseeding it. */
+export function bodyMeasurements(pos: Position, rnd: () => number) {
+  const tall = pos === "GK" ? 8 : pos === "DF" ? 4 : 0;
   return {
     height: Math.round(171 + tall + rnd() * 16),
     weight: Math.round(65 + tall * 0.9 + rnd() * 18),

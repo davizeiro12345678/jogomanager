@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
-import { profileFor, setAttrDeltas } from "./attributes";
+import { ATTR_LABELS, profileFor, setAttrDeltas } from "./attributes";
+import { ATTRIBUTE_KEYS } from "./player-attribute-keys";
 import { buildAttrs } from "./player-attributes-generator";
 import { physiqueFor } from "./player-physique";
 import { buildTeamSetup } from "./quickMatch";
@@ -20,6 +21,12 @@ it("expõe atributos detalhados de decisão, disponibilidade e funções de gole
   const original = buildTeamSetup("fla").players[0]!;
   const field = profileFor({ ...original, id: "advanced-field", pos: "MF" });
   const keeper = profileFor({ ...original, id: "advanced-gk", pos: "GK" });
+
+  expect(new Set(ATTRIBUTE_KEYS).size).toBe(ATTRIBUTE_KEYS.length);
+  expect(Object.keys(ATTR_LABELS)).toEqual(ATTRIBUTE_KEYS);
+  expect([...ATTRIBUTE_KEYS].sort()).toEqual(Object.keys(field.attrs).sort());
+  expect([...ATTRIBUTE_KEYS].sort()).toEqual(Object.keys(keeper.attrs).sort());
+  for (const label of Object.values(ATTR_LABELS)) expect(label.length).toBeGreaterThan(0);
 
   expect(field.attrs).toMatchObject({
     technique: expect.any(Number),
