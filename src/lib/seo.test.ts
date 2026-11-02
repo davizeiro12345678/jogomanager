@@ -26,14 +26,14 @@ describe("page metadata", () => {
   it("links actual home language variants using absolute reciprocal targets", () => {
     expect(HOME_LOCALES).toEqual([
       { language: "pt-BR", path: "/" },
-      { language: "en", path: "/en.html" },
-      { language: "es", path: "/es.html" },
+      { language: "en", path: "/en" },
+      { language: "es", path: "/es" },
       { language: "x-default", path: "/" },
     ]);
     for (const lang of ["en", "es"] as const) {
       const html = readFileSync(new URL(`../../public/${lang}.html`, import.meta.url), "utf8");
       expect(html).toContain(`<html lang="${lang}">`);
-      expect(html).toContain(`rel="canonical" href="${SITE_URL}/${lang}.html"`);
+      expect(html).toContain(`rel="canonical" href="${SITE_URL}/${lang}"`);
       for (const locale of HOME_LOCALES) {
         expect(html).toContain(`hreflang="${locale.language}" href="${SITE_URL}${locale.path}"`);
       }

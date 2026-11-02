@@ -512,10 +512,10 @@ export function FootballHome() {
         </nav>
         <nav className="home-more-modes" aria-label="Idiomas da página inicial">
           <span>Idiomas</span>
-          <a href="/en.html" lang="en">
+          <a href="/en" lang="en">
             English
           </a>
-          <a href="/es.html" lang="es">
+          <a href="/es" lang="es">
             Español
           </a>
         </nav>

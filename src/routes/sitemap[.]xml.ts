@@ -17,8 +17,8 @@ export const Route = createFileRoute("/sitemap.xml")({
         const BASE_URL = baseUrlFor(request);
         const entries: SitemapEntry[] = [
           { path: "/", changefreq: "weekly", priority: "1.0" },
-          { path: "/en.html", changefreq: "weekly", priority: "0.8" },
-          { path: "/es.html", changefreq: "weekly", priority: "0.8" },
+          { path: "/en", changefreq: "weekly", priority: "0.8" },
+          { path: "/es", changefreq: "weekly", priority: "0.8" },
           { path: "/jogo-de-manager-de-futebol", changefreq: "weekly", priority: "0.9" },
           { path: "/tabelas", changefreq: "daily", priority: "0.9" },
           { path: "/tabelas/brasileirao-serie-a", changefreq: "daily", priority: "0.8" },
