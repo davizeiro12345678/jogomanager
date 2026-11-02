@@ -62,6 +62,96 @@ export interface LiveSnapshot {
 const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 const legacyPacketEvents = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 
+function copyPlayer(player: SimPlayer): SimPlayer {
+  const copy: SimPlayer = {
+    id: player.id,
+    side: player.side,
+    name: player.name,
+    number: player.number,
+    pos: player.pos,
+    heightCm: player.heightCm!,
+    weightKg: player.weightKg!,
+    x: player.x,
+    z: player.z,
+    vx: player.vx,
+    vz: player.vz,
+    slotX: player.slotX,
+    slotZ: player.slotZ,
+    pace: player.pace,
+    shooting: player.shooting,
+    passing: player.passing,
+    defending: player.defending,
+    physical: player.physical,
+    stamina: player.stamina,
+    action: player.action,
+    actionT: player.actionT,
+    actionDur: player.actionDur,
+    pid: player.pid,
+    goals: player.goals,
+    assists: player.assists,
+    shots: player.shots,
+    passes: player.passes,
+    tackles: player.tackles,
+    saves: player.saves,
+    onSince: player.onSince,
+    minutes: player.minutes,
+    yellows: player.yellows,
+    sentOff: player.sentOff,
+    injuryWeeks: player.injuryWeeks,
+    interceptions: player.interceptions,
+    offsides: player.offsides,
+    foulsWon: player.foulsWon,
+    pensScored: player.pensScored,
+    pensMissed: player.pensMissed,
+    xg: player.xg,
+  } satisfies Required<SimPlayer>;
+  if (!Object.hasOwn(player, "heightCm")) delete copy.heightCm;
+  if (!Object.hasOwn(player, "weightKg")) delete copy.weightKg;
+  return copy;
+}
+
+/** Copy the declared transport state while keeping interpolated x/z and identity. */
+function applyPlayerState(current: SimPlayer, target: SimPlayer) {
+  current.id = target.id;
+  current.side = target.side;
+  current.name = target.name;
+  current.number = target.number;
+  current.pos = target.pos;
+  if (Object.hasOwn(target, "heightCm")) current.heightCm = target.heightCm!;
+  if (Object.hasOwn(target, "weightKg")) current.weightKg = target.weightKg!;
+  current.vx = target.vx;
+  current.vz = target.vz;
+  current.slotX = target.slotX;
+  current.slotZ = target.slotZ;
+  current.pace = target.pace;
+  current.shooting = target.shooting;
+  current.passing = target.passing;
+  current.defending = target.defending;
+  current.physical = target.physical;
+  current.stamina = target.stamina;
+  current.action = target.action;
+  current.actionT = target.actionT;
+  current.actionDur = target.actionDur;
+  current.pid = target.pid;
+  current.goals = target.goals;
+  current.assists = target.assists;
+  current.shots = target.shots;
+  current.passes = target.passes;
+  current.tackles = target.tackles;
+  current.saves = target.saves;
+  current.onSince = target.onSince;
+  current.minutes = target.minutes;
+  current.yellows = target.yellows;
+  current.sentOff = target.sentOff;
+  current.injuryWeeks = target.injuryWeeks;
+  current.interceptions = target.interceptions;
+  current.offsides = target.offsides;
+  current.foulsWon = target.foulsWon;
+  current.pensScored = target.pensScored;
+  current.pensMissed = target.pensMissed;
+  current.xg = target.xg;
+}
+
 export interface LiveResult extends LiveSnapshot {
   ratings: PlayerRating[];
   scorers: Scorer[];
@@ -180,7 +270,7 @@ export function snapshotMatch(
     weather: sim.weather,
     wind: { ...sim.wind },
     refName: sim.ref.name,
-    players: sim.players.map((player) => ({ ...player })),
+    players: sim.players.map(copyPlayer),
     ball: { ...sim.ball },
     ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
@@ -331,17 +421,13 @@ export class WorkerMatchView implements MatchRuntime {
     this.previousBall.z = this.ball.z;
     this.previousBall.height = this.ball.height;
     if (rosterChanged) {
-      this.players = next.players.map((player) => ({ ...player }));
+      this.players = next.players.map(copyPlayer);
     } else {
       for (let index = 0; index < next.players.length; index += 1) {
         const target = next.players[index];
         const current = this.players[index];
         if (!target || !current) continue;
-        const x = current.x;
-        const z = current.z;
-        Object.assign(current, target);
-        current.x = x;
-        current.z = z;
+        applyPlayerState(current, target);
       }
     }
     this.targetBall.x = next.ball.x;

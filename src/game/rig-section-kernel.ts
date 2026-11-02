@@ -8,6 +8,29 @@ export interface RigSectionInput {
 }
 export const MAX_SECTION_RINGS = 256;
 export const MAX_SECTION_RADIAL = 128;
+// Shared angular terms only; rings and owned output buffers are never cached.
+// Bound the cache even when imported models supply many different roundnesses.
+const profiles = new Map<string, Float64Array>();
+
+function angularProfile(radial: number, roundness: number): Float64Array {
+  const key = `${radial}:${roundness}`;
+  let profile = profiles.get(key);
+  if (!profile) {
+    profile = new Float64Array((radial + 1) * 3);
+    for (let side = 0; side <= radial; side++) {
+      const u = side / radial;
+      const angle = u * Math.PI * 2;
+      const sine = Math.sin(angle);
+      const cosine = Math.cos(angle);
+      profile[side * 3] = Math.sign(sine) * Math.abs(sine) ** roundness;
+      profile[side * 3 + 1] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
+      profile[side * 3 + 2] = u;
+    }
+    if (profiles.size >= 8) profiles.clear();
+    profiles.set(key, profile);
+  }
+  return profile;
+}
 export function validRigSection(input: RigSectionInput): boolean {
   if (
     !(input.rings instanceof Float64Array) ||
@@ -32,7 +55,7 @@ export function validRigSection(input: RigSectionInput): boolean {
   return true;
 }
 export function rigSectionVertexCount(input: RigSectionInput): number {
-  const caps = Number((input.caps & 1) !== 0) + Number((input.caps & 2) !== 0);
+  const caps = (input.caps & 1) + ((input.caps >> 1) & 1);
   return (input.rings.length / 4) * (input.radial + 1) + caps * (input.radial + 2);
 }
 export function generateRigSectionFallback(input: RigSectionInput): Float32Array {
@@ -42,6 +65,7 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   const output = new Float32Array(rigSectionVertexCount(input) * 5);
   const bottom = rings[0]!;
   const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
+  const profile = angularProfile(radial, roundness);
   let cursor = 0;
   // Write to the owned typed buffer directly. Allocating a temporary five-
   // element array for every 3D vertex creates unnecessary GC pressure.
@@ -54,30 +78,27 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   };
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;
+    const y = rings[offset]!;
+    const radiusX = rings[offset + 1]!;
+    const radiusZ = rings[offset + 2]!;
+    const centerZ = rings[offset + 3]!;
+    const v = (y - bottom) / span;
     for (let side = 0; side <= radial; side++) {
-      const u = side / radial;
-      const angle = u * Math.PI * 2;
-      const sine = Math.sin(angle);
-      const cosine = Math.cos(angle);
-      write(
-        Math.sign(sine) * Math.abs(sine) ** roundness * rings[offset + 1]!,
-        rings[offset]!,
-        Math.sign(cosine) * Math.abs(cosine) ** roundness * rings[offset + 2]! + rings[offset + 3]!,
-        u,
-        (rings[offset]! - bottom) / span,
-      );
+      output[cursor++] = profile[side * 3]! * radiusX;
+      output[cursor++] = y;
+      output[cursor++] = profile[side * 3 + 1]! * radiusZ + centerZ;
+      output[cursor++] = profile[side * 3 + 2]!;
+      output[cursor++] = v;
     }
   }
-  for (const [row, mask] of [
-    [0, 1],
-    [rows - 1, 2],
-  ]) {
-    if (!(caps & mask!)) continue;
-    const offset = row! * 4;
+  for (const mask of [1, 2]) {
+    if (!(caps & mask)) continue;
+    const row = mask === 1 ? 0 : rows - 1;
+    const offset = row * 4;
     const v = mask === 1 ? 0 : 1;
     write(0, rings[offset]!, rings[offset + 3]!, 0.5, v);
     for (let side = 0; side <= radial; side++) {
-      const source = (row! * (radial + 1) + side) * 5;
+      const source = (row * (radial + 1) + side) * 5;
       write(output[source]!, output[source + 1]!, output[source + 2]!, side / radial, v);
     }
   }
@@ -86,7 +107,7 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
 export function rigSectionIndices(input: RigSectionInput): Uint32Array {
   const { radial, caps } = input;
   const rows = input.rings.length / 4;
-  const capsCount = Number((caps & 1) !== 0) + Number((caps & 2) !== 0);
+  const capsCount = (caps & 1) + ((caps >> 1) & 1);
   const output = new Uint32Array((rows - 1) * radial * 6 + capsCount * radial * 3);
   let cursor = 0;
   for (let row = 0; row < rows - 1; row++)

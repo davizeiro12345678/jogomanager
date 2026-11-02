@@ -87,11 +87,11 @@ export function pickLineup(players: Player[], formation: FormationKey, source?: 
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
   const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
-  const available = [...players]
+  const available = players
     .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort(
-      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
-    );
+    .map((player) => ({ player, rating: selectionRating(player, source) }))
+    .sort((a, b) => b.rating - a.rating || a.player.id.localeCompare(b.player.id))
+    .map(({ player }) => player);
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 
@@ -186,10 +186,11 @@ export function buildReadySquad(clubId: string): Player[] {
 
 export function enrichPlayer(p: Player): Player {
   const rnd = makeRng(`pl-${p.id}`);
+  let generatedValue: number | undefined;
   return {
     ...p,
     wage: p.wage > 0 ? p.wage : wageFor(p.ovr),
-    value: p.value > 0 ? p.value : valueFor(p.ovr, p.age),
+    value: p.value > 0 ? p.value : (generatedValue = valueFor(p.ovr, p.age)),
     yellows: p.yellows ?? 0,
     suspended: p.suspended ?? false,
     injuryWeeks: p.injuryWeeks ?? 0,
@@ -208,7 +209,8 @@ export function enrichPlayer(p: Player): Player {
     form: p.form ?? Math.round((p.morale + p.condition) / 2),
     contractYears: p.contractYears ?? 1 + Math.floor(rnd() * 4),
     releaseClause:
-      p.releaseClause ?? Math.round(valueFor(p.ovr, p.age) * (1.8 + rnd() * 1.4) * 10) / 10,
+      p.releaseClause ??
+      Math.round((generatedValue ?? valueFor(p.ovr, p.age)) * (1.8 + rnd() * 1.4) * 10) / 10,
     unhappy: p.unhappy ?? false,
   };
 }

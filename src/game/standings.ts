@@ -9,11 +9,12 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     if (group.length < 2) return group;
     const criterion = remaining[0];
     if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
-    const ids = new Set(group.map((r) => r.clubId));
-    const head = new Map(group.map((r) => [r.clubId, 0]));
+    let head: Map<string, number> | undefined;
     if (criterion === "headToHead") {
       // A CBF só aplica confronto direto quando restam duas associações empatadas.
       if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const ids = new Set(group.map((r) => r.clubId));
+      head = new Map(group.map((r) => [r.clubId, 0]));
       const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
       if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
         return split(group, remaining.slice(1));
@@ -38,7 +39,7 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
           : criterion === "goalsFor"
             ? r.gf
             : criterion === "headToHead"
-              ? head.get(r.clubId)!
+              ? head!.get(r.clubId)!
               : -fixtures.reduce(
                   (cards, f) =>
                     cards +
@@ -49,14 +50,20 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     const buckets = new Map<number, TableRow[]>();
     for (const row of group) {
       const key = value(row);
-      buckets.set(key, [...(buckets.get(key) ?? []), row]);
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(row);
+      else buckets.set(key, [row]);
     }
     return [...buckets]
       .sort(([a], [b]) => b - a)
       .flatMap(([, bucket]) => split(bucket, remaining.slice(1)));
   };
   const points = new Map<number, TableRow[]>();
-  for (const row of rows) points.set(row.pts, [...(points.get(row.pts) ?? []), row]);
+  for (const row of rows) {
+    const group = points.get(row.pts);
+    if (group) group.push(row);
+    else points.set(row.pts, [row]);
+  }
   return [...points].sort(([a], [b]) => b - a).flatMap(([, group]) => split(group, criteria));
 }
 

@@ -1,0 +1,42 @@
+name: Engine benchmark reference comparison
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engine-benchmark-reference-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    name: All 16 benchmarks against PR 110
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Preserve the last PR benchmark reference
+        env:
+          REFERENCE_SHA: f30509166857c68396fd11630d92df0696f7fdb7
+        run: |
+          git fetch --depth=1 origin "$REFERENCE_SHA"
+          git worktree add --detach .benchmark-reference "$REFERENCE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.benchmark-reference/node_modules"
+      - name: Compare unchanged callbacks with identical dependencies in ABBA order
+        run: node scripts/compare-engine-benchmarks.mjs .benchmark-reference . engine-benchmark-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: engine-benchmark-reference-results
+          path: engine-benchmark-results
+          if-no-files-found: error
