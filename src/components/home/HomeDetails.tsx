@@ -10,7 +10,7 @@ const DECISIONS = [
   },
   {
     title: "Dê uma identidade ao time",
-    text: "Escolha formação, mentalidade e pressão. Observe o adversário e ajuste o plano durante a partida.",
+    text: "O 4-4-2 usa dois atacantes; no 4-3-3, são três na frente. Observe a cobertura dos lados.",
     to: "/melhores-formacoes",
     cta: "Entender as táticas",
   },
@@ -48,10 +48,6 @@ const FAQ = [
     "O 3D funciona do mesmo jeito em qualquer celular?",
     "O jogo adapta a qualidade conforme o hardware. Para comparar fluidez, teste no mesmo aparelho e navegador, com o mesmo nível gráfico.",
   ],
-  [
-    "Onde aprendo a jogar melhor?",
-    "Os guias explicam escalação, táticas, scouting e finanças. Comece por uma partida rápida e aplique uma mudança por vez.",
-  ],
 ] as const;
 
 export function HomeDetails() {
@@ -82,26 +78,6 @@ export function HomeDetails() {
             </article>
           ))}
         </div>
-      </section>
-      <section className="mt-14" aria-labelledby="home-tactical-example">
-        <h2 id="home-tactical-example" className="font-display text-2xl">
-          Como escolher uma formação para seu time
-        </h2>
-        <p className="mt-3 leading-relaxed text-muted-foreground">
-          Comece pelas características do elenco. No 4-4-2, duas linhas de quatro ajudam a organizar
-          os setores e há dois atacantes para dividir o espaço à frente. No 4-3-3, três jogadores
-          podem ocupar a linha de ataque, mas é preciso observar a cobertura dos lados quando o time
-          perde a bola.
-        </p>
-        <p className="mt-3 leading-relaxed text-muted-foreground">
-          Experimente as formações na prancheta acima e compare o que acontece em partidas
-          diferentes. A formação sozinha não garante resultado: condição física, jogadores,
-          instruções e adversário também fazem parte da decisão. No{" "}
-          <Link to="/melhores-formacoes" className="text-primary underline">
-            guia de formações
-          </Link>{" "}
-          você encontra mais orientações para preparar sua equipe.
-        </p>
       </section>
       <section className="mt-14" aria-labelledby="home-faq">
         <h2 id="home-faq" className="font-display text-2xl">

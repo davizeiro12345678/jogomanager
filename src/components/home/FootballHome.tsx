@@ -291,8 +291,8 @@ export function FootballHome() {
             <em>DE FUTEBOL 3D.</em>
           </h1>
           <p className="home-hero-copy">
-            No jogomanager, você comanda um clube: monte o elenco, prepare a tática e acompanhe
-            partidas em 3D. Comece seu jogo grátis de futebol direto no navegador.
+            No jogomanager, monte o elenco e veja partidas em 3D. Um jogo grátis de futebol direto
+            no navegador.
           </p>
           <div className="home-hero-actions">
             <Link to={resume ? "/dashboard" : "/new"} className="home-button">
@@ -512,12 +512,12 @@ export function FootballHome() {
         </nav>
         <nav className="home-more-modes" aria-label="Idiomas da página inicial">
           <span>Idiomas</span>
-          <Link to="/en" lang="en">
+          <a href="/en.html" lang="en">
             English
-          </Link>
-          <Link to="/es" lang="es">
+          </a>
+          <a href="/es.html" lang="es">
             Español
-          </Link>
+          </a>
         </nav>
         <section className="home-final-cta">
           <div>

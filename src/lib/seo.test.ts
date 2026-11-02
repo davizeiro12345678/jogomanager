@@ -1,45 +1,43 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   articleLd,
   breadcrumbLd,
   canonical,
   gameLd,
-  homeLanguageLinks,
   OG_IMAGE,
   seoMeta,
   SITE_URL,
   websiteLd,
 } from "./seo";
-import { homeLocale } from "./home-locale";
-import { isPublicContentPath } from "./public-content-routes";
+import { HOME_LOCALES } from "./home-locales";
 
 describe("page metadata", () => {
-  it("links actual home language variants using absolute reciprocal targets", () => {
-    expect(homeLanguageLinks()).toEqual([
-      { rel: "alternate", hrefLang: "pt-BR", href: `${SITE_URL}/` },
-      { rel: "alternate", hrefLang: "en", href: `${SITE_URL}/en` },
-      { rel: "alternate", hrefLang: "es", href: `${SITE_URL}/es` },
-      { rel: "alternate", hrefLang: "x-default", href: `${SITE_URL}/` },
-    ]);
-    for (const [path, lang] of [
-      ["/en", "en"],
-      ["/es/", "es"],
-    ] as const) {
-      expect(homeLocale(path)).toBe(lang);
-      expect(isPublicContentPath(path)).toBe(true);
-    }
-    expect(homeLocale("/guias")).toBeNull();
+  it("uses explicit page keywords instead of repeating a global list", () => {
+    const page = { title: "Clube", description: "Gestão", path: "/" };
+    expect(seoMeta(page).some((tag) => tag["name"] === "keywords")).toBe(false);
+    expect(
+      seoMeta({ ...page, keywords: ["jogomanager", "jogo de técnico de futebol"] }).find(
+        (tag) => tag["name"] === "keywords",
+      )?.["content"],
+    ).toBe("jogomanager, jogo de técnico de futebol");
   });
 
-  it("uses the language-specific social locale without changing the canonical URL", () => {
-    const meta = seoMeta({
-      title: "Football manager",
-      description: "Play",
-      path: "/en",
-      locale: "en_US",
-    });
-    expect(meta.find((tag) => tag["property"] === "og:locale")?.["content"]).toBe("en_US");
-    expect(canonical("/en")[0]?.href).toBe(`${SITE_URL}/en`);
+  it("links actual home language variants using absolute reciprocal targets", () => {
+    expect(HOME_LOCALES).toEqual([
+      { language: "pt-BR", path: "/" },
+      { language: "en", path: "/en.html" },
+      { language: "es", path: "/es.html" },
+      { language: "x-default", path: "/" },
+    ]);
+    for (const lang of ["en", "es"] as const) {
+      const html = readFileSync(new URL(`../../public/${lang}.html`, import.meta.url), "utf8");
+      expect(html).toContain(`<html lang="${lang}">`);
+      expect(html).toContain(`rel="canonical" href="${SITE_URL}/${lang}.html"`);
+      for (const locale of HOME_LOCALES) {
+        expect(html).toContain(`hreflang="${locale.language}" href="${SITE_URL}${locale.path}"`);
+      }
+    }
   });
 
   it("shares one canonical identity and supplies accessible social images", () => {

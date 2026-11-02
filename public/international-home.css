@@ -1,0 +1,140 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #0b1410;
+  color: #f2f7ee;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  line-height: 1.65;
+}
+a {
+  color: #c5f66d;
+}
+a:focus-visible {
+  outline: 2px solid #d4ff86;
+  outline-offset: 4px;
+}
+.wrap {
+  width: min(100% - 2rem, 64rem);
+  margin-inline: auto;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-block: 1.5rem;
+  border-bottom: 1px solid #34463a;
+}
+.brand {
+  color: #fff;
+  font-weight: 850;
+  font-size: 1.35rem;
+  text-decoration: none;
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+nav a[aria-current="page"] {
+  color: #fff;
+  text-decoration-thickness: 2px;
+}
+.hero {
+  padding-block: clamp(3.5rem, 9vw, 7rem);
+}
+.eyebrow {
+  color: #c5f66d;
+  font-weight: 700;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.16;
+  margin: 0;
+}
+h1 {
+  max-width: 52rem;
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  letter-spacing: -0.045em;
+}
+h2 {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  letter-spacing: -0.02em;
+}
+h3 {
+  font-size: 1.2rem;
+}
+p {
+  color: #c1cfc1;
+}
+.intro {
+  max-width: 47rem;
+  font-size: 1.15rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1.75rem 1rem;
+}
+.button {
+  display: inline-block;
+  padding: 0.75rem 1.2rem;
+  border: 1px solid #c5f66d;
+  border-radius: 0.5rem;
+  color: #101b0b;
+  background: #c5f66d;
+  font-weight: 750;
+  text-decoration: none;
+}
+.button.secondary {
+  background: transparent;
+  color: #f2f7ee;
+  border-color: #6d8470;
+}
+.note {
+  font-size: 0.9rem;
+}
+section.content {
+  padding-block: 2.75rem;
+  border-top: 1px solid #34463a;
+}
+.grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+.card {
+  padding: 1.25rem;
+  border: 1px solid #34463a;
+  border-radius: 0.75rem;
+  background: #132019;
+}
+.card p:last-child {
+  margin-bottom: 0;
+}
+.stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+.stack p {
+  margin: 0.5rem 0 0;
+}
+footer {
+  border-top: 1px solid #34463a;
+  padding-block: 2rem;
+  font-size: 0.9rem;
+}
+@media (min-width: 42rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -4,15 +4,6 @@ export const SITE_TITLE = "Jogo de Técnico de Futebol Grátis | jogomanager";
 export const SITE_DESCRIPTION =
   "Seja técnico no jogomanager: monte seu elenco, escolha táticas e acompanhe partidas em 3D. Comece grátis no navegador do celular ou computador.";
 export const OG_IMAGE = `${SITE_URL}/og-cover.jpg`;
-export const SITE_KEYWORDS = [
-  "manager de futebol",
-  "jogo de futebol 3D",
-  "simulação de futebol",
-  "gestão de clubes",
-  "táticas de futebol",
-  "mercado de transferências",
-  "jogo no navegador",
-];
 const IMAGE_ALT = "Pro Football Manager 3D — gestão de clubes e partidas de futebol em estádio 3D";
 
 type Meta = Record<string, string>;
@@ -27,7 +18,6 @@ interface SeoInput {
   image?: string;
   imageAlt?: string;
   keywords?: readonly string[];
-  locale?: string;
 }
 
 /** Page identities exclude tracking parameters and fragments. */
@@ -48,7 +38,7 @@ export function seoMeta(input: SeoInput): Meta[] {
   return [
     { title: input.title },
     { name: "description", content: input.description },
-    { name: "keywords", content: (input.keywords ?? SITE_KEYWORDS).join(", ") },
+    ...(input.keywords?.length ? [{ name: "keywords", content: input.keywords.join(", ") }] : []),
     { property: "og:title", content: input.ogTitle ?? input.title },
     { property: "og:description", content: input.ogDescription ?? input.description },
     { property: "og:type", content: input.type ?? "website" },
@@ -63,7 +53,7 @@ export function seoMeta(input: SeoInput): Meta[] {
           { property: "og:image:height", content: "640" },
         ]
       : []),
-    { property: "og:locale", content: input.locale ?? "pt_BR" },
+    { property: "og:locale", content: "pt_BR" },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: input.ogTitle ?? input.title },
     { name: "twitter:description", content: input.ogDescription ?? input.description },
@@ -74,16 +64,6 @@ export function seoMeta(input: SeoInput): Meta[] {
 
 export function canonical(path: string) {
   return [{ rel: "canonical", href: pageUrl(path) }];
-}
-
-/** Only advertise real, mutually linked versions of the home page. */
-export function homeLanguageLinks() {
-  return [
-    { rel: "alternate", hrefLang: "pt-BR", href: pageUrl("/") },
-    { rel: "alternate", hrefLang: "en", href: pageUrl("/en") },
-    { rel: "alternate", hrefLang: "es", href: pageUrl("/es") },
-    { rel: "alternate", hrefLang: "x-default", href: pageUrl("/") },
-  ];
 }
 
 export const noindexMeta: Meta[] = [{ name: "robots", content: "noindex, follow" }];
@@ -165,13 +145,11 @@ export function gameLd() {
     "@type": "Game",
     "@id": `${SITE_URL}/#game`,
     name: SITE_NAME,
-    alternateName: "jogomanager",
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     image: OG_IMAGE,
     inLanguage: "pt-BR",
     genre: ["Sports", "Simulation", "Management"],
-    keywords: SITE_KEYWORDS.join(", "),
     isAccessibleForFree: true,
     publisher: { "@id": `${SITE_URL}/#organization` },
     isPartOf: { "@id": `${SITE_URL}/#website` },

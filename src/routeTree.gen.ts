@@ -33,8 +33,6 @@ import { Route as CupRouteImport } from './routes/cup'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DicasDeGestaoRouteImport } from './routes/dicas-de-gestao'
 import { Route as EditorRouteImport } from './routes/editor'
-import { Route as EnRouteImport } from './routes/en'
-import { Route as EsRouteImport } from './routes/es'
 import { Route as FinancesRouteImport } from './routes/finances'
 import { Route as GestaoFinanceiraRouteImport } from './routes/gestao-financeira'
 import { Route as GlossarioDoFutebolRouteImport } from './routes/glossario-do-futebol'
@@ -214,16 +212,6 @@ const DicasDeGestaoRoute = DicasDeGestaoRouteImport.update({
 const EditorRoute = EditorRouteImport.update({
   id: '/editor',
   path: '/editor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EnRoute = EnRouteImport.update({
-  id: '/en',
-  path: '/en',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EsRoute = EsRouteImport.update({
-  id: '/es',
-  path: '/es',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinancesRoute = FinancesRouteImport.update({
@@ -550,8 +538,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
-  '/en': typeof EnRoute
-  '/es': typeof EsRoute
   '/finances': typeof FinancesRoute
   '/gestao-financeira': typeof GestaoFinanceiraRoute
   '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
@@ -637,8 +623,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
-  '/en': typeof EnRoute
-  '/es': typeof EsRoute
   '/finances': typeof FinancesRoute
   '/gestao-financeira': typeof GestaoFinanceiraRoute
   '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
@@ -725,8 +709,6 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/dicas-de-gestao': typeof DicasDeGestaoRoute
   '/editor': typeof EditorRoute
-  '/en': typeof EnRoute
-  '/es': typeof EsRoute
   '/finances': typeof FinancesRoute
   '/gestao-financeira': typeof GestaoFinanceiraRoute
   '/glossario-do-futebol': typeof GlossarioDoFutebolRoute
@@ -814,8 +796,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/editor'
-    | '/en'
-    | '/es'
     | '/finances'
     | '/gestao-financeira'
     | '/glossario-do-futebol'
@@ -901,8 +881,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/editor'
-    | '/en'
-    | '/es'
     | '/finances'
     | '/gestao-financeira'
     | '/glossario-do-futebol'
@@ -988,8 +966,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dicas-de-gestao'
     | '/editor'
-    | '/en'
-    | '/es'
     | '/finances'
     | '/gestao-financeira'
     | '/glossario-do-futebol'
@@ -1076,8 +1052,6 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DicasDeGestaoRoute: typeof DicasDeGestaoRoute
   EditorRoute: typeof EditorRoute
-  EnRoute: typeof EnRoute
-  EsRoute: typeof EsRoute
   FinancesRoute: typeof FinancesRoute
   GestaoFinanceiraRoute: typeof GestaoFinanceiraRoute
   GlossarioDoFutebolRoute: typeof GlossarioDoFutebolRoute
@@ -1307,20 +1281,6 @@ declare module '@tanstack/react-router' {
       path: '/editor'
       fullPath: '/editor'
       preLoaderRoute: typeof EditorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/en': {
-      id: '/en'
-      path: '/en'
-      fullPath: '/en'
-      preLoaderRoute: typeof EnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/es': {
-      id: '/es'
-      path: '/es'
-      fullPath: '/es'
-      preLoaderRoute: typeof EsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/finances': {
@@ -1764,8 +1724,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DicasDeGestaoRoute: DicasDeGestaoRoute,
   EditorRoute: EditorRoute,
-  EnRoute: EnRoute,
-  EsRoute: EsRoute,
   FinancesRoute: FinancesRoute,
   GestaoFinanceiraRoute: GestaoFinanceiraRoute,
   GlossarioDoFutebolRoute: GlossarioDoFutebolRoute,
