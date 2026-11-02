@@ -1,0 +1,55 @@
+name: .NET reference contracts
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engine-contracts-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-reference:
+    name: Native .NET kernels match the existing TypeScript reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      JM_DOTNET_PATH: dotnet
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: engine/dotnet/global.json
+      - name: Install the unchanged application dependency lock
+        run: npm ci
+      - name: Check the authored harness formatting and lint
+        run: |
+          node node_modules/prettier/bin/prettier.cjs --check scripts/dotnet-parity.mjs scripts/dotnet-source-fingerprints.mjs scripts/dotnet-native-process.mjs scripts/dotnet-native-process.test.mjs engine/dotnet/README.md .github/workflows/engine-contracts.yml
+          node node_modules/eslint/bin/eslint.js scripts/dotnet-parity.mjs scripts/dotnet-source-fingerprints.mjs scripts/dotnet-native-process.mjs scripts/dotnet-native-process.test.mjs --max-warnings=0
+      - name: Reject late process failures, extra replies and timeouts
+        run: node --test scripts/dotnet-native-process.test.mjs
+      # The harness verifies the selected SDK, builds both projects with
+      # warnings as errors, runs self checks, all 381 real TS/C# cases and
+      # invalid JSON followed by valid requests in the same native process.
+      # Unknown/full-match/season commands remain unavailable.
+      - name: Build and execute the complete native foundation differential
+        run: node scripts/dotnet-parity.mjs
+      - name: Confirm the existing application inputs were not rewritten
+        run: git diff --exit-code -- package.json package-lock.json src
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-engine-contract-evidence
+          path: engine/dotnet/artifacts/contracts
+          if-no-files-found: error

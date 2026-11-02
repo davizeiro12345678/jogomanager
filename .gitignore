@@ -45,3 +45,8 @@ tsconfig.tsbuildinfo
 
 # Local Rust compiler output; the reviewed WASM package is tracked separately.
 /wasm/crowd-visibility/target/
+
+# Generated .NET contract proofs and compiler outputs.
+/engine/dotnet/**/bin/
+/engine/dotnet/**/obj/
+/engine/dotnet/artifacts/
