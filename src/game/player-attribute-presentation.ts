@@ -2,54 +2,10 @@ import { ATTRIBUTE_KEYS } from "./player-attribute-keys";
 import type { AttributeGroup, DetailedAttributes } from "./attributes";
 import type { Personality, Position } from "./types";
 
-const labels = [
-  "Finalização",
-  "Drible",
-  "Técnica",
-  "Controle de bola",
-  "Criatividade",
-  "Passe",
-  "Visão de jogo",
-  "Cruzamento",
-  "Domínio",
-  "Chute de longe",
-  "Bola parada",
-  "Marcação",
-  "Desarme",
-  "Cabeceio",
-  "Interceptação",
-  "Antecipação",
-  "Concentração",
-  "Coragem",
-  "Combatividade",
-  "Velocidade",
-  "Aceleração",
-  "Força",
-  "Fôlego",
-  "Agilidade",
-  "Impulsão",
-  "Equilíbrio",
-  "Condição natural",
-  "Resistência a lesões",
-  "Posicionamento",
-  "Frieza",
-  "Liderança",
-  "Entrega",
-  "Disciplina",
-  "Decisão",
-  "Movimentação sem bola",
-  "Trabalho em equipe",
-  "Determinação",
-  "Regularidade",
-  "Reflexo",
-  "Encaixe",
-  "Saída aérea",
-  "Reposição",
-  "Um contra um",
-  "Comando da área",
-  "Saída do gol",
-  "Comunicação",
-] as const;
+const labels =
+  "Finalização|Drible|Técnica|Controle de bola|Criatividade|Passe|Visão de jogo|Cruzamento|Domínio|Chute de longe|Bola parada|Marcação|Desarme|Cabeceio|Interceptação|Antecipação|Concentração|Coragem|Combatividade|Velocidade|Aceleração|Força|Fôlego|Agilidade|Impulsão|Equilíbrio|Condição natural|Resistência a lesões|Posicionamento|Frieza|Liderança|Entrega|Disciplina|Decisão|Movimentação sem bola|Trabalho em equipe|Determinação|Regularidade|Reflexo|Encaixe|Saída aérea|Reposição|Um contra um|Comando da área|Saída do gol|Comunicação".split(
+    "|",
+  );
 export const ATTR_LABELS = Object.fromEntries(
   ATTRIBUTE_KEYS.map((key, index) => [key, labels[index]]),
 ) as Record<keyof DetailedAttributes, string>;
@@ -64,17 +20,7 @@ export const FIELD_GROUPS: AttributeGroup[] = [
 export const GK_GROUPS: AttributeGroup[] = [
   {
     label: "Goleiro",
-    keys: [
-      "reflexes",
-      "handling",
-      "aerialReach",
-      "distribution",
-      "oneOnOnes",
-      "commandOfArea",
-      "rushingOut",
-      "communication",
-      "positioning",
-    ],
+    keys: [...ATTRIBUTE_KEYS.slice(38), "positioning"],
   },
   { label: "Com os pés", keys: ["passing", "firstTouch", "composure", "decisions"] },
   {

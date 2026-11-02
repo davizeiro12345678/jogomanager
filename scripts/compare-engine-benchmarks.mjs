@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { assertBenchmarkSource, benchmarkSource } from "./benchmark-source.mjs";
 
 const script = fileURLToPath(import.meta.url);
 const hash = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
@@ -56,6 +57,11 @@ if (process.argv[2] === "--sample") {
   const baseline = realpathSync(baseArg);
   const candidate = realpathSync(candidateArg);
   const output = path.resolve(outputArg);
+  const sources = { baseline: benchmarkSource(baseline), candidate: benchmarkSource(candidate) };
+  const assertSources = () => {
+    assertBenchmarkSource(baseline, sources.baseline);
+    assertBenchmarkSource(candidate, sources.candidate);
+  };
   const pinnedNode = readFileSync(path.join(candidate, ".nvmrc"), "utf8").trim();
   assert.equal(process.version, `v${pinnedNode}`, "Use the pinned Node for both revisions");
   assert.equal(
@@ -76,6 +82,7 @@ if (process.argv[2] === "--sample") {
   const loader = pathToFileURL(require.resolve("tsx")).href;
   const passes = [];
   for (const [index, revision] of ["baseline", "candidate", "candidate", "baseline"].entries()) {
+    assertSources();
     const root = revision === "baseline" ? baseline : candidate;
     const target = path.join(output, `pass-${index}-${revision}.json`);
     const child = spawnSync(
@@ -89,6 +96,7 @@ if (process.argv[2] === "--sample") {
       },
     );
     assert.equal(child.status, 0, child.error?.message ?? child.stderr);
+    assertSources();
     passes.push({ revision, ...JSON.parse(readFileSync(target, "utf8")) });
     console.log(`Completed ${revision} pass ${index + 1}/4`);
   }
@@ -131,9 +139,10 @@ if (process.argv[2] === "--sample") {
   });
   const report = {
     protocol:
-      "Same-runner ABBA Walltime diagnostic; pinned Node; one installed dependency tree; unchanged 16 benchmark callbacks; 200 ms measurement and 50 ms warm-up. Independent of CodSpeed CPU simulation. Two pass medians per revision do not provide a confidence interval.",
+      "Same-runner ABBA Walltime diagnostic; pinned Node; one installed dependency tree; unchanged 16 benchmark callbacks; revision and source digests checked before/after every pass; 200 ms measurement and 50 ms warm-up. Independent of CodSpeed CPU simulation. Two pass medians per revision do not provide a confidence interval.",
     baseline,
     candidate,
+    sources,
     environment: passes[0].environment,
     fixtureSha256: passes[0].fixtureSha256,
     dependencyLockSha256: hash(path.join(candidate, "package-lock.json")),

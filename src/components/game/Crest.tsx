@@ -121,6 +121,7 @@ export function Crest({
   if (custom && !imgFailed) {
     return (
       <img
+        lang="pt-BR"
         src={custom}
         width={size}
         height={size}
@@ -140,6 +141,7 @@ export function Crest({
   if (!full) {
     return (
       <svg
+        lang="pt-BR"
         width={size}
         height={size}
         viewBox="0 0 64 64"
@@ -167,6 +169,7 @@ export function Crest({
 
   return (
     <svg
+      lang="pt-BR"
       width={size}
       height={size}
       viewBox="0 0 64 64"

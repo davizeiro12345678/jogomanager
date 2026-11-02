@@ -59,14 +59,11 @@ export interface LiveSnapshot {
   subsUsed: Record<Side, number>;
 }
 
-const cloneState = <T extends object>(value: T): T => ({ ...value });
-
 const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 const legacyPacketEvents = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 
 /** Copy the declared transport state while keeping interpolated x/z and identity. */
 function applyPlayerState(current: SimPlayer, target: SimPlayer) {
-  current.id = target.id;
   current.side = target.side;
   current.name = target.name;
   current.number = target.number;
@@ -201,16 +198,16 @@ export function snapshotMatch(
 ): LiveSnapshot {
   // Most snapshots only move players and the ball. Do not clone the historical
   // feed merely to discard it on the way to the structured-clone boundary.
-  const events = includeEvents
-    ? (() => {
-        const cachedEvents = eventCache.get(sim);
-        const copied =
-          cachedEvents?.seq === sim.lastEventId ? cachedEvents.events : sim.events.map(cloneState);
-        if (cachedEvents?.seq !== sim.lastEventId)
-          eventCache.set(sim, { seq: sim.lastEventId, events: copied });
-        return copied;
-      })()
-    : undefined;
+  let events: MatchSim["events"] | undefined;
+  if (includeEvents) {
+    const cachedEvents = eventCache.get(sim);
+    events =
+      cachedEvents?.seq === sim.lastEventId
+        ? cachedEvents.events
+        : sim.events.map((value) => ({ ...value }));
+    if (cachedEvents?.seq !== sim.lastEventId)
+      eventCache.set(sim, { seq: sim.lastEventId, events });
+  }
   return {
     seq,
     execution: sim.executionContract(),
@@ -218,11 +215,11 @@ export function snapshotMatch(
     time: sim.time,
     clock: sim.clock(),
     phase: sim.phase,
-    shootout: sim.shootout.map(cloneState),
+    shootout: sim.shootout.map((value) => ({ ...value })),
     weather: sim.weather,
     wind: { ...sim.wind },
     refName: sim.ref.name,
-    players: sim.players.map(cloneState),
+    players: sim.players.map((value) => ({ ...value })),
     ball: { ...sim.ball },
     ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
@@ -238,8 +235,8 @@ export function resultMatch(sim: MatchSim, seq: number, visualBall?: VisualBallS
   return {
     ...snapshotMatch(sim, seq, visualBall),
     ratings: sim.playerRatings(),
-    scorers: sim.scorers.map(cloneState),
-    shotMap: sim.shotMap.map(cloneState),
+    scorers: sim.scorers.map((value) => ({ ...value })),
+    shotMap: sim.shotMap.map((value) => ({ ...value })),
   };
 }
 
@@ -373,7 +370,7 @@ export class WorkerMatchView implements MatchRuntime {
     this.previousBall.x = this.ball.x;
     this.previousBall.z = this.ball.z;
     this.previousBall.height = this.ball.height;
-    if (rosterChanged) this.players = next.players.map(cloneState);
+    if (rosterChanged) this.players = next.players.map((value) => ({ ...value }));
     this.targetBall.x = next.ball.x;
     this.targetBall.z = next.ball.z;
     this.targetBall.height = next.ball.height;
@@ -401,23 +398,23 @@ export class WorkerMatchView implements MatchRuntime {
     if (next.execution) this.execution = { ...next.execution };
     this.clock = next.clock;
     this.phase = next.phase;
-    this.shootout = next.shootout.map(cloneState);
+    this.shootout = next.shootout.map((value) => ({ ...value }));
     this.weather = next.weather;
     Object.assign(this.wind, next.wind);
     this.refName = next.refName;
     this.possession = next.possession;
     this.stats = { home: { ...next.stats.home }, away: { ...next.stats.away } };
     if (next.events && (!this.hasEventSnapshot || next.eventSeq !== this.eventSeq)) {
-      this.events = next.events.map(cloneState);
+      this.events = next.events.map((value) => ({ ...value }));
       this.hasEventSnapshot = true;
     }
     this.eventSeq = next.eventSeq;
     this.finished = next.finished;
     Object.assign(this.subsUsed, next.subsUsed);
     if ("ratings" in next) {
-      this.ratings = next.ratings.map(cloneState);
-      this.scorers = next.scorers.map(cloneState);
-      this.shotMap = next.shotMap.map(cloneState);
+      this.ratings = next.ratings.map((value) => ({ ...value }));
+      this.scorers = next.scorers.map((value) => ({ ...value }));
+      this.shotMap = next.shotMap.map((value) => ({ ...value }));
     }
     return [];
   }
@@ -469,7 +466,7 @@ export class WorkerMatchView implements MatchRuntime {
     return [Math.round((home / total) * 100), Math.round((away / total) * 100)];
   }
   playerRatings() {
-    return this.ratings.map(cloneState);
+    return this.ratings.map((value) => ({ ...value }));
   }
   manOfTheMatch() {
     return this.ratings.length

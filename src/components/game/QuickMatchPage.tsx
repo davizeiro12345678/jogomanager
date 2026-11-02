@@ -85,6 +85,7 @@ export function QuickMatchPage() {
           </label>
           <select
             id="quick-league"
+            lang="pt-BR"
             value={leagueId}
             onChange={(e) => chooseLeague(e.target.value)}
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"

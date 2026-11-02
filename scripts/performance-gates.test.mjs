@@ -1,15 +1,64 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
+import { assertBenchmarkSource, benchmarkSource } from "./benchmark-source.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+test("benchmark identity rejects source edits, new source files and a moved revision", (t) => {
+  const directory = mkdtempSync(path.join(tmpdir(), "benchmark-source-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const git = (...args) => {
+    const result = spawnSync("git", args, { cwd: directory, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  git("init", "--quiet");
+  mkdirSync(path.join(directory, "src"));
+  const source = path.join(directory, "src", "engine.ts");
+  writeFileSync(source, "export const value = 1;\n");
+  git("add", "src");
+  git(
+    "-c",
+    "user.name=Benchmark test",
+    "-c",
+    "user.email=benchmark@example.invalid",
+    "commit",
+    "--quiet",
+    "-m",
+    "fixture",
+  );
+  const original = benchmarkSource(directory);
+  assertBenchmarkSource(directory, original);
+  writeFileSync(path.join(directory, "measurement.json"), "{}");
+  assertBenchmarkSource(directory, original);
+  writeFileSync(source, "export const value = 2;\n");
+  assert.throws(() => assertBenchmarkSource(directory, original), /Source changed/);
+  writeFileSync(source, "export const value = 1;\n");
+  const added = path.join(directory, "src", "added.ts");
+  writeFileSync(added, "export const added = true;\n");
+  assert.throws(() => assertBenchmarkSource(directory, original), /Source changed/);
+  rmSync(added);
+  git(
+    "-c",
+    "user.name=Benchmark test",
+    "-c",
+    "user.email=benchmark@example.invalid",
+    "commit",
+    "--quiet",
+    "--allow-empty",
+    "-m",
+    "next revision",
+  );
+  assert.equal(benchmarkSource(directory).sourceSha256, original.sourceSha256);
+  assert.throws(() => assertBenchmarkSource(directory, original), /Source changed/);
+});
 
 test("every mobile run must meet the existing critical performance budgets", () => {
   const { ci } = require("../.lighthouserc.mobile.cjs");
