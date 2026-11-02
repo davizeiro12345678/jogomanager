@@ -20,6 +20,7 @@ import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;450&aspe
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
+import brandLogo from "@/assets/brand/jogomanager-logo-header.webp";
 import "./home.css";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
@@ -211,16 +212,15 @@ export function FootballHome() {
         Ir para o conteúdo
       </a>
       <header className="home-nav">
-        <Link to="/" className="home-brand">
-          <span className="home-brand-mark">
-            <Gamepad2 size={21} />
-          </span>
-          <span>
-            PRO FOOTBALL
-            <span className="home-brand-sub">
-              MANAGER <b>3D</b>
-            </span>
-          </span>
+        <Link to="/" className="home-brand" aria-label="jogomanager — início">
+          <img
+            src={brandLogo}
+            alt="jogomanager — Da várzea à final, cada decisão é sua"
+            width={560}
+            height={223}
+            className="home-brand-logo"
+            decoding="async"
+          />
         </Link>
         <nav aria-label="Navegação principal" className="home-desktop-nav">
           <a href="#modos">Modos de jogo</a>
