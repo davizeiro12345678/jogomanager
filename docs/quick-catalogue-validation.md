@@ -77,6 +77,14 @@ Candidate emitted-assets SHA256:
 
 ## Reproduce functional checks
 
+Remote run `41364429246` at `aa5792e9` passed the mobile quick-match gate,
+but failed one obsolete static-import assertion and the home mobile score
+(0.99 / 0.97 / 1.00). The home failure's LCP node was the stadium hero image;
+its worst sample had 2447.53 ms LCP and zero TBT. No threshold was changed.
+The static-import assertion now protects the deferred catalogue and live-match
+boundaries. The complete local non-stress suite then passed all 1,582 tests
+in 294 files. Linux verification of this follow-up remains required.
+
 After `npm ci` and `npm run build`:
 
 ```sh
