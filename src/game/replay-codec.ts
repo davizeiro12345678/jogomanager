@@ -40,6 +40,10 @@ function integer(value: number) {
   return rounded < -32_768 ? -32_768 : rounded > 32_767 ? 32_767 : rounded;
 }
 
+function numeric(values: Int16Array | Uint8Array | Uint16Array | Uint32Array, index: number) {
+  return values[index] ?? 0;
+}
+
 export function encodeReplay(replay: Replay): StoredReplayV3 {
   const frames = replay.frames;
   const playerCount = replay.meta.length;
@@ -97,6 +101,7 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
+  const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
   const times = raw.frames.timesMs;
   const ball = raw.frames.ball;
@@ -104,11 +109,9 @@ function decodeV3(raw: StoredReplayV3): Replay {
   const actions = raw.frames.actions;
   const score = raw.frames.score;
   const possession = raw.frames.possession;
-  const visual = raw.frames.visual;
-  const frames: ReplayFrame[] = [];
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < times.length; frameIndex += 1) {
-    timeMs += times[frameIndex]!;
+    timeMs += numeric(times, frameIndex);
     // V3 buffers are length-validated before decoding. Preallocate the exact
     // player arrays and read typed buffers directly: avoid repeated push growth,
     // optional indexed lookups and four helper calls per athlete per frame.
@@ -127,16 +130,16 @@ function decodeV3(raw: StoredReplayV3): Replay {
     frames.push({
       t: timeMs / 1_000,
       b: [
-        ball[frameIndex * 3]! / QUANTIZE,
-        ball[frameIndex * 3 + 1]! / QUANTIZE,
-        ball[frameIndex * 3 + 2]! / QUANTIZE,
+        numeric(ball, frameIndex * 3) / QUANTIZE,
+        numeric(ball, frameIndex * 3 + 1) / QUANTIZE,
+        numeric(ball, frameIndex * 3 + 2) / QUANTIZE,
       ],
       p,
       a,
-      hg: score[frameIndex * 2]!,
-      ag: score[frameIndex * 2 + 1]!,
-      poss: possession[frameIndex] === 1 ? "away" : "home",
-      ...(visual?.[frameIndex] ? { v: visual[frameIndex]! } : {}),
+      hg: numeric(score, frameIndex * 2),
+      ag: numeric(score, frameIndex * 2 + 1),
+      poss: numeric(possession, frameIndex) === 1 ? "away" : "home",
+      ...(raw.frames.visual?.[frameIndex] ? { v: raw.frames.visual[frameIndex]! } : {}),
     });
   }
   return {
