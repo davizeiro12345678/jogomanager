@@ -50,7 +50,7 @@
 .home-brand-logo {
   display: block;
   width: auto;
-  height: 48px;
+  height: 56px;
 }
 .home-brand-mark {
   display: grid;
@@ -604,7 +604,7 @@
     font-size: 9px;
   }
   .home-brand-logo {
-    height: 38px;
+    height: 42px;
   }
   .home-brand-mark {
     width: 34px;
