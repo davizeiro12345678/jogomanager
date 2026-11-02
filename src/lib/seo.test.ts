@@ -40,6 +40,16 @@ describe("page metadata", () => {
     }
   });
 
+  it("protects the independently served language pages", () => {
+    const headers = readFileSync(new URL("../../public/_headers", import.meta.url), "utf8");
+    for (const path of ["/en", "/es"]) {
+      const section = headers.split("\n\n").find((part) => part.startsWith(`${path}\n`));
+      expect(section).toContain("Content-Security-Policy:");
+      expect(section).toContain("X-Content-Type-Options: nosniff");
+      expect(section).toContain("Referrer-Policy: strict-origin-when-cross-origin");
+    }
+  });
+
   it("shares one canonical identity and supplies accessible social images", () => {
     const meta = seoMeta({
       title: "Gráficos",
