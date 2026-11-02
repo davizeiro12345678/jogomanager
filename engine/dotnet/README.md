@@ -1,9 +1,17 @@
 # Native C# reference kernels and contracts
 
-This is the first isolated engine-contract milestone, based on main revision
-`e4d10b398e88e5af725bd33aec6e471c85f58a9a`. It adds an executable C# reference
+This is the first isolated engine-contract milestone, originally verified on
+main revision `e4d10b398e88e5af725bd33aec6e471c85f58a9a`. It adds an executable C# reference
 for three existing TypeScript kernels and a strict, versioned JSON protocol.
-It does not change the application's current simulation or dependency lock.
+Its own changes do not alter the application's simulation or dependency lock.
+
+Delivery is stacked on the rendering foundation in PR110, using a normal merge
+of `4cd61796b3c3e30651111f547f3b9d8c4faa69eb`. Main's formatting failures and
+high-severity dependency findings already have their fixes in that foundation.
+The contract PR's difference remains these 22 files. Its original standalone
+native CI passed, but the complete quality run failed those base gates; that
+failed run is retained. The new base requires fresh CI before either PR can be
+merged into main. No history is rewritten and no failed check is waived.
 
 | Operation                  | Existing TypeScript reference                            | C# implementation                                |
 | -------------------------- | -------------------------------------------------------- | ------------------------------------------------ |
