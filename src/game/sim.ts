@@ -468,7 +468,6 @@ export class MatchSim {
     return setup.players.slice(0, 11).map((p, i) => {
       const slot = slots[Math.min(i, slots.length - 1)]!;
       const physique = physiqueFor(p);
-      const attributes = matchAttributes(p, this.matchSeed, side, undefined, teamVariation);
       const x = slot.x * FIELD_X * 0.92 * dir;
       const z = slot.z * FIELD_Z * 0.8 * dir;
       return {
@@ -485,12 +484,7 @@ export class MatchSim {
         vz: 0,
         slotX: slot.x * dir,
         slotZ: slot.z * dir,
-        pace: attributes.pace,
-        shooting: attributes.shooting,
-        passing: attributes.passing,
-        defending: attributes.defending,
-        physical: attributes.physical,
-        stamina: attributes.stamina,
+        ...matchAttributes(p, this.matchSeed, side, undefined, teamVariation),
         action: null,
         actionT: 0,
         actionDur: 0,

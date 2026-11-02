@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import { profileFor, setAttrDeltas } from "./attributes";
-import { buildAttrs, physiqueFor } from "./player-physique";
+import { buildAttrs } from "./player-attributes-generator";
+import { physiqueFor } from "./player-physique";
 import { buildTeamSetup } from "./quickMatch";
 import type { Position } from "./types";
 

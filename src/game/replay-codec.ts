@@ -105,7 +105,7 @@ function decodeV3(raw: StoredReplayV3): Replay {
   const score = raw.frames.score;
   const possession = raw.frames.possession;
   const visual = raw.frames.visual;
-  const frames = new Array<ReplayFrame>(times.length);
+  const frames: ReplayFrame[] = [];
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < times.length; frameIndex += 1) {
     timeMs += times[frameIndex]!;
@@ -124,7 +124,7 @@ function decodeV3(raw: StoredReplayV3): Replay {
       p[target + 3] = positions[source + 3]! / QUANTIZE;
       a[playerIndex] = actionFromCode(actions[frameBase + playerIndex]!);
     }
-    const frame: ReplayFrame = {
+    frames.push({
       t: timeMs / 1_000,
       b: [
         ball[frameIndex * 3]! / QUANTIZE,
@@ -136,9 +136,8 @@ function decodeV3(raw: StoredReplayV3): Replay {
       hg: score[frameIndex * 2]!,
       ag: score[frameIndex * 2 + 1]!,
       poss: possession[frameIndex] === 1 ? "away" : "home",
-    };
-    if (visual?.[frameIndex]) frame.v = visual[frameIndex]!;
-    frames[frameIndex] = frame;
+      ...(visual?.[frameIndex] ? { v: visual[frameIndex]! } : {}),
+    });
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),

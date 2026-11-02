@@ -8,8 +8,8 @@
 //  ~55 KB de dados e zero shader novo; o passe `LUT3DEffect` já vem com a
 //  biblioteca de pós-processamento.
 //
-//  A curva é montada em cima do ACES que o renderer já aplica: ela só "pinta"
-//  a imagem final (temperatura, contraste, matiz de sombra), nunca reexpõe.
+//  A LUT recebe a imagem após ACES explícito no compositor HDR. O compositor
+//  desativa a curva do renderer; o tratamento preserva essa ordem de cor.
 // ============================================================================
 
 import * as THREE from "three";
@@ -202,17 +202,48 @@ export function gradeLut(
   const recipe = gradeFor(time, weather, moment);
   const size = LUT_SIZE;
   const data = new Uint8Array(size * size * size * 4);
+  // The exposure, temperature and contrast curve for each channel depends
+  // only on its axis. Precompute those 72 values once instead of rebuilding
+  // the same curve and a temporary RGB tuple for all 13,824 texels. Keep the
+  // operation order identical to applyRecipe so the resulting bytes match.
+  const red = new Float64Array(size);
+  const green = new Float64Array(size);
+  const blue = new Float64Array(size);
+  const contrast = recipe.contrast;
+  const knee = (value: number) => {
+    const d = value - 0.5;
+    return 0.5 + d * contrast * (1 - Math.abs(d) * 0.35 * (contrast > 1 ? 1 : 0.6));
+  };
+  for (let axis = 0; axis < size; axis++) {
+    const value = (axis / (size - 1)) * recipe.exposure;
+    red[axis] = knee(value * (1 + recipe.temperature * 0.16));
+    green[axis] = knee(value * (1 + recipe.tint * 0.1));
+    blue[axis] = knee(value * (1 - recipe.temperature * 0.16));
+  }
+  const rgb = new Float64Array(3);
   let i = 0;
   for (let z = 0; z < size; z++) {
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
-        const r = x / (size - 1);
-        const g = y / (size - 1);
-        const b = z / (size - 1);
-        const [r2, g2, b2] = applyRecipe(r, g, b, recipe);
-        data[i++] = Math.round(Math.min(1, Math.max(0, r2)) * 255);
-        data[i++] = Math.round(Math.min(1, Math.max(0, g2)) * 255);
-        data[i++] = Math.round(Math.min(1, Math.max(0, b2)) * 255);
+        rgb[0] = red[x]!;
+        rgb[1] = green[y]!;
+        rgb[2] = blue[z]!;
+        const lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+        const shadowWeight = Math.max(0, 1 - lum) ** 1.5;
+        const highWeight = Math.max(0, lum) ** 2;
+        for (let channel = 0; channel < 3; channel++) {
+          const value =
+            rgb[channel]! *
+            (1 +
+              (recipe.shadowTint[channel]! - 1) * shadowWeight +
+              (recipe.highlightTint[channel]! - 1) * highWeight);
+          rgb[channel] = value + recipe.lift * (1 - value);
+        }
+        const luminance = 0.2126 * rgb[0]! + 0.7152 * rgb[1]! + 0.0722 * rgb[2]!;
+        for (let channel = 0; channel < 3; channel++) {
+          const value = luminance + (rgb[channel]! - luminance) * recipe.saturation;
+          data[i++] = Math.round(Math.min(1, Math.max(0, value)) * 255);
+        }
         data[i++] = 255;
       }
     }

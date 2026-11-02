@@ -7,7 +7,7 @@
 
 import { CLUBS } from "./data/leagues";
 import { makeRng } from "./rng";
-import { buildAttrs } from "./player-physique";
+import { buildAttrs } from "./player-attributes-generator";
 import type { Personality, Player, Position } from "./types";
 import {
   effectivePlayer,

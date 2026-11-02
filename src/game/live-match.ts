@@ -62,54 +62,6 @@ export interface LiveSnapshot {
 const eventCache = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 const legacyPacketEvents = new WeakMap<MatchSim, { seq: number; events: MatchSim["events"] }>();
 
-function copyPlayer(player: SimPlayer): SimPlayer {
-  const copy: SimPlayer = {
-    id: player.id,
-    side: player.side,
-    name: player.name,
-    number: player.number,
-    pos: player.pos,
-    heightCm: player.heightCm!,
-    weightKg: player.weightKg!,
-    x: player.x,
-    z: player.z,
-    vx: player.vx,
-    vz: player.vz,
-    slotX: player.slotX,
-    slotZ: player.slotZ,
-    pace: player.pace,
-    shooting: player.shooting,
-    passing: player.passing,
-    defending: player.defending,
-    physical: player.physical,
-    stamina: player.stamina,
-    action: player.action,
-    actionT: player.actionT,
-    actionDur: player.actionDur,
-    pid: player.pid,
-    goals: player.goals,
-    assists: player.assists,
-    shots: player.shots,
-    passes: player.passes,
-    tackles: player.tackles,
-    saves: player.saves,
-    onSince: player.onSince,
-    minutes: player.minutes,
-    yellows: player.yellows,
-    sentOff: player.sentOff,
-    injuryWeeks: player.injuryWeeks,
-    interceptions: player.interceptions,
-    offsides: player.offsides,
-    foulsWon: player.foulsWon,
-    pensScored: player.pensScored,
-    pensMissed: player.pensMissed,
-    xg: player.xg,
-  } satisfies Required<SimPlayer>;
-  if (!Object.hasOwn(player, "heightCm")) delete copy.heightCm;
-  if (!Object.hasOwn(player, "weightKg")) delete copy.weightKg;
-  return copy;
-}
-
 /** Copy the declared transport state while keeping interpolated x/z and identity. */
 function applyPlayerState(current: SimPlayer, target: SimPlayer) {
   current.id = target.id;
@@ -270,7 +222,7 @@ export function snapshotMatch(
     weather: sim.weather,
     wind: { ...sim.wind },
     refName: sim.ref.name,
-    players: sim.players.map(copyPlayer),
+    players: sim.players.map((player) => ({ ...player })),
     ball: { ...sim.ball },
     ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
@@ -416,20 +368,12 @@ export class WorkerMatchView implements MatchRuntime {
       this.positions[offset + 1] = current?.z ?? target.z;
       this.positions[offset + 2] = target.x;
       this.positions[offset + 3] = target.z;
+      if (!rosterChanged && current) applyPlayerState(current, target);
     }
     this.previousBall.x = this.ball.x;
     this.previousBall.z = this.ball.z;
     this.previousBall.height = this.ball.height;
-    if (rosterChanged) {
-      this.players = next.players.map(copyPlayer);
-    } else {
-      for (let index = 0; index < next.players.length; index += 1) {
-        const target = next.players[index];
-        const current = this.players[index];
-        if (!target || !current) continue;
-        applyPlayerState(current, target);
-      }
-    }
+    if (rosterChanged) this.players = next.players.map((player) => ({ ...player }));
     this.targetBall.x = next.ball.x;
     this.targetBall.z = next.ball.z;
     this.targetBall.height = next.ball.height;

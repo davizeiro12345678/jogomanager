@@ -32,16 +32,18 @@ export function teamDay(seed: string, side: "home" | "away"): number {
   return (sumThreeRng(`match-day:${seed}:${side}`) - 1.5) * 4;
 }
 
+const form = (value?: number) => (value === undefined ? 0 : (bounded(value, 60, 0, 100) - 60) / 40);
+const fatigue = (value?: number) =>
+  value === undefined ? -0 : -Math.max(0, bounded(value, 0, 0, 100) - 15) / 190;
+const risk = (t?: MatchConditions["homeTactics"]) =>
+  t
+    ? (bounded(t.mentality, 2, 0, 4) - 2) * 0.045 +
+      (bounded(t.pressing, 1, 0, 2) - 1) * 0.018 +
+      (bounded(t.tempo, 1, 0, 2) - 1) * 0.012
+    : 0;
+
 export function expectedGoals(home: number, away: number, seed: string, ctx: MatchConditions = {}) {
   const quality = strengthEdge(ctx.homeStrength ?? home, ctx.awayStrength ?? away);
-  const form = (value?: number) => (bounded(value, 60, 0, 100) - 60) / 40;
-  const fatigue = (value?: number) => -Math.max(0, bounded(value, 0, 0, 100) - 15) / 190;
-  const risk = (t?: MatchConditions["homeTactics"]) =>
-    t
-      ? (bounded(t.mentality, 2, 0, 4) - 2) * 0.045 +
-        (bounded(t.pressing, 1, 0, 2) - 1) * 0.018 +
-        (bounded(t.tempo, 1, 0, 2) - 1) * 0.012
-      : 0;
   const edge = quality + (form(ctx.homeForm) - form(ctx.awayForm)) * 0.075;
   const hr = risk(ctx.homeTactics),
     ar = risk(ctx.awayTactics);
@@ -71,9 +73,14 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
 
 function poissonBuckets(lambda: number): number[] {
   const p = [Math.exp(-lambda)];
-  for (let i = 1; i < 8; i++) p.push((p[i - 1]! * lambda) / i);
+  let sum = p[0]!;
+  for (let i = 1; i < 8; i++) {
+    const value = (p[i - 1]! * lambda) / i;
+    p.push(value);
+    sum += value;
+  }
   // The final bucket owns the tail; no rejection loop or lost probability mass.
-  p.push(Math.max(0, 1 - p.reduce((sum, v) => sum + v, 0)));
+  p.push(Math.max(0, 1 - sum));
   return p;
 }
 

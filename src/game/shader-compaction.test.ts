@@ -4,7 +4,7 @@ import path from "node:path";
 import ts from "typescript";
 import { compactThreeShader } from "../../scripts/compact-shader-source";
 
-it("compacts shipping shader indentation while preserving every token, line and engine licence", () => {
+it("compacts shipping shader whitespace while preserving every token, line and engine licence", () => {
   const file = path.resolve("node_modules/three/build/three.module.js"),
     source = readFileSync(file, "utf8");
   const result = compactThreeShader(source, file)!;
@@ -40,4 +40,17 @@ it("leaves interpolation, escaped shaders and non-shader modules untouched", () 
     ),
   ).toBeNull();
   expect(compactThreeShader('export default "data";', "/project/src/app.ts")).toBeNull();
+});
+
+it("preserves macro and operator boundaries while compacting safe delimiters", () => {
+  const shader =
+    "#define F (x)\nvoid main() { float y = - -x; vec2 z = vec2(y, y); vec2 a[ 2 ]; a[ 1 ] = z; float t = y > 0.0 ? y : 0.0; }\n";
+  const source = `const x = ${JSON.stringify(shader)}; const ShaderChunk = {x};`;
+  const result = compactThreeShader(source, "/project/node_modules/three/build/three.module.js")!;
+  expect(result).toContain("#define F (x)");
+  expect(result).toContain("- -x");
+  expect(result).toContain("vec2(y,y)");
+  expect(result).toContain("a[2]");
+  expect(result).toContain("a[1]");
+  expect(result).toContain("? y : 0.0");
 });
