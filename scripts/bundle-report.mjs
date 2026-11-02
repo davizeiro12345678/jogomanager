@@ -47,7 +47,9 @@ for (const name of await readdir(assets)) {
     gzipBytes: gzipSync(data, { level: 9 }).length,
     brotliBytes: brotliBytes(data),
     surface:
-      source.includes("SEU CLUBE.") || source.includes("Você é o manager.")
+      source.includes("JOGO DE TÉCNICO") ||
+      source.includes("SEU CLUBE.") ||
+      source.includes("Você é o manager.")
         ? "home"
         : source.includes("Novo treinador") &&
             (source.includes("manager-name") || source.includes("career-step-title"))

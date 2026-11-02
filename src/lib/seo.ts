@@ -1,18 +1,9 @@
 export const SITE_URL = "https://jogomanager.com";
 export const SITE_NAME = "Pro Football Manager 3D";
-export const SITE_TITLE = "Manager de Futebol 3D Grátis | Pro Football Manager 3D";
+export const SITE_TITLE = "Jogo de Técnico de Futebol Grátis | jogomanager";
 export const SITE_DESCRIPTION =
-  "Crie seu treinador, monte o elenco, defina táticas e acompanhe partidas em 3D. Jogue gratuitamente no navegador, no PC ou no celular.";
+  "Seja técnico no jogomanager: monte seu elenco, escolha táticas e acompanhe partidas em 3D. Comece grátis no navegador do celular ou computador.";
 export const OG_IMAGE = `${SITE_URL}/og-cover.jpg`;
-export const SITE_KEYWORDS = [
-  "manager de futebol",
-  "jogo de futebol 3D",
-  "simulação de futebol",
-  "gestão de clubes",
-  "táticas de futebol",
-  "mercado de transferências",
-  "jogo no navegador",
-];
 const IMAGE_ALT = "Pro Football Manager 3D — gestão de clubes e partidas de futebol em estádio 3D";
 
 type Meta = Record<string, string>;
@@ -47,7 +38,7 @@ export function seoMeta(input: SeoInput): Meta[] {
   return [
     { title: input.title },
     { name: "description", content: input.description },
-    { name: "keywords", content: (input.keywords ?? SITE_KEYWORDS).join(", ") },
+    ...(input.keywords?.length ? [{ name: "keywords", content: input.keywords.join(", ") }] : []),
     { property: "og:title", content: input.ogTitle ?? input.title },
     { property: "og:description", content: input.ogDescription ?? input.description },
     { property: "og:type", content: input.type ?? "website" },
@@ -128,6 +119,7 @@ export function websiteLd() {
         "@type": "WebSite",
         "@id": `${SITE_URL}/#website`,
         name: SITE_NAME,
+        alternateName: "jogomanager",
         url: SITE_URL,
         description: SITE_DESCRIPTION,
         inLanguage: "pt-BR",
@@ -158,7 +150,6 @@ export function gameLd() {
     image: OG_IMAGE,
     inLanguage: "pt-BR",
     genre: ["Sports", "Simulation", "Management"],
-    keywords: SITE_KEYWORDS.join(", "),
     isAccessibleForFree: true,
     publisher: { "@id": `${SITE_URL}/#organization` },
     isPartOf: { "@id": `${SITE_URL}/#website` },

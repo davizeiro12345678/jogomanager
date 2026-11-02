@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   articleLd,
   breadcrumbLd,
@@ -9,8 +10,46 @@ import {
   SITE_URL,
   websiteLd,
 } from "./seo";
+import { HOME_LOCALES } from "./home-locales";
 
 describe("page metadata", () => {
+  it("uses explicit page keywords instead of repeating a global list", () => {
+    const page = { title: "Clube", description: "Gestão", path: "/" };
+    expect(seoMeta(page).some((tag) => tag["name"] === "keywords")).toBe(false);
+    expect(
+      seoMeta({ ...page, keywords: ["jogomanager", "jogo de técnico de futebol"] }).find(
+        (tag) => tag["name"] === "keywords",
+      )?.["content"],
+    ).toBe("jogomanager, jogo de técnico de futebol");
+  });
+
+  it("links actual home language variants using absolute reciprocal targets", () => {
+    expect(HOME_LOCALES).toEqual([
+      { language: "pt-BR", path: "/" },
+      { language: "en", path: "/en" },
+      { language: "es", path: "/es" },
+      { language: "x-default", path: "/" },
+    ]);
+    for (const lang of ["en", "es"] as const) {
+      const html = readFileSync(new URL(`../../public/${lang}.html`, import.meta.url), "utf8");
+      expect(html).toContain(`<html lang="${lang}">`);
+      expect(html).toContain(`rel="canonical" href="${SITE_URL}/${lang}"`);
+      for (const locale of HOME_LOCALES) {
+        expect(html).toContain(`hreflang="${locale.language}" href="${SITE_URL}${locale.path}"`);
+      }
+    }
+  });
+
+  it("protects the independently served language pages", () => {
+    const headers = readFileSync(new URL("../../public/_headers", import.meta.url), "utf8");
+    for (const path of ["/en", "/es"]) {
+      const section = headers.split("\n\n").find((part) => part.startsWith(`${path}\n`));
+      expect(section).toContain("Content-Security-Policy:");
+      expect(section).toContain("X-Content-Type-Options: nosniff");
+      expect(section).toContain("Referrer-Policy: strict-origin-when-cross-origin");
+    }
+  });
+
   it("shares one canonical identity and supplies accessible social images", () => {
     const meta = seoMeta({
       title: "Gráficos",

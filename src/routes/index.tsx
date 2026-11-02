@@ -12,9 +12,15 @@ export const Route = createFileRoute("/")({
         title: SITE_TITLE,
         description: SITE_DESCRIPTION,
         path: "/",
-        ogTitle: "Pro Football Manager 3D | Seu clube. Sua história.",
-        ogDescription:
-          "Crie seu treinador, assuma um clube e acompanhe suas decisões no gramado em 3D. Comece a sua carreira direto no navegador.",
+        keywords: [
+          "jogomanager",
+          "jogo de técnico de futebol",
+          "jogo grátis de futebol",
+          "manager de futebol",
+          "jogo de futebol no navegador",
+          "carreira de técnico",
+          "gestão de clube de futebol",
+        ],
       }),
       { name: "google-site-verification", content: "jQnHkMGkHJbJedGaIYWIRl14nynSHLVLLvHfzLfpTXg" },
     ],

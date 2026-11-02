@@ -173,7 +173,7 @@
 }
 .home-hero h1 {
   font-family: var(--font-display);
-  font-size: clamp(46px, 6.5vw, 90px);
+  font-size: clamp(40px, 5.3vw, 76px);
   letter-spacing: -0.045em;
   line-height: 1.04;
   margin: 20px 0 24px;
@@ -649,7 +649,7 @@
     background: linear-gradient(180deg, #08130f66 0%, #08130fb8 45%, #0c1211 100%);
   }
   .home-hero h1 {
-    font-size: clamp(40px, 9.2vw, 65px);
+    font-size: clamp(29px, 7.8vw, 54px);
   }
   .home-hero-copy {
     font-size: 16px;
@@ -759,7 +759,7 @@
   }
 }
 
-/* Real catalog figures give the first screen concrete proof, not only slogans. */
+/* Brief, stable characteristics avoid stale catalogue counts on the home page. */
 .home-hero-stats {
   margin-top: 26px;
   display: grid;
@@ -783,7 +783,7 @@
 .home-hero-stats dd {
   margin: 0;
   font-family: var(--font-display, inherit);
-  font-size: 24px;
+  font-size: clamp(16px, 2.1vw, 22px);
   font-weight: 800;
   line-height: 1;
   color: var(--primary);

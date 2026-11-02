@@ -10,7 +10,7 @@ const DECISIONS = [
   },
   {
     title: "Dê uma identidade ao time",
-    text: "Escolha formação, mentalidade e pressão. Observe o adversário e ajuste o plano durante a partida.",
+    text: "O 4-4-2 usa dois atacantes; no 4-3-3, são três na frente. Observe a cobertura dos lados.",
     to: "/melhores-formacoes",
     cta: "Entender as táticas",
   },
@@ -47,10 +47,6 @@ const FAQ = [
   [
     "O 3D funciona do mesmo jeito em qualquer celular?",
     "O jogo adapta a qualidade conforme o hardware. Para comparar fluidez, teste no mesmo aparelho e navegador, com o mesmo nível gráfico.",
-  ],
-  [
-    "Onde aprendo a jogar melhor?",
-    "Os guias explicam escalação, táticas, scouting e finanças. Comece por uma partida rápida e aplique uma mudança por vez.",
   ],
 ] as const;
 
