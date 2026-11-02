@@ -17,6 +17,7 @@ import * as THREE from "three";
 import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
 import { GradeLut } from "./GradeLut";
+import { AcesToneMapping } from "./AcesToneMapping";
 import type { GradeMoment, GradeTime, GradeWeather } from "@/game/graphics/grade";
 
 export type { PostMoment, PostQuality, PostTime };
@@ -27,7 +28,7 @@ export type { PostMoment, PostQuality, PostTime };
  * A calibração vive em `presets.ts`; aqui montamos as passagens conforme o
  * nível de qualidade:
  *  - baixa : nenhuma passagem (aparelho fraco desenha o quadro cru)
- *  - média : bloom, cor e vinheta em meia resolução
+ *  - média : bloom, cor e vinheta
  *  - alta  : oclusão de contato, bloom, foco seletivo em replay/gol, cor,
  *            granulado, vinheta e anti-serrilhado
  */
@@ -69,34 +70,17 @@ export function PostFX({
 
   if (quality === "baixa") return null;
 
-  if (quality === "media") {
-    return (
-      <EffectComposer key="media" enableNormalPass={false} multisampling={0} resolutionScale={0.62}>
-        <Bloom
-          intensity={Math.max(0.04, p.bloom * 0.55)}
-          luminanceThreshold={0.92}
-          luminanceSmoothing={0.18}
-          mipmapBlur
-        />
-        <HueSaturation saturation={p.saturation * 1.25} hue={p.hue} />
-        <BrightnessContrast brightness={p.brightness + 0.012} contrast={p.contrast * 1.2} />
-        <Vignette offset={0.3} darkness={p.vignette * 0.7} />
-        {antialias ? <SMAA /> : <></>}
-      </EffectComposer>
-    );
-  }
-
-  const cinema = cinematic || m !== "match";
+  const medium = quality === "media";
+  const cinema = !medium && (cinematic || m !== "match");
+  const grade = medium ? undefined : grading;
 
   return (
     <EffectComposer
       // Sem trocar a key por momento: remontar o compositor piscava a tela.
-      key="alta"
       // N8AO reconstructs its normals from depth; the remaining lens effects
       // also use depth/color. An unused NormalPass redrew the complete scene.
       enableNormalPass={false}
       multisampling={0}
-      resolutionScale={cinema ? 0.9 : 0.8}
     >
       {cinema ? (
         <N8AO
@@ -125,10 +109,10 @@ export function PostFX({
         <></>
       )}
       <Bloom
-        intensity={Math.max(0.05, p.bloom)}
-        luminanceThreshold={Math.max(0.82, p.bloomThreshold)}
-        luminanceSmoothing={0.22}
-        radius={0.72}
+        intensity={medium ? Math.max(0.04, p.bloom * 0.55) : Math.max(0.05, p.bloom)}
+        luminanceThreshold={medium ? 0.92 : Math.max(0.82, p.bloomThreshold)}
+        luminanceSmoothing={medium ? 0.18 : 0.22}
+        radius={medium ? 0.85 : 0.72}
         mipmapBlur
       />
       {cinema ? (
@@ -136,17 +120,28 @@ export function PostFX({
       ) : (
         <></>
       )}
-      {grading ? <></> : <HueSaturation saturation={p.saturation} hue={p.hue} />}
-      {grading ? <></> : <BrightnessContrast brightness={p.brightness} contrast={p.contrast} />}
+      <AcesToneMapping />
+      {grade ? (
+        <></>
+      ) : (
+        <HueSaturation saturation={p.saturation * (medium ? 1.25 : 1)} hue={p.hue} />
+      )}
+      {grade ? (
+        <></>
+      ) : (
+        <BrightnessContrast
+          brightness={p.brightness + (medium ? 0.012 : 0)}
+          contrast={p.contrast * (medium ? 1.2 : 1)}
+        />
+      )}
       {cinema ? <Noise opacity={p.grain} blendFunction={BlendFunction.OVERLAY} /> : <></>}
       {/* Uma LUT 3D substitui brilho/contraste/saturação/temperatura de uma vez */}
-      {grading ? (
-        <GradeLut time={grading.time} weather={grading.weather} moment={grading.moment} />
-      ) : (
-        <></>
-      )}
-      <Vignette offset={cinema ? 0.15 : 0.26} darkness={p.vignette} />
-      {/* O renderer já aplica ACES; uma segunda curva aqui esmagava médios e realces. */}
+      {grade ? <GradeLut time={grade.time} weather={grade.weather} moment={grade.moment} /> : <></>}
+      <Vignette
+        offset={medium ? 0.3 : cinema ? 0.15 : 0.26}
+        darkness={p.vignette * (medium ? 0.7 : 1)}
+      />
+      {/* The composer disables renderer tone mapping; ACES precedes display grading. */}
       {antialias ? <SMAA /> : <></>}
     </EffectComposer>
   );

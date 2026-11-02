@@ -5,6 +5,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { publicPageRedirect } from "./lib/public-page-redirects";
 import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
+import publicStyles from "./public-styles.css?url";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -68,7 +69,8 @@ export default {
       init.duplex = "half";
     }
     const verifiedRequest = new Request(request.url, init);
-    const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
+    const protect = (response: Response) =>
+      secureResponse(response, verifiedRequest, nonce, publicStyles);
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return measured(protect(redirect));
     try {

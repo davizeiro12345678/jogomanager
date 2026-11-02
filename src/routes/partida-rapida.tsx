@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { QuickMatchPage } from "@/components/game/QuickMatchPage";
+import { QuickMatchRoute } from "@/components/game/QuickMatchPage";
 import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 
 export const Route = createFileRoute("/partida-rapida")({
   // Selection uses serializable catalogue data; the 3D match remains lazy.
   ssr: true,
+  loader: async () => (await import("@/game/quick-selection")).loadQuickSelection(),
   head: () => ({
     meta: [
       ...seoMeta({
@@ -17,5 +18,5 @@ export const Route = createFileRoute("/partida-rapida")({
     ],
     links: canonical("/partida-rapida"),
   }),
-  component: QuickMatchPage,
+  component: QuickMatchRoute,
 });

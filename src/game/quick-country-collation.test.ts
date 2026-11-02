@@ -5,6 +5,8 @@ const state = vi.hoisted(() => ({ lang: "pt-BR" }));
 vi.mock("@/i18n/provider", () => ({ useT: () => ({ lang: state.lang, t: (key: string) => key }) }));
 vi.mock("react", async (original) => ({
   ...(await original<typeof import("react")>()),
+  useEffect: () => undefined,
+  useRef: <T>(current: T) => ({ current }),
   useState: <T>(initial: T | (() => T)) => [
     typeof initial === "function" ? (initial as () => T)() : initial,
     () => undefined,
@@ -27,7 +29,9 @@ it.each(["pt-BR", "en", "es", "ar", "zh-CN"])(
     );
     const legacy = vi.spyOn(String.prototype, "localeCompare"),
       collators = vi.spyOn(Intl, "Collator");
-    expect(countries(QuickMatchPage())).toEqual(expected);
+    expect(
+      countries(QuickMatchPage({ initialSelection: { leagues: LEAGUES, league: LEAGUES[0]! } })),
+    ).toEqual(expected);
     expect(legacy).not.toHaveBeenCalled();
     expect(collators).toHaveBeenCalledTimes(1);
   },
