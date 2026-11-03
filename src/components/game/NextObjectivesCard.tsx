@@ -29,7 +29,6 @@ export function NextObjectivesCard({ career }: { career: CareerState }) {
         previousVisit.set(career.clubId, raw ? Number(raw) : null);
       }
       const last = previousVisit.get(career.clubId) ?? null;
-      console.log("DBG reminder", last, returnReminder(last, career, Date.now()));
       setReminder(returnReminder(last, career, Date.now())?.message ?? null);
       localStorage.setItem(visitKey(career), String(Date.now()));
     } catch {
