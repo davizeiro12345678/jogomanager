@@ -52,6 +52,41 @@
         }
       }
     },
+    "project.match_started": {
+      "event_schema_version": 1,
+      "description": "A player confirmed and began a match, from career match preparation or from quick match.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "entry"
+        ],
+        "properties": {
+          "career_id": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "career",
+              "quick"
+            ]
+          },
+          "entry": {
+            "type": "string",
+            "enum": [
+              "match_preparation",
+              "quick_match"
+            ]
+          }
+        }
+      }
+    },
     "project.store_checkout_started": {
       "event_schema_version": 1,
       "description": "A player picked a store product and the secure checkout session was created successfully.",
