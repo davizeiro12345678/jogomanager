@@ -5,6 +5,17 @@
  */
 import type { MatchSim } from "./sim";
 import type { Side } from "./sim-contracts";
+import { headerPower } from "./match-physics-extras";
+import {
+  FIELD_X,
+  FIELD_Z,
+  GOAL_Z,
+  PENALTY_DIST,
+  solveCornerDuel,
+  solveDirectFK,
+  solvePenalty,
+  XG_PENALTY,
+} from "./sim-rules";
 
 export type SetPieceHost = Pick<
   MatchSim,
