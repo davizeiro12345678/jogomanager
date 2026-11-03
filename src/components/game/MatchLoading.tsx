@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 
 /** Short, true gameplay tips shown while the 3D code downloads. */
 const TIPS = [
-  "Toque na câmera para alternar entre transmissão, tática e drone.",
-  "No intervalo, a conversa com o elenco muda a confiança do time.",
-  "Jogadores cansados erram mais passes: troque antes dos 70 minutos.",
+  "Troque a câmera durante o jogo: transmissão, cinema, tática ou imersão.",
+  "No intervalo, a conversa com o elenco mexe no moral e no fôlego do time.",
+  "Jogadores cansados rendem menos: use as substituições no segundo tempo.",
   "Em aparelhos mais simples, o jogo baixa os gráficos sozinho para ficar fluido.",
-  "A velocidade 8x termina a partida rápido sem mudar o resultado.",
+  "Acelere a partida em até 8x quando quiser chegar logo ao apito final.",
 ] as const;
 
 const TIP_EVERY_MS = 4500;
