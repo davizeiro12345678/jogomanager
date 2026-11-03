@@ -73,6 +73,7 @@ import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
 import { halfTimePlan } from "./ai-halftime";
+import * as setPieces from "./sim-set-pieces";
 import {
   blockRestitution,
   bodyContactShare,
@@ -245,7 +246,7 @@ export class MatchSim {
   subsOut: SimPlayer[] = [];
   subsUsed: Record<Side, number> = { home: 0, away: 0 };
   /** último passador de cada lado, para creditar assistência */
-  private lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
+  /** @internal */ lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
   /** jogadores em "freeze" curto após um chute próximo */
   private reactionUntil = new Map<string, number>();
   private mentalityCache: Record<Side, number> | null = null;
@@ -254,18 +255,18 @@ export class MatchSim {
   finished = false;
   lastEventId = 0;
   private decisionTimer = 0;
-  private rnd: ReturnType<typeof makeRng>;
-  private restartTimer = 0;
+  /** @internal */ rnd: ReturnType<typeof makeRng>;
+  /** @internal */ restartTimer = 0;
   /** tempo com a bola solta, usado para destravar a jogada */
-  private looseTime = 0;
+  /** @internal */ looseTime = 0;
   /** Pressão coletiva curta disparada por erro técnico ou passe para trás. */
   private pressSurge: Record<Side, number> = { home: 0, away: 0 };
   /** último lado que tocou na bola — define lateral, escanteio e tiro de meta */
-  private lastTouch: Side = "home";
+  /** @internal */ lastTouch: Side = "home";
   /** velocidade vertical da bola (m/s) — a altura passa a ser física de verdade */
-  private ballVy = 0;
+  /** @internal */ ballVy = 0;
   /** curva lateral (efeito Magnus) aplicada enquanto a bola voa */
-  private ballSpin = 0;
+  /** @internal */ ballSpin = 0;
   /**
    * Autoridade física opcional da bola, injetada apenas pela partida ao vivo.
    * A simulação ainda decide posse, regras e eventos; o Rapier integra a
@@ -273,7 +274,7 @@ export class MatchSim {
    */
   private ballPhysics: BallPhysicsAuthority | null = null;
   /** finalização em voo: só vira gol/defesa quando a bola chega lá */
-  private pendingShot: {
+  /** @internal */ pendingShot: {
     side: Side;
     shooter: string;
     outcome: "goal" | "saved" | "off";
@@ -285,7 +286,7 @@ export class MatchSim {
     bodyPart: "foot" | "head";
   } | null = null;
   /** passe em voo: quem deve receber e até quando o passador não retoma a bola */
-  private pass: {
+  /** @internal */ pass: {
     to: string;
     from: string;
     until: number;
@@ -322,9 +323,9 @@ export class MatchSim {
   /** relógio congelado durante intervalo e pausa da prorrogação */
   private freezeT = 0;
   /** até quando (this.time) não há impedimento (isenção pós-bola parada) */
-  private exemptUntil = 0;
+  /** @internal */ exemptUntil = 0;
   /** bola parada armada: cobra após a barreira se posicionar */
-  private setPiece: {
+  /** @internal */ setPiece: {
     kind: "penalty" | "directFK" | "corner";
     side: Side;
     takerId: string;
@@ -638,11 +639,11 @@ export class MatchSim {
     this.synchronizeBallPhysics();
   }
 
-  private setup(side: Side) {
+  /** @internal */ setup(side: Side) {
     return side === "home" ? this.home : this.away;
   }
 
-  private attackDir(side: Side) {
+  /** @internal */ attackDir(side: Side) {
     return side === "home" ? 1 : -1;
   }
 
@@ -654,13 +655,13 @@ export class MatchSim {
     return this.mentalityCache[side];
   }
 
-  private pushEvent(e: MatchEventLog) {
+  /** @internal */ pushEvent(e: MatchEventLog) {
     this.events.push(e);
     this.lastEventId++;
     if (this.events.length > 80) this.events.shift();
   }
 
-  private recordShot(shot: ShotRecord) {
+  /** @internal */ recordShot(shot: ShotRecord) {
     this.shotMap.push(shot);
     if (this.shotMap.length > 120) this.shotMap.shift();
   }
@@ -1130,7 +1131,7 @@ export class MatchSim {
   }
 
   /** melhor cobrador em campo (não expulso, não goleiro) */
-  private bestTaker(side: Side, attr: "shooting" | "passing"): SimPlayer | null {
+  /** @internal */ bestTaker(side: Side, attr: "shooting" | "passing"): SimPlayer | null {
     let best: SimPlayer | null = null;
     for (const p of this.players) {
       if (p.side !== side || p.sentOff || p.pos === "GK") continue;
@@ -1139,472 +1140,28 @@ export class MatchSim {
     return best;
   }
 
-  private setupPenalty(side: Side) {
-    const dir = this.attackDir(side);
-    const goalX = dir * FIELD_X;
-    const taker = this.bestTaker(side, "shooting");
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
-    if (!taker) return;
-    taker.x = goalX - dir * PENALTY_DIST;
-    taker.z = 0.6;
-    taker.vx = 0;
-    taker.vz = 0;
-    if (gk) {
-      gk.x = goalX - dir * 0.8;
-      gk.z = 0;
-      gk.vx = 0;
-      gk.vz = 0;
-    }
-    // todo mundo a 9,15 m da marca
-    for (const p of this.players) {
-      if (p === taker || p === gk || p.sentOff) continue;
-      const d = Math.hypot(p.x - (goalX - dir * PENALTY_DIST), p.z);
-      if (d < 9.5) {
-        const ang = Math.atan2(p.z, p.x - (goalX - dir * PENALTY_DIST));
-        p.x = goalX - dir * PENALTY_DIST + Math.cos(ang) * 10.5;
-        p.z = Math.sin(ang) * 10.5;
-      }
-    }
-    this.ball.x = goalX - dir * PENALTY_DIST;
-    this.ball.z = 0;
-    this.ball.vx = 0;
-    this.ball.vz = 0;
-    this.ball.height = 0.12;
-    this.ballVy = 0;
-    this.ballSpin = 0;
-    this.ball.holder = null;
-    this.pendingShot = null;
-    this.pass = null;
-    this.setPiece = { kind: "penalty", side, takerId: taker.id, timer: 2.2 };
-    this.restartTimer = 2.6;
-    this.exemptUntil = this.time + 3;
-    this.trigger(taker, "penalty", 2);
-    this.pushEvent({
-      minute: this.minute(),
-      type: "penalty",
-      side,
-      text: `Pênalti para o ${this.setup(side).short}! ${taker.name} vai para a cobrança.`,
-    });
-    this.synchronizeBallPhysics();
+  setupPenalty(side: Side) {
+    setPieces.setupPenalty(this, side);
   }
 
-  private takePenalty() {
-    const sp = this.setPiece;
-    if (!sp) return;
-    const side = sp.side;
-    const dir = this.attackDir(side);
-    const taker = this.players.find((p) => p.id === sp.takerId) ?? null;
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
-    this.setPiece = null;
-    if (!taker) {
-      this.scheduleRestart(side === "home" ? "away" : "home");
-      return;
-    }
-    const late = this.minute() >= 75;
-    const close = Math.abs(this.stats.home.goals - this.stats.away.goals) <= 1;
-    const out = solvePenalty({
-      taker: taker.shooting,
-      gk: gk?.defending ?? 60,
-      pressure: late && close ? 0.7 : 0.25,
-      rnd: this.rnd,
-    });
-    this.trigger(taker, "shot", 0.8);
-    if (gk)
-      this.trigger(gk, out.gkSide === 0 ? "save" : out.gkSide > 0 ? "diveRight" : "diveLeft", 1.15);
-    this.lastPass[side] = null; // pênalti não tem assistência
-    this.stats[side].shots++;
-    this.stats[side].pens++;
-    this.stats[side].xg += XG_PENALTY;
-    taker.shots++;
-    taker.xg += XG_PENALTY;
-    if (out.scored) taker.pensScored++;
-    else taker.pensMissed++;
-    const targetZ = out.skied
-      ? Math.sign(out.takerSide || 1) * (GOAL_Z + 1.5 + this.rnd() * 2)
-      : out.takerSide * GOAL_Z * 0.72;
-    const targetH = out.skied ? 3.2 + this.rnd() * 1.5 : 0.35 + this.rnd() * 1.3;
-    const dx = dir * FIELD_X - this.ball.x;
-    const dz = targetZ - this.ball.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const power = 24 + this.rnd() * 7;
-    this.ball.vx = (dx / d) * power;
-    this.ball.vz = (dz / d) * power;
-    this.ball.height = 0.25;
-    const flight = Math.max(0.15, d / power);
-    this.ballVy = (targetH - 0.25) / flight + 4.905 * flight;
-    this.ballSpin = 0;
-    this.lastTouch = side;
-    this.pendingShot = {
-      side,
-      shooter: taker.id,
-      outcome: out.scored ? "goal" : out.skied ? "off" : "saved",
-      fromX: this.ball.x,
-      fromZ: this.ball.z,
-      targetZ,
-      xg: XG_PENALTY,
-      bigChance: true,
-      bodyPart: "foot",
-    };
-    if (!out.scored && out.skied) {
-      this.recordShot({
-        x: this.ball.x,
-        z: this.ball.z,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: taker.name,
-        xg: XG_PENALTY,
-        bigChance: true,
-        bodyPart: "foot",
-      });
-      this.pushEvent({
-        minute: this.minute(),
-        type: "penalty",
-        side,
-        text: `${taker.name} isola o pênalti!`,
-      });
-    }
-    this.synchronizeBallPhysics();
+  takePenalty() {
+    setPieces.takePenalty(this);
   }
 
-  private setupDirectFK(side: Side, fx: number, fz: number) {
-    const dir = this.attackDir(side);
-    const goalX = dir * FIELD_X;
-    const taker = this.bestTaker(side, "shooting");
-    if (!taker) return;
-    taker.x = fx - dir * 1.2;
-    taker.z = fz + 0.8;
-    taker.vx = 0;
-    taker.vz = 0;
-    // barreira: 2 a 4 adversários a 9,15 m, entre a bola e o gol
-    const foes = this.players
-      .filter((p) => p.side !== side && !p.sentOff && p.pos !== "GK")
-      .sort((a, b) => Math.hypot(a.x - fx, a.z - fz) - Math.hypot(b.x - fx, b.z - fz));
-    const wall = Math.min(foes.length, 2 + Math.floor(this.rnd() * 3));
-    const ang = Math.atan2(0 - fz, goalX - fx);
-    for (let i = 0; i < wall; i++) {
-      const w = foes[i]!;
-      const off = (i - (wall - 1) / 2) * 0.9;
-      w.x = fx + Math.cos(ang) * 9.15 - Math.sin(ang) * off;
-      w.z = fz + Math.sin(ang) * 9.15 + Math.cos(ang) * off;
-      w.vx = 0;
-      w.vz = 0;
-      this.trigger(w, "block", 2.4);
-    }
-    this.ball.x = fx;
-    this.ball.z = fz;
-    this.ball.vx = 0;
-    this.ball.vz = 0;
-    this.ball.height = 0.12;
-    this.ballVy = 0;
-    this.ballSpin = 0;
-    this.ball.holder = null;
-    this.pendingShot = null;
-    this.pass = null;
-    this.setPiece = { kind: "directFK", side, takerId: taker.id, timer: 2.4 };
-    this.restartTimer = 2.8;
-    this.exemptUntil = this.time + 3;
-    this.trigger(taker, "freeKick", 2.2);
-    this.pushEvent({
-      minute: this.minute(),
-      type: "freekick",
-      side,
-      text: `Falta perigosa para o ${this.setup(side).short}. ${taker.name} na cobrança.`,
-    });
-    this.synchronizeBallPhysics();
+  setupDirectFK(side: Side, fx: number, fz: number) {
+    setPieces.setupDirectFK(this, side, fx, fz);
   }
 
-  private takeDirectFK() {
-    const sp = this.setPiece;
-    if (!sp) return;
-    const side = sp.side;
-    const dir = this.attackDir(side);
-    const taker = this.players.find((p) => p.id === sp.takerId) ?? null;
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
-    this.setPiece = null;
-    if (!taker) {
-      this.restartFor(side, "throwIn");
-      return;
-    }
-    const fx = this.ball.x;
-    const fz = this.ball.z;
-    const dist = Math.hypot(dir * FIELD_X - fx, fz);
-    const wall = this.players.filter(
-      (p) => p.side !== side && !p.sentOff && Math.hypot(p.x - fx, p.z - fz) < 12,
-    ).length;
-    const out = solveDirectFK({
-      dist,
-      central: Math.abs(fz) < 12,
-      taker: taker.shooting,
-      wall,
-      gk: gk?.defending ?? 60,
-      rnd: this.rnd,
-    });
-    this.trigger(taker, "shot", 0.8);
-    this.lastPass[side] = null; // falta direta não tem assistência
-    this.stats[side].shots++;
-    this.stats[side].xg += out.xg;
-    taker.shots++;
-    taker.xg += out.xg;
-    if (out.result === "wall") {
-      // explode na barreira e segue viva
-      const dx = dir * FIELD_X - fx;
-      const dz = out.targetZ - fz;
-      const d = Math.hypot(dx, dz) || 1;
-      this.ball.vx = (dx / d) * 12;
-      this.ball.vz = (dz / d) * 12;
-      this.ballVy = 2.5;
-      this.lastTouch = side;
-      this.looseTime = 0;
-      this.pushEvent({
-        minute: this.minute(),
-        type: "freekick",
-        side,
-        text: `A cobrança de ${taker.name} explode na barreira!`,
-      });
-      this.recordShot({
-        x: fx,
-        z: fz,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: taker.name,
-        xg: out.xg,
-        bigChance: false,
-        bodyPart: "foot",
-      });
-      this.synchronizeBallPhysics();
-      return;
-    }
-    const dx = dir * FIELD_X - fx;
-    const dz = out.targetZ - fz;
-    const d = Math.hypot(dx, dz) || 1;
-    const power = 21 + this.rnd() * 7;
-    this.ball.vx = (dx / d) * power;
-    this.ball.vz = (dz / d) * power;
-    this.ball.height = 0.25;
-    const flight = Math.max(0.15, d / power);
-    this.ballVy = (out.targetH - 0.25) / flight + 4.905 * flight;
-    this.ballSpin = (this.rnd() - 0.5) * 6;
-    this.lastTouch = side;
-    this.pendingShot = {
-      side,
-      shooter: taker.id,
-      outcome: out.result,
-      fromX: fx,
-      fromZ: fz,
-      targetZ: out.targetZ,
-      xg: out.xg,
-      bigChance: false,
-      bodyPart: "foot",
-    };
-    if (out.result === "off") {
-      this.recordShot({
-        x: fx,
-        z: fz,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: taker.name,
-        xg: out.xg,
-        bigChance: false,
-        bodyPart: "foot",
-      });
-    }
-    this.synchronizeBallPhysics();
+  takeDirectFK() {
+    setPieces.takeDirectFK(this);
   }
 
-  private setupCorner(side: Side) {
-    // batedor vai para a bandeira; área enche dos dois lados
-    const dir = this.attackDir(side);
-    const goalX = dir * FIELD_X;
-    const cornerZ = Math.sign(this.ball.z || 1) * (FIELD_Z - 0.8);
-    const taker =
-      this.players
-        .filter((p) => p.side === side && !p.sentOff && p.pos !== "GK")
-        .sort((a, b) => b.passing - a.passing)[0] ?? null;
-    if (!taker) return;
-    taker.x = goalX - dir * 1.5;
-    taker.z = cornerZ;
-    taker.vx = 0;
-    taker.vz = 0;
-    const attack = this.players
-      .filter((p) => p.side === side && !p.sentOff && p !== taker && p.pos !== "GK")
-      .sort((a, b) => b.physical - a.physical)
-      .slice(0, 5);
-    attack.forEach((p, i) => {
-      p.x = goalX - dir * (6 + (i % 3) * 3.5) + (this.rnd() - 0.5) * 2;
-      p.z = (i - 2) * 3.4 + (this.rnd() - 0.5) * 2;
-    });
-    const defense = this.players
-      .filter((p) => p.side !== side && !p.sentOff && p.pos !== "GK")
-      .sort((a, b) => Math.hypot(a.x - goalX, a.z) - Math.hypot(b.x - goalX, b.z))
-      .slice(0, 6);
-    defense.forEach((p, i) => {
-      p.x = goalX - dir * (4.5 + (i % 3) * 3) + (this.rnd() - 0.5) * 2;
-      p.z = (i - 2.5) * 2.8 + (this.rnd() - 0.5) * 2;
-    });
-    this.ball.x = goalX - dir * 1.2;
-    this.ball.z = cornerZ;
-    this.ball.vx = 0;
-    this.ball.vz = 0;
-    this.ball.height = 0.12;
-    this.ballVy = 0;
-    this.ballSpin = 0;
-    this.ball.holder = null;
-    this.pendingShot = null;
-    this.pass = null;
-    this.stats[side].corners++;
-    this.setPiece = { kind: "corner", side, takerId: taker.id, timer: 2.2 };
-    this.restartTimer = 2.6;
-    this.exemptUntil = this.time + 3.5;
-    this.trigger(taker, "corner", 2);
-    this.pushEvent({
-      minute: this.minute(),
-      type: "corner",
-      side,
-      text: `Escanteio para ${this.setup(side).short}.`,
-    });
-    this.synchronizeBallPhysics();
+  setupCorner(side: Side) {
+    setPieces.setupCorner(this, side);
   }
 
-  private takeCorner() {
-    const sp = this.setPiece;
-    if (!sp) return;
-    const side = sp.side;
-    const dir = this.attackDir(side);
-    const goalX = dir * FIELD_X;
-    // gol de escanteio tem assistência do batedor
-    this.lastPass[side] = { id: sp.takerId, time: this.time };
-    this.setPiece = null;
-    const attack = this.players.filter(
-      (p) => p.side === side && !p.sentOff && p.pos !== "GK" && Math.abs(p.x - goalX) < 22,
-    );
-    const defense = this.players.filter(
-      (p) => p.side !== side && !p.sentOff && p.pos !== "GK" && Math.abs(p.x - goalX) < 22,
-    );
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
-    const att = attack.reduce((s, p) => s + p.physical + p.shooting * 0.4, 0);
-    const dfn = defense.reduce((s, p) => s + p.physical + p.defending * 0.4, 0);
-    const duel = solveCornerDuel({
-      attack: att,
-      defense: dfn,
-      gkComes: !!gk && this.rnd() < 0.5,
-      gk: gk?.defending ?? 60,
-      rnd: this.rnd,
-    });
-    if (duel.winner === "gk" && gk) {
-      this.trigger(gk, "catch", 1);
-      this.pushEvent({
-        minute: this.minute(),
-        type: "corner",
-        side: gk.side,
-        text: `${gk.name} sai do gol e fica com o escanteio.`,
-      });
-      this.scheduleRestart(gk.side);
-      return;
-    }
-    if (duel.winner === "defense") {
-      const clearer = [...defense].sort((a, b) => b.physical - a.physical)[0] ?? null;
-      if (clearer) {
-        this.trigger(clearer, "headClear", 0.9);
-        this.ball.x = clearer.x;
-        this.ball.z = clearer.z;
-        this.ball.vx = -dir * (14 + this.rnd() * 8);
-        this.ball.vz = (this.rnd() - 0.5) * 14;
-        this.ballVy = 4 + this.rnd() * 3;
-        this.ball.height = 1.8;
-        this.lastTouch = clearer.side;
-        this.looseTime = 0;
-      }
-      this.pushEvent({
-        minute: this.minute(),
-        type: "corner",
-        side,
-        text: `A zaga afasta o escanteio.`,
-      });
-      this.synchronizeBallPhysics();
-      return;
-    }
-    // ataque ganha: cabeçada com o xG sorteado
-    const header =
-      [...attack].sort((a, b) => b.physical + b.shooting - (a.physical + a.shooting))[0] ?? null;
-    if (!header) {
-      this.restartFor(side, "throwIn");
-      return;
-    }
-    this.trigger(header, "header", 0.9);
-    const goalP = duel.headerXg * 1.1;
-    const onP = goalP + 0.4;
-    const roll = this.rnd();
-    const outcome: "goal" | "saved" | "off" = roll < goalP ? "goal" : roll < onP ? "saved" : "off";
-    this.stats[side].shots++;
-    this.stats[side].xg += duel.headerXg;
-    header.shots++;
-    header.xg += duel.headerXg;
-    const targetZ =
-      outcome === "off"
-        ? Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1 + this.rnd() * 3)
-        : (this.rnd() - 0.5) * GOAL_Z * 1.5;
-    const dx = goalX - header.x;
-    const dz = targetZ - header.z;
-    const d = Math.hypot(dx, dz) || 1;
-    const power = headerPower(
-      13 + this.rnd() * 6,
-      Math.hypot(this.ball.vx, this.ball.vz),
-      header.physical,
-    );
-    this.ball.x = header.x;
-    this.ball.z = header.z;
-    this.ball.vx = (dx / d) * power;
-    this.ball.vz = (dz / d) * power;
-    this.ball.height = 1.9;
-    this.ballVy = 0.5 + this.rnd() * 1.5;
-    this.ballSpin = 0;
-    this.lastTouch = side;
-    if (outcome === "goal" && gk) {
-      const dive = targetZ - gk.z;
-      this.trigger(gk, Math.abs(dive) < 1.15 ? "save" : dive > 0 ? "diveRight" : "diveLeft", 1.1);
-    }
-    this.pendingShot = {
-      side,
-      shooter: header.id,
-      outcome,
-      fromX: header.x,
-      fromZ: header.z,
-      targetZ,
-      xg: duel.headerXg,
-      bigChance: duel.headerXg > 0.12,
-      bodyPart: "head",
-    };
-    if (outcome === "off") {
-      if (this.rnd() < 0.2) this.lastTouch = side === "home" ? "away" : "home";
-      this.recordShot({
-        x: header.x,
-        z: header.z,
-        side,
-        result: "off",
-        minute: this.minute(),
-        name: header.name,
-        xg: duel.headerXg,
-        bigChance: duel.headerXg > 0.12,
-        bodyPart: "head",
-      });
-      this.pushEvent({
-        minute: this.minute(),
-        type: "shot",
-        side,
-        text: `${header.name} cabeceia para fora.`,
-      });
-    } else {
-      this.pushEvent({
-        minute: this.minute(),
-        type: "shot",
-        side,
-        text: `${header.name} cabeceia após o escanteio!`,
-      });
-    }
-    this.synchronizeBallPhysics();
+  takeCorner() {
+    setPieces.takeCorner(this);
   }
 
   private tickSetPiece(dt: number) {
@@ -2484,7 +2041,7 @@ export class MatchSim {
   }
 
   /** entrega a bola parada ao jogador mais próximo do lado indicado */
-  private restartFor(side: Side, kind: "throwIn" | "corner") {
+  /** @internal */ restartFor(side: Side, kind: "throwIn" | "corner") {
     // escanteio é disputado na área, com goleiro, zaga e cabeçada
     if (kind === "corner") {
       this.setupCorner(side);
@@ -2881,7 +2438,7 @@ export class MatchSim {
     this.synchronizeBallPhysics();
   }
 
-  private scheduleRestart(side: Side) {
+  /** @internal */ scheduleRestart(side: Side) {
     const gk = this.players.find((p) => p.side === side && p.pos === "GK");
     if (!gk) return;
     this.ball.holder = gk.id;
