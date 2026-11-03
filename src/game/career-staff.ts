@@ -1,7 +1,7 @@
 import { CLUBS } from "./data/leagues";
 import { defaultStaff } from "./events";
 import { makeRng } from "./rng";
-import { financialChange, validFinancialState } from "./financial-inputs";
+import { financeLedgerFor, financialChange, validFinancialState } from "./financial-inputs";
 import { operatingPlanFor } from "./finance-forecast";
 import { buildSquad } from "./squad";
 import type { CareerState, ScoutReport } from "./types";
