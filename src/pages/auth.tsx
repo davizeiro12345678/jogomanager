@@ -15,6 +15,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { needsMfaChallenge } from "@/lib/mfa-session";
 
 import { Button } from "@/components/ui/button";
+import { AuthTurnstile } from "@/components/security/AuthTurnstile";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 
@@ -63,6 +64,8 @@ export function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -82,6 +85,13 @@ export function AuthPage() {
   // the direct provider path returns 400 "Unsupported provider".
   const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
   const passkeysSupported = supportsPasskeys();
+  // Disabled by default until Supabase Auth CAPTCHA has the matching Turnstile secret.
+  const turnstileEnabled = import.meta.env["VITE_TURNSTILE_AUTH_ENABLED"] === "true";
+  const turnstileSiteKey = import.meta.env["VITE_TURNSTILE_SITE_KEY"] || "";
+  const needsCaptcha =
+    turnstileEnabled &&
+    (mode === "in" || mode === "up" || mode === "reset" || mode === "magic") &&
+    !(mode === "magic" && otpSent);
 
   const checkMfa = useCallback(async () => {
     const { data, error: assuranceError } =
@@ -180,6 +190,8 @@ export function AuthPage() {
     setOtpSent(false);
     setEmailOtp("");
     setMagicEmail("");
+    setCaptchaToken(null);
+    setCaptchaAttempt((attempt) => attempt + 1);
   }
 
   async function submit(event: React.FormEvent) {
@@ -187,6 +199,10 @@ export function AuthPage() {
     if (busy) return;
     setError(null);
     setNotice(null);
+    if (needsCaptcha && (!turnstileSiteKey || !captchaToken)) {
+      setError("Conclua a verificação de segurança para continuar.");
+      return;
+    }
     if ((mode === "up" || mode === "update") && password !== confirmPassword) {
       setError("As senhas precisam ser iguais.");
       return;
@@ -214,6 +230,7 @@ export function AuthPage() {
             options: {
               emailRedirectTo: callback(),
               shouldCreateUser: false,
+              ...(needsCaptcha && captchaToken ? { captchaToken } : {}),
             },
           });
           if (result.error) throw result.error;
@@ -226,6 +243,7 @@ export function AuthPage() {
       } else if (mode === "reset") {
         const result = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: callback(true),
+          ...(needsCaptcha && captchaToken ? { captchaToken } : {}),
         });
         if (result.error) throw result.error;
         setNotice(
@@ -245,6 +263,7 @@ export function AuthPage() {
             ? await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password,
+                ...(needsCaptcha && captchaToken ? { options: { captchaToken } } : {}),
               })
             : await supabase.auth.signUp({
                 email: email.trim(),
@@ -252,6 +271,7 @@ export function AuthPage() {
                 options: {
                   emailRedirectTo: callback(),
                   data: { display_name: name.trim() },
+                  ...(needsCaptcha && captchaToken ? { captchaToken } : {}),
                 },
               });
         if (result.error) throw result.error;
@@ -278,6 +298,10 @@ export function AuthPage() {
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
     } finally {
+      if (needsCaptcha) {
+        setCaptchaToken(null);
+        setCaptchaAttempt((attempt) => attempt + 1);
+      }
       setBusy(false);
     }
   }
@@ -362,6 +386,10 @@ export function AuthPage() {
 
   async function resend() {
     if (busy) return;
+    if (needsCaptcha && (!turnstileSiteKey || !captchaToken)) {
+      setError("Conclua a verificação de segurança para reenviar a confirmação.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -370,6 +398,7 @@ export function AuthPage() {
         email: email.trim(),
         options: {
           emailRedirectTo: callback(),
+          ...(needsCaptcha && captchaToken ? { captchaToken } : {}),
         },
       });
       if (result.error) throw result.error;
@@ -379,6 +408,10 @@ export function AuthPage() {
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
     } finally {
+      if (needsCaptcha) {
+        setCaptchaToken(null);
+        setCaptchaAttempt((attempt) => attempt + 1);
+      }
       setBusy(false);
     }
   }
@@ -600,6 +633,18 @@ export function AuthPage() {
             <p role="status" className="mt-4 text-sm">
               O cadastro está indisponível no momento. Se você já tem conta, volte para entrar.
             </p>
+          )}
+          {needsCaptcha && !turnstileSiteKey && (
+            <p role="alert" className="mt-4 text-sm text-destructive">
+              Proteção contra bots indisponível: chave pública Turnstile não configurada.
+            </p>
+          )}
+          {needsCaptcha && turnstileSiteKey && (
+            <AuthTurnstile
+              key={`${mode}-${captchaAttempt}`}
+              siteKey={turnstileSiteKey}
+              onToken={setCaptchaToken}
+            />
           )}
           {confirmationSent ? (
             <Button
