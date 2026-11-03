@@ -94,4 +94,55 @@ describe("bounded rig-section presentation kernel", () => {
       }),
     ).toBe(false);
   });
+
+  it("keeps section buffers independent and observes mutations to the input rings", () => {
+    const input = {
+      rings: new Float64Array([0, 0.2, 0.1, 0, 1, 0.3, 0.2, 0.01]),
+      radial: 16,
+      roundness: 1.2,
+      caps: 3,
+    };
+    const first = generateRigSectionFallback(input);
+    const expected = first.slice();
+    first.fill(99);
+    expect(generateRigSectionFallback(input)).toEqual(expected);
+    input.rings[1] = 0.7;
+    const changed = generateRigSectionFallback(input);
+    expect(changed).not.toEqual(expected);
+    expect(first.every((value) => value === 99)).toBe(true);
+    input.rings[1] = Number.NaN;
+    expect(() => generateRigSectionFallback(input)).toThrow("Invalid rig section");
+  });
+
+  it("matches the uncached formula across profile changes and cache eviction", () => {
+    const rings = new Float64Array([
+      -0, -0.2, 0.1, -0, 0.35, 0.4, -0.15, 0.01, 0.8, 0.18, 0.19, -0.01,
+    ]);
+    for (const radial of [3, 7, 16, 64, 128, 16]) {
+      for (const roundness of [0.25, 0.5, 1, 1.2, 4]) {
+        for (const caps of [0, 1, 2, 3]) {
+          const output = generateRigSectionFallback({ rings, radial, roundness, caps });
+          for (let row = 0; row < rings.length / 4; row++) {
+            for (let side = 0; side <= radial; side++) {
+              const u = side / radial;
+              const angle = u * Math.PI * 2;
+              const sine = Math.sin(angle);
+              const cosine = Math.cos(angle);
+              const base = (row * (radial + 1) + side) * 5;
+              expect(output[base]).toBe(
+                Math.fround(Math.sign(sine) * Math.abs(sine) ** roundness * rings[row * 4 + 1]!),
+              );
+              expect(output[base + 2]).toBe(
+                Math.fround(
+                  Math.sign(cosine) * Math.abs(cosine) ** roundness * rings[row * 4 + 2]! +
+                    rings[row * 4 + 3]!,
+                ),
+              );
+              expect(output[base + 3]).toBe(Math.fround(u));
+            }
+          }
+        }
+      }
+    }
+  });
 });

@@ -22,6 +22,41 @@ function makeReplay() {
 }
 
 describe("versioned replay codec", () => {
+  it("preserves int16 saturation, rounding and non-finite conversion at the codec boundary", () => {
+    const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "codec-boundaries");
+    const recorder = new ReplayRecorder(sim);
+    recorder.sample();
+    const replay = recorder.build("Boundary values");
+    const values = [
+      -Infinity,
+      -400,
+      -327.68,
+      -327.675,
+      -1.235,
+      -0.005,
+      -0,
+      0,
+      0.005,
+      1.235,
+      327.665,
+      327.67,
+      400,
+      Infinity,
+      NaN,
+    ];
+    const frame = replay.frames[0]!;
+    frame.b = [NaN, Infinity, -Infinity];
+    frame.p = frame.p.map((_, index) => values[index % values.length]!);
+    const expected = Int16Array.from(frame.p, (value) =>
+      Math.max(-32_768, Math.min(32_767, Math.round(value * 100))),
+    );
+    const stored = encodeReplay(replay);
+    expect(stored.frames.positions).toEqual(expected);
+    expect(stored.frames.ball).toEqual(new Int16Array([0, 32_767, -32_768]));
+    const decoded = decodeReplay(stored);
+    expect(decoded.frames[0]!.p).toEqual(Array.from(expected, (value) => value / 100));
+  });
+
   it("round-trips legacy-shaped replays with score, seek and visual context", () => {
     const original = makeReplay();
     const stored = encodeReplay(original);

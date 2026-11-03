@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, memo, Suspense, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
@@ -85,6 +85,7 @@ export function QuickMatchPage() {
           </label>
           <select
             id="quick-league"
+            lang="pt-BR"
             value={leagueId}
             onChange={(e) => chooseLeague(e.target.value)}
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
@@ -111,14 +112,14 @@ export function QuickMatchPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <TeamPicker
             title={t("quick.home")}
-            clubs={league.clubs.map((c) => c.id)}
+            leagueId={leagueId}
             value={myClub}
             onChange={setMyClub}
             disabled={oppClub}
           />
           <TeamPicker
             title={t("quick.away")}
-            clubs={league.clubs.map((c) => c.id)}
+            leagueId={leagueId}
             value={oppClub}
             onChange={setOppClub}
             disabled={myClub}
@@ -170,25 +171,36 @@ export function QuickMatchPage() {
   );
 }
 
-function TeamPicker({
-  title,
-  clubs,
-  value,
-  onChange,
-  disabled,
-}: {
-  title: string;
-  clubs: string[];
-  value: string;
-  onChange: (id: string) => void;
-  disabled: string;
-}) {
-  const selected = safeClub(value);
+function TeamPicker({ title, ...selection }: TeamSelectionProps & { title: string }) {
   return (
     <section className="rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
         {title}
       </h2>
+      <TeamSelection {...selection} />
+    </section>
+  );
+}
+
+interface TeamSelectionProps {
+  leagueId: string;
+  value: string;
+  onChange: (id: string) => void;
+  disabled: string;
+}
+
+// Language detection and difficulty changes only affect labels outside this
+// catalogue. Keep all clubs hydrated and interactive, but avoid reconciling
+// their SVG crests again until the league or either selection changes.
+const TeamSelection = memo(function TeamSelection({
+  leagueId,
+  value,
+  onChange,
+  disabled,
+}: TeamSelectionProps) {
+  const selected = safeClub(value);
+  return (
+    <>
       <div className="mt-3 flex items-center gap-3">
         <Crest club={selected} size={44} detail="full" />
         <span className="font-display text-lg">{selected.name}</span>
@@ -200,7 +212,7 @@ function TeamPicker({
         </span>
       </div>
       <div className="mt-3 grid max-h-56 gap-1 overflow-y-auto pr-1">
-        {clubs.map((id) => (
+        {getLeague(leagueId).clubs.map(({ id }) => (
           <button
             key={id}
             onClick={() => onChange(id)}
@@ -216,6 +228,6 @@ function TeamPicker({
           </button>
         ))}
       </div>
-    </section>
+    </>
   );
-}
+});

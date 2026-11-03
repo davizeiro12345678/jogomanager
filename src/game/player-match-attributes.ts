@@ -1,7 +1,6 @@
 import type { DetailedAttributes } from "./attributes";
 import type { AttributeSource } from "./player-development";
-import { buildAttrs } from "./player-physique";
-import { normalizedPlayerRatings, ratingValue } from "./player-rating-inputs";
+import { ratingValue } from "./player-rating-inputs";
 import { makeRng } from "./rng";
 import type { Player } from "./types";
 
@@ -19,24 +18,25 @@ const generatedProfiles = new Map<string, MatchProfile>();
 const MAX_GENERATED_PROFILES = 2048;
 
 function generatedMatchProfile(player: Player): MatchProfile {
-  const key = JSON.stringify([
-    player.id,
-    player.name,
-    player.pos,
-    player.age,
-    player.ovr,
-    player.pace,
-    player.shooting,
-    player.passing,
-    player.defending,
-    player.physical,
-  ]);
+  const ovr = ratingValue(player.ovr);
+  const age = ratingValue(player.age, 25, 14, 70);
+  const passing = ratingValue(player.passing);
+  const shooting = ratingValue(player.shooting);
+  const key = JSON.stringify([player.id, player.name, player.pos, age, ovr, shooting, passing]);
   const cached = generatedProfiles.get(key);
   if (cached) return cached;
-  const { consistency, technique, teamwork, anticipation } = buildAttrs(
-    normalizedPlayerRatings(player),
-    makeRng(`profile-${player.id}-${player.name}`),
-  );
+  // These four values use draws 4, 9, 11 and 12 of buildAttrs' independent
+  // advanced stream. Preserve its order and arithmetic without constructing
+  // the other attributes or pulling their generator into the match worker.
+  const rnd = makeRng(`advanced-attributes-${player.id}-${player.name}`);
+  const extra = (base: number) => Math.max(20, Math.min(99, Math.round(base + rnd() * 7 - 3.5)));
+  for (let draw = 0; draw < 3; draw++) rnd();
+  const anticipation = extra(ovr - 4 + (player.pos === "DF" || player.pos === "GK" ? 4 : 0));
+  for (let draw = 0; draw < 4; draw++) rnd();
+  const teamwork = extra(ovr - 4 + (player.pos === "MF" ? 3 : 0));
+  rnd();
+  const consistency = extra(ovr - 7 + (age >= 28 ? 4 : 0));
+  const technique = extra((passing + shooting) / 2 + (player.pos === "MF" ? 3 : 0));
   const generated = { consistency, technique, teamwork, anticipation };
   // Bounded FIFO; changing a player's ratings creates a new key, so training,
   // imports and editor updates cannot return stale attributes.

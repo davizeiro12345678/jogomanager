@@ -3,12 +3,7 @@ import { makeRng } from "./rng";
 import { expectedGoals, regulationScore, type MatchConditions } from "./match-probability";
 
 /** Simulação curta determinística usada pelo worker para ligas e eliminatórias de IA. */
-export function competitionScore(
-  home: string,
-  away: string,
-  seed: string,
-  ctx: MatchConditions = {},
-) {
+export function competitionScore(home: string, away: string, seed: string, ctx?: MatchConditions) {
   const rnd = makeRng(seed);
   return regulationScore(
     expectedGoals(CLUBS[home]?.strength ?? 70, CLUBS[away]?.strength ?? 70, seed, ctx),

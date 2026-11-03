@@ -6,8 +6,8 @@
  * Montamos o efeito uma vez por combinação (horário × clima × momento) e
  * entregamos o objeto pronto ao `EffectComposer`.
  */
-import { createElement, useEffect, useMemo } from "react";
 import { BlendFunction, LUT3DEffect } from "postprocessing";
+import { useDisposable } from "../useDisposable";
 
 import {
   gradeLut,
@@ -25,21 +25,18 @@ export function GradeLut({
   weather: GradeWeather;
   moment?: GradeMoment;
 }) {
-  const lut = useMemo(() => gradeLut(time, weather, moment), [time, weather, moment]);
-  const effect = useMemo(
+  const effect = useDisposable(
     () =>
-      new LUT3DEffect(lut, {
+      new LUT3DEffect(gradeLut(time, weather, moment), {
         blendFunction: BlendFunction.NORMAL,
         // interpolação tri-linear: a tetraédrica é mais precisa, porém exige
         // GLSL3 e derruba o quadro em drivers antigos. 24³ já interpola bem.
         tetrahedralInterpolation: false,
       }),
-    [lut],
+    [time, weather, moment],
   );
 
-  useEffect(() => () => effect.dispose(), [effect]);
-
-  return createElement("primitive", { object: effect, dispose: null });
+  return <primitive object={effect} dispose={null} />;
 }
 
 export default GradeLut;

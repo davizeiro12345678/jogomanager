@@ -86,6 +86,7 @@ export function RootShell({ children }: { children: ReactNode }) {
     <html
       lang="pt-BR"
       className="dark"
+      data-text-size="normal"
       data-public-shell={isLightweightCssPath(pathname) || undefined}
     >
       <head>

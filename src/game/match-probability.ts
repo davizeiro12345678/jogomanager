@@ -1,4 +1,4 @@
-import { makeRng } from "./rng";
+import { sumThreeRng } from "./rng";
 import type { Tactics } from "./types";
 
 export interface MatchConditions {
@@ -29,20 +29,21 @@ export function strengthEdge(home: number, away: number): number {
 
 /** Independent seed stream: a good/bad day cannot alter identity or consume the event RNG. */
 export function teamDay(seed: string, side: "home" | "away"): number {
-  const rnd = makeRng(`match-day:${seed}:${side}`);
-  return (rnd() + rnd() + rnd() - 1.5) * 4;
+  return (sumThreeRng(`match-day:${seed}:${side}`) - 1.5) * 4;
 }
+
+const form = (value?: number) => (value === undefined ? 0 : (bounded(value, 60, 0, 100) - 60) / 40);
+const fatigue = (value?: number) =>
+  value === undefined ? -0 : -Math.max(0, bounded(value, 0, 0, 100) - 15) / 190;
+const risk = (t?: MatchConditions["homeTactics"]) =>
+  t
+    ? (bounded(t.mentality, 2, 0, 4) - 2) * 0.045 +
+      (bounded(t.pressing, 1, 0, 2) - 1) * 0.018 +
+      (bounded(t.tempo, 1, 0, 2) - 1) * 0.012
+    : 0;
 
 export function expectedGoals(home: number, away: number, seed: string, ctx: MatchConditions = {}) {
   const quality = strengthEdge(ctx.homeStrength ?? home, ctx.awayStrength ?? away);
-  const form = (value?: number) => (bounded(value, 60, 0, 100) - 60) / 40;
-  const fatigue = (value?: number) => -Math.max(0, bounded(value, 0, 0, 100) - 15) / 190;
-  const risk = (t?: MatchConditions["homeTactics"]) =>
-    t
-      ? (bounded(t.mentality, 2, 0, 4) - 2) * 0.045 +
-        (bounded(t.pressing, 1, 0, 2) - 1) * 0.018 +
-        (bounded(t.tempo, 1, 0, 2) - 1) * 0.012
-      : 0;
   const edge = quality + (form(ctx.homeForm) - form(ctx.awayForm)) * 0.075;
   const hr = risk(ctx.homeTactics),
     ar = risk(ctx.awayTactics);
@@ -72,9 +73,14 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
 
 function poissonBuckets(lambda: number): number[] {
   const p = [Math.exp(-lambda)];
-  for (let i = 1; i < 8; i++) p.push((p[i - 1]! * lambda) / i);
+  let sum = p[0]!;
+  for (let i = 1; i < 8; i++) {
+    const value = (p[i - 1]! * lambda) / i;
+    p.push(value);
+    sum += value;
+  }
   // The final bucket owns the tail; no rejection loop or lost probability mass.
-  p.push(Math.max(0, 1 - p.reduce((sum, v) => sum + v, 0)));
+  p.push(Math.max(0, 1 - sum));
   return p;
 }
 
@@ -89,15 +95,19 @@ export function regulationScore(rates: { home: number; away: number }, rnd: () =
   for (let hg = 0; hg < hp.length; hg++) {
     for (let ag = 0; ag < ap.length; ag++) {
       const tau =
-        hg === 0 && ag === 0
-          ? 1 - home * away * rho
-          : hg === 0 && ag === 1
-            ? 1 + home * rho
-            : hg === 1 && ag === 0
+        hg === 0
+          ? ag === 0
+            ? 1 - home * away * rho
+            : ag === 1
+              ? 1 + home * rho
+              : 1
+          : hg === 1
+            ? ag === 0
               ? 1 + away * rho
-              : hg === 1 && ag === 1
+              : ag === 1
                 ? 1 - rho
-                : 1;
+                : 1
+            : 1;
       roll -= hp[hg]! * ap[ag]! * tau;
       if (roll <= 0) return { hg, ag };
     }

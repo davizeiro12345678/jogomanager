@@ -48,7 +48,9 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
       if (teamResult.error) throw new Error("Não foi possível resolver o clube na base oficial.");
       const ids = (teamResult.data ?? []).map((team) => team.source_id);
       type Stadium = { name: string; capacity: number | null; photo_url: string | null } | null;
-      let stadium = (Array.isArray(club.stadiums) ? (club.stadiums[0] ?? null) : club.stadiums) as Stadium;
+      let stadium = (
+        Array.isArray(club.stadiums) ? (club.stadiums[0] ?? null) : club.stadiums
+      ) as Stadium;
       if (!stadium) {
         const venueIds = (teamResult.data ?? []).flatMap((team) =>
           team.venue_source_id ? [team.venue_source_id] : [],

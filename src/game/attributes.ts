@@ -7,8 +7,10 @@
 
 import { CLUBS } from "./data/leagues";
 import { makeRng } from "./rng";
-import { buildAttrs } from "./player-physique";
-import type { Personality, Player, Position } from "./types";
+import { ATTRIBUTE_KEYS } from "./player-attribute-keys";
+import { bodyMeasurements } from "./player-physique";
+import { buildAttrs } from "./player-attributes-generator";
+import type { Personality, Player } from "./types";
 import {
   effectivePlayer,
   limitedDevelopmentDelta,
@@ -77,142 +79,6 @@ export interface AttributeGroup {
   keys: (keyof DetailedAttributes)[];
 }
 
-export const ATTR_LABELS: Record<keyof DetailedAttributes, string> = {
-  finishing: "Finalização",
-  dribbling: "Drible",
-  technique: "Técnica",
-  ballControl: "Controle de bola",
-  flair: "Criatividade",
-  passing: "Passe",
-  vision: "Visão de jogo",
-  crossing: "Cruzamento",
-  firstTouch: "Domínio",
-  longShots: "Chute de longe",
-  setPieces: "Bola parada",
-  marking: "Marcação",
-  tackling: "Desarme",
-  heading: "Cabeceio",
-  interceptions: "Interceptação",
-  anticipation: "Antecipação",
-  concentration: "Concentração",
-  bravery: "Coragem",
-  aggression: "Combatividade",
-  pace: "Velocidade",
-  acceleration: "Aceleração",
-  strength: "Força",
-  stamina: "Fôlego",
-  agility: "Agilidade",
-  jumping: "Impulsão",
-  balance: "Equilíbrio",
-  naturalFitness: "Condição natural",
-  injuryResistance: "Resistência a lesões",
-  positioning: "Posicionamento",
-  composure: "Frieza",
-  leadership: "Liderança",
-  workRate: "Entrega",
-  discipline: "Disciplina",
-  decisions: "Decisão",
-  offBall: "Movimentação sem bola",
-  teamwork: "Trabalho em equipe",
-  determination: "Determinação",
-  consistency: "Regularidade",
-  reflexes: "Reflexo",
-  handling: "Encaixe",
-  aerialReach: "Saída aérea",
-  distribution: "Reposição",
-  oneOnOnes: "Um contra um",
-  commandOfArea: "Comando da área",
-  rushingOut: "Saída do gol",
-  communication: "Comunicação",
-};
-
-export const FIELD_GROUPS: AttributeGroup[] = [
-  {
-    label: "Técnico",
-    keys: [
-      "finishing",
-      "dribbling",
-      "technique",
-      "ballControl",
-      "flair",
-      "passing",
-      "vision",
-      "crossing",
-      "firstTouch",
-      "longShots",
-      "setPieces",
-    ],
-  },
-  {
-    label: "Defensivo",
-    keys: [
-      "marking",
-      "tackling",
-      "heading",
-      "interceptions",
-      "anticipation",
-      "concentration",
-      "bravery",
-      "aggression",
-    ],
-  },
-  {
-    label: "Físico",
-    keys: [
-      "pace",
-      "acceleration",
-      "strength",
-      "stamina",
-      "agility",
-      "jumping",
-      "balance",
-      "naturalFitness",
-      "injuryResistance",
-    ],
-  },
-  {
-    label: "Mental",
-    keys: [
-      "positioning",
-      "composure",
-      "leadership",
-      "workRate",
-      "discipline",
-      "decisions",
-      "offBall",
-      "teamwork",
-      "determination",
-      "consistency",
-    ],
-  },
-];
-
-export const GK_GROUPS: AttributeGroup[] = [
-  {
-    label: "Goleiro",
-    keys: [
-      "reflexes",
-      "handling",
-      "aerialReach",
-      "distribution",
-      "oneOnOnes",
-      "commandOfArea",
-      "rushingOut",
-      "communication",
-      "positioning",
-    ],
-  },
-  { label: "Com os pés", keys: ["passing", "firstTouch", "composure", "decisions"] },
-  {
-    label: "Físico",
-    keys: ["agility", "jumping", "strength", "stamina", "pace", "balance", "naturalFitness"],
-  },
-  {
-    label: "Mental",
-    keys: ["leadership", "workRate", "discipline", "vision", "concentration", "consistency"],
-  },
-];
-
 export type Foot = "destro" | "canhoto" | "ambidestro";
 
 export interface ClubSpell {
@@ -249,15 +115,6 @@ export const PERSONALITIES: Personality[] = [
   "caseiro",
   "determinado",
 ];
-
-export const PERSONALITY_DESC: Record<Personality, string> = {
-  líder: "Puxa o grupo, levanta a moral dos companheiros em fases ruins.",
-  profissional: "Treina sempre no limite. Evolui de forma constante e raramente reclama.",
-  ambicioso: "Quer títulos e vitrine. Fica insatisfeito se o clube não briga em cima.",
-  temperamental: "Explosivo. Rende muito bem ou muito mal, e pega mais cartões.",
-  caseiro: "Ligado ao clube e à cidade. Difícil de convencer a sair.",
-  determinado: "Reage bem à pressão e cresce em jogo decisivo.",
-};
 
 /** Efeito da personalidade em moral, evolução e disciplina. */
 export function personalityEffect(p: Personality) {
@@ -314,7 +171,7 @@ export function getAttrDeltas(): AttrDeltas {
   return deltas;
 }
 
-const ALL_KEYS = Object.keys(ATTR_LABELS) as (keyof DetailedAttributes)[];
+const ALL_KEYS = ATTRIBUTE_KEYS;
 
 /**
  * Uma temporada de evolução: jovens crescem até o potencial, veteranos perdem
@@ -464,12 +321,10 @@ function baseProfileFor(p: Player, stableIdentity = false): PlayerProfile {
   if (hit) return hit;
   const rnd = makeRng(stableIdentity ? `profile-id-${p.id}` : `profile-${p.id}-${p.name}`);
   const attrs = buildAttrs(seedPlayer, rnd);
-  const tall = p.pos === "GK" ? 8 : p.pos === "DF" ? 4 : 0;
   const profile: PlayerProfile = {
     attrs,
     foot: rnd() < 0.72 ? "destro" : rnd() < 0.9 ? "canhoto" : "ambidestro",
-    height: Math.round(171 + tall + rnd() * 16),
-    weight: Math.round(65 + tall * 0.9 + rnd() * 18),
+    ...bodyMeasurements(p.pos, rnd),
     traits: pickTraits(p, attrs, rnd),
     personality: p.personality ?? PERSONALITIES[Math.floor(rnd() * PERSONALITIES.length)]!,
     spells: buildSpells(p, rnd),
@@ -579,15 +434,11 @@ export function evolveSeasonV2(players: Player[], state: CareerState): AttrDelta
   return out;
 }
 
-export function groupsFor(pos: Position): AttributeGroup[] {
-  return pos === "GK" ? GK_GROUPS : FIELD_GROUPS;
-}
-
-/** Cor semântica de um atributo pela faixa de valor. */
-export function attrTone(v: number) {
-  if (v >= 85) return "text-emerald-400";
-  if (v >= 74) return "text-primary";
-  if (v >= 62) return "text-foreground";
-  if (v >= 50) return "text-amber-400";
-  return "text-destructive";
-}
+export {
+  ATTR_LABELS,
+  FIELD_GROUPS,
+  GK_GROUPS,
+  PERSONALITY_DESC,
+  groupsFor,
+  attrTone,
+} from "./player-attribute-presentation";

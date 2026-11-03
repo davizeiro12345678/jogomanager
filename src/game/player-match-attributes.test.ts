@@ -47,6 +47,29 @@ const imported: Player = {
 };
 
 describe("match attribute identity without profile history", () => {
+  it("preserves the full generator's advanced stream for varied athlete identities", () => {
+    const positions = ["GK", "DF", "MF", "FW"] as const;
+    for (let index = 0; index < 256; index++) {
+      const input: Player = {
+        ...player,
+        id: `projected-${index}`,
+        name: `Atleta ação ${index}`,
+        pos: positions[index % positions.length]!,
+        age: 14 + (index % 32),
+        ovr: 20 + (index % 80),
+        passing: 20 + ((index * 17) % 80),
+        shooting: 20 + ((index * 7) % 80),
+      };
+      const { consistency, technique, teamwork, anticipation } = profileFor(input).attrs;
+      expect(matchProfileAttributes(input)).toEqual({
+        consistency,
+        technique,
+        teamwork,
+        anticipation,
+      });
+    }
+  });
+
   it("refreshes a warmed projection after ratings, imports, deltas or frozen identity change", () => {
     const input = { ...player, id: "warmed-match-projection" };
     const expected = (value: Player, source?: AttributeSource) => {
@@ -99,7 +122,12 @@ describe("match attribute identity without profile history", () => {
       const entry = output.find((item) => item.type === "chunk" && item.isEntry);
       expect(entry?.type).toBe("chunk");
       if (entry?.type !== "chunk") return;
-      for (const name of ["player-development.ts", "economy.ts", "financial-inputs.ts"])
+      for (const name of [
+        "player-development.ts",
+        "economy.ts",
+        "financial-inputs.ts",
+        "player-attributes-generator.ts",
+      ])
         expect(Object.keys(entry.modules)).not.toContain(path.join(import.meta.dirname, name));
     } finally {
       await bundle.close();

@@ -18,6 +18,8 @@ module.exports = {
       numberOfRuns: 3,
       puppeteerScript: "./scripts/verify-preview-representations.cjs",
       settings: {
+        // Preserve the failing run's CPU timeline; reports alone hide task causes.
+        saveAssets: true,
         formFactor: "mobile",
         screenEmulation: {
           mobile: true,

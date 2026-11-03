@@ -12,6 +12,30 @@ function fixture() {
 }
 
 describe("live visual-ball snapshots", () => {
+  it("updates the complete player contract without replacing interpolated positions or identity", () => {
+    const { home, away, sim } = fixture();
+    const view = new WorkerMatchView(home, away);
+    view.apply(snapshotMatch(sim, 1));
+    const original = view.players[0]!;
+    const previous = view.players.map(({ x, z }) => ({ x, z }));
+    const position = { x: original.x, z: original.z };
+    for (let tick = 0; tick < 120; tick++) sim.step(1 / 30, 6);
+    const next = snapshotMatch(sim, 2);
+    Object.assign(next.players[0]!, { name: "Updated", number: 99, heightCm: 190, weightKg: 87 });
+    view.apply(next);
+    expect(view.players[0]).toBe(original);
+    expect(view.players[0]).toEqual({ ...next.players[0], ...position });
+    view.renderTick(performance.now() + 300);
+    expect(view.players).toEqual(
+      next.players.map((player, index) => ({
+        ...player,
+        x: previous[index]!.x + (player.x - previous[index]!.x),
+        z: previous[index]!.z + (player.z - previous[index]!.z),
+      })),
+    );
+    expect(view.players.every((player, index) => player !== next.players[index])).toBe(true);
+  });
+
   it("serializes an optional visual pose without mutating the canonical match ball", () => {
     const { sim } = fixture();
     const canonicalBefore = { ...sim.ball };

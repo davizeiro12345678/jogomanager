@@ -18,6 +18,7 @@ import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
 import { matchAttributes } from "./match-readiness";
+import { teamDay } from "./match-probability";
 import { positionalOverall } from "./overall";
 import {
   BOX_DEPTH,
@@ -463,6 +464,7 @@ export class MatchSim {
   private buildTeam(setup: TeamSetup, side: Side): SimPlayer[] {
     const slots = FORMATIONS[setup.tactics.formation];
     const dir = side === "home" ? 1 : -1;
+    const teamVariation = teamDay(this.matchSeed, side);
     return setup.players.slice(0, 11).map((p, i) => {
       const slot = slots[Math.min(i, slots.length - 1)]!;
       const physique = physiqueFor(p);
@@ -482,7 +484,7 @@ export class MatchSim {
         vz: 0,
         slotX: slot.x * dir,
         slotZ: slot.z * dir,
-        ...matchAttributes(p, this.matchSeed, side),
+        ...matchAttributes(p, this.matchSeed, side, undefined, teamVariation),
         action: null,
         actionT: 0,
         actionDur: 0,
@@ -1886,6 +1888,7 @@ export class MatchSim {
         // Resolve contacts in the original order; only reject provably distant pairs.
         // NaN must reach the original recovery path instead of being hidden by the rejection.
         if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
+        if ((dz > 1.7 || dz < -1.7) && !Number.isNaN(dx)) continue;
         const d2 = dx * dx + dz * dz;
         if (d2 > 2.89) continue; // (0.85 * 2)^2
         let d = Math.sqrt(d2);
