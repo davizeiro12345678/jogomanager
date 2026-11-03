@@ -5,10 +5,10 @@ import { Page } from "@/pages/perguntas-frequentes";
 import { FAQ_COUNT, faqPageLd } from "@/content/faq";
 import { PERGUNTAS_FREQUENTES_PATH as PATH } from "@/lib/public-route-paths";
 
-const TITLE = "Perguntas Frequentes | Pro Football Manager 3D";
+const TITLE = `FAQ do jogo: ${FAQ_COUNT} respostas sobre carreira, 3D e saves | jogomanager`;
 
 const DESC =
-  "Tire dúvidas sobre jogo grátis, clubes, partidas 3D, carreira, saves, nuvem, multiplayer e compras no Pro Football Manager 3D.";
+  "Busque respostas sobre o manager de futebol grátis: como salvar a carreira na nuvem, jogar offline, usar moedas, montar táticas e deixar a partida 3D fluida no celular.";
 
 export const Route = createFileRoute("/perguntas-frequentes")({
   head: () => ({
