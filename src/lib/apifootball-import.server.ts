@@ -3,15 +3,11 @@
 // Mappings live in official_leagues/official_teams with an "af:" prefix so they
 // never collide with the other provider's ids.
 
-import type { TablesInsert } from "@/integrations/supabase/types";
-import { AsyncLocalStorage } from "node:async_hooks";
 import {
   FIXTURE_ENDPOINTS,
   LEADER_ENDPOINTS,
   apiFootballPlayerId,
-  apiFootballProfileProjection,
   isApiFootballPhase,
-  isFootballStaffRole,
   type Phase,
 } from "./apifootball-phases";
 import {

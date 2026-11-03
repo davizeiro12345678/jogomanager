@@ -3,17 +3,11 @@ import { closeSpell } from "./events";
 import { makeRng } from "./rng";
 import { leagueClubIds } from "./pyramid";
 import { withDevelopmentBase } from "./attributes";
-import {
-  financeLedgerFor,
-  financialChange,
-  finiteAmount,
-  safeMoney,
-  validFinancialState,
-} from "./financial-inputs";
+import { financialChange, finiteAmount, safeMoney, validFinancialState } from "./financial-inputs";
 import { generateFixtures } from "./season";
 import { buildSquad } from "./squad";
 import type { CareerState } from "./types";
-import { defaultV3, pickLineup, withCustomPlayers, withRealPlayers } from "./career";
+import { pickLineup, withCustomPlayers, withRealPlayers } from "./career";
 
 /** Aceita uma proposta por um dos seus jogadores. */
 export function acceptOffer(state: CareerState, offerId: string): CareerState {

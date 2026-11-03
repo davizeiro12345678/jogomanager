@@ -17,7 +17,6 @@ import type { PlayerAction } from "./animation";
 import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
-import { matchAttributes } from "./match-readiness";
 
 import {
   BOX_DEPTH,

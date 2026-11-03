@@ -1,9 +1,6 @@
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CLIP_NAMES, type ClipName, type PlayerAction } from "@/game/animation";
 import { cinematicOverlayActive, subscribeCinematicOverlay } from "@/game/cinematic-overlay";
-import { gkKitFor, kitFor } from "@/game/kits";
-import { WorkerMatchView } from "@/game/live-match";
 import { footballContactAt } from "@/game/motion-metadata";
 import {
   athleteLookForAppearance,
@@ -17,23 +14,13 @@ import {
   type BeardStyle,
   type BodyType,
   type HairStyle,
-  type PlayerLook,
 } from "@/game/player-model";
-import { studioAppearanceRevision } from "@/game/player-studio-appearance";
-import { studioCameraFit } from "@/game/player-studio-camera";
-import {
-  STUDIO_NEUTRAL_GAZE_BALL_Z,
-  studioBallFocusDistanceFor,
-} from "@/game/player-studio-presentation";
 import { getAnnotatedClip } from "@/game/register-animations";
-import type { RigSkin } from "@/game/rig-skin";
-import type { SimPlayer, TeamSetup } from "@/game/sim";
-import { safeClub } from "@/game/squad";
 import { useAccessibility } from "@/hooks/useAccessibility";
 import { useT } from "@/i18n/provider";
 import { studioMovementLabel } from "@/i18n/studio-movement-messages";
-import { ContactShadows, Environment, Lightformer, OrbitControls } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { ContactShadows, OrbitControls } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
 import {
   Activity,
   ArrowLeft,
@@ -48,18 +35,15 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import * as THREE from "three";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { CanvasLifecycle } from "../CanvasLifecycle";
 import { MobileFramebufferBudget } from "../MobileFramebufferBudget";
-import { detectQuality, isCoarsePointer } from "@/game/device";
+import { detectQuality } from "@/game/device";
 import { GraphicsBoundary } from "../GraphicsBoundary";
 import { Ktx2CanvasAssets } from "../Ktx2CanvasAssets";
 import type { CanvasStatus } from "../canvas-lifecycle";
 import "../cinematic/studio.css";
-import { LowPlayers } from "./LowPlayers";
-import { PlayerRig } from "./PlayerRig";
 import { type CameraCommand, MOVEMENTS, fixture } from "./player-studio-setup";
 import { StudioScene } from "./PlayerStudioScene";
 

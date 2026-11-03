@@ -1,63 +1,27 @@
 import { CLUBS, getLeague } from "./data/leagues";
-import { seasonPrize, valueFor, wageFor } from "./economy";
-import { checkSacking, closeSpell, defaultStaff, pressureDelta, runWeeklyEvents } from "./events";
+import { valueFor, wageFor } from "./economy";
+import { checkSacking, defaultStaff, pressureDelta, runWeeklyEvents } from "./events";
 import { customPlayersFor, toGamePlayer } from "@/lib/customData";
 import { realSquadFor } from "@/lib/realSquads";
 import { applyImportedSquad } from "./squad-import";
-import { updatedSeasonComposition } from "./catalog-season";
 import { FORMATIONS } from "./formations";
 import { makeRng } from "./rng";
 import { expectedGoals, regulationScore, type MatchConditions } from "./match-probability";
 import { selectionRating } from "./match-readiness";
-import { migrateSquadRatings } from "./squad-rating-migration";
-import { applyRegens } from "./regen";
-import { checkSeasonIntegrity } from "./season-integrity";
-import { repairCareer } from "./career-repair";
 import { recordWorldTransition, withCareerWorld } from "./career-world";
-import { applyPyramid, leagueClubIds, REGIONAL_LINKS } from "./pyramid";
+import { withDevelopmentBase } from "./attributes";
 import {
-  applyRegionalEntries,
-  resolveQualifications,
-  regionalFinals,
-  seasonTables,
-  seasonCompetitionRecord,
-  topLeague,
-} from "./competition-season";
-import { calendarYear, countryRegulation } from "./competition-regulations";
-import {
-  developedPlayer,
-  evolveSeason,
-  evolveSeasonV2,
-  profileFor,
-  withDevelopmentBase,
-} from "./attributes";
-import type { AttrDeltas } from "./attributes";
-import {
-  developmentResponse,
   effectivePlayer,
-  FOCUS_ATTRIBUTES,
-  limitedDevelopmentDelta,
   withDevelopmentSeasonStart,
   type AttributeSource,
 } from "./player-development";
-import {
-  addMoney,
-  financialChange,
-  finiteAmount,
-  safeMoney,
-  validFinancialState,
-  financeLedgerFor,
-} from "./financial-inputs";
-import { operatingPlanFor, settleWeeklyFinance } from "./finance-forecast";
+import { settleWeeklyFinance } from "./finance-forecast";
 
 import { computeTable, generateFixtures } from "./season";
-import { settlePromises } from "./unhappy";
 import { evaluateAchievements } from "./achievements";
-import { createCups, cupPrize, inGroupStage, nextPhaseName, playCupStage, stageName } from "./cup";
-import { buildSquad, completeSquad } from "./squad";
+import { buildSquad } from "./squad";
 import type {
   CareerState,
-  CupState,
   Fixture,
   FixtureEvent,
   FormationKey,
@@ -67,7 +31,6 @@ import type {
   Player,
   Position,
   ScoutReport,
-  TrainingFocus,
   Tactics,
   TransferOffer,
 } from "./types";
