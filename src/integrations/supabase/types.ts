@@ -218,6 +218,30 @@ export type Database = {
         }
         Relationships: []
       }
+      career_risk_signals: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
           created_at: string
@@ -605,6 +629,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coin_service_spends: {
+        Row: {
+          cost: number
+          created_at: string
+          id: string
+          request_id: string
+          service: string
+          user_id: string
+        }
+        Insert: {
+          cost: number
+          created_at?: string
+          id?: string
+          request_id: string
+          service: string
+          user_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          id?: string
+          request_id?: string
+          service?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       competition_seasons: {
         Row: {
@@ -2257,6 +2308,7 @@ export type Database = {
         Args: { _event_id: string; _event_type: string }
         Returns: boolean
       }
+      career_risk_score: { Args: { _user_id: string }; Returns: number }
       claim_api_football_import_phase: {
         Args: never
         Returns: {
@@ -2442,6 +2494,15 @@ export type Database = {
         Returns: {
           coins: number
           season_pass: boolean
+        }[]
+      }
+      spend_coins_on_service: {
+        Args: { _request_id: string; _service: string; _user_id: string }
+        Returns: {
+          coins: number
+          ok: boolean
+          reason: string
+          used_this_week: number
         }[]
       }
       store_product_contents_valid: {

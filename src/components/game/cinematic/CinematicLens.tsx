@@ -16,6 +16,7 @@ import { BlendFunction, DepthOfFieldEffect } from "postprocessing";
 import * as THREE from "three";
 import type { QualityLevel } from "@/game/device";
 import { useCinematicRuntime } from "./cinematic-runtime";
+import { HdrSanitize } from "@/components/game/postfx/HdrSanitize";
 
 /** Dialogue needs a crisp face: restrained grading and short-range contact AO.
  * The shallow focus and tiny film texture run only in the high adaptive tier. */
@@ -71,6 +72,7 @@ export default function CinematicLens({
       ) : (
         <></>
       )}
+      <HdrSanitize />
       <Bloom
         intensity={0.11 + intensity * 0.045}
         luminanceThreshold={mood === "bad" ? 0.91 : 0.95}

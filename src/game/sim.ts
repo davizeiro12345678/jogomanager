@@ -72,6 +72,7 @@ import type {
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
+import { halfTimePlan } from "./ai-halftime";
 import {
   blockRestitution,
   bodyContactShare,
@@ -732,6 +733,8 @@ export class MatchSim {
       this.pushEvent({ minute: 45, type: "halftime", side: "neutral", text: "Intervalo." });
       this.halfTalk("home");
       this.halfTalk("away");
+      this.halfTimeRead("home");
+      this.halfTimeRead("away");
       return false;
     }
     if (this.phase === "half") {
@@ -807,6 +810,31 @@ export class MatchSim {
     }
     this.finishMatch();
     return true;
+  }
+
+  /** Intervalo: o time da CPU lê o adversário e ajusta a tática (sem sorteio). */
+  private halfTimeRead(side: Side) {
+    const setup = this.setup(side);
+    if (setup.cpu === false) return;
+    const foe: Side = side === "home" ? "away" : "home";
+    const [home, away] = this.possessionPct();
+    const own = side === "home" ? home : away;
+    const plan = halfTimePlan(
+      { goals: this.stats[side].goals, shots: this.stats[side].shots, possession: own },
+      { goals: this.stats[foe].goals, shots: this.stats[foe].shots, possession: 100 - own },
+      setup.tactics,
+      this.setup(foe).tactics,
+    );
+    setup.tactics = plan.tactics;
+    this.aiTweakMin[side] = 45;
+    if (plan.notes.length > 0) {
+      this.pushEvent({
+        minute: 45,
+        type: "talk",
+        side,
+        text: `No intervalo, ${setup.name ?? "o adversário"} ${plan.notes.slice(0, 2).join(" e ")}.`,
+      });
+    }
   }
 
   /** papo de vestiário: mexe um pouco na moral de cada lado */
@@ -1933,9 +1961,17 @@ export class MatchSim {
     }
     // Goal posts are solid: push bodies out radially so no athlete renders through them.
     const POST_CLEAR = 0.46; // body radius at the hips + post radius
+    const NET_CLEAR = 0.38; // body radius beside the side netting
     for (const p of list) {
       p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, p.x));
       p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, p.z));
+      // Side netting behind the goal line is a wall: nobody walks through it.
+      const behind = p.x > FIELD_X + 0.05 || p.x < -FIELD_X - 0.05;
+      const sideGap = Math.abs(p.z) - GOAL_Z;
+      if (behind && sideGap > -NET_CLEAR && sideGap < NET_CLEAR) {
+        const outside = sideGap >= 0;
+        p.z = Math.sign(p.z || 1) * (GOAL_Z + (outside ? NET_CLEAR : -NET_CLEAR));
+      }
       const px = p.x < 0 ? -FIELD_X : FIELD_X;
       const pz = p.z < 0 ? -GOAL_Z : GOAL_Z;
       const dx = p.x - px;

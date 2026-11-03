@@ -18,6 +18,7 @@ import { postPreset } from "./presets";
 import type { PostMoment, PostQuality, PostTime } from "./presets";
 import { GradeLut } from "./GradeLut";
 import type { GradeMoment, GradeTime, GradeWeather } from "@/game/graphics/grade";
+import { HdrSanitize } from "@/components/game/postfx/HdrSanitize";
 
 export type { PostMoment, PostQuality, PostTime };
 
@@ -72,6 +73,7 @@ export function PostFX({
   if (quality === "media") {
     return (
       <EffectComposer key="media" enableNormalPass={false} multisampling={0} resolutionScale={0.62}>
+        <HdrSanitize />
         <Bloom
           intensity={Math.max(0.04, p.bloom * 0.55)}
           luminanceThreshold={0.92}
@@ -124,6 +126,7 @@ export function PostFX({
       ) : (
         <></>
       )}
+      <HdrSanitize />
       <Bloom
         intensity={Math.max(0.05, p.bloom)}
         luminanceThreshold={Math.max(0.82, p.bloomThreshold)}

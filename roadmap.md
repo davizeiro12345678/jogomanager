@@ -16,10 +16,13 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] E3: rodar teste de estresse de 200 jogos (excede o tempo do sandbox; roda no Quality gates)
 - [x] Visitantes: aviso de login obrigatório para compras/recursos de conta (loja pública e loja do jogo)
 - [x] Cutscenes: clarão branco por partícula colada na câmera (tamanho das partículas limitado)
-- [ ] Física dos jogadores
-- [ ] Inteligência dos times
-- [ ] Moedas: novos usos/benefícios
+- [x] Física dos jogadores: rede lateral sólida (placas e bancos já ficam fora do alcance)
+  - [ ] Passada que encurta com o cansaço (animação)
+- [x] Inteligência dos times: leitura do adversário no intervalo (posse, finalizações, pontas, pressão, placar)
+- [x] Moedas: tratamento de lesão (250) e relatório do adversário (100), com limites semanais, pedido único e saldo nunca negativo no banco
 - [x] Idiomas: textos da interface completos nos 25 idiomas mais falados (pacotes carregados sob demanda + teste)
 - [ ] Proteção: trapaça em saves, partidas e moedas
+  - [x] Limites de plausibilidade nos saves + pontuação de risco (30 dias) que bloqueia atestar progresso
+  - [ ] Saves encadeados por hash
   - [x] Nomes ofensivos bloqueados ao criar carreira/clube e trocados por "Treinador" no ranking público (banco)
-- [ ] Home
+- [ ] Home e páginas: velocidade (home móvel publicada: 87; seções abaixo da dobra adiadas e desfoques removidos, falta medir após publicar)
