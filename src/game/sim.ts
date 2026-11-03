@@ -1910,9 +1910,23 @@ export class MatchSim {
         b.z += nz * overlap * (bWeight / totalWeight);
       }
     }
+    // Goal posts are solid: push bodies out radially so no athlete renders through them.
+    const POST_CLEAR = 0.46; // body radius at the hips + post radius
     for (const p of list) {
       p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, p.x));
       p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, p.z));
+      const px = p.x < 0 ? -FIELD_X : FIELD_X;
+      const pz = p.z < 0 ? -GOAL_Z : GOAL_Z;
+      const dx = p.x - px;
+      const dz = p.z - pz;
+      if (dx > POST_CLEAR || dx < -POST_CLEAR || dz > POST_CLEAR || dz < -POST_CLEAR) continue;
+      const d = Math.hypot(dx, dz);
+      if (d >= POST_CLEAR) continue;
+      // Exactly on the post: step back onto the pitch side.
+      const nx = d < 1e-4 ? -Math.sign(px) : dx / d;
+      const nz = d < 1e-4 ? 0 : dz / d;
+      p.x = px + nx * POST_CLEAR;
+      p.z = pz + nz * POST_CLEAR;
     }
   }
 
