@@ -108,10 +108,9 @@
   transform: translateY(-2px);
 }
 .home-button-secondary {
-  background: #101b1599;
+  background: #101b15d9;
   color: #eef3ed;
   border-color: #ddebd640;
-  backdrop-filter: blur(8px);
 }
 .home-button-secondary:hover {
   background: #293e2d;
@@ -767,8 +766,8 @@
   max-width: 420px;
   border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
   border-radius: 14px;
-  background: color-mix(in oklab, var(--background) 70%, transparent);
-  backdrop-filter: blur(10px);
+  /* Opaque enough to read over the photo without a costly backdrop blur. */
+  background: color-mix(in oklab, var(--background) 86%, transparent);
   overflow: hidden;
 }
 .home-hero-stats > div {
@@ -810,4 +809,13 @@
 .home-body > .home-final-cta {
   content-visibility: auto;
   contain-intrinsic-size: auto 280px;
+}
+
+/* Below-the-fold bands skip style and layout work until they approach the
+   viewport; intrinsic sizes keep the scrollbar and anchors stable. */
+.home-body > section:not(.home-hero),
+.home-first-season,
+.home-final-cta {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
