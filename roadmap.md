@@ -19,6 +19,7 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] Física dos jogadores
 - [ ] Inteligência dos times
 - [ ] Moedas: novos usos/benefícios
-- [ ] Idiomas
+- [x] Idiomas: textos da interface completos nos 25 idiomas mais falados (pacotes carregados sob demanda + teste)
 - [ ] Proteção: trapaça em saves, partidas e moedas
+  - [x] Nomes ofensivos bloqueados ao criar carreira/clube e trocados por "Treinador" no ranking público (banco)
 - [ ] Home

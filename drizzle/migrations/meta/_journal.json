@@ -295,6 +295,13 @@
       "when": 1793724744074,
       "tag": "0041_chat_infractions",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793728847309,
+      "tag": "0042_public_name_moderation",
+      "breakpoints": true
     }
   ]
 }

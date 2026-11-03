@@ -62,6 +62,7 @@ import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/
 
 import "@/components/game/career-create.css";
 import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
+import { containsProfanity } from "@/lib/moderation";
 
 const Cutscene = lazy(() =>
   import("@/components/game/Cutscene").then((m) => ({ default: m.Cutscene })),
@@ -115,6 +116,7 @@ export function NewCareer() {
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
   const [name, setName] = useState("Técnico");
+  const nameBlocked = containsProfanity(name);
   const [age, setAge] = useState(38);
   const [country, setCountry] = useState(LEAGUES[0]!.id);
   const [countryQuery, setCountryQuery] = useState("");
@@ -376,7 +378,14 @@ export function NewCareer() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Como você quer ser chamado?"
                     className="career-input"
+                    aria-invalid={nameBlocked}
+                    aria-describedby={nameBlocked ? "manager-name-error" : undefined}
                   />
+                  {nameBlocked ? (
+                    <p id="manager-name-error" role="alert" className="text-sm text-destructive">
+                      Escolha outro nome: este não é permitido no jogo.
+                    </p>
+                  ) : null}
                   <div className="career-range-label">
                     <label htmlFor="manager-age">Idade</label>
                     <output htmlFor="manager-age">{age} anos</output>
@@ -777,7 +786,7 @@ export function NewCareer() {
                 <button
                   type="button"
                   className="career-primary"
-                  disabled={!name.trim() || (step === 2 && left !== 0) || loading}
+                  disabled={!name.trim() || nameBlocked || (step === 2 && left !== 0) || loading}
                   onClick={() => go(step + 1)}
                 >
                   {step === 2 && left !== 0

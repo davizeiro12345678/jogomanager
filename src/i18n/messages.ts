@@ -1101,8 +1101,15 @@ const DICTS: Record<Lang, Dict> = {
   sw,
 };
 
+/** Lazily loaded per-language packs that replace English fallbacks. */
+const PACKS: Partial<Record<Lang, Dict>> = {};
+export function registerLanguagePack(lang: Lang, dict: Dict) {
+  PACKS[lang] = dict;
+}
+
 export function translate(lang: Lang, key: string): string {
   return (
+    PACKS[lang]?.[key] ??
     INTERFACE_MESSAGES[lang]?.[key] ??
     DICTS[lang][key] ??
     INTERFACE_MESSAGES.en?.[key] ??
