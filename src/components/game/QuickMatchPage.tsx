@@ -11,6 +11,7 @@ import { loadQuickLive } from "@/game/quick-match-entry";
 import { safeClub } from "@/game/club-reference";
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { useT } from "@/i18n/provider";
+import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
 
 const QuickLive = lazy(loadQuickLive);
 const preloadQuickLive = () => loadQuickLive().catch(() => undefined);
@@ -150,7 +151,15 @@ export function QuickMatchPage() {
             <Shuffle size={14} aria-hidden="true" /> {t("quick.random")}
           </button>
           <button
-            onClick={() => setStarted(true)}
+            onClick={() => {
+              setStarted(true);
+              const careerId = existingCareerAnalyticsId();
+              window.__lovableEvents?.track?.("project.match_started", {
+                ...(careerId ? { career_id: careerId } : {}),
+                mode: "quick",
+                entry: "quick_match",
+              });
+            }}
             onPointerEnter={preloadQuickLive}
             onFocus={preloadQuickLive}
             disabled={myClub === oppClub}

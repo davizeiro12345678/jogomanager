@@ -23,6 +23,7 @@ import { useCareer } from "@/hooks/useCareer";
 import { RealClubInfo } from "@/components/game/RealClubInfo";
 
 import "@/components/game/prematch.css";
+import { careerAnalyticsId } from "@/lib/career-analytics-id";
 
 export function PreMatchPage() {
   const { career } = useCareer();
@@ -146,7 +147,17 @@ function PreMatch({ career }: { career: CareerState }) {
           <Link to="/squad" className="career-secondary-button">
             <Users size={16} /> Mudar escalação
           </Link>
-          <Link to="/match" className="career-primary-button prematch-go">
+          <Link
+            to="/match"
+            className="career-primary-button prematch-go"
+            onClick={() =>
+              window.__lovableEvents?.track?.("project.match_started", {
+                career_id: careerAnalyticsId(),
+                mode: "career",
+                entry: "match_preparation",
+              })
+            }
+          >
             <Play size={18} /> Entrar em campo
           </Link>
         </div>

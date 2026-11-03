@@ -50,6 +50,7 @@ import {
   type ClubDraft,
   type MyClub,
 } from "@/lib/myClub";
+import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
 
 const ROOFS: { id: RoofKind; label: string }[] = [
   { id: "aberto", label: "Sem cobertura" },
@@ -327,6 +328,7 @@ export function NewClubPage() {
     startWorldForNewCareer(finalClub.id);
     writeMyClub(finalClub);
     update(initCareer(finalClub.leagueId, finalClub.id, profile.name, profile));
+    startCareerAnalyticsId();
     navigate({ to: "/club" });
   }
 
