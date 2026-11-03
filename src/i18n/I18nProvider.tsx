@@ -48,7 +48,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLangState(detect());
   }, []);
   // Language packs fill strings that would otherwise fall back to English.
-  const [packLang, setPackLang] = useState<Lang | null>(null);
   useEffect(() => {
     if (lang === "pt-BR" || lang === "en") return;
     let active = true;
@@ -58,8 +57,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       .then(([module, pack]) => {
         if (!active) return;
         if (pack) module.registerLanguagePack(lang, pack.default);
-        setLoadedTranslator(() => module.translate);
-        setPackLang(lang);
+        // A fresh wrapper re-renders consumers once this language's pack registers.
+        setLoadedTranslator(() => (l: Lang, key: string) => module.translate(l, key));
       })
       .catch((error) => {
         reportSilent("i18n.translation", error, {
@@ -100,8 +99,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       dir,
       t: (key: string) => (loadedTranslator ?? translateBootstrap)(lang, key),
     }),
-    // packLang re-creates the translator closure once a pack registers.
-    [lang, setLang, dir, loadedTranslator, packLang],
+    [lang, setLang, dir, loadedTranslator],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
