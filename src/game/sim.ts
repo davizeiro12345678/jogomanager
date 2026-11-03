@@ -1,22 +1,51 @@
 import { FORMATIONS } from "./formations";
-import { evaluatePassLanesFallback, evaluatePassLanesIntoFallback, MAX_PASS_LANE_PLAYERS, type PassLaneKernel, type PassLaneIntoKernel } from "./wasm/match-perception";
-import { MATCH_EXECUTION_REVISION, validExecutionContract, type MatchExecutionContract } from "./match-execution-contract";
+import {
+  evaluatePassLanesFallback,
+  evaluatePassLanesIntoFallback,
+  MAX_PASS_LANE_PLAYERS,
+  type PassLaneKernel,
+  type PassLaneIntoKernel,
+} from "./wasm/match-perception";
+import {
+  MATCH_EXECUTION_REVISION,
+  validExecutionContract,
+  type MatchExecutionContract,
+} from "./match-execution-contract";
 import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
 import { MatchVisualContextComputer } from "./sim-visual-context";
 import type { PlayerAction } from "./animation";
 import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
+import { matchAttributes } from "./match-readiness";
 
-
-import { BOX_DEPTH, BOX_HALF, PENALTY_DIST, clockText, type MatchPhase, passErrMult, type RefProfile, refFor, type ShootoutKick, shootoutWinner, solvePenalty, staminaDrainMult, type WeatherKind, xgForShot } from "./sim-rules";
+import {
+  BOX_DEPTH,
+  BOX_HALF,
+  PENALTY_DIST,
+  clockText,
+  type MatchPhase,
+  passErrMult,
+  type RefProfile,
+  refFor,
+  type ShootoutKick,
+  shootoutWinner,
+  solvePenalty,
+  staminaDrainMult,
+  type WeatherKind,
+  xgForShot,
+} from "./sim-rules";
 import { pitchCondition, windFor, type WindVector } from "./ball-climate";
 import { athleteContact, athleteRemainder, restoreAthleteRemainder } from "./athlete-dynamics";
 import { HIGH_FIDELITY_PHYSICS_STEP } from "./physics-quality";
 import type { Player, MatchEventLog } from "./types";
 import { type VersionedVisualData } from "./visual-context";
 import type { CanonicalBallPhysicsState } from "./visual-ball";
-import type { BallPhysicsAuthority, RapierBallHolder, RapierBallState } from "./rapier-ball-authority";
+import type {
+  BallPhysicsAuthority,
+  RapierBallHolder,
+  RapierBallState,
+} from "./rapier-ball-authority";
 
 // Medidas do campo vivem em sim-rules.ts; reexportadas aqui por compatibilidade.
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
@@ -28,7 +57,17 @@ import * as sim_discipline from "./sim-discipline";
 import * as sim_team_ai from "./sim-team-ai";
 import * as sim_ball_duels from "./sim-ball-duels";
 import { bodyContactShare, quadraticDragDeceleration, settlesOnTurf } from "./match-physics-extras";
-import type { Side, TeamTalkKind, SimPlayer, ShotRecord, PlayerRating, TeamSetup, MatchStats, Scorer, MatchCheckpoint } from "./sim-contracts";
+import type {
+  Side,
+  TeamTalkKind,
+  SimPlayer,
+  ShotRecord,
+  PlayerRating,
+  TeamSetup,
+  MatchStats,
+  Scorer,
+  MatchCheckpoint,
+} from "./sim-contracts";
 export * from "./sim-contracts";
 
 const CHECKPOINT_EXTERNAL = new Set(["rnd", "passLaneKernel", "ballPhysics"]);
@@ -748,7 +787,7 @@ export class MatchSim {
   }
 
   /** @internal */ halfTimeRead(side: Side) {
-    return sim_team_ai.halfTimeRead(this, side);
+    sim_team_ai.halfTimeRead(this, side);
   }
 
   /** papo de vestiário: mexe um pouco na moral de cada lado */
@@ -919,21 +958,21 @@ export class MatchSim {
   /* ---------------- cartões, expulsões e lesões ---------------- */
 
   /** @internal */ issueYellow(p: SimPlayer) {
-    return sim_discipline.issueYellow(this, p);
+    sim_discipline.issueYellow(this, p);
   }
 
   /** @internal */ sendOff(p: SimPlayer, why: string) {
-    return sim_discipline.sendOff(this, p, why);
+    sim_discipline.sendOff(this, p, why);
   }
 
   /** @internal */ injure(p: SimPlayer, cause: string) {
-    return sim_discipline.injure(this, p, cause);
+    sim_discipline.injure(this, p, cause);
   }
 
   /* ---------------- IA do treinador ---------------- */
 
   /** @internal */ aiManage(side: Side) {
-    return sim_team_ai.aiManage(this, side);
+    sim_team_ai.aiManage(this, side);
   }
 
   /* ---------------- bolas paradas ---------------- */
@@ -1098,7 +1137,7 @@ export class MatchSim {
   }
 
   /** @internal */ moveOffBall(dt: number) {
-    return sim_team_ai.moveOffBall(this, dt);
+    sim_team_ai.moveOffBall(this, dt);
   }
 
   /** empurra jogadores sobrepostos para que não se atravessem */
@@ -1339,7 +1378,7 @@ export class MatchSim {
   }
 
   /** @internal */ controlBall(p: SimPlayer, ballSpeed: number, h: number) {
-    return sim_ball_duels.controlBall(this, p, ballSpeed, h);
+    sim_ball_duels.controlBall(this, p, ballSpeed, h);
   }
 
   /** @internal */ tryBlock(dt: number): boolean {
@@ -1454,11 +1493,11 @@ export class MatchSim {
   }
 
   /** @internal */ dribble(holder: SimPlayer, dt: number) {
-    return sim_ball_duels.dribble(this, holder, dt);
+    sim_ball_duels.dribble(this, holder, dt);
   }
 
   /** @internal */ pressure(holder: SimPlayer, dt: number) {
-    return sim_ball_duels.pressure(this, holder, dt);
+    sim_ball_duels.pressure(this, holder, dt);
   }
 
   private decide(holder: SimPlayer) {
@@ -1595,7 +1634,7 @@ export class MatchSim {
   }
 
   /** @internal */ shoot(holder: SimPlayer, distGoal: number) {
-    return sim_ball_duels.shoot(this, holder, distGoal);
+    sim_ball_duels.shoot(this, holder, distGoal);
   }
 
   /** @internal */ scheduleRestart(side: Side) {

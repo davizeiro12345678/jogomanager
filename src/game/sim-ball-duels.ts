@@ -4,9 +4,30 @@
  * própria MatchSim, então sementes e replays continuam idênticos.
  */
 import type { MatchSim } from "./sim";
-import { type ShotTechnique, blockRestitution, fatigueStrikeFactor, firstTouchSpill, parryReboundSpeed, shotProfile } from "./match-physics-extras";
+import {
+  type ShotTechnique,
+  blockRestitution,
+  fatigueStrikeFactor,
+  firstTouchSpill,
+  parryReboundSpeed,
+  shotProfile,
+} from "./match-physics-extras";
 import { type Side, type SimPlayer } from "./sim-contracts";
-import { FIELD_X, FIELD_Z, type FoulInput, GOAL_Z, cardForFoul, controlFailAdd, defensiveLineX, duelMult, foulMult, isOffside, shotProbabilities, woodworkAt, xgForShot } from "./sim-rules";
+import {
+  FIELD_X,
+  FIELD_Z,
+  type FoulInput,
+  GOAL_Z,
+  cardForFoul,
+  controlFailAdd,
+  defensiveLineX,
+  duelMult,
+  foulMult,
+  isOffside,
+  shotProbabilities,
+  woodworkAt,
+  xgForShot,
+} from "./sim-rules";
 
 /**
  * Primeiro toque. Bola forte ou alta pode escapar do controle e sobrar viva —
@@ -130,7 +151,10 @@ export function tryBlock(sim: MatchSim, dt: number): boolean {
  * Resolve a finalização quando a bola chega à meta: gol entre as traves,
  * defesa do goleiro no plano da linha, ou segue viva para fora.
  */
-export function resolveShot(sim: MatchSim, previous = { x: sim.ball.x, z: sim.ball.z, height: sim.ball.height }): boolean {
+export function resolveShot(
+  sim: MatchSim,
+  previous = { x: sim.ball.x, z: sim.ball.z, height: sim.ball.height },
+): boolean {
   const s = sim.pendingShot!;
   const dir = sim.attackDir(s.side);
   const goalX = dir * FIELD_X;
@@ -233,11 +257,14 @@ export function resolveShot(sim: MatchSim, previous = { x: sim.ball.x, z: sim.ba
  * manual (determinística pelo estado da bola, sem consumir o rng); na
  * autoridade Rapier a colisão física já aconteceu — só registra o evento.
  */
-export function woodworkOrRelease(sim: MatchSim, s: NonNullable<MatchSim["pendingShot"]>,
-    shooter: SimPlayer | null,
-    crossingZ: number,
-    crossingH: number,
-    dir: number): boolean {
+export function woodworkOrRelease(
+  sim: MatchSim,
+  s: NonNullable<MatchSim["pendingShot"]>,
+  shooter: SimPlayer | null,
+  crossingZ: number,
+  crossingH: number,
+  dir: number,
+): boolean {
   sim.pendingShot = null;
   const hit = woodworkAt(crossingZ, crossingH);
   if (!hit) return false;

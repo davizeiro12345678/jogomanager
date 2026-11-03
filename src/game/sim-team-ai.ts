@@ -9,7 +9,15 @@ import { advanceAthlete } from "./athlete-dynamics";
 import { pitchTraction } from "./match-physics-extras";
 import { positionalOverall } from "./overall";
 import { type Side, type SimPlayer } from "./sim-contracts";
-import { type AiBenchInput, type AiLineupInput, FIELD_X, FIELD_Z, GOAL_Z, aiMentalityTweak, aiSubPick } from "./sim-rules";
+import {
+  type AiBenchInput,
+  type AiLineupInput,
+  FIELD_X,
+  FIELD_Z,
+  GOAL_Z,
+  aiMentalityTweak,
+  aiSubPick,
+} from "./sim-rules";
 import { type Player } from "./types";
 
 /** Intervalo: o time da CPU lê o adversário e ajusta a tática (sem sorteio). */
@@ -124,9 +132,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
   const bz = sim.ball.z;
   const chase = sim.chasers();
   // The holder is skipped below, so its position stays fixed throughout sim pass.
-  const holder = sim.ball.holder
-    ? sim.players.find((q) => q.id === sim.ball.holder)
-    : undefined;
+  const holder = sim.ball.holder ? sim.players.find((q) => q.id === sim.ball.holder) : undefined;
 
   // Urgência pelo placar e pelo relógio: quem está perdendo no fim empurra a
   // equipe para a frente; quem está ganhando recua e segura o resultado.
@@ -184,8 +190,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       const incoming = sim.pendingShot?.side !== p.side ? sim.pendingShot : null;
       if (incoming) {
         const reaction = 0.32 + p.defending / 220;
-        tz +=
-          (Math.max(-GOAL_Z + 0.35, Math.min(GOAL_Z - 0.35, incoming.targetZ)) - tz) * reaction;
+        tz += (Math.max(-GOAL_Z + 0.35, Math.min(GOAL_Z - 0.35, incoming.targetZ)) - tz) * reaction;
         tx += dir * Math.min(1.4, ballDist * 0.04);
         sprint = 1.18;
       }
