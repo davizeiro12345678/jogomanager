@@ -288,7 +288,7 @@ export function FootballHome() {
             width={1600}
             height={912}
             fetchPriority="high"
-            decoding="sync"
+            decoding="async"
           />
         </picture>
         <div className="home-hero-shade" aria-hidden="true" />

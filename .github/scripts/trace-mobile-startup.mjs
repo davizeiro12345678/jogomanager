@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -76,6 +76,22 @@ try {
       });
       await writeFile(path.join(output, `${id}.log`), Buffer.concat(log));
       if (code !== 0) failures.push(`${id}: Lighthouse exited ${code}`);
+      // Lighthouse can exit zero with a runtimeError (for example NO_FCP).
+      // Preserve every attempted fixture but reject missing/invalid timings.
+      try {
+        const result = JSON.parse(await readFile(path.join(output, `${id}.json`), "utf8"));
+        if (
+          result.runtimeError ||
+          !Number.isFinite(result.categories?.performance?.score) ||
+          !Number.isFinite(result.audits?.["largest-contentful-paint"]?.numericValue) ||
+          !Number.isFinite(result.audits?.["total-blocking-time"]?.numericValue)
+        )
+          failures.push(
+            `${id}: invalid report (${result.runtimeError?.code ?? "missing metrics"})`,
+          );
+      } catch {
+        failures.push(`${id}: missing or unreadable report`);
+      }
       console.log(JSON.stringify({ id, traceSaved: true, exitCode: code }));
     }
   }

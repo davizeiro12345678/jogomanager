@@ -4,6 +4,14 @@ on:
     paths:
       - ".github/scripts/trace-mobile-startup.mjs"
       - ".github/workflows/match3d-lighthouse-trace.yml"
+      - "src/client.tsx"
+      - "src/hydrate-app.tsx"
+      - "src/components/game/QuickMatchPage.tsx"
+      - "src/components/home/**"
+      - "src/game/data/leagues.ts"
+      - "src/lib/officialAssets.ts"
+      - "src/public-styles.css"
+      - "vite.config.ts"
   workflow_dispatch:
 permissions:
   contents: read

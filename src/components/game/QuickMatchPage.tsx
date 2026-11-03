@@ -5,7 +5,8 @@ import { lazy, Suspense, useState } from "react";
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
-import { LEAGUES, getLeague } from "@/game/data/leagues";
+import { BUNDLED_LEAGUES, LEAGUES, getLeague } from "@/game/data/leagues";
+import { COUNTRY_ORDER, COUNTRY_COLLATION_EXCEPTIONS } from "@/game/quick-country-order.generated";
 import type { Difficulty } from "@/game/quickMatch";
 import { loadQuickLive } from "@/game/quick-match-entry";
 import { safeClub } from "@/game/club-reference";
@@ -16,6 +17,7 @@ const QuickLive = lazy(loadQuickLive);
 const preloadQuickLive = () => loadQuickLive().catch(() => undefined);
 
 const DIFFS: Difficulty[] = ["facil", "normal", "dificil"];
+const countryRank = new Map(COUNTRY_ORDER.map((i, rank) => [BUNDLED_LEAGUES[i]!.country, rank]));
 
 export function QuickMatchPage() {
   const { t, lang } = useT();
@@ -61,9 +63,18 @@ export function QuickMatchPage() {
     );
   }
 
-  // localeCompare with an explicit locale constructs ICU collation work for
-  // every sort comparison. Share one comparator without caching mutable leagues.
-  const countryCompare = new Intl.Collator(lang).compare;
+  const groups = Object.entries(
+    LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, league) => {
+      (acc[league.country] ??= []).push(league);
+      return acc;
+    }, {}),
+  );
+  // 89 supported locales share this exact order. Avoid cold ICU setup during
+  // hydration; preserve platform collation for exceptions and custom countries.
+  const countryCompare =
+    COUNTRY_COLLATION_EXCEPTIONS.has(lang) || groups.some(([c]) => !countryRank.has(c))
+      ? new Intl.Collator(lang).compare
+      : (a: string, b: string) => countryRank.get(a)! - countryRank.get(b)!;
   return (
     <div className="pitch-bg min-h-screen px-4 py-10">
       <div className="mx-auto max-w-5xl">
@@ -89,12 +100,7 @@ export function QuickMatchPage() {
             onChange={(e) => chooseLeague(e.target.value)}
             className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
           >
-            {Object.entries(
-              LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, l) => {
-                (acc[l.country] ??= []).push(l);
-                return acc;
-              }, {}),
-            )
+            {groups
               .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
               .map(([country, ls]) => (
                 <optgroup key={country} label={country}>

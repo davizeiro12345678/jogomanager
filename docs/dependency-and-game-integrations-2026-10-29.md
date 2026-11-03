@@ -1,0 +1,77 @@
+# Dependências e integrações do jogo — 29/10/2026
+
+Esta continuação do PR #96 atualiza o conjunto restante compatível, melhora o ciclo de vida de recursos do navegador e amplia as evidências de produção. A aprovação depende dos checks do commit final; este documento não autoriza publicação com gates incompletos.
+
+## Dependências
+
+| Área                       | Antes                                            | Agora                                              |
+| -------------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| Formulários                | resolvers 5.9.2                                  | 6.0.2                                              |
+| E-mail                     | SDK 0.3.1; render 2.1.1 e cópia transitiva 2.0.6 | SDK 0.5.0; um renderizador 2.2.0                   |
+| MCP                        | SDK Lovable 3.0.5; protocolo 1.32.1              | 3.3.1; 1.32.2                                      |
+| Configuração Vite/TanStack | 2.26.5                                           | 2.27.0                                             |
+| Servidor                   | Nitro 3.0.260603-beta                            | 3.0.260903-beta                                    |
+| Bundlers                   | Rolldown 1.2.1; esbuild 0.28.1                   | 1.2.15; 0.28.2                                     |
+| Cloudflare                 | Wrangler 4.152.0                                 | 4.154.0                                            |
+| TypeScript                 | 5.9.3; tipos Node 26                             | 6.0.3; tipos Node 24.19.2, alinhados ao runtime 24 |
+| Benchmarks                 | Tinybench 5.1; CodSpeed 5.7.1                    | 6.2.2; 6.1.0                                       |
+| Ícones                     | Lucide 1.61                                      | 1.63                                               |
+| Serviço auxiliar           | MongoDB driver 6.21                              | 7.7                                                |
+
+O override do renderizador evita a cópia antiga fixada pelo agregador de componentes de e-mail. A cadeia `html-to-text` passa a 10.0.1, sem o `deepmerge` antigo. O override global antigo de `entities` do bloco pnpm foi removido. O override de Nitro fica restrito ao peer do configurador Lovable: o intervalo upstream de pré-lançamento exclui a nova versão, embora o build com a versão explicitamente escolhida passe. A instalação limpa deve continuar funcionando sem `--force` e sem `--legacy-peer-deps`.
+
+As datas de publicação dos pacotes alterados foram conferidas. PostHog 1.441.2 e painéis 4.15.0 continuam até as versões seguintes cumprirem a janela de 24 horas; o SDK de e-mail fica em 0.5.0 pela mesma razão. Não foram adicionadas exceções ao Bun. TypeScript 7 não substitui diretamente o compilador: o lint atual precisa da API JavaScript e declara suporte a TypeScript `<6.1.0`. Referências: [compatibilidade do lint](https://typescript-eslint.io/users/dependency-versions/), [transição do compilador](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/), [upgrade MongoDB](https://www.mongodb.com/docs/drivers/node/current/reference/upgrade/).
+
+O agregador de e-mail ainda puxa componentes individuais marcados como deprecated pelo publicador; instalação sem avisos de depreciação não foi comprovada. Eles não aparecem como vulnerabilidades conhecidas na auditoria atual.
+
+## Minificação de produção
+
+O primeiro gate mediu aumento de 2.001 bytes gzip no total e até 680 bytes no startup da partida. O teste de Terser apenas no cliente aumentou o total em cerca de 25 KB gzip e foi descartado; Oxc permanece, sem nova dependência de minificação. O Vite oferece essa integração nativamente: [opções do build](https://vite.dev/config/build-options). Os limites de transferência permanecem iguais, e a comparação com a base deve continuar no mesmo runner e com as mesmas dependências.
+
+A configuração reúne o fechamento estático do construtor QueryClient e os módulos core/WebGL já usados em conjunto do Three.js, sem incluir outro motor. A configuração de nonce do router é eliminada explicitamente do cliente e preservada no SSR. O controle de tela da carreira carrega ao abrir a gestão da partida e continua montado depois de fechar o painel. A exportação de vídeo saiu do módulo de replay/simulação e é importada diretamente pela interface.
+
+Com instalação idêntica e dois builds limpos na mesma máquina, a comparação obrigatória passou para todos os caminhos, gzip total e Brotli total. Essa comparação isolada não aprova o Lighthouse móvel nem substitui os checks do commit publicado.
+
+Avaliação pontual de 29/10/2026, contra um concorrente real sugerido pela ferramenta. Wrappers exclusivos de Webpack foram descartados porque o projeto usa Vite.
+
+| Candidato                                         | Downloads semanais / tendência | Popularidade / manutenção            | Deprecated | Vulnerabilidades conhecidas | Tipos TS | Estrelas GitHub | Risco de scripts                     |
+| ------------------------------------------------- | ------------------------------ | ------------------------------------ | ---------- | --------------------------- | -------- | --------------- | ------------------------------------ |
+| [Terser](https://npmscan.com/package/terser)      | 112.085.448 / +46,7%           | Muito alta / ativa                   | Não        | Nenhuma                     | Sim      | 9.356           | Nenhum sinal no comando de lifecycle |
+| [UglifyJS](https://npmscan.com/package/uglify-js) | 61.746.044 / +33,8%            | Muito alta / sem release há 791 dias | Não        | Nenhuma                     | Não      | 13.368          | Nenhum sinal no comando de lifecycle |
+
+Resultado da ferramenta: `pick: terser`, `runnerUp: uglify-js`, `confidence: high`. Rationale: "terser: widely used (112,085,448 weekly downloads); actively maintained (published 63d ago); ships built-in TypeScript types; no known vulnerabilities in its latest version." Essa pontuação não mede tamanho ou comportamento do jogo; o resultado real deste projeto foi melhor com Oxc e prevaleceu sobre a recomendação genérica. A análise de scripts aqui cobre os comandos de lifecycle, não uma inspeção do tarball.
+
+## Integrações e fronteiras
+
+- Screen Wake Lock opcional nas partidas rápida e de carreira e nos replays. Só solicita ao habilitar, durante reprodução visível; libera ao pausar, ocultar ou sair. Grants atrasados são liberados, e recusas por bateria ou política não causam loop de tentativas nem alteram a simulação.
+- Web Share de vídeos de replay a partir de um segundo clique explícito após finalizar a gravação, preservando a ativação exigida pelo navegador. Cancelamento é normal; download continua disponível quando o formato ou a política não permitem compartilhar. Nenhum upload automático foi adicionado.
+- MediaRecorder com dono explícito para o stream, encerramento idempotente, liberação dos tracks em erro ou desmontagem e extensão baseada no MIME efetivo, incluindo MP4 quando suportado. A interface encerra clipes após 60 segundos.
+- As APIs opcionais ficam fora dos módulos de simulação e dos caminhos públicos iniciais. A gravação não passa objetos do renderizador para saves ou resultados oficiais.
+
+## Validação
+
+O workflow auxiliar usa banco MongoDB descartável em loopback para verificar corrida de claims, rejeição de escrita por processos antigos, persistência lida por outra conexão e índices de expiração. O teste recusa a URI de produção e nunca usa `MONGODB_URI`.
+
+A imagem MongoDB 8 foi fixada por digest, e o job usa Ubuntu 22.04: no runner mais novo, o próprio MongoDB recusou o kernel por [SERVER-121912](https://jira.mongodb.org/browse/SERVER-121912). A suíte continua obrigatória no workflow auxiliar e não considera o startup recusado como aprovação.
+
+Na fila durável herdada da base, o grant do ACK foi corrigido para a assinatura de cinco argumentos. Um digest SHA-256 retém a identidade do conteúdo após a exclusão do corpo entregue, permitindo repetir o mesmo evento sem colisão falsa. O contrato SQL testa grants privados, deduplicação antes/depois da entrega, colisões de conteúdo/template, tokens de lease, backoff, dead letters e expiração. A falha da assinatura antiga foi reproduzida; a migração corrigida e o contrato passaram em PostgreSQL embarcado, e o replay Supabase completo continua obrigatório no CI.
+
+O diagnóstico de startup compara a base real do PR e o candidato com as mesmas dependências. Preserva CPU profiles, timeline do Chrome, LCP observado, screenshots e HTML. O throttling real desse diagnóstico é diferente da simulação do Lighthouse; seus resultados não substituem o gate móvel nem certificam FPS físico.
+
+Cada amostra abre um processo novo do Chrome, pois apenas trocar o contexto ainda pode reutilizar caches de compilação do processo.
+
+Na revisão `5682f0d4`, todos os jobs de Quality passaram, exceto o Lighthouse móvel da home: o pior LCP foi 2.769 ms, com performance 94. A imagem já tem preload responsivo e prioridade alta; o relatório atribui a maior parcela ao atraso de renderização. A entrada do cliente passa a importar e avaliar o runtime depois de duas animações do documento público servido pelo SSR, em vez de atrasar somente `hydrateRoot`. Rotas privadas e documentos ocultos iniciam imediatamente; uma mudança de visibilidade não deixa a hidratação presa. Não há espera arbitrária nem alteração dos limites. Os testes cobrem as cinco combinações de pintura/visibilidade e a execução única. O efeito no gate móvel ainda precisa ser medido no novo commit.
+
+Na revisão `5a583cf5`, a home passou nas três amostras: performance 98/99/99, LCP máximo de 1.925 ms. O bloqueio móvel passou à seleção da partida rápida, com TBT de 316/169/172 ms. O profile frio localizou trabalho na montagem do índice de clubes, ordenação de países e persistência dos escudos. Os índices agora são preenchidos diretamente e reutilizados após construir as divisões, preservando a ordem e a precedência das identidades sem arrays intermediários ou cópia integral do registro. O SHA-256 da serialização de todas as 300 ligas e 5.234 identidades coincide com a base; o snapshot público continua isolado de mutações.
+
+O experimento de gravar o catálogo inteiro como JSON foi rejeitado: no Chrome 156 com CPU 4x, a mediana síncrona passou de 49,15 ms (objeto) a 60,90 ms (string). A gravação retorna à representação de objeto; o leitor aceita também strings produzidas em previews anteriores. Consultas repetidas à preferência de escudos são evitadas quando o cache está vazio ou a mesma carga já está em andamento.
+
+A ordem comum dos países é pré-calculada no build a partir do catálogo estável. Os testes conferem a ordem exata nos 98 idiomas suportados, com Intl nos nove idiomas de collation diferente e para países personalizados. Isso remove a inicialização fria de ICU do render inicial nos outros 89 idiomas. Hooks e Link do router compartilham a mesma dependência estática já necessária no startup, sem importar outras rotas. A imagem da home mantém fonte, resolução, qualidade e prioridade, mas permite decodificação assíncrona para liberar a pintura do restante da página.
+
+O CI preserva também um benchmark Chrome isolado de catálogo sintético (25 mil escudos e mil uniformes), com CPU 4x, ordem ABBA, 22 amostras por formato e verificação integral do conteúdo após cada leitura. Ele mede o trabalho síncrono de codificar/iniciar a gravação e a latência completa de leitura/decodificação, que inclui I/O. Esse experimento não substitui as quinze medições protegidas do Lighthouse. Traces Lighthouse passam a ser capturados quando a entrada pública, home, seleção ou cache mudam, sem alterar o gate independente.
+
+Antes do primeiro envio desta revisão: instalação npm limpa, árvore npm válida, Bun frozen-lockfile, build, TypeScript 6, lint sem avisos, orçamento absoluto de bundles, 20 testes focados, 33 contratos Node e 12 testes auxiliares passaram. A auditoria npm completa reportou zero vulnerabilidades conhecidas. A suíte completa e os gates do commit final ainda precisam ser confirmados no CI, incluindo o novo contrato MongoDB e o Lighthouse móvel que reprovou a revisão anterior.
+
+Publicação exige também backend pronto e SHA compilado de `/api/health` idêntico ao release aprovado. Nenhum segredo ou serviço de produção foi alterado nesta etapa.
+
+Em consulta somente de leitura de 29/10, o projeto Supabase de produção estava `ACTIVE_HEALTHY`; os contratos de metadados de cupons, ranking e telemetria passaram com 78 migrações registradas e nenhuma tabela pública sem RLS. A migração `20261029184000` e `notification_private.outbox` ainda não estavam instaladas. Os advisors retornaram avisos de grants GraphQL/SECURITY DEFINER que precisam ser interpretados segundo os contratos intencionais, além de informações de índices sem uso; isso não equivale a uma auditoria sem avisos. A sondagem HTTP pública retornou 503 do proxy Envoy antes dos headers da aplicação, portanto não comprovou saúde nem SHA publicado. A ativação de e-mail, worker e entrega controlada continua seguindo o runbook e seus pré-requisitos.

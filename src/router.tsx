@@ -17,13 +17,13 @@ const requestNonce = createIsomorphicFn()
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
-  const nonce = requestNonce();
+  const nonce = import.meta.env.SSR ? requestNonce() : undefined;
 
   const router = createRouter({
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    ...(nonce ? { ssr: { nonce } } : {}),
+    ...(import.meta.env.SSR && nonce ? { ssr: { nonce } } : {}),
     defaultPreloadStaleTime: 0,
     defaultPendingComponent: RoutePending,
     defaultPendingMs: 300,

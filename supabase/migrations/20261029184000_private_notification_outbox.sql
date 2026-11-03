@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS notification_private.outbox (
   dedupe_key text NOT NULL UNIQUE CHECK (length(dedupe_key) BETWEEN 12 AND 128),
   template text NOT NULL CHECK (template IN ('welcome', 'season-start', 'career-milestone')),
   payload jsonb NOT NULL,
-  payload_fingerprint text NOT NULL CHECK (payload_fingerprint ~ '^[0-9a-f]{32}$'),
+  payload_fingerprint text NOT NULL CHECK (payload_fingerprint ~ '^[0-9a-f]{64}$'),
   trace_id text CHECK (trace_id IS NULL OR trace_id ~ '^[0-9a-f]{32}$'),
   status text NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'processing', 'delivered', 'dead')),
@@ -37,7 +37,7 @@ CREATE OR REPLACE FUNCTION public.jm_queue_notification(
   p_key text, p_template text, p_payload jsonb, p_trace_id text DEFAULT NULL
 ) RETURNS uuid
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog AS $$
-DECLARE v_id uuid; v_existing_fingerprint text;
+DECLARE v_id uuid; v_existing text; v_digest text; v_template text;
 BEGIN
   IF p_key IS NULL OR length(p_key) NOT BETWEEN 12 AND 128
     OR p_template NOT IN ('welcome', 'season-start', 'career-milestone')
@@ -51,17 +51,17 @@ BEGIN
     OR length(coalesce(p_payload->>'text','')) NOT BETWEEN 1 AND 40000
     OR (p_trace_id IS NOT NULL AND p_trace_id !~ '^[0-9a-f]{32}$')
   THEN RAISE EXCEPTION 'Invalid notification request'; END IF;
+  v_digest := encode(sha256(convert_to(p_payload::text, 'UTF8')), 'hex');
   INSERT INTO notification_private.outbox (dedupe_key, template, payload, payload_fingerprint, trace_id)
-  VALUES (p_key, p_template, p_payload, md5(p_payload::text), p_trace_id)
+  VALUES (p_key, p_template, p_payload, v_digest, p_trace_id)
   ON CONFLICT (dedupe_key) DO NOTHING
   RETURNING id INTO v_id;
   IF v_id IS NOT NULL THEN RETURN v_id; END IF;
-  -- Payload is scrubbed after success, but the fingerprint remains.
-  -- A repeat enqueue must return the original job rather than creating
-  -- duplicate mail or falsely reporting an idempotency collision.
-  SELECT id, payload_fingerprint INTO v_id, v_existing_fingerprint
+  -- Keep the digest after successful delivery removes the private content.
+  -- A retried enqueue of that same event must still return its original ID.
+  SELECT id, payload_fingerprint, template INTO v_id, v_existing, v_template
     FROM notification_private.outbox WHERE dedupe_key = p_key;
-  IF v_existing_fingerprint IS DISTINCT FROM md5(p_payload::text) THEN
+  IF v_existing IS DISTINCT FROM v_digest OR v_template IS DISTINCT FROM p_template THEN
     RAISE EXCEPTION 'Notification idempotency key collision';
   END IF;
   RETURN v_id;

@@ -803,3 +803,7 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 280px;
 }
+.home-body > footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}

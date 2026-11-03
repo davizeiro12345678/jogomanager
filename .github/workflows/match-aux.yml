@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
           cache: npm
       - name: Install pinned main app dependencies
         run: npm ci
@@ -28,3 +28,29 @@ jobs:
         run: npm exec -- tsc --noEmit --pretty false
       - name: Lint and formatting
         run: npm run lint
+  mongodb-contract:
+    name: MongoDB driver persistence and claim fencing
+    # MongoDB 8 refuses kernels 6.19–7.0.13 (SERVER-121912). Use the supported
+    # LTS runner; changing the container image cannot fix its host kernel.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 6
+    services:
+      mongo:
+        image: mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: services/match-aux/package-lock.json
+      - run: npm ci --prefix services/match-aux --ignore-scripts --no-audit --no-fund
+      - name: Verify isolated MongoDB persistence and competing claims
+        env:
+          MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+        run: node --test services/match-aux/mongodb.integration.test.mjs
