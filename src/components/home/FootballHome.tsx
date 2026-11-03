@@ -198,7 +198,7 @@ export function FootballHome() {
           setResume({
             club: nameOf(save.clubId),
             season: save.season ?? 1,
-            round: (save.round ?? 0) + 1,
+            round: save.round ?? 1,
             next: fixture
               ? {
                   opponent: nameOf(fixture.home === save.clubId ? fixture.away : fixture.home),
