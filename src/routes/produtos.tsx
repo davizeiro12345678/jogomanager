@@ -8,10 +8,10 @@ import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { ProdutosPage } from "@/pages/produtos";
 import { PRODUTOS_PATH as PATH } from "@/lib/public-route-paths";
 
-const TITLE = "Pacotes e passe de temporada | Pro Football Manager 3D";
+const TITLE = "Pacotes do jogomanager: preços, moedas por real e passe mensal";
 
 const DESC =
-  "Catálogo atual de itens para a carreira no Pro Football Manager 3D. Consulte os detalhes e compre com e-mail ou entre para sua carreira.";
+  "Compare os 10 pacotes do manager de futebol 3D: custo por moeda, bônus de olheiros e treino, passe de temporada e itens visuais. Compra segura, também sem conta.";
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
