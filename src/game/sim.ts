@@ -41,14 +41,11 @@ import {
   refFor,
   type ShootoutKick,
   shootoutWinner,
-  solveCornerDuel,
-  solveDirectFK,
   solvePenalty,
   shotProbabilities,
   staminaDrainMult,
   type WeatherKind,
   woodworkAt,
-  XG_PENALTY,
   xgForShot,
 } from "./sim-rules";
 import { pitchCondition, windFor, type WindVector } from "./ball-climate";
@@ -79,7 +76,6 @@ import {
   bodyContactShare,
   fatigueStrikeFactor,
   firstTouchSpill,
-  headerPower,
   parryReboundSpeed,
   pitchTraction,
   quadraticDragDeceleration,
