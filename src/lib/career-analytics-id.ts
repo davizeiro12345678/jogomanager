@@ -24,7 +24,12 @@ export function startCareerAnalyticsId(): string {
 
 export function careerAnalyticsId(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY) ?? startCareerAnalyticsId();
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) return existing;
+    // A career saved before ids existed: give it one without calling it new.
+    const id = randomId();
+    localStorage.setItem(STORAGE_KEY, id);
+    return id;
   } catch {
     return randomId();
   }

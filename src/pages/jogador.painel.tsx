@@ -34,6 +34,7 @@ import { WeekTab } from "@/components/game/athlete/PlayerWeekTab";
 
 import "@/components/game/athlete.css";
 import { getRouteApi } from "@tanstack/react-router";
+import { claimCareerReturn } from "@/lib/career-analytics-id";
 const Route = getRouteApi("/jogador/painel");
 
 const AthleteHero3D = lazy(() =>
@@ -97,6 +98,15 @@ const TABS: { id: Tab; label: string }[] = [
 export function AthletePanelPage() {
   const { slot, tab } = Route.useSearch();
   const { state, commit, syncError, syncConflict, resolveWithCloud } = useAthlete(slot);
+  const hasAthlete = Boolean(state);
+  useEffect(() => {
+    // An existing athlete reopened in a new browser session counts as a return.
+    if (!hasAthlete || !claimCareerReturn("player", `slot-${slot}`)) return;
+    window.__lovableEvents?.track?.("project.career_returned", {
+      career_type: "player",
+      entry: "player_panel",
+    });
+  }, [hasAthlete, slot]);
   if (state === undefined)
     return (
       <main className="athlete-shell">
