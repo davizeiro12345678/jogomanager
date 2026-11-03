@@ -54,6 +54,8 @@ export function AuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const destination = search.next ?? "/club";
+  // Only the path: query strings could carry codes or personal values.
+  const entryRoute = destination.split(/[?#]/)[0] || "/club";
   const [mode, setMode] = useState<AuthMode>(search.mode === "up" ? "up" : "in");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -200,6 +202,10 @@ export function AuthPage() {
           });
           if (result.error) throw result.error;
           if (!result.data.session) throw new Error("No verified session");
+          window.__lovableEvents?.track?.("project.account_signed_in", {
+            method: "email_code",
+            entry_route: entryRoute,
+          });
           await continueSession();
         } else {
           const submittedEmail = email.trim();
@@ -249,6 +255,18 @@ export function AuthPage() {
                 },
               });
         if (result.error) throw result.error;
+        if (mode === "in") {
+          window.__lovableEvents?.track?.("project.account_signed_in", {
+            method: "password",
+            entry_route: entryRoute,
+          });
+        } else if (result.data.user) {
+          window.__lovableEvents?.track?.("project.account_created", {
+            method: "password",
+            entry_route: entryRoute,
+            needs_email_confirmation: !result.data.session,
+          });
+        }
         if (result.data.session) await continueSession();
         else {
           setConfirmationSent(true);
@@ -277,7 +295,13 @@ export function AuthPage() {
           redirect_uri: callback(),
         });
         if (result.error) throw result.error;
-        if (!result.redirected) await continueSession();
+        if (!result.redirected) {
+          window.__lovableEvents?.track?.("project.account_signed_in", {
+            method: provider,
+            entry_route: entryRoute,
+          });
+          await continueSession();
+        }
       } else {
         const result = await supabase.auth.signInWithOAuth({
           provider,
@@ -301,7 +325,13 @@ export function AuthPage() {
       const { lovable } = await import("@/integrations/lovable/index");
       const result = await lovable.auth.signInWithOAuth("lovable", { redirect_uri: callback() });
       if (result.error) throw result.error;
-      if (!result.redirected) await continueSession();
+      if (!result.redirected) {
+        window.__lovableEvents?.track?.("project.account_signed_in", {
+          method: "lovable",
+          entry_route: entryRoute,
+        });
+        await continueSession();
+      }
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
     } finally {
@@ -318,6 +348,10 @@ export function AuthPage() {
       const result = await supabase.auth.signInWithPasskey();
       if (result.error) throw result.error;
       if (!result.data?.session) throw new Error("No passkey session");
+      window.__lovableEvents?.track?.("project.account_signed_in", {
+        method: "passkey",
+        entry_route: entryRoute,
+      });
       await continueSession();
     } catch (cause) {
       setError(passkeyErrorMessage(cause));
@@ -742,7 +776,15 @@ export function AuthPage() {
             methods?.phone &&
             import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
               <Suspense fallback={null}>
-                <PhoneAuthPanel onSignedIn={continueSession} />
+                <PhoneAuthPanel
+                  onSignedIn={async () => {
+                    window.__lovableEvents?.track?.("project.account_signed_in", {
+                      method: "phone",
+                      entry_route: entryRoute,
+                    });
+                    await continueSession();
+                  }}
+                />
               </Suspense>
             )}
           {mode === "update" && notice ? (
