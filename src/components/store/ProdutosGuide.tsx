@@ -328,6 +328,30 @@ export function ProdutosGuide() {
         </p>
       </section>
 
+      <section aria-labelledby="example" className="space-y-4">
+        <h3 id="example" className="font-display text-2xl text-foreground">
+          Exemplo prático: uma temporada planejada
+        </h3>
+        <p>
+          Imagine um treinador que assume um clube médio com orçamento curto e um elenco
+          envelhecido. Sem gastar nada, ele pode usar a primeira janela para vender um veterano
+          caro, liberar folha salarial e apostar em dois jovens. O risco é escolher errado, porque
+          o potencial dos jovens fica escondido.
+        </p>
+        <p>
+          Com relatórios de olheiro, esse risco cai: cada relatório premium mostra o potencial e a
+          personalidade de {PREMIUM_SCOUT_REPORT_SIZE} jovens, e a escolha passa a ser feita com
+          informação. Ao longo da temporada, impulsos de treino usados nas semanas sem jogo
+          aceleram a evolução desses atletas. No fim do ano, o clube tem titulares formados em
+          casa e pode vender um deles por muito mais do que pagou.
+        </p>
+        <p>
+          O mesmo plano funciona de graça, só que mais devagar: as moedas acumuladas na carreira
+          também compram relatórios e impulsos pela tabela de troca. Os pacotes apenas encurtam o
+          caminho — o que decide a temporada continua sendo a qualidade das suas escolhas.
+        </p>
+      </section>
+
       <section aria-labelledby="mistakes" className="space-y-4">
         <h3 id="mistakes" className="font-display text-2xl text-foreground">
           Cinco erros comuns ao usar a loja

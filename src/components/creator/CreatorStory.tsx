@@ -87,6 +87,33 @@ const MODES: { name: string; session: string; focus: string; online: string }[] 
   },
 ];
 
+const CREATOR_FAQ: { q: string; a: string }[] = [
+  {
+    q: "O jogo é feito por uma empresa grande?",
+    a: "Não. É um projeto independente, criado e mantido por Davi Andrian Thomazini. As decisões de design, as correções e as novidades saem da mesma pessoa, com ajuda do retorno da comunidade.",
+  },
+  {
+    q: "O jogo tem relação com outros jogos de manager famosos?",
+    a: "Não. O Pro Football Manager 3D é uma criação própria, com motor, interface e regras desenvolvidos para rodar no navegador. Comparações com outros jogos do gênero estão no comparativo do site.",
+  },
+  {
+    q: "Com que frequência sai atualização?",
+    a: "As melhorias saem em entregas frequentes e menores, registradas na linha do tempo desta página. Cada entrega passa pelas verificações de estabilidade e desempenho antes de ir ao ar.",
+  },
+  {
+    q: "Posso sugerir uma liga, um clube ou um recurso?",
+    a: "Pode e deve. Envie pela comunidade ou pelo e-mail do criador, explicando o que você gostaria de ver e por quê. Pedidos com exemplos concretos ajudam a priorizar.",
+  },
+  {
+    q: "Como reporto um erro de forma útil?",
+    a: "Diga o aparelho, o navegador, a página, o passo a passo do que fez e o que aconteceu. Se for na carreira, inclua clube, temporada e rodada. Uma captura de tela ajuda muito.",
+  },
+  {
+    q: "O jogo vai continuar gratuito?",
+    a: "Sim. A proposta é manter a carreira e as partidas acessíveis de graça; a loja é opcional e financia servidores, dados esportivos e desenvolvimento.",
+  },
+];
+
 export function CreatorStory() {
   const updates = CHANGELOG.reduce((total, entry) => total + entry.items.length, 0);
 
@@ -328,6 +355,45 @@ export function CreatorStory() {
           <Link to="/produtos" className="text-primary hover:underline">pacotes</Link>.
         </p>
 
+      </section>
+
+      <section aria-labelledby="match-inside" className="space-y-4">
+        <h2 id="match-inside" className="font-display text-2xl uppercase tracking-wide text-foreground">
+          Bastidores: o que acontece numa partida
+        </h2>
+        <p>
+          Quando o apito inicial soa, o motor de simulação começa a avançar a partida em pequenos
+          passos. A cada passo, cada atleta decide para onde ir conforme a função tática, a posição
+          da bola, os companheiros e os adversários. Quem está com a bola escolhe entre passar,
+          driblar ou chutar, pesando o espaço livre e o risco de perder a posse. Atributos como
+          passe, finalização, velocidade e físico mudam a chance de cada ação dar certo.
+        </p>
+        <p>
+          Ao mesmo tempo, o desgaste avança. Correr muito, jogar no calor ou sob chuva consome mais
+          energia, e um atleta cansado reage mais devagar e erra mais. Os corpos dos jogadores não
+          se atravessam: contatos empurram os atletas, e as traves do gol são sólidas. É por isso
+          que as substituições e os ajustes no intervalo fazem diferença de verdade.
+        </p>
+        <p>
+          O 3D recebe esses resultados e cuida da apresentação: animações de corrida e chute,
+          câmera de transmissão, iluminação do estádio, torcida e replays. Como a apresentação não
+          decide nada, ela pode ficar mais leve num celular sem alterar o placar, e a mesma partida
+          pode ser reassistida com o mesmo resultado.
+        </p>
+      </section>
+
+      <section aria-labelledby="creator-faq" className="space-y-4">
+        <h2 id="creator-faq" className="font-display text-2xl uppercase tracking-wide text-foreground">
+          Perguntas sobre o projeto
+        </h2>
+        <dl className="space-y-4">
+          {CREATOR_FAQ.map((item) => (
+            <div key={item.q} className="rounded-2xl border border-border/60 surface-card p-5">
+              <dt className="font-display text-lg text-foreground">{item.q}</dt>
+              <dd className="mt-2 text-sm">{item.a}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section aria-labelledby="feedback" className="space-y-4">
