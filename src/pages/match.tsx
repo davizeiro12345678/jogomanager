@@ -16,7 +16,6 @@ import {
   MessageCircle,
   Pause,
   Play,
-  Repeat,
   ShoppingBag,
   SkipForward,
   Sparkles,
@@ -56,8 +55,6 @@ import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loadi
 import { ceremonyEnabled } from "@/game/ceremony-prefs";
 
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
-
-import { MENTALITIES, PRESSING } from "@/game/formations";
 
 import { WorkerMatchView } from "@/game/live-match";
 
@@ -104,8 +101,6 @@ import type { CareerState, ManagerLook, Player } from "@/game/types";
 import { Feed, Scoreboard } from "@/features/match/MatchHud";
 import { MatchManagementControls } from "@/features/match/MatchManagementControls";
 import { MatchStatsPanel } from "@/features/match/MatchStatsPanel";
-
-import { eventIcon } from "@/features/match/event-icon";
 
 import { snapshot, type Snap } from "@/features/match/types";
 
