@@ -36,7 +36,7 @@ export async function saveValidatedCareer(
     }
 
     // Plausibility limits: implausible saves stay personal, never attested.
-    let issues: PlausibilityIssue[] = [];
+    let issues: PlausibilityIssue[];
     try {
       const elapsed = stored?.updated_at ? Date.now() - Date.parse(stored.updated_at) : null;
       issues = plausibilityIssues(previous ?? null, incoming, elapsed);
