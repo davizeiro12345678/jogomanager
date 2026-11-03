@@ -40,3 +40,6 @@
 - Coin-priced career services are charged only by `spend_coins_on_service` (prices, weekly limits and per-request idempotency in the database), which consumes a stored shop item before coins; the client applies the effect to its own save only after the server approves.
 - Implausible career saves are still stored but never attested; the server records risk signals and a 30-day risk score blocks attestation, so suspicious accounts lose rewards before any ban.
 - Every post-processing stack runs `HdrSanitize` before bloom; one non-finite pixel spread by bloom flashes the whole frame white or black.
+
+- Reference the full game stylesheet only through `src/lib/game-stylesheet.ts` (`?url`); a second plain `import "@/styles.css"` makes server and browser builds name the asset differently and game pages link a missing stylesheet.
+- Go and C#/.NET WebAssembly pilots were measured and rejected (`docs/report-2026-11-03-speed-and-wasm-pilots.md`); TypeScript stays the only runtime for game logic unless a new pilot beats that baseline.

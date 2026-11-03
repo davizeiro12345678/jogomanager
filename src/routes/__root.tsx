@@ -6,7 +6,7 @@ import {
   RootShell,
   RootComponent,
 } from "@/components/RootLayout";
-import appCss from "../styles.css?url";
+import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
 
 import { isLightweightCssPath } from "@/lib/public-content-routes";

@@ -28,13 +28,18 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] Home e páginas: velocidade (home móvel publicada: 87; seções abaixo da dobra adiadas e desfoques removidos, falta medir após publicar)
 
 ## Plano: carregamento, modularização, novas compras, Go e C# (aprovado 03/11)
-- [ ] Etapa 1 Medição de base (todas as páginas, 3 rodadas)
+- [x] Etapa 1 Medição de base (docs/report-2026-11-03-speed-and-wasm-pilots.md; FAQ dava 404 no publicado)
+  - [ ] Medir de novo depois de publicar
 - [ ] Etapa 2 Divisão do código e carregamento
+  - [x] Estilo do jogo ausente no publicado (CLS 0,78 em /new) corrigido
+  - [x] Catálogo de clubes de /new baixado só depois da pintura
+  - [x] Guias longos de loja/criador pulam o desenho fora da tela
+  - [ ] Reduzir o JS de /new (463 kB) e o bloqueio de /produtos e /guias (>1 s)
 - [ ] Etapa 3 Modularização dos arquivos gigantes
 - [ ] Etapa 4 Experiência do usuário
 - [x] Etapa 5 Novas compras
   - [x] Pacote de estreia (1x por conta) e Kit do clube
   - [x] Pacote médico e análise tática (tratamentos/relatórios guardados na carteira)
   - [x] Passe anual (assinatura anual, 12 meses pelo preço de 10)
-- [ ] Etapa 6 Go e C# (pilotos WASM medidos)
+- [x] Etapa 6 Go e C# (pilotos medidos; nenhum entra: Go 21% mais lento, .NET +1,3 MB)
 - [ ] Etapa 7 Relatório final
