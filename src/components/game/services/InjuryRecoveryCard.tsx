@@ -33,7 +33,9 @@ export function InjuryRecoveryCard({
     if (busy) return;
     setBusy(playerId);
     try {
-      const result = await spend({ data: { service: "injury_recovery", requestId: crypto.randomUUID() } });
+      const result = await spend({
+        data: { service: "injury_recovery", requestId: crypto.randomUUID() },
+      });
       if (!result.ok) {
         toast.error(
           result.reason === "not_enough_coins"
@@ -46,7 +48,9 @@ export function InjuryRecoveryCard({
       }
       onApply(applyInjuryRecovery(career, playerId));
       await queryClient.invalidateQueries({ queryKey: ["wallet"] });
-      toast.success(`Tratamento feito: −${INJURY_RECOVERY_WEEKS} semanas de lesão. Saldo: ${result.coins} moedas.`);
+      toast.success(
+        `Tratamento feito: −${INJURY_RECOVERY_WEEKS} semanas de lesão. Saldo: ${result.coins} moedas.`,
+      );
     } catch {
       toast.error("Não foi possível fazer o tratamento agora.");
     } finally {
@@ -55,12 +59,19 @@ export function InjuryRecoveryCard({
   }
 
   return (
-    <section aria-labelledby="medical-title" className="mb-6 rounded-2xl border border-border/60 bg-card/60 p-4">
-      <h2 id="medical-title" className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-primary">
+    <section
+      aria-labelledby="medical-title"
+      className="mb-6 rounded-2xl border border-border/60 bg-card/60 p-4"
+    >
+      <h2
+        id="medical-title"
+        className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-primary"
+      >
         <HeartPulse size={16} aria-hidden="true" /> Departamento médico
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Tratamento intensivo: {cost} moedas tiram {INJURY_RECOVERY_WEEKS} semanas da lesão de um jogador. Até {weeklyLimit} por semana.
+        Tratamento intensivo: {cost} moedas tiram {INJURY_RECOVERY_WEEKS} semanas da lesão de um
+        jogador. Até {weeklyLimit} por semana.
       </p>
       {userId === null ? (
         <div className="mt-3">

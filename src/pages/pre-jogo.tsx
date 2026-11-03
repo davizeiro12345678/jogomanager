@@ -25,6 +25,7 @@ import { RealClubInfo } from "@/components/game/RealClubInfo";
 import "@/components/game/prematch.css";
 import { careerAnalyticsId } from "@/lib/career-analytics-id";
 import { useMarkOnboardingVisit } from "@/lib/onboarding-progress";
+import { OpponentReportCard } from "@/components/game/services/OpponentReportCard";
 
 export function PreMatchPage() {
   const { career } = useCareer();
@@ -163,6 +164,7 @@ function PreMatch({ career }: { career: CareerState }) {
             <Play size={18} /> Entrar em campo
           </Link>
         </div>
+        <OpponentReportCard career={career} />
       </section>
     </GameShell>
   );

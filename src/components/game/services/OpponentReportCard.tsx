@@ -36,7 +36,9 @@ export function OpponentReportCard({ career }: { career: CareerState }) {
     if (busy) return;
     setBusy(true);
     try {
-      const result = await spend({ data: { service: "opponent_report", requestId: crypto.randomUUID() } });
+      const result = await spend({
+        data: { service: "opponent_report", requestId: crypto.randomUUID() },
+      });
       if (!result.ok) {
         toast.error(
           result.reason === "not_enough_coins"
@@ -62,15 +64,22 @@ export function OpponentReportCard({ career }: { career: CareerState }) {
   }
 
   return (
-    <section aria-labelledby="opp-report-title" className="mt-6 rounded-2xl border border-border/60 bg-card/60 p-4">
-      <h2 id="opp-report-title" className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-primary">
+    <section
+      aria-labelledby="opp-report-title"
+      className="mt-6 rounded-2xl border border-border/60 bg-card/60 p-4"
+    >
+      <h2
+        id="opp-report-title"
+        className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-primary"
+      >
         <FileSearch size={16} aria-hidden="true" /> Relatório do adversário
       </h2>
       {unlocked ? (
         <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
           <p>
             <span className="block text-xs text-muted-foreground">Situação</span>
-            {report.opponentName} · {report.position ? `${report.position}º na tabela` : "sem posição"} ·{" "}
+            {report.opponentName} ·{" "}
+            {report.position ? `${report.position}º na tabela` : "sem posição"} ·{" "}
             {report.atHome ? "você joga em casa" : "você joga fora"}
           </p>
           <p>
@@ -80,7 +89,9 @@ export function OpponentReportCard({ career }: { career: CareerState }) {
           <p>
             <span className="block text-xs text-muted-foreground">Média de gols</span>
             {report.goalsForAvg} marcados · {report.goalsAgainstAvg} sofridos por jogo
-            {report.secondHalfGoalShare !== null ? ` · ${report.secondHalfGoalShare}% no 2º tempo` : ""}
+            {report.secondHalfGoalShare !== null
+              ? ` · ${report.secondHalfGoalShare}% no 2º tempo`
+              : ""}
           </p>
           <p>
             <span className="block text-xs text-muted-foreground">Como devem jogar</span>
@@ -94,7 +105,8 @@ export function OpponentReportCard({ career }: { career: CareerState }) {
       ) : (
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            Forma, média de gols, estilo provável e uma recomendação tática para enfrentar {report.opponentName}.
+            Forma, média de gols, estilo provável e uma recomendação tática para enfrentar{" "}
+            {report.opponentName}.
           </p>
           {userId === null ? (
             <GuestSignInButton />

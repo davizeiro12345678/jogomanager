@@ -14,7 +14,10 @@ export function applyInjuryRecovery(career: CareerState, playerId: string): Care
     ...career,
     players: {
       ...career.players,
-      [playerId]: { ...player, injuryWeeks: Math.max(0, player.injuryWeeks - INJURY_RECOVERY_WEEKS) },
+      [playerId]: {
+        ...player,
+        injuryWeeks: Math.max(0, player.injuryWeeks - INJURY_RECOVERY_WEEKS),
+      },
     },
   };
 }
@@ -42,7 +45,10 @@ export function opponentReport(career: CareerState): OpponentReport | null {
   const atHome = fixture.home === career.clubId;
   const opponentId = atHome ? fixture.away : fixture.home;
   const played = career.fixtures.filter(
-    (f) => f.homeGoals !== null && f.awayGoals !== null && (f.home === opponentId || f.away === opponentId),
+    (f) =>
+      f.homeGoals !== null &&
+      f.awayGoals !== null &&
+      (f.home === opponentId || f.away === opponentId),
   );
   let gf = 0;
   let ga = 0;
