@@ -204,6 +204,17 @@ async function fetchAll(): Promise<Cache> {
   return { at: Date.now(), leagues, clubs };
 }
 
+/** The bundled clubs are already on screen; downloading and parsing tens of
+ * thousands of extra rows must not compete with the first paint and input. */
+function afterFirstPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    const ric = (window as { requestIdleCallback?: typeof requestIdleCallback })
+      .requestIdleCallback;
+    if (typeof ric === "function") ric(() => resolve(), { timeout: 2500 });
+    else window.setTimeout(resolve, 1200);
+  });
+}
+
 /** Applies the cached catalogue at once and refreshes it in the background. */
 export function loadDbCatalog(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
@@ -211,7 +222,8 @@ export function loadDbCatalog(): Promise<void> {
   if (cache && !merged) apply(cache);
   if (merged && Date.now() - refreshedAt < CACHE_TTL_MS) return Promise.resolve();
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return Promise.resolve();
-  refreshing ??= fetchAll()
+  refreshing ??= afterFirstPaint()
+    .then(fetchAll)
     .then((fresh) => {
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
