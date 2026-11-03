@@ -38,6 +38,8 @@ function detect(): Lang {
 
 type Translator = typeof import("./messages").translate;
 
+const PACK_LOADERS = import.meta.glob<{ default: Record<string, string> }>("./packs/*.json");
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("pt-BR");
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -45,12 +47,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setLangState(detect());
   }, []);
+  // Language packs fill strings that would otherwise fall back to English.
+  const [packLang, setPackLang] = useState<Lang | null>(null);
   useEffect(() => {
-    if (lang === "pt-BR" || lang === "en" || loadedTranslator) return;
+    if (lang === "pt-BR" || lang === "en") return;
     let active = true;
-    void import("./messages")
-      .then((module) => {
-        if (active) setLoadedTranslator(() => module.translate);
+    const packPath = `./packs/${lang}.json`;
+    const loadPack = PACK_LOADERS[packPath];
+    void Promise.all([import("./messages"), loadPack ? loadPack() : Promise.resolve(null)])
+      .then(([module, pack]) => {
+        if (!active) return;
+        if (pack) module.registerLanguagePack(lang, pack.default);
+        setLoadedTranslator(() => module.translate);
+        setPackLang(lang);
       })
       .catch((error) => {
         reportSilent("i18n.translation", error, {
@@ -63,7 +72,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [lang, loadedTranslator]);
+  }, [lang]);
   const setLang = useCallback((l: Lang) => {
     if (!(LANGS as readonly string[]).includes(l)) return;
     setLangState(l);
@@ -91,7 +100,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       dir,
       t: (key: string) => (loadedTranslator ?? translateBootstrap)(lang, key),
     }),
-    [lang, setLang, dir, loadedTranslator],
+    // packLang re-creates the translator closure once a pack registers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lang, setLang, dir, loadedTranslator, packLang],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
