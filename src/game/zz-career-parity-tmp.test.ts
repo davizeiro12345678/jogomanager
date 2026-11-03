@@ -11,8 +11,9 @@ it("career split plays two identical seasons", () => {
     a = JSON.parse(JSON.stringify(a)); b = JSON.parse(JSON.stringify({ ...a }));
     for (let i = 0; i < 90; i++) {
       const r = { hg: i % 3, ag: (i + 1) % 2 };
-      a = base.advanceRound(a, r);
-      b = next.advanceRound(b, r);
+      const t = 1_790_000_000_000 + i * 604_800_000;
+      a = base.advanceRound(a, r, [], "Liga", t);
+      b = next.advanceRound(b, r, [], "Liga", t);
       expect(JSON.stringify(b)).toBe(JSON.stringify(a));
     }
     console.log("CAREER_OK", club, a.season, a.round);
