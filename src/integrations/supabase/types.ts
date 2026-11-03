@@ -606,6 +606,33 @@ export type Database = {
           },
         ]
       }
+      coin_service_spends: {
+        Row: {
+          cost: number
+          created_at: string
+          id: string
+          request_id: string
+          service: string
+          user_id: string
+        }
+        Insert: {
+          cost: number
+          created_at?: string
+          id?: string
+          request_id: string
+          service: string
+          user_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          id?: string
+          request_id?: string
+          service?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       competition_seasons: {
         Row: {
           champion_club_id: string | null
@@ -2442,6 +2469,15 @@ export type Database = {
         Returns: {
           coins: number
           season_pass: boolean
+        }[]
+      }
+      spend_coins_on_service: {
+        Args: { _request_id: string; _service: string; _user_id: string }
+        Returns: {
+          coins: number
+          ok: boolean
+          reason: string
+          used_this_week: number
         }[]
       }
       store_product_contents_valid: {
