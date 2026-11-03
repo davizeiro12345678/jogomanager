@@ -101,7 +101,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       t: (key: string) => (loadedTranslator ?? translateBootstrap)(lang, key),
     }),
     // packLang re-creates the translator closure once a pack registers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lang, setLang, dir, loadedTranslator, packLang],
   );
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
