@@ -35,3 +35,5 @@
 - See `docs/critical-performance.md` for the limits and evidence required to assess a change.
 - The connected backend did not run the recovered history in `supabase/migrations/` (it belongs to another backend); apply schema changes as new forward migrations under `drizzle/migrations/` and never replay those historical files, because they assume an empty database.
 - Wallet items are spent only through service-role database functions called from authenticated server functions, and their rates live in both those functions and `src/lib/wallet-rules.ts`; the database is the authority so clients cannot mint coins or items.
+
+- Keep match physics refinements as pure, randomness-free functions in `src/game/match-physics-extras.ts`; MatchSim and the Rapier authority call them so seeds and server replays stay deterministic.

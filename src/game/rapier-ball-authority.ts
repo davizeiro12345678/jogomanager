@@ -14,6 +14,7 @@ import {
 } from "@dimforge/rapier3d-compat";
 
 import { pitchCondition } from "./ball-climate";
+import { quadraticDragDeceleration } from "./match-physics-extras";
 import { highFidelitySubsteps } from "./physics-quality";
 import type { WeatherKind } from "./sim-rules";
 
@@ -226,6 +227,7 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.stepWorld(dt, (substep) => {
       this.applyMagnusImpulse(substep, state.spin);
       this.applyWindImpulse(substep);
+      this.applyQuadraticDrag(substep);
     });
     this.writeDynamicState(state);
     this.lastWritten = copyState(state);
@@ -272,6 +274,17 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
       { x: -(velocity.z / speed) * strength, y: 0, z: (velocity.x / speed) * strength },
       true,
     );
+  }
+
+  /** Air resistance grows with v²: driven shots and long balls die in flight. */
+  private applyQuadraticDrag(dt: number) {
+    if (this.ballBody.translation().y < BALL_PHYSICS_RADIUS * 2.5) return;
+    const v = this.ballBody.linvel();
+    const speed = Math.hypot(v.x, v.y, v.z);
+    if (speed < 1) return;
+    const dv = Math.min(speed * 0.5, quadraticDragDeceleration(speed) * finite(dt, 1 / 30));
+    const m = (this.ballBody.mass() * dv) / speed;
+    this.ballBody.applyImpulse({ x: -v.x * m, y: -v.y * m, z: -v.z * m }, true);
   }
 
   private applyWindImpulse(dt: number) {
