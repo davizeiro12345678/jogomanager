@@ -16,7 +16,6 @@ import {
   MessageCircle,
   Pause,
   Play,
-  Repeat,
   ShoppingBag,
   SkipForward,
   Sparkles,
@@ -56,8 +55,6 @@ import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loadi
 import { ceremonyEnabled } from "@/game/ceremony-prefs";
 
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
-
-import { MENTALITIES, PRESSING } from "@/game/formations";
 
 import { WorkerMatchView } from "@/game/live-match";
 
@@ -99,11 +96,11 @@ import { useCareer } from "@/hooks/useCareer";
 
 import { useT } from "@/i18n/provider";
 
-import type { CareerState, ManagerLook } from "@/game/types";
+import type { CareerState, ManagerLook, Player } from "@/game/types";
 
-import { Feed, Scoreboard, StatRow } from "@/features/match/MatchHud";
-
-import { eventIcon } from "@/features/match/event-icon";
+import { Feed, Scoreboard } from "@/features/match/MatchHud";
+import { MatchManagementControls } from "@/features/match/MatchManagementControls";
+import { MatchStatsPanel } from "@/features/match/MatchStatsPanel";
 
 import { snapshot, type Snap } from "@/features/match/types";
 
@@ -547,8 +544,6 @@ function LiveMatch({
   const myTactics = (mySide === "home" ? sim.home : sim.away).tactics;
 
   // Substituições ao vivo (até 5)
-  const [outPid, setOutPid] = useState("");
-  const [inId, setInId] = useState("");
   // The worker populates and mutates this view after the first render. Derive
   // the roster from each snapshot so an initially empty team cannot stay cached.
   const onPitch = sim.players.filter((p) => p.side === mySide);
@@ -558,14 +553,11 @@ function LiveMatch({
     .filter((p) => p && !usedIds.has(p.id) && p.injuryWeeks === 0 && !p.suspended);
   const subsUsed = sim.subsUsed[mySide];
 
-  async function makeSub() {
-    const incoming = career.players[inId];
-    if (!outPid || !incoming || subsUsed >= 5) return;
-    if (await controllerRef.current?.substitute(mySide, outPid, incoming)) {
-      setOutPid("");
-      setInId("");
-      setSnap(snapshot(sim));
-    }
+  async function makeSub(outPid: string, incoming: Player): Promise<boolean> {
+    if (subsUsed >= 5) return false;
+    const accepted = Boolean(await controllerRef.current?.substitute(mySide, outPid, incoming));
+    if (accepted) setSnap(snapshot(sim));
+    return accepted;
   }
 
   return (
@@ -670,73 +662,7 @@ function LiveMatch({
       <MatchMinimap view={sim} />
 
       {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
-      {showStats ? (
-        <div className="match-stats-panel pointer-events-auto absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 max-h-[55vh] space-y-3 overflow-y-auto rounded-xl border border-primary/25 bg-[#07100d]/95 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl md:inset-x-auto md:bottom-auto md:right-3 md:top-24 md:max-h-none md:w-64 md:rounded-xl md:p-3">
-          <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-white/25 md:hidden" />
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
-              Estatísticas
-            </h2>
-            <button
-              onClick={() => setShowStats(false)}
-              aria-label="Fechar estatísticas"
-              className="min-h-11 rounded-full bg-white/10 px-4 text-xs text-white/70"
-            >
-              Fechar
-            </button>
-          </div>
-          <StatRow label="Posse" h={snap.poss[0]} a={snap.poss[1]} />
-          <StatRow label="Chutes" h={snap.hShots} a={snap.aShots} />
-          <StatRow label="No gol" h={snap.hOn} a={snap.aOn} />
-          <StatRow label="xG" h={snap.hXg} a={snap.aXg} />
-          <StatRow label="Passes" h={snap.hPass} a={snap.aPass} />
-          <StatRow label="Passes certos" h={snap.hPassOk} a={snap.aPassOk} />
-          <div className="flex items-center justify-between text-[11px] text-white/60">
-            <span className="font-display tabular-nums text-white">
-              {snap.hPass ? Math.round((snap.hPassOk / snap.hPass) * 100) : 0}%
-            </span>
-            <span className="uppercase tracking-widest">Acerto de passe</span>
-            <span className="font-display tabular-nums text-white">
-              {snap.aPass ? Math.round((snap.aPassOk / snap.aPass) * 100) : 0}%
-            </span>
-          </div>
-          <StatRow label="Escanteios" h={snap.hCorners} a={snap.aCorners} />
-          <StatRow label="Faltas" h={snap.hFouls} a={snap.aFouls} />
-          <div className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-[11px] text-white/70">
-            <span className="font-display tabular-nums text-white">
-              <span className="mr-1 inline-block h-2.5 w-2 rounded-[2px] bg-yellow-400 align-middle" />
-              {snap.hYellow}
-              <span className="ml-2 mr-1 inline-block h-2.5 w-2 rounded-[2px] bg-red-500 align-middle" />
-              {snap.hRed}
-            </span>
-            <span className="uppercase tracking-widest">Cartões</span>
-            <span className="font-display tabular-nums text-white">
-              {snap.aYellow}
-              <span className="mx-1 inline-block h-2.5 w-2 rounded-[2px] bg-yellow-400 align-middle" />
-              {snap.aRed}
-              <span className="ml-1 inline-block h-2.5 w-2 rounded-[2px] bg-red-500 align-middle" />
-            </span>
-          </div>
-          {/* eventos ao vivo — no celular o feed lateral fica oculto */}
-          <div className="md:hidden">
-            <p className="mb-1 font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
-              Lances
-            </p>
-            <div className="space-y-1 text-xs text-white/85">
-              {[...snap.events]
-                .reverse()
-                .slice(0, 8)
-                .map((e, i) => (
-                  <p key={`${e.minute}-${i}`} className="flex gap-2">
-                    <span className="w-7 shrink-0 tabular-nums text-white/45">{e.minute}'</span>
-                    <span className="shrink-0">{eventIcon(e.type)}</span>
-                    <span>{e.text}</span>
-                  </p>
-                ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {showStats ? <MatchStatsPanel snap={snap} onClose={() => setShowStats(false)} /> : null}
 
       {/* Barra de transporte sempre visível */}
       <div
@@ -933,90 +859,15 @@ function LiveMatch({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <label className="block">
-            <span className="font-display text-[10px] uppercase tracking-[0.2em] text-white/50">
-              Mentalidade
-            </span>
-            <select
-              aria-label="Mentalidade da equipe"
-              value={myTactics.mentality}
-              onChange={(e) => setMentality(Number(e.target.value))}
-              className="mt-1 min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
-            >
-              {MENTALITIES.map((m, i) => (
-                <option key={m} value={i} className="text-black">
-                  {m}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="font-display text-[10px] uppercase tracking-[0.2em] text-white/50">
-              Pressão
-            </span>
-            <select
-              aria-label="Intensidade de pressão"
-              value={myTactics.pressing}
-              onChange={(e) => setPressing(Number(e.target.value))}
-              className="mt-1 min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
-            >
-              {PRESSING.map((m, i) => (
-                <option key={m} value={i} className="text-black">
-                  {m}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div>
-          <p className="flex items-center justify-between font-display text-[10px] uppercase tracking-[0.25em] text-white/50">
-            <span className="flex items-center gap-1">
-              <Repeat size={11} /> Substituições
-            </span>
-            <span>{subsUsed}/5</span>
-          </p>
-          <div className="mt-1 grid grid-cols-2 gap-1">
-            <select
-              aria-label="Jogador que sai"
-              value={outPid}
-              onChange={(e) => setOutPid(e.target.value)}
-              className="min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
-            >
-              <option value="" className="text-black">
-                Sai…
-              </option>
-              {onPitch.map((p) => (
-                <option key={p.pid} value={p.pid} className="text-black">
-                  {p.number} {p.name}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Jogador que entra"
-              value={inId}
-              onChange={(e) => setInId(e.target.value)}
-              className="min-h-10 w-full rounded-lg bg-white/10 px-2 py-1 text-xs text-white"
-            >
-              <option value="" className="text-black">
-                Entra…
-              </option>
-              {benchAvailable.map((p) => (
-                <option key={p.id} value={p.id} className="text-black">
-                  {p.number} {p.name} ({p.pos})
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={makeSub}
-            disabled={!outPid || !inId || subsUsed >= 5}
-            className="mt-1 w-full rounded-lg bg-white/15 px-2 py-1.5 text-xs text-white disabled:opacity-40"
-          >
-            Confirmar substituição
-          </button>
-        </div>
+        <MatchManagementControls
+          myTactics={myTactics}
+          setMentality={setMentality}
+          setPressing={setPressing}
+          subsUsed={subsUsed}
+          onPitch={onPitch}
+          benchAvailable={benchAvailable}
+          onSubstitute={makeSub}
+        />
 
         <button
           onClick={() => {
