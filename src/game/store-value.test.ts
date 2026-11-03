@@ -37,3 +37,11 @@ describe("store career value", () => {
     );
   });
 });
+
+describe("store headline", () => {
+  it("leads with the dominant item: scouting pack talks about talent", () => {
+    expect(
+      careerValue("scout", parseOfferContents({ scoutReports: 15, trainingBoosts: 1 })).headline,
+    ).toBe("Encontra talentos antes dos rivais.");
+  });
+});

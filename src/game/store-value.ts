@@ -127,7 +127,7 @@ export function careerValue(kind: string, contents: OfferContents | null): Caree
     c.scoutReports * COIN_EXCHANGE.scout_report +
     c.trainingBoosts * COIN_EXCHANGE.training_boost;
   const headline =
-    c.trainingBoosts > 0
+    c.trainingBoosts >= 3
       ? "Acelera a evolução do seu elenco."
       : c.scoutReports >= 10
         ? "Encontra talentos antes dos rivais."
