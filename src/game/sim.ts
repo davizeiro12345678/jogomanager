@@ -53,9 +53,9 @@ export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
 
 import * as setPieces from "./sim-set-pieces";
-import * as sim_discipline from "./sim-discipline";
-import * as sim_team_ai from "./sim-team-ai";
-import * as sim_ball_duels from "./sim-ball-duels";
+import * as discipline from "./sim-discipline";
+import * as teamAi from "./sim-team-ai";
+import * as ballDuels from "./sim-ball-duels";
 import { bodyContactShare, quadraticDragDeceleration, settlesOnTurf } from "./match-physics-extras";
 import type {
   Side,
@@ -787,7 +787,7 @@ export class MatchSim {
   }
 
   /** @internal */ halfTimeRead(side: Side) {
-    sim_team_ai.halfTimeRead(this, side);
+    teamAi.halfTimeRead(this, side);
   }
 
   /** papo de vestiário: mexe um pouco na moral de cada lado */
@@ -958,21 +958,21 @@ export class MatchSim {
   /* ---------------- cartões, expulsões e lesões ---------------- */
 
   /** @internal */ issueYellow(p: SimPlayer) {
-    sim_discipline.issueYellow(this, p);
+    discipline.issueYellow(this, p);
   }
 
   /** @internal */ sendOff(p: SimPlayer, why: string) {
-    sim_discipline.sendOff(this, p, why);
+    discipline.sendOff(this, p, why);
   }
 
   /** @internal */ injure(p: SimPlayer, cause: string) {
-    sim_discipline.injure(this, p, cause);
+    discipline.injure(this, p, cause);
   }
 
   /* ---------------- IA do treinador ---------------- */
 
   /** @internal */ aiManage(side: Side) {
-    sim_team_ai.aiManage(this, side);
+    teamAi.aiManage(this, side);
   }
 
   /* ---------------- bolas paradas ---------------- */
@@ -1133,11 +1133,11 @@ export class MatchSim {
   }
 
   /** @internal */ chasers(): Set<string> {
-    return sim_team_ai.chasers(this);
+    return teamAi.chasers(this);
   }
 
   /** @internal */ moveOffBall(dt: number) {
-    sim_team_ai.moveOffBall(this, dt);
+    teamAi.moveOffBall(this, dt);
   }
 
   /** empurra jogadores sobrepostos para que não se atravessem */
@@ -1378,17 +1378,17 @@ export class MatchSim {
   }
 
   /** @internal */ controlBall(p: SimPlayer, ballSpeed: number, h: number) {
-    sim_ball_duels.controlBall(this, p, ballSpeed, h);
+    ballDuels.controlBall(this, p, ballSpeed, h);
   }
 
   /** @internal */ tryBlock(dt: number): boolean {
-    return sim_ball_duels.tryBlock(this, dt);
+    return ballDuels.tryBlock(this, dt);
   }
 
   /** @internal */ resolveShot(
     previous = { x: this.ball.x, z: this.ball.z, height: this.ball.height },
   ): boolean {
-    return sim_ball_duels.resolveShot(this, previous);
+    return ballDuels.resolveShot(this, previous);
   }
 
   /** @internal */ woodworkOrRelease(
@@ -1398,7 +1398,7 @@ export class MatchSim {
     crossingH: number,
     dir: number,
   ): boolean {
-    return sim_ball_duels.woodworkOrRelease(this, s, shooter, crossingZ, crossingH, dir);
+    return ballDuels.woodworkOrRelease(this, s, shooter, crossingZ, crossingH, dir);
   }
 
   /** Registra o gol, celebrações e reinício. */
@@ -1493,11 +1493,11 @@ export class MatchSim {
   }
 
   /** @internal */ dribble(holder: SimPlayer, dt: number) {
-    sim_ball_duels.dribble(this, holder, dt);
+    ballDuels.dribble(this, holder, dt);
   }
 
   /** @internal */ pressure(holder: SimPlayer, dt: number) {
-    sim_ball_duels.pressure(this, holder, dt);
+    ballDuels.pressure(this, holder, dt);
   }
 
   private decide(holder: SimPlayer) {
@@ -1634,7 +1634,7 @@ export class MatchSim {
   }
 
   /** @internal */ shoot(holder: SimPlayer, distGoal: number) {
-    sim_ball_duels.shoot(this, holder, distGoal);
+    ballDuels.shoot(this, holder, distGoal);
   }
 
   /** @internal */ scheduleRestart(side: Side) {
