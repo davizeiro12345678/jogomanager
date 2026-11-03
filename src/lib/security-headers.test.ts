@@ -102,6 +102,15 @@ describe("outer response protection", () => {
     );
     expect(authorized.headers.get("cache-control")).toBe("no-store");
   });
+  it("lets the edge keep public HTML for 5 minutes while browsers always revalidate", () => {
+    const page = secureResponse(
+      new Response("page", { headers: { "content-type": "text/html" } }),
+      new Request("https://jogomanager.com/produtos"),
+    );
+    expect(page.headers.get("cache-control")).toBe(
+      "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+    );
+  });
   it("preserves static caching and public indexing and implements bodyless HEAD", async () => {
     const asset = secureResponse(
       new Response("asset"),

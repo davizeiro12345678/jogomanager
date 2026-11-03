@@ -180,6 +180,14 @@ describe("IA do treinador", () => {
     expect(aiMentalityTweak(0, 40, 0)).toBe(null);
     expect(rnd()).toBeDefined();
   });
+
+  it("time exausto depois dos 60 minutos para de pressionar", () => {
+    expect(aiMentalityTweak(-1, 65, 0, 45)).toEqual({ mentality: 1, pressing: -1 });
+    expect(aiMentalityTweak(0, 65, 0, 45)).toEqual({ mentality: 0, pressing: -1 });
+    // Antes dos 60 minutos, ou com fôlego, a regra de cansaço não age.
+    expect(aiMentalityTweak(0, 58, 0, 45)).toBe(null);
+    expect(aiMentalityTweak(-1, 65, 0, 80)).toEqual({ mentality: 1, pressing: 1 });
+  });
 });
 
 describe("contexto e relógio", () => {

@@ -1,144 +1,19 @@
 import { Link } from "@tanstack/react-router";
+import { useDeferredValue, useState } from "react";
+import { Search } from "lucide-react";
+
+import { FAQ_COUNT, FAQ_GROUPS, searchFaq } from "@/content/faq";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
 import { CommunityInvite } from "@/components/CommunityInvite";
 import { PERGUNTAS_FREQUENTES_PATH as PATH } from "@/lib/public-route-paths";
 
-const GROUPS = [
-  {
-    id: "comecar",
-    title: "Começar a jogar",
-    questions: [
-      {
-        q: "O Pro Football Manager 3D é gratuito?",
-        a: "O jogo oferece acesso gratuito para começar a carreira e experimentar partidas. A loja apresenta produtos opcionais; confira o preço, a descrição e as condições de cada item antes da compra.",
-      },
-      {
-        q: "Preciso instalar algo para jogar?",
-        a: "Não. A experiência principal funciona no navegador. Uma conexão e um dispositivo compatíveis são recomendados para partidas em 3D e sincronização.",
-      },
-      {
-        q: "Posso jogar sem criar uma conta?",
-        a: "É possível começar como convidado. Nesse caso, o progresso depende do armazenamento mantido no navegador. Uma conta habilita os recursos de nuvem disponíveis.",
-      },
-      {
-        q: "Funciona em celulares e computadores?",
-        a: "O site é acessível em dispositivos móveis e desktop. A fluidez das partidas 3D varia com a GPU, a memória, o navegador e as opções gráficas selecionadas.",
-      },
-      {
-        q: "Qual modo devo experimentar primeiro?",
-        a: "Uma partida rápida ajuda a conhecer a visualização 3D. A carreira de treinador é indicada para quem quer administrar elenco, táticas, contratações e temporadas.",
-      },
-    ],
-  },
-  {
-    id: "carreira",
-    title: "Carreiras, clubes e competições",
-    questions: [
-      {
-        q: "Os clubes e jogadores são reais?",
-        a: "A plataforma reúne dados de clubes, atletas e competições reais obtidos de fontes esportivas. Os dados podem ter lacunas ou diferenças de atualização; nem todo registro do catálogo é necessariamente jogável em todos os modos.",
-      },
-      {
-        q: "Por que a quantidade de clubes do catálogo difere da tela de carreira?",
-        a: "O catálogo global inclui registros importados, enquanto cada modo pode oferecer um subconjunto de opções com elencos e regras integrados. Consulte a tela de seleção para saber o que está disponível naquele modo.",
-      },
-      {
-        q: "Posso escolher clubes de vários países?",
-        a: "Existem clubes e competições de diferentes países na base. A disponibilidade depende do modo, dos dados importados e do suporte da competição dentro da carreira.",
-      },
-      {
-        q: "Como escolho minha primeira equipe?",
-        a: "Veja o objetivo da diretoria, o orçamento, as opções por posição e o nível dos adversários. Um time intermediário costuma oferecer um desafio diferente de um favorito ao título.",
-      },
-      {
-        q: "Qual é a melhor formação?",
-        a: "Não existe um esquema que vence sempre. Compare pontas, volantes, zagueiros, laterais e as fraquezas do adversário antes de decidir. Ajustes táticos devem ser avaliados ao longo de várias partidas.",
-      },
-      {
-        q: "O que são overall e potencial?",
-        a: "Overall resume uma avaliação atual; potencial representa uma estimativa de crescimento. Nenhuma das duas medidas substitui a análise da função tática, do custo e da condição do atleta.",
-      },
-      {
-        q: "Dá para assistir a toda a partida em 3D?",
-        a: "O jogo possui visualização de partidas em 3D e opções de simulação. Disponibilidade e desempenho variam conforme o modo, o navegador e o dispositivo.",
-      },
-    ],
-  },
-  {
-    id: "salvamento",
-    title: "Salvamento, nuvem e modo offline",
-    questions: [
-      {
-        q: "Como minha carreira é salva?",
-        a: "A carreira de convidado utiliza armazenamento local. Ao entrar numa conta, há recursos de sincronização com a nuvem quando a conexão e os serviços estão disponíveis. Confira sempre o estado da sincronização.",
-      },
-      {
-        q: "Posso continuar no computador após jogar no celular?",
-        a: "A sincronização entre aparelhos depende de conta, conectividade e conclusão do envio dos dados. Confirme o progresso salvo antes de trocar de dispositivo.",
-      },
-      {
-        q: "Posso jogar offline?",
-        a: "Algumas funções podem operar sem conexão após o carregamento inicial. Importações, autenticação, multiplayer, pagamentos e atualizações precisam de acesso aos serviços online.",
-      },
-      {
-        q: "Posso apagar os dados do navegador sem perder minha carreira?",
-        a: "Não apague os dados locais sem confirmar que existe uma cópia válida. Exporte a carreira quando possível e verifique o save na nuvem. Uma carreira de convidado pode ser perdida ao limpar o navegador.",
-      },
-      {
-        q: "O que faço se uma carreira antiga aparecer de novo?",
-        a: "Evite substituir arquivos repetidas vezes. Guarde cópias, anote clube, temporada e dispositivo, e informe o problema ao suporte. Isso ajuda a investigar conflitos entre saves locais e remotos.",
-      },
-    ],
-  },
-  {
-    id: "online",
-    title: "Multiplayer e comunidade",
-    questions: [
-      {
-        q: "Como funciona o multiplayer?",
-        a: "O modo inclui a criação de salas e compartilhamento de convite com outros jogadores. Confira na tela do multiplayer as regras e os recursos disponíveis na versão atual.",
-      },
-      {
-        q: "Preciso de internet para enfrentar amigos?",
-        a: "Sim. Sessões compartilhadas dependem da comunicação com serviços online; uma partida local ou offline não substitui uma conexão multiplayer.",
-      },
-      {
-        q: "Onde posso encontrar outros treinadores?",
-        a: "A comunidade pode ser acessada pelos convites oficiais apresentados no site. Não compartilhe senhas, códigos privados ou dados de pagamento em chats.",
-      },
-    ],
-  },
-  {
-    id: "suporte",
-    title: "Compras, suporte e privacidade",
-    questions: [
-      {
-        q: "A loja é obrigatória para disputar partidas?",
-        a: "Não é necessário comprar um produto para começar gratuitamente. Antes de qualquer compra opcional, confira o efeito real do item, a forma de pagamento e as condições exibidas.",
-      },
-      {
-        q: "Paguei, mas não recebi o produto. O que faço?",
-        a: "Confira o status do pedido e a conta utilizada. Se a entrega não aparecer, contate o suporte com o número do pedido. Não compartilhe dados completos do cartão nem senha.",
-      },
-      {
-        q: "Como solicito suporte ou faço uma sugestão?",
-        a: "Use a página de contato. Informe dispositivo, navegador, página, ação realizada e resultado encontrado. Para problemas de carreira, inclua clube, temporada e rodada.",
-      },
-      {
-        q: "Posso pedir acesso ou exclusão dos meus dados?",
-        a: "A política de privacidade explica os tipos de informações tratados e os canais para solicitações sobre seus dados pessoais.",
-      },
-      {
-        q: "Como acompanho novidades do jogo?",
-        a: "A página do criador reúne atualizações do desenvolvimento. Consulte também os canais oficiais antes de considerar uma funcionalidade experimental como concluída.",
-      },
-    ],
-  },
-] as const;
-
 export function Page() {
+  const [query, setQuery] = useState("");
+  const deferred = useDeferredValue(query);
+  const groups = searchFaq(deferred);
+  const found = groups.reduce((n, g) => n + g.questions.length, 0);
   return (
     <main className="pitch-bg min-h-screen px-4 py-14">
       <article className="mx-auto max-w-3xl">
@@ -149,8 +24,33 @@ export function Page() {
         <p className="mt-4 text-muted-foreground">
           Entenda como começar, escolher o clube, acompanhar partidas em 3D, proteger o progresso da
           carreira e resolver problemas. As respostas explicam o que verificar; a disponibilidade de
-          cada recurso pode variar com a versão e o modo de jogo.
+          cada recurso pode variar com a versão e o modo de jogo. São {FAQ_COUNT} respostas em{" "}
+          {FAQ_GROUPS.length} temas.
         </p>
+
+        <section aria-labelledby="faq-search-title" className="mt-8">
+          <h2 id="faq-search-title" className="font-display text-lg">
+            Buscar nas perguntas
+          </h2>
+          <label className="mt-3 flex min-h-12 items-center gap-3 rounded-xl border border-border/60 surface-card px-4 focus-within:border-primary">
+            <Search size={18} aria-hidden className="text-muted-foreground" />
+            <span className="sr-only">Digite uma palavra, como save, moedas ou celular</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Ex.: save, moedas, celular, formação"
+              className="w-full bg-transparent py-3 text-base outline-none placeholder:text-muted-foreground"
+            />
+          </label>
+          <p role="status" className="mt-2 text-xs text-muted-foreground">
+            {deferred.trim()
+              ? found === 0
+                ? "Nenhuma resposta encontrada. Tente outra palavra ou fale com o suporte."
+                : `${found} ${found === 1 ? "resposta encontrada" : "respostas encontradas"}`
+              : "Digite para filtrar as respostas na hora."}
+          </p>
+        </section>
 
         <nav
           aria-label="Navegar por assuntos"
@@ -158,7 +58,7 @@ export function Page() {
         >
           <h2 className="font-display text-lg">Encontre o assunto</h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {GROUPS.map((group) => (
+            {FAQ_GROUPS.map((group) => (
               <li key={group.id}>
                 <a
                   href={`#${group.id}`}
@@ -171,9 +71,10 @@ export function Page() {
           </ul>
         </nav>
 
-        {GROUPS.map((group) => (
+        {groups.map((group) => (
           <section id={group.id} key={group.id} className="mt-12 scroll-mt-24">
             <h2 className="font-display text-2xl">{group.title}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{group.intro}</p>
             <dl className="mt-5 space-y-4">
               {group.questions.map(({ q, a }) => (
                 <div key={q} className="rounded-xl border border-border/60 surface-card p-4">

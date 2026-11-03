@@ -391,13 +391,22 @@ export function aiSubPick(
 }
 
 /** Ajuste de postura da IA ao longo do jogo (chamado a cada ~10'). */
+/** Below this average stamina the AI coach drops the press after the hour mark. */
+export const AI_TIRED_TEAM_STAMINA = 50;
+
 export function aiMentalityTweak(
   goalDiff: number,
   minute: number,
   sentOffs: number,
+  /** Average stamina of the players still on the pitch (0-100). */
+  teamStamina = 100,
 ): { mentality: number; pressing: number } | null {
   if (minute < 55) return null;
   if (sentOffs > 0) return { mentality: -1, pressing: -1 };
+  // An exhausted side cannot sustain a high press: keep the attacking intent
+  // when chasing the game, but stop pressing so the shape does not collapse.
+  if (teamStamina < AI_TIRED_TEAM_STAMINA && minute >= 60)
+    return { mentality: goalDiff < 0 ? 1 : 0, pressing: -1 };
   if (goalDiff < 0 && minute >= 60) return { mentality: 1, pressing: 1 };
   if (goalDiff > 0 && minute >= 70) return { mentality: -1, pressing: 0 };
   if (goalDiff === 0 && minute >= 80) return { mentality: 1, pressing: 0 };

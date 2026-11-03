@@ -412,11 +412,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   // down and rebuilding it recompiles shaders and shows one untonemapped
   // (white) frame — the "piscada branca" between beats.
   const enhancedAllowed =
-    ready &&
-    !reduced &&
-    presentation.lens !== "off" &&
-    quality !== "baixa" &&
-    !contextLost;
+    ready && !reduced && presentation.lens !== "off" && quality !== "baixa" && !contextLost;
   const showEnhanced = enhanced && enhancedAllowed;
   useEffect(() => {
     if (!enhancedAllowed) {
