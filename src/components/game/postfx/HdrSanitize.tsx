@@ -1,37 +1,53 @@
-import { forwardRef, useMemo } from "react";
-import { Effect, EffectAttribute } from "postprocessing";
-import { Uniform } from "three";
+import { useEffect, useMemo } from "react";
+import { ShaderPass } from "postprocessing";
+import { ShaderMaterial, Uniform } from "three";
 
 /*
  * A single NaN or Infinity pixel (half-float overflow from a bright glint,
  * a degenerate depth-of-field sample) is spread by bloom's blur until the
- * whole frame flashes white or black. This pass replaces non-finite values
- * and caps HDR brightness before the blurring effects read the image.
+ * whole frame flashes white or black. This standalone pass replaces
+ * non-finite values and caps HDR brightness, so every later effect pass
+ * (bloom, grading, vignette) reads a clean image.
  */
-const fragmentShader = /* glsl */ `
-uniform float ceiling;
-void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
-  vec3 c = inputColor.rgb;
-  // Comparisons are false for NaN, so out-of-range or non-finite channels fail.
-  bvec3 ok = bvec3(c.r > -1.0 && c.r < 1e6, c.g > -1.0 && c.g < 1e6, c.b > -1.0 && c.b < 1e6);
-  c = vec3(ok.r ? c.r : 0.0, ok.g ? c.g : 0.0, ok.b ? c.b : 0.0);
-  outputColor = vec4(clamp(c, 0.0, ceiling), inputColor.a);
+const vertexShader = /* glsl */ `
+varying vec2 vUv;
+void main() {
+  vUv = position.xy * 0.5 + 0.5;
+  gl_Position = vec4(position.xy, 1.0, 1.0);
 }
 `;
 
-class HdrSanitizeEffect extends Effect {
-  constructor(ceiling: number) {
-    super("HdrSanitizeEffect", fragmentShader, {
-      // Its own pass, so the next effects sample the cleaned image.
-      attributes: EffectAttribute.CONVOLUTION,
-      uniforms: new Map([["ceiling", new Uniform(ceiling)]]),
-    });
-  }
+const fragmentShader = /* glsl */ `
+uniform sampler2D inputBuffer;
+uniform float ceiling;
+varying vec2 vUv;
+void main() {
+  vec4 color = texture2D(inputBuffer, vUv);
+  vec3 c = color.rgb;
+  // Comparisons are false for NaN, so non-finite or absurd channels fail.
+  c.r = (c.r > -1.0 && c.r < 1e6) ? c.r : 0.0;
+  c.g = (c.g > -1.0 && c.g < 1e6) ? c.g : 0.0;
+  c.b = (c.b > -1.0 && c.b < 1e6) ? c.b : 0.0;
+  gl_FragColor = vec4(clamp(c, 0.0, ceiling), color.a);
 }
+`;
 
-export const HdrSanitize = forwardRef<HdrSanitizeEffect, { ceiling?: number }>(
-  function HdrSanitize({ ceiling = 24 }, ref) {
-    const effect = useMemo(() => new HdrSanitizeEffect(ceiling), [ceiling]);
-    return <primitive ref={ref} object={effect} dispose={null} />;
-  },
-);
+export function HdrSanitize({ ceiling = 24 }: { ceiling?: number }) {
+  const pass = useMemo(
+    () =>
+      new ShaderPass(
+        new ShaderMaterial({
+          name: "HdrSanitize",
+          uniforms: { inputBuffer: new Uniform(null), ceiling: new Uniform(ceiling) },
+          vertexShader,
+          fragmentShader,
+          depthWrite: false,
+          depthTest: false,
+        }),
+        "inputBuffer",
+      ),
+    [ceiling],
+  );
+  useEffect(() => () => pass.dispose(), [pass]);
+  return <primitive object={pass} dispose={null} />;
+}
