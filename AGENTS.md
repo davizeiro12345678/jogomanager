@@ -43,3 +43,4 @@
 
 - Reference the full game stylesheet only through `src/lib/game-stylesheet.ts` (`?url`); a second plain `import "@/styles.css"` makes server and browser builds name the asset differently and game pages link a missing stylesheet.
 - Go and C#/.NET WebAssembly pilots were measured and rejected (`docs/report-2026-11-03-speed-and-wasm-pilots.md`); TypeScript stays the only runtime for game logic unless a new pilot beats that baseline.
+- Move MatchSim behaviour into `src/game/sim-*.ts` modules as functions that take the sim (shared members marked `@internal`, not `private`), copying code verbatim and confirming same-seed parity against the previous engine; this shrinks sim.ts without changing draw order or replays.

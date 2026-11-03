@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const files = [
   "src/components/game/Stadium3D.tsx",
+  "src/components/game/stadium/StadiumSky.tsx",
+  "src/components/game/stadium/StadiumGoalFx.tsx",
   "src/components/game/FrameProbe.tsx",
   "src/game/player-materials.ts",
   "src/game/player-instance-batch.ts",
