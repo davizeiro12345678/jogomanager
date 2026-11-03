@@ -392,22 +392,24 @@ function GoalFx({
     }
     if (goalPulse.current < 0.2) armed.current = false;
 
+    let particleTransformsChanged = false;
     for (let i = 0; i < COUNT; i++) {
       const p = parts[i]!;
-      if (p.y > 0.05) {
-        p.vy -= dt * 2.2;
-        p.x += (p.vx + Math.sin(clock.elapsedTime * 2 + i) * 0.4) * dt;
-        p.z += (p.vz + Math.cos(clock.elapsedTime * 1.7 + i) * 0.4) * dt;
-        p.y = Math.max(0.03, p.y + p.vy * dt);
-        p.r += p.spin * dt;
-      }
+      // Settled particles keep their last transform; do not upload them.
+      if (p.y <= 0.05) continue;
+      particleTransformsChanged = true;
+      p.vy -= dt * 2.2;
+      p.x += (p.vx + Math.sin(clock.elapsedTime * 2 + i) * 0.4) * dt;
+      p.z += (p.vz + Math.cos(clock.elapsedTime * 1.7 + i) * 0.4) * dt;
+      p.y = Math.max(0.03, p.y + p.vy * dt);
+      p.r += p.spin * dt;
       dummy.position.set(p.x, p.y, p.z);
       dummy.rotation.set(p.r, p.r * 0.7, p.r * 0.4);
       dummy.scale.setScalar(p.y > 0.05 ? 1 : 0.0001);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    if (particleTransformsChanged) mesh.instanceMatrix.needsUpdate = true;
 
     const sm = smoke.current;
     if (sm) {

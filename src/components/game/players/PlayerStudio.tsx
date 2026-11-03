@@ -322,6 +322,7 @@ function StudioScene({
     movement.action ?? "",
   );
   const groundAction = movement.action === "slide";
+  const cameraZoom = (camera as THREE.PerspectiveCamera).zoom;
   const cameraFit = useMemo(
     () =>
       studioCameraFit(
@@ -331,8 +332,9 @@ function StudioScene({
         framing,
         overhead,
         groundAction,
+        cameraZoom,
       ),
-    [height, size.width, size.height, framing, overhead, groundAction],
+    [height, size.width, size.height, framing, overhead, groundAction, cameraZoom],
   );
   // A real wide studio viewport left the hero visually small, with unused
   // floor and side space. Preserve the camera-fit envelope for actions and

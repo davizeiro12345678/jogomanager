@@ -7,6 +7,7 @@ export function studioCameraFit(
   framing: string,
   overhead = false,
   groundAction = false,
+  zoom = 1,
 ) {
   const h = Number.isFinite(height) ? Math.max(1.4, Math.min(2.3, height)) : 1.8;
   const ratio = Number.isFinite(aspect) ? Math.max(0.1, aspect) : 1;
@@ -20,7 +21,10 @@ export function studioCameraFit(
     body: groundAction ? [1.65, 0.92] : overhead ? [0.95, 1.55] : [0.7, 1.28],
   };
   const [width, tall] = spans[framing] ?? spans["body"]!;
-  const tangent = Math.tan((angle * Math.PI) / 360);
+  // PerspectiveCamera.zoom narrows the visible frustum without changing fov.
+  // Keep orbit clipping and subject framing consistent with that projection.
+  const scale = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+  const tangent = Math.tan((angle * Math.PI) / 360) / scale;
   const distance = Math.max((h * tall) / (2 * tangent), (h * width) / (2 * tangent * ratio));
   return {
     distance: distance * 1.08,
