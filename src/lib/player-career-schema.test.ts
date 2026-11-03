@@ -65,4 +65,22 @@ describe("contrato de save de atleta", () => {
     const item = { id: "x", season: 1, week: 1, title: "x", tone: "good" };
     expect(accepted({ ...valid, news: Array(200).fill(item) })).toBe(false);
   });
+
+  it("descarta campos não declarados antes de persistir", () => {
+    const valid = athlete();
+    const parsed = AthleteMutationSchema.parse({
+      slot: 1,
+      expectedRevision: 0,
+      state: {
+        ...valid,
+        verifiedTitles: 99,
+        contract: { ...valid.contract, adminBonus: 1 },
+        current: { ...valid.current, fakeTrophies: 5 },
+      },
+    });
+    expect(parsed.state).not.toHaveProperty("verifiedTitles");
+    expect(parsed.state.contract).not.toHaveProperty("adminBonus");
+    expect(parsed.state.current).not.toHaveProperty("fakeTrophies");
+    expect(parsed.state.name).toBe(valid.name);
+  });
 });

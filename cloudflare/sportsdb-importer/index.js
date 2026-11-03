@@ -402,14 +402,41 @@ async function iEP(e, li) {
   await logI(e.SPORTS_DB, "epl", "ok", ev.length, "league " + li);
   return { imported: ev.length };
 }
+/** Standings may only be requested for an already-imported soccer league and a plausible season. */
+async function approvedStandingsTarget(e, li, se) {
+  const league = typeof li === "string" ? li.trim() : "";
+  const season = typeof se === "string" ? se.trim() : "";
+  if (!/^\d{1,7}$/.test(league)) return null;
+  const m = /^(\d{4})(?:-(\d{4}))?$/.exec(season);
+  if (!m) return null;
+  const start = Number(m[1]);
+  const maxYear = new Date().getUTCFullYear() + 1;
+  if (start < 1990 || start > maxYear) return null;
+  if (m[2] && Number(m[2]) !== start + 1) return null;
+  const known = await e.SPORTS_DB.prepare(
+    "SELECT strLeague FROM sportsdb_leagues WHERE idLeague=?",
+  )
+    .bind(league)
+    .first();
+  if (!known) return null;
+  return { league, season, name: known.strLeague || "" };
+}
 async function iS(e, li, se) {
-  const d = await fa("lookuptable.php?l=" + li + "&s=" + se, e);
+  const target = await approvedStandingsTarget(e, li, se);
+  if (!target) {
+    const err = new Error("League or season not approved for import");
+    err.status = 400;
+    throw err;
+  }
+  li = target.league;
+  se = target.season;
+  const d = await fa(
+    "lookuptable.php?l=" + encodeURIComponent(li) + "&s=" + encodeURIComponent(se),
+    e,
+  );
   if (!d) return { imported: 0 };
   const tb = d.table || [];
-  const li2 = await e.SPORTS_DB.prepare("SELECT strLeague FROM sportsdb_leagues WHERE idLeague=?")
-    .bind(li)
-    .first();
-  const lg = li2?.strLeague || "";
+  const lg = target.name;
   for (const s of tb) await uS(e.SPORTS_DB, s, li, lg, se);
   await logI(e.SPORTS_DB, "standings", "ok", tb.length, "league " + li);
   return { imported: tb.length };
@@ -759,7 +786,9 @@ export default {
             ? 503
             : err?.code === "SPORTSDB_CONFIG" || err?.code === "SPORTSDB_UPSTREAM_PAUSED"
               ? 503
-              : 500;
+              : err?.status === 400
+                ? 400
+                : 500;
       const message = String(err?.message || "Import failed").slice(0, 180);
       return j(
         {
