@@ -218,6 +218,30 @@ export type Database = {
         }
         Relationships: []
       }
+      career_risk_signals: {
+        Row: {
+          created_at: string
+          id: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
           created_at: string
@@ -2284,6 +2308,7 @@ export type Database = {
         Args: { _event_id: string; _event_type: string }
         Returns: boolean
       }
+      career_risk_score: { Args: { _user_id: string }; Returns: number }
       claim_api_football_import_phase: {
         Args: never
         Returns: {

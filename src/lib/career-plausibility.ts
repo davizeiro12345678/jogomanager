@@ -14,17 +14,13 @@ export const PLAUSIBILITY = {
   maxBudget: 5000,
   /** Trophies a club can win per season (league, cups, continental, super cups). */
   maxTrophiesPerSeason: 6,
-  /** Fastest a real player can finish a match, in seconds (simulated weeks included). */
-  minSecondsPerMatch: 3,
+  /** Fastest the game can play one match, in seconds, even when auto-simulating. */
+  minSecondsPerMatch: 0.5,
   /** Fastest a season can pass, in minutes. */
-  minMinutesPerSeason: 5,
+  minMinutesPerSeason: 2,
 } as const;
 
 export type PlausibilityIssue = "goals" | "budget" | "trophies" | "match_pace" | "season_pace";
-
-function clubMatches(s: Shape): number {
-  return s.results.filter((r) => r.home === s.clubId || r.away === s.clubId).length + s.season * 0;
-}
 
 export function plausibilityIssues(previous: Shape | null, next: Shape, elapsedMs: number | null): PlausibilityIssue[] {
   const issues: PlausibilityIssue[] = [];
@@ -43,4 +39,3 @@ export function plausibilityIssues(previous: Shape | null, next: Shape, elapsedM
   return issues;
 }
 
-export { clubMatches as _clubMatches };
