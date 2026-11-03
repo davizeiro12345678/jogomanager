@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { breadcrumbLd, canonical, seoMeta } from "@/lib/seo";
 import { Page } from "@/pages/perguntas-frequentes";
+import { FAQ_COUNT, faqPageLd } from "@/content/faq";
 import { PERGUNTAS_FREQUENTES_PATH as PATH } from "@/lib/public-route-paths";
 
 const TITLE = "Perguntas Frequentes | Pro Football Manager 3D";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/perguntas-frequentes")({
     meta: seoMeta({ title: TITLE, description: DESC, path: PATH }),
     links: canonical(PATH),
     scripts: [
+      faqPageLd(),
       breadcrumbLd([
         { name: "Início", path: "/" },
         { name: "Perguntas frequentes", path: PATH },
