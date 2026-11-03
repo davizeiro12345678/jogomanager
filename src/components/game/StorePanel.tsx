@@ -191,6 +191,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   return (
     <div>
+      {isGuest && <GuestSignInNotice className="mb-4" />}
       {signedIn === true && <CouponRedeem onRedeemed={() => void walletQuery.refetch()} />}
       <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap items-center gap-3">

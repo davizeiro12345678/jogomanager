@@ -106,20 +106,7 @@ export function ProdutosPage() {
           disponibilidade antes do pagamento.
         </p>
         {signedIn === false ? (
-          <div
-            role="status"
-            className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
-          >
-            <p className="text-muted-foreground">
-              Compare os itens e preços à vontade. Você pode comprar com e-mail ou entrar para
-              vincular a compra diretamente à sua carreira.
-            </p>
-            <Button asChild variant="outline" className="shrink-0">
-              <Link to="/auth" search={{ next: PATH }}>
-                Entrar ou criar conta
-              </Link>
-            </Button>
-          </div>
+          <GuestSignInNotice className="mt-5" />
         ) : signedIn === null ? (
           <p role="status" className="mt-5 text-sm text-muted-foreground">
             Verificando sua conta para mostrar a ação de compra segura…
