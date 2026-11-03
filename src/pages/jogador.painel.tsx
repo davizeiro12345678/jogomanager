@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { ArrowLeft, Flag, HeartPulse, Sparkles } from "lucide-react";
 

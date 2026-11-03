@@ -100,10 +100,7 @@ export function CareersHub() {
             <div className="career-hub-card-actions">
               {decision && highlighted ? (
                 <Button asChild>
-                  <Link
-                    to="/jogador/painel"
-                    search={{ slot: highlighted.slot, tab: decision.tab }}
-                  >
+                  <Link to="/jogador/painel" search={{ slot: highlighted.slot, tab: decision.tab }}>
                     Ir para a decisão <ArrowRight className="size-4" />
                   </Link>
                 </Button>
@@ -163,9 +160,7 @@ export function CareersHub() {
                   </div>
                   <div className="career-hub-card-actions">
                     <Button asChild>
-                      <Link
-                        to={coach.active ? "/dashboard" : "/carreira"}
-                      >
+                      <Link to={coach.active ? "/dashboard" : "/carreira"}>
                         {coach.active ? "Continuar no clube" : "Ver propostas"}
                         <ArrowRight className="size-4" />
                       </Link>

@@ -230,10 +230,7 @@ export function FootballHome() {
           <DiscordLink>Comunidade</DiscordLink>
           <Link to="/auth">Entrar</Link>
         </nav>
-        <Link
-          to={resume ? "/dashboard" : "/new"}
-          className="home-button home-nav-cta"
-        >
+        <Link to={resume ? "/dashboard" : "/new"} className="home-button home-nav-cta">
           {resume ? "Continuar carreira" : "Começar a jogar"}
           <ArrowRight size={16} />
         </Link>
@@ -300,10 +297,7 @@ export function FootballHome() {
             e veja suas decisões ganharem vida em 3D.
           </p>
           <div className="home-hero-actions">
-            <Link
-              to={resume ? "/dashboard" : "/new"}
-              className="home-button"
-            >
+            <Link to={resume ? "/dashboard" : "/new"} className="home-button">
               {resume ? "Continuar minha carreira" : "Criar minha carreira"}
               <ArrowRight size={19} />
             </Link>
@@ -331,10 +325,7 @@ export function FootballHome() {
             </div>
           </dl>
           {resume ? (
-            <Link
-              to="/dashboard"
-              className="home-resume"
-            >
+            <Link to="/dashboard" className="home-resume">
               <span>SEU PRÓXIMO CAPÍTULO</span>
               <strong>{resume.club}</strong>
               <small>
@@ -531,10 +522,7 @@ export function FootballHome() {
             </h2>
           </div>
           <div>
-            <Link
-              to={resume ? "/dashboard" : "/new"}
-              className="home-button"
-            >
+            <Link to={resume ? "/dashboard" : "/new"} className="home-button">
               {resume ? "Voltar ao meu clube" : "Assumir meu primeiro clube"}
               <ArrowRight size={19} />
             </Link>
