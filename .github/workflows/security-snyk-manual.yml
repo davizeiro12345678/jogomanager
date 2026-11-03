@@ -28,8 +28,9 @@ jobs:
             exit 1
           fi
 
-      - name: Install pinned Snyk CLI without package lifecycle scripts
-        run: npm install --global snyk@1.1308.3 --ignore-scripts --no-audit --no-fund
+      - name: Install pinned Snyk CLI
+        # Snyk's official npm package uses a postinstall bootstrap to download its CLI.
+        run: npm install --global snyk@1.1308.3 --no-audit --no-fund
 
       - name: Audit open-source dependencies (including dev)
         id: oss
