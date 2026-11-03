@@ -10,7 +10,7 @@ import {
   SHOT_MIN_TIME,
   type ShotContext,
   type ShotId,
-} from "../StadiumCameraFraming";
+} from "./StadiumCameraFraming";
 import { presentationBall } from "./stadium-ball";
 import { type CameraMode } from "@/game/camera-modes";
 import { type GoalFocusRef } from "@/game/goal-choreography";
