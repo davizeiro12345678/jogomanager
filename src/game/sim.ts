@@ -1961,9 +1961,17 @@ export class MatchSim {
     }
     // Goal posts are solid: push bodies out radially so no athlete renders through them.
     const POST_CLEAR = 0.46; // body radius at the hips + post radius
+    const NET_CLEAR = 0.38; // body radius beside the side netting
     for (const p of list) {
       p.x = Math.max(-FIELD_X - 1, Math.min(FIELD_X + 1, p.x));
       p.z = Math.max(-FIELD_Z - 1, Math.min(FIELD_Z + 1, p.z));
+      // Side netting behind the goal line is a wall: nobody walks through it.
+      const behind = p.x > FIELD_X + 0.05 || p.x < -FIELD_X - 0.05;
+      const sideGap = Math.abs(p.z) - GOAL_Z;
+      if (behind && sideGap > -NET_CLEAR && sideGap < NET_CLEAR) {
+        const outside = sideGap >= 0;
+        p.z = Math.sign(p.z || 1) * (GOAL_Z + (outside ? NET_CLEAR : -NET_CLEAR));
+      }
       const px = p.x < 0 ? -FIELD_X : FIELD_X;
       const pz = p.z < 0 ? -GOAL_Z : GOAL_Z;
       const dx = p.x - px;
