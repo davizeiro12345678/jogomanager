@@ -60,6 +60,33 @@ const TECH_ROWS: { part: string; choice: string; why: string }[] = [
   },
 ];
 
+const MODES: { name: string; session: string; focus: string; online: string }[] = [
+  {
+    name: "Partida rápida",
+    session: "10 a 20 minutos",
+    focus: "Conhecer o 3D, a narração e a leitura tática de uma partida",
+    online: "Não, depois do primeiro carregamento",
+  },
+  {
+    name: "Carreira de treinador",
+    session: "De uma rodada a uma temporada inteira",
+    focus: "Elenco, mercado, treino, finanças e objetivos da diretoria",
+    online: "Não; com conta, sincroniza quando houver conexão",
+  },
+  {
+    name: "Temporada automática",
+    session: "Poucos minutos por temporada",
+    focus: "Avançar rápido e interferir só nas decisões importantes",
+    online: "Não",
+  },
+  {
+    name: "Multiplayer",
+    session: "Uma partida por desafio",
+    focus: "Enfrentar outro treinador com resultado conferido no servidor",
+    online: "Sim, durante toda a sessão",
+  },
+];
+
 export function CreatorStory() {
   const updates = CHANGELOG.reduce((total, entry) => total + entry.items.length, 0);
 
@@ -159,6 +186,101 @@ export function CreatorStory() {
           <Link to="/tabelas" className="text-primary hover:underline">tabelas das ligas</Link>, para
           quem quer acompanhar o futebol real e usá-lo como referência na carreira.
         </p>
+      </section>
+
+      <section aria-labelledby="modes" className="space-y-4">
+        <h2 id="modes" className="font-display text-2xl uppercase tracking-wide text-foreground">
+          Os modos de jogo e o que cada um ensina
+        </h2>
+        <p>
+          O jogo foi organizado em modos que se complementam. Cada um responde a um tipo de
+          sessão: alguns minutos no ônibus, uma noite inteira planejando a temporada ou uma
+          disputa com um amigo. A tabela mostra como eles se encaixam.
+        </p>
+        <div className="overflow-x-auto rounded-2xl border border-border/60">
+          <table className="w-full min-w-[38rem] text-left text-sm">
+            <caption className="sr-only">Modos de jogo, duração típica e foco</caption>
+            <thead className="bg-secondary/40 text-foreground">
+              <tr>
+                <th scope="col" className="p-3">Modo</th>
+                <th scope="col" className="p-3">Sessão típica</th>
+                <th scope="col" className="p-3">Foco</th>
+                <th scope="col" className="p-3">Precisa de internet?</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MODES.map((mode) => (
+                <tr key={mode.name} className="border-t border-border/60 align-top">
+                  <th scope="row" className="p-3 font-medium text-foreground">{mode.name}</th>
+                  <td className="p-3">{mode.session}</td>
+                  <td className="p-3">{mode.focus}</td>
+                  <td className="p-3">{mode.online}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          A partida rápida é a porta de entrada: você escolhe dois clubes, a dificuldade e assiste
+          ao jogo com narração e placar ao vivo. É o melhor jeito de entender como o 3D mostra a
+          tática em ação antes de assumir uma carreira. A carreira de treinador é o coração do
+          jogo, com mercado, elenco, treino, diretoria e temporadas que se encadeiam. A temporada
+          automática existe para quem quer avançar rápido: o computador joga semana a semana, ou
+          até o fim, e você interfere quando quiser. O multiplayer coloca dois treinadores frente a
+          frente, com o placar conferido no servidor.
+        </p>
+      </section>
+
+      <section aria-labelledby="devices" className="space-y-4">
+        <h2 id="devices" className="font-display text-2xl uppercase tracking-wide text-foreground">
+          Pensado primeiro para o celular
+        </h2>
+        <p>
+          A maior parte de quem joga usa celular, muitas vezes um modelo intermediário. Por isso
+          o ponto de partida de cada tela é o aparelho mais simples, e não o computador mais
+          rápido. A interface reorganiza menus e tabelas para telas pequenas, os botões têm área
+          de toque confortável e a partida 3D escolhe sozinha a qualidade gráfica que o aparelho
+          aguenta.
+        </p>
+        <p>
+          Quando a aba vai para segundo plano, o desenho 3D pausa para economizar bateria. A
+          simulação pesada roda separada da tela, então mesmo uma temporada inteira simulada não
+          congela a interface. E, depois do primeiro carregamento, a carreira e as partidas
+          funcionam sem internet — útil para quem joga no metrô ou com dados móveis limitados.
+        </p>
+        <p>
+          A acessibilidade segue a mesma lógica. Há opções de leitura e contraste, respeito à
+          preferência de reduzir movimento do sistema e controles que funcionam pelo teclado. As
+          cenas de história podem ser pausadas, puladas ou desligadas por completo.
+        </p>
+      </section>
+
+      <section aria-labelledby="values" className="space-y-4">
+        <h2 id="values" className="font-display text-2xl uppercase tracking-wide text-foreground">
+          Compromissos com quem joga
+        </h2>
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            <strong className="text-foreground">Sem vantagem escondida:</strong> itens visuais
+            não mudam o resultado, e o placar do multiplayer é conferido no servidor.
+          </li>
+          <li>
+            <strong className="text-foreground">Progresso respeitado:</strong> a nuvem não deixa um
+            aparelho desatualizado apagar suas rodadas mais recentes.
+          </li>
+          <li>
+            <strong className="text-foreground">Pagamento claro:</strong> o preço é confirmado
+            antes de pagar, e os itens só são entregues depois da confirmação.
+          </li>
+          <li>
+            <strong className="text-foreground">Dados cuidados:</strong> a política de privacidade
+            explica o que é tratado e como pedir acesso ou exclusão.
+          </li>
+          <li>
+            <strong className="text-foreground">Comunicação direta:</strong> as novidades ficam
+            registradas aqui, e o criador responde pelos canais oficiais.
+          </li>
+        </ul>
       </section>
 
       <section aria-labelledby="timeline" className="space-y-4">

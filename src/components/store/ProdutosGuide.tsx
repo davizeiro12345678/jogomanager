@@ -328,6 +328,71 @@ export function ProdutosGuide() {
         </p>
       </section>
 
+      <section aria-labelledby="mistakes" className="space-y-4">
+        <h3 id="mistakes" className="font-display text-2xl text-foreground">
+          Cinco erros comuns ao usar a loja
+        </h3>
+        <ol className="list-decimal space-y-3 pl-5">
+          <li>
+            <strong className="text-foreground">Comprar moedas sem plano.</strong> Antes de
+            comprar, defina o que falta no clube. Se o problema é informação sobre jovens, um
+            pacote de olheiros resolve melhor do que moedas avulsas.
+          </li>
+          <li>
+            <strong className="text-foreground">Usar impulsos em atletas veteranos.</strong> O
+            ganho de evolução rende mais em jogadores jovens com potencial alto; em veteranos, a
+            recuperação extra é o benefício principal.
+          </li>
+          <li>
+            <strong className="text-foreground">Comprar com outra conta.</strong> Os itens vão para
+            a conta usada na compra. Confira se você entrou na conta certa antes de pagar.
+          </li>
+          <li>
+            <strong className="text-foreground">Repetir o pagamento por impaciência.</strong> A
+            confirmação pode levar alguns instantes. Consulte o histórico de compras antes de
+            tentar de novo.
+          </li>
+          <li>
+            <strong className="text-foreground">Esperar vantagem de itens visuais.</strong>{" "}
+            Gramado, temas e comemorações deixam o jogo com a cara do seu clube, mas não mudam a
+            força do time.
+          </li>
+        </ol>
+      </section>
+
+      <section aria-labelledby="store-glossary" className="space-y-4">
+        <h3 id="store-glossary" className="font-display text-2xl text-foreground">
+          Glossário rápido da loja
+        </h3>
+        <div className="overflow-x-auto rounded-2xl border border-border/60">
+          <table className="w-full min-w-[32rem] text-left text-sm">
+            <caption className="sr-only">Termos usados na loja e seus significados</caption>
+            <thead className="bg-secondary/40 text-foreground">
+              <tr>
+                <th scope="col" className="p-3">Termo</th>
+                <th scope="col" className="p-3">O que significa</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["Moedas", "Saldo da carteira usado para trocar por relatórios e impulsos dentro do jogo."],
+                ["Relatório premium", `Revela potencial e personalidade de ${PREMIUM_SCOUT_REPORT_SIZE} jovens de até 23 anos.`],
+                ["Impulso de treino", "+25% de evolução e +5 de recuperação na semana; vários se somam."],
+                ["Bônus", "Itens extras incluídos no pacote, além do conteúdo principal."],
+                ["Item visual", "Muda gramado, torcida, tema ou comemorações, sem efeito no resultado."],
+                ["Resgate semanal", `Crédito de ${SEASON_PASS_WEEKLY_COINS} moedas a cada 7 dias enquanto o passe estiver ativo.`],
+                ["Compra como visitante", "Compra feita só com e-mail, sem criar conta, vinculável depois."],
+              ].map(([term, meaning]) => (
+                <tr key={term} className="border-t border-border/60">
+                  <th scope="row" className="p-3 font-medium text-foreground">{term}</th>
+                  <td className="p-3">{meaning}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section aria-labelledby="how-to-buy" className="space-y-4">
         <h3 id="how-to-buy" className="font-display text-2xl text-foreground">
           Passo a passo da compra
