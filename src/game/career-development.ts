@@ -2,7 +2,12 @@ import { valueFor } from "./economy";
 import { makeRng } from "./rng";
 import { developedPlayer, profileFor } from "./attributes";
 import type { AttrDeltas } from "./attributes";
-import { developmentResponse, effectivePlayer, FOCUS_ATTRIBUTES, limitedDevelopmentDelta } from "./player-development";
+import {
+  developmentResponse,
+  effectivePlayer,
+  FOCUS_ATTRIBUTES,
+  limitedDevelopmentDelta,
+} from "./player-development";
 import { operatingPlanFor } from "./finance-forecast";
 import type { CareerState, NewsItem, Player, TrainingFocus } from "./types";
 

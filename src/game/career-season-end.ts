@@ -5,7 +5,14 @@ import { makeRng } from "./rng";
 import { applyRegens } from "./regen";
 import { checkSeasonIntegrity } from "./season-integrity";
 import { applyPyramid, leagueClubIds, REGIONAL_LINKS } from "./pyramid";
-import { applyRegionalEntries, resolveQualifications, regionalFinals, seasonTables, seasonCompetitionRecord, topLeague } from "./competition-season";
+import {
+  applyRegionalEntries,
+  resolveQualifications,
+  regionalFinals,
+  seasonTables,
+  seasonCompetitionRecord,
+  topLeague,
+} from "./competition-season";
 import { calendarYear } from "./competition-regulations";
 import { developedPlayer, evolveSeason, evolveSeasonV2, withDevelopmentBase } from "./attributes";
 import { addMoney } from "./financial-inputs";

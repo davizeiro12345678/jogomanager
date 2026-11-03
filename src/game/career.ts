@@ -354,9 +354,6 @@ export function initCareer(
   });
 }
 
-
-
-
 export function orderedPositions(): Position[] {
   return ["GK", "DF", "MF", "FW"];
 }
@@ -496,9 +493,6 @@ function totalRounds(state: CareerState): number {
 }
 
 /* ------------------------------------------------------------ mecânicas */
-
-
-
 
 /** Desempenho individual de uma partida (jogadores do clube do usuário). */
 export interface MatchPerformance {
@@ -766,14 +760,6 @@ export function advanceRound(
 
   return next;
 }
-
-
-
-
-
-
-
-
 
 /**
  * Relatório premium (comprado na loja ou do passe): mapeia jovens de até 23
