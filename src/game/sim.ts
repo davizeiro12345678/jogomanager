@@ -116,7 +116,7 @@ export class MatchSim {
   #perceptionBackend: "compat" | "wasm" = "compat";
   #execution: MatchExecutionContract | null = null;
   #physicsFault = false;
-  /** @internal */ passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
+  private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
 
   setPassLaneKernel(kernel: PassLaneKernel) {
     if (this.#execution) throw new Error("Match execution is already fixed");
@@ -1529,8 +1529,137 @@ export class MatchSim {
     return sim_ball_duels.pressure(this, holder, dt);
   }
 
-  /** @internal */ decide(holder: SimPlayer) {
-    return sim_team_ai.decide(this, holder);
+  private decide(holder: SimPlayer) {
+    const dir = this.attackDir(holder.side);
+    const goalX = dir * FIELD_X;
+    const distGoal = Math.hypot(goalX - holder.x, holder.z);
+    const { dist: pressDist } = this.nearestOpponent(holder);
+    const mentality = this.setup(holder.side).tactics.mentality;
+
+    // Take an open chance before dribbling into the keeper and a crowded goalmouth.
+    const chance = xgForShot({
+      dist: distGoal,
+      wide: Math.abs(holder.z),
+      bodyPart: "foot",
+      pressDist,
+      onRun: Math.hypot(holder.vx, holder.vz) > 5,
+    });
+    const shootUrge =
+      distGoal < 30
+        ? Math.min(0.72, chance * 2.4 + (distGoal < 9 ? 0.08 : 0)) *
+          (0.8 + holder.shooting / 500) *
+          (0.9 + mentality * 0.05)
+        : 0;
+
+    if (holder.pos !== "GK" && this.rnd() < shootUrge) {
+      this.shoot(holder, distGoal);
+      return;
+    }
+
+    const mates = this.players.filter(
+      (p) => p.side === holder.side && p.id !== holder.id && !p.sentOff,
+    );
+    let best: SimPlayer | null = null;
+    let bestScore = -Infinity;
+    const defenders = this.players.filter((p) => p.side !== holder.side && !p.sentOff);
+    const receiversBuffer = this.#passLaneReceivers.pack(mates);
+    const defendersBuffer = this.#passLaneDefenders.pack(defenders);
+    let lanes: Float64Array;
+    try {
+      if (this.#passLaneIntoKernel) {
+        const written = this.#passLaneIntoKernel(
+          holder.x,
+          holder.z,
+          receiversBuffer,
+          defendersBuffer,
+          this.#passLaneOutput,
+        );
+        if (written !== mates.length * 3) throw new Error("Invalid perception output");
+        lanes = this.#passLaneOutput;
+      } else lanes = this.passLaneKernel(holder.x, holder.z, receiversBuffer, defendersBuffer);
+      for (let index = 0; index < mates.length * 3; index++)
+        if (!Number.isFinite(lanes[index])) throw new Error("Invalid perception value");
+    } catch {
+      this.passLaneKernel = evaluatePassLanesFallback;
+      this.#passLaneIntoKernel = evaluatePassLanesIntoFallback;
+      // The fallback has proven numerical parity with the selected perception
+      // revision. Keep the recorded contract stable across a recoverable trap.
+      evaluatePassLanesIntoFallback(
+        holder.x,
+        holder.z,
+        receiversBuffer,
+        defendersBuffer,
+        this.#passLaneOutput,
+      );
+      lanes = this.#passLaneOutput;
+    }
+    for (const [index, m] of mates.entries()) {
+      const dist = lanes[index * 3]!;
+      if (dist < 4 || dist > 42) continue;
+      const forward = (m.x - holder.x) * dir;
+      const cover = lanes[index * 3 + 1]!;
+      const laneRisk = lanes[index * 3 + 2]!;
+      const score =
+        forward * (0.7 + mentality * 0.12) + cover * 1.7 - dist * 0.32 - laneRisk + this.rnd() * 8;
+      if (score > bestScore) {
+        bestScore = score;
+        best = m;
+      }
+    }
+
+    if (!best) return;
+    const rawDist = Math.hypot(best.x - holder.x, best.z - holder.z);
+    const isBackPass = (best.x - holder.x) * dir < -2;
+    if (isBackPass) {
+      const pressingSide: Side = holder.side === "home" ? "away" : "home";
+      this.pressSurge[pressingSide] = Math.max(this.pressSurge[pressingSide], 1.6);
+    }
+    const power = Math.min(31, 10 + rawDist * 0.8);
+    // passe na frente: mira onde o companheiro estará quando a bola chegar
+    const flight = rawDist / power;
+    const aimX = best.x + best.vx * flight * 0.8;
+    const aimZ = best.z + best.vz * flight * 0.8;
+
+    const success = Math.min(0.96, (holder.passing / 100) * (1 - rawDist / 90) + 0.25);
+    const errRoll = this.rnd() * passErrMult(this.weather);
+    const err = success > errRoll ? 0 : (this.rnd() - 0.5) * 12;
+    const dx = aimX - holder.x;
+    const dz = aimZ - holder.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const wide = Math.abs(holder.z) > FIELD_Z * 0.55 && Math.abs(best.x - dir * FIELD_X) < 30;
+    const lofted = wide || rawDist > 22;
+    this.trigger(
+      holder,
+      wide ? "cross" : rawDist > 24 ? "passLong" : "pass",
+      rawDist > 24 ? 0.85 : 0.6,
+    );
+    holder.passes++;
+    this.stats[holder.side].passes++;
+    this.lastPass[holder.side] = { id: holder.id, time: this.time };
+    this.ball.holder = null;
+    this.lastTouch = holder.side;
+    this.pass = {
+      to: best.id,
+      from: holder.id,
+      until: this.time + 0.45,
+      fromX: holder.x,
+      dir,
+      side: holder.side,
+    };
+    this.ball.vx = (dx / d) * power + err * 0.18;
+    this.ball.vz = (dz / d) * power + err;
+    if (lofted) {
+      // bola alçada: sobe e cai perto do destino
+      const t = Math.max(0.4, d / power);
+      this.ball.height = 0.35;
+      this.ballVy = 4.905 * t;
+      this.ballSpin = wide ? (this.rnd() - 0.5) * 5 : 0;
+    } else {
+      this.ball.height = 0.12;
+      this.ballVy = 0;
+      this.ballSpin = 0;
+    }
+    this.synchronizeBallPhysics();
   }
 
   /** @internal */ shoot(holder: SimPlayer, distGoal: number) {
