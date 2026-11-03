@@ -13,6 +13,8 @@ const ICONS: Record<NextObjective["id"], typeof Target> = {
 };
 
 const visitKey = (career: CareerState) => `jm.last-visit:${career.clubId}`;
+/** Previous visit per club, read once per page load (effects may run twice in development). */
+const previousVisit = new Map<string, number | null>();
 
 /** Next clear goals for the season plus a welcome-back reminder after a break. */
 export function NextObjectivesCard({ career }: { career: CareerState }) {
@@ -22,8 +24,11 @@ export function NextObjectivesCard({ career }: { career: CareerState }) {
   useEffect(() => {
     // Read storage after hydration so server and client markup match.
     try {
-      const raw = localStorage.getItem(visitKey(career));
-      const last = raw ? Number(raw) : null;
+      if (!previousVisit.has(career.clubId)) {
+        const raw = localStorage.getItem(visitKey(career));
+        previousVisit.set(career.clubId, raw ? Number(raw) : null);
+      }
+      const last = previousVisit.get(career.clubId) ?? null;
       setReminder(returnReminder(last, career, Date.now())?.message ?? null);
       localStorage.setItem(visitKey(career), String(Date.now()));
     } catch {
