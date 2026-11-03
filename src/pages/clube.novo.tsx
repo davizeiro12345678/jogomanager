@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 
 import { useNavigate } from "@tanstack/react-router";
@@ -171,6 +170,7 @@ export function NewClubPage() {
   const { update } = useCareer();
   const [step, setStep] = useState(0);
   const [manager, setManager] = useState("");
+  const [nameError, setNameError] = useState("");
   const [managerAge, setManagerAge] = useState(38);
   const [managerLook, setManagerLook] = useState<ManagerLook>({ ...DEFAULT_MANAGER_LOOK });
   const [managerPersonality, setManagerPersonality] = useState<ManagerPersonality>("motivador");
@@ -317,7 +317,9 @@ export function NewClubPage() {
   function finish() {
     const finalClub = normalized();
     if ([manager, finalClub.name, finalClub.short].some((text) => containsProfanity(text ?? ""))) {
-      toast.error("Escolha outros nomes: o nome do clube ou do treinador não é permitido no jogo.");
+      setNameError(
+        "Escolha outros nomes: o nome do clube ou do treinador não é permitido no jogo.",
+      );
       return;
     }
     const profile = createManagerProfile({
@@ -841,6 +843,11 @@ export function NewClubPage() {
                 Fundar clube e começar
               </button>
             )}
+            {nameError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {nameError}
+              </p>
+            ) : null}
           </div>
         </SectionCard>
 
