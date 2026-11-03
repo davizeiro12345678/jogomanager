@@ -99,6 +99,17 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       // `store_products` selects the current active SKU first; Stripe only
       // confirms that its server-side amount and currency still match it.
       const product = await getServerStoreProduct(getStoreServiceSupabase(), data.productKey);
+      // The starter pack is a one-time offer per account.
+      if (product.key === "starter_bundle") {
+        const { count } = await getStoreServiceSupabase()
+          .from("user_purchases")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", context.userId)
+          .eq("product_key", "starter_bundle")
+          .in("status", ["completed", "pending"]);
+        if ((count ?? 0) > 0)
+          throw new Error("O Pacote de estreia só pode ser comprado uma vez por conta.");
+      }
       const stripe = createStripeClient(environment);
       const stripePrice = await resolveValidatedStripePrice(stripe, product);
       const isRecurring = stripePrice.type === "recurring";

@@ -26,3 +26,15 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [ ] Saves encadeados por hash
   - [x] Nomes ofensivos bloqueados ao criar carreira/clube e trocados por "Treinador" no ranking público (banco)
 - [ ] Home e páginas: velocidade (home móvel publicada: 87; seções abaixo da dobra adiadas e desfoques removidos, falta medir após publicar)
+
+## Plano: carregamento, modularização, novas compras, Go e C# (aprovado 03/11)
+- [ ] Etapa 1 Medição de base (todas as páginas, 3 rodadas)
+- [ ] Etapa 2 Divisão do código e carregamento
+- [ ] Etapa 3 Modularização dos arquivos gigantes
+- [ ] Etapa 4 Experiência do usuário
+- [ ] Etapa 5 Novas compras
+  - [x] Pacote de estreia (1x por conta) e Kit do clube
+  - [ ] Pacote médico e análise tática (precisa guardar tratamentos/relatórios na carteira)
+  - [ ] Passe anual (assinatura anual)
+- [ ] Etapa 6 Go e C# (pilotos WASM medidos)
+- [ ] Etapa 7 Relatório final
