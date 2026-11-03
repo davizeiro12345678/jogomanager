@@ -6,7 +6,9 @@ const key = (clubId: string) => `jm.onboarding:${clubId}`;
 export function readOnboardingVisits(clubId: string): Set<OnboardingVisit> {
   try {
     const raw = JSON.parse(localStorage.getItem(key(clubId)) ?? "[]") as unknown;
-    return new Set(Array.isArray(raw) ? (raw.filter((v) => typeof v === "string") as OnboardingVisit[]) : []);
+    return new Set(
+      Array.isArray(raw) ? (raw.filter((v) => typeof v === "string") as OnboardingVisit[]) : [],
+    );
   } catch {
     return new Set();
   }

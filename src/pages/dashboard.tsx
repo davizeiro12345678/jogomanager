@@ -53,6 +53,7 @@ import { useCareer } from "@/hooks/useCareer";
 
 import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 import { NextObjectivesCard } from "@/components/game/NextObjectivesCard";
+import { FirstMatchGuide } from "@/components/game/FirstMatchGuide";
 
 export function Dashboard() {
   const { career } = useCareer();
@@ -114,15 +115,6 @@ function TrainerDashboard({ career }: { career: CareerState }) {
   const homeClub = atHome ? club : opponent;
   const awayClub = atHome ? opponent : club;
   const drillDone = Boolean(drillDoneThisRound(career));
-  const onboardKey = `onboard-done:${career.clubId}:${career.season}`;
-  const [onboardDone, setOnboardDone] = useState(() => {
-    try {
-      return localStorage.getItem(onboardKey) === "1";
-    } catch {
-      return false;
-    }
-  });
-  const showOnboard = !onboardDone && career.round <= 4 && career.season <= 1;
 
   return (
     <GameShell career={career}>
@@ -149,6 +141,7 @@ function TrainerDashboard({ career }: { career: CareerState }) {
         </Link>
       </div>
 
+      <FirstMatchGuide career={career} />
       <NextObjectivesCard career={career} />
 
       <div className="trainer-match-grid">
@@ -379,47 +372,6 @@ function TrainerDashboard({ career }: { career: CareerState }) {
           <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </nav>
-
-      {showOnboard && (
-        <details className="trainer-onboarding">
-          <summary>
-            <span>Começando sua carreira?</span>
-            <span>Veja os 3 primeiros passos</span>
-          </summary>
-          <div>
-            <ol>
-              <li>
-                <Link to="/squad">
-                  1. Conheça os jogadores e escolha os titulares <ArrowRight size={14} />
-                </Link>
-              </li>
-              <li>
-                <Link to="/tactics">
-                  2. Ajuste a formação e o estilo de jogo <ArrowRight size={14} />
-                </Link>
-              </li>
-              <li>
-                <Link to="/match">
-                  3. Entre em campo para a primeira partida <ArrowRight size={14} />
-                </Link>
-              </li>
-            </ol>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  localStorage.setItem(onboardKey, "1");
-                } catch {
-                  /* The current visit can still dismiss the guide. */
-                }
-                setOnboardDone(true);
-              }}
-            >
-              Já conheço o jogo
-            </button>
-          </div>
-        </details>
-      )}
 
       <div className="trainer-section-heading trainer-overview-heading">
         <div>

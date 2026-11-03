@@ -97,13 +97,17 @@ export function FirstMatchGuide({ career }: { career: CareerState }) {
             >
               <span
                 className={`inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs ${
-                  step.done ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"
+                  step.done
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border text-muted-foreground"
                 }`}
                 aria-hidden="true"
               >
                 {step.done ? <Check size={13} /> : index + 1}
               </span>
-              <span className={step.done ? "text-muted-foreground line-through" : "text-foreground"}>
+              <span
+                className={step.done ? "text-muted-foreground line-through" : "text-foreground"}
+              >
                 {step.title}
               </span>
               <span className="sr-only">{step.done ? "(concluído)" : "(pendente)"}</span>

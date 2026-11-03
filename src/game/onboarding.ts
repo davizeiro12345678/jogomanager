@@ -27,7 +27,10 @@ export interface OnboardingProgress {
 /** Players needed on the pitch for a valid starting eleven. */
 export const STARTING_ELEVEN = 11;
 
-type Source = Pick<CareerState, "lineup" | "players" | "matchLog" | "round" | "season" | "results" | "clubId">;
+type Source = Pick<
+  CareerState,
+  "lineup" | "players" | "matchLog" | "round" | "season" | "results" | "clubId"
+>;
 
 export function firstMatchPlayed(career: Source): boolean {
   if ((career.matchLog?.length ?? 0) > 0) return true;
@@ -41,12 +44,29 @@ export function availableStarters(career: Source): number {
   }).length;
 }
 
-export function onboardingProgress(career: Source, visited: ReadonlySet<OnboardingVisit>): OnboardingProgress {
+export function onboardingProgress(
+  career: Source,
+  visited: ReadonlySet<OnboardingVisit>,
+): OnboardingProgress {
   const played = firstMatchPlayed(career);
   const starters = availableStarters(career);
   const steps: OnboardingStep[] = [
-    { id: "club", title: "Escolher o clube", hint: "Seu clube e sua meta da diretoria já estão definidos.", to: "/new", cta: "Ver clube", done: true },
-    { id: "squad", title: "Conhecer o elenco", hint: "Veja quem são seus melhores jogadores, a forma e quem está lesionado.", to: "/squad", cta: "Abrir elenco", done: played || visited.has("squad") },
+    {
+      id: "club",
+      title: "Escolher o clube",
+      hint: "Seu clube e sua meta da diretoria já estão definidos.",
+      to: "/new",
+      cta: "Ver clube",
+      done: true,
+    },
+    {
+      id: "squad",
+      title: "Conhecer o elenco",
+      hint: "Veja quem são seus melhores jogadores, a forma e quem está lesionado.",
+      to: "/squad",
+      cta: "Abrir elenco",
+      done: played || visited.has("squad"),
+    },
     {
       id: "lineup",
       title: "Definir os 11 titulares",
@@ -58,9 +78,30 @@ export function onboardingProgress(career: Source, visited: ReadonlySet<Onboardi
       cta: "Ajustar titulares",
       done: played || starters >= STARTING_ELEVEN,
     },
-    { id: "tactics", title: "Escolher a tática", hint: "Formação, mentalidade e pressão: o jeito do seu time jogar.", to: "/tactics", cta: "Abrir táticas", done: played || visited.has("tactics") },
-    { id: "prematch", title: "Preparar o primeiro jogo", hint: "Veja o adversário, a forma recente e confirme a escalação.", to: "/pre-jogo", cta: "Ir ao pré-jogo", done: played || visited.has("prematch") },
-    { id: "match", title: "Jogar a primeira partida", hint: "Entre em campo e acompanhe o jogo em 3D.", to: "/pre-jogo", cta: "Entrar em campo", done: played },
+    {
+      id: "tactics",
+      title: "Escolher a tática",
+      hint: "Formação, mentalidade e pressão: o jeito do seu time jogar.",
+      to: "/tactics",
+      cta: "Abrir táticas",
+      done: played || visited.has("tactics"),
+    },
+    {
+      id: "prematch",
+      title: "Preparar o primeiro jogo",
+      hint: "Veja o adversário, a forma recente e confirme a escalação.",
+      to: "/pre-jogo",
+      cta: "Ir ao pré-jogo",
+      done: played || visited.has("prematch"),
+    },
+    {
+      id: "match",
+      title: "Jogar a primeira partida",
+      hint: "Entre em campo e acompanhe o jogo em 3D.",
+      to: "/pre-jogo",
+      cta: "Entrar em campo",
+      done: played,
+    },
   ];
   const doneCount = steps.filter((s) => s.done).length;
   return { steps, doneCount, next: steps.find((s) => !s.done) ?? null, complete: played };

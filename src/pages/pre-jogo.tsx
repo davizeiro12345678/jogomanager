@@ -24,9 +24,11 @@ import { RealClubInfo } from "@/components/game/RealClubInfo";
 
 import "@/components/game/prematch.css";
 import { careerAnalyticsId } from "@/lib/career-analytics-id";
+import { useMarkOnboardingVisit } from "@/lib/onboarding-progress";
 
 export function PreMatchPage() {
   const { career } = useCareer();
+  useMarkOnboardingVisit(career?.clubId, "prematch");
   if (!career) return <NoCareer hint="Crie uma carreira para ver o pré-jogo." />;
   return <PreMatch career={career} />;
 }
