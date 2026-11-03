@@ -4,6 +4,9 @@
  * própria MatchSim, então sementes e replays continuam idênticos.
  */
 import type { MatchSim } from "./sim";
+import { makeRng } from "./rng";
+import { type SimPlayer } from "./sim-contracts";
+import { FIELD_X, FIELD_Z } from "./sim-rules";
 
 export function issueYellow(sim: MatchSim, p: SimPlayer) {
   p.yellows++;

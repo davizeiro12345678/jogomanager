@@ -4,6 +4,13 @@
  * própria MatchSim, então sementes e replays continuam idênticos.
  */
 import type { MatchSim } from "./sim";
+import { halfTimePlan } from "./ai-halftime";
+import { advanceAthlete } from "./athlete-dynamics";
+import { pitchTraction } from "./match-physics-extras";
+import { positionalOverall } from "./overall";
+import { type Side, type SimPlayer } from "./sim-contracts";
+import { type AiBenchInput, type AiLineupInput, FIELD_X, FIELD_Z, GOAL_Z, aiMentalityTweak, aiSubPick } from "./sim-rules";
+import { type Player } from "./types";
 
 /** Intervalo: o time da CPU lê o adversário e ajusta a tática (sem sorteio). */
 export function halfTimeRead(sim: MatchSim, side: Side) {

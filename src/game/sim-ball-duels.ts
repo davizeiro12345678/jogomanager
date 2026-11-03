@@ -4,6 +4,9 @@
  * própria MatchSim, então sementes e replays continuam idênticos.
  */
 import type { MatchSim } from "./sim";
+import { type ShotTechnique, blockRestitution, fatigueStrikeFactor, firstTouchSpill, parryReboundSpeed, shotProfile } from "./match-physics-extras";
+import { type Side, type SimPlayer } from "./sim-contracts";
+import { FIELD_X, FIELD_Z, type FoulInput, GOAL_Z, cardForFoul, controlFailAdd, defensiveLineX, duelMult, foulMult, isOffside, shotProbabilities, woodworkAt, xgForShot } from "./sim-rules";
 
 /**
  * Primeiro toque. Bola forte ou alta pode escapar do controle e sobrar viva —

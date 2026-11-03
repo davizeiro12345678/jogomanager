@@ -1,102 +1,34 @@
 import { FORMATIONS } from "./formations";
-import {
-  evaluatePassLanesFallback,
-  evaluatePassLanesIntoFallback,
-  MAX_PASS_LANE_PLAYERS,
-  type PassLaneKernel,
-  type PassLaneIntoKernel,
-} from "./wasm/match-perception";
-import {
-  MATCH_EXECUTION_REVISION,
-  validExecutionContract,
-  type MatchExecutionContract,
-} from "./match-execution-contract";
+import { evaluatePassLanesFallback, evaluatePassLanesIntoFallback, MAX_PASS_LANE_PLAYERS, type PassLaneKernel, type PassLaneIntoKernel } from "./wasm/match-perception";
+import { MATCH_EXECUTION_REVISION, validExecutionContract, type MatchExecutionContract } from "./match-execution-contract";
 import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
 import { MatchVisualContextComputer } from "./sim-visual-context";
 import type { PlayerAction } from "./animation";
 import { calculatePlayerRatings } from "./sim-ratings";
 import { makeRng } from "./rng";
 import { physiqueFor } from "./player-physique";
-import { matchAttributes } from "./match-readiness";
-import { positionalOverall } from "./overall";
-import {
-  BOX_DEPTH,
-  BOX_HALF,
-  PENALTY_DIST,
-  type AiBenchInput,
-  type AiLineupInput,
-  aiMentalityTweak,
-  aiSubPick,
-  cardForFoul,
-  clockText,
-  controlFailAdd,
-  defensiveLineX,
-  duelMult,
-  type FoulInput,
-  foulMult,
-  isOffside,
-  type MatchPhase,
-  passErrMult,
-  type RefProfile,
-  refFor,
-  type ShootoutKick,
-  shootoutWinner,
-  solvePenalty,
-  shotProbabilities,
-  staminaDrainMult,
-  type WeatherKind,
-  woodworkAt,
-  xgForShot,
-} from "./sim-rules";
+
+
+import { BOX_DEPTH, BOX_HALF, PENALTY_DIST, clockText, type MatchPhase, passErrMult, type RefProfile, refFor, type ShootoutKick, shootoutWinner, solvePenalty, staminaDrainMult, type WeatherKind, xgForShot } from "./sim-rules";
 import { pitchCondition, windFor, type WindVector } from "./ball-climate";
-import {
-  advanceAthlete,
-  athleteContact,
-  athleteRemainder,
-  restoreAthleteRemainder,
-} from "./athlete-dynamics";
+import { athleteContact, athleteRemainder, restoreAthleteRemainder } from "./athlete-dynamics";
 import { HIGH_FIDELITY_PHYSICS_STEP } from "./physics-quality";
 import type { Player, MatchEventLog } from "./types";
 import { type VersionedVisualData } from "./visual-context";
 import type { CanonicalBallPhysicsState } from "./visual-ball";
-import type {
-  BallPhysicsAuthority,
-  RapierBallHolder,
-  RapierBallState,
-} from "./rapier-ball-authority";
+import type { BallPhysicsAuthority, RapierBallHolder, RapierBallState } from "./rapier-ball-authority";
 
 // Medidas do campo vivem em sim-rules.ts; reexportadas aqui por compatibilidade.
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
-import { halfTimePlan } from "./ai-halftime";
+
 import * as setPieces from "./sim-set-pieces";
 import * as sim_discipline from "./sim-discipline";
 import * as sim_team_ai from "./sim-team-ai";
 import * as sim_ball_duels from "./sim-ball-duels";
-import {
-  blockRestitution,
-  bodyContactShare,
-  fatigueStrikeFactor,
-  firstTouchSpill,
-  parryReboundSpeed,
-  pitchTraction,
-  quadraticDragDeceleration,
-  settlesOnTurf,
-  shotProfile,
-  type ShotTechnique,
-} from "./match-physics-extras";
-import type {
-  Side,
-  TeamTalkKind,
-  SimPlayer,
-  ShotRecord,
-  PlayerRating,
-  TeamSetup,
-  MatchStats,
-  Scorer,
-  MatchCheckpoint,
-} from "./sim-contracts";
+import { bodyContactShare, quadraticDragDeceleration, settlesOnTurf } from "./match-physics-extras";
+import type { Side, TeamTalkKind, SimPlayer, ShotRecord, PlayerRating, TeamSetup, MatchStats, Scorer, MatchCheckpoint } from "./sim-contracts";
 export * from "./sim-contracts";
 
 const CHECKPOINT_EXTERNAL = new Set(["rnd", "passLaneKernel", "ballPhysics"]);
