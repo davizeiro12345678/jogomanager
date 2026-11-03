@@ -12,7 +12,14 @@ function product(overrides: Partial<ServerStoreProduct> = {}): ServerStoreProduc
     kind: "cosmetic",
     active: true,
     stripeLookupKey: "theme_pack",
-    contents: { coins: 0, scoutReports: 0, trainingBoosts: 0, injuryTreatments: 0, opponentReports: 0, themes: ["premium_gold"] },
+    contents: {
+      coins: 0,
+      scoutReports: 0,
+      trainingBoosts: 0,
+      injuryTreatments: 0,
+      opponentReports: 0,
+      themes: ["premium_gold"],
+    },
     salePercentOff: 0,
     ...overrides,
   };
@@ -29,7 +36,14 @@ describe("server checkout package policy gate", () => {
         product({
           key: "mystery_box",
           kind: "lootbox",
-          contents: { coins: 10, scoutReports: 0, trainingBoosts: 0, injuryTreatments: 0, opponentReports: 0, themes: [] },
+          contents: {
+            coins: 10,
+            scoutReports: 0,
+            trainingBoosts: 0,
+            injuryTreatments: 0,
+            opponentReports: 0,
+            themes: [],
+          },
         }),
       ),
     ).rejects.toThrow(/não está liberado/);

@@ -19,7 +19,14 @@ import {
   recordPendingPurchase,
   syncSubscriptionForUser,
 } from "./fulfillment.server";
-const paidContents = { coins: 1500, scoutReports: 2, trainingBoosts: 0, injuryTreatments: 0, opponentReports: 0, themes: ["premium_gold"] };
+const paidContents = {
+  coins: 1500,
+  scoutReports: 2,
+  trainingBoosts: 0,
+  injuryTreatments: 0,
+  opponentReports: 0,
+  themes: ["premium_gold"],
+};
 beforeEach(() => {
   vi.resetAllMocks();
   const chain: Record<string, unknown> = {};
@@ -64,6 +71,17 @@ describe("immutable authenticated offer delivery", () => {
         _scout_reports: 2,
         _themes: ["premium_gold"],
       }),
+    );
+  });
+  it("credits stored treatments and opponent reports from a service pack", async () => {
+    deps.rpc.mockResolvedValue({ data: true, error: null });
+    await fulfillOneTimePurchase("user_fixture", "medical_pack", "cs_medical", 990, {
+      priceCents: 990,
+      contents: { ...paidContents, coins: 0, injuryTreatments: 5, opponentReports: 0 },
+    });
+    expect(deps.rpc).toHaveBeenCalledWith(
+      "fulfill_store_purchase",
+      expect.objectContaining({ _injury_treatments: 5, _opponent_reports: 0, _coins: 0 }),
     );
   });
   it("fails closed for a legacy offer that has no historical snapshot", async () => {
