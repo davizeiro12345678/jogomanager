@@ -19,7 +19,7 @@ import {
   recordPendingPurchase,
   syncSubscriptionForUser,
 } from "./fulfillment.server";
-const paidContents = { coins: 1500, scoutReports: 2, trainingBoosts: 0, themes: ["premium_gold"] };
+const paidContents = { coins: 1500, scoutReports: 2, trainingBoosts: 0, injuryTreatments: 0, opponentReports: 0, themes: ["premium_gold"] };
 beforeEach(() => {
   vi.resetAllMocks();
   const chain: Record<string, unknown> = {};
