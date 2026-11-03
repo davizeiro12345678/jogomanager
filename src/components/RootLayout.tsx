@@ -8,7 +8,7 @@ import {
   useLocation,
   Scripts,
 } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
@@ -208,7 +208,9 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   ) : null;
 }
 
-const LazyToaster = lazy(() => import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })));
+const LazyToaster = lazy(() =>
+  import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })),
+);
 /** Notifications from toast() need one mounted host; load it after hydration. */
 function DeferredToaster() {
   const [ready, setReady] = useState(false);
