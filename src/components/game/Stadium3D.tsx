@@ -109,17 +109,13 @@ const SHADOW_SETTINGS = { type: THREE.PCFShadowMap };
 /** Concreto compartilhado por toda a estrutura (um material só, muitas peças). */
 /* --------------------------------------------------------------- jogadores */
 
-
 /* --------------------------------------------------------- pós-processamento */
 
 /** Céu com degradê, nuvens volumosas, estrelas e sol/lua; gira bem devagar. */
 
 /* ------------------------------------------------------------------- cena */
 
-
 /* ------------------------------------------------------- arbitragem */
-
-
 
 function Scene({
   sim,

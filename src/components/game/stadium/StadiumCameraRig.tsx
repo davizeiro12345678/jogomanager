@@ -4,7 +4,13 @@ import { easing } from "maath";
 import type React from "react";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { framingFor, MANUAL_SHOT, SHOT_MIN_TIME, type ShotContext, type ShotId } from "../StadiumCameraFraming";
+import {
+  framingFor,
+  MANUAL_SHOT,
+  SHOT_MIN_TIME,
+  type ShotContext,
+  type ShotId,
+} from "../StadiumCameraFraming";
 import { presentationBall } from "./stadium-ball";
 import { type CameraMode } from "@/game/camera-modes";
 import { type GoalFocusRef } from "@/game/goal-choreography";
