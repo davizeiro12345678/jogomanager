@@ -8,5 +8,6 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] E5 Moedas e benefícios
 - [ ] E6 Idiomas (25 maiores completos)
 - [ ] E7 Proteção, anticheat e moderação
-  - [ ] 7.3 Moderador do chat no servidor (disfarces, links, dados pessoais, punição progressiva)
+  - [x] 7.3 Moderador do chat no servidor (disfarces, links, dados pessoais, punição progressiva)
+  - [ ] 7.3b Denúncia de mensagem enviada ao servidor (hoje só oculta localmente)
 - [ ] E8 Home, estilos e carregamento
