@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
-import { containsProfanity, PROFANITY_BLOCKED_MESSAGE } from "@/lib/moderation";
+import { MODERATION_MESSAGES, moderateMessage } from "@/lib/moderation";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -133,22 +133,28 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   const send = useCallback(async () => {
     const body = draft.trim();
     if (!body) return;
-    if (containsProfanity(body)) {
-      toast.error(PROFANITY_BLOCKED_MESSAGE);
+    // Instant hint only; the server repeats the check and decides.
+    const rule = moderateMessage(body);
+    if (rule) {
+      toast.error(MODERATION_MESSAGES[rule]);
       return;
     }
     setSending(true);
     // Envio pelo servidor: a identidade vem do token verificado (não do
-    // navegador) e há limite de tamanho e de mensagens por minuto.
+    // navegador) e há moderação, silenciamento e limite por minuto.
     const result = await sendChatMessage({ data: { body } }).catch(() => null);
     setSending(false);
     if (!result || !result.ok) {
       toast.error(
-        result && result.reason === "rate_limited"
-          ? "Calma! Você está enviando mensagens rápido demais."
-          : result && result.reason === "invalid_length"
-            ? "A mensagem precisa ter entre 1 e 500 caracteres."
-            : "Não foi possível enviar a mensagem.",
+        !result
+          ? "Não foi possível enviar a mensagem."
+          : result.reason === "blocked" || result.reason === "muted"
+            ? result.message
+            : result.reason === "rate_limited"
+              ? "Calma! Você está enviando mensagens rápido demais."
+              : result.reason === "invalid_length"
+                ? "A mensagem precisa ter entre 1 e 500 caracteres."
+                : "Não foi possível enviar a mensagem.",
       );
       return;
     }

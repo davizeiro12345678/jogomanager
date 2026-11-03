@@ -288,6 +288,13 @@
       "when": 1793385908888,
       "tag": "0040_wallet_item_uses",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793724744074,
+      "tag": "0041_chat_infractions",
+      "breakpoints": true
     }
   ]
 }
