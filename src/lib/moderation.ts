@@ -61,8 +61,6 @@ const LOOKALIKES: Record<string, string> = {
   "8": "b",
   "@": "a",
   $: "s",
-  "!": "i",
-  "|": "i",
 };
 
 /** Lowercase, strip accents and map look-alike characters to letters. */
@@ -71,7 +69,7 @@ export function normalizeForModeration(text: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[0-9@$!|]/g, (c) => LOOKALIKES[c] ?? c);
+    .replace(/[0-9@$]/g, (c) => LOOKALIKES[c] ?? c);
 }
 
 /** Letters only, with runs of the same letter collapsed ("poorrraaa" -> "pora"). */
@@ -98,7 +96,10 @@ export function containsProfanity(text: string): boolean {
   const normalized = normalizeForModeration(text);
   // Whole words: "porra", "p0rr4", "poooorra".
   if (words(normalized).some((w) => SINGLE_WORD_TERMS.has(w))) return true;
-  // Split spellings and phrases: "p.o.r.r.a", "filho-da-puta".
+  // Letter-by-letter spellings: "p.o.r.r.a", "p o r r a".
+  const spelled = normalized.match(/(?:\b[a-z]\b[^a-z]*){3,}/g) ?? [];
+  if (spelled.some((run) => SINGLE_WORD_TERMS.has(squash(run)))) return true;
+  // Phrases and glued spellings: "filho-da-puta", "seucaralho".
   const glued = squash(normalized);
   if (PHRASE_TERMS.some((t) => glued.includes(t))) return true;
   return SQUASHED_TERMS.some((t) => t.length >= MIN_EMBEDDED_LENGTH && glued.includes(t));
