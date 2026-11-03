@@ -22,6 +22,7 @@ export type StoreCatalogProduct = Pick<
   | "sale_percent_off"
   | "sale_starts_at"
   | "sale_ends_at"
+  | "contents"
 >;
 
 export function useStoreCatalog() {
@@ -31,7 +32,7 @@ export function useStoreCatalog() {
       const { data, error } = await supabase
         .from("store_products")
         .select(
-          "key, name, description, price_cents, currency, coins, kind, sale_percent_off, sale_starts_at, sale_ends_at",
+          "key, name, description, price_cents, currency, coins, kind, sale_percent_off, sale_starts_at, sale_ends_at, contents",
         )
         .eq("active", true)
         .order("price_cents", { ascending: true });

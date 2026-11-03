@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { recordAdMetric } from "@/features/ads/ad-manager";
 import { reportSilent } from "@/lib/silent-errors";
+import { CareerValueBox } from "@/components/store/CareerValueBox";
 
 interface Wallet {
   coins: number;
@@ -355,6 +356,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     </Badge>
                   </div>
                   <CardDescription>{p.description}</CardDescription>
+                  <CareerValueBox kind={p.kind} contents={p.contents} />
                 </CardHeader>
                 <CardContent className="mt-auto flex flex-wrap items-baseline gap-2">
                   {salePrice(p).percent > 0 ? (

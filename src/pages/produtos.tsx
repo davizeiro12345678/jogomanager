@@ -30,6 +30,7 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
 import { formatPrice, PACK_BY_KEY, type PackKind } from "@/game/store-catalog";
 import { PRODUTOS_PATH as PATH } from "@/lib/public-route-paths";
+import { CareerValueBox } from "@/components/store/CareerValueBox";
 
 const PackScene = lazy(() =>
   import("@/components/store/PackScene").then((m) => ({ default: m.PackScene })),
@@ -177,6 +178,7 @@ export function ProdutosPage() {
                   <div className="flex flex-1 flex-col p-5">
                     <h2 className="font-display text-lg uppercase tracking-wide">{product.name}</h2>
                     <p className="mt-3 text-sm text-muted-foreground">{product.description}</p>
+                    <CareerValueBox kind={product.kind} contents={product.contents} />
 
                     {product.coins > 0 ? (
                       <span className="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
