@@ -51,6 +51,43 @@
           }
         }
       }
+    },
+    "project.store_checkout_started": {
+      "event_schema_version": 1,
+      "description": "A player picked a store product and the secure checkout session was created successfully.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_key",
+          "price_cents",
+          "currency",
+          "checkout_mode"
+        ],
+        "properties": {
+          "product_key": {
+            "type": "string"
+          },
+          "price_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string"
+          },
+          "checkout_mode": {
+            "type": "string",
+            "enum": [
+              "account",
+              "guest"
+            ]
+          }
+        }
+      }
     }
   }
 }
