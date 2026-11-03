@@ -58,7 +58,7 @@ export type GuestCheckoutStatus =
   | { status: "invalid" | "expired"; message: string };
 
 export type ClaimGuestCheckoutResult =
-  | { status: "delivered"; productKey: string }
+  | { status: "delivered"; productKey: string; amountCents: number; currency: string }
   | { status: "pending"; message: string }
   | { status: "error"; message: string };
 
@@ -540,7 +540,12 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
         return { status: "error", message: "Esta compra já está vinculada a outra conta." };
       }
       if (intent.state === "claimed")
-        return { status: "delivered", productKey: intent.product_key };
+        return {
+          status: "delivered",
+          productKey: intent.product_key,
+          amountCents: intent.amount_cents,
+          currency: intent.currency,
+        };
       // Only an intent already confirmed paid by the signed Stripe webhook can
       // be delivered; a client request alone never triggers fulfillment.
       if (intent.state !== "paid" && intent.state !== "claiming") {
@@ -610,7 +615,12 @@ export const claimGuestCheckout = createServerFn({ method: "POST" })
       // esta função apenas vincula a conta; o crédito acontece em
       // deliverClaimedGuestPurchase, compartilhado com o webhook assinado.
       await deliverClaimedGuestPurchase(intent.id, data.sessionId, environment);
-      return { status: "delivered", productKey: intent.product_key };
+      return {
+        status: "delivered",
+        productKey: intent.product_key,
+        amountCents: intent.amount_cents,
+        currency: intent.currency,
+      };
     } catch (error) {
       console.error("claimGuestCheckout falhou", error);
       return { status: "error", message: "Não foi possível vincular esta compra agora." };

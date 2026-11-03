@@ -5,7 +5,14 @@ import { createStripeClient, getConfiguredStripeEnvironment } from "@/lib/stripe
 import { isSeasonPassDelivered } from "@/lib/subscription-delivery.server";
 
 export type ClaimResult =
-  | { status: "delivered"; kind?: "subscription" }
+  | {
+      status: "delivered";
+      kind?: "subscription";
+      /** Server-confirmed offer and amount, for purchase analytics only. */
+      productKey: string | null;
+      amountCents: number;
+      currency: string;
+    }
   | { status: "pending" }
   | { status: "error"; message: string };
 
@@ -33,7 +40,7 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
       const { getStoreServiceSupabase } = await import("@/lib/store-products.server");
       const { data: owner, error: ownerError } = await getStoreServiceSupabase()
         .from("checkout_session_owners")
-        .select("session_id")
+        .select("session_id, product_key, price_cents, currency")
         .eq("session_id", data.sessionId)
         .eq("user_id", context.userId)
         .eq("environment", environment)
@@ -83,7 +90,13 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
           subscriptionId,
           environment,
         })
-          ? { status: "delivered", kind: "subscription" }
+          ? {
+              status: "delivered",
+              kind: "subscription",
+              productKey: owner.product_key,
+              amountCents: owner.price_cents ?? session.amount_total ?? 0,
+              currency: (owner.currency ?? session.currency ?? "").toUpperCase(),
+            }
           : { status: "pending" };
       }
       if (session.mode !== "payment") return { status: "pending" };
@@ -92,12 +105,19 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
       // reports whether that verified fulfillment has completed.
       const { data: purchase, error: purchaseError } = await context.supabase
         .from("user_purchases")
-        .select("status")
+        .select("status, product_key, amount_cents")
         .eq("user_id", context.userId)
         .eq("reference", session.id)
         .maybeSingle();
       if (purchaseError) throw new Error("Não foi possível consultar a entrega da compra.");
-      return purchase?.status === "completed" ? { status: "delivered" } : { status: "pending" };
+      return purchase?.status === "completed"
+        ? {
+            status: "delivered",
+            productKey: purchase.product_key,
+            amountCents: purchase.amount_cents,
+            currency: (owner.currency ?? session.currency ?? "").toUpperCase(),
+          }
+        : { status: "pending" };
     } catch (err) {
       console.error("claimCheckoutSession falhou", err);
       return {

@@ -123,6 +123,50 @@
           }
         }
       }
+    },
+    "project.store_purchase_completed": {
+      "event_schema_version": 1,
+      "description": "A provider-confirmed store purchase was delivered to the player's account (signed-in return or claimed guest purchase); counted once per checkout session on that device.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product_key",
+          "amount_cents",
+          "currency",
+          "purchase_mode"
+        ],
+        "properties": {
+          "product_key": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string"
+          },
+          "purchase_mode": {
+            "type": "string",
+            "enum": [
+              "account",
+              "guest_claim"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "subscription"
+            ]
+          }
+        }
+      }
     }
   }
 }
