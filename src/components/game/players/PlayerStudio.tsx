@@ -61,7 +61,7 @@ import "../cinematic/studio.css";
 import { LowPlayers } from "./LowPlayers";
 import { PlayerRig } from "./PlayerRig";
 import { type CameraCommand, MOVEMENTS, fixture } from "./player-studio-setup";
-import { StudioScene } from "./PlayerStudioScene.tsx";
+import { StudioScene } from "./PlayerStudioScene";
 
 /**
  * `value` turns the appearance controls into a controlled editor. Existing
