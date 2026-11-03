@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { type Phase } from "./apifootball-phases";
-import { type AfImportResult } from "./apifootball-import.server";
+import type { AfImportResult } from "./apifootball-import.server";
 
 export const BASE = "https://v3.football.api-sports.io";
 

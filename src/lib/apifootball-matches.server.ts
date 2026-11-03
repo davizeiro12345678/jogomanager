@@ -1,5 +1,5 @@
 import { FIXTURE_ENDPOINTS, type Phase } from "./apifootball-phases";
-import { type AfImportResult } from "./apifootball-import.server";
+import type { AfImportResult } from "./apifootball-import.server";
 import {
   SOURCE,
   admin,

@@ -4,7 +4,7 @@ import {
   apiFootballProfileProjection,
   isFootballStaffRole,
 } from "./apifootball-phases";
-import { type AfImportResult } from "./apifootball-import.server";
+import type { AfImportResult } from "./apifootball-import.server";
 import {
   type LeagueTarget,
   SOURCE,
