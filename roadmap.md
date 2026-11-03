@@ -36,7 +36,15 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [x] Guias longos de loja/criador pulam o desenho fora da tela
   - [ ] Reduzir o JS de /new (463 kB) e o bloqueio de /produtos e /guias (>1 s)
 - [ ] Etapa 3 Modularização dos arquivos gigantes
+  - [x] Motor da partida: bolas paradas em src/game/sim-set-pieces.ts (2.915 → 2.472 linhas; 30 partidas idênticas ao original, mesma velocidade)
+  - [x] Estádio 3D: câmera, céu, festa do gol, arbitragem e medidor de quadros em stadium/ (1.174 → 733 linhas)
+  - [ ] Motor: posse/bloqueios, IA do time, cartões e lesões
+  - [ ] Carreira, tela da partida, importação, estúdio de jogadores
 - [ ] Etapa 4 Experiência do usuário
+  - [x] Início: cartão da carreira mostra o próximo adversário e botão "Jogar o próximo jogo" (rodada corrigida)
+  - [x] Carregamento do estádio com dicas, aviso de conexão lenta/sem internet e botão de tentar de novo se o download falhar
+  - [x] Aviso de aparelho fraco com ajuste automático de gráficos (já existia)
+  - [ ] Mensagens de erro simples nas demais telas
 - [x] Etapa 5 Novas compras
   - [x] Pacote de estreia (1x por conta) e Kit do clube
   - [x] Pacote médico e análise tática (tratamentos/relatórios guardados na carteira)
