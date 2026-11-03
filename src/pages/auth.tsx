@@ -264,7 +264,7 @@ export function AuthPage() {
           window.__lovableEvents?.track?.("project.account_created", {
             method: "password",
             entry_route: entryRoute,
-            needs_email_confirmation: !result.data.session,
+            confirmation_pending: !result.data.session,
           });
         }
         if (result.data.session) await continueSession();
