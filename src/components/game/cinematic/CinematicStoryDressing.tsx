@@ -87,9 +87,11 @@ function LockerDressing({ primary, secondary, art, quality }: DressingProps) {
         <planeGeometry args={[8, 1.25]} />
         <meshStandardMaterial map={artwork} roughness={0.82} />
       </mesh>
-      {/* Boots, bags and bottles give the foreground a lived-in matchday story. */}
-      {[-2.55, -1.72, 1.72, 2.55].map((x, index) => (
-        <group key={x} position={[x, 0, 1.25]} rotation-y={(index % 2 ? 1 : -1) * 0.16}>
+      {/* Boots, bags and bottles give the foreground a lived-in matchday story.
+          Kept between and in front of the seated players' feet (bench z≈0.6,
+          feet reach z≈1.3) so no prop intersects a leg. */}
+      {[-3.35, -1.18, 0.42, 3.75].map((x, index) => (
+        <group key={x} position={[x, 0, 1.75]} rotation-y={(index % 2 ? 1 : -1) * 0.16}>
           <mesh position={[0, 0.1, 0]} castShadow>
             <sphereGeometry args={[0.17, quality === "alta" ? 12 : 8, 6]} />
             <meshStandardMaterial color={index % 2 ? primary : secondary} roughness={0.58} />

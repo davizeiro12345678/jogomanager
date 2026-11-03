@@ -408,11 +408,12 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     setReady(true);
     onReady?.();
   }, [onReady]);
+  // Pause/tab-hide must NOT unmount the post stack: tearing the EffectComposer
+  // down and rebuilding it recompiles shaders and shows one untonemapped
+  // (white) frame — the "piscada branca" between beats.
   const enhancedAllowed =
     ready &&
-    !paused &&
     !reduced &&
-    !hidden &&
     presentation.lens !== "off" &&
     quality !== "baixa" &&
     !contextLost;
@@ -490,8 +491,11 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               antialias: quality !== "baixa",
               powerPreference: "high-performance",
               stencil: false,
+              alpha: false,
             }}
             onCreated={({ gl }) => {
+              // Opaque dark clear: DPR/resize changes never expose a white page.
+              gl.setClearColor("#0b1116", 1);
               contextListenerCleanup.current?.();
               const onContextLost = (event: Event) => {
                 // Prevent the browser's default reload path, then let the
