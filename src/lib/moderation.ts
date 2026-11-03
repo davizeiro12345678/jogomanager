@@ -86,8 +86,8 @@ function words(text: string): string[] {
 }
 
 const SQUASHED_TERMS = BLOCKED_TERMS.map((t) => squash(normalizeForModeration(t)));
-const SINGLE_WORD_TERMS = new Set(SQUASHED_TERMS.filter((t, i) => !BLOCKED_TERMS[i].includes(" ")));
-const PHRASE_TERMS = SQUASHED_TERMS.filter((_, i) => BLOCKED_TERMS[i].includes(" "));
+const SINGLE_WORD_TERMS = new Set(SQUASHED_TERMS.filter((_, i) => !BLOCKED_TERMS[i]?.includes(" ")));
+const PHRASE_TERMS = SQUASHED_TERMS.filter((_, i) => BLOCKED_TERMS[i]?.includes(" "));
 /** Long terms are matched even when glued to other letters or split by dots. */
 const MIN_EMBEDDED_LENGTH = 5;
 
