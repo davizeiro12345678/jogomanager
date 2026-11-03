@@ -51,6 +51,7 @@ import {
   type MyClub,
 } from "@/lib/myClub";
 import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
+import { containsProfanity } from "@/lib/moderation";
 
 const ROOFS: { id: RoofKind; label: string }[] = [
   { id: "aberto", label: "Sem cobertura" },
@@ -314,6 +315,10 @@ export function NewClubPage() {
 
   function finish() {
     const finalClub = normalized();
+    if ([manager, finalClub.name, finalClub.short].some((text) => containsProfanity(text ?? ""))) {
+      toast.error("Escolha outros nomes: o nome do clube ou do treinador não é permitido no jogo.");
+      return;
+    }
     const profile = createManagerProfile({
       name: manager,
       country: finalClub.leagueId,
