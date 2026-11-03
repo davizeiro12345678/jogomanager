@@ -208,10 +208,10 @@ async function fetchAll(): Promise<Cache> {
  * thousands of extra rows must not compete with the first paint and input. */
 function afterFirstPaint(): Promise<void> {
   return new Promise((resolve) => {
-    const ric = (window as { requestIdleCallback?: typeof requestIdleCallback })
+    const ric = (globalThis as { requestIdleCallback?: typeof requestIdleCallback })
       .requestIdleCallback;
     if (typeof ric === "function") ric(() => resolve(), { timeout: 2500 });
-    else window.setTimeout(resolve, 1200);
+    else globalThis.setTimeout(resolve, 800);
   });
 }
 
