@@ -18,7 +18,7 @@ describe("FAQ", () => {
   });
 
   it("search ignores accents and case", () => {
-    const results = searchFaq("SALVAMENTO NUVEM");
+    const results = searchFaq("NÚVEM sincronizacao");
     expect(results.some((g) => g.id === "salvamento")).toBe(true);
     expect(searchFaq("xyzzy-nada")).toHaveLength(0);
   });
