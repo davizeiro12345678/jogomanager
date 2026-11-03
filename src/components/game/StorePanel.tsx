@@ -42,6 +42,8 @@ interface Wallet {
   season_pass_until: string | null;
   scout_reports: number;
   training_boosts: number;
+  injury_treatments: number;
+  opponent_reports: number;
   unlocked_themes: string[];
 }
 
@@ -62,6 +64,8 @@ const KIND_LABELS: Record<string, string> = {
   training: "Treino",
   cosmetic: "Cosmético",
   pass: "Passe de temporada",
+  medical: "Departamento médico",
+  tactical: "Análise tática",
 };
 
 const KIND_ART: Record<string, string> = {
@@ -78,6 +82,8 @@ const KIND_ICONS: Record<string, ReactNode> = {
   training: <Dumbbell size={16} />,
   cosmetic: <Palette size={16} />,
   pass: <Crown size={16} />,
+  medical: <HeartPulse size={16} />,
+  tactical: <ClipboardList size={16} />,
 };
 
 function formatDate(iso: string | null | undefined): string {
@@ -134,7 +140,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
       const { data, error } = await supabase
         .from("user_wallet")
         .select(
-          "coins, season_pass, season_pass_until, scout_reports, training_boosts, unlocked_themes",
+          "coins, season_pass, season_pass_until, scout_reports, training_boosts, injury_treatments, opponent_reports, unlocked_themes",
         )
         .eq("user_id", userId)
         .maybeSingle();
@@ -145,6 +151,8 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         season_pass_until: null,
         scout_reports: 0,
         training_boosts: 0,
+        injury_treatments: 0,
+        opponent_reports: 0,
         unlocked_themes: [],
       }) as Wallet;
     },
@@ -356,7 +364,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     </Badge>
                   </div>
                   <CardDescription>{p.description}</CardDescription>
-                  <CareerValueBox kind={p.kind} contents={p.contents} />
+                  <CareerValueBox kind={p.kind} contents={p.contents} annual={p.key === "season_pass_annual"} />
                 </CardHeader>
                 <CardContent className="mt-auto flex flex-wrap items-baseline gap-2">
                   {salePrice(p).percent > 0 ? (

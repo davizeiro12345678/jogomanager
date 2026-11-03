@@ -42,6 +42,8 @@ const ICONS: Record<PackKind, React.ReactNode> = {
   training: <Dumbbell size={14} />,
   cosmetic: <Palette size={14} />,
   pass: <Crown size={14} />,
+  medical: <HeartPulse size={14} />,
+  tactical: <ClipboardList size={14} />,
 };
 
 const KIND_LABEL: Record<PackKind, string> = {
@@ -50,9 +52,19 @@ const KIND_LABEL: Record<PackKind, string> = {
   training: "Treino",
   cosmetic: "Visual",
   pass: "Assinatura",
+  medical: "Médico",
+  tactical: "Análise tática",
 };
 
-const PACK_KINDS: readonly PackKind[] = ["coins", "scout", "training", "cosmetic", "pass"];
+const PACK_KINDS: readonly PackKind[] = [
+  "coins",
+  "scout",
+  "training",
+  "cosmetic",
+  "pass",
+  "medical",
+  "tactical",
+];
 
 function asPackKind(kind: string): PackKind | null {
   return PACK_KINDS.includes(kind as PackKind) ? (kind as PackKind) : null;
@@ -178,7 +190,11 @@ export function ProdutosPage() {
                   <div className="flex flex-1 flex-col p-5">
                     <h2 className="font-display text-lg uppercase tracking-wide">{product.name}</h2>
                     <p className="mt-3 text-sm text-muted-foreground">{product.description}</p>
-                    <CareerValueBox kind={product.kind} contents={product.contents} />
+                    <CareerValueBox
+                      kind={product.kind}
+                      contents={product.contents}
+                      annual={product.key === "season_pass_annual"}
+                    />
 
                     {product.coins > 0 ? (
                       <span className="mt-4 inline-flex w-fit items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
