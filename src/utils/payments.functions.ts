@@ -15,7 +15,9 @@ import {
 import { assertPaymentsConfigured, PAYMENTS_UNAVAILABLE } from "@/lib/payments-config.server";
 import type { StripeEnv } from "@/lib/stripe.server";
 
-export type CheckoutSessionResult = { clientSecret: string } | { error: string };
+export type CheckoutSessionResult =
+  | { clientSecret: string; productKey: string; priceCents: number; currency: string }
+  | { error: string };
 
 export type PortalSessionResult = { url: string } | { error: string };
 
@@ -148,7 +150,12 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
         });
       if (ownerError) throw new Error("Não foi possível registrar a compra.");
 
-      return { clientSecret: session.client_secret ?? "" };
+      return {
+        clientSecret: session.client_secret ?? "",
+        productKey: product.key,
+        priceCents: product.priceCents,
+        currency: product.currency,
+      };
     } catch (error) {
       return { error: getStripeErrorMessage(error) };
     }

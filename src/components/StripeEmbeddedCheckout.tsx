@@ -22,6 +22,13 @@ export function StripeEmbeddedCheckout({ productKey, returnUrl }: StripeEmbedded
       },
     });
     if ("error" in result) throw new Error(result.error);
+    // Server-confirmed product and catalog price, sent only once the session exists.
+    window.__lovableEvents?.track?.("project.store_checkout_started", {
+      product_key: result.productKey,
+      price_cents: result.priceCents,
+      currency: result.currency.toUpperCase(),
+      checkout_mode: "account",
+    });
     return result.clientSecret;
   }, [createSession, productKey, returnUrl]);
 
