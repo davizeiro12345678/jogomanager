@@ -15,6 +15,7 @@ import { useCareer } from "@/hooks/useCareer";
 import type { FormationKey, Player, Tactics } from "@/game/types";
 
 import { playerForDisplay } from "@/game/player-development";
+import { useMarkOnboardingVisit } from "@/lib/onboarding-progress";
 
 const FORMATION_KEYS: FormationKey[] = ["4-3-3", "4-4-2", "3-5-2", "4-2-3-1"];
 
@@ -56,6 +57,7 @@ function fit(player: Player, slotPos: string) {
 export function TacticsPage() {
   const { career, update } = useCareer();
   const [picked, setPicked] = useState<number | null>(null);
+  useMarkOnboardingVisit(career?.clubId, "tactics");
 
   if (!career) return <NoCareer />;
 

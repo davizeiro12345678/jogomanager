@@ -31,6 +31,7 @@ import {
 import type { Player } from "@/game/types";
 
 import { worldFor } from "@/game/career-world";
+import { useMarkOnboardingVisit } from "@/lib/onboarding-progress";
 
 function statusBadge(p: Player) {
   if (p.injuryWeeks > 0)
@@ -65,6 +66,7 @@ export function SquadPage() {
   const [sector, setSector] = useState<"ALL" | "GK" | "DF" | "MF" | "FW">("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("ovr");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
+  useMarkOnboardingVisit(career?.clubId, "squad");
   if (!career) return <NoCareer />;
 
   const players = Object.values(career.players)
