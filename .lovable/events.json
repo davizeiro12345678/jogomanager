@@ -53,8 +53,8 @@
       }
     },
     "project.career_returned": {
-      "event_schema_version": 1,
-      "description": "A player reopened an existing saved career (coach or player) to resume play; new careers are not counted.",
+      "event_schema_version": 2,
+      "description": "An existing saved career (coach or player) was opened and resumed in a new browser session; careers created in that session are not counted.",
       "privacy": {
         "contains_pii": false,
         "purpose": "product_analytics"
@@ -63,8 +63,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "career_type",
-          "entry"
+          "career_type"
         ],
         "properties": {
           "career_type": {
@@ -81,7 +80,9 @@
               "home_hero",
               "home_resume_card",
               "home_footer",
-              "careers_hub"
+              "careers_hub",
+              "dashboard",
+              "player_panel"
             ]
           },
           "season": {

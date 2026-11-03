@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import {
   ArrowLeftRight,
@@ -52,6 +53,7 @@ import { useCareer } from "@/hooks/useCareer";
 import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
 import { NextObjectivesCard } from "@/components/game/NextObjectivesCard";
 import { FirstMatchGuide } from "@/components/game/FirstMatchGuide";
+import { careerAnalyticsId, claimCareerReturn } from "@/lib/career-analytics-id";
 
 export function Dashboard() {
   const { career } = useCareer();
@@ -113,6 +115,19 @@ function TrainerDashboard({ career }: { career: CareerState }) {
   const homeClub = atHome ? club : opponent;
   const awayClub = atHome ? opponent : club;
   const drillDone = Boolean(drillDoneThisRound(career));
+  useEffect(() => {
+    // A saved coach career reopened in a new browser session counts as a return.
+    const careerId = careerAnalyticsId();
+    if (!claimCareerReturn("coach", careerId)) return;
+    window.__lovableEvents?.track?.("project.career_returned", {
+      career_type: "coach",
+      entry: "dashboard",
+      season: career.season,
+      career_id: careerId,
+    });
+    // Once per mount of this career's dashboard.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <GameShell career={career}>

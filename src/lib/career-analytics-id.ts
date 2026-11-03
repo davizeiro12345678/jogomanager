@@ -13,6 +13,7 @@ function randomId() {
 /** Call when a new career is created so its events get a fresh identifier. */
 export function startCareerAnalyticsId(): string {
   const id = randomId();
+  markCareerCreatedThisSession("coach", id);
   try {
     localStorage.setItem(STORAGE_KEY, id);
   } catch {
@@ -23,7 +24,12 @@ export function startCareerAnalyticsId(): string {
 
 export function careerAnalyticsId(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY) ?? startCareerAnalyticsId();
+    const existing = localStorage.getItem(STORAGE_KEY);
+    if (existing) return existing;
+    // A career saved before ids existed: give it one without calling it new.
+    const id = randomId();
+    localStorage.setItem(STORAGE_KEY, id);
+    return id;
   } catch {
     return randomId();
   }
@@ -34,5 +40,33 @@ export function existingCareerAnalyticsId(): string | null {
     return localStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
+  }
+}
+
+type CareerKind = "coach" | "player";
+const createdKey = (kind: CareerKind, id: string) => `jm.career-created:${kind}:${id}`;
+const returnedKey = (kind: CareerKind, id: string) => `jm.career-returned:${kind}:${id}`;
+
+/** Remember a career created in this browser session so opening it is not a "return". */
+export function markCareerCreatedThisSession(kind: CareerKind, id: string) {
+  try {
+    sessionStorage.setItem(createdKey(kind, id), "1");
+  } catch {
+    // Storage blocked: nothing to remember.
+  }
+}
+
+/**
+ * True the first time an existing saved career is opened in a new browser
+ * session; false for careers created in this session and for repeat opens.
+ */
+export function claimCareerReturn(kind: CareerKind, id: string): boolean {
+  try {
+    if (sessionStorage.getItem(createdKey(kind, id))) return false;
+    if (sessionStorage.getItem(returnedKey(kind, id))) return false;
+    sessionStorage.setItem(returnedKey(kind, id), "1");
+    return true;
+  } catch {
+    return false;
   }
 }

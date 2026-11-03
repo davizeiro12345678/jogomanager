@@ -34,6 +34,7 @@ import { useAthlete } from "@/hooks/useAthlete";
 
 import "@/components/game/athlete.css";
 import { getRouteApi } from "@tanstack/react-router";
+import { markCareerCreatedThisSession } from "@/lib/career-analytics-id";
 const Route = getRouteApi("/jogador/novo");
 
 const AthleteHero3D = lazy(() =>
@@ -203,6 +204,7 @@ export function CreateAthletePage() {
       shirtNumber: shirt,
     });
     commit(state);
+    markCareerCreatedThisSession("player", `slot-${slotId}`);
     void navigate({ to: "/jogador/painel", search: { slot } });
   };
 
