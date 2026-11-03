@@ -160,6 +160,8 @@ export async function fulfillOneTimePurchase(
     _scout_reports: contents.scoutReports,
     _training_boosts: contents.trainingBoosts,
     _themes: contents.themes,
+    _injury_treatments: contents.injuryTreatments,
+    _opponent_reports: contents.opponentReports,
   });
   if (error) throw new Error(error.message);
   if (data === true) {
