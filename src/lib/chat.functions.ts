@@ -55,7 +55,10 @@ export const sendChatMessage = createServerFn({ method: "POST" })
         .limit(REPEAT_LOOKBACK),
     ]);
     if (infractions.error || recent.error) {
-      console.error("chat moderation lookup failed", infractions.error?.message ?? recent.error?.message);
+      console.error(
+        "chat moderation lookup failed",
+        infractions.error?.message ?? recent.error?.message,
+      );
       return { ok: false, reason: "error" };
     }
 

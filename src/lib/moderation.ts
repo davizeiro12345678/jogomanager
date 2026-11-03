@@ -107,7 +107,8 @@ export function containsProfanity(text: string): boolean {
 
 export type ModerationReason = "profanity" | "link" | "contact" | "shouting" | "repeated";
 
-const LINK = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app)\b|discord\.gg)/i;
+const LINK =
+  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app)\b|discord\.gg)/i;
 const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 /** Eight or more digits, allowing spaces, dots, dashes and parentheses between them. */
 const PHONE = /(?:\d[\s().-]?){8,}/;
@@ -119,12 +120,19 @@ const SHOUTING_MIN_LETTERS = 12;
  * Checks one message. Returns the first rule it breaks, or null when allowed.
  * `previous` holds the sender's recent messages for the repeat rule.
  */
-export function moderateMessage(text: string, previous: readonly string[] = []): ModerationReason | null {
+export function moderateMessage(
+  text: string,
+  previous: readonly string[] = [],
+): ModerationReason | null {
   if (containsProfanity(text)) return "profanity";
   if (EMAIL.test(text) || PHONE.test(text)) return "contact";
   if (LINK.test(text)) return "link";
   const letters = text.replace(/[^\p{L}]/gu, "");
-  if (letters.length >= SHOUTING_MIN_LETTERS && letters === letters.toUpperCase() && letters !== letters.toLowerCase())
+  if (
+    letters.length >= SHOUTING_MIN_LETTERS &&
+    letters === letters.toUpperCase() &&
+    letters !== letters.toLowerCase()
+  )
     return "shouting";
   const key = squash(normalizeForModeration(text));
   if (key && previous.some((p) => squash(normalizeForModeration(p)) === key)) return "repeated";

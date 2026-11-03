@@ -5,12 +5,24 @@ import { muteUntil } from "./chat-penalties";
 
 describe("chat moderation", () => {
   it("catches disguised offensive words", () => {
-    for (const text of ["porra", "P0RR4", "poooorraaa", "p.o.r.r.a", "seu filho-da-puta", "c@r@lho"])
+    for (const text of [
+      "porra",
+      "P0RR4",
+      "poooorraaa",
+      "p.o.r.r.a",
+      "seu filho-da-puta",
+      "c@r@lho",
+    ])
       expect(containsProfanity(text)).toBe(true);
   });
 
   it("does not flag ordinary football talk", () => {
-    for (const text of ["Que golaço do Flamengo!", "computador", "o Palmeiras condenou o lance", "Pedro marcou"])
+    for (const text of [
+      "Que golaço do Flamengo!",
+      "computador",
+      "o Palmeiras condenou o lance",
+      "Pedro marcou",
+    ])
       expect(containsProfanity(text)).toBe(false);
   });
 
@@ -35,7 +47,12 @@ describe("progressive chat mutes", () => {
     expect(muteUntil(five, now)).toBe(now + 24 * 60 * min);
   });
   it("blocks permanently at 10 and forgets infractions older than 7 days", () => {
-    expect(muteUntil(Array.from({ length: 10 }, (_, i) => now - i * min), now)).toBe(Number.POSITIVE_INFINITY);
+    expect(
+      muteUntil(
+        Array.from({ length: 10 }, (_, i) => now - i * min),
+        now,
+      ),
+    ).toBe(Number.POSITIVE_INFINITY);
     const old = now - 8 * 24 * 60 * min;
     expect(muteUntil([old, old, old], now)).toBeNull();
   });
