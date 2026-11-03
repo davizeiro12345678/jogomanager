@@ -222,6 +222,33 @@
   min-height: 44px;
   color: #dce5dc;
 }
+.home-resume-wrap {
+  display: grid;
+  gap: 8px;
+  max-width: 350px;
+  margin-top: 24px;
+}
+.home-resume-wrap .home-resume {
+  margin-top: 0;
+}
+.home-resume-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 17px;
+  border-radius: 8px;
+  background: var(--home-lime);
+  color: #0b1510;
+  font-weight: 700;
+  font-size: 14px;
+}
+.home-resume-play:focus-visible,
+.home-resume:focus-visible {
+  outline: 2px solid var(--home-lime);
+  outline-offset: 3px;
+}
 .home-resume {
   display: grid;
   grid-template-columns: 1fr auto;

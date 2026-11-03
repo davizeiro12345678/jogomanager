@@ -165,9 +165,13 @@ export function FootballHome() {
   const { leagues } = getRouteApi("/").useLoaderData();
   const [menu, setMenu] = useState(false);
   const [system, setSystem] = useState(0);
-  const [resume, setResume] = useState<{ club: string; season: number; round: number } | null>(
-    null,
-  );
+  const [resume, setResume] = useState<{
+    club: string;
+    season: number;
+    round: number;
+    /** Next league opponent, when the saved calendar still has a match this round. */
+    next: { opponent: string; home: boolean } | null;
+  } | null>(null);
   useEffect(() => {
     let active = true;
     // Returning players alone need the catalogue to resolve their club name.
@@ -182,14 +186,25 @@ export function FootballHome() {
         ]);
         if (active) {
           const created = readMyClub();
+          const custom = readCustom().clubs;
+          const nameOf = (id: string) =>
+            (created?.id === id ? created.name : undefined) ??
+            custom[id]?.name ??
+            CLUBS[id]?.name ??
+            id;
+          const fixture = (save.fixtures ?? []).find(
+            (f) => f.round === save.round && (f.home === save.clubId || f.away === save.clubId),
+          );
           setResume({
-            club:
-              (created?.id === save.clubId ? created.name : undefined) ??
-              readCustom().clubs[save.clubId]?.name ??
-              CLUBS[save.clubId]?.name ??
-              save.clubId,
+            club: nameOf(save.clubId),
             season: save.season ?? 1,
             round: (save.round ?? 0) + 1,
+            next: fixture
+              ? {
+                  opponent: nameOf(fixture.home === save.clubId ? fixture.away : fixture.home),
+                  home: fixture.home === save.clubId,
+                }
+              : null,
           });
         }
       })
@@ -325,14 +340,25 @@ export function FootballHome() {
             </div>
           </dl>
           {resume ? (
-            <Link to="/dashboard" className="home-resume">
-              <span>SEU PRÓXIMO CAPÍTULO</span>
-              <strong>{resume.club}</strong>
-              <small>
-                Temporada {resume.season} · rodada {resume.round}
-              </small>
-              <ChevronRight size={20} />
-            </Link>
+            <div className="home-resume-wrap">
+              <Link to="/dashboard" className="home-resume">
+                <span>SEU PRÓXIMO CAPÍTULO</span>
+                <strong>{resume.club}</strong>
+                <small>
+                  Temporada {resume.season} · rodada {resume.round}
+                  {resume.next
+                    ? ` · ${resume.next.home ? "em casa contra" : "fora contra"} ${resume.next.opponent}`
+                    : ""}
+                </small>
+                <ChevronRight size={20} />
+              </Link>
+              {resume.next ? (
+                <Link to="/pre-jogo" className="home-resume-play">
+                  Jogar o próximo jogo
+                  <ArrowRight size={16} aria-hidden />
+                </Link>
+              ) : null}
+            </div>
           ) : null}
         </div>
         <div className="home-hero-foot">
