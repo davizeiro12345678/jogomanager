@@ -11,3 +11,6 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [x] 7.3 Moderador do chat no servidor (disfarces, links, dados pessoais, punição progressiva)
   - [ ] 7.3b Denúncia de mensagem enviada ao servidor (hoje só oculta localmente)
 - [ ] E8 Home, estilos e carregamento
+
+- [x] E3: 10 novas funcionalidades de física da partida (src/game/match-physics-extras.ts)
+- [ ] E3: rodar teste de estresse de 200 jogos (excede o tempo do sandbox; roda no Quality gates)
