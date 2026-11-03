@@ -50,12 +50,15 @@ const fmt = (n: number) => n.toLocaleString("pt-BR");
 export function parseOfferContents(raw: unknown): OfferContents | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0);
+  const num = (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
   return {
     coins: num(r["coins"]),
     scoutReports: num(r["scoutReports"]),
     trainingBoosts: num(r["trainingBoosts"]),
-    themes: Array.isArray(r["themes"]) ? r["themes"].filter((t): t is string => typeof t === "string") : [],
+    themes: Array.isArray(r["themes"])
+      ? r["themes"].filter((t): t is string => typeof t === "string")
+      : [],
   };
 }
 
@@ -75,7 +78,11 @@ export function careerValue(kind: string, contents: OfferContents | null): Caree
           title: "Relatórios de olheiro sem limite",
           detail: `Cada relatório revela potencial e personalidade de ${PREMIUM_SCOUT_REPORT_SIZE} jovens de até 23 anos.`,
         },
-        { kind: "pass", title: "Cancele quando quiser", detail: "Os benefícios valem até o fim do mês pago." },
+        {
+          kind: "pass",
+          title: "Cancele quando quiser",
+          detail: "Os benefícios valem até o fim do mês pago.",
+        },
       ],
       coinEquivalent: monthly,
     };
@@ -116,7 +123,9 @@ export function careerValue(kind: string, contents: OfferContents | null): Caree
     });
   }
   const coinEquivalent =
-    c.coins + c.scoutReports * COIN_EXCHANGE.scout_report + c.trainingBoosts * COIN_EXCHANGE.training_boost;
+    c.coins +
+    c.scoutReports * COIN_EXCHANGE.scout_report +
+    c.trainingBoosts * COIN_EXCHANGE.training_boost;
   const headline =
     c.trainingBoosts > 0
       ? "Acelera a evolução do seu elenco."
