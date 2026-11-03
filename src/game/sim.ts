@@ -72,6 +72,19 @@ import type {
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
+import {
+  blockRestitution,
+  bodyContactShare,
+  fatigueStrikeFactor,
+  firstTouchSpill,
+  headerPower,
+  parryReboundSpeed,
+  pitchTraction,
+  quadraticDragDeceleration,
+  settlesOnTurf,
+  shotProfile,
+  type ShotTechnique,
+} from "./match-physics-extras";
 import type {
   Side,
   TeamTalkKind,
@@ -1508,7 +1521,11 @@ export class MatchSim {
     const dx = goalX - header.x;
     const dz = targetZ - header.z;
     const d = Math.hypot(dx, dz) || 1;
-    const power = 13 + this.rnd() * 6;
+    const power = headerPower(
+      13 + this.rnd() * 6,
+      Math.hypot(this.ball.vx, this.ball.vz),
+      header.physical,
+    );
     this.ball.x = header.x;
     this.ball.z = header.z;
     this.ball.vx = (dx / d) * power;
@@ -1872,7 +1889,7 @@ export class MatchSim {
         // reação tardia a um chute próximo
         if ((this.reactionUntil.get(p.id) ?? 0) > this.time) speedEff *= 0.3;
       }
-      advanceAthlete(p, tx, tz, speedEff, dt, this.weather === "rain" ? 0.72 : 1);
+      advanceAthlete(p, tx, tz, speedEff, dt, pitchTraction(this.weather, this.time));
     }
   }
 
@@ -1901,8 +1918,9 @@ export class MatchSim {
         const overlap = R * 2 - d;
         // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
         // resolve toda a sobreposição para não deixar atletas grudados.
-        const aWeight = a.id === this.ball.holder ? 0.25 : 1;
-        const bWeight = b.id === this.ball.holder ? 0.25 : 1;
+        const share = bodyContactShare(a.physical, a.weightKg, b.physical, b.weightKg);
+        const aWeight = share * (a.id === this.ball.holder ? 0.25 : 1);
+        const bWeight = (1 - share) * (b.id === this.ball.holder ? 0.25 : 1);
         const totalWeight = aWeight + bWeight;
         const nx = dx / d;
         const nz = dz / d;
@@ -2005,6 +2023,15 @@ export class MatchSim {
       const kd = Math.exp(-drag * dt);
       this.ball.vx *= kd;
       this.ball.vz *= kd;
+      const planar = Math.hypot(this.ball.vx, this.ball.vz);
+      if (airborne && planar > 0.01) {
+        const k = Math.max(0, 1 - (quadraticDragDeceleration(planar) * dt) / planar);
+        this.ball.vx *= k;
+        this.ball.vz *= k;
+      } else if (settlesOnTurf(planar, this.ball.height) && this.ballVy <= 0) {
+        this.ball.vx = 0;
+        this.ball.vz = 0;
+      }
 
       this.ball.x += this.ball.vx * dt;
       this.ball.z += this.ball.vz * dt;
@@ -2155,7 +2182,7 @@ export class MatchSim {
 
     // toque mal dado: a bola sobra à frente, ainda em disputa
     const dirx = this.attackDir(p.side);
-    const spill = 2.6 + this.rnd() * 3.4;
+    const spill = firstTouchSpill(2.6 + this.rnd() * 3.4, ballSpeed, this.weather);
     const ang = (this.rnd() - 0.5) * 1.4;
     this.ball.holder = null;
     this.ball.vx = Math.cos(ang) * spill * dirx;
@@ -2185,7 +2212,8 @@ export class MatchSim {
       const chance = (0.35 + (p.defending / 100) * 0.5) * Math.min(1, dt * 30);
       if (this.rnd() > chance) continue;
 
-      this.trigger(p, this.rnd() < 0.45 ? "slide" : "block", 0.7);
+      const slide = this.rnd() < 0.45;
+      this.trigger(p, slide ? "slide" : "block", 0.7);
       p.tackles++;
       this.lastTouch = p.side;
       const wasShot = !!this.pendingShot;
@@ -2193,7 +2221,7 @@ export class MatchSim {
       this.pass = null;
       // rebote: a bola volta desviada e perde muita força
       const ang = Math.atan2(this.ball.vz, this.ball.vx) + Math.PI + (this.rnd() - 0.5) * 1.6;
-      const back = speed * (0.2 + this.rnd() * 0.25);
+      const back = speed * (0.2 + this.rnd() * 0.25) * blockRestitution(slide, p.weightKg);
       this.ball.vx = Math.cos(ang) * back;
       this.ball.vz = Math.sin(ang) * back;
       this.ballVy = 1.6 + this.rnd() * 2.4;
@@ -2280,7 +2308,11 @@ export class MatchSim {
         gk.x = this.ball.x - dir * 0.4;
         gk.z = this.ball.z * 0.6;
         const ang = Math.atan2(this.ball.z, -dir) + (this.rnd() - 0.5) * 1.2;
-        const back = 6 + this.rnd() * 7;
+        const back = parryReboundSpeed(
+          6 + this.rnd() * 7,
+          Math.hypot(this.ball.vx, this.ball.vz),
+          gk.physical,
+        );
         this.ball.holder = null;
         this.ball.vx = -dir * Math.abs(Math.cos(ang) * back);
         this.ball.vz = Math.sin(ang) * back;
@@ -2723,8 +2755,7 @@ export class MatchSim {
         : "saved";
 
     const roll = this.rnd();
-    this.trigger(
-      holder,
+    const technique: ShotTechnique =
       distGoal > 22
         ? "shotPower"
         : roll < 0.12
@@ -2735,9 +2766,9 @@ export class MatchSim {
               ? "bicycle"
               : roll < 0.6
                 ? "shotPlaced"
-                : "shot",
-      0.8,
-    );
+                : "shot";
+    this.trigger(holder, technique, 0.8);
+    const profile = shotProfile(technique);
     this.ball.holder = null;
     this.lastTouch = side;
     // reação ao chute: adversários próximos congelam por uma fração de segundo
@@ -2753,20 +2784,25 @@ export class MatchSim {
     const outsideZ = Math.sign(this.rnd() - 0.5 || 1) * (GOAL_Z + 1.2 + this.rnd() * GOAL_Z * 1.6);
     const targetZ = outcome === "off" ? outsideZ : inside;
     // altura de chegada: no alvo sempre abaixo do travessão; fora pode ir por cima
-    const targetH =
+    const baseH =
       outcome === "off" && this.rnd() < 0.42 ? 3.0 + this.rnd() * 1.8 : 0.25 + this.rnd() * 1.8;
+    // a cavadinha sobe mais, mas no alvo continua abaixo do travessão
+    const targetH = outcome === "off" ? baseH + profile.loft : Math.min(2.2, baseH + profile.loft);
 
     const dx = dir * FIELD_X - holder.x;
     const dz = targetZ - holder.z;
     const d = Math.hypot(dx, dz) || 1;
-    const power = 24 + (holder.shooting / 100) * 13 + this.rnd() * 6;
+    const power =
+      (24 + (holder.shooting / 100) * 13 + this.rnd() * 6) *
+      profile.power *
+      fatigueStrikeFactor(holder.stamina);
     this.ball.vx = (dx / d) * power;
     this.ball.vz = (dz / d) * power;
     this.ball.height = 0.25;
     const flight = Math.max(0.15, d / power);
     // vy resolvido pela balística: sai baixo e chega na altura pretendida
     this.ballVy = (targetH - 0.25) / flight + 4.905 * flight;
-    this.ballSpin = (this.rnd() - 0.5) * (distGoal > 20 ? 7 : 3);
+    this.ballSpin = (this.rnd() - 0.5) * (distGoal > 20 ? 7 : 3) * profile.spin;
 
     this.pendingShot = {
       side,

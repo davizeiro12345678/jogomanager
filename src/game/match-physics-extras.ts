@@ -11,13 +11,7 @@ const clamp = (n: number, lo: number, hi: number) =>
   Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : lo;
 
 /** 1. Shot technique: each strike style has its own power, loft and spin. */
-export type ShotTechnique =
-  | "shotPower"
-  | "shot"
-  | "shotPlaced"
-  | "chip"
-  | "volley"
-  | "bicycle";
+export type ShotTechnique = "shotPower" | "shot" | "shotPlaced" | "chip" | "volley" | "bicycle";
 
 export interface ShotProfile {
   power: number;
