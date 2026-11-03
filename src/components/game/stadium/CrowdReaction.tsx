@@ -1,5 +1,4 @@
 // ============================================================================
-import { capPointSize } from "@/game/point-size-guard";
 //  CrowdReaction.tsx
 //  Reação da torcida ao que acontece em campo.
 //
@@ -17,6 +16,7 @@ import { capPointSize } from "@/game/point-size-guard";
 //  do que qualquer shader.
 // ============================================================================
 
+import { capPointSize } from "@/game/point-size-guard";
 import { useFrame } from "@react-three/fiber";
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";

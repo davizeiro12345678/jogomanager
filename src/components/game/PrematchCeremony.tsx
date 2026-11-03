@@ -1,5 +1,4 @@
 // ============================================================================
-import { capPointSize } from "@/game/point-size-guard";
 //  PrematchCeremony.tsx
 //  Cerimônia pré-jogo 3D: 5 beats com corte seco de broadcast (~24s).
 //
@@ -13,6 +12,7 @@ import { capPointSize } from "@/game/point-size-guard";
 //  botão de pular e preferência "não mostrar mais" (manager3d.ceremony).
 // ============================================================================
 
+import { capPointSize } from "@/game/point-size-guard";
 import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";

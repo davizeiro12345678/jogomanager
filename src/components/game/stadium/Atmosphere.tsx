@@ -1,5 +1,4 @@
 // ============================================================================
-import { capPointSize } from "@/game/point-size-guard";
 //  Atmosphere.tsx
 //  Atmosfera do estádio: feixe volumétrico dos refletores, poeira em suspensão
 //  e discos de brilho nas lâmpadas.
@@ -14,6 +13,7 @@ import { capPointSize } from "@/game/point-size-guard";
 //     WebGPU experimental os feixes saem, mas o resto continua — nada quebra.
 // ============================================================================
 
+import { capPointSize } from "@/game/point-size-guard";
 import { useFrame } from "@react-three/fiber";
 import { memo, useMemo, useRef } from "react";
 import * as THREE from "three";

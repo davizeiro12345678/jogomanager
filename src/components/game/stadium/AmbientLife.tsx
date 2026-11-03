@@ -1,5 +1,4 @@
 // ============================================================================
-import { capPointSize } from "@/game/point-size-guard";
 //  AmbientLife.tsx
 //  Camada ambiente do estádio: gaivotas circulando de dia, papel picado à
 //  deriva no vento e mariposas orbitando os refletores à noite.
@@ -7,6 +6,7 @@ import { capPointSize } from "@/game/point-size-guard";
 //  Custo: 3 desenhos (2 instanciados + 1 nuvem de pontos), todos reciclados.
 // ============================================================================
 
+import { capPointSize } from "@/game/point-size-guard";
 import { useFrame } from "@react-three/fiber";
 import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
