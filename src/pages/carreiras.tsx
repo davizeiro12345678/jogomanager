@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 
 import "@/components/game/athlete.css";
+import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
 
 function syncLabel(sync: ReturnType<typeof useCareer>["sync"], signedIn: boolean | null) {
   if (signedIn === false) return { Icon: CloudOff, label: "Salvo neste aparelho" };
@@ -47,6 +48,14 @@ export function CareersHub() {
   const { career, isLoading, signedIn, sync } = useCareer();
   const { slots, error: athleteError } = useAthleteSlots();
   const coach = summarizeCoachCareer(career);
+  const handleResumeCoach = () => {
+    const careerId = existingCareerAnalyticsId();
+    window.__lovableEvents?.track?.("project.career_returned", {
+      career_type: "coach",
+      entry: "careers_hub",
+      ...(careerId ? { career_id: careerId } : {}),
+    });
+  };
   const coachClub = career ? CLUBS[career.clubId] : undefined;
   const syncState = syncLabel(sync, signedIn);
   const SyncIcon = syncState.Icon;
@@ -99,13 +108,22 @@ export function CareersHub() {
             <div className="career-hub-card-actions">
               {decision && highlighted ? (
                 <Button asChild>
-                  <Link to="/jogador/painel" search={{ slot: highlighted.slot, tab: decision.tab }}>
+                  <Link
+                    to="/jogador/painel"
+                    search={{ slot: highlighted.slot, tab: decision.tab }}
+                    onClick={() =>
+                      window.__lovableEvents?.track?.("project.career_returned", {
+                        career_type: "player",
+                        entry: "careers_hub",
+                      })
+                    }
+                  >
                     Ir para a decisão <ArrowRight className="size-4" />
                   </Link>
                 </Button>
               ) : coach ? (
                 <Button asChild>
-                  <Link to={coach.active ? "/dashboard" : "/carreira"}>
+                  <Link to={coach.active ? "/dashboard" : "/carreira"} onClick={handleResumeCoach}>
                     Retomar treinador <ArrowRight className="size-4" />
                   </Link>
                 </Button>
@@ -159,7 +177,10 @@ export function CareersHub() {
                   </div>
                   <div className="career-hub-card-actions">
                     <Button asChild>
-                      <Link to={coach.active ? "/dashboard" : "/carreira"}>
+                      <Link
+                        to={coach.active ? "/dashboard" : "/carreira"}
+                        onClick={handleResumeCoach}
+                      >
                         {coach.active ? "Continuar no clube" : "Ver propostas"}
                         <ArrowRight className="size-4" />
                       </Link>

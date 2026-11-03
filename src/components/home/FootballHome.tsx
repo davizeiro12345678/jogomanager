@@ -23,6 +23,7 @@ import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import brandLogo from "@/assets/brand/jogomanager-logo-header.webp";
 import "./home.css";
+import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
@@ -207,6 +208,17 @@ export function FootballHome() {
     return () => window.removeEventListener("keydown", close);
   }, [menu]);
   const active = SYSTEMS[system]!;
+  // Fires only when a saved career is reopened; new careers go to /new instead.
+  const handleResumeCareer = (entry: string) => {
+    if (!resume) return;
+    const careerId = existingCareerAnalyticsId();
+    window.__lovableEvents?.track?.("project.career_returned", {
+      career_type: "coach",
+      entry,
+      season: resume.season,
+      ...(careerId ? { career_id: careerId } : {}),
+    });
+  };
   return (
     <main className="football-home">
       <a href="#home-content" className="home-skip">
@@ -230,7 +242,11 @@ export function FootballHome() {
           <DiscordLink>Comunidade</DiscordLink>
           <Link to="/auth">Entrar</Link>
         </nav>
-        <Link to={resume ? "/dashboard" : "/new"} className="home-button home-nav-cta">
+        <Link
+          to={resume ? "/dashboard" : "/new"}
+          className="home-button home-nav-cta"
+          onClick={() => handleResumeCareer("home_nav")}
+        >
           {resume ? "Continuar carreira" : "Começar a jogar"}
           <ArrowRight size={16} />
         </Link>
@@ -297,7 +313,11 @@ export function FootballHome() {
             e veja suas decisões ganharem vida em 3D.
           </p>
           <div className="home-hero-actions">
-            <Link to={resume ? "/dashboard" : "/new"} className="home-button">
+            <Link
+              to={resume ? "/dashboard" : "/new"}
+              className="home-button"
+              onClick={() => handleResumeCareer("home_hero")}
+            >
               {resume ? "Continuar minha carreira" : "Criar minha carreira"}
               <ArrowRight size={19} />
             </Link>
@@ -325,7 +345,11 @@ export function FootballHome() {
             </div>
           </dl>
           {resume ? (
-            <Link to="/dashboard" className="home-resume">
+            <Link
+              to="/dashboard"
+              className="home-resume"
+              onClick={() => handleResumeCareer("home_resume_card")}
+            >
               <span>SEU PRÓXIMO CAPÍTULO</span>
               <strong>{resume.club}</strong>
               <small>
@@ -522,7 +546,11 @@ export function FootballHome() {
             </h2>
           </div>
           <div>
-            <Link to={resume ? "/dashboard" : "/new"} className="home-button">
+            <Link
+              to={resume ? "/dashboard" : "/new"}
+              className="home-button"
+              onClick={() => handleResumeCareer("home_footer")}
+            >
               {resume ? "Voltar ao meu clube" : "Assumir meu primeiro clube"}
               <ArrowRight size={19} />
             </Link>
