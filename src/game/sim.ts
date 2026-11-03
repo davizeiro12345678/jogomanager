@@ -1068,7 +1068,10 @@ export class MatchSim {
     // ajuste de postura no máximo a cada 10' (nunca no time do usuário)
     if (!userManaged && min - this.aiTweakMin[side] >= 10) {
       const sentOffs = this.players.filter((p) => p.side === side && p.sentOff).length;
-      const tweak = aiMentalityTweak(diff, min, sentOffs);
+      const onPitch = this.players.filter((p) => p.side === side && !p.sentOff);
+      const teamStamina =
+        onPitch.reduce((sum, p) => sum + p.stamina, 0) / Math.max(1, onPitch.length);
+      const tweak = aiMentalityTweak(diff, min, sentOffs, teamStamina);
       if (tweak) {
         this.aiTweakMin[side] = min;
         const t = this.setup(side).tactics;
