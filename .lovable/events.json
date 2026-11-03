@@ -52,6 +52,48 @@
         }
       }
     },
+    "project.career_returned": {
+      "event_schema_version": 1,
+      "description": "A player reopened an existing saved career (coach or player) to resume play; new careers are not counted.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "career_type",
+          "entry"
+        ],
+        "properties": {
+          "career_type": {
+            "type": "string",
+            "enum": [
+              "coach",
+              "player"
+            ]
+          },
+          "entry": {
+            "type": "string",
+            "enum": [
+              "home_nav",
+              "home_hero",
+              "home_resume_card",
+              "home_footer",
+              "careers_hub"
+            ]
+          },
+          "season": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "career_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "project.match_started": {
       "event_schema_version": 1,
       "description": "A player confirmed and began a match, from career match preparation or from quick match.",
