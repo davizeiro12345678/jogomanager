@@ -830,7 +830,7 @@ export class MatchSim {
     if (plan.notes.length > 0) {
       this.pushEvent({
         minute: 45,
-        type: "tactic",
+        type: "talk",
         side,
         text: `No intervalo, ${setup.name ?? "o adversário"} ${plan.notes.slice(0, 2).join(" e ")}.`,
       });

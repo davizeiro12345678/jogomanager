@@ -19,7 +19,12 @@ export interface HalfTimePlan {
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
-export function halfTimePlan(own: HalfStats, foe: HalfStats, current: Tactics, foeTactics: Tactics): HalfTimePlan {
+export function halfTimePlan(
+  own: HalfStats,
+  foe: HalfStats,
+  current: Tactics,
+  foeTactics: Tactics,
+): HalfTimePlan {
   const t = { ...current };
   const notes: string[] = [];
   const diff = own.goals - foe.goals;
