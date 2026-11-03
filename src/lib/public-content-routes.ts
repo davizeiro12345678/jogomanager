@@ -23,6 +23,8 @@ export const PUBLIC_CONTENT_PATHS = new Set([
   "/contato",
   "/sobre",
   "/criador",
+  // The shop window reads only the store catalog; it never needs the career world.
+  "/produtos",
 ]);
 
 export function isPublicContentPath(pathname: string): boolean {
