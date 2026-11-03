@@ -205,11 +205,7 @@ export function CreatorStory() {
           comparações, está na página de{" "}
           <Link to="/produtos" className="text-primary hover:underline">pacotes</Link>.
         </p>
-        <p>
-          A publicidade, quando exibida, aparece apenas nas páginas de conteúdo e nunca durante a
-          partida. O objetivo é que quem joga de graça tenha a mesma experiência em campo de quem
-          decide apoiar o projeto.
-        </p>
+
       </section>
 
       <section aria-labelledby="feedback" className="space-y-4">
