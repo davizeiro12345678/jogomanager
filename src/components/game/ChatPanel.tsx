@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
-import { containsProfanity, PROFANITY_BLOCKED_MESSAGE } from "@/lib/moderation";
+import { MODERATION_MESSAGES, moderateMessage } from "@/lib/moderation";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
