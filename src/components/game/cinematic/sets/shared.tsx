@@ -1,3 +1,4 @@
+import { capPointSize } from "@/game/point-size-guard";
 import { useMemo, useRef } from "react";
 
 import * as THREE from "three";
@@ -6,6 +7,8 @@ import { useDisposable } from "../../useDisposable";
 
 import { hash } from "@/components/game/cinematic/sets/hash";
 import { useCinematicFrame, useCinematicRuntime } from "../cinematic-runtime";
+
+const POINT_CAP = capPointSize(6);
 
 export function CelebrationRain() {
   const COUNT = 130;
@@ -142,6 +145,7 @@ export function TunnelDust() {
   return (
     <points ref={ref} geometry={geo} frustumCulled={false}>
       <pointsMaterial
+        {...POINT_CAP}
         color="#dff5e4"
         size={0.05}
         transparent

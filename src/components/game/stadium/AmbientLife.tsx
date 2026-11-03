@@ -6,6 +6,7 @@
 //  Custo: 3 desenhos (2 instanciados + 1 nuvem de pontos), todos reciclados.
 // ============================================================================
 
+import { capPointSize } from "@/game/point-size-guard";
 import { useFrame } from "@react-three/fiber";
 import { memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -14,6 +15,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { censusRef } from "@/game/scene-census";
 import type { TimeOfDay } from "@/game/matchday";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
+
+const POINT_CAP = capPointSize(10);
 
 const BIRDS = 7;
 const PAPERS = 22;
@@ -166,6 +169,7 @@ export const AmbientLife = memo(function AmbientLife({ time }: { time: TimeOfDay
       {night && (
         <points ref={moths} geometry={mothGeo} frustumCulled={false}>
           <pointsMaterial
+            {...POINT_CAP}
             color="#ffe9b8"
             size={0.14}
             transparent

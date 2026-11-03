@@ -21,10 +21,7 @@ import { WalletActions } from "@/components/store/WalletActions";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useSubscription, isSubscriptionActive } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
-import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
+import { GuestSignInButton, GuestSignInNotice } from "@/components/store/GuestSignInNotice";
 import {
   Card,
   CardContent,
@@ -123,7 +120,6 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
   const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
   // A leitura é publicamente permitida por RLS; usar a mesma consulta para
   // visitantes e contas evita que a oferta mude depois do login.
@@ -195,6 +191,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   return (
     <div>
+      {isGuest && <GuestSignInNotice className="mb-4" />}
       {signedIn === true && <CouponRedeem onRedeemed={() => void walletQuery.refetch()} />}
       <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -388,21 +385,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                         Verificando conta…
                       </Button>
                     ) : isGuest ? (
-                      <Button
-                        className="w-full"
-                        data-testid="guest-checkout-start"
-                        disabled={!checkoutEnabled}
-                        onClick={() =>
-                          setGuestProduct({
-                            key: p.key,
-                            name: p.name,
-                            priceCents: salePrice(p).cents,
-                            currency: p.currency,
-                          })
-                        }
-                      >
-                        Comprar como visitante
-                      </Button>
+                      <GuestSignInButton className="w-full" />
                     ) : (
                       <Button
                         className="w-full"
@@ -451,14 +434,6 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           )}
         </>
       )}
-
-      <GuestCheckoutDialog
-        product={guestProduct}
-        open={guestProduct !== null}
-        onOpenChange={(open) => {
-          if (!open) setGuestProduct(null);
-        }}
-      />
     </div>
   );
 }

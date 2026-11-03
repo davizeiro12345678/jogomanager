@@ -14,3 +14,11 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 
 - [x] E3: 10 novas funcionalidades de física da partida (src/game/match-physics-extras.ts)
 - [ ] E3: rodar teste de estresse de 200 jogos (excede o tempo do sandbox; roda no Quality gates)
+- [x] Visitantes: aviso de login obrigatório para compras/recursos de conta (loja pública e loja do jogo)
+- [x] Cutscenes: clarão branco por partícula colada na câmera (tamanho das partículas limitado)
+- [ ] Física dos jogadores
+- [ ] Inteligência dos times
+- [ ] Moedas: novos usos/benefícios
+- [ ] Idiomas
+- [ ] Proteção: trapaça em saves, partidas e moedas
+- [ ] Home

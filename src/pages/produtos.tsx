@@ -16,10 +16,7 @@ import { PublicLinks } from "@/components/PublicLinks";
 
 import { ProdutosGuide } from "@/components/store/ProdutosGuide";
 
-import {
-  GuestCheckoutDialog,
-  type GuestCheckoutProduct,
-} from "@/components/store/GuestCheckoutDialog";
+import { GuestSignInButton, GuestSignInNotice } from "@/components/store/GuestSignInNotice";
 
 import { Button } from "@/components/ui/button";
 
@@ -70,7 +67,6 @@ export function ProdutosPage() {
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [opening, setOpening] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState<string | null>(null);
-  const [guestProduct, setGuestProduct] = useState<GuestCheckoutProduct | null>(null);
 
   function buy(productKey: string) {
     // A sessão autenticada preserva o fluxo de conta já existente.
@@ -110,20 +106,7 @@ export function ProdutosPage() {
           disponibilidade antes do pagamento.
         </p>
         {signedIn === false ? (
-          <div
-            role="status"
-            className="mt-5 flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
-          >
-            <p className="text-muted-foreground">
-              Compare os itens e preços à vontade. Você pode comprar com e-mail ou entrar para
-              vincular a compra diretamente à sua carreira.
-            </p>
-            <Button asChild variant="outline" className="shrink-0">
-              <Link to="/auth" search={{ next: PATH }}>
-                Entrar ou criar conta
-              </Link>
-            </Button>
-          </div>
+          <GuestSignInNotice className="mt-5" />
         ) : signedIn === null ? (
           <p role="status" className="mt-5 text-sm text-muted-foreground">
             Verificando sua conta para mostrar a ação de compra segura…
@@ -215,19 +198,7 @@ export function ProdutosPage() {
                           {opening === product.key ? "Abrindo…" : "Comprar agora"}
                         </Button>
                       ) : signedIn === false ? (
-                        <Button
-                          data-testid="guest-checkout-start"
-                          onClick={() =>
-                            setGuestProduct({
-                              key: product.key,
-                              name: product.name,
-                              priceCents: product.price_cents,
-                              currency: product.currency,
-                            })
-                          }
-                        >
-                          Comprar como visitante
-                        </Button>
+                        <GuestSignInButton />
                       ) : (
                         <Button disabled>Verificando conta…</Button>
                       )}
@@ -302,14 +273,6 @@ export function ProdutosPage() {
             </div>
           ) : null}
         </div>
-
-        <GuestCheckoutDialog
-          product={guestProduct}
-          open={guestProduct !== null}
-          onOpenChange={(open) => {
-            if (!open) setGuestProduct(null);
-          }}
-        />
 
         <p className="mt-8 text-sm text-muted-foreground">
           Já tem carreira em andamento? Os itens comprados aparecem direto na{" "}
