@@ -1,8 +1,12 @@
 # Roadmap
-- [ ] F1 Medir antes (Lighthouse, cache, capturas)
-- [ ] F2 Cache e entrega estática
-- [ ] F3 Conteúdo /produtos, /criador, /perguntas-frequentes
-- [ ] F4 Cutscenes 3D
-- [ ] F5 Partida 3D gráficos/fluidez
-- [ ] F6 Física e IA
-- [ ] F7 Publicar, medir depois, relatório PDF
+Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moedas-úteis-2-2026-11-03.md`
+
+- [ ] E1 Gráficos da partida 3D (salto visual)
+- [ ] E2 Cutscenes
+- [ ] E3 Física (salto de qualidade)
+- [ ] E4 IA (salto de qualidade)
+- [ ] E5 Moedas e benefícios
+- [ ] E6 Idiomas (25 maiores completos)
+- [ ] E7 Proteção, anticheat e moderação
+  - [ ] 7.3 Moderador do chat no servidor (disfarces, links, dados pessoais, punição progressiva)
+- [ ] E8 Home, estilos e carregamento
