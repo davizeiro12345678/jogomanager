@@ -14,6 +14,7 @@ export function CinematicFrameProbe({
   host,
   openedAt,
   stopped,
+  setReady,
   onVisible,
   onReady,
   onSample,
@@ -21,6 +22,7 @@ export function CinematicFrameProbe({
   host: RefObject<HTMLDivElement | null>;
   openedAt: number;
   stopped: boolean;
+  setReady: RefObject<boolean>;
   onVisible?: (() => void) | undefined;
   onReady?: (() => void) | undefined;
   onSample?: ((fps: number, p95: number) => void) | undefined;
@@ -68,7 +70,7 @@ export function CinematicFrameProbe({
       element.dataset["rendererBackend"] = backend.kind;
       element.dataset["rendererClass"] = backend.rendererClass;
       element.dataset["cinematicGpu"] = backend.gpuRenderer ?? "unverified";
-      if (!visible) {
+      if (!visible && setReady.current) {
         visible = true;
         element.dataset["firstFrameMs"] = (frame.now - openedAt).toFixed(1);
         element.dataset["interactiveFrameMs"] = (frame.now - openedAt).toFixed(1);
@@ -124,6 +126,6 @@ export function CinematicFrameProbe({
       drawSum = triangleSum = frames = 0;
       report = frame.now;
     });
-  }, [gl, camera, scene, host, openedAt]);
+  }, [gl, camera, scene, host, openedAt, setReady]);
   return null;
 }

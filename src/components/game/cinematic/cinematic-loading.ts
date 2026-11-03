@@ -49,7 +49,7 @@ export const LazyCinematicStage = lazy(() =>
 );
 
 /** Prepare likely cutscenes after the host screen has had time to paint. */
-export function useCinematicPreload(enabled = true) {
+export function useCinematicPreload(enabled = true, set?: CinematicSet) {
   useEffect(() => {
     if (!enabled) return;
     const connection = (
@@ -67,7 +67,7 @@ export function useCinematicPreload(enabled = true) {
     )
       return;
     const preload = () => {
-      if (!document.hidden) void preloadCinematicStage().catch(() => undefined);
+      if (!document.hidden) void preloadCinematicStage(set).catch(() => undefined);
     };
     if (typeof window.requestIdleCallback === "function") {
       const idle = window.requestIdleCallback(preload, { timeout: 2500 });
@@ -75,5 +75,5 @@ export function useCinematicPreload(enabled = true) {
     }
     const timer = window.setTimeout(preload, 1000);
     return () => window.clearTimeout(timer);
-  }, [enabled]);
+  }, [enabled, set]);
 }

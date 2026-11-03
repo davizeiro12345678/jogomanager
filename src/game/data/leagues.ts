@@ -1154,14 +1154,6 @@ current.push(
   ),
 );
 
-/** Stable built-in catalog for public pages; runtime custom/database catalogs mutate LEAGUES. */
-export const BUNDLED_LEAGUES: readonly League[] = Object.freeze(
-  current.map((league) => ({
-    ...league,
-    clubs: league.clubs.map((club) => ({ ...club })),
-  })),
-);
-
 export const LEAGUES: League[] = current;
 export const CLUBS: Record<string, Club> = {
   ...legacyClubs,
