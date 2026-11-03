@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 
 import { Badge } from "@/components/ui/badge";
 
-import { useSignedIn } from "@/hooks/useCareer";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 
 import { useStoreCatalog } from "@/hooks/useStoreCatalog";
 
@@ -61,7 +61,10 @@ function asPackKind(kind: string): PackKind | null {
 }
 
 export function ProdutosPage() {
-  const signedIn = useSignedIn();
+  // Read only the session here: the career hook module pulls the whole league
+  // catalog into this public page's first load.
+  const userId = useAuthUserId();
+  const signedIn = userId === undefined ? null : userId !== null;
   const productsQuery = useStoreCatalog();
   const products = productsQuery.data ?? [];
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
