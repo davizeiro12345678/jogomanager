@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.account_created": {
+      "event_schema_version": 1,
+      "description": "A visitor successfully submitted the registration form and an account was created.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "entry_route"
+        ],
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "entry_route": {
+            "type": "string"
+          },
+          "confirmation_pending": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.account_signed_in": {
+      "event_schema_version": 1,
+      "description": "A player successfully signed in from the sign-in page (password, email code, passkey, phone or in-page provider).",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "method",
+          "entry_route"
+        ],
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "entry_route": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
