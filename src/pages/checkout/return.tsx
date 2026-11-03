@@ -58,6 +58,25 @@ export function CheckoutReturn() {
           setStatus("error");
           return;
         }
+        if (result.status === "delivered" && result.productKey) {
+          // Count each confirmed delivery once, even if this page is reopened.
+          const seenKey = `jm.purchase-tracked.${sessionId}`;
+          let seen = false;
+          try {
+            seen = localStorage.getItem(seenKey) !== null;
+            localStorage.setItem(seenKey, "1");
+          } catch {
+            // Storage blocked: still record this confirmation.
+          }
+          if (!seen)
+            window.__lovableEvents?.track?.("project.store_purchase_completed", {
+              product_key: result.productKey,
+              amount_cents: result.amountCents,
+              currency: result.currency,
+              purchase_mode: "account",
+              kind: result.kind === "subscription" ? "subscription" : "one_time",
+            });
+        }
         if (result.status === "delivered" && result.kind === "subscription") {
           setSubscriptionDelivered(true);
           setStatus("delivered");

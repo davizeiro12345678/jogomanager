@@ -41,6 +41,22 @@ export function ClaimGuestCheckout() {
         const result = await claim({ data: { intentId: intent, sessionId } });
         if (!mounted) return;
         if (result.status === "delivered") {
+          const seenKey = `jm.purchase-tracked.${sessionId}`;
+          let seen = false;
+          try {
+            seen = localStorage.getItem(seenKey) !== null;
+            localStorage.setItem(seenKey, "1");
+          } catch {
+            // Storage blocked: still record this confirmation.
+          }
+          if (!seen)
+            window.__lovableEvents?.track?.("project.store_purchase_completed", {
+              product_key: result.productKey,
+              amount_cents: result.amountCents,
+              currency: result.currency,
+              purchase_mode: "guest_claim",
+              kind: "one_time",
+            });
           setStatus("delivered");
         } else if (result.status === "pending") {
           setStatus("pending");
