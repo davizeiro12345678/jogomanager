@@ -786,7 +786,9 @@ export default {
             ? 503
             : err?.code === "SPORTSDB_CONFIG" || err?.code === "SPORTSDB_UPSTREAM_PAUSED"
               ? 503
-              : 500;
+              : err?.status === 400
+                ? 400
+                : 500;
       const message = String(err?.message || "Import failed").slice(0, 180);
       return j(
         {
