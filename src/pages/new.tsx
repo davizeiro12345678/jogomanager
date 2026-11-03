@@ -61,6 +61,7 @@ import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loadi
 import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/types";
 
 import "@/components/game/career-create.css";
+import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
 
 const Cutscene = lazy(() =>
   import("@/components/game/Cutscene").then((m) => ({ default: m.Cutscene })),
@@ -238,6 +239,7 @@ export function NewCareer() {
       if (!mounted.current) return;
       startWorldForNewCareer(club.id);
       update(initCareer(selected.league.id, club.id, profile.name, profile));
+      startCareerAnalyticsId();
       setScene(true);
     } catch {
       if (mounted.current)
