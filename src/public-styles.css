@@ -44,7 +44,7 @@
 @source "./components/creator/CreatorStory.tsx";
 @source "./pages/produtos.tsx";
 @source "./components/store/ProdutosGuide.tsx";
-@source "./components/store/GuestCheckoutDialog.tsx";
+@source "./components/store/GuestSignInNotice.tsx";
 @source "./components/StripeCheckoutFrame.tsx";
 @source "./components/StripeEmbeddedCheckout.tsx";
 @source "./components/PaymentTestModeBanner.tsx";
