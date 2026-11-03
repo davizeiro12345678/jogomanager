@@ -72,6 +72,7 @@ import type {
 import { FIELD_X, FIELD_Z, GOAL_Z } from "./sim-rules";
 export { FIELD_X, FIELD_Z, GOAL_Z };
 import { emptyStats } from "./sim-contracts";
+import { halfTimePlan } from "./ai-halftime";
 import {
   blockRestitution,
   bodyContactShare,
@@ -732,6 +733,8 @@ export class MatchSim {
       this.pushEvent({ minute: 45, type: "halftime", side: "neutral", text: "Intervalo." });
       this.halfTalk("home");
       this.halfTalk("away");
+      this.halfTimeRead("home");
+      this.halfTimeRead("away");
       return false;
     }
     if (this.phase === "half") {
@@ -807,6 +810,31 @@ export class MatchSim {
     }
     this.finishMatch();
     return true;
+  }
+
+  /** Intervalo: o time da CPU lê o adversário e ajusta a tática (sem sorteio). */
+  private halfTimeRead(side: Side) {
+    const setup = this.setup(side);
+    if (setup.cpu === false) return;
+    const foe: Side = side === "home" ? "away" : "home";
+    const [home, away] = this.possessionPct();
+    const own = side === "home" ? home : away;
+    const plan = halfTimePlan(
+      { goals: this.stats[side].goals, shots: this.stats[side].shots, possession: own },
+      { goals: this.stats[foe].goals, shots: this.stats[foe].shots, possession: 100 - own },
+      setup.tactics,
+      this.setup(foe).tactics,
+    );
+    setup.tactics = plan.tactics;
+    this.aiTweakMin[side] = 45;
+    if (plan.notes.length > 0) {
+      this.pushEvent({
+        minute: 45,
+        type: "tactic",
+        side,
+        text: `No intervalo, ${setup.name ?? "o adversário"} ${plan.notes.slice(0, 2).join(" e ")}.`,
+      });
+    }
   }
 
   /** papo de vestiário: mexe um pouco na moral de cada lado */
