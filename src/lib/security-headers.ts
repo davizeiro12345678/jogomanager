@@ -83,7 +83,11 @@ export function secureResponse(response: Response, request: Request, nonce?: str
       : PUBLIC_STATIC.test(url.pathname)
         ? "public, max-age=86400, stale-while-revalidate=604800"
         : contentType.includes("text/html")
-          ? "public, max-age=0, must-revalidate"
+          ? // Browsers always revalidate; the edge may serve a 5-minute copy and
+            // refresh it in the background. Public SSR HTML is identical for
+            // every visitor (private paths/cookies/auth were excluded above),
+            // and this removes the ~2 s SSR wait from first visits.
+            "public, max-age=0, s-maxage=300, stale-while-revalidate=86400"
           : null;
     if (cache) headers.set("cache-control", cache);
   }
