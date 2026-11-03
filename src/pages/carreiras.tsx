@@ -109,7 +109,7 @@ export function CareersHub() {
                 </Button>
               ) : coach ? (
                 <Button asChild>
-                  <Link to={coach.active ? "/dashboard" : "/carreira"} onClick={handleResumeCoach}>
+                  <Link to={coach.active ? "/dashboard" : "/carreira"}>
                     Retomar treinador <ArrowRight className="size-4" />
                   </Link>
                 </Button>
@@ -165,7 +165,6 @@ export function CareersHub() {
                     <Button asChild>
                       <Link
                         to={coach.active ? "/dashboard" : "/carreira"}
-                        onClick={handleResumeCoach}
                       >
                         {coach.active ? "Continuar no clube" : "Ver propostas"}
                         <ArrowRight className="size-4" />
