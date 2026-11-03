@@ -127,7 +127,10 @@ export function returnReminder(
   if (lastVisitMs === null || !Number.isFinite(lastVisitMs) || lastVisitMs > nowMs) return null;
   const hoursAway = Math.floor((nowMs - lastVisitMs) / 3_600_000);
   if (hoursAway < RETURN_REMINDER_HOURS) return null;
-  const away = hoursAway >= 48 ? plural(Math.floor(hoursAway / 24), "dia", "dias") : plural(hoursAway, "hora", "horas");
+  const away =
+    hoursAway >= 48
+      ? plural(Math.floor(hoursAway / 24), "dia", "dias")
+      : plural(hoursAway, "hora", "horas");
   return {
     hoursAway,
     message: `Bem-vindo de volta! Faz ${away} que você não aparece. Seu clube parou na rodada ${career.round} da temporada ${career.season}.`,
