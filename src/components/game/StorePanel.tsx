@@ -8,7 +8,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Coins, Sparkles, Crown, Package, Search, Dumbbell, Palette } from "lucide-react";
+import {
+  ClipboardList,
+  Coins,
+  Sparkles,
+  Crown,
+  HeartPulse,
+  Package,
+  Search,
+  Dumbbell,
+  Palette,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
@@ -74,6 +84,8 @@ const KIND_ART: Record<string, string> = {
   training: artTraining,
   cosmetic: artCosmetic,
   pass: artPass,
+  medical: artTraining,
+  tactical: artScout,
 };
 
 const KIND_ICONS: Record<string, ReactNode> = {
@@ -218,6 +230,16 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           {walletQuery.data && walletQuery.data.training_boosts > 0 && (
             <Badge variant="secondary" className="gap-1">
               <Dumbbell size={12} /> {walletQuery.data.training_boosts} treinos
+            </Badge>
+          )}
+          {walletQuery.data && walletQuery.data.injury_treatments > 0 && (
+            <Badge variant="secondary" className="gap-1">
+              <HeartPulse size={12} /> {walletQuery.data.injury_treatments} tratamentos
+            </Badge>
+          )}
+          {walletQuery.data && walletQuery.data.opponent_reports > 0 && (
+            <Badge variant="secondary" className="gap-1">
+              <ClipboardList size={12} /> {walletQuery.data.opponent_reports} análises do rival
             </Badge>
           )}
           {subscriptionActive && (

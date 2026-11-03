@@ -6,7 +6,16 @@ import { ClientOnly, Link } from "@tanstack/react-router";
 
 import { lazy, Suspense, useState } from "react";
 
-import { Coins, Crown, Dumbbell, Package, Palette, Search } from "lucide-react";
+import {
+  ClipboardList,
+  Coins,
+  Crown,
+  Dumbbell,
+  HeartPulse,
+  Package,
+  Palette,
+  Search,
+} from "lucide-react";
 
 import { toast } from "sonner";
 
