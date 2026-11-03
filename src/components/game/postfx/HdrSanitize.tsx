@@ -1,5 +1,6 @@
 import { forwardRef, useMemo } from "react";
 import { Effect, EffectAttribute } from "postprocessing";
+import { Uniform } from "three";
 
 /*
  * A single NaN or Infinity pixel (half-float overflow from a bright glint,
@@ -23,7 +24,7 @@ class HdrSanitizeEffect extends Effect {
     super("HdrSanitizeEffect", fragmentShader, {
       // Its own pass, so the next effects sample the cleaned image.
       attributes: EffectAttribute.CONVOLUTION,
-      uniforms: new Map([["ceiling", { value: ceiling }]]),
+      uniforms: new Map([["ceiling", new Uniform(ceiling)]]),
     });
   }
 }
