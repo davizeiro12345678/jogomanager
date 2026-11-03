@@ -37,6 +37,6 @@
 - Wallet items are spent only through service-role database functions called from authenticated server functions, and their rates live in both those functions and `src/lib/wallet-rules.ts`; the database is the authority so clients cannot mint coins or items.
 
 - Keep match physics refinements as pure, randomness-free functions in `src/game/match-physics-extras.ts`; MatchSim and the Rapier authority call them so seeds and server replays stay deterministic.
-- Coin-priced career services are charged only by `spend_coins_on_service` (prices, weekly limits and per-request idempotency in the database); the client applies the effect to its own save only after the server approves.
+- Coin-priced career services are charged only by `spend_coins_on_service` (prices, weekly limits and per-request idempotency in the database), which consumes a stored shop item before coins; the client applies the effect to its own save only after the server approves.
 - Implausible career saves are still stored but never attested; the server records risk signals and a 30-day risk score blocks attestation, so suspicious accounts lose rewards before any ban.
 - Every post-processing stack runs `HdrSanitize` before bloom; one non-finite pixel spread by bloom flashes the whole frame white or black.

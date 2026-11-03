@@ -635,6 +635,7 @@ export type Database = {
           cost: number
           created_at: string
           id: string
+          paid_with: string
           request_id: string
           service: string
           user_id: string
@@ -643,6 +644,7 @@ export type Database = {
           cost: number
           created_at?: string
           id?: string
+          paid_with?: string
           request_id: string
           service: string
           user_id: string
@@ -651,6 +653,7 @@ export type Database = {
           cost?: number
           created_at?: string
           id?: string
+          paid_with?: string
           request_id?: string
           service?: string
           user_id?: string
@@ -2235,6 +2238,8 @@ export type Database = {
       user_wallet: {
         Row: {
           coins: number
+          injury_treatments: number
+          opponent_reports: number
           pass_coins_claimed_at: string | null
           scout_reports: number
           season_pass: boolean
@@ -2246,6 +2251,8 @@ export type Database = {
         }
         Insert: {
           coins?: number
+          injury_treatments?: number
+          opponent_reports?: number
           pass_coins_claimed_at?: string | null
           scout_reports?: number
           season_pass?: boolean
@@ -2257,6 +2264,8 @@ export type Database = {
         }
         Update: {
           coins?: number
+          injury_treatments?: number
+          opponent_reports?: number
           pass_coins_claimed_at?: string | null
           scout_reports?: number
           season_pass?: boolean
@@ -2361,19 +2370,35 @@ export type Database = {
         Args: { _event_id: string; _succeeded: boolean }
         Returns: undefined
       }
-      fulfill_store_purchase: {
-        Args: {
-          _amount_cents: number
-          _coins: number
-          _product_key: string
-          _reference: string
-          _scout_reports: number
-          _themes: string[]
-          _training_boosts: number
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      fulfill_store_purchase:
+        | {
+            Args: {
+              _amount_cents: number
+              _coins: number
+              _product_key: string
+              _reference: string
+              _scout_reports: number
+              _themes: string[]
+              _training_boosts: number
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _amount_cents: number
+              _coins: number
+              _injury_treatments: number
+              _opponent_reports: number
+              _product_key: string
+              _reference: string
+              _scout_reports: number
+              _themes: string[]
+              _training_boosts: number
+              _user_id: string
+            }
+            Returns: boolean
+          }
       get_own_activity_ranking: {
         Args: never
         Returns: {

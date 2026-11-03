@@ -144,6 +144,8 @@ export interface CheckoutProductPolicyInput {
     coins: number;
     scoutReports: number;
     trainingBoosts: number;
+    injuryTreatments?: number;
+    opponentReports?: number;
     themes: readonly string[];
   };
 }
@@ -429,10 +431,24 @@ export function assertNonPayToWin(benefits: readonly CommercialBenefit[]): void 
 }
 
 /** Store package kinds approved for sale. Unknown kinds stay blocked until reviewed. */
-export const CHECKOUT_PRODUCT_KINDS = ["cosmetic", "coins", "scout", "training", "pass"] as const;
+export const CHECKOUT_PRODUCT_KINDS = [
+  "cosmetic",
+  "coins",
+  "scout",
+  "training",
+  "pass",
+  "medical",
+  "tactical",
+] as const;
 const CHECKOUT_KIND_SET = new Set<string>(CHECKOUT_PRODUCT_KINDS);
 /** Upper bounds per package keep a mistyped catalog row from granting absurd amounts. */
-export const CHECKOUT_CONTENT_LIMITS = { coins: 20_000, scoutReports: 100, trainingBoosts: 100 };
+export const CHECKOUT_CONTENT_LIMITS = {
+  coins: 20_000,
+  scoutReports: 100,
+  trainingBoosts: 100,
+  injuryTreatments: 50,
+  opponentReports: 100,
+};
 
 /**
  * Validates a catalog row before a payment provider is queried: the kind must
@@ -440,6 +456,8 @@ export const CHECKOUT_CONTENT_LIMITS = { coins: 20_000, scoutReports: 100, train
  */
 export function assertCheckoutProductAllowed(product: CheckoutProductPolicyInput): void {
   const { coins, scoutReports, trainingBoosts, themes } = product.contents;
+  const injuryTreatments = product.contents.injuryTreatments ?? 0;
+  const opponentReports = product.contents.opponentReports ?? 0;
   const counterOk = (value: number, max: number) =>
     Number.isSafeInteger(value) && value >= 0 && value <= max;
   if (
@@ -448,6 +466,8 @@ export function assertCheckoutProductAllowed(product: CheckoutProductPolicyInput
     !counterOk(coins, CHECKOUT_CONTENT_LIMITS.coins) ||
     !counterOk(scoutReports, CHECKOUT_CONTENT_LIMITS.scoutReports) ||
     !counterOk(trainingBoosts, CHECKOUT_CONTENT_LIMITS.trainingBoosts) ||
+    !counterOk(injuryTreatments, CHECKOUT_CONTENT_LIMITS.injuryTreatments) ||
+    !counterOk(opponentReports, CHECKOUT_CONTENT_LIMITS.opponentReports) ||
     !Array.isArray(themes) ||
     themes.some((theme) => !validCosmeticKey(theme))
   ) {

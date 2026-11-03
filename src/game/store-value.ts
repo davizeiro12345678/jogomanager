@@ -4,7 +4,9 @@
  * promises more than the game actually delivers.
  */
 import {
+  CAREER_SERVICES,
   COIN_EXCHANGE,
+  INJURY_RECOVERY_WEEKS,
   PREMIUM_SCOUT_REPORT_SIZE,
   SEASON_PASS_WEEKLY_COINS,
 } from "@/lib/wallet-rules";
@@ -13,11 +15,13 @@ export interface OfferContents {
   coins: number;
   scoutReports: number;
   trainingBoosts: number;
+  injuryTreatments: number;
+  opponentReports: number;
   themes: string[];
 }
 
 export interface CareerBenefit {
-  kind: "coins" | "scout" | "training" | "cosmetic" | "pass";
+  kind: "coins" | "scout" | "training" | "cosmetic" | "pass" | "medical" | "tactical";
   title: string;
   detail: string;
 }
@@ -56,17 +60,28 @@ export function parseOfferContents(raw: unknown): OfferContents | null {
     coins: num(r["coins"]),
     scoutReports: num(r["scoutReports"]),
     trainingBoosts: num(r["trainingBoosts"]),
+    injuryTreatments: num(r["injuryTreatments"]),
+    opponentReports: num(r["opponentReports"]),
     themes: Array.isArray(r["themes"])
       ? r["themes"].filter((t): t is string => typeof t === "string")
       : [],
   };
 }
 
-export function careerValue(kind: string, contents: OfferContents | null): CareerValue {
+/** Annual pass is charged as 10 monthly payments for 12 months of pass. */
+export const ANNUAL_PASS_PAID_MONTHS = 10;
+
+export function careerValue(
+  kind: string,
+  contents: OfferContents | null,
+  options: { annual?: boolean } = {},
+): CareerValue {
   if (kind === "pass") {
     const monthly = SEASON_PASS_WEEKLY_COINS * 4;
     return {
-      headline: "Recursos todo mês enquanto a assinatura estiver ativa.",
+      headline: options.annual
+        ? `12 meses de passe pelo preço de ${ANNUAL_PASS_PAID_MONTHS}.`
+        : "Recursos todo mês enquanto a assinatura estiver ativa.",
       benefits: [
         {
           kind: "coins",
@@ -80,15 +95,38 @@ export function careerValue(kind: string, contents: OfferContents | null): Caree
         },
         {
           kind: "pass",
-          title: "Cancele quando quiser",
-          detail: "Os benefícios valem até o fim do mês pago.",
+          title: options.annual ? "2 meses grátis" : "Cancele quando quiser",
+          detail: options.annual
+            ? "Pagamento único por ano; os benefícios valem até o fim do ano pago."
+            : "Os benefícios valem até o fim do mês pago.",
         },
       ],
       coinEquivalent: monthly,
     };
   }
-  const c = contents ?? { coins: 0, scoutReports: 0, trainingBoosts: 0, themes: [] };
+  const c = contents ?? {
+    coins: 0,
+    scoutReports: 0,
+    trainingBoosts: 0,
+    injuryTreatments: 0,
+    opponentReports: 0,
+    themes: [],
+  };
   const benefits: CareerBenefit[] = [];
+  if (c.injuryTreatments > 0) {
+    benefits.push({
+      kind: "medical",
+      title: plural(c.injuryTreatments, "tratamento de lesão", "tratamentos de lesão"),
+      detail: `Cada um tira ${INJURY_RECOVERY_WEEKS} semanas da lesão de um jogador. Ficam guardados até você usar.`,
+    });
+  }
+  if (c.opponentReports > 0) {
+    benefits.push({
+      kind: "tactical",
+      title: plural(c.opponentReports, "relatório do adversário", "relatórios do adversário"),
+      detail: "Forma, pontos fortes e onde atacar o próximo rival. Ficam guardados até você usar.",
+    });
+  }
   if (c.trainingBoosts > 0) {
     benefits.push({
       kind: "training",
@@ -125,14 +163,20 @@ export function careerValue(kind: string, contents: OfferContents | null): Caree
   const coinEquivalent =
     c.coins +
     c.scoutReports * COIN_EXCHANGE.scout_report +
-    c.trainingBoosts * COIN_EXCHANGE.training_boost;
+    c.trainingBoosts * COIN_EXCHANGE.training_boost +
+    c.injuryTreatments * CAREER_SERVICES.injury_recovery.cost +
+    c.opponentReports * CAREER_SERVICES.opponent_report.cost;
   const headline =
-    c.trainingBoosts >= 3
-      ? "Acelera a evolução do seu elenco."
-      : c.scoutReports >= 10
-        ? "Encontra talentos antes dos rivais."
-        : c.themes.length > 0 && c.coins <= 300
-          ? "Deixa o seu clube com outra cara, sem mexer no equilíbrio do jogo."
-          : "Reforça o caixa da sua carreira para usar quando precisar.";
+    c.injuryTreatments >= 3 && c.coins === 0
+      ? "Devolve seus titulares lesionados mais cedo."
+      : c.opponentReports >= 3 && c.coins === 0
+        ? "Chega a cada jogo sabendo como o rival joga."
+        : c.trainingBoosts >= 3
+          ? "Acelera a evolução do seu elenco."
+          : c.scoutReports >= 10
+            ? "Encontra talentos antes dos rivais."
+            : c.themes.length > 0 && c.coins <= 300
+              ? "Deixa o seu clube com outra cara, sem mexer no equilíbrio do jogo."
+              : "Reforça o caixa da sua carreira para usar quando precisar.";
   return { headline, benefits, coinEquivalent };
 }

@@ -15,8 +15,32 @@ describe("server store-product contract", () => {
       coins: 1500,
       scoutReports: 10,
       trainingBoosts: 1,
+      injuryTreatments: 0,
+      opponentReports: 0,
       themes: ["premium_gold"],
     });
+  });
+
+  it("lê tratamentos e relatórios do adversário dos pacotes de serviço", () => {
+    expect(
+      parseStoreProductContents({
+        coins: 0,
+        scoutReports: 0,
+        trainingBoosts: 0,
+        injuryTreatments: 5,
+        opponentReports: 10,
+        themes: [],
+      }),
+    ).toMatchObject({ injuryTreatments: 5, opponentReports: 10 });
+    expect(
+      parseStoreProductContents({
+        coins: 0,
+        scoutReports: 0,
+        trainingBoosts: 0,
+        injuryTreatments: -1,
+        themes: [],
+      }),
+    ).toBeNull();
   });
 
   it("recusa campos ausentes ou com tipos inválidos", () => {

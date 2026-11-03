@@ -45,3 +45,14 @@ describe("store headline", () => {
     ).toBe("Encontra talentos antes dos rivais.");
   });
 });
+
+describe("service packs", () => {
+  it("values a treatment at 250 coins and an opponent report at 100", () => {
+    expect(careerValue("medical", parseOfferContents({ injuryTreatments: 5 })).coinEquivalent).toBe(
+      1250,
+    );
+    expect(
+      careerValue("tactical", parseOfferContents({ opponentReports: 10 })).coinEquivalent,
+    ).toBe(1000);
+  });
+});

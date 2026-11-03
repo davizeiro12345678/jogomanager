@@ -362,9 +362,9 @@ export const getLeagueDigests = createServerFn({ method: "GET" }).handler(
       });
       if (error) throw new Error("Não foi possível carregar os indicadores das ligas.");
       const source = new Map(
-        ((rows ?? []) as { league_id: number; payload: unknown; injury_count: number | null }[]).map(
-          (row) => [row.league_id, row],
-        ),
+        (
+          (rows ?? []) as { league_id: number; payload: unknown; injury_count: number | null }[]
+        ).map((row) => [row.league_id, row]),
       );
       // The RPC includes null payloads for absent leagues. Every requested ID
       // must still arrive once: a custom Data API cap must not cache a subset.

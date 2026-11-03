@@ -7,6 +7,7 @@ import { GuestSignInButton } from "@/components/store/GuestSignInNotice";
 import { opponentReport } from "@/game/coin-services";
 import type { CareerState } from "@/game/types";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { useStoredServices } from "@/hooks/useStoredServices";
 import { spendCoinsOnService } from "@/lib/coin-services.functions";
 import { CAREER_SERVICES } from "@/lib/wallet-rules";
 
@@ -18,6 +19,7 @@ export function OpponentReportCard({ career }: { career: CareerState }) {
   const userId = useAuthUserId();
   const spend = useServerFn(spendCoinsOnService);
   const queryClient = useQueryClient();
+  const stored = useStoredServices(userId).data?.opponentReports ?? 0;
   const key = report ? `jm.opp-report:${career.clubId}:${career.season}:${report.round}` : "";
   const [unlocked, setUnlocked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -117,7 +119,11 @@ export function OpponentReportCard({ career }: { career: CareerState }) {
               onClick={() => void unlock()}
               className="min-h-11 shrink-0 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              {busy ? "Gerando…" : `Ver relatório · ${cost} moedas`}
+              {busy
+                ? "Gerando…"
+                : stored > 0
+                  ? `Ver relatório · usar 1 de ${stored} guardados`
+                  : `Ver relatório · ${cost} moedas`}
             </button>
           )}
         </div>

@@ -7,7 +7,8 @@
  * no checkout da loja.
  */
 
-export type PackKind = "coins" | "scout" | "training" | "cosmetic" | "pass";
+export type PackKind =
+  "coins" | "scout" | "training" | "cosmetic" | "pass" | "medical" | "tactical";
 
 export interface StorePack {
   key: string;
@@ -19,7 +20,7 @@ export interface StorePack {
   currency: string;
   coins: number;
   kind: PackKind;
-  recurring?: "month";
+  recurring?: "month" | "year";
   contents: string[];
   /** cores usadas no render 3D do pacote */
   accent: string;
@@ -191,7 +192,8 @@ export const STORE_PACKS: StorePack[] = [
     priceId: "starter_bundle",
     name: "Pacote de estreia",
     tagline: "Oferta única por conta",
-    description: "800 moedas, 3 relatórios de olheiro e 2 impulsos de treino para começar forte.",
+    description:
+      "800 moedas, 3 relatórios de olheiro, 2 impulsos de treino e 2 tratamentos médicos para começar forte.",
     priceCents: 690,
     currency: "brl",
     coins: 800,
@@ -200,6 +202,7 @@ export const STORE_PACKS: StorePack[] = [
       "800 moedas",
       "+3 relatórios de olheiro",
       "+2 impulsos de treino",
+      "+2 tratamentos médicos",
       "Só uma vez por conta",
     ],
     accent: "#a3e635",
@@ -220,6 +223,40 @@ export const STORE_PACKS: StorePack[] = [
     accent2: "#713f12",
   },
   {
+    key: "tactical_pack",
+    priceId: "tactical_pack",
+    name: "Pacote análise tática",
+    tagline: "Conheça o rival antes do apito",
+    description:
+      "10 relatórios do próximo adversário guardados na carteira: forma, pontos fortes e onde atacar.",
+    priceCents: 790,
+    currency: "brl",
+    coins: 0,
+    kind: "tactical",
+    contents: [
+      "10 relatórios do adversário",
+      "Ficam guardados até você usar",
+      "Valem 1.000 moedas",
+    ],
+    accent: "#38bdf8",
+    accent2: "#0c4a6e",
+  },
+  {
+    key: "medical_pack",
+    priceId: "medical_pack",
+    name: "Pacote departamento médico",
+    tagline: "Seus titulares de volta mais cedo",
+    description:
+      "5 tratamentos intensivos guardados na carteira: cada um tira 2 semanas da lesão de um jogador.",
+    priceCents: 990,
+    currency: "brl",
+    coins: 0,
+    kind: "medical",
+    contents: ["5 tratamentos de lesão", "−2 semanas de lesão cada", "Valem 1.250 moedas"],
+    accent: "#f87171",
+    accent2: "#7f1d1d",
+  },
+  {
     key: "season_pass",
     priceId: "season_pass_monthly",
     name: "Passe de temporada",
@@ -234,6 +271,22 @@ export const STORE_PACKS: StorePack[] = [
     contents: ["300 moedas toda semana", "Relatórios premium ilimitados", "Cancele quando quiser"],
     accent: "#ffb547",
     accent2: "#5a2c00",
+  },
+  {
+    key: "season_pass_annual",
+    priceId: "season_pass_yearly",
+    name: "Passe de temporada anual",
+    tagline: "12 meses pelo preço de 10",
+    description:
+      "O passe de temporada por um ano inteiro com 2 meses grátis: moedas semanais, relatórios ilimitados e todos os cosméticos.",
+    priceCents: 24900,
+    currency: "brl",
+    coins: 0,
+    kind: "pass",
+    recurring: "year",
+    contents: ["300 moedas toda semana", "Relatórios premium ilimitados", "2 meses grátis"],
+    accent: "#fde047",
+    accent2: "#713f12",
   },
 ];
 

@@ -4,12 +4,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CAREER_SERVICES, type CareerService } from "@/lib/wallet-rules";
 
 export type CareerServiceResult =
-  | { ok: true; coins: number; usedThisWeek: number }
+  | { ok: true; coins: number; usedThisWeek: number; paidWith: "coins" | "stored_item" }
   | { ok: false; reason: "not_enough_coins" | "weekly_limit" | "error"; coins?: number };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Charges coins for a career service. Prices, limits and retries are decided by the database. */
+/** Charges a career service: a stored item from a shop pack first, otherwise coins.
+ * Prices, limits and retries are decided by the database. */
 export const spendCoinsOnService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { service: CareerService; requestId: string }) => {
@@ -37,5 +38,10 @@ export const spendCoinsOnService = createServerFn({ method: "POST" })
         reason: row.reason === "weekly_limit" ? "weekly_limit" : "not_enough_coins",
         coins: row.coins,
       };
-    return { ok: true, coins: row.coins, usedThisWeek: row.used_this_week };
+    return {
+      ok: true,
+      coins: row.coins,
+      usedThisWeek: row.used_this_week,
+      paidWith: row.reason === "stored_item" ? "stored_item" : "coins",
+    };
   });

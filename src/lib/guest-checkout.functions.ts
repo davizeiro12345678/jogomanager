@@ -117,6 +117,8 @@ function hasMatchingContentsSnapshot(
     parsed.coins === productContents.coins &&
     parsed.scoutReports === productContents.scoutReports &&
     parsed.trainingBoosts === productContents.trainingBoosts &&
+    parsed.injuryTreatments === productContents.injuryTreatments &&
+    parsed.opponentReports === productContents.opponentReports &&
     parsed.themes.length === productContents.themes.length &&
     parsed.themes.every((theme, index) => theme === productContents.themes[index])
   );

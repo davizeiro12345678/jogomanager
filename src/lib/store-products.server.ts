@@ -13,6 +13,10 @@ export interface StoreProductContents {
   coins: number;
   scoutReports: number;
   trainingBoosts: number;
+  /** Stored injury treatments (optional in older catalog rows, defaults to 0). */
+  injuryTreatments: number;
+  /** Stored opponent reports (optional in older catalog rows, defaults to 0). */
+  opponentReports: number;
   themes: string[];
 }
 
@@ -86,11 +90,17 @@ export function parseStoreProductContents(value: unknown): StoreProductContents 
   const coins = nonNegativeInteger(record["coins"]);
   const scoutReports = nonNegativeInteger(record["scoutReports"]);
   const trainingBoosts = nonNegativeInteger(record["trainingBoosts"]);
+  const injuryTreatments =
+    record["injuryTreatments"] === undefined ? 0 : nonNegativeInteger(record["injuryTreatments"]);
+  const opponentReports =
+    record["opponentReports"] === undefined ? 0 : nonNegativeInteger(record["opponentReports"]);
   const rawThemes = record["themes"];
   if (
     coins === null ||
     scoutReports === null ||
     trainingBoosts === null ||
+    injuryTreatments === null ||
+    opponentReports === null ||
     !Array.isArray(rawThemes) ||
     rawThemes.length > 100 ||
     rawThemes.some((theme) => typeof theme !== "string" || theme.length > 80)
@@ -102,6 +112,8 @@ export function parseStoreProductContents(value: unknown): StoreProductContents 
     coins,
     scoutReports,
     trainingBoosts,
+    injuryTreatments,
+    opponentReports,
     themes: Array.from(new Set(rawThemes as string[])),
   };
 }

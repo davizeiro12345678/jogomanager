@@ -1,4 +1,4 @@
-import { Coins, Crown, Dumbbell, Palette, Search } from "lucide-react";
+import { ClipboardList, Coins, Crown, Dumbbell, HeartPulse, Palette, Search } from "lucide-react";
 import { careerValue, parseOfferContents, type CareerBenefit } from "@/game/store-value";
 
 const ICONS: Record<CareerBenefit["kind"], typeof Coins> = {
@@ -7,11 +7,21 @@ const ICONS: Record<CareerBenefit["kind"], typeof Coins> = {
   training: Dumbbell,
   cosmetic: Palette,
   pass: Crown,
+  medical: HeartPulse,
+  tactical: ClipboardList,
 };
 
 /** "What changes in your career" summary shown on each offer before checkout. */
-export function CareerValueBox({ kind, contents }: { kind: string; contents: unknown }) {
-  const value = careerValue(kind, parseOfferContents(contents));
+export function CareerValueBox({
+  kind,
+  contents,
+  annual = false,
+}: {
+  kind: string;
+  contents: unknown;
+  annual?: boolean;
+}) {
+  const value = careerValue(kind, parseOfferContents(contents), { annual });
   if (value.benefits.length === 0) return null;
   return (
     <section

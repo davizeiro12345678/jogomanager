@@ -32,9 +32,9 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] Etapa 2 Divisão do código e carregamento
 - [ ] Etapa 3 Modularização dos arquivos gigantes
 - [ ] Etapa 4 Experiência do usuário
-- [ ] Etapa 5 Novas compras
+- [x] Etapa 5 Novas compras
   - [x] Pacote de estreia (1x por conta) e Kit do clube
-  - [ ] Pacote médico e análise tática (precisa guardar tratamentos/relatórios na carteira)
-  - [ ] Passe anual (assinatura anual)
+  - [x] Pacote médico e análise tática (tratamentos/relatórios guardados na carteira)
+  - [x] Passe anual (assinatura anual, 12 meses pelo preço de 10)
 - [ ] Etapa 6 Go e C# (pilotos WASM medidos)
 - [ ] Etapa 7 Relatório final
