@@ -3,7 +3,11 @@
  * marcação FAQPage, para que o texto indexado seja idêntico ao exibido.
  */
 import { formatPrice, PACK_BY_KEY } from "@/game/store-catalog";
-import { COIN_EXCHANGE, PREMIUM_SCOUT_REPORT_SIZE, SEASON_PASS_WEEKLY_COINS } from "@/lib/wallet-rules";
+import {
+  COIN_EXCHANGE,
+  PREMIUM_SCOUT_REPORT_SIZE,
+  SEASON_PASS_WEEKLY_COINS,
+} from "@/lib/wallet-rules";
 
 export interface FaqItem {
   q: string;

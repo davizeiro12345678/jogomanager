@@ -6,12 +6,19 @@
 import { Link } from "@tanstack/react-router";
 
 import { formatPrice, PACK_BY_KEY, STORE_PACKS, type StorePack } from "@/game/store-catalog";
-import { COIN_EXCHANGE, PREMIUM_SCOUT_REPORT_SIZE, SEASON_PASS_WEEKLY_COINS } from "@/lib/wallet-rules";
+import {
+  COIN_EXCHANGE,
+  PREMIUM_SCOUT_REPORT_SIZE,
+  SEASON_PASS_WEEKLY_COINS,
+} from "@/lib/wallet-rules";
 
 const COIN_PACK_KEYS = ["coins_starter", "coins_small", "coins_medium", "coins_large"] as const;
 
 /** Bônus de itens de cada pacote de moedas, como descrito no catálogo. */
-const COIN_PACK_BONUS: Record<(typeof COIN_PACK_KEYS)[number], { reports: number; boosts: number }> = {
+const COIN_PACK_BONUS: Record<
+  (typeof COIN_PACK_KEYS)[number],
+  { reports: number; boosts: number }
+> = {
   coins_starter: { reports: 1, boosts: 0 },
   coins_small: { reports: 2, boosts: 0 },
   coins_medium: { reports: 5, boosts: 2 },
@@ -91,16 +98,15 @@ export function ProdutosGuide() {
         <p>
           A loja do Pro Football Manager 3D é opcional. Todo o jogo — carreira, mercado, táticas,
           partidas em 3D e multiplayer — pode ser disputado sem gastar nada. Os pacotes servem para
-          adiantar recursos que você também consegue ao longo das temporadas ou para mudar o
-          visual do seu estádio. Este guia explica, com os números reais do catálogo, o que cada
-          item entrega, quanto vale cada moeda e qual opção faz sentido para o seu estilo de jogo,
-          para você decidir com calma e sem surpresa no pagamento.
+          adiantar recursos que você também consegue ao longo das temporadas ou para mudar o visual
+          do seu estádio. Este guia explica, com os números reais do catálogo, o que cada item
+          entrega, quanto vale cada moeda e qual opção faz sentido para o seu estilo de jogo, para
+          você decidir com calma e sem surpresa no pagamento.
         </p>
         <p>
-          Os valores abaixo são calculados a partir do mesmo catálogo que abastece o checkout e
-          das mesmas regras de troca que o servidor aplica. Se um preço mudar, as tabelas desta
-          página mudam junto. O valor final continua sendo confirmado na tela de pagamento antes
-          da compra.
+          Os valores abaixo são calculados a partir do mesmo catálogo que abastece o checkout e das
+          mesmas regras de troca que o servidor aplica. Se um preço mudar, as tabelas desta página
+          mudam junto. O valor final continua sendo confirmado na tela de pagamento antes da compra.
         </p>
       </header>
 
@@ -120,11 +126,21 @@ export function ProdutosGuide() {
             <caption className="sr-only">Comparação de todos os pacotes da loja</caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Item</th>
-                <th scope="col" className="p-3">Tipo</th>
-                <th scope="col" className="p-3">Preço</th>
-                <th scope="col" className="p-3">Moedas</th>
-                <th scope="col" className="p-3">O que vem dentro</th>
+                <th scope="col" className="p-3">
+                  Item
+                </th>
+                <th scope="col" className="p-3">
+                  Tipo
+                </th>
+                <th scope="col" className="p-3">
+                  Preço
+                </th>
+                <th scope="col" className="p-3">
+                  Moedas
+                </th>
+                <th scope="col" className="p-3">
+                  O que vem dentro
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -138,7 +154,9 @@ export function ProdutosGuide() {
                     {formatPrice(pack.priceCents, pack.currency)}
                     {pack.recurring ? "/mês" : ""}
                   </td>
-                  <td className="p-3 tabular-nums">{pack.coins > 0 ? pack.coins.toLocaleString("pt-BR") : "—"}</td>
+                  <td className="p-3 tabular-nums">
+                    {pack.coins > 0 ? pack.coins.toLocaleString("pt-BR") : "—"}
+                  </td>
                   <td className="p-3">{pack.contents.join(" · ")}</td>
                 </tr>
               ))}
@@ -161,21 +179,35 @@ export function ProdutosGuide() {
         </p>
         <p>
           Com essa tabela, dá para comparar os pacotes de moedas de forma justa. A coluna “valor
-          total” soma as moedas recebidas com o valor, em moedas, dos relatórios e impulsos que
-          vêm de bônus — exatamente o que você pagaria para trocá-los na loja do jogo.
+          total” soma as moedas recebidas com o valor, em moedas, dos relatórios e impulsos que vêm
+          de bônus — exatamente o que você pagaria para trocá-los na loja do jogo.
         </p>
         <div className="overflow-x-auto rounded-2xl border border-border/60">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <caption className="sr-only">Custo por moeda dos pacotes de moedas</caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Pacote</th>
-                <th scope="col" className="p-3">Preço</th>
-                <th scope="col" className="p-3">Moedas</th>
-                <th scope="col" className="p-3">Moedas por R$ 1</th>
-                <th scope="col" className="p-3">Bônus</th>
-                <th scope="col" className="p-3">Valor total em moedas</th>
-                <th scope="col" className="p-3">Valor total por R$ 1</th>
+                <th scope="col" className="p-3">
+                  Pacote
+                </th>
+                <th scope="col" className="p-3">
+                  Preço
+                </th>
+                <th scope="col" className="p-3">
+                  Moedas
+                </th>
+                <th scope="col" className="p-3">
+                  Moedas por R$ 1
+                </th>
+                <th scope="col" className="p-3">
+                  Bônus
+                </th>
+                <th scope="col" className="p-3">
+                  Valor total em moedas
+                </th>
+                <th scope="col" className="p-3">
+                  Valor total por R$ 1
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -188,7 +220,8 @@ export function ProdutosGuide() {
                   <td className="p-3 tabular-nums">{row.pack.coins.toLocaleString("pt-BR")}</td>
                   <td className="p-3 tabular-nums">{row.perReal.toFixed(1)}</td>
                   <td className="p-3">
-                    {row.bonus.reports} relat.{row.bonus.boosts ? ` + ${row.bonus.boosts} impulsos` : ""}
+                    {row.bonus.reports} relat.
+                    {row.bonus.boosts ? ` + ${row.bonus.boosts} impulsos` : ""}
                   </td>
                   <td className="p-3 tabular-nums">{row.totalValue.toLocaleString("pt-BR")}</td>
                   <td className="p-3 tabular-nums">{row.valuePerReal.toFixed(1)}</td>
@@ -201,8 +234,8 @@ export function ProdutosGuide() {
           A leitura é direta: cada degrau da escada de moedas entrega mais por real do que o
           anterior. O pacote inicial existe para quem quer testar com o menor gasto possível; o
           Cofre faz sentido para quem já sabe que vai jogar várias temporadas e quer resolver o
-          mercado de uma vez. Entre os dois, o Baú costuma ser o ponto de equilíbrio, porque os
-          dois impulsos de treino incluídos já representam uma parte relevante do valor.
+          mercado de uma vez. Entre os dois, o Baú costuma ser o ponto de equilíbrio, porque os dois
+          impulsos de treino incluídos já representam uma parte relevante do valor.
         </p>
       </section>
 
@@ -211,21 +244,30 @@ export function ProdutosGuide() {
           Passe de temporada ou compra única?
         </h3>
         <p>
-          O Passe de temporada custa {pass ? formatPrice(pass.priceCents, pass.currency) : "o valor do catálogo"} por
-          mês e credita {SEASON_PASS_WEEKLY_COINS} moedas a cada sete dias enquanto estiver ativo —
-          cerca de {monthlyPassCoins.toLocaleString("pt-BR")} moedas em quatro semanas. Além das
-          moedas, ele libera relatórios premium de olheiro sem limite e todos os itens visuais. O
-          resgate das moedas semanais é feito dentro do jogo, e a assinatura pode ser cancelada
-          quando você quiser, sem multa.
+          O Passe de temporada custa{" "}
+          {pass ? formatPrice(pass.priceCents, pass.currency) : "o valor do catálogo"} por mês e
+          credita {SEASON_PASS_WEEKLY_COINS} moedas a cada sete dias enquanto estiver ativo — cerca
+          de {monthlyPassCoins.toLocaleString("pt-BR")} moedas em quatro semanas. Além das moedas,
+          ele libera relatórios premium de olheiro sem limite e todos os itens visuais. O resgate
+          das moedas semanais é feito dentro do jogo, e a assinatura pode ser cancelada quando você
+          quiser, sem multa.
         </p>
         <div className="overflow-x-auto rounded-2xl border border-border/60">
           <table className="w-full min-w-[34rem] text-left text-sm">
-            <caption className="sr-only">Comparação entre Passe de temporada e compras únicas</caption>
+            <caption className="sr-only">
+              Comparação entre Passe de temporada e compras únicas
+            </caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Critério</th>
-                <th scope="col" className="p-3">Passe de temporada</th>
-                <th scope="col" className="p-3">Pacotes de compra única</th>
+                <th scope="col" className="p-3">
+                  Critério
+                </th>
+                <th scope="col" className="p-3">
+                  Passe de temporada
+                </th>
+                <th scope="col" className="p-3">
+                  Pacotes de compra única
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -237,7 +279,9 @@ export function ProdutosGuide() {
                 ["Melhor para", "Quem joga toda semana", "Quem joga em ritmo irregular"],
               ].map(([criterion, passValue, single]) => (
                 <tr key={criterion} className="border-t border-border/60">
-                  <th scope="row" className="p-3 font-medium text-foreground">{criterion}</th>
+                  <th scope="row" className="p-3 font-medium text-foreground">
+                    {criterion}
+                  </th>
                   <td className="p-3">{passValue}</td>
                   <td className="p-3">{single}</td>
                 </tr>
@@ -246,10 +290,10 @@ export function ProdutosGuide() {
           </table>
         </div>
         <p>
-          Se você abre o jogo várias vezes por semana, o Passe tende a render mais, porque as
-          moedas chegam continuamente e os relatórios ilimitados eliminam a escolha de “onde usar
-          o próximo olheiro”. Se você joga em fases, com semanas paradas, um pacote de compra única
-          é mais previsível: você paga uma vez e usa no seu ritmo, sem cobrança recorrente.
+          Se você abre o jogo várias vezes por semana, o Passe tende a render mais, porque as moedas
+          chegam continuamente e os relatórios ilimitados eliminam a escolha de “onde usar o próximo
+          olheiro”. Se você joga em fases, com semanas paradas, um pacote de compra única é mais
+          previsível: você paga uma vez e usa no seu ritmo, sem cobrança recorrente.
         </p>
       </section>
 
@@ -267,15 +311,23 @@ export function ProdutosGuide() {
             <caption className="sr-only">Recomendação de pacote por perfil de jogador</caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Seu perfil</th>
-                <th scope="col" className="p-3">Pacote sugerido</th>
-                <th scope="col" className="p-3">Por quê</th>
+                <th scope="col" className="p-3">
+                  Seu perfil
+                </th>
+                <th scope="col" className="p-3">
+                  Pacote sugerido
+                </th>
+                <th scope="col" className="p-3">
+                  Por quê
+                </th>
               </tr>
             </thead>
             <tbody>
               {PROFILES.map((row) => (
                 <tr key={row.who} className="border-t border-border/60 align-top">
-                  <th scope="row" className="p-3 font-medium text-foreground">{row.who}</th>
+                  <th scope="row" className="p-3 font-medium text-foreground">
+                    {row.who}
+                  </th>
                   <td className="p-3">{row.pick}</td>
                   <td className="p-3">{row.why}</td>
                 </tr>
@@ -291,11 +343,11 @@ export function ProdutosGuide() {
         </h3>
         <p>
           Um relatório premium de olheiro revela informações que normalmente ficam escondidas:
-          potencial e personalidade. Cada relatório mapeia {PREMIUM_SCOUT_REPORT_SIZE} jovens de
-          até 23 anos, o que ajuda a encontrar atletas baratos com margem de crescimento antes que
-          os rivais percebam. Na prática, isso muda a forma de montar o elenco: em vez de pagar
-          caro por um titular pronto, você pode formar uma geração e vender parte dela com lucro
-          mais tarde.
+          potencial e personalidade. Cada relatório mapeia {PREMIUM_SCOUT_REPORT_SIZE} jovens de até
+          23 anos, o que ajuda a encontrar atletas baratos com margem de crescimento antes que os
+          rivais percebam. Na prática, isso muda a forma de montar o elenco: em vez de pagar caro
+          por um titular pronto, você pode formar uma geração e vender parte dela com lucro mais
+          tarde.
         </p>
         <p>
           O impulso de treino age na semana: +25% de evolução e +5 de recuperação. Os impulsos se
@@ -335,15 +387,15 @@ export function ProdutosGuide() {
         <p>
           Imagine um treinador que assume um clube médio com orçamento curto e um elenco
           envelhecido. Sem gastar nada, ele pode usar a primeira janela para vender um veterano
-          caro, liberar folha salarial e apostar em dois jovens. O risco é escolher errado, porque
-          o potencial dos jovens fica escondido.
+          caro, liberar folha salarial e apostar em dois jovens. O risco é escolher errado, porque o
+          potencial dos jovens fica escondido.
         </p>
         <p>
           Com relatórios de olheiro, esse risco cai: cada relatório premium mostra o potencial e a
           personalidade de {PREMIUM_SCOUT_REPORT_SIZE} jovens, e a escolha passa a ser feita com
-          informação. Ao longo da temporada, impulsos de treino usados nas semanas sem jogo
-          aceleram a evolução desses atletas. No fim do ano, o clube tem titulares formados em
-          casa e pode vender um deles por muito mais do que pagou.
+          informação. Ao longo da temporada, impulsos de treino usados nas semanas sem jogo aceleram
+          a evolução desses atletas. No fim do ano, o clube tem titulares formados em casa e pode
+          vender um deles por muito mais do que pagou.
         </p>
         <p>
           O mesmo plano funciona de graça, só que mais devagar: as moedas acumuladas na carreira
@@ -358,13 +410,13 @@ export function ProdutosGuide() {
         </h3>
         <ol className="list-decimal space-y-3 pl-5">
           <li>
-            <strong className="text-foreground">Comprar moedas sem plano.</strong> Antes de
-            comprar, defina o que falta no clube. Se o problema é informação sobre jovens, um
-            pacote de olheiros resolve melhor do que moedas avulsas.
+            <strong className="text-foreground">Comprar moedas sem plano.</strong> Antes de comprar,
+            defina o que falta no clube. Se o problema é informação sobre jovens, um pacote de
+            olheiros resolve melhor do que moedas avulsas.
           </li>
           <li>
-            <strong className="text-foreground">Usar impulsos em atletas veteranos.</strong> O
-            ganho de evolução rende mais em jogadores jovens com potencial alto; em veteranos, a
+            <strong className="text-foreground">Usar impulsos em atletas veteranos.</strong> O ganho
+            de evolução rende mais em jogadores jovens com potencial alto; em veteranos, a
             recuperação extra é o benefício principal.
           </li>
           <li>
@@ -373,13 +425,13 @@ export function ProdutosGuide() {
           </li>
           <li>
             <strong className="text-foreground">Repetir o pagamento por impaciência.</strong> A
-            confirmação pode levar alguns instantes. Consulte o histórico de compras antes de
-            tentar de novo.
+            confirmação pode levar alguns instantes. Consulte o histórico de compras antes de tentar
+            de novo.
           </li>
           <li>
-            <strong className="text-foreground">Esperar vantagem de itens visuais.</strong>{" "}
-            Gramado, temas e comemorações deixam o jogo com a cara do seu clube, mas não mudam a
-            força do time.
+            <strong className="text-foreground">Esperar vantagem de itens visuais.</strong> Gramado,
+            temas e comemorações deixam o jogo com a cara do seu clube, mas não mudam a força do
+            time.
           </li>
         </ol>
       </section>
@@ -393,22 +445,46 @@ export function ProdutosGuide() {
             <caption className="sr-only">Termos usados na loja e seus significados</caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Termo</th>
-                <th scope="col" className="p-3">O que significa</th>
+                <th scope="col" className="p-3">
+                  Termo
+                </th>
+                <th scope="col" className="p-3">
+                  O que significa
+                </th>
               </tr>
             </thead>
             <tbody>
               {[
-                ["Moedas", "Saldo da carteira usado para trocar por relatórios e impulsos dentro do jogo."],
-                ["Relatório premium", `Revela potencial e personalidade de ${PREMIUM_SCOUT_REPORT_SIZE} jovens de até 23 anos.`],
-                ["Impulso de treino", "+25% de evolução e +5 de recuperação na semana; vários se somam."],
+                [
+                  "Moedas",
+                  "Saldo da carteira usado para trocar por relatórios e impulsos dentro do jogo.",
+                ],
+                [
+                  "Relatório premium",
+                  `Revela potencial e personalidade de ${PREMIUM_SCOUT_REPORT_SIZE} jovens de até 23 anos.`,
+                ],
+                [
+                  "Impulso de treino",
+                  "+25% de evolução e +5 de recuperação na semana; vários se somam.",
+                ],
                 ["Bônus", "Itens extras incluídos no pacote, além do conteúdo principal."],
-                ["Item visual", "Muda gramado, torcida, tema ou comemorações, sem efeito no resultado."],
-                ["Resgate semanal", `Crédito de ${SEASON_PASS_WEEKLY_COINS} moedas a cada 7 dias enquanto o passe estiver ativo.`],
-                ["Compra como visitante", "Compra feita só com e-mail, sem criar conta, vinculável depois."],
+                [
+                  "Item visual",
+                  "Muda gramado, torcida, tema ou comemorações, sem efeito no resultado.",
+                ],
+                [
+                  "Resgate semanal",
+                  `Crédito de ${SEASON_PASS_WEEKLY_COINS} moedas a cada 7 dias enquanto o passe estiver ativo.`,
+                ],
+                [
+                  "Compra como visitante",
+                  "Compra feita só com e-mail, sem criar conta, vinculável depois.",
+                ],
               ].map(([term, meaning]) => (
                 <tr key={term} className="border-t border-border/60">
-                  <th scope="row" className="p-3 font-medium text-foreground">{term}</th>
+                  <th scope="row" className="p-3 font-medium text-foreground">
+                    {term}
+                  </th>
                   <td className="p-3">{meaning}</td>
                 </tr>
               ))}
@@ -431,8 +507,8 @@ export function ProdutosGuide() {
             Sem conta, use “Comprar como visitante” e informe um e-mail que você acessa.
           </li>
           <li>
-            Confira o total na tela de pagamento segura da Stripe. O jogo não vê nem guarda os
-            dados completos do seu cartão.
+            Confira o total na tela de pagamento segura da Stripe. O jogo não vê nem guarda os dados
+            completos do seu cartão.
           </li>
           <li>
             Aguarde a confirmação. O servidor só entrega os itens depois que o pagamento é
@@ -440,9 +516,14 @@ export function ProdutosGuide() {
           </li>
           <li>
             Consulte o pedido em{" "}
-            <Link to="/compras" className="text-primary hover:underline">minhas compras</Link>{" "}
+            <Link to="/compras" className="text-primary hover:underline">
+              minhas compras
+            </Link>{" "}
             e use os itens na{" "}
-            <Link to="/loja" className="text-primary hover:underline">loja dentro do jogo</Link>.
+            <Link to="/loja" className="text-primary hover:underline">
+              loja dentro do jogo
+            </Link>
+            .
           </li>
         </ol>
       </section>
@@ -454,17 +535,25 @@ export function ProdutosGuide() {
         <p>
           Cada compra é validada no servidor pelo preço oficial do catálogo e pela confirmação
           assinada do provedor de pagamento. Esse cuidado impede itens entregues sem pagamento e
-          também garante que um pagamento confirmado gere a entrega correta, mesmo se você fechar
-          a página logo depois de pagar.
+          também garante que um pagamento confirmado gere a entrega correta, mesmo se você fechar a
+          página logo depois de pagar.
         </p>
         <p>
           Se o item não aparecer, verifique se está na mesma conta usada na compra e consulte o
           histórico. Persistindo o problema, procure a página de{" "}
-          <Link to="/contato" className="text-primary hover:underline">contato e suporte</Link>{" "}
+          <Link to="/contato" className="text-primary hover:underline">
+            contato e suporte
+          </Link>{" "}
           informando o e-mail e a data do pedido. Nunca envie número de cartão, senha ou código de
           verificação por chat ou e-mail. As regras completas estão nos{" "}
-          <Link to="/termos" className="text-primary hover:underline">termos de uso</Link> e na{" "}
-          <Link to="/privacidade" className="text-primary hover:underline">política de privacidade</Link>.
+          <Link to="/termos" className="text-primary hover:underline">
+            termos de uso
+          </Link>{" "}
+          e na{" "}
+          <Link to="/privacidade" className="text-primary hover:underline">
+            política de privacidade
+          </Link>
+          .
         </p>
       </section>
 
@@ -474,15 +563,25 @@ export function ProdutosGuide() {
         </h3>
         <p>
           Os pacotes encurtam caminhos, mas a carreira foi pensada para ser vencida com boas
-          decisões. Um olheiro bem usado, uma folha salarial controlada e uma formação que
-          aproveita o elenco valem mais do que qualquer bônus. Se você está começando, leia o{" "}
-          <Link to="/guias" className="text-primary hover:underline">guia do treinador</Link>, as{" "}
-          <Link to="/dicas-de-gestao" className="text-primary hover:underline">dicas de gestão financeira</Link>{" "}
+          decisões. Um olheiro bem usado, uma folha salarial controlada e uma formação que aproveita
+          o elenco valem mais do que qualquer bônus. Se você está começando, leia o{" "}
+          <Link to="/guias" className="text-primary hover:underline">
+            guia do treinador
+          </Link>
+          , as{" "}
+          <Link to="/dicas-de-gestao" className="text-primary hover:underline">
+            dicas de gestão financeira
+          </Link>{" "}
           e as{" "}
-          <Link to="/melhores-formacoes" className="text-primary hover:underline">melhores formações</Link>{" "}
+          <Link to="/melhores-formacoes" className="text-primary hover:underline">
+            melhores formações
+          </Link>{" "}
           antes de decidir se algum pacote faz sentido para você. Dúvidas rápidas sobre moedas,
           passe e entrega estão nas{" "}
-          <Link to="/perguntas-frequentes" className="text-primary hover:underline">perguntas frequentes</Link>.
+          <Link to="/perguntas-frequentes" className="text-primary hover:underline">
+            perguntas frequentes
+          </Link>
+          .
         </p>
       </section>
     </article>

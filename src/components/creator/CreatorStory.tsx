@@ -125,16 +125,16 @@ export function CreatorStory() {
         </h2>
         <p>
           O Pro Football Manager 3D nasceu de uma vontade simples: ter um manager de futebol
-          completo, gratuito e bonito que rode em qualquer aparelho, sem instalação. Muitos jogos
-          de gestão exigem computador potente, download grande ou compra antecipada. Outros são
-          leves, mas parecem planilhas e não mostram o jogo acontecendo. A proposta aqui é juntar
-          as duas coisas: profundidade de gestão e uma partida em 3D que você assiste e entende.
+          completo, gratuito e bonito que rode em qualquer aparelho, sem instalação. Muitos jogos de
+          gestão exigem computador potente, download grande ou compra antecipada. Outros são leves,
+          mas parecem planilhas e não mostram o jogo acontecendo. A proposta aqui é juntar as duas
+          coisas: profundidade de gestão e uma partida em 3D que você assiste e entende.
         </p>
         <p>
           O projeto é desenvolvido de forma independente, por uma única pessoa, como criação
           autoral. Isso explica algumas escolhas: o foco em recursos que realmente mudam a
-          experiência, as atualizações frequentes em vez de grandes lançamentos raros e a
-          conversa direta com quem joga, pela comunidade e pelos canais do criador.
+          experiência, as atualizações frequentes em vez de grandes lançamentos raros e a conversa
+          direta com quem joga, pela comunidade e pelos canais do criador.
         </p>
       </section>
 
@@ -148,7 +148,10 @@ export function CreatorStory() {
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {PILLARS.map((pillar) => (
-            <section key={pillar.title} className="rounded-2xl border border-border/60 surface-card p-5">
+            <section
+              key={pillar.title}
+              className="rounded-2xl border border-border/60 surface-card p-5"
+            >
               <h3 className="font-display text-lg text-foreground">{pillar.title}</h3>
               <p className="mt-2 text-sm">{pillar.body}</p>
             </section>
@@ -162,25 +165,35 @@ export function CreatorStory() {
         </h2>
         <p>
           Por trás da tela existe uma divisão clara de responsabilidades. O motor de simulação
-          decide o que acontece em campo; o 3D só desenha. Essa separação é o que permite
-          acelerar uma partida, pular para o resultado ou assistir ao jogo inteiro sem que o
-          placar mude. Também é o que permite reduzir a qualidade gráfica num celular mais simples
-          sem tirar nada da partida em si.
+          decide o que acontece em campo; o 3D só desenha. Essa separação é o que permite acelerar
+          uma partida, pular para o resultado ou assistir ao jogo inteiro sem que o placar mude.
+          Também é o que permite reduzir a qualidade gráfica num celular mais simples sem tirar nada
+          da partida em si.
         </p>
         <div className="overflow-x-auto rounded-2xl border border-border/60">
           <table className="w-full min-w-[38rem] text-left text-sm">
-            <caption className="sr-only">Partes técnicas do jogo e o motivo de cada escolha</caption>
+            <caption className="sr-only">
+              Partes técnicas do jogo e o motivo de cada escolha
+            </caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Parte</th>
-                <th scope="col" className="p-3">Escolha</th>
-                <th scope="col" className="p-3">Motivo</th>
+                <th scope="col" className="p-3">
+                  Parte
+                </th>
+                <th scope="col" className="p-3">
+                  Escolha
+                </th>
+                <th scope="col" className="p-3">
+                  Motivo
+                </th>
               </tr>
             </thead>
             <tbody>
               {TECH_ROWS.map((row) => (
                 <tr key={row.part} className="border-t border-border/60 align-top">
-                  <th scope="row" className="p-3 font-medium text-foreground">{row.part}</th>
+                  <th scope="row" className="p-3 font-medium text-foreground">
+                    {row.part}
+                  </th>
                   <td className="p-3">{row.choice}</td>
                   <td className="p-3">{row.why}</td>
                 </tr>
@@ -189,8 +202,8 @@ export function CreatorStory() {
           </table>
         </div>
         <p>
-          O desempenho é tratado como requisito, não como detalhe. Antes de uma versão ir ao ar,
-          ela passa por uma bateria de verificações automáticas, incluindo centenas de partidas
+          O desempenho é tratado como requisito, não como detalhe. Antes de uma versão ir ao ar, ela
+          passa por uma bateria de verificações automáticas, incluindo centenas de partidas
           simuladas em sequência para garantir estabilidade, limites de tamanho do carregamento
           inicial e testes que conferem que o resultado continua idêntico para os mesmos dados.
         </p>
@@ -202,16 +215,18 @@ export function CreatorStory() {
         </h2>
         <p>
           A base do jogo reúne mais de 100 ligas e mais de 1.300 clubes, com escudos, uniformes e
-          cores próprias, montada a partir de dados esportivos reais e atualizada em lotes. As
-          ligas nacionais seguem uma pirâmide com acesso e rebaixamento resolvidos ao mesmo
-          tempo no fim da temporada, mantendo o número de clubes de cada divisão.
+          cores próprias, montada a partir de dados esportivos reais e atualizada em lotes. As ligas
+          nacionais seguem uma pirâmide com acesso e rebaixamento resolvidos ao mesmo tempo no fim
+          da temporada, mantendo o número de clubes de cada divisão.
         </p>
         <p>
-          A interface fala 39 idiomas e detecta o idioma do navegador automaticamente. A narração
-          ao vivo das partidas está em português, inglês e espanhol. As tabelas das principais
-          ligas do mundo também ficam disponíveis no site, como em{" "}
-          <Link to="/tabelas" className="text-primary hover:underline">tabelas das ligas</Link>, para
-          quem quer acompanhar o futebol real e usá-lo como referência na carreira.
+          A interface fala 39 idiomas e detecta o idioma do navegador automaticamente. A narração ao
+          vivo das partidas está em português, inglês e espanhol. As tabelas das principais ligas do
+          mundo também ficam disponíveis no site, como em{" "}
+          <Link to="/tabelas" className="text-primary hover:underline">
+            tabelas das ligas
+          </Link>
+          , para quem quer acompanhar o futebol real e usá-lo como referência na carreira.
         </p>
       </section>
 
@@ -220,25 +235,35 @@ export function CreatorStory() {
           Os modos de jogo e o que cada um ensina
         </h2>
         <p>
-          O jogo foi organizado em modos que se complementam. Cada um responde a um tipo de
-          sessão: alguns minutos no ônibus, uma noite inteira planejando a temporada ou uma
-          disputa com um amigo. A tabela mostra como eles se encaixam.
+          O jogo foi organizado em modos que se complementam. Cada um responde a um tipo de sessão:
+          alguns minutos no ônibus, uma noite inteira planejando a temporada ou uma disputa com um
+          amigo. A tabela mostra como eles se encaixam.
         </p>
         <div className="overflow-x-auto rounded-2xl border border-border/60">
           <table className="w-full min-w-[38rem] text-left text-sm">
             <caption className="sr-only">Modos de jogo, duração típica e foco</caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Modo</th>
-                <th scope="col" className="p-3">Sessão típica</th>
-                <th scope="col" className="p-3">Foco</th>
-                <th scope="col" className="p-3">Precisa de internet?</th>
+                <th scope="col" className="p-3">
+                  Modo
+                </th>
+                <th scope="col" className="p-3">
+                  Sessão típica
+                </th>
+                <th scope="col" className="p-3">
+                  Foco
+                </th>
+                <th scope="col" className="p-3">
+                  Precisa de internet?
+                </th>
               </tr>
             </thead>
             <tbody>
               {MODES.map((mode) => (
                 <tr key={mode.name} className="border-t border-border/60 align-top">
-                  <th scope="row" className="p-3 font-medium text-foreground">{mode.name}</th>
+                  <th scope="row" className="p-3 font-medium text-foreground">
+                    {mode.name}
+                  </th>
                   <td className="p-3">{mode.session}</td>
                   <td className="p-3">{mode.focus}</td>
                   <td className="p-3">{mode.online}</td>
@@ -250,10 +275,10 @@ export function CreatorStory() {
         <p>
           A partida rápida é a porta de entrada: você escolhe dois clubes, a dificuldade e assiste
           ao jogo com narração e placar ao vivo. É o melhor jeito de entender como o 3D mostra a
-          tática em ação antes de assumir uma carreira. A carreira de treinador é o coração do
-          jogo, com mercado, elenco, treino, diretoria e temporadas que se encadeiam. A temporada
-          automática existe para quem quer avançar rápido: o computador joga semana a semana, ou
-          até o fim, e você interfere quando quiser. O multiplayer coloca dois treinadores frente a
+          tática em ação antes de assumir uma carreira. A carreira de treinador é o coração do jogo,
+          com mercado, elenco, treino, diretoria e temporadas que se encadeiam. A temporada
+          automática existe para quem quer avançar rápido: o computador joga semana a semana, ou até
+          o fim, e você interfere quando quiser. O multiplayer coloca dois treinadores frente a
           frente, com o placar conferido no servidor.
         </p>
       </section>
@@ -263,11 +288,10 @@ export function CreatorStory() {
           Pensado primeiro para o celular
         </h2>
         <p>
-          A maior parte de quem joga usa celular, muitas vezes um modelo intermediário. Por isso
-          o ponto de partida de cada tela é o aparelho mais simples, e não o computador mais
-          rápido. A interface reorganiza menus e tabelas para telas pequenas, os botões têm área
-          de toque confortável e a partida 3D escolhe sozinha a qualidade gráfica que o aparelho
-          aguenta.
+          A maior parte de quem joga usa celular, muitas vezes um modelo intermediário. Por isso o
+          ponto de partida de cada tela é o aparelho mais simples, e não o computador mais rápido. A
+          interface reorganiza menus e tabelas para telas pequenas, os botões têm área de toque
+          confortável e a partida 3D escolhe sozinha a qualidade gráfica que o aparelho aguenta.
         </p>
         <p>
           Quando a aba vai para segundo plano, o desenho 3D pausa para economizar bateria. A
@@ -288,16 +312,16 @@ export function CreatorStory() {
         </h2>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong className="text-foreground">Sem vantagem escondida:</strong> itens visuais
-            não mudam o resultado, e o placar do multiplayer é conferido no servidor.
+            <strong className="text-foreground">Sem vantagem escondida:</strong> itens visuais não
+            mudam o resultado, e o placar do multiplayer é conferido no servidor.
           </li>
           <li>
             <strong className="text-foreground">Progresso respeitado:</strong> a nuvem não deixa um
             aparelho desatualizado apagar suas rodadas mais recentes.
           </li>
           <li>
-            <strong className="text-foreground">Pagamento claro:</strong> o preço é confirmado
-            antes de pagar, e os itens só são entregues depois da confirmação.
+            <strong className="text-foreground">Pagamento claro:</strong> o preço é confirmado antes
+            de pagar, e os itens só são entregues depois da confirmação.
           </li>
           <li>
             <strong className="text-foreground">Dados cuidados:</strong> a política de privacidade
@@ -324,16 +348,24 @@ export function CreatorStory() {
             <caption className="sr-only">Resumo das atualizações recentes</caption>
             <thead className="bg-secondary/40 text-foreground">
               <tr>
-                <th scope="col" className="p-3">Mês</th>
-                <th scope="col" className="p-3">Atualização</th>
-                <th scope="col" className="p-3">Melhorias</th>
+                <th scope="col" className="p-3">
+                  Mês
+                </th>
+                <th scope="col" className="p-3">
+                  Atualização
+                </th>
+                <th scope="col" className="p-3">
+                  Melhorias
+                </th>
               </tr>
             </thead>
             <tbody>
               {CHANGELOG.map((entry) => (
                 <tr key={`${entry.date}-${entry.title}`} className="border-t border-border/60">
                   <td className="p-3 tabular-nums">{entry.date}</td>
-                  <th scope="row" className="p-3 font-medium text-foreground">{entry.title}</th>
+                  <th scope="row" className="p-3 font-medium text-foreground">
+                    {entry.title}
+                  </th>
                   <td className="p-3 tabular-nums">{entry.items.length}</td>
                 </tr>
               ))}
@@ -348,17 +380,22 @@ export function CreatorStory() {
         </h2>
         <p>
           O jogo continua gratuito. A loja oferece {STORE_PACKS.length} itens opcionais — moedas,
-          olheiros, treino, itens visuais e um passe mensal — que ajudam a manter servidores,
-          dados esportivos e desenvolvimento. Nenhum item muda a simulação de forma escondida, e
-          os itens visuais não alteram o resultado. A explicação completa, com custo por moeda e
-          comparações, está na página de{" "}
-          <Link to="/produtos" className="text-primary hover:underline">pacotes</Link>.
+          olheiros, treino, itens visuais e um passe mensal — que ajudam a manter servidores, dados
+          esportivos e desenvolvimento. Nenhum item muda a simulação de forma escondida, e os itens
+          visuais não alteram o resultado. A explicação completa, com custo por moeda e comparações,
+          está na página de{" "}
+          <Link to="/produtos" className="text-primary hover:underline">
+            pacotes
+          </Link>
+          .
         </p>
-
       </section>
 
       <section aria-labelledby="match-inside" className="space-y-4">
-        <h2 id="match-inside" className="font-display text-2xl uppercase tracking-wide text-foreground">
+        <h2
+          id="match-inside"
+          className="font-display text-2xl uppercase tracking-wide text-foreground"
+        >
           Bastidores: o que acontece numa partida
         </h2>
         <p>
@@ -375,15 +412,18 @@ export function CreatorStory() {
           que as substituições e os ajustes no intervalo fazem diferença de verdade.
         </p>
         <p>
-          O 3D recebe esses resultados e cuida da apresentação: animações de corrida e chute,
-          câmera de transmissão, iluminação do estádio, torcida e replays. Como a apresentação não
-          decide nada, ela pode ficar mais leve num celular sem alterar o placar, e a mesma partida
-          pode ser reassistida com o mesmo resultado.
+          O 3D recebe esses resultados e cuida da apresentação: animações de corrida e chute, câmera
+          de transmissão, iluminação do estádio, torcida e replays. Como a apresentação não decide
+          nada, ela pode ficar mais leve num celular sem alterar o placar, e a mesma partida pode
+          ser reassistida com o mesmo resultado.
         </p>
       </section>
 
       <section aria-labelledby="creator-faq" className="space-y-4">
-        <h2 id="creator-faq" className="font-display text-2xl uppercase tracking-wide text-foreground">
+        <h2
+          id="creator-faq"
+          className="font-display text-2xl uppercase tracking-wide text-foreground"
+        >
           Perguntas sobre o projeto
         </h2>
         <dl className="space-y-4">
@@ -402,10 +442,10 @@ export function CreatorStory() {
         </h2>
         <p>
           Sugestões chegam pela comunidade no Discord, pelo e-mail do criador e pela página de
-          contato. Os relatos mais úteis dizem o aparelho, o navegador, a página, o que você fez
-          e o que aconteceu; para problemas de carreira, clube, temporada e rodada. Com essas
-          informações é possível reproduzir o problema, corrigir a causa e conferir a correção
-          antes de publicar.
+          contato. Os relatos mais úteis dizem o aparelho, o navegador, a página, o que você fez e o
+          que aconteceu; para problemas de carreira, clube, temporada e rodada. Com essas
+          informações é possível reproduzir o problema, corrigir a causa e conferir a correção antes
+          de publicar.
         </p>
         <ol className="list-decimal space-y-2 pl-5">
           <li>O relato é registrado e reproduzido em um ambiente de teste.</li>
@@ -415,11 +455,18 @@ export function CreatorStory() {
         </ol>
         <p>
           Antes de enviar uma dúvida, vale consultar as {FAQ_COUNT}{" "}
-          <Link to="/perguntas-frequentes" className="text-primary hover:underline">perguntas frequentes</Link>
+          <Link to="/perguntas-frequentes" className="text-primary hover:underline">
+            perguntas frequentes
+          </Link>
           , que já respondem a maioria das questões sobre saves, partidas 3D e compras. Para
           aprender a jogar melhor, os{" "}
-          <Link to="/guias" className="text-primary hover:underline">guias do treinador</Link> e o{" "}
-          <Link to="/glossario-do-futebol" className="text-primary hover:underline">glossário</Link>{" "}
+          <Link to="/guias" className="text-primary hover:underline">
+            guias do treinador
+          </Link>{" "}
+          e o{" "}
+          <Link to="/glossario-do-futebol" className="text-primary hover:underline">
+            glossário
+          </Link>{" "}
           são o melhor ponto de partida.
         </p>
       </section>
