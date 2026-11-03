@@ -41,6 +41,15 @@
 @source "./pages/contato.tsx";
 @source "./pages/sobre.tsx";
 @source "./pages/criador.tsx";
+@source "./components/creator/CreatorStory.tsx";
+@source "./pages/produtos.tsx";
+@source "./components/store/ProdutosGuide.tsx";
+@source "./components/store/GuestCheckoutDialog.tsx";
+@source "./components/StripeCheckoutFrame.tsx";
+@source "./components/StripeEmbeddedCheckout.tsx";
+@source "./components/PaymentTestModeBanner.tsx";
+@source "./hooks/useStripeCheckout.tsx";
+@source "./components/ui/badge.tsx";
 @source "./pages/tabelas.index.tsx";
 @source "./pages/tabelas.$slug.tsx";
 @import "./design-system.css";
