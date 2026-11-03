@@ -386,7 +386,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     </Badge>
                   </div>
                   <CardDescription>{p.description}</CardDescription>
-                  <CareerValueBox kind={p.kind} contents={p.contents} annual={p.key === "season_pass_annual"} />
+                  <CareerValueBox
+                    kind={p.kind}
+                    contents={p.contents}
+                    annual={p.key === "season_pass_annual"}
+                  />
                 </CardHeader>
                 <CardContent className="mt-auto flex flex-wrap items-baseline gap-2">
                   {salePrice(p).percent > 0 ? (

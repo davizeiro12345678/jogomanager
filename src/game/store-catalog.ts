@@ -7,7 +7,8 @@
  * no checkout da loja.
  */
 
-export type PackKind = "coins" | "scout" | "training" | "cosmetic" | "pass" | "medical" | "tactical";
+export type PackKind =
+  "coins" | "scout" | "training" | "cosmetic" | "pass" | "medical" | "tactical";
 
 export interface StorePack {
   key: string;
@@ -232,7 +233,11 @@ export const STORE_PACKS: StorePack[] = [
     currency: "brl",
     coins: 0,
     kind: "tactical",
-    contents: ["10 relatórios do adversário", "Ficam guardados até você usar", "Valem 1.000 moedas"],
+    contents: [
+      "10 relatórios do adversário",
+      "Ficam guardados até você usar",
+      "Valem 1.000 moedas",
+    ],
     accent: "#38bdf8",
     accent2: "#0c4a6e",
   },

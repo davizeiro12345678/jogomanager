@@ -7,6 +7,7 @@ import { GuestSignInButton } from "@/components/store/GuestSignInNotice";
 import { applyInjuryRecovery } from "@/game/coin-services";
 import type { CareerState } from "@/game/types";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { useStoredServices } from "@/hooks/useStoredServices";
 import { spendCoinsOnService } from "@/lib/coin-services.functions";
 import { CAREER_SERVICES, INJURY_RECOVERY_WEEKS } from "@/lib/wallet-rules";
 
@@ -23,6 +24,7 @@ export function InjuryRecoveryCard({
   const userId = useAuthUserId();
   const spend = useServerFn(spendCoinsOnService);
   const queryClient = useQueryClient();
+  const stored = useStoredServices(userId).data?.injuryTreatments ?? 0;
   const [busy, setBusy] = useState<string | null>(null);
   const injured = Object.values(career.players)
     .filter((p) => p.injuryWeeks > 0)
@@ -49,7 +51,9 @@ export function InjuryRecoveryCard({
       onApply(applyInjuryRecovery(career, playerId));
       await queryClient.invalidateQueries({ queryKey: ["wallet"] });
       toast.success(
-        `Tratamento feito: −${INJURY_RECOVERY_WEEKS} semanas de lesão. Saldo: ${result.coins} moedas.`,
+        result.paidWith === "stored_item"
+          ? `Tratamento feito: −${INJURY_RECOVERY_WEEKS} semanas de lesão. Usado 1 tratamento guardado.`
+          : `Tratamento feito: −${INJURY_RECOVERY_WEEKS} semanas de lesão. Saldo: ${result.coins} moedas.`,
       );
     } catch {
       toast.error("Não foi possível fazer o tratamento agora.");
@@ -72,6 +76,9 @@ export function InjuryRecoveryCard({
       <p className="mt-1 text-sm text-muted-foreground">
         Tratamento intensivo: {cost} moedas tiram {INJURY_RECOVERY_WEEKS} semanas da lesão de um
         jogador. Até {weeklyLimit} por semana.
+        {stored > 0
+          ? ` Você tem ${stored} tratamento${stored === 1 ? "" : "s"} guardado${stored === 1 ? "" : "s"}, usados antes das moedas.`
+          : ""}
       </p>
       {userId === null ? (
         <div className="mt-3">
@@ -93,7 +100,11 @@ export function InjuryRecoveryCard({
               onClick={() => void treat(p.id)}
               className="min-h-11 shrink-0 rounded-lg border border-primary/50 px-3 text-xs font-semibold text-primary disabled:opacity-50"
             >
-              {busy === p.id ? "Tratando…" : `Tratar · ${cost} moedas`}
+              {busy === p.id
+                ? "Tratando…"
+                : stored > 0
+                  ? "Tratar · guardado"
+                  : `Tratar · ${cost} moedas`}
             </button>
           </li>
         ))}

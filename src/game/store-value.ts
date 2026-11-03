@@ -172,11 +172,11 @@ export function careerValue(
       : c.opponentReports >= 3 && c.coins === 0
         ? "Chega a cada jogo sabendo como o rival joga."
         : c.trainingBoosts >= 3
-      ? "Acelera a evolução do seu elenco."
-      : c.scoutReports >= 10
-        ? "Encontra talentos antes dos rivais."
-        : c.themes.length > 0 && c.coins <= 300
-          ? "Deixa o seu clube com outra cara, sem mexer no equilíbrio do jogo."
-          : "Reforça o caixa da sua carreira para usar quando precisar.";
+          ? "Acelera a evolução do seu elenco."
+          : c.scoutReports >= 10
+            ? "Encontra talentos antes dos rivais."
+            : c.themes.length > 0 && c.coins <= 300
+              ? "Deixa o seu clube com outra cara, sem mexer no equilíbrio do jogo."
+              : "Reforça o caixa da sua carreira para usar quando precisar.";
   return { headline, benefits, coinEquivalent };
 }
