@@ -1,4 +1,5 @@
 import { responseIndexingPolicy } from "./public-indexing";
+import { isLightweightCssPath } from "./public-content-routes";
 
 /** Supplied only by the outer server entry, never copied from an incoming header. */
 export const CSP_NONCE_HEADER = "x-manager-csp-nonce";
@@ -32,7 +33,12 @@ const HASHED_PATH =
 const PUBLIC_STATIC = /\.(?:png|jpe?g|webp|avif|gif|svg|ico|ttf|woff2?|webmanifest|txt)$/i;
 
 /** Works for SSR, JSON, redirects and errors, including immutable upstream headers. */
-export function secureResponse(response: Response, request: Request, nonce?: string): Response {
+export function secureResponse(
+  response: Response,
+  request: Request,
+  nonce?: string,
+  publicStyles?: string,
+): Response {
   const headers = new Headers(response.headers);
   const contentType = (headers.get("content-type") ?? "").toLowerCase();
   const url = new URL(request.url);
@@ -46,6 +52,30 @@ export function secureResponse(response: Response, request: Request, nonce?: str
   if (url.protocol === "https:")
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
   if (contentType.includes("text/html")) {
+    // These two local fonts paint the heading and article introduction. Send
+    // hints with the document so they do not wait behind CSS discovery and
+    // application hydration. Keep existing framework Link entries intact.
+    if (response.status === 200 && isLightweightCssPath(url.pathname)) {
+      // The server's Vite import supplies the same hashed URL used by the SSR
+      // link. Discover critical CSS with the response headers, before parsing.
+      if (publicStyles && !headers.get("link")?.includes(`<${publicStyles}>`)) {
+        const existing = headers.get("link");
+        headers.set(
+          "link",
+          `<${publicStyles}>; rel=preload; as=style${existing ? `, ${existing}` : ""}`,
+        );
+      }
+      const fonts = ["5aU69_a8oxmIdGl4BA", "HTxqL289NzCGg4MzN6KJ7eW6CYyF_g"];
+      // Home's visible call to action uses bold Hind. Medium and semibold
+      // are discovered normally when needed instead of competing with the
+      // mobile hero image for the initial network connections.
+      if (url.pathname === "/") fonts.push("5aU19_a8oxmIfNJdERySjQ");
+      for (const font of fonts) {
+        const href = `/fonts/match3d/${font}.woff2`;
+        if (!headers.get("link")?.includes(`<${href}>`))
+          headers.append("link", `<${href}>; rel=preload; as=font; type="font/woff2"; crossorigin`);
+      }
+    }
     // Keep the established integrations operational while the stricter nonce
     // policy is observed. Moving it to enforcement requires browser evidence.
     headers.set(

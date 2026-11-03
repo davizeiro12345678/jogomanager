@@ -124,11 +124,11 @@ const projectConfig = defineConfig({
                 includeDependenciesRecursively: false,
               },
               {
-                // React's small shared API, scheduler, store adapters and app
-                // contexts are used together. Share one transport instead of
-                // many tiny requests. The client renderer remains deferred.
+                // React's shared API and these routing primitives already
+                // belong to every browser startup closure. Share their
+                // transport; keep the client renderer and optional routes lazy.
                 name: "browser-react",
-                test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts|i18n[\\/]context\.ts|hooks[\\/]useAccessibility\.ts|lib[\\/]accessibility-preferences\.ts)$|[\\/]node_modules[\\/](?:scheduler[\\/]|use-sync-external-store[\\/]|react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?))/,
+                test: /[\\/]src[\\/](?:components[\\/]DiscordLink\.tsx|content[\\/]community\.ts|i18n[\\/]context\.ts|hooks[\\/]useAccessibility\.ts|lib[\\/]accessibility-preferences\.ts)$|[\\/]node_modules[\\/](?:scheduler[\\/]|use-sync-external-store[\\/]|react-dom[\\/](?:index\.js|cjs[\\/]react-dom\.(?:production|development)\.js)(?:$|\?)|@tanstack[\\/](?:react-router|router-core)[\\/]dist[\\/]esm[\\/](?:route|link|path|utils|root|invariant|qss|redirect|not-found|matchContext|routerContext|useRouter|useMatch|useNavigate|useLocation|useLoaderData|useLoaderDeps|useParams|useSearch|useRouteContext|ClientOnly)\.js$)/,
               },
               {
                 // Lazy routes share Vite's preload helper. If it lives in the

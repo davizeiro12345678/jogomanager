@@ -37,6 +37,18 @@ jobs:
       - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
       - run: npm run bundle:check
+      - name: Install isolated browser verification tools
+        run: |
+          npm install --prefix .cache/quick-browser --no-save --ignore-scripts playwright@1.63.0
+          node .cache/quick-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Verify deferred quick-match catalogue in the built application
+        run: node scripts/verify-quick-catalogue.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quick-catalogue-browser-results
+          path: verification/quick-catalogue
+          if-no-files-found: warn
 
   bundle-impact:
     name: Critical startup bundle comparison
@@ -221,6 +233,15 @@ jobs:
           configPath: .lighthouserc.mobile.cjs
           uploadArtifacts: true
           temporaryPublicStorage: false
+      - name: Preserve mobile CPU traces for every measured run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-mobile-cpu-traces
+          path: |
+            *.trace.json
+            *.devtoolslog.json
+          if-no-files-found: error
 
   dependency-audit:
     name: Production dependency audit

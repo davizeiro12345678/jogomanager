@@ -8,6 +8,73 @@ import server from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
+  it("discovers home's bold action weight without duplicating font hints", () => {
+    const request = new Request("https://jogomanager.com/");
+    const once = secureResponse(
+      new Response("home", { headers: { "content-type": "text/html" } }),
+      request,
+    );
+    const link = secureResponse(once, request).headers.get("link")!;
+    expect(link.match(/as=font/g)).toHaveLength(3);
+    expect(link).toContain("5aU19_a8oxmIfNJdERySjQ.woff2");
+  });
+  it("preloads the server's exact public CSS asset once without replacing other hints", () => {
+    const request = new Request("https://jogomanager.com/");
+    const html = new Response("<html></html>", {
+      headers: { "content-type": "text/html", link: "</assets/client.js>; rel=modulepreload" },
+    });
+    const once = secureResponse(html, request, undefined, "/assets/public-styles-12345678.css");
+    const twice = secureResponse(once, request, undefined, "/assets/public-styles-12345678.css");
+    const link = twice.headers.get("link")!;
+    expect(link.match(/public-styles-12345678/g)).toHaveLength(1);
+    expect(link).toContain("</assets/public-styles-12345678.css>; rel=preload; as=style");
+    expect(link).toContain("</assets/client.js>; rel=modulepreload");
+    expect(
+      secureResponse(
+        new Response("{}", { headers: { "content-type": "application/json" } }),
+        request,
+        undefined,
+        "/assets/public.css",
+      ).headers.get("link"),
+    ).toBeNull();
+  });
+
+  it("preloads article fonts once while preserving framework Link headers", () => {
+    const request = new Request("https://jogomanager.com/guias");
+    const response = secureResponse(
+      new Response("article", {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          link: "</assets/client.js>; rel=modulepreload; as=script",
+        },
+      }),
+      request,
+    );
+    const link = response.headers.get("link")!;
+    expect(link).toContain("</assets/client.js>; rel=modulepreload; as=script");
+    expect(link).toContain(
+      '</fonts/match3d/5aU69_a8oxmIdGl4BA.woff2>; rel=preload; as=font; type="font/woff2"; crossorigin',
+    );
+    expect(link.match(/as=font/g)).toHaveLength(2);
+    expect(link.match(/crossorigin/g)).toHaveLength(2);
+    expect(secureResponse(response, request).headers.get("link")).toBe(link);
+  });
+  it("does not preload public CSS or fonts for private pages, assets or unsuccessful responses", () => {
+    for (const [path, type, status] of [
+      ["/dashboard", "text/html", 200],
+      ["/guias", "application/json", 200],
+      ["/guias", "text/html", 500],
+      ["/guias", "text/html", 301],
+    ] as const) {
+      const response = secureResponse(
+        new Response("body", { status, headers: { "content-type": type } }),
+        new Request(`https://jogomanager.com${path}`),
+        undefined,
+        "/assets/public.css",
+      );
+      expect(response.headers.get("link")).toBeNull();
+    }
+  });
   it("adds protections to recovered h3 failures and thrown failures", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const fail of [false, true]) {
