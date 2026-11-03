@@ -53,9 +53,8 @@ export function ClaimGuestCheckout() {
             window.__lovableEvents?.track?.("project.store_purchase_completed", {
               product_key: result.productKey,
               amount_cents: result.amountCents,
-              currency: result.currency,
+              currency: result.currency.toUpperCase(),
               purchase_mode: "guest_claim",
-              kind: "one_time",
             });
           setStatus("delivered");
         } else if (result.status === "pending") {
