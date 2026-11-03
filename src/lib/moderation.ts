@@ -120,8 +120,8 @@ const SHOUTING_MIN_LETTERS = 12;
  */
 export function moderateMessage(text: string, previous: readonly string[] = []): ModerationReason | null {
   if (containsProfanity(text)) return "profanity";
-  if (LINK.test(text)) return "link";
   if (EMAIL.test(text) || PHONE.test(text)) return "contact";
+  if (LINK.test(text)) return "link";
   const letters = text.replace(/[^\p{L}]/gu, "");
   if (letters.length >= SHOUTING_MIN_LETTERS && letters === letters.toUpperCase() && letters !== letters.toLowerCase())
     return "shouting";
