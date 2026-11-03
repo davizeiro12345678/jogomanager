@@ -1,8 +1,10 @@
 export const SITE_URL = "https://jogomanager.com";
 export const SITE_NAME = "Pro Football Manager 3D";
-export const SITE_TITLE = "Manager de Futebol 3D Grátis | Pro Football Manager 3D";
+/** Names people type to find the site; WebSite.alternateName feeds Google's site name. */
+export const SITE_ALTERNATE_NAMES = ["jogomanager", "JogoManager", "jogomanager.com", "PFM 3D"];
+export const SITE_TITLE = "Jogo de Técnico de Futebol Grátis em 3D | jogomanager";
 export const SITE_DESCRIPTION =
-  "Crie seu treinador, monte o elenco, defina táticas e acompanhe partidas em 3D. Jogue gratuitamente no navegador, no PC ou no celular.";
+  "jogomanager é um jogo grátis de futebol em que você é o técnico: monte o elenco, defina a tática e veja a partida em 3D no celular ou PC, sem instalar.";
 export const OG_IMAGE = `${SITE_URL}/og-cover.jpg`;
 export const SITE_KEYWORDS = [
   "manager de futebol",
@@ -13,7 +15,43 @@ export const SITE_KEYWORDS = [
   "mercado de transferências",
   "jogo no navegador",
 ];
-const IMAGE_ALT = "Pro Football Manager 3D — gestão de clubes e partidas de futebol em estádio 3D";
+/** Home targets brand, Brazilian and international discovery terms. */
+export const HOME_KEYWORDS = [
+  "jogomanager",
+  "jogo manager",
+  "jogo de técnico de futebol",
+  "jogo de técnico de futebol grátis",
+  "jogo grátis de futebol",
+  "jogo de futebol grátis online",
+  "jogo de manager de futebol",
+  "manager de futebol online",
+  "jogo de treinador de futebol",
+  "simulador de técnico de futebol",
+  "jogo de gerenciar time de futebol",
+  "jogo de futebol no navegador",
+  "jogo de futebol para celular",
+  "jogo de futebol offline",
+  "jogo de futebol 3D",
+  "brasfoot online",
+  "alternativa ao football manager",
+  "football manager grátis",
+  "carreira de técnico",
+  "modo carreira futebol",
+  "Brasileirão",
+  "football manager game",
+  "free football manager",
+  "soccer manager game",
+  "free soccer manager online",
+  "football management game",
+  "soccer coach game",
+  "browser football game",
+  "3D football manager",
+  "juego de mánager de fútbol",
+  "juego de entrenador de fútbol gratis",
+  "jeu de manager de football",
+  "fußball manager spiel",
+];
+const IMAGE_ALT = "jogomanager — escudo 3D e o slogan Da várzea à final, cada decisão é sua";
 
 type Meta = Record<string, string>;
 
