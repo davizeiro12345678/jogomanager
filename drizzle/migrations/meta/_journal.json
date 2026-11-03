@@ -330,6 +330,13 @@
       "when": 1793731912095,
       "tag": "0046_career_risk_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793734912774,
+      "tag": "0047_wallet_stored_services",
+      "breakpoints": true
     }
   ]
 }
