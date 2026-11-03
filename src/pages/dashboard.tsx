@@ -52,6 +52,7 @@ import { computeTable, nextFixture } from "@/game/season";
 import { useCareer } from "@/hooks/useCareer";
 
 import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHeritagePanel";
+import { NextObjectivesCard } from "@/components/game/NextObjectivesCard";
 
 export function Dashboard() {
   const { career } = useCareer();
@@ -147,6 +148,8 @@ function TrainerDashboard({ career }: { career: CareerState }) {
           <ArrowRight size={15} />
         </Link>
       </div>
+
+      <NextObjectivesCard career={career} />
 
       <div className="trainer-match-grid">
         <section className="trainer-match-card" aria-labelledby="next-match-title">
