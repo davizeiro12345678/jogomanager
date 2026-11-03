@@ -23,13 +23,26 @@ import { useCareer } from "@/hooks/useCareer";
 import { RealClubInfo } from "@/components/game/RealClubInfo";
 
 import "@/components/game/prematch.css";
-import { careerAnalyticsId } from "@/lib/career-analytics-id";
+import { careerAnalyticsId, claimCareerReturn } from "@/lib/career-analytics-id";
 import { useMarkOnboardingVisit } from "@/lib/onboarding-progress";
 import { OpponentReportCard } from "@/components/game/services/OpponentReportCard";
 
 export function PreMatchPage() {
   const { career } = useCareer();
   useMarkOnboardingVisit(career?.clubId, "prematch");
+  const season = career?.season;
+  useEffect(() => {
+    // The home "play next match" shortcut skips the dashboard; count that return too.
+    if (season === undefined) return;
+    const careerId = careerAnalyticsId();
+    if (!claimCareerReturn("coach", careerId)) return;
+    window.__lovableEvents?.track?.("project.career_returned", {
+      career_type: "coach",
+      entry: "pre-jogo",
+      season,
+      career_id: careerId,
+    });
+  }, [season]);
   if (!career) return <NoCareer hint="Crie uma carreira para ver o pré-jogo." />;
   return <PreMatch career={career} />;
 }
