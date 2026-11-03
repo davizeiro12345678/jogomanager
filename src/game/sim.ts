@@ -242,7 +242,10 @@ export class MatchSim {
   subsOut: SimPlayer[] = [];
   subsUsed: Record<Side, number> = { home: 0, away: 0 };
   /** último passador de cada lado, para creditar assistência */
-  /** @internal */ lastPass: Record<Side, { id: string; time: number } | null> = { home: null, away: null };
+  /** @internal */ lastPass: Record<Side, { id: string; time: number } | null> = {
+    home: null,
+    away: null,
+  };
   /** jogadores em "freeze" curto após um chute próximo */
   private reactionUntil = new Map<string, number>();
   private mentalityCache: Record<Side, number> | null = null;
