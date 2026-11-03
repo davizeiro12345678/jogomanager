@@ -2389,6 +2389,7 @@ export type Database = {
           status: string
         }[]
       }
+      public_name_is_clean: { Args: { _name: string }; Returns: boolean }
       reconcile_purchase_payment_review: {
         Args: {
           _event_created: number
