@@ -6,7 +6,7 @@ import { TablesIndex } from "@/pages/tabelas.index";
 import { TABELAS_INDEX_PATH as PATH } from "@/lib/public-route-paths";
 
 const TITLE =
-  "Classificação ao vivo de 12 ligas: Brasileirão, Premier, La Liga e mais | Pro Football Manager 3D";
+  "Tabelas de 12 ligas: Brasileirão, Premier League, La Liga e mais | jogomanager";
 
 const DESC =
   "Tabela, artilharia, assistências, forma recente, casa x fora e desfalques de 12 campeonatos — e o mesmo clube pronto para você comandar em 3D.";
