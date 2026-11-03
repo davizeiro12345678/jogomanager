@@ -169,6 +169,14 @@ export const FAQ_GROUPS: FaqGroup[] = [
         q: "Como funciona o scouting?",
         a: `Os olheiros revelam informações escondidas dos atletas. Cada relatório premium mapeia ${PREMIUM_SCOUT_REPORT_SIZE} jovens de até 23 anos com potencial e personalidade revelados, ajudando a contratar antes dos rivais.`,
       },
+      {
+        q: "Como lido com lesões no elenco?",
+        a: "Um atleta lesionado fica fora até se recuperar. Mantenha reservas para cada posição e dose a carga de treino para reduzir o desgaste do grupo.",
+      },
+      {
+        q: "O cansaço muda o desempenho em campo?",
+        a: "Sim. A energia cai durante o jogo conforme o esforço, o clima e o físico de cada atleta. Jogadores cansados correm menos e erram mais, por isso as trocas importam.",
+      },
     ],
   },
   {
@@ -191,6 +199,14 @@ export const FAQ_GROUPS: FaqGroup[] = [
       {
         q: "Jovens da base valem a pena?",
         a: "Jovens com potencial alto custam pouco e podem virar titulares ou vendas lucrativas. Combine minutos em jogo e treino para que eles se desenvolvam.",
+      },
+      {
+        q: "Quando abre a janela de transferências?",
+        a: "O mercado segue o calendário da temporada exibido na carreira. Fora da janela, você ainda pode observar atletas e preparar as propostas para quando ela abrir.",
+      },
+      {
+        q: "Como sei se um jogador combina com meu time?",
+        a: "Compare a posição, o pé preferido, a idade e os atributos que importam para a sua tática. Um relatório de olheiro revela potencial e personalidade antes de você investir.",
       },
     ],
   },
