@@ -1,4 +1,5 @@
 // ============================================================================
+import { capPointSize } from "@/game/point-size-guard";
 //  PrematchCeremony.tsx
 //  Cerimônia pré-jogo 3D: 5 beats com corte seco de broadcast (~24s).
 //
@@ -21,6 +22,8 @@ import { prefersReducedMotion } from "@/game/device";
 import { storeCeremony } from "@/game/ceremony-prefs";
 import { ClubFlag, TifoBanner, type ClubColors } from "@/components/game/stadium/ClubIdentity";
 import { StadiumExterior } from "@/components/game/stadium/StadiumExterior";
+
+const POINT_CAP = capPointSize(10);
 
 const BEAT_LEN = [5, 5, 5, 4.5, 4.5];
 const TOTAL = BEAT_LEN.reduce((a, b) => a + b, 0);
@@ -354,6 +357,7 @@ const Tifo = memo(function Tifo({ home }: { home: ClubColors }) {
           <bufferAttribute attach="attributes-position" args={[sparkPos, 3]} />
         </bufferGeometry>
         <pointsMaterial
+          {...POINT_CAP}
           color={home.secondary}
           size={0.16}
           transparent

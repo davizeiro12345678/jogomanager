@@ -1,4 +1,5 @@
 // ============================================================================
+import { capPointSize } from "@/game/point-size-guard";
 //  CrowdReaction.tsx
 //  Reação da torcida ao que acontece em campo.
 //
@@ -37,6 +38,8 @@ import {
   EMPTY,
 } from "@/components/game/stadium/crowd-reaction-context";
 import type { SupporterMatchday } from "@/game/career-world-types";
+
+const POINT_CAP = capPointSize(14);
 
 /** Decaimento por segundo de cada humor. */
 const DECAY: Record<CrowdMood, number> = {
@@ -340,6 +343,7 @@ function FlashBursts({
           renderOrder={6}
         >
           <pointsMaterial
+            {...POINT_CAP}
             size={0.55}
             sizeAttenuation
             color="#ffffff"

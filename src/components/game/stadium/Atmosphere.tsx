@@ -1,4 +1,5 @@
 // ============================================================================
+import { capPointSize } from "@/game/point-size-guard";
 //  Atmosphere.tsx
 //  Atmosfera do estádio: feixe volumétrico dos refletores, poeira em suspensão
 //  e discos de brilho nas lâmpadas.
@@ -22,6 +23,8 @@ import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context"
 import type { Weather } from "@/game/matchday";
 import { censusRef } from "@/game/scene-census";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
+
+const POINT_CAP = capPointSize(10);
 
 export type AtmosQuality = "alta" | "media" | "baixa";
 export type AtmosTime = "dia" | "entardecer" | "noite";
@@ -283,6 +286,7 @@ function DustMotes({
   return (
     <points ref={points} geometry={geometry} frustumCulled={false} renderOrder={2}>
       <pointsMaterial
+        {...POINT_CAP}
         map={tex}
         color={color}
         size={0.16}

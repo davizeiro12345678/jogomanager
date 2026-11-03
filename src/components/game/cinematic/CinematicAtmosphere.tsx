@@ -1,3 +1,4 @@
+import { capPointSize } from "@/game/point-size-guard";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { SceneArt, SceneMood } from "@/content/cutscenes";
@@ -6,6 +7,8 @@ import type { QualityLevel } from "@/game/device";
 import { useCinematicFrame } from "./cinematic-runtime";
 import { useCinematicRuntime } from "./cinematic-runtime";
 import { cinematicDrillAt, cinematicDrillFor } from "@/game/cinematic-action";
+
+const POINT_CAP = capPointSize(6);
 
 const MARKS: Record<CinematicSet, number[][]> = {
   locker: [
@@ -185,6 +188,7 @@ export function CinematicAtmosphere({
       {count > 0 && (indoor || openAir) && (
         <points geometry={geometry} frustumCulled={false}>
           <pointsMaterial
+            {...POINT_CAP}
             color={mood === "bad" ? "#b1c9eb" : openAir ? "#e7f1d9" : "#ffe2ae"}
             size={openAir ? 0.018 : 0.013}
             transparent

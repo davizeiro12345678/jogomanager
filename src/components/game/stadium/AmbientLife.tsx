@@ -1,4 +1,5 @@
 // ============================================================================
+import { capPointSize } from "@/game/point-size-guard";
 //  AmbientLife.tsx
 //  Camada ambiente do estádio: gaivotas circulando de dia, papel picado à
 //  deriva no vento e mariposas orbitando os refletores à noite.
@@ -14,6 +15,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { censusRef } from "@/game/scene-census";
 import type { TimeOfDay } from "@/game/matchday";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
+
+const POINT_CAP = capPointSize(10);
 
 const BIRDS = 7;
 const PAPERS = 22;
@@ -166,6 +169,7 @@ export const AmbientLife = memo(function AmbientLife({ time }: { time: TimeOfDay
       {night && (
         <points ref={moths} geometry={mothGeo} frustumCulled={false}>
           <pointsMaterial
+            {...POINT_CAP}
             color="#ffe9b8"
             size={0.14}
             transparent
