@@ -28,31 +28,3 @@ export function ensureGameStylesheet(): Promise<void> {
     document.head.appendChild(link);
   }));
 }
-
-let cssPrefetched = false;
-
-/**
- * Non-blocking, intent-only warmup for navigation from public content into
- * gameplay. The SSR page keeps its own public CSS; this never applies game
- * styles on a public route or blocks the first paint.
- */
-export function prefetchGameStylesheet(): void {
-  if (typeof document === "undefined" || cssPrefetched) return;
-  const links = document.querySelectorAll<HTMLLinkElement>("link[href]");
-  if (
-    Array.from(links).some(
-      (link) =>
-        link.getAttribute("href") === GAME_STYLESHEET_URL &&
-        (link.rel === "stylesheet" || link.rel === "prefetch"),
-    )
-  ) {
-    cssPrefetched = true;
-    return;
-  }
-  const link = document.createElement("link");
-  link.rel = "prefetch";
-  link.as = "style";
-  link.href = GAME_STYLESHEET_URL;
-  document.head.appendChild(link);
-  cssPrefetched = true;
-}
