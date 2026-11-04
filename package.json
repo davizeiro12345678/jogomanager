@@ -116,7 +116,6 @@
     "n8ao": "^2.0.1",
     "posthog-js": "^1.435.8",
     "postprocessing": "^6.39.5",
-    "r3f-perf": "^7.2.3",
     "react": "~19.3.0",
     "react-day-picker": "^10.0.2",
     "react-dom": "~19.3.0",
