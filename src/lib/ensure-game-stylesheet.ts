@@ -15,7 +15,7 @@ export function ensureGameStylesheet(): Promise<void> {
     link.onerror = () => {
       pending = undefined;
       link.remove();
-      reject(new Error("Game CSS unavailable"));
+      reject(new Error("CSS load failed"));
     };
     document.head.append(link);
   }));
