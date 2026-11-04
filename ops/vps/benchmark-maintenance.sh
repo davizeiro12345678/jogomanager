@@ -9,7 +9,7 @@ LABEL="$1"; PHASE="$2"
 case "$LABEL" in core8) EXPECT=194.163.188.190;; plus6) EXPECT=144.91.111.116;; *) exit 2;; esac
 case "$PHASE" in before|after) ;; *) exit 2;; esac
 if (( EUID == 0 )); then echo 'Refusing root'; exit 3; fi
-if [[ "$JM_MAINTENANCE_APPROVED" != 1 ]]; then
+if [[ "${JM_MAINTENANCE_APPROVED:-}" != 1 ]]; then
   echo 'Set JM_MAINTENANCE_APPROVED=1 only during a verified maintenance window.' >&2; exit 3
 fi
 if grep -qiE 'microsoft|wsl' /proc/sys/kernel/osrelease; then echo 'Refusing WSL'; exit 3; fi
