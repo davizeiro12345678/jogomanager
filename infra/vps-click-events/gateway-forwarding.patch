@@ -1,0 +1,31 @@
+--- a/gateway.mjs
++++ b/gateway.mjs
+@@ -292,6 +292,28 @@
+         totals.eventsRejected++;
+         return write(res, 400, { error: "invalid_consent_or_event" });
+       }
++      // Enqueue only validated, consented low-cardinality events.
++      // The private stream container is reachable only on Docker's gateway network.
++      let persisted;
++      try {
++        persisted = await fetch("http://pfm-click-events-ingest:3095/v1/events/click", {
++          method: "POST",
++          headers: {
++            "content-type": "application/json",
++            "x-pfm-event-token": eventToken,
++          },
++          body: JSON.stringify({ consent: true, event: v.event }),
++          signal: AbortSignal.timeout(950),
++          cache: "no-store",
++        });
++      } catch {
++        totals.eventsRejected++;
++        return write(res, 503, { error: "event_queue_unavailable" });
++      }
++      if (persisted.status !== 202) {
++        totals.eventsRejected++;
++        return write(res, 503, { error: "event_queue_unavailable" });
++      }
+       eventTypes[v.event] = (eventTypes[v.event] || 0) + 1;
+       totals.eventsAccepted++;
+       return write(res, 202, { accepted: true });
