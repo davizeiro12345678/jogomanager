@@ -1,5 +1,5 @@
 import { emailStyles } from "@/lib/email-templates/email-styles";
-import { Button, Text } from "@react-email/components";
+import { Button, Text } from "react-email";
 import { EmailShell } from "./email-shell";
 
 export interface AccountSecurityEmailProps {

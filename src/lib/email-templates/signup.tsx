@@ -1,5 +1,5 @@
 import { emailStyles } from "@/lib/email-templates/email-styles";
-import { Button, Link, Text } from "@react-email/components";
+import { Button, Link, Text } from "react-email";
 import { EmailShell } from "./email-shell";
 
 interface SignupEmailProps {

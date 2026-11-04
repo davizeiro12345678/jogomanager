@@ -1,3 +1,5 @@
+import { checkMatchAuxReadiness } from "./match-aux-readiness.server";
+
 type Environment = Record<string, string | undefined>;
 
 // Replaced by Vite from the checked-out Git revision. It is not a mutable Worker variable.
@@ -56,7 +58,10 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
       databaseReachable = false;
     }
   }
-  const ready = configured && authReachable && serverCredentialsValid && databaseReachable;
+  const auxiliaryConfigured = Boolean(env["MATCH_AUX_URL"]?.trim());
+  const auxiliaryReady = auxiliaryConfigured ? await checkMatchAuxReadiness(env, fetcher) : true;
+  const ready =
+    configured && authReachable && serverCredentialsValid && databaseReachable && auxiliaryReady;
   return {
     status: ready ? "ready" : "degraded",
     release: {
@@ -67,6 +72,7 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
       auth: authReachable,
       serverCredentials: serverCredentialsValid,
       database: databaseReachable,
+      ...(auxiliaryConfigured ? { auxiliaryMatch: auxiliaryReady } : {}),
     },
   } as const;
 }

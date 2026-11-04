@@ -45,7 +45,7 @@ export function FirebasePushControl() {
   }, []);
 
   const change = async () => {
-    if (busy || !configured || !signedIn) return;
+    if (busy || !signedIn || (!configured && !enabled)) return;
     setBusy(true);
     try {
       if (!enabled && Notification.permission !== "granted") {
@@ -74,14 +74,14 @@ export function FirebasePushControl() {
           type="button"
           variant="outline"
           size="sm"
-          disabled={!configured || !signedIn || busy}
+          disabled={busy || !signedIn || (!configured && !enabled)}
           onClick={() => void change()}
         >
           {enabled ? <BellOff className="mr-1.5 h-4 w-4" /> : <Bell className="mr-1.5 h-4 w-4" />}
           {enabled ? "Desativar avisos neste aparelho" : "Ativar avisos neste aparelho"}
         </Button>
         <span className="text-xs text-muted-foreground">
-          {!configured
+          {!configured && !enabled
             ? "Firebase Push ainda não configurado"
             : !signedIn
               ? "Entre na conta para habilitar"

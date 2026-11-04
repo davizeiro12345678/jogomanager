@@ -116,13 +116,18 @@ export function RootComponent() {
     // Estatísticas de uso não podem competir com a primeira pintura: só sobem
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
     const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "pfm-consent-v1" || event.key === null) start();
+    };
     window.addEventListener("consent-changed", start);
+    window.addEventListener("storage", onStorage);
     const ric = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
       .requestIdleCallback;
     const idle = typeof ric === "function";
     const handle = idle ? ric(start, { timeout: 5000 }) : window.setTimeout(start, 3000);
     return () => {
       window.removeEventListener("consent-changed", start);
+      window.removeEventListener("storage", onStorage);
       if (idle) window.cancelIdleCallback?.(handle);
       else window.clearTimeout(handle);
     };

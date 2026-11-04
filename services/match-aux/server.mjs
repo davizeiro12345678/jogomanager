@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { MongoClient } from "mongodb";
 import { simulateAuthoritativeRoom } from "./engine.mjs";
 import { verifyRequest } from "./signature.mjs";
+import { completeMatchJob, failMatchJob } from "./job-store.mjs";
+import { signedReadiness } from "./readiness.mjs";
 
 const port = Number(process.env.MATCH_AUX_PORT ?? 3090);
 const host = process.env.MATCH_AUX_BIND ?? "127.0.0.1";
@@ -65,7 +67,7 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/healthz") {
     return write(res, 200, { ok: true, busy }); // no secrets or databases exposed
   }
-  if (req.method !== "POST" || req.url !== "/v1/simulate") {
+  if (req.method !== "POST" || !["/v1/simulate", "/v1/readiness"].includes(req.url)) {
     return write(res, 404, { error: "not_found" });
   }
   let body;
@@ -73,6 +75,17 @@ const server = createServer(async (req, res) => {
     body = await readBody(req);
   } catch {
     return write(res, 413, { error: "payload_too_large" });
+  }
+  if (req.url === "/v1/readiness") {
+    const result = await signedReadiness(
+      body,
+      req.headers["x-pfm-timestamp"] ?? "",
+      req.headers["x-pfm-signature"] ?? "",
+      key,
+      () => mongo.db("admin").command({ ping: 1 }, { timeoutMS: 2000 }),
+      () => busy,
+    );
+    return write(res, result.status, result.body);
   }
   if (
     !verifyRequest(
@@ -93,7 +106,7 @@ const server = createServer(async (req, res) => {
   const digest = createHash("sha256")
     .update(JSON.stringify([data.roomId, data.homeClub, data.awayClub, data.seed]))
     .digest("hex");
-  let claimed = false;
+  let claimId;
   let slotAcquired = false;
   try {
     const previous = await jobs.findOne({ roomId: data.roomId });
@@ -123,32 +136,22 @@ const server = createServer(async (req, res) => {
     busy = true;
     slotAcquired = true;
     // Unique index prevents conflicting claims across multiple processes.
-    await jobs.insertOne({
+    const claim = await jobs.insertOne({
       roomId: data.roomId,
       digest,
       status: "running",
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 7 * 86400000),
     });
-    claimed = true;
+    claimId = claim.insertedId;
     const started = performance.now();
     const result = await simulateAuthoritativeRoom(data.homeClub, data.awayClub, data.seed);
     const durationMs = Math.round(performance.now() - started);
-    await jobs.updateOne(
-      { roomId: data.roomId, digest, status: "running" },
-      {
-        $set: { status: "finished", result, durationMs, completedAt: new Date() },
-      },
-    );
+    await completeMatchJob(jobs, claimId, digest, result, durationMs);
     return write(res, 200, result);
   } catch {
-    if (claimed) {
-      await jobs
-        .updateOne(
-          { roomId: data.roomId, digest, status: "running" },
-          { $set: { status: "failed", completedAt: new Date() } },
-        )
-        .catch(() => undefined);
+    if (claimId) {
+      await failMatchJob(jobs, claimId, digest).catch(() => undefined);
     }
     return write(res, 503, { error: "simulation_unavailable" });
   } finally {
