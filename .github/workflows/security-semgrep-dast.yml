@@ -23,6 +23,17 @@ jobs:
           node-version-file: .nvmrc
       - run: node --test scripts/css-route-gates.test.mjs
 
+  secret-contracts:
+    name: Tracked environment credential guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/secret-exposure-contracts.mjs
+
   semgrep:
     name: Semgrep OWASP and custom rules
     runs-on: ubuntu-24.04
