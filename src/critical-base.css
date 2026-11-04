@@ -1,0 +1,18 @@
+/* Shared critical foundation. Keep under 12 KiB uncompressed.
+ * This file is imported into the public and game CSS bundles; do not create
+ * an extra blocking stylesheet request just to load these 5 declarations.
+ * The full semantic design tokens remain in design-system.css.
+ */
+@layer base {
+  html {
+    min-height: 100%;
+    color-scheme: dark;
+    background-color: #0b1220;
+  }
+
+  body {
+    min-height: 100%;
+    margin: 0;
+    background-color: #0b1220;
+  }
+}

@@ -61,12 +61,26 @@ jobs:
           # keep their own source files and identical installed dependencies.
           cp "$RUNNER_TEMP/bundle-package.json" package.json
           cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
+          # The old Vite config aliased every "entities/*" subpath into a
+          # physical root directory. The candidate's audited lockfile uses
+          # entities v7 exports, so that alias is incompatible with this shared
+          # dependency graph. Normalize only this legacy resolver directive for
+          # the baseline build. Bundle-report code and performance budgets stay
+          # identical for the two revisions.
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const file = "vite.config.ts";
+          const input = readFileSync(file, "utf8");
+          const legacy = /^\s*entities: path\.resolve\(import\.meta\.dirname, "node_modules\/entities"\),\r?\n/m;
+          if (!legacy.test(input)) throw new Error("Expected legacy entities alias missing");
+          writeFileSync(file, input.replace(legacy, "\n"));
+          NODE
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
-          git restore scripts/bundle-report.mjs package.json package-lock.json
+          git restore vite.config.ts scripts/bundle-report.mjs package.json package-lock.json
       - name: Build proposed commit on the same runner
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}

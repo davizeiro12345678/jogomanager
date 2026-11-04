@@ -28,4 +28,37 @@ module.exports = async () => {
       console.log(`Verified decoded HTML: ${route} (${encoding})`);
     }
   }
+
+  // SSR may link a game stylesheet that the server build never publishes.
+  // Assert the actual response instead of assuming a generated href is valid.
+  for (const route of ["/new", "/dashboard", "/match"]) {
+    const response = await fetch(`http://127.0.0.1:4173${route}`, {
+      headers: { "accept-encoding": "identity" },
+    });
+    if (
+      response.status !== 200 ||
+      !/^text\/html\b/i.test(response.headers.get("content-type") ?? "")
+    ) {
+      throw new Error(`Invalid game SSR response for ${route}: ${response.status}`);
+    }
+    const head = (await response.text()).split(/<\/head>/i)[0];
+    const match = head.match(
+      /<link\b(?=[^>]*\brel=["']stylesheet["'])(?=[^>]*\bhref=["']([^"']+\.css))[^>]*>/i,
+    );
+    if (!match) throw new Error(`No game CSS link in SSR head for ${route}`);
+    const cssUrl = new URL(match[1], "http://127.0.0.1:4173");
+    if (cssUrl.origin !== "http://127.0.0.1:4173") {
+      throw new Error(`Cross-origin game CSS link for ${route}`);
+    }
+    const cssResponse = await fetch(cssUrl, { redirect: "error" });
+    if (
+      cssResponse.status !== 200 ||
+      !/^text\/css\b/i.test(cssResponse.headers.get("content-type") ?? "")
+    ) {
+      throw new Error(
+        `Game CSS unavailable for ${route}: ${cssUrl.pathname} HTTP ${cssResponse.status}`,
+      );
+    }
+    console.log(`Verified critical game stylesheet: ${route}`);
+  }
 };

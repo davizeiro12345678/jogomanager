@@ -43,8 +43,9 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()',
   );
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
-  if (url.protocol === "https:")
-    headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
+  // Do not escalate to preload or two years without a full HTTPS inventory
+  // and a deliberate Cloudflare edge-policy change.
+  if (url.protocol === "https:") headers.set("strict-transport-security", "max-age=31536000");
   if (contentType.includes("text/html")) {
     // Keep the established integrations operational while the stricter nonce
     // policy is observed. Moving it to enforcement requires browser evidence.
@@ -74,7 +75,9 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     PRIVATE_PATH.test(url.pathname) ||
     (indexing && contentType.includes("text/html")) ||
     headers.has("set-cookie") ||
-    request.headers.has("authorization")
+    request.headers.has("authorization") ||
+    (request.headers.has("cookie") &&
+      (contentType.includes("text/html") || contentType.includes("json")))
   ) {
     headers.set("cache-control", "no-store");
   } else if (!headers.has("cache-control")) {

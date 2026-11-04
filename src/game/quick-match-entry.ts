@@ -6,7 +6,7 @@ export function loadQuickLive() {
     import("@/components/game/QuickLive"),
     import("../lib/world").then((world) => world.default()),
     // The quick-match picker uses the light stylesheet; live play needs the full one.
-    import("../lib/game-stylesheet").then((sheet) => sheet.ensureGameStylesheet()),
+    import("../lib/ensure-game-stylesheet").then((sheet) => sheet.ensureGameStylesheet()),
   ]).then(
     ([page]) => page,
     (error: unknown) => {

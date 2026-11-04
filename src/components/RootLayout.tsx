@@ -113,6 +113,33 @@ export function RootComponent() {
   }, [pathname]);
 
   useEffect(() => {
+    if (!isLightweightCssPath(pathname)) return;
+
+    // Warm the stylesheet only on real game-navigation intent. Do not add a
+    // route-wide preload: it would compete with the public hero's LCP.
+    const onGameIntent = (event: Event) => {
+      if (!(event.target instanceof Element)) return;
+      const anchor = event.target.closest<HTMLAnchorElement>("a[href]");
+      if (!anchor || anchor.origin !== window.location.origin) return;
+      if (["new", "dashboard", "match"].includes(anchor.pathname.split("/")[1] ?? "")) {
+        // Only load the warmup implementation when navigation intent exists.
+        void import("@/lib/prefetch-game-stylesheet")
+          .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
+          .catch(() => undefined);
+      }
+    };
+
+    document.addEventListener("pointerover", onGameIntent, { passive: true });
+    document.addEventListener("focusin", onGameIntent);
+    document.addEventListener("touchstart", onGameIntent, { passive: true });
+    return () => {
+      document.removeEventListener("pointerover", onGameIntent);
+      document.removeEventListener("focusin", onGameIntent);
+      document.removeEventListener("touchstart", onGameIntent);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
     // Estatísticas de uso não podem competir com a primeira pintura: só sobem
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
     const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());

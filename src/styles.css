@@ -1,4 +1,5 @@
 @import "tailwindcss" source(none);
+@import "./critical-base.css";
 @source "../src";
 @import "./design-system.css";
 @import "./game-presentation.css";
