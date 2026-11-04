@@ -102,6 +102,23 @@ describe("outer response protection", () => {
     );
     expect(authorized.headers.get("cache-control")).toBe("no-store");
   });
+  it.each([
+    "/api",
+    "/api/private",
+    "/_serverFn",
+    "/_serverFn/abc",
+    "/checkout",
+    "/checkout/return",
+    "/auth",
+    "/lovable",
+    "/mcp",
+  ])("never caches bare or nested private route %s", (path) => {
+    const response = secureResponse(
+      Response.json({ ok: true }, { headers: { "cache-control": "public, max-age=3600" } }),
+      new Request(`https://jogomanager.com${path}`),
+    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
   it("does not escalate HSTS or cache personalized HTML on a public URL", () => {
     const personalized = secureResponse(
       new Response("session-dependent html", {
