@@ -173,7 +173,6 @@ const projectConfig = defineConfig({
           import.meta.dirname,
           "node_modules/entities/lib/encode.js",
         ),
-        entities: path.resolve(import.meta.dirname, "node_modules/entities"),
       },
     },
   },
