@@ -48,10 +48,16 @@ html[data-contrast="high"]
 html[data-contrast="high"] :focus-visible {
   outline-color: oklch(0.94 0.17 98);
 }
-html[data-reading-space="true"] :where(p, li, dd, dt, td, .career-nav-link, .preference-help) {
+html[data-reading-space="true"] :where(p,
+li,
+dd,
+dt,
+td,
+.preference-help) {
   line-height: 1.85;
 }
-html[data-reading-space="true"] :where(td, th, .career-nav-link) {
+html[data-reading-space="true"] :where(td,
+th {
   padding-block: 0.8rem;
 }
 html[data-motion="reduced"] {

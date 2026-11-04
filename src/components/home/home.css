@@ -52,24 +52,6 @@
   width: auto;
   height: 56px;
 }
-.home-brand-mark {
-  display: grid;
-  place-items: center;
-  width: 41px;
-  height: 41px;
-  border: 1px solid #b5ec7055;
-  border-radius: 11px;
-  color: var(--home-lime);
-}
-.home-brand-sub {
-  display: block;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  color: #a5b3ab;
-}
-.home-brand-sub b {
-  color: var(--home-lime);
-}
 .home-desktop-nav {
   display: flex;
   gap: 26px;
@@ -626,15 +608,8 @@
   .home-brand {
     font-size: 11px;
   }
-  .home-brand-sub {
-    font-size: 9px;
-  }
   .home-brand-logo {
     height: 42px;
-  }
-  .home-brand-mark {
-    width: 34px;
-    height: 34px;
   }
   .home-menu-button {
     display: grid;
