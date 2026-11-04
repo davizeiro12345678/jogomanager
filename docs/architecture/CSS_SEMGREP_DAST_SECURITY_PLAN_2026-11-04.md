@@ -65,3 +65,16 @@ Em 04/11/2026: 22 avisos de RLS sem policy, 26 objetos GraphQL visíveis para `a
 - ZAP baseline: https://www.zaproxy.org/docs/docker/baseline-scan/
 - Supabase RLS: https://supabase.com/docs/guides/database/postgres/row-level-security
 - API protection: https://supabase.com/docs/guides/api/securing-your-api
+
+## 6. Resultado real dos pipelines na PR #119
+
+- **Semgrep PASS:** 84 regras OWASP + personalizadas em 1.490 arquivos, **0 achados** e artefato JSON disponível [no workflow](https://github.com/davizeiro12345678/jogomanager/actions/runs/41894792552). Isso não comprova ausência de vulnerabilidades.
+- **CSS gates PASS:** verificação de base crítica <12 KiB, isolamento público/jogo e prefetch acionado por intenção.
+- **ZAP DAST:** passo explicitamente **SKIPPED**, pois requer execução manual e não deve testar produção agressivamente.
+- **Quality gates FAIL:** aumento de **265 bytes gzip / ~228 bytes Brotli** no startup JS, bloqueado pelo orçamento estrito de *zero regressão*. Precisa otimizar o prefetch ou revisar abordagem antes do merge.
+- **Lint FAIL:** 41 erros no lint global. Um separador extra na alteração de `game-stylesheet.ts` foi corrigido; não assumir que todos os demais erros são provocados por este PR sem comparação com a base.
+- **Dependency audit FAIL:** o job `npm audit --omit=dev --audit-level=high` identifica vulnerabilidades. Corrigir de maneira compatível com os locks, sem desligar o gate.
+- **Ativo em staging:** Stripe TEST, adulteração de carreira e RLS A/B ainda **não executados**. Nenhuma alteração no Supabase produtivo foi feita.
+- **Função sensível para inspeção:** `public.mutate_player_career`, SECURITY DEFINER exposta ao papel autenticado, com search_path configurado. Revisão de autorização é necessária antes da liberação.
+
+A PR permanece **draft, sem merge**. O fluxo de sucesso seguro é corrigir CI, medir FCP/LCP/CLS, executar testes em staging e só então considerar deploy.
