@@ -108,6 +108,8 @@ jobs:
       - run: npm ci
       - name: Build the PR candidate without production deployments
         run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Confirm headers in compiled static assets
+        run: node --test scripts/static-asset-headers.test.mjs
       - name: Start fixed-port Wrangler SSR preview on loopback
         run: |
           nohup ./node_modules/.bin/wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 >/tmp/jm-zap-preview.log 2>&1 &
