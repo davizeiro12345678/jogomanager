@@ -8,7 +8,15 @@ import {
   useLocation,
   Scripts,
 } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type SyntheticEvent,
+} from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
@@ -99,6 +107,21 @@ export function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+// Delegate intent to the existing content root. React already delegates these
+// events, so extra document listeners and their cleanup are unnecessary.
+function prefetchGameOnIntent(event: SyntheticEvent) {
+  const target = event.target;
+  const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : null;
+  if (
+    anchor?.origin !== location.origin ||
+    !/^\/(?:new|dashboard|match)(?:\/|$)/.test(anchor.pathname)
+  )
+    return;
+  void import("@/lib/prefetch-game-stylesheet")
+    .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
+    .catch(() => undefined);
+}
+
 // SEO/editorial pages must not download the full league and squad catalogue.
 // On navigation into gameplay we still initialize it immediately.
 export function RootComponent() {
@@ -110,33 +133,6 @@ export function RootComponent() {
     // rest of the app, rather than downloading every club after first paint.
     if (!isLightweightCssPath(pathname))
       void import("../lib/world").then((world) => world.default()).catch(() => undefined);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!isLightweightCssPath(pathname)) return;
-
-    // Warm the stylesheet only on real game-navigation intent. Do not add a
-    // route-wide preload: it would compete with the public hero's LCP.
-    const onGameIntent = (event: Event) => {
-      if (!(event.target instanceof Element)) return;
-      const anchor = event.target.closest<HTMLAnchorElement>("a[href]");
-      if (!anchor || anchor.origin !== window.location.origin) return;
-      if (["new", "dashboard", "match"].includes(anchor.pathname.split("/")[1] ?? "")) {
-        // Only load the warmup implementation when navigation intent exists.
-        void import("@/lib/prefetch-game-stylesheet")
-          .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
-          .catch(() => undefined);
-      }
-    };
-
-    document.addEventListener("pointerover", onGameIntent, { passive: true });
-    document.addEventListener("focusin", onGameIntent);
-    document.addEventListener("touchstart", onGameIntent, { passive: true });
-    return () => {
-      document.removeEventListener("pointerover", onGameIntent);
-      document.removeEventListener("focusin", onGameIntent);
-      document.removeEventListener("touchstart", onGameIntent);
-    };
   }, [pathname]);
 
   useEffect(() => {
@@ -166,7 +162,13 @@ export function RootComponent() {
           >
             <SkipContentLabel />
           </a>
-          <div id="conteudo" tabIndex={-1}>
+          <div
+            id="conteudo"
+            tabIndex={-1}
+            onPointerOver={prefetchGameOnIntent}
+            onFocus={prefetchGameOnIntent}
+            onTouchStart={prefetchGameOnIntent}
+          >
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
             <ConsentBanner />

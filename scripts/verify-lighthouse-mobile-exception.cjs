@@ -25,7 +25,7 @@ for (const relative of candidates) {
 const counts = new Map([...expected].map((route) => [route, 0]));
 const allowed = [];
 const blocking = [];
-const auditsByUrlAndDate = new Set();
+const auditsByUrlAndDate = new Map();
 for (const filename of entries) {
   let data;
   try {
@@ -50,12 +50,6 @@ for (const filename of entries) {
     continue;
   }
   const key = url.pathname + "|" + data.fetchTime;
-  if (auditsByUrlAndDate.has(key)) {
-    blocking.push("Duplicate Lighthouse run: " + key);
-    continue;
-  }
-  auditsByUrlAndDate.add(key);
-  counts.set(url.pathname, counts.get(url.pathname) + 1);
   const perf = data.categories?.performance?.score;
   const access = data.categories?.accessibility?.score;
   const lcp = data.audits?.["largest-contentful-paint"]?.numericValue;
@@ -65,6 +59,16 @@ for (const filename of entries) {
     blocking.push("Missing metrics: " + url.pathname);
     continue;
   }
+  const fingerprint = JSON.stringify([perf, access, lcp, cls, tbt]);
+  if (auditsByUrlAndDate.has(key)) {
+    // LHCI emits both lhr-*.json and *.report.json for a single audit.
+    // Count once, but reject conflicting metrics for the same run.
+    if (auditsByUrlAndDate.get(key) !== fingerprint)
+      blocking.push("Conflicting Lighthouse copies: " + key);
+    continue;
+  }
+  auditsByUrlAndDate.set(key, fingerprint);
+  counts.set(url.pathname, counts.get(url.pathname) + 1);
   if (access < 0.9) blocking.push(url.pathname + " accessibility " + access + " < 0.90");
   if (cls > 0.1) blocking.push(url.pathname + " CLS " + cls + " > 0.10");
   if (perf < 0.98 || lcp > 2500 || tbt > 200) {

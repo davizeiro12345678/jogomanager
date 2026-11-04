@@ -7,7 +7,13 @@ import { join, resolve } from "node:path";
 
 const checker = resolve("scripts/verify-lighthouse-mobile-exception.cjs");
 const routes = ["/", "/guias", "/guia-de-scouting", "/melhores-formacoes", "/partida-rapida"];
-function scenario({ omit, accessibility = 0.95, cls = 0.02, runtimeError = false } = {}) {
+function scenario({
+  omit,
+  accessibility = 0.95,
+  cls = 0.02,
+  runtimeError = false,
+  duplicate = false,
+} = {}) {
   const folder = mkdtempSync(join(tmpdir(), "jm-lighthouse-"));
   const sub = join(folder, ".lighthouseci");
   mkdirSync(sub);
@@ -29,6 +35,7 @@ function scenario({ omit, accessibility = 0.95, cls = 0.02, runtimeError = false
       },
     };
     writeFileSync(join(sub, "lhr-" + i + ".json"), JSON.stringify(report));
+    if (duplicate) writeFileSync(join(sub, i + ".report.json"), JSON.stringify(report));
   }
   const run = spawnSync(process.execPath, [checker], {
     encoding: "utf8",
@@ -42,6 +49,11 @@ test("allows only complete performance breaches on integration PR", () => {
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /Complete runs: 15 \/ 15/);
   assert.match(r.stdout, /Performance-only breaches/);
+});
+test("deduplicates identical LHCI report mirrors without hiding failed audits", () => {
+  const r = scenario({ duplicate: true });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /Complete runs: 15 \/ 15/);
 });
 test("blocks missing Lighthouse evidence", () => {
   const r = scenario({ omit: 3 });

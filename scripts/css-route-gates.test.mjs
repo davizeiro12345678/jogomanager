@@ -29,9 +29,9 @@ test("SSR still selects public versus game CSS by matched route", () => {
 test("game CSS prefetch is intent-only and does not block public CSS", () => {
   const layout = read("src/components/RootLayout.tsx");
   const helper = read("src/lib/prefetch-game-stylesheet.ts");
-  assert.match(layout, /pointerover/);
-  assert.match(layout, /focusin/);
-  assert.match(layout, /touchstart/);
+  assert.match(layout, /onPointerOver/);
+  assert.match(layout, /onFocus/);
+  assert.match(layout, /onTouchStart/);
   assert.match(layout, /prefetchGameStylesheet\(\)/);
   assert.match(layout, /import\("@\/lib\/prefetch-game-stylesheet"\)/);
   assert.doesNotMatch(layout, /import \{ prefetchGameStylesheet \} from/);
