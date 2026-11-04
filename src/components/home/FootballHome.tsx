@@ -32,6 +32,7 @@ const prepareGameStylesheet = () => {
     .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
     .catch(() => {});
 };
+const gameIntentProps = { onPointerEnter: prepareGameStylesheet, onFocus: prepareGameStylesheet };
 const SYSTEMS = [
   {
     id: "tactics",
@@ -318,20 +319,14 @@ export function FootballHome() {
             e veja suas decisões ganharem vida em 3D.
           </p>
           <div className="home-hero-actions">
-            <Link
-              to={resume ? "/dashboard" : "/new"}
-              className="home-button"
-              onPointerEnter={prepareGameStylesheet}
-              onFocus={prepareGameStylesheet}
-            >
+            <Link to={resume ? "/dashboard" : "/new"} className="home-button" {...gameIntentProps}>
               {resume ? "Continuar minha carreira" : "Criar minha carreira"}
               <ArrowRight size={19} />
             </Link>
             <Link
               to="/partida-rapida"
               className="home-button home-button-secondary"
-              onPointerEnter={prepareGameStylesheet}
-              onFocus={prepareGameStylesheet}
+              {...gameIntentProps}
             >
               <Play size={16} />
               Experimentar uma partida
@@ -357,12 +352,7 @@ export function FootballHome() {
           </dl>
           {resume ? (
             <div className="home-resume-wrap">
-              <Link
-                to="/dashboard"
-                className="home-resume"
-                onPointerEnter={prepareGameStylesheet}
-                onFocus={prepareGameStylesheet}
-              >
+              <Link to="/dashboard" className="home-resume" {...gameIntentProps}>
                 <span>SEU PRÓXIMO CAPÍTULO</span>
                 <strong>{resume.club}</strong>
                 <small>
@@ -422,12 +412,7 @@ export function FootballHome() {
             </p>
           </div>
           <div className="home-mode-grid">
-            <Link
-              to="/new"
-              className="home-mode home-mode-career"
-              onPointerEnter={prepareGameStylesheet}
-              onFocus={prepareGameStylesheet}
-            >
+            <Link to="/new" className="home-mode home-mode-career" {...gameIntentProps}>
               <div className="home-mode-art" aria-hidden="true">
                 <span>01</span>
                 <Trophy size={86} />
@@ -443,12 +428,7 @@ export function FootballHome() {
                 <ArrowRight size={19} />
               </span>
             </Link>
-            <Link
-              to="/partida-rapida"
-              className="home-mode"
-              onPointerEnter={prepareGameStylesheet}
-              onFocus={prepareGameStylesheet}
-            >
+            <Link to="/partida-rapida" className="home-mode" {...gameIntentProps}>
               <div className="home-mode-art home-mode-art-match" aria-hidden="true">
                 <span>02</span>
                 <Gamepad2 size={76} />
@@ -547,12 +527,7 @@ export function FootballHome() {
               </li>
             ))}
           </ol>
-          <Link
-            to="/new"
-            className="home-button"
-            onPointerEnter={prepareGameStylesheet}
-            onFocus={prepareGameStylesheet}
-          >
+          <Link to="/new" className="home-button" {...gameIntentProps}>
             Começar minha história
             <ArrowRight size={18} />
           </Link>
