@@ -28,7 +28,7 @@ export function NotFoundComponent() {
         <p className="text-7xl font-bold text-foreground">404</p>
         <h1 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Esta página não existe ou mudou de endereço.
+          Esta página não existe ou foi movida.
         </p>
         <div className="mt-6">
           <Link
@@ -53,10 +53,10 @@ export function ErrorComponent({ error, reset }: { error: unknown; reset: () => 
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Não foi possível carregar esta página
+          Falha ao carregar a página
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Tente carregar novamente ou volte ao início para continuar.
+          Tente novamente ou volte ao início.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
