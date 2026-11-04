@@ -57,10 +57,13 @@ BEGIN
   ASSERT (SELECT state->>'owner' FROM public.player_careers)='A', 'A player career mismatch';
   ASSERT (SELECT count(*) FROM public.user_wallet)=1, 'A saw B wallet';
   ASSERT (SELECT coins FROM public.user_wallet)=101, 'A wallet mismatch';
-  UPDATE public.careers SET state='{"tampered":true}'
-    WHERE user_id='77777777-7777-4777-8777-777777777772';
-  GET DIAGNOSTICS affected=ROW_COUNT;
-  ASSERT affected=0, 'A modified B career';
+  BEGIN
+    UPDATE public.careers SET state='{"tampered":true}'
+      WHERE user_id='77777777-7777-4777-8777-777777777772';
+    GET DIAGNOSTICS affected=ROW_COUNT;
+    ASSERT affected=0, 'A modified B career';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
   BEGIN
     UPDATE public.player_careers SET state='{"tampered":true}'
       WHERE user_id='77777777-7777-4777-8777-777777777772';
@@ -96,10 +99,13 @@ BEGIN
   ASSERT (SELECT state->>'owner' FROM public.player_careers)='B', 'A corrupted B player career';
   ASSERT (SELECT count(*) FROM public.user_wallet)=1, 'B saw A wallet';
   ASSERT (SELECT coins FROM public.user_wallet)=202, 'B wallet was modified';
-  UPDATE public.careers SET state='{"tampered":true}'
-    WHERE user_id='77777777-7777-4777-8777-777777777771';
-  GET DIAGNOSTICS affected=ROW_COUNT;
-  ASSERT affected=0, 'B modified A career';
+  BEGIN
+    UPDATE public.careers SET state='{"tampered":true}'
+      WHERE user_id='77777777-7777-4777-8777-777777777771';
+    GET DIAGNOSTICS affected=ROW_COUNT;
+    ASSERT affected=0, 'B modified A career';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
 END
 $b$;
 RESET ROLE;
