@@ -38,8 +38,12 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] Etapa 3 Modularização dos arquivos gigantes
   - [x] Motor da partida: bolas paradas em src/game/sim-set-pieces.ts (2.915 → 2.472 linhas; 30 partidas idênticas ao original, mesma velocidade)
   - [x] Estádio 3D: câmera, céu, festa do gol, arbitragem e medidor de quadros em stadium/ (1.174 → 733 linhas)
-  - [ ] Motor: posse/bloqueios, IA do time, cartões e lesões
-  - [ ] Carreira, tela da partida, importação, estúdio de jogadores
+  - [x] Motor: disputas de bola, inteligência do time, cartões e lesões (sim.ts 2.472 → 1.671; 30 partidas idênticas, mesma velocidade)
+  - [x] Carreira em 7 arquivos (1.683 → 813; 90 rodadas idênticas ao original)
+  - [x] Importação em conexão, clubes/jogadores e partidas (1.228 → 164)
+  - [x] Estúdio de jogadores: cena 3D e dados separados (1.173 → 660)
+  - [x] Tela da partida: estatísticas e táticas/substituições separadas (1.157 → 1.008)
+  - [ ] Decisão de quem tem a bola (usa campos privados do motor) e o resto da tela da partida
 - [ ] Etapa 4 Experiência do usuário
   - [x] Início: cartão da carreira mostra o próximo adversário e botão "Jogar o próximo jogo" (rodada corrigida)
   - [x] Carregamento do estádio com dicas, aviso de conexão lenta/sem internet e botão de tentar de novo se o download falhar
