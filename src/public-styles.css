@@ -9,9 +9,6 @@
 @source "./components/StickyPlayCta.tsx";
 @source "./components/LeagueDataInsights.tsx";
 @source "./components/LeagueExtras.tsx";
-@source "./components/home/FootballHome.tsx";
-@source "./components/home/HomeDetails.tsx";
-@source "./components/home/HomeLeaguePulse.tsx";
 @source "./components/privacy/ConsentBanner.tsx";
 @source "./components/privacy/ConsentCenter.tsx";
 @source "./components/privacy/FirebasePushControl.tsx";
