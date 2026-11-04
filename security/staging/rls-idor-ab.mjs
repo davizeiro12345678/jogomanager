@@ -5,8 +5,13 @@
  */
 const env = process.env;
 const needed = [
-  "STAGING_SUPABASE_URL", "STAGING_PROJECT_REF", "STAGING_PUBLISHABLE_KEY",
-  "STAGING_JWT_A", "STAGING_JWT_B", "STAGING_USER_A_ID", "STAGING_USER_B_ID",
+  "STAGING_SUPABASE_URL",
+  "STAGING_PROJECT_REF",
+  "STAGING_PUBLISHABLE_KEY",
+  "STAGING_JWT_A",
+  "STAGING_JWT_B",
+  "STAGING_USER_A_ID",
+  "STAGING_USER_B_ID",
 ];
 for (const key of needed) {
   if (!env[key]) throw new Error("Missing " + key + " (staging only)");
@@ -17,10 +22,13 @@ if (env.STAGING_ACK_ISOLATED !== "true") {
 const origin = new URL(env.STAGING_SUPABASE_URL);
 const ref = env.STAGING_PROJECT_REF;
 if (
-  origin.protocol !== "https:" || origin.hostname !== ref + ".supabase.co" ||
-  ref === "lguqnwvsfeefxamzeyos" || ref.length < 12 ||
+  origin.protocol !== "https:" ||
+  origin.hostname !== ref + ".supabase.co" ||
+  ref === "lguqnwvsfeefxamzeyos" ||
+  ref.length < 12 ||
   !/^[a-z0-9]+$/.test(ref)
-) throw new Error("Refusing production or unverified staging URL");
+)
+  throw new Error("Refusing production or unverified staging URL");
 const a = env.STAGING_USER_A_ID;
 const b = env.STAGING_USER_B_ID;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
