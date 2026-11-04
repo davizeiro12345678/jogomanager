@@ -29,7 +29,6 @@ export function ensureGameStylesheet(): Promise<void> {
   }));
 }
 
-
 let cssPrefetched = false;
 
 /**
