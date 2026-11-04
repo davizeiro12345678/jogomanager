@@ -184,8 +184,16 @@ export function moveOffBall(sim: MatchSim, dt: number) {
   for (const p of sim.players) {
     if (p.sentOff) continue;
     if (p.id === holderId) continue;
-    const { setup, dir, attacking, surge, widthFactor, pressLine, shift, urgency: push } =
-      contexts[p.side];
+    const {
+      setup,
+      dir,
+      attacking,
+      surge,
+      widthFactor,
+      pressLine,
+      shift,
+      urgency: push,
+    } = contexts[p.side];
 
     let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
     let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;

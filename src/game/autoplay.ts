@@ -8,6 +8,7 @@ import { CLUBS } from "@/game/data/leagues";
 import {
   advanceRound,
   careerMatchContext,
+  careerMatchPlayers,
   quickSimulate,
   type MatchPerformance,
 } from "@/game/career";
@@ -52,10 +53,7 @@ export function buildPerformances(
   seed: string,
 ): MatchPerformance[] {
   const rnd = makeRng(seed);
-  const starters = state.lineup
-    .map((id) => state.players[id])
-    .filter(Boolean)
-    .map((p) => effectivePlayer(p!, state)) as Player[];
+  const starters = careerMatchPlayers(state).map((p) => effectivePlayer(p, state));
   if (!starters.length) return [];
 
   const perf = new Map<string, MatchPerformance>();

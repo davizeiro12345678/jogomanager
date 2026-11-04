@@ -56,11 +56,11 @@ export function pickLineup(players: Player[], formation: FormationKey, source?: 
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
   const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
-  const available = [...players]
-    .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort(
-      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
-    );
+  const available = players.filter((p) => !p.suspended && p.injuryWeeks === 0);
+  // Computing developed attributes is expensive; sorting compares each player
+  // several times, but their rating cannot change during this selection.
+  const ratings = new Map(available.map((player) => [player, selectionRating(player, source)]));
+  available.sort((a, b) => ratings.get(b)! - ratings.get(a)! || a.id.localeCompare(b.id));
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 
@@ -117,21 +117,15 @@ export function pickLineup(players: Player[], formation: FormationKey, source?: 
   // 3) Banco: melhores restantes, mas sempre com um goleiro. Sem reserva, uma
   // lesão na camisa 1 deixa o time sem ninguém na posição até o fim do jogo.
   const rest = available.filter((p) => !taken.has(p.id));
-  const benchIds = rest.slice(0, 7).map((p) => p.id);
-  if (!benchIds.some((id) => rest.find((p) => p.id === id)?.pos === "GK")) {
+  const bench = rest.slice(0, 7);
+  if (!bench.some((p) => p.pos === "GK")) {
     const spareKeeper = rest.find((p) => p.pos === "GK");
-    if (spareKeeper) {
-      const weakestOutfield = [...benchIds].reverse().find((id) => {
-        const p = rest.find((q) => q.id === id);
-        return Boolean(p) && p!.pos !== "GK";
-      });
-      if (weakestOutfield) {
-        benchIds.splice(benchIds.indexOf(weakestOutfield), 1);
-        benchIds.unshift(spareKeeper.id);
-      }
+    if (spareKeeper && bench.length) {
+      bench.pop();
+      bench.unshift(spareKeeper);
     }
   }
-  return { lineup, bench: benchIds };
+  return { lineup, bench: bench.map((p) => p.id) };
 }
 
 const PERSONALITIES = [
@@ -216,8 +210,12 @@ export function withCustomPlayers(clubId: string, squad: Player[]): Player[] {
     usedNumbers.add(num);
     const player = enrichPlayer(toGamePlayer(cp, num));
 
-    const samePos = list.filter((p) => p.pos === cp.pos).sort((a, b) => a.ovr - b.ovr)[0];
-    const weakest = [...list].sort((a, b) => a.ovr - b.ovr)[0];
+    let samePos: Player | undefined;
+    let weakest: Player | undefined;
+    for (const p of list) {
+      if (!weakest || p.ovr < weakest.ovr) weakest = p;
+      if (p.pos === cp.pos && (!samePos || p.ovr < samePos.ovr)) samePos = p;
+    }
     const target = samePos ?? weakest;
     const idx = target ? list.findIndex((p) => p.id === target.id) : -1;
     if (idx >= 0) list[idx] = player;
@@ -357,17 +355,7 @@ export function careerMatchContext(
     awayFatigue: squadFatigue(state.fixtures, away, state.round),
   };
   if (home !== state.clubId && away !== state.clubId) return ctx;
-  const squad = Object.values(state.players).filter((p) => p.clubId === state.clubId);
-  let players = state.lineup
-    .map((id) => state.players[id])
-    .filter(
-      (p): p is Player =>
-        Boolean(p) && p!.clubId === state.clubId && !p!.suspended && p!.injuryWeeks === 0,
-    );
-  if (players.length < 11) {
-    const { lineup } = pickLineup(squad, state.tactics.formation);
-    players = lineup.map((id) => state.players[id]!).filter(Boolean);
-  }
+  const players = careerMatchPlayers(state);
   const side = home === state.clubId ? "home" : "away";
   if (players.length) {
     const average = (read: (p: Player) => number) =>
@@ -380,6 +368,22 @@ export function careerMatchContext(
   }
   ctx[`${side}Tactics`] = state.tactics;
   return ctx;
+}
+
+/** The saved XI or the same eligible replacement XI used by quick simulation. */
+export function careerMatchPlayers(state: CareerState): Player[] {
+  let players = state.lineup
+    .map((id) => state.players[id])
+    .filter(
+      (p): p is Player =>
+        Boolean(p) && p!.clubId === state.clubId && !p!.suspended && p!.injuryWeeks === 0,
+    );
+  if (players.length < 11) {
+    const squad = Object.values(state.players).filter((p) => p.clubId === state.clubId);
+    const { lineup } = pickLineup(squad, state.tactics.formation);
+    players = lineup.map((id) => state.players[id]!).filter(Boolean);
+  }
+  return players;
 }
 
 /** Forma recente 0–100 pelos pontos nos últimos 5 jogos (60 = neutra). */
@@ -496,6 +500,16 @@ export function advanceRound(
     (f) => f.round === round && (f.home === state.clubId || f.away === state.clubId),
   );
   if (played && !userResult) throw new Error("O resultado da partida do clube é obrigatório.");
+  if (played && (played.homeGoals !== null || played.awayGoals !== null))
+    throw new Error("A partida desta rodada já foi concluída.");
+  if (
+    userResult &&
+    (!Number.isSafeInteger(userResult.hg) ||
+      userResult.hg < 0 ||
+      !Number.isSafeInteger(userResult.ag) ||
+      userResult.ag < 0)
+  )
+    throw new Error("O placar deve conter números inteiros não negativos.");
   const matchResult = played ? userResult : null;
   const fixtures = state.fixtures.map((f) => {
     if (f.round !== round || f.homeGoals !== null) return f;
@@ -572,7 +586,7 @@ export function advanceRound(
   }
 
   // mecânicas semanais sobre o elenco (quem tem dado ao vivo não entra no sorteio)
-  const livePids = new Set(performances.map((p) => p.pid));
+  const livePids = new Map(performances.map((p) => [p.pid, p.played]));
   const { players, news, attrDeltas } = applyWeeklyDevelopment(
     squadAfterMatch,
     state,

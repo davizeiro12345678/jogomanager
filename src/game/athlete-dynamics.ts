@@ -70,7 +70,10 @@ export function advanceAthlete(
     const dx = tx - p.x,
       dz = tz - p.z,
       distance = Math.hypot(dx, dz);
-    const desiredSpeed = Math.min(maxDesired, Math.sqrt(2 * braking * Math.max(0, distance - 0.08)));
+    const desiredSpeed = Math.min(
+      maxDesired,
+      Math.sqrt(2 * braking * Math.max(0, distance - 0.08)),
+    );
     let ux = 0,
       uz = 0;
     if (distance > 0.00001) {

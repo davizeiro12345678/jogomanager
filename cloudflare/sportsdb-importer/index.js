@@ -413,9 +413,7 @@ async function approvedStandingsTarget(e, li, se) {
   const maxYear = new Date().getUTCFullYear() + 1;
   if (start < 1990 || start > maxYear) return null;
   if (m[2] && Number(m[2]) !== start + 1) return null;
-  const known = await e.SPORTS_DB.prepare(
-    "SELECT strLeague FROM sportsdb_leagues WHERE idLeague=?",
-  )
+  const known = await e.SPORTS_DB.prepare("SELECT strLeague FROM sportsdb_leagues WHERE idLeague=?")
     .bind(league)
     .first();
   if (!known) return null;

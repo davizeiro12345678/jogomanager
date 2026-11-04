@@ -34,10 +34,22 @@ const MODES = [
 ] as const;
 
 const STEPS = [
-  ["Escolha o desafio", "Assuma um favorito ao título ou um clube pequeno que precisa subir de divisão."],
-  ["Monte o elenco", "Compare condição física, posição e potencial; use olheiros antes de gastar o orçamento."],
-  ["Defina a tática", "Formação, mentalidade, pressão e substituições. Mude uma coisa por vez e observe o efeito."],
-  ["Assista e ajuste", "A partida roda em 3D. No intervalo, corrija o plano a partir do que aconteceu em campo."],
+  [
+    "Escolha o desafio",
+    "Assuma um favorito ao título ou um clube pequeno que precisa subir de divisão.",
+  ],
+  [
+    "Monte o elenco",
+    "Compare condição física, posição e potencial; use olheiros antes de gastar o orçamento.",
+  ],
+  [
+    "Defina a tática",
+    "Formação, mentalidade, pressão e substituições. Mude uma coisa por vez e observe o efeito.",
+  ],
+  [
+    "Assista e ajuste",
+    "A partida roda em 3D. No intervalo, corrija o plano a partir do que aconteceu em campo.",
+  ],
 ] as const;
 
 export function HomeSearchGuide() {
@@ -52,16 +64,16 @@ export function HomeSearchGuide() {
         </h2>
         <div className="mt-4 grid gap-4 text-base leading-relaxed text-muted-foreground lg:grid-cols-2">
           <p>
-            No jogomanager você não controla o jogador com o polegar: você é o técnico. Escolhe
-            quem joga, como o time se posiciona, quem contratar e quando poupar um atleta cansado.
-            Depois assiste às suas decisões ganharem forma numa partida em 3D, lance a lance, com
-            narração em português.
+            No jogomanager você não controla o jogador com o polegar: você é o técnico. Escolhe quem
+            joga, como o time se posiciona, quem contratar e quando poupar um atleta cansado. Depois
+            assiste às suas decisões ganharem forma numa partida em 3D, lance a lance, com narração
+            em português.
           </p>
           <p>
-            É um jogo grátis de futebol que abre no celular ou no computador sem instalar nada e
-            sem cadastro obrigatório. A carreira fica salva no próprio aparelho e continua
-            funcionando sem internet; com uma conta, você também pode guardar uma cópia na nuvem.
-            A loja é opcional.
+            É um jogo grátis de futebol que abre no celular ou no computador sem instalar nada e sem
+            cadastro obrigatório. A carreira fica salva no próprio aparelho e continua funcionando
+            sem internet; com uma conta, você também pode guardar uma cópia na nuvem. A loja é
+            opcional.
           </p>
         </div>
       </section>
@@ -72,7 +84,10 @@ export function HomeSearchGuide() {
         </h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {MODES.map((mode) => (
-            <article key={mode.title} className="surface-card rounded-xl border border-border/60 p-5">
+            <article
+              key={mode.title}
+              className="surface-card rounded-xl border border-border/60 p-5"
+            >
               <h3 className="font-display text-xl">{mode.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{mode.text}</p>
               <Link
@@ -128,8 +143,8 @@ export function HomeSearchGuide() {
           >
             Premier League
           </Link>
-          , com artilharia, forma recente e desempenho em casa e fora. É uma boa forma de escolher
-          o clube que você quer comandar.
+          , com artilharia, forma recente e desempenho em casa e fora. É uma boa forma de escolher o
+          clube que você quer comandar.
         </p>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-muted-foreground">
           Quer comparar com outros jogos de manager? O{" "}
@@ -141,7 +156,10 @@ export function HomeSearchGuide() {
           </Link>{" "}
           mostra onde o jogomanager se sai melhor e onde os simuladores de PC vão mais fundo. Para
           aprender a jogar, comece pelo guia de{" "}
-          <Link to="/melhores-formacoes" className="text-primary underline-offset-4 hover:underline">
+          <Link
+            to="/melhores-formacoes"
+            className="text-primary underline-offset-4 hover:underline"
+          >
             formações
           </Link>{" "}
           e pelo{" "}
