@@ -102,6 +102,40 @@ describe("outer response protection", () => {
     );
     expect(authorized.headers.get("cache-control")).toBe("no-store");
   });
+  it.each([
+    "/api",
+    "/api/private",
+    "/_serverFn",
+    "/_serverFn/abc",
+    "/checkout",
+    "/checkout/return",
+    "/auth",
+    "/lovable",
+    "/mcp",
+  ])("never caches bare or nested private route %s", (path) => {
+    const response = secureResponse(
+      Response.json({ ok: true }, { headers: { "cache-control": "public, max-age=3600" } }),
+      new Request(`https://jogomanager.com${path}`),
+    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
+  it("does not escalate HSTS or cache personalized HTML on a public URL", () => {
+    const personalized = secureResponse(
+      new Response("session-dependent html", {
+        headers: { "content-type": "text/html", "cache-control": "public, max-age=3600" },
+      }),
+      new Request("https://jogomanager.com/guias", { headers: { cookie: "session=fixture" } }),
+    );
+    expect(personalized.headers.get("cache-control")).toBe("no-store");
+    expect(personalized.headers.get("strict-transport-security")).toBe("max-age=31536000");
+    const asset = secureResponse(
+      new Response("static", { headers: { "content-type": "text/javascript" } }),
+      new Request("https://jogomanager.com/assets/app-abc12345.js", {
+        headers: { cookie: "consent=fixture" },
+      }),
+    );
+    expect(asset.headers.get("cache-control")).toContain("immutable");
+  });
   it("lets the edge keep public HTML for 5 minutes while browsers always revalidate", () => {
     const page = secureResponse(
       new Response("page", { headers: { "content-type": "text/html" } }),

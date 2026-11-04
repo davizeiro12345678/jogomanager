@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      BASE_SHA: "5a75fef3662e3750917df1c2259169e4ed9f24d3"
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || format('{0}^', github.sha) }}
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +39,9 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          # Build each revision against its own committed lockfile: sharing the
+          # candidate node_modules broke old htmlparser2/entities resolution.
+          (cd "$RUNNER_TEMP/startup-base" && npm ci)
       - name: Profile baseline then candidate with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright

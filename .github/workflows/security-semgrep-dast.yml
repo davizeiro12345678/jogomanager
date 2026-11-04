@@ -1,0 +1,188 @@
+name: Security - Semgrep SAST and passive DAST
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: semgrep-dast-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  css-contracts:
+    name: CSS architecture integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node --test scripts/css-route-gates.test.mjs
+
+  secret-contracts:
+    name: Tracked environment credential guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/secret-exposure-contracts.mjs
+
+  semgrep:
+    name: Semgrep OWASP and custom rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static scan (report mode; do not hide scanner failures)
+        run: |
+          mkdir -p reports
+          semgrep scan --error \
+            --config p/owasp-top-ten \
+            --config security/semgrep-rules.yml \
+            --metrics=off \
+            --json --output reports/semgrep.json \
+            --exclude node_modules \
+            --exclude dist \
+            --exclude .output \
+            src cloudflare supabase
+      - name: Store complete SAST report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-sast-json
+          path: reports/semgrep.json
+          if-no-files-found: warn
+
+  http-headers-passive:
+    name: Passive HTTPS, CSP and private-cache contracts
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/http-security-contracts.mjs https://jogomanager.com/
+  zap-passive:
+    name: OWASP ZAP baseline (manual, public pages only)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Run limited passive baseline on public homepage
+        run: |
+          mkdir -p reports
+          docker run --rm \
+            -v "$PWD/reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t https://jogomanager.com/ -m 1 -I \
+              -J zap-baseline.json -r zap-baseline.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-public-passive
+          path: reports/
+          if-no-files-found: warn
+
+  zap-preview-passive:
+    name: ZAP passive DAST against isolated PR preview
+    if: github.event_name == 'pull_request' && github.head_ref == 'integration/pr119-verified-20261104'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build the PR candidate without production deployments
+        run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Confirm headers in compiled static assets
+        run: node --test scripts/static-asset-headers.test.mjs
+      - name: Start fixed-port Wrangler SSR preview on loopback
+        run: |
+          nohup ./node_modules/.bin/wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 >/tmp/jm-zap-preview.log 2>&1 &
+          echo "$!" >/tmp/jm-zap-preview.pid
+          for attempt in $(seq 1 180); do
+            if curl --fail --silent --max-time 3 http://127.0.0.1:4173/ -o /dev/null; then
+              echo "Local SSR preview served GET / on 127.0.0.1:4173"
+              exit 0
+            fi
+            if (( attempt % 30 == 0 )); then
+              echo "Waiting for loopback-only worker: attempt $attempt"
+              tail -6 /tmp/jm-zap-preview.log || true
+            fi
+            sleep 1
+          done
+          tail -80 /tmp/jm-zap-preview.log
+          exit 1
+      - name: Run one-minute passive OWASP ZAP baseline on the local preview
+        run: |
+          mkdir -p reports
+          chmod 0777 reports
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://127.0.0.1:4173/ -m 1 -T 7 \
+            -J zap-preview.json -r zap-preview.html
+      - name: Preserve complete baseline findings even if ZAP fails
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-isolated-preview-baseline
+          path: reports/
+          if-no-files-found: warn
+
+  css-preview-browser:
+    name: Mobile and desktop SSR CSS + SPA browser contract
+    if: github.event_name == 'pull_request' && github.head_ref == 'integration/pr119-verified-20261104'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build candidate for local browser validation
+        run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Install separate Playwright tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/css-qa" --no-package-lock --no-save playwright@1.62.1
+          command -v google-chrome
+      - name: Start candidate SSR preview at loopback
+        run: |
+          nohup ./node_modules/.bin/wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 >/tmp/jm-css-browser-preview.log 2>&1 &
+          for attempt in $(seq 1 180); do
+            if curl --fail --silent --max-time 3 http://127.0.0.1:4173/ -o /dev/null; then
+              echo "Local SSR preview ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          tail -80 /tmp/jm-css-browser-preview.log
+          exit 1
+      - name: Verify linked CSS, rendering, navigation and browser errors
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/css-qa/node_modules/playwright
+        run: |
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)"
+          node scripts/css-browser-qa.mjs "$RUNNER_TEMP/css-browser-qa-artifacts"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: css-browser-ssr-spa-evidence
+          path: ${{ runner.temp }}/css-browser-qa-artifacts
+          if-no-files-found: warn
+          retention-days: 14

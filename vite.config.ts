@@ -165,6 +165,14 @@ const projectConfig = defineConfig({
     ],
     resolve: {
       alias: {
+        // htmlparser2@10 (nested in @react-email/render) requires entities@7's
+        // conditional-export subpath. Rolldown may otherwise resolve the
+        // unrelated top-level entities@4 package, which lacks this subpath.
+        // Keep legacy entities/lib/* aliases for older consumers.
+        "entities/decode": path.resolve(
+          import.meta.dirname,
+          "node_modules/@react-email/render/node_modules/htmlparser2/node_modules/entities/dist/esm/decode.js",
+        ),
         "entities/lib/decode.js": path.resolve(
           import.meta.dirname,
           "node_modules/entities/lib/decode.js",
@@ -173,7 +181,6 @@ const projectConfig = defineConfig({
           import.meta.dirname,
           "node_modules/entities/lib/encode.js",
         ),
-        entities: path.resolve(import.meta.dirname, "node_modules/entities"),
       },
     },
   },

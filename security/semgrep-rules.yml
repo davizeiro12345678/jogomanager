@@ -1,0 +1,25 @@
+rules:
+  - id: jogomanager-client-exposed-server-secrets
+    message: >-
+      Potential server credential referenced through VITE_. Do not expose
+      Stripe secrets, Supabase service-role keys, or private API tokens in
+      browser bundles; move to server-only environment variables.
+    severity: ERROR
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-regex: 'import\.meta\.env\.VITE_(?:SERVICE_ROLE|STRIPE_SECRET|SECRET_KEY|API_SECRET|WEBHOOK_SECRET|PRIVATE_KEY|SUPABASE_SERVICE_ROLE|JWT_SECRET)[A-Z0-9_]*'
+  - id: jogomanager-review-raw-html
+    message: >-
+      Review raw HTML injection; use trusted content and sanitization such as
+      DOMPurify before passing data into dangerouslySetInnerHTML.
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-regex: 'dangerouslySetInnerHTML\s*=\s*\{\{'
+  - id: jogomanager-review-setinnerhtml
+    message: >-
+      Direct innerHTML assignment requires a review for DOM XSS.
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-regex: '\.innerHTML\s*='

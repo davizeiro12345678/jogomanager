@@ -203,6 +203,51 @@ describe("Stripe payment webhook lifecycle", () => {
     );
   });
 
+  it("refuses duplicate credit for two different Stripe events referencing one paid session", async () => {
+    const paid = sessionEvent("checkout.session.completed", {
+      id: "cs_test_same_business_fact",
+      mode: "payment",
+      payment_status: "paid",
+      metadata: { userId: "user_1", productKey: "coins_small" },
+    });
+
+    deps.isDelivered.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+    deps.event = { ...paid, id: "evt_test_first" };
+    expect((await post({ request: request() })).status).toBe(200);
+    deps.event = { ...paid, id: "evt_test_second" };
+    expect((await post({ request: request() })).status).toBe(200);
+
+    expect(deps.beginEvent).toHaveBeenCalledTimes(2);
+    expect(deps.isDelivered).toHaveBeenCalledTimes(2);
+    expect(deps.fulfill).toHaveBeenCalledTimes(1);
+    expect(deps.fulfill).toHaveBeenCalledWith(
+      "user_1",
+      "coins_small",
+      "cs_test_same_business_fact",
+      500,
+      expect.any(Object),
+      500,
+    );
+  });
+
+  it("deduplicates the same Stripe event ID through the durable event journal", async () => {
+    deps.event = sessionEvent("checkout.session.completed", {
+      id: "cs_test_journal_replay",
+      mode: "payment",
+      payment_status: "paid",
+      metadata: { userId: "user_1" },
+    });
+    deps.beginEvent.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    expect((await post({ request: request() })).status).toBe(200);
+    expect((await post({ request: request() })).status).toBe(200);
+
+    expect(deps.beginEvent).toHaveBeenCalledTimes(2);
+    expect(deps.retrieveSession).toHaveBeenCalledTimes(1);
+    expect(deps.fulfill).toHaveBeenCalledTimes(1);
+  });
+
   it("records a refund for review without revoking delivered benefits", async () => {
     deps.event = sessionEvent("charge.refunded", {
       id: "ch_test_refunded",
