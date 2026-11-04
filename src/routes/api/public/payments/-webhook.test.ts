@@ -203,6 +203,43 @@ describe("Stripe payment webhook lifecycle", () => {
     );
   });
 
+  it("does not process a completed event again when the event journal rejects a replay", async () => {
+    deps.event = sessionEvent("checkout.session.completed", {
+      id: "cs_test_replayed_once",
+      mode: "payment",
+      payment_status: "paid",
+      metadata: { userId: "user_1", productKey: "coins_small" },
+    });
+    deps.beginEvent.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    expect((await post({ request: request() })).status).toBe(200);
+    expect((await post({ request: request() })).status).toBe(200);
+    expect(deps.fulfill).toHaveBeenCalledTimes(1);
+    expect(deps.finishEvent).toHaveBeenCalledTimes(1);
+    expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", true);
+  });
+
+  it("marks a processing failure for retry and succeeds on the next delivery", async () => {
+    deps.event = sessionEvent("checkout.session.completed", {
+      id: "cs_test_retry",
+      mode: "payment",
+      payment_status: "paid",
+      metadata: { userId: "user_1", productKey: "coins_small" },
+    });
+    deps.fulfill
+      .mockRejectedValueOnce(new Error("database unavailable"))
+      .mockResolvedValueOnce(undefined);
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      expect((await post({ request: request() })).status).toBe(503);
+      expect(deps.finishEvent).toHaveBeenNthCalledWith(1, "evt_fixture", false);
+      expect((await post({ request: request() })).status).toBe(200);
+      expect(deps.finishEvent).toHaveBeenNthCalledWith(2, "evt_fixture", true);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("records a refund for review without revoking delivered benefits", async () => {
     deps.event = sessionEvent("charge.refunded", {
       id: "ch_test_refunded",

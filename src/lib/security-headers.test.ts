@@ -102,6 +102,21 @@ describe("outer response protection", () => {
     );
     expect(authorized.headers.get("cache-control")).toBe("no-store");
   });
+  it.each([
+    "/api",
+    "/api/private",
+    "/_serverFn",
+    "/_serverFn/abc",
+    "/checkout",
+    "/checkout/return",
+    "/auth",
+  ])("overrides public cache headers for the private path %s", (path) => {
+    const response = secureResponse(
+      Response.json({ ok: true }, { headers: { "cache-control": "public, max-age=3600" } }),
+      new Request(`https://jogomanager.com${path}`),
+    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
   it("lets the edge keep public HTML for 5 minutes while browsers always revalidate", () => {
     const page = secureResponse(
       new Response("page", { headers: { "content-type": "text/html" } }),

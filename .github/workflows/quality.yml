@@ -149,6 +149,8 @@ jobs:
         run: supabase db reset --local --no-seed --yes
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify payment replay and cross-user isolation
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/payment-rls-regression.sql
       - name: Verify public catalog and bounded identity enrichment
         run: |
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql
@@ -216,6 +218,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Verify route styles and intent prefetch in a browser
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/css-qa/node_modules/playwright
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: |
+          npm install --prefix "$RUNNER_TEMP/css-qa" --no-package-lock --no-save playwright@1.62.1
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)"
+          node .github/scripts/check-route-css.mjs
       - uses: treosh/lighthouse-ci-action@v12
         with:
           configPath: .lighthouserc.mobile.cjs

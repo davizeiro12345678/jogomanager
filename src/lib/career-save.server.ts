@@ -37,11 +37,13 @@ export async function saveValidatedCareer(
 
     // Plausibility limits: implausible saves stay personal, never attested.
     let issues: PlausibilityIssue[];
+    let plausibilityChecked = true;
     try {
       const elapsed = stored?.updated_at ? Date.now() - Date.parse(stored.updated_at) : null;
       issues = plausibilityIssues(previous ?? null, incoming, elapsed);
     } catch {
       issues = [];
+      plausibilityChecked = false;
     }
     if (issues.length > 0) {
       const { error: riskError } = await supabaseAdmin
@@ -49,10 +51,25 @@ export async function saveValidatedCareer(
         .insert(issues.map((reason) => ({ user_id: userId, reason, points: RISK_POINTS[reason] })));
       if (riskError) console.error("career_risk_signals insert failed", riskError.message);
     }
-    let attested = verifiedProgress && issues.length === 0;
+    let attested = verifiedProgress && plausibilityChecked && issues.length === 0;
     if (attested) {
-      const { data: score } = await supabaseAdmin.rpc("career_risk_score", { _user_id: userId });
-      if (typeof score === "number" && score >= RISK_HOLD_SCORE) attested = false;
+      // A missing function, a database outage or an invalid score must not turn
+      // an unverified personal save into official progress.
+      try {
+        const { data: score, error: scoreError } = await supabaseAdmin.rpc("career_risk_score", {
+          _user_id: userId,
+        });
+        if (
+          scoreError ||
+          typeof score !== "number" ||
+          !Number.isFinite(score) ||
+          score < 0 ||
+          score >= RISK_HOLD_SCORE
+        )
+          attested = false;
+      } catch {
+        attested = false;
+      }
     }
     const values = {
       state: incoming as unknown as Json,

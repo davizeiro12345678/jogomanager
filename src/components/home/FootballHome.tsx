@@ -26,6 +26,12 @@ import "./home.css";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
+const prepareGameStylesheet = () => {
+  // A speculative hint must never prevent navigation when the network fails.
+  void import("@/lib/game-stylesheet-loader")
+    .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
+    .catch(() => {});
+};
 const SYSTEMS = [
   {
     id: "tactics",
@@ -312,11 +318,21 @@ export function FootballHome() {
             e veja suas decisões ganharem vida em 3D.
           </p>
           <div className="home-hero-actions">
-            <Link to={resume ? "/dashboard" : "/new"} className="home-button">
+            <Link
+              to={resume ? "/dashboard" : "/new"}
+              className="home-button"
+              onPointerEnter={prepareGameStylesheet}
+              onFocus={prepareGameStylesheet}
+            >
               {resume ? "Continuar minha carreira" : "Criar minha carreira"}
               <ArrowRight size={19} />
             </Link>
-            <Link to="/partida-rapida" className="home-button home-button-secondary">
+            <Link
+              to="/partida-rapida"
+              className="home-button home-button-secondary"
+              onPointerEnter={prepareGameStylesheet}
+              onFocus={prepareGameStylesheet}
+            >
               <Play size={16} />
               Experimentar uma partida
             </Link>
@@ -341,7 +357,12 @@ export function FootballHome() {
           </dl>
           {resume ? (
             <div className="home-resume-wrap">
-              <Link to="/dashboard" className="home-resume">
+              <Link
+                to="/dashboard"
+                className="home-resume"
+                onPointerEnter={prepareGameStylesheet}
+                onFocus={prepareGameStylesheet}
+              >
                 <span>SEU PRÓXIMO CAPÍTULO</span>
                 <strong>{resume.club}</strong>
                 <small>
@@ -401,7 +422,12 @@ export function FootballHome() {
             </p>
           </div>
           <div className="home-mode-grid">
-            <Link to="/new" className="home-mode home-mode-career">
+            <Link
+              to="/new"
+              className="home-mode home-mode-career"
+              onPointerEnter={prepareGameStylesheet}
+              onFocus={prepareGameStylesheet}
+            >
               <div className="home-mode-art" aria-hidden="true">
                 <span>01</span>
                 <Trophy size={86} />
@@ -417,7 +443,12 @@ export function FootballHome() {
                 <ArrowRight size={19} />
               </span>
             </Link>
-            <Link to="/partida-rapida" className="home-mode">
+            <Link
+              to="/partida-rapida"
+              className="home-mode"
+              onPointerEnter={prepareGameStylesheet}
+              onFocus={prepareGameStylesheet}
+            >
               <div className="home-mode-art home-mode-art-match" aria-hidden="true">
                 <span>02</span>
                 <Gamepad2 size={76} />
@@ -516,7 +547,12 @@ export function FootballHome() {
               </li>
             ))}
           </ol>
-          <Link to="/new" className="home-button">
+          <Link
+            to="/new"
+            className="home-button"
+            onPointerEnter={prepareGameStylesheet}
+            onFocus={prepareGameStylesheet}
+          >
             Começar minha história
             <ArrowRight size={18} />
           </Link>

@@ -2,6 +2,20 @@ import { GAME_STYLESHEET_URL } from "./game-stylesheet";
 
 let pending: Promise<void> | undefined;
 
+/** Hint at the game CSS only after a visitor indicates intent to play. */
+export function prefetchGameStylesheet(): void {
+  if (typeof document === "undefined") return;
+  const alreadyRequested = Array.from(document.querySelectorAll<HTMLLinkElement>("link")).some(
+    (link) => link.getAttribute("href") === GAME_STYLESHEET_URL,
+  );
+  if (alreadyRequested) return;
+  const link = document.createElement("link");
+  link.rel = "prefetch";
+  link.as = "style";
+  link.href = GAME_STYLESHEET_URL;
+  document.head.appendChild(link);
+}
+
 /** Adds the full game stylesheet on lightweight pages and waits until it applies. */
 export function ensureGameStylesheet(): Promise<void> {
   if (typeof document === "undefined") return Promise.resolve();

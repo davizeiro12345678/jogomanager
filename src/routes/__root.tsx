@@ -8,6 +8,7 @@ import {
 } from "@/components/RootLayout";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
+import homeCss from "../home-styles.css?url";
 
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
@@ -44,7 +45,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // is too late for the first styled paint on a throttled mobile device.
       {
         rel: "stylesheet",
-        href: isLightweightCssPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
+        id: "route-stylesheet",
+        href:
+          matches.at(-1)?.pathname === "/"
+            ? homeCss
+            : isLightweightCssPath(matches.at(-1)?.pathname ?? "")
+              ? publicCss
+              : appCss,
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },

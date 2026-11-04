@@ -26,7 +26,7 @@ const COMMON_CSP = [
 ];
 
 const PRIVATE_PATH =
-  /^(?:\/api\/|\/_serverFn\/(?!assets\/)|\/lovable\/|\/checkout\/|\/auth(?:\/|$)|\/cadastro(?:\/|$)|\/mcp(?:\/|$))/;
+  /^(?:\/api(?:\/|$)|\/_serverFn(?:\/(?!assets\/)|$)|\/lovable(?:\/|$)|\/checkout(?:\/|$)|\/auth(?:\/|$)|\/cadastro(?:\/|$)|\/mcp(?:\/|$))/;
 const HASHED_PATH =
   /(?:^\/(?:assets|_build|_serverFn\/assets)\/|-[A-Za-z0-9_]{8}\.(?:js|mjs|css|woff2)$)/;
 const PUBLIC_STATIC = /\.(?:png|jpe?g|webp|avif|gif|svg|ico|ttf|woff2?|webmanifest|txt)$/i;
