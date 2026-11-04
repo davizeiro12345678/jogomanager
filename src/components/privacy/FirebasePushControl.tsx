@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getFirebaseWebConfig } from "@/lib/firebase-config.functions";
 import {
   disableFirebaseNotifications,
   enableFirebaseNotifications,
+  getFirebasePushDeviceToken,
   hasFirebasePushDeviceToken,
 } from "@/lib/firebase-push";
+import { sendTestPush } from "@/lib/firebase-test.functions";
 
 /** FCM notification permission is requested only by clicking the opt-in button. */
 export function FirebasePushControl() {
   const [configured, setConfigured] = useState(false);
+  const [deliveryConfigured, setDeliveryConfigured] = useState(false);
+  const sendTest = useServerFn(sendTestPush);
   const [signedIn, setSignedIn] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -28,7 +33,10 @@ export function FirebasePushControl() {
     if (browserSupportsPush) {
       void getFirebaseWebConfig()
         .then((config) => {
-          if (mounted) setConfigured(Boolean(config.apiKey && config.vapidPublicKey));
+          if (mounted) {
+            setConfigured(Boolean(config.apiKey && config.vapidPublicKey));
+            setDeliveryConfigured(config.pushDeliveryConfigured);
+          }
         })
         .catch(() => undefined);
     }
@@ -45,7 +53,7 @@ export function FirebasePushControl() {
   }, []);
 
   const change = async () => {
-    if (busy || !configured || !signedIn) return;
+    if (busy || !configured || (!deliveryConfigured && !enabled) || !signedIn) return;
     setBusy(true);
     try {
       if (!enabled && Notification.permission !== "granted") {
@@ -67,6 +75,26 @@ export function FirebasePushControl() {
     }
   };
 
+  const test = async () => {
+    const token = getFirebasePushDeviceToken();
+    if (!token || !signedIn || busy || !deliveryConfigured) return;
+    setBusy(true);
+    try {
+      const result = await sendTest({ data: { token } });
+      setMessage(
+        result.ok
+          ? "Teste enviado. Confira a notificação neste aparelho."
+          : result.reason === "rate_limited"
+            ? "Aguarde uma hora para enviar outro teste."
+            : "Não foi possível enviar o teste agora.",
+      );
+    } catch {
+      setMessage("Não foi possível enviar o teste agora.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="mt-4 rounded-lg border border-border/60 p-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -74,7 +102,7 @@ export function FirebasePushControl() {
           type="button"
           variant="outline"
           size="sm"
-          disabled={!configured || !signedIn || busy}
+          disabled={!configured || (!deliveryConfigured && !enabled) || !signedIn || busy}
           onClick={() => void change()}
         >
           {enabled ? <BellOff className="mr-1.5 h-4 w-4" /> : <Bell className="mr-1.5 h-4 w-4" />}
@@ -83,10 +111,23 @@ export function FirebasePushControl() {
         <span className="text-xs text-muted-foreground">
           {!configured
             ? "Firebase Push ainda não configurado"
-            : !signedIn
-              ? "Entre na conta para habilitar"
-              : "Opcional e revogável"}
+            : !deliveryConfigured
+              ? "Envio de testes ainda não configurado"
+              : !signedIn
+                ? "Entre na conta para habilitar"
+                : "Teste opcional e revogável; avisos automáticos ainda não disponíveis"}
         </span>
+        {enabled && deliveryConfigured ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!signedIn || busy}
+            onClick={() => void test()}
+          >
+            Testar notificação
+          </Button>
+        ) : null}
       </div>
       {message ? (
         <p className="mt-2 text-xs text-muted-foreground" role="status">

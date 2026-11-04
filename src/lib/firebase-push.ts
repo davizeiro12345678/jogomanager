@@ -85,3 +85,7 @@ export async function disableFirebaseNotifications(): Promise<PushResult> {
 export function hasFirebasePushDeviceToken(): boolean {
   return typeof window !== "undefined" && !!window.localStorage.getItem(DEVICE_TOKEN_KEY);
 }
+
+export function getFirebasePushDeviceToken(): string | null {
+  return typeof window === "undefined" ? null : window.localStorage.getItem(DEVICE_TOKEN_KEY);
+}
