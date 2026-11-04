@@ -52,7 +52,17 @@ async function inspect(page, path, isPublic, mode) {
     undefined,
     { timeout: 15000 },
   );
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(1000);
+  await page.waitForFunction(
+    () => {
+      const links = [
+        ...document.querySelectorAll('head link[rel="stylesheet"]'),
+      ];
+      return links.length > 0 && links.every((link) => !!link.sheet);
+    },
+    undefined,
+    { timeout: 20000 },
+  );
   const state = await page.evaluate(() => {
     const html = document.documentElement;
     const sheets = [
