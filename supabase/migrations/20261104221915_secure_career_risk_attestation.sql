@@ -25,9 +25,9 @@ STABLE
 SECURITY INVOKER
 SET search_path TO ''
 AS $risk$
-  SELECT COALESCE(
-    LEAST(SUM(points), 2147483647::bigint),
-    0::bigint
+  SELECT LEAST(
+    COALESCE(SUM(points), 0::bigint),
+    2147483647::bigint
   )::integer
   FROM public.career_risk_signals
   WHERE user_id = _user_id
