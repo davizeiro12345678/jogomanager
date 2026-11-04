@@ -19,4 +19,6 @@ jobs:
         run: |
           bash -n ops/vps/benchmark.sh
           bash -n ops/vps/integration-audit.sh
+          bash -n ops/vps/benchmark-maintenance.sh
+          python3 ops/vps/compare-results.py --self-test
           test -s ops/vps/README.md
