@@ -1,6 +1,6 @@
 import { valueFor } from "./economy";
 import { makeRng } from "./rng";
-import { developedPlayer, profileFor } from "./attributes";
+import { developedPlayer, profileFor, withDevelopmentBase } from "./attributes";
 import type { AttrDeltas } from "./attributes";
 import {
   developmentResponse,
