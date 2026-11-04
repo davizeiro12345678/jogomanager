@@ -10,7 +10,7 @@ const sources = JSON.parse(read("../public/fonts/match3d/sources.json"));
 
 test("initial shared styles discover fonts without a late activation script", () => {
   assert.match(read("../src/design-system.css"), /@import\s+["']\.\/fonts\.css["']/);
-  for (const entry of ["styles.css", "public-styles.css", "home-styles.css"])
+  for (const entry of ["styles.css", "public-styles.css", "home-styles.css", "guide-styles.css"])
     assert.match(read("../src/" + entry), /@import\s+["']\.\/design-system\.css["']/);
   assert.doesNotMatch(root, /fonts\.googleapis\.com|fonts\.gstatic\.com|ENABLE_FONTS/);
 });

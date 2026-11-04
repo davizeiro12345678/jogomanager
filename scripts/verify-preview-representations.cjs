@@ -19,7 +19,12 @@ module.exports = async () => {
         throw new Error(`Invalid rendered HTML for ${route} with Accept-Encoding ${encoding}`);
       }
       const head = html.split(/<\/head>/i)[0];
-      const stylesheet = route === "/" ? "home-styles" : "public-styles";
+      const stylesheet =
+        route === "/"
+          ? "home-styles"
+          : ["/guias", "/melhores-formacoes"].includes(route)
+            ? "guide-styles"
+            : "public-styles";
       if (
         !new RegExp(
           `<link\\b(?=[^>]*\\brel=["']stylesheet["'])(?=[^>]*\\bhref=["'][^"']*${stylesheet}[^"']*\\.css)[^>]*>`,

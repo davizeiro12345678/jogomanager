@@ -23,7 +23,7 @@ test("rejects public SSR pages that depend on hydration for their critical CSS",
 test("accepts route-specific critical stylesheets before client hydration", async () => {
   await preview(
     (path) =>
-      `<link href="/assets/${path === "/" ? "home" : "public"}-styles-fixture.css" rel="stylesheet">`,
+      `<link href="/assets/${path === "/" ? "home" : ["/guias", "/melhores-formacoes"].includes(path) ? "guide" : "public"}-styles-fixture.css" rel="stylesheet">`,
     verify,
   );
 });
