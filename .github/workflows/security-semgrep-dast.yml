@@ -93,3 +93,46 @@ jobs:
           name: zap-public-passive
           path: reports/
           if-no-files-found: warn
+
+  zap-preview-passive:
+    name: ZAP passive DAST against isolated PR preview
+    if: github.event_name == 'pull_request' && github.head_ref == 'integration/pr119-verified-20261104'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build the PR candidate without production deployments
+        run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Start loopback-only Nitro SSR preview
+        run: |
+          nohup npx nitro preview --host 127.0.0.1 --port 4173 >/tmp/jm-zap-preview.log 2>&1 &
+          echo "$!" >/tmp/jm-zap-preview.pid
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent --max-time 3 http://127.0.0.1:4173/ -o /dev/null; then
+              echo "Local preview responded to GET /"
+              exit 0
+            fi
+            sleep 1
+          done
+          tail -80 /tmp/jm-zap-preview.log
+          exit 1
+      - name: Run one-minute passive OWASP ZAP baseline on the local preview
+        run: |
+          mkdir -p reports
+          chmod 0777 reports
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://127.0.0.1:4173/ -m 1 -T 7 \
+            -J zap-preview.json -r zap-preview.html
+      - name: Preserve complete baseline findings even if ZAP fails
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-isolated-preview-baseline
+          path: reports/
+          if-no-files-found: warn
