@@ -7,7 +7,7 @@ rules:
     severity: ERROR
     languages: [javascript, typescript]
     patterns:
-      - pattern-regex: 'import\\.meta\\.env\\.VITE_(?:SERVICE_ROLE|STRIPE_SECRET|SECRET_KEY|API_SECRET|WEBHOOK_SECRET|PRIVATE_KEY|SUPABASE_SERVICE_ROLE|JWT_SECRET)[A-Z0-9_]*'
+      - pattern-regex: 'import\.meta\.env\.VITE_(?:SERVICE_ROLE|STRIPE_SECRET|SECRET_KEY|API_SECRET|WEBHOOK_SECRET|PRIVATE_KEY|SUPABASE_SERVICE_ROLE|JWT_SECRET)[A-Z0-9_]*'
   - id: jogomanager-review-raw-html
     message: >-
       Review raw HTML injection; use trusted content and sanitization such as
@@ -15,11 +15,11 @@ rules:
     severity: WARNING
     languages: [javascript, typescript]
     patterns:
-      - pattern-regex: 'dangerouslySetInnerHTML\\s*=\\s*\\{\\{'
+      - pattern-regex: 'dangerouslySetInnerHTML\s*=\s*\{\{'
   - id: jogomanager-review-setinnerhtml
     message: >-
       Direct innerHTML assignment requires a review for DOM XSS.
     severity: WARNING
     languages: [javascript, typescript]
     patterns:
-      - pattern-regex: '\\.innerHTML\\s*='
+      - pattern-regex: '\.innerHTML\s*='
