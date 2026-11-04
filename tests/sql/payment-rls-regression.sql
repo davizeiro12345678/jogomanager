@@ -12,7 +12,7 @@ INSERT INTO public.user_wallet(user_id, coins) VALUES
 
 SET LOCAL ROLE service_role;
 DO $payment$
-DECLARE changed boolean;
+DECLARE changed boolean; outcome text;
 BEGIN
   IF NOT public.begin_payment_webhook_event('evt_codex_rollback_20261104', 'checkout.session.completed') THEN
     RAISE EXCEPTION 'First event was not accepted';
@@ -41,6 +41,14 @@ BEGIN
       INTO changed USING '00000000-0000-4000-8fff-260011040001'::uuid, 'fixture',
       'cs_codex_extended_20261104', 500, 222, 0, 0, ARRAY[]::text[], 2, 3;
     IF changed THEN RAISE EXCEPTION 'Extended purchase was fulfilled twice'; END IF;
+    EXECUTE 'SELECT reason FROM public.spend_coins_on_service($1,$2,$3)'
+      INTO outcome USING '00000000-0000-4000-8fff-260011040001'::uuid, 'injury_recovery',
+      '00000000-0000-4000-8fff-260011040003'::uuid;
+    IF outcome IS DISTINCT FROM 'stored_item' THEN RAISE EXCEPTION 'Stored service was not consumed'; END IF;
+    EXECUTE 'SELECT reason FROM public.spend_coins_on_service($1,$2,$3)'
+      INTO outcome USING '00000000-0000-4000-8fff-260011040001'::uuid, 'injury_recovery',
+      '00000000-0000-4000-8fff-260011040003'::uuid;
+    IF outcome IS DISTINCT FROM 'duplicate' THEN RAISE EXCEPTION 'Repeated service request was not deduplicated'; END IF;
   END IF;
 END $payment$;
 RESET ROLE;
