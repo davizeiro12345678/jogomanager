@@ -1,0 +1,25 @@
+name: VPS ops scripts validation
+on:
+  pull_request:
+    paths:
+      - 'ops/vps/**'
+      - '.github/workflows/vps-ops-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate scripts offline
+        run: |
+          bash -n ops/vps/benchmark.sh
+          bash -n ops/vps/integration-audit.sh
+          bash -n ops/vps/benchmark-maintenance.sh
+          bash -n ops/vps/ssh-fido2-preflight.sh
+          python3 ops/vps/compare-results.py --self-test
+          test -s ops/vps/README.md
