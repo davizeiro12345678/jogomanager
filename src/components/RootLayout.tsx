@@ -122,7 +122,7 @@ export function RootComponent() {
       if (!(event.target instanceof Element)) return;
       const anchor = event.target.closest<HTMLAnchorElement>("a[href]");
       if (!anchor || anchor.origin !== window.location.origin) return;
-      if (/^\\/(?:new|dashboard|match)(?:\\/|$)/.test(anchor.pathname)) {
+      if (["new", "dashboard", "match"].includes(anchor.pathname.split("/")[1] ?? "")) {
         prefetchGameStylesheet();
       }
     };
