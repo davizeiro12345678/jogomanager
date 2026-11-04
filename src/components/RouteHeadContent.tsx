@@ -14,9 +14,16 @@ export function RouteHeadContent() {
     : tags;
   return (
     <>
-      {visibleTags.map((tag) => (
-        <Asset {...tag} key={JSON.stringify(tag)} {...(nonce ? { nonce } : {})} />
-      ))}
+      {visibleTags.map((tag) =>
+        tag.tag === "link" && tag.attrs?.["id"] === "route-stylesheet" ? (
+          // React retains precedence-managed stylesheets after navigation.
+          // Keep this one as a normal, stable head node so switching routes
+          // replaces its href instead of leaving the previous CSS active.
+          <link key="route-stylesheet" {...tag.attrs} nonce={nonce} />
+        ) : (
+          <Asset {...tag} key={JSON.stringify(tag)} {...(nonce ? { nonce } : {})} />
+        ),
+      )}
     </>
   );
 }

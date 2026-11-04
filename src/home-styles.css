@@ -1,0 +1,25 @@
+/* The homepage only needs utilities used by its own components and shell.
+   Other public routes and the game retain their own SSR stylesheets. */
+@import "tailwindcss" source(none);
+@source "./components/RootLayout.tsx";
+@source "./components/RoutePending.tsx";
+@source "./components/SiteFooter.tsx";
+@source "./components/PublicLinks.tsx";
+@source "./components/CommunityInvite.tsx";
+@source "./components/DiscordLink.tsx";
+@source "./components/StickyPlayCta.tsx";
+@source "./components/home/FootballHome.tsx";
+@source "./components/home/HomeDetails.tsx";
+@source "./components/home/HomeLeaguePulse.tsx";
+@source "./components/home/HomeSearchGuide.tsx";
+@source "./components/privacy/ConsentBanner.tsx";
+@source "./components/privacy/ConsentCenter.tsx";
+@source "./components/privacy/FirebasePushControl.tsx";
+@source "./components/accessibility";
+@source "./components/ui/button.tsx";
+@source "./components/ui/dialog.tsx";
+@source "./components/ui/switch.tsx";
+@source "./components/ui/slider.tsx";
+@source "./components/ui/popover.tsx";
+@source "./components/ui/select.tsx";
+@import "./design-system.css";

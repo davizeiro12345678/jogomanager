@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 class FakeLink extends EventTarget {
   rel = "stylesheet";
   href = "";
+  as = "";
   sheet: object | null = null;
   removed = false;
   onload: (() => void) | null = null;
@@ -36,6 +37,18 @@ afterEach(() => {
 });
 
 describe("game stylesheet loading", () => {
+  it("prefetches the game stylesheet once after intent and does not apply it", async () => {
+    const doc = fakeDocument();
+    vi.stubGlobal("document", doc);
+    const { prefetchGameStylesheet } = await import("./game-stylesheet-loader");
+    const { GAME_STYLESHEET_URL } = await import("./game-stylesheet");
+    expect(doc.links).toHaveLength(0);
+    prefetchGameStylesheet();
+    prefetchGameStylesheet();
+    expect(doc.links).toHaveLength(1);
+    expect(doc.links[0]).toMatchObject({ rel: "prefetch", as: "style", href: GAME_STYLESHEET_URL });
+  });
+
   it("waits for an existing stylesheet that is still loading", async () => {
     const doc = fakeDocument();
     vi.stubGlobal("document", doc);

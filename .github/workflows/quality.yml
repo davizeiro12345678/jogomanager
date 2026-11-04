@@ -147,8 +147,15 @@ jobs:
         run: bash scripts/start-replay-db.sh
       - name: Replay the complete canonical migration history
         run: supabase db reset --local --no-seed --yes
+      - name: Apply pending career and commerce migrations to disposable database
+        run: |
+          for migration in drizzle/migrations/0044_coin_career_services.sql drizzle/migrations/0045_fix_spend_coins_on_service.sql drizzle/migrations/0046_career_risk_signals.sql drizzle/migrations/0047_wallet_stored_services.sql; do
+            psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 --single-transaction -f "$migration"
+          done
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify payment replay and cross-user isolation
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/payment-rls-regression.sql
       - name: Verify public catalog and bounded identity enrichment
         run: |
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql
@@ -216,6 +223,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Verify route styles and intent prefetch in a browser
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/css-qa/node_modules/playwright
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+        run: |
+          npm install --prefix "$RUNNER_TEMP/css-qa" --no-package-lock --no-save playwright@1.62.1
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)"
+          node .github/scripts/check-route-css.mjs
       - uses: treosh/lighthouse-ci-action@v12
         with:
           configPath: .lighthouserc.mobile.cjs

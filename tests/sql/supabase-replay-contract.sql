@@ -17,6 +17,10 @@ BEGIN
   ASSERT to_regclass('public.players_club_cursor_idx') IS NOT NULL, 'Missing squad keyset index';
   ASSERT NOT has_table_privilege('authenticated', 'public.player_careers', 'INSERT'),
     'Direct writes would bypass career CAS';
+  ASSERT to_regprocedure('public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)') IS NOT NULL,
+    'The current payment fulfillment RPC must exist';
+  ASSERT to_regprocedure('public.career_risk_score(uuid)') IS NOT NULL,
+    'The server-side career risk score must exist';
   ASSERT NOT has_table_privilege('anon', 'public.api_football_data', 'SELECT'),
     'Provider archives must remain private';
   ASSERT NOT has_function_privilege('anon', 'public.get_public_league_digest_source(integer[])', 'EXECUTE')

@@ -19,10 +19,17 @@ module.exports = async () => {
         throw new Error(`Invalid rendered HTML for ${route} with Accept-Encoding ${encoding}`);
       }
       const head = html.split(/<\/head>/i)[0];
+      const stylesheet =
+        route === "/"
+          ? "home-styles"
+          : ["/guias", "/melhores-formacoes"].includes(route)
+            ? "guide-styles"
+            : "public-styles";
       if (
-        !/<link\b(?=[^>]*\brel=["']stylesheet["'])(?=[^>]*\bhref=["'][^"']*public-styles[^"']*\.css)[^>]*>/i.test(
-          head,
-        )
+        !new RegExp(
+          `<link\\b(?=[^>]*\\brel=["']stylesheet["'])(?=[^>]*\\bhref=["'][^"']*${stylesheet}[^"']*\\.css)[^>]*>`,
+          "i",
+        ).test(head)
       )
         throw new Error(`Missing critical SSR stylesheet for ${route}`);
       console.log(`Verified decoded HTML: ${route} (${encoding})`);
