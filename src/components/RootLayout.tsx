@@ -13,7 +13,6 @@ import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "rea
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
 import { isLightweightCssPath, isPublicContentPath } from "@/lib/public-content-routes";
-import { prefetchGameStylesheet } from "@/lib/game-stylesheet";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { RouteHeadContent } from "@/components/RouteHeadContent";
 // Reading-controls UI is only visible on the public home page. Keep it out of
@@ -123,7 +122,10 @@ export function RootComponent() {
       const anchor = event.target.closest<HTMLAnchorElement>("a[href]");
       if (!anchor || anchor.origin !== window.location.origin) return;
       if (["new", "dashboard", "match"].includes(anchor.pathname.split("/")[1] ?? "")) {
-        prefetchGameStylesheet();
+        // Only load the warmup implementation when navigation intent exists.
+        void import("@/lib/prefetch-game-stylesheet")
+          .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
+          .catch(() => undefined);
       }
     };
 
