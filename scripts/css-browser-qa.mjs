@@ -39,25 +39,17 @@ async function inspect(page, path, isPublic, mode) {
     waitUntil: "domcontentloaded",
     timeout: 30000,
   });
-  assert.equal(
-    response?.status(),
-    200,
-    mode + " " + path + ": SSR response must be 200",
-  );
+  assert.equal(response?.status(), 200, mode + " " + path + ": SSR response must be 200");
   await page.waitForFunction(
     () =>
-      [...document.querySelectorAll('head link[rel="stylesheet"]')].some(
-        (link) => !!link.sheet,
-      ),
+      [...document.querySelectorAll('head link[rel="stylesheet"]')].some((link) => !!link.sheet),
     undefined,
     { timeout: 15000 },
   );
   await page.waitForTimeout(1000);
   await page.waitForFunction(
     () => {
-      const links = [
-        ...document.querySelectorAll('head link[rel="stylesheet"]'),
-      ];
+      const links = [...document.querySelectorAll('head link[rel="stylesheet"]')];
       return links.length > 0 && links.every((link) => !!link.sheet);
     },
     undefined,
@@ -65,9 +57,7 @@ async function inspect(page, path, isPublic, mode) {
   );
   const state = await page.evaluate(() => {
     const html = document.documentElement;
-    const sheets = [
-      ...document.querySelectorAll('head link[rel="stylesheet"]'),
-    ].map((link) => ({
+    const sheets = [...document.querySelectorAll('head link[rel="stylesheet"]')].map((link) => ({
       path: new URL(link.href).pathname,
       ready: !!link.sheet,
     }));
@@ -75,8 +65,7 @@ async function inspect(page, path, isPublic, mode) {
       sheets,
       overflow: html.scrollWidth - innerWidth,
       background: getComputedStyle(document.body).backgroundColor,
-      heading:
-        document.querySelector("h1")?.textContent?.trim().slice(0, 100) || null,
+      heading: document.querySelector("h1")?.textContent?.trim().slice(0, 100) || null,
     };
   });
   assert.ok(
@@ -84,17 +73,11 @@ async function inspect(page, path, isPublic, mode) {
     mode + " " + path + ": stylesheet was not loaded",
   );
   assert.ok(
-    state.sheets.some((link) =>
-      (isPublic ? /public-styles-/ : /\/styles-/).test(link.path),
-    ),
+    state.sheets.some((link) => (isPublic ? /public-styles-/ : /\/styles-/).test(link.path)),
     mode + " " + path + ": incorrect SSR stylesheet family",
   );
   assert.ok(state.overflow <= 5, mode + " " + path + ": horizontal overflow");
-  assert.equal(
-    cssFailures.length,
-    0,
-    mode + " " + path + ": CSS HTTP failures",
-  );
+  assert.equal(cssFailures.length, 0, mode + " " + path + ": CSS HTTP failures");
   assert.equal(errors.length, 0, mode + " " + path + ": browser script errors");
   if (path === "/" || path === "/new") {
     await page.screenshot({
@@ -128,8 +111,7 @@ async function verifySpa(page, mode) {
   await page.waitForFunction(
     () =>
       [...document.querySelectorAll('head link[rel="stylesheet"]')].some(
-        (link) =>
-          /public-styles-/.test(new URL(link.href).pathname) && !!link.sheet,
+        (link) => /public-styles-/.test(new URL(link.href).pathname) && !!link.sheet,
       ),
     undefined,
     { timeout: 15000 },
@@ -155,8 +137,7 @@ try {
     });
     try {
       const page = await context.newPage();
-      for (const target of targets)
-        await inspect(page, target.path, target.public, mode);
+      for (const target of targets) await inspect(page, target.path, target.public, mode);
       await verifySpa(page, mode);
     } finally {
       await context.close();
@@ -164,13 +145,6 @@ try {
   }
 } finally {
   await browser.close();
-  writeFileSync(
-    join(output, "css-browser-qa.json"),
-    JSON.stringify(results, null, 2),
-  );
+  writeFileSync(join(output, "css-browser-qa.json"), JSON.stringify(results, null, 2));
 }
-console.log(
-  "PASS: " +
-    results.length +
-    " CSS/SSR/browser assertions and SPA navigation scenarios",
-);
+console.log("PASS: " + results.length + " CSS/SSR/browser assertions and SPA navigation scenarios");
