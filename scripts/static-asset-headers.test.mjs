@@ -7,8 +7,8 @@ const built = new URL("../.output/public/_headers", import.meta.url);
 
 const verify = (body) => {
   assert.match(body, /^\/\*\s*$/m, "static assets need an inclusive /* rule");
-  assert.match(body, /^\s+X-Content-Type-Options:\s*nosniff\s*$/mi);
-  assert.match(body, /^\s+Referrer-Policy:\s*strict-origin-when-cross-origin\s*$/mi);
+  assert.match(body, /^\s+X-Content-Type-Options:\s*nosniff\s*$/im);
+  assert.match(body, /^\s+Referrer-Policy:\s*strict-origin-when-cross-origin\s*$/im);
   assert.match(body, /^\s+Permissions-Policy:\s*.+\bcamera=\(\)/mi);
 };
 
