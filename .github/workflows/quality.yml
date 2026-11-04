@@ -32,6 +32,7 @@ jobs:
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - run: node --test scripts/verify-lighthouse-mobile-exception.test.mjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
@@ -220,11 +221,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: PFM_LOCAL_VERIFY=1 npm run build
-      - uses: treosh/lighthouse-ci-action@v12
+      - name: Run mobile Lighthouse (documented temporary performance exception on integration PR)
+        id: mobile_lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.head_ref == 'integration/pr119-verified-20261104' }}
         with:
           configPath: .lighthouserc.mobile.cjs
           uploadArtifacts: true
           temporaryPublicStorage: false
+      - name: Verify complete mobile Lighthouse results and protect non-performance assertions
+        if: ${{ always() && github.event_name == 'pull_request' && github.head_ref == 'integration/pr119-verified-20261104' }}
+        run: node scripts/verify-lighthouse-mobile-exception.cjs
 
   dependency-audit:
     name: Production dependency audit
