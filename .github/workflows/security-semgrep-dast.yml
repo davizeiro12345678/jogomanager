@@ -34,7 +34,7 @@ jobs:
       - name: Static scan (report mode; do not hide scanner failures)
         run: |
           mkdir -p reports
-          semgrep scan \
+          semgrep scan --error \
             --config p/owasp-top-ten \
             --config security/semgrep-rules.yml \
             --metrics=off \
@@ -51,6 +51,17 @@ jobs:
           path: reports/semgrep.json
           if-no-files-found: warn
 
+  http-headers-passive:
+    name: Passive HTTPS, CSP and private-cache contracts
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/http-security-contracts.mjs https://jogomanager.com/
   zap-passive:
     name: OWASP ZAP baseline (manual, public pages only)
     if: github.event_name == 'workflow_dispatch'

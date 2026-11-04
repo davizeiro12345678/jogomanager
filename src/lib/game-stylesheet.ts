@@ -38,10 +38,14 @@ let cssPrefetched = false;
  */
 export function prefetchGameStylesheet(): void {
   if (typeof document === "undefined" || cssPrefetched) return;
-  const links = document.querySelectorAll<HTMLLinkElement>('link[href]');
-  if (Array.from(links).some((link) =>
-    link.getAttribute("href") === GAME_STYLESHEET_URL &&
-    (link.rel === "stylesheet" || link.rel === "prefetch"))) {
+  const links = document.querySelectorAll<HTMLLinkElement>("link[href]");
+  if (
+    Array.from(links).some(
+      (link) =>
+        link.getAttribute("href") === GAME_STYLESHEET_URL &&
+        (link.rel === "stylesheet" || link.rel === "prefetch"),
+    )
+  ) {
     cssPrefetched = true;
     return;
   }

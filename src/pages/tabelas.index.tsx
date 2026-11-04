@@ -45,16 +45,16 @@ export function TablesIndex() {
                 vitórias, empates, derrotas, gols pró e contra e saldo de cada clube.
               </li>
               <li>
-                <strong className="text-foreground">Casa e fora:</strong> times que somam muito
-                em casa e pouco fora costumam depender do mando — algo a considerar na sua tática.
+                <strong className="text-foreground">Casa e fora:</strong> times que somam muito em
+                casa e pouco fora costumam depender do mando — algo a considerar na sua tática.
               </li>
               <li>
                 <strong className="text-foreground">Forma recente:</strong> os últimos cinco
                 resultados mostram quem está em alta antes da próxima rodada.
               </li>
               <li>
-                <strong className="text-foreground">Artilharia e assistências:</strong> os
-                jogadores que mais decidem no campeonato.
+                <strong className="text-foreground">Artilharia e assistências:</strong> os jogadores
+                que mais decidem no campeonato.
               </li>
               <li>
                 <strong className="text-foreground">Desfalques:</strong> atletas lesionados ou
@@ -70,10 +70,7 @@ export function TablesIndex() {
               com o elenco cansado e a pressão da diretoria. Os dados são atualizados a partir de
               uma fonte esportiva externa e podem ter algumas horas de atraso em dia de rodada.
             </p>
-            <Link
-              to="/new"
-              className="mt-4 inline-flex min-h-11 items-center text-sm text-primary"
-            >
+            <Link to="/new" className="mt-4 inline-flex min-h-11 items-center text-sm text-primary">
               Escolher meu clube e começar →
             </Link>
           </div>
