@@ -25,7 +25,7 @@ def read_metrics(directory):
         if value is not None:
             numbers[f"sysbench_cpu_{count}_events_s"] = value
     for name in ("ram_speed", "ram_1"):
-        value = metric_from_text(directory / f"{name}.txt", r"transferred \([^)]*\),?\s*\(?([\d.]+)\s+MiB/sec")
+        value = metric_from_text(directory / f"{name}.txt", r"\(([\d.]+)\s+MiB/sec\)")
         if value is not None:
             numbers["memory_MiB_s"] = value
     for name in ("fio_write", "fio_read", "fio_seqwrite", "fio_randread", "fio_randwrite"):
