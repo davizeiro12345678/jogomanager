@@ -1,25 +1,19 @@
 import { GAME_STYLESHEET_URL } from "./game-stylesheet";
 
-let cssPrefetched = false;
+let prefetched = false;
 
-/** Non-blocking CSS warmup, loaded only on navigation intent. */
+/** Warm the game CSS only after a local navigation gesture, never on first paint. */
 export function prefetchGameStylesheet(): void {
-  if (typeof document === "undefined" || cssPrefetched) return;
-  const links = document.querySelectorAll<HTMLLinkElement>(
-    'link[rel="stylesheet"],link[rel="prefetch"]',
-  );
-  if (Array.from(links).some((link) => link.getAttribute("href") === GAME_STYLESHEET_URL)) {
-    cssPrefetched = true;
-    return;
-  }
+  if (typeof document === "undefined" || prefetched) return;
+  if (document.querySelector(`link[href="${GAME_STYLESHEET_URL}"]`)) return;
   const link = document.createElement("link");
   link.rel = "prefetch";
   link.as = "style";
   link.href = GAME_STYLESHEET_URL;
   link.onerror = () => {
-    cssPrefetched = false;
+    prefetched = false;
     link.remove();
   };
-  document.head.appendChild(link);
-  cssPrefetched = true;
+  prefetched = true;
+  document.head.append(link);
 }
