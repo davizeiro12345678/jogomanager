@@ -41,6 +41,11 @@ for (const filename of entries) {
     blocking.push("Missing valid audited URL: " + path.basename(filename));
     continue;
   }
+  // Only local preview evidence is valid; never accept a report for another host.
+  if (url.origin !== "http://127.0.0.1:4173") {
+    blocking.push("Unexpected Lighthouse origin: " + url.origin);
+    continue;
+  }
   if (!expected.has(url.pathname)) {
     blocking.push("Unexpected audited route: " + url.pathname);
     continue;
