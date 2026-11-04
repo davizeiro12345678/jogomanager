@@ -1,3 +1,6 @@
 # Recorded database statements are byte-preserved provenance, including CRLF.
 /supabase/migration-archive/recorded/*.sql -text
 /supabase/migration-archive/legacy/*.sql -text
+
+# Keep performance scripts executable from WSL/Linux after Windows checkouts.
+/services/contabo-aux/perf/*.sh text eol=lf
