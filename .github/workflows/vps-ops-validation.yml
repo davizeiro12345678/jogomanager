@@ -23,3 +23,13 @@ jobs:
           bash -n ops/vps/ssh-fido2-preflight.sh
           python3 ops/vps/compare-results.py --self-test
           test -s ops/vps/README.md
+      - name: Validate Windows PowerShell client probe without network
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('ops/vps/windows-client-probe.ps1', [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
