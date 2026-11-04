@@ -42,7 +42,7 @@ function Measure-Http([string]$url,[int]$count) {
     $codes=New-Object 'System.Collections.Generic.List[string]'
     $errs=0
     for($i=0;$i -lt $count;$i++){
-        $result = & curl.exe --silent --show-error --connect-timeout 5 --max-time 10 --output NUL --write-out '%{http_code};%{time_connect};%{time_appconnect};%{time_starttransfer};%{time_total}' $url 2>$null
+        $result = & curl.exe --silent --connect-timeout 5 --max-time 10 --output NUL --write-out '%{http_code};%{time_connect};%{time_appconnect};%{time_starttransfer};%{time_total}' $url 2>$null
         if($LASTEXITCODE -eq 0 -and $result -match '^\d{3};'){
             $v=$result -split ';'; $codes.Add($v[0])
             $ttfb=[double]::Parse($v[3],$culture)*1000
