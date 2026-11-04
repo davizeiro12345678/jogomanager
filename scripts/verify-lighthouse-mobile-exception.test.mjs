@@ -13,6 +13,8 @@ function scenario({
   cls = 0.02,
   runtimeError = false,
   duplicate = false,
+  conflictingMirror = false,
+  origin = "http://127.0.0.1:4173",
 } = {}) {
   const folder = mkdtempSync(join(tmpdir(), "jm-lighthouse-"));
   const sub = join(folder, ".lighthouseci");
@@ -21,7 +23,7 @@ function scenario({
     if (i === omit) continue;
     const route = routes[Math.floor(i / 3)];
     const report = {
-      requestedUrl: "http://127.0.0.1:4173" + route,
+      requestedUrl: origin + route,
       fetchTime: new Date(Date.UTC(2026, 10, 4, 16, 0, i)).toISOString(),
       runtimeError: runtimeError ? { code: "NO_FCP" } : undefined,
       categories: {
@@ -35,7 +37,11 @@ function scenario({
       },
     };
     writeFileSync(join(sub, "lhr-" + i + ".json"), JSON.stringify(report));
-    if (duplicate) writeFileSync(join(sub, i + ".report.json"), JSON.stringify(report));
+    if (duplicate) {
+      const mirror = JSON.parse(JSON.stringify(report));
+      if (conflictingMirror && i === 0) mirror.audits["total-blocking-time"].numericValue = 601;
+      writeFileSync(join(sub, i + ".report.json"), JSON.stringify(mirror));
+    }
   }
   const run = spawnSync(process.execPath, [checker], {
     encoding: "utf8",
@@ -54,6 +60,16 @@ test("deduplicates identical LHCI report mirrors without hiding failed audits", 
   const r = scenario({ duplicate: true });
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /Complete runs: 15 \/ 15/);
+});
+test("rejects mismatched duplicate Lighthouse reports", () => {
+  const r = scenario({ duplicate: true, conflictingMirror: true });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stdout, /Conflicting Lighthouse copies/);
+});
+test("rejects fake reports from a different web origin", () => {
+  const r = scenario({ origin: "https://example.invalid" });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stdout, /Unexpected Lighthouse origin/);
 });
 test("blocks missing Lighthouse evidence", () => {
   const r = scenario({ omit: 3 });
