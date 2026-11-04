@@ -27,9 +27,7 @@ export function NotFoundComponent() {
       <div className="max-w-md text-center">
         <p className="text-7xl font-bold text-foreground">404</p>
         <h1 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Esta página não existe ou foi movida.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Este endereço não existe.</p>
         <div className="mt-6">
           <Link
             to="/"
@@ -52,11 +50,9 @@ export function ErrorComponent({ error, reset }: { error: unknown; reset: () => 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Falha ao carregar a página
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Erro ao carregar</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Tente novamente ou volte ao início.
+          Tente de novo ou volte ao início.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -66,7 +62,7 @@ export function ErrorComponent({ error, reset }: { error: unknown; reset: () => 
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Tentar novamente
+            Tentar de novo
           </button>
           <a
             href="/"
