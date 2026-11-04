@@ -18,6 +18,7 @@ const mass = (p: AthleteBody) => (Number.isFinite(p.weightKg) ? clamp(p.weightKg
 // slices. This applies only to live motion; long recovery intervals still use
 // a bounded fallback below.
 const MAX_LIVE_ATHLETE_SUBSTEPS = 11;
+const FIXED_SLICE_RESPONSE = 1 - Math.exp(-6 * HIGH_FIDELITY_PHYSICS_STEP);
 const liveRemainder = new WeakMap<AthleteBody, number>();
 export const athleteRemainder = (body: AthleteBody) => liveRemainder.get(body) ?? 0;
 export function restoreAthleteRemainder(body: AthleteBody, remainder: number) {
@@ -59,18 +60,23 @@ export function advanceAthlete(
   if (useFixedSlices)
     liveRemainder.set(p, Math.max(0, accumulated - steps * HIGH_FIDELITY_PHYSICS_STEP));
   else liveRemainder.delete(p);
+  // Every slice of a call has the same length, so the exponential response is
+  // computed once per call (bit-identical to computing it inside the loop).
+  const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
+  const response = useFixedSlices ? FIXED_SLICE_RESPONSE : 1 - Math.exp(-6 * h);
+  const maxDesired = Math.max(0, maxSpeed);
+  const halfH = 0.5 * h;
   for (let i = 0; i < steps; i++) {
-    const h = useFixedSlices ? HIGH_FIDELITY_PHYSICS_STEP : dt / steps;
-    const response = 1 - Math.exp(-6 * h);
     const dx = tx - p.x,
       dz = tz - p.z,
       distance = Math.hypot(dx, dz);
-    const desiredSpeed = Math.min(
-      Math.max(0, maxSpeed),
-      Math.sqrt(2 * braking * Math.max(0, distance - 0.08)),
-    );
-    const ux = distance > 0.00001 ? (dx / distance) * desiredSpeed : 0;
-    const uz = distance > 0.00001 ? (dz / distance) * desiredSpeed : 0;
+    const desiredSpeed = Math.min(maxDesired, Math.sqrt(2 * braking * Math.max(0, distance - 0.08)));
+    let ux = 0,
+      uz = 0;
+    if (distance > 0.00001) {
+      ux = (dx / distance) * desiredSpeed;
+      uz = (dz / distance) * desiredSpeed;
+    }
     const dvx = ux - p.vx,
       dvz = uz - p.vz,
       change = Math.hypot(dvx, dvz);
@@ -82,8 +88,9 @@ export function advanceAthlete(
       oldZ = p.vz;
     p.vx += dvx * factor;
     p.vz += dvz * factor;
-    p.x += (oldX + p.vx) * 0.5 * h;
-    p.z += (oldZ + p.vz) * 0.5 * h;
+    // Halving is exact in binary floating point, so this equals `* 0.5 * h`.
+    p.x += (oldX + p.vx) * halfH;
+    p.z += (oldZ + p.vz) * halfH;
   }
 }
 

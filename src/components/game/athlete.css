@@ -91,9 +91,6 @@
 .career-hub-heading {
   max-width: 48rem;
 }
-.career-hub-heading .screen-header {
-  margin-bottom: 0.25rem;
-}
 .career-hub-kicker,
 .career-hub-card-label {
   color: var(--club, var(--primary));
@@ -298,12 +295,6 @@
   .athlete-grid {
     grid-template-columns: 1.3fr 1fr;
   }
-  /* The detailed studio contains its own canvas and control rail. Keeping it
-     in the narrow right column makes the athlete smaller than the Hero it
-     replaces. Open it as a deliberate full-width creation step instead. */
-  .athlete-studio-card {
-    grid-column: 1 / -1;
-  }
 }
 .athlete-tabs {
   display: flex;
@@ -478,43 +469,6 @@
   background: var(--card);
   color: var(--foreground);
   padding: 0 0.8rem;
-}
-.athlete-avatar {
-  width: 7rem;
-  height: 9rem;
-  position: relative;
-  margin: 0 auto;
-}
-.athlete-avatar .head {
-  position: absolute;
-  left: 50%;
-  top: 0.4rem;
-  width: 3.4rem;
-  height: 4rem;
-  transform: translateX(-50%);
-  border-radius: 46% 46% 42% 42%;
-}
-.athlete-avatar .hair {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 3.7rem;
-  transform: translateX(-50%);
-  border-radius: 50% 50% 20% 20%;
-}
-.athlete-avatar .body {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 6.5rem;
-  height: 4.6rem;
-  transform: translateX(-50%);
-  border-radius: 40% 40% 12px 12px;
-  display: grid;
-  place-items: center;
-  font:
-    700 1.6rem "Space Grotesk",
-    system-ui;
 }
 .athlete-moment {
   display: grid;

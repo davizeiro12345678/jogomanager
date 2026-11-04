@@ -157,20 +157,37 @@ export function moveOffBall(sim: MatchSim, dt: number) {
     } else if (q.x > lineX.away) lineX.away = q.x;
   }
 
+  // Values that are the same for every player of a side are computed once per
+  // call instead of 22 times; the arithmetic per player is unchanged.
+  const traction = pitchTraction(sim.weather, sim.time);
+  const holderId = sim.ball.holder;
+  const sideContext = (side: Side) => {
+    const setup = sim.setup(side);
+    const attacking = sim.possession === side;
+    const defendingWide = !attacking && Math.abs(bz) > FIELD_Z * 0.7;
+    const surge = !attacking && sim.pressSurge[side] > 0;
+    return {
+      setup,
+      dir: sim.attackDir(side),
+      attacking,
+      surge,
+      widthFactor: (0.62 + setup.tactics.width * 0.14) * (defendingWide ? 0.76 : 1),
+      pressLine: attacking
+        ? 10 + setup.tactics.mentality * 5
+        : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0),
+      shift: sim.mentalityShift(side),
+      urgency: urgency(side),
+    };
+  };
+  const contexts = { home: sideContext("home"), away: sideContext("away") };
+
   for (const p of sim.players) {
     if (p.sentOff) continue;
-    if (p.id === sim.ball.holder) continue;
-    const setup = sim.setup(p.side);
-    const dir = sim.attackDir(p.side);
-    const attacking = sim.possession === p.side;
-    const defendingWide = !attacking && Math.abs(bz) > FIELD_Z * 0.7;
-    const widthFactor = (0.62 + setup.tactics.width * 0.14) * (defendingWide ? 0.76 : 1);
-    const surge = !attacking && sim.pressSurge[p.side] > 0;
-    const pressLine = attacking
-      ? 10 + setup.tactics.mentality * 5
-      : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0);
+    if (p.id === holderId) continue;
+    const { setup, dir, attacking, surge, widthFactor, pressLine, shift, urgency: push } =
+      contexts[p.side];
 
-    let tx = p.slotX * FIELD_X * 0.9 + sim.mentalityShift(p.side) + bx * 0.22 + pressLine * dir;
+    let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
     let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
     let sprint = 1;
 
@@ -239,7 +256,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         sprint = (surge ? 1.3 : 1.15) * (0.82 + p.stamina / 550);
       }
       // perdendo no fim: a equipe inteira sobe para pressionar
-      tx += urgency(p.side) * 7 * dir;
+      tx += push * 7 * dir;
     } else {
       // Movimento sem bola de verdade, em vez de balanço aleatório:
       // atacante ataca as costas da linha, ponta corta para dentro,
@@ -263,7 +280,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         sprint = 1.2;
       }
       tz += Math.sin(sim.time * 0.4 + p.number) * 0.9;
-      tx += urgency(p.side) * 5 * dir;
+      tx += push * 5 * dir;
     }
 
     tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
@@ -287,6 +304,6 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       // reação tardia a um chute próximo
       if ((sim.reactionUntil.get(p.id) ?? 0) > sim.time) speedEff *= 0.3;
     }
-    advanceAthlete(p, tx, tz, speedEff, dt, pitchTraction(sim.weather, sim.time));
+    advanceAthlete(p, tx, tz, speedEff, dt, traction);
   }
 }

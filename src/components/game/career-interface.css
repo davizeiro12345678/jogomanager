@@ -415,34 +415,6 @@
   font-weight: 700;
   white-space: nowrap;
 }
-.trainer-onboarding {
-  margin-top: 18px;
-}
-.trainer-onboarding summary {
-  cursor: pointer;
-}
-.trainer-onboarding summary span:first-child {
-  font-weight: 600;
-  margin-inline-end: 12px;
-}
-.trainer-onboarding ol {
-  list-style: none;
-  padding: 0;
-}
-.trainer-onboarding a {
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-}
-.trainer-onboarding a:hover {
-  color: var(--primary);
-}
-.trainer-onboarding button {
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--primary);
-}
 .trainer-overview-heading {
   margin: 30px 0 16px;
 }
@@ -582,9 +554,6 @@
   .trainer-attention {
     flex-wrap: wrap;
     gap: 10px;
-  }
-  .trainer-onboarding summary span {
-    display: block;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1229,40 +1198,6 @@
   line-height: 1.5;
   color: var(--muted-foreground);
 }
-.trainer-onboarding {
-  margin-block: 18px 26px;
-  padding: 0;
-  background: var(--card);
-  border: 1px solid var(--career-line);
-  border-radius: 12px;
-}
-.trainer-onboarding summary {
-  padding: 15px 18px;
-  min-height: 48px;
-  font-size: 0.875rem;
-  color: #d1e0ee;
-}
-.trainer-onboarding summary span:last-child {
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-}
-.trainer-onboarding > div {
-  padding: 0 18px 18px;
-  font-size: 0.875rem;
-  line-height: 1.8;
-}
-.trainer-onboarding a {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-}
-.trainer-onboarding button {
-  min-height: 44px;
-  padding: 8px 12px;
-  margin-top: 10px;
-  border: 1px solid var(--input);
-  border-radius: 8px;
-}
 .trainer-overview-heading {
   margin-top: 30px;
   margin-bottom: 18px;
@@ -1787,10 +1722,6 @@
   }
   .trainer-quick-actions a > svg:last-child {
     display: none;
-  }
-  .trainer-onboarding summary span:last-child {
-    display: block;
-    margin-top: 5px;
   }
   .trainer-overview-heading {
     margin-top: 26px;
@@ -3277,8 +3208,7 @@ html[data-text-size="xlarge"] .career-content {
   margin-block: 1rem;
   font: inherit;
 }
-[dir="rtl"] .career-current-page > svg,
-[dir="rtl"] .career-nav-link > svg:last-child {
+[dir="rtl"] .career-current-page > svg {
   transform: scaleX(-1);
 }
 [dir="rtl"] .career-sidebar {
