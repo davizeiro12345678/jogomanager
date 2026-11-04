@@ -8,15 +8,7 @@ import {
   useLocation,
   Scripts,
 } from "@tanstack/react-router";
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type SyntheticEvent,
-} from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
@@ -107,21 +99,6 @@ export function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-// Delegate intent to the existing content root. React already delegates these
-// events, so extra document listeners and their cleanup are unnecessary.
-function prefetchGameOnIntent(event: SyntheticEvent) {
-  const target = event.target;
-  const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : null;
-  if (
-    anchor?.origin !== location.origin ||
-    !/^\/(?:new|dashboard|match)(?:\/|$)/.test(anchor.pathname)
-  )
-    return;
-  void import("@/lib/prefetch-game-stylesheet")
-    .then(({ prefetchGameStylesheet }) => prefetchGameStylesheet())
-    .catch(() => undefined);
-}
-
 // SEO/editorial pages must not download the full league and squad catalogue.
 // On navigation into gameplay we still initialize it immediately.
 export function RootComponent() {
@@ -162,13 +139,7 @@ export function RootComponent() {
           >
             <SkipContentLabel />
           </a>
-          <div
-            id="conteudo"
-            tabIndex={-1}
-            onPointerOver={prefetchGameOnIntent}
-            onFocus={prefetchGameOnIntent}
-            onTouchStart={prefetchGameOnIntent}
-          >
+          <div id="conteudo" tabIndex={-1}>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
             <ConsentBanner />

@@ -12,7 +12,7 @@ Data: 2026-11-04 | Projeto: Pro Football Manager 3D | Estado: **proposto em PR, 
 | Público | `src/public-styles.css` | Home, loja, SEO, guias, termos, privacidade, tabelas, componentes públicos |
 | Jogo/3D | `src/styles.css`, `src/game-presentation.css` | Dashboard, criação de carreira, HUD, partida, cenas 3D |
 
-**Implementação da PR:** o helper `prefetchGameStylesheet` somente agenda `<link rel=prefetch as=style>` quando o usuário manifesta intenção de ir para `/new`, `/dashboard` ou `/match` via mouse, teclado ou toque. Não aumenta a prioridade de download do jogo na primeira visita à home. A folha do jogo usada no SSR continua a ser descoberta pelo `head()` do TanStack Start.
+**Integração PR #123:** a folha do jogo é descoberta pelo `head()` do TanStack Start no SSR e é obtida na rota de jogo. O experimento opcional `prefetchGameStylesheet` por intenção foi retirado da integração por aumentar o JS comprimido total e falhar no gate de bundle; a opção de prefetch continua **pendente de implementação sem regressão**, com testes controlados de FCP/LCP e ausência de FOUC. A home não antecipa o download do stylesheet 3D.
 
 **Observação:** CSS importado em componentes `React.lazy` não é automaticamente CSS crítico do primeiro SSR. Evitar trocar a folha inicial por um `useEffect` sem medições e testes de flash. `server.build.inlineCss` existe, mas é experimental, aumenta HTML e exige nonce CSP; não ativar globalmente sem análise.
 
