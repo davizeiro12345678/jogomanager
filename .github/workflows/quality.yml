@@ -158,6 +158,10 @@ jobs:
         env:
           JM_DISPOSABLE_RLS_TEST: 'true'
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/payment-rls-regression.sql
+      - name: Verify private risk-score RPC and 30-day score calculation (disposable only)
+        env:
+          JM_DISPOSABLE_RLS_TEST: 'true'
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/career-risk-attestation-disposable.sql
       - name: Verify public catalog and bounded identity enrichment
         run: |
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql
