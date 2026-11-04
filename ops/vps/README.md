@@ -27,3 +27,15 @@ Execute `bash ops/vps/ssh-fido2-preflight.sh` em cada VPS antes de configurar ce
 Após realizar as duas medições na mesma VPS, compare `python3 ops/vps/compare-results.py CAMINHO_BEFORE CAMINHO_AFTER`. O comparador rejeita perfis distintos e comparações entre máquinas, e não inventa categorias faltantes.
 
 Os arquivos de resultados são locais e privados; não incluí-los em commits, issues ou logs públicos sem revisão de dados operacionais.
+
+## Diagnóstico externo pelo Windows (PowerShell 5.1)
+
+O script `ops/vps/windows-client-probe.ps1` mede **somente** tempos de conexão TCP/22 dos dois IPs e TTFB de URLs HTTPS públicas. Executar localmente no Windows:
+
+    powershell.exe -NoProfile -File .\ops\vps\windows-client-probe.ps1
+
+Não realiza login SSH, leitura de processos, uso de CPU, memória, benchmark NVMe nem vazão WAN. Falhas de conexão ficam contabilizadas, sem abortar a coleta inteira; gera JSON local privado na pasta Downloads. Jamais usar p50/p95 TCP ou TTFB público como benchmark da CPU da VPS.
+
+Quando o SSH retorna `Permission denied (publickey)`, a autenticação foi recusada apesar de TCP/22 estar acessível. Consulte `ops/vps/SSH-PUBLICKEY-RECOVERY.md` para a recuperação correta via VNC root da Contabo. Não habilitar login SSH root por senha para contornar a recusa.
+
+O trabalho de infraestrutura foi incorporado ao PR de integração #123. Evite novos merges independentes do PR #122 ou duplicação de arquivos.
