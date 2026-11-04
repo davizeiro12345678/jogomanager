@@ -18,6 +18,7 @@ const mass = (p: AthleteBody) => (Number.isFinite(p.weightKg) ? clamp(p.weightKg
 // slices. This applies only to live motion; long recovery intervals still use
 // a bounded fallback below.
 const MAX_LIVE_ATHLETE_SUBSTEPS = 11;
+const FIXED_SLICE_RESPONSE = 1 - Math.exp(-6 * HIGH_FIDELITY_PHYSICS_STEP);
 const liveRemainder = new WeakMap<AthleteBody, number>();
 export const athleteRemainder = (body: AthleteBody) => liveRemainder.get(body) ?? 0;
 export function restoreAthleteRemainder(body: AthleteBody, remainder: number) {
@@ -87,8 +88,9 @@ export function advanceAthlete(
       oldZ = p.vz;
     p.vx += dvx * factor;
     p.vz += dvz * factor;
-    p.x += (oldX + p.vx) * 0.5 * h;
-    p.z += (oldZ + p.vz) * 0.5 * h;
+    // Halving is exact in binary floating point, so this equals `* 0.5 * h`.
+    p.x += (oldX + p.vx) * halfH;
+    p.z += (oldZ + p.vz) * halfH;
   }
 }
 
