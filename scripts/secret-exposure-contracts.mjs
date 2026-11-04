@@ -21,7 +21,8 @@ const privatePatterns = [
   /\bwhsec_[a-zA-Z0-9]{12,}\b/,
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
 ];
-const sensitiveName = /(?:SERVICE_ROLE|STRIPE_SECRET|WEBHOOK_SECRET|PRIVATE_KEY|DATABASE_PASSWORD|JWT_SECRET)/i;
+const sensitiveName =
+  /(?:SERVICE_ROLE|STRIPE_SECRET|WEBHOOK_SECRET|PRIVATE_KEY|DATABASE_PASSWORD|JWT_SECRET)/i;
 const flagged = [];
 for (const file of tracked) {
   const lines = readFileSync(file, "utf8").split(/\r?\n/);
