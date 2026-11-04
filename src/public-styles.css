@@ -1,4 +1,5 @@
 @import "tailwindcss" source(none);
+@import "./critical-base.css";
 @source "./components/RootLayout.tsx";
 @source "./components/RoutePending.tsx";
 @source "./components/ArticleShell.tsx";
