@@ -108,14 +108,18 @@ jobs:
       - run: npm ci
       - name: Build the PR candidate without production deployments
         run: PFM_LOCAL_VERIFY=1 npm run build
-      - name: Start loopback-only Nitro SSR preview
+      - name: Start fixed-port Wrangler SSR preview on loopback
         run: |
-          nohup npx nitro preview --host 127.0.0.1 --port 4173 >/tmp/jm-zap-preview.log 2>&1 &
+          nohup ./node_modules/.bin/wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 >/tmp/jm-zap-preview.log 2>&1 &
           echo "$!" >/tmp/jm-zap-preview.pid
-          for attempt in $(seq 1 90); do
+          for attempt in $(seq 1 180); do
             if curl --fail --silent --max-time 3 http://127.0.0.1:4173/ -o /dev/null; then
-              echo "Local preview responded to GET /"
+              echo "Local SSR preview served GET / on 127.0.0.1:4173"
               exit 0
+            fi
+            if (( attempt % 30 == 0 )); then
+              echo "Waiting for loopback-only worker: attempt $attempt"
+              tail -6 /tmp/jm-zap-preview.log || true
             fi
             sleep 1
           done
