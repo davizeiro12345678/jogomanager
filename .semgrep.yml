@@ -1,0 +1,68 @@
+rules:
+  - id: jogomanager.typescript.eval
+    languages: [javascript, typescript]
+    message: Avoid eval and Function constructors; keep executable code static.
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: new Function(...)
+          - pattern: Function(...)
+    paths:
+      exclude:
+        - '**/*.test.ts'
+        - '**/*.test.tsx'
+
+  - id: jogomanager.typescript.browser-secret-env
+    languages: [javascript, typescript]
+    message: Do not expose server secrets through Vite's client environment.
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: import.meta.env.VITE_STRIPE_SECRET_KEY
+          - pattern: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+          - pattern: import.meta.env.VITE_CRON_SECRET
+          - pattern: import.meta.env.VITE_ANTHROPIC_API_KEY
+
+  - id: jogomanager.typescript.dangerously-set-inner-html
+    languages: [typescript]
+    message: Review dangerouslySetInnerHTML; sanitize untrusted HTML before rendering.
+    severity: WARNING
+    pattern: dangerouslySetInnerHTML
+    paths:
+      exclude:
+        - '**/*.test.ts'
+        - '**/*.test.tsx'
+
+  - id: jogomanager.typescript.regex-redos-review
+    languages: [javascript, typescript]
+    message: Review nested or overlapping repetition in regexes for ReDoS risk.
+    severity: WARNING
+    patterns:
+      - pattern-regex: '\/(?:\\.|\[[^]]*\]|[^/])*(?:\([^)]*[+*][^)]*\)|\[[^]]+\]|\\w|\\d|\.)[+*](?:\\.|\[[^]]*\]|[^/])*\/[gimsuy]*'
+    paths:
+      exclude:
+        - '**/*.test.ts'
+        - '**/*.test.tsx'
+
+  - id: jogomanager.typescript.zod-server-input
+    languages: [typescript]
+    message: Review server function input validation and ensure unknown keys are handled intentionally by the schema.
+    severity: INFO
+    patterns:
+      - pattern: createServerFn(...). ... .handler(async ({ data, ... }) => ...)
+    paths:
+      include:
+        - 'src/**/*.ts'
+        - 'src/**/*.tsx'
+
+  - id: jogomanager.typescript.eval-string-timer
+    languages: [javascript, typescript]
+    message: Do not pass strings to setTimeout or setInterval.
+    severity: ERROR
+    pattern-either:
+      - pattern: setTimeout($CODE, ...)
+      - pattern: setInterval($CODE, ...)
+    metavariable-regex:
+      metavariable: $CODE
+      regex: '^(["\']).*\\1$'
