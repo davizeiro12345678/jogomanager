@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 /**
  * Vitrine pública dos itens atualmente ativos no catálogo oficial.
  * A vitrine e a compra por e-mail também funcionam antes da autenticação.
@@ -103,7 +104,7 @@ export function ProdutosPage() {
         document.getElementById("checkout-area")?.scrollIntoView({ behavior: "smooth" }),
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível abrir o pagamento.");
+      toast.error(friendlyError(err, "Não foi possível abrir o pagamento. Tente de novo em instantes."));
     } finally {
       setOpening(null);
     }

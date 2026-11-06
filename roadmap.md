@@ -64,7 +64,7 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [x] Início: cartão da carreira mostra o próximo adversário e botão "Jogar o próximo jogo" (rodada corrigida)
   - [x] Carregamento do estádio com dicas, aviso de conexão lenta/sem internet e botão de tentar de novo se o download falhar
   - [x] Aviso de aparelho fraco com ajuste automático de gráficos (já existia)
-  - [ ] Mensagens de erro simples nas demais telas
+  - [x] Mensagens de erro simples nas demais telas (loja, perfil, autorização)
 - [x] Etapa 5 Novas compras
   - [x] Pacote de estreia (1x por conta) e Kit do clube
   - [x] Pacote médico e análise tática (tratamentos/relatórios guardados na carteira)

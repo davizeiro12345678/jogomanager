@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { Link, useLocation } from "@tanstack/react-router";
 import artCoins from "@/assets/store/coins.jpg?format=webp&w=640&quality=65&as=url";
 import artScout from "@/assets/store/scout.jpg?format=webp&w=640&quality=65&as=url";
@@ -204,7 +205,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         phase: "open",
         dedupeKey: "checkout-open",
       });
-      toast.error(error instanceof Error ? error.message : "Não foi possível abrir o checkout.");
+      toast.error(friendlyError(error, "Não foi possível abrir o pagamento. Tente de novo em instantes."));
     } finally {
       setOpeningKey(null);
     }

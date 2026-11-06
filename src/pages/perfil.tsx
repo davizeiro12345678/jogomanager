@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { ScreenHeader } from "@/components/game/screen-kit";
 
 import { Link } from "@tanstack/react-router";
@@ -357,9 +358,7 @@ export function Perfil() {
                   setTransferStatus("Carreira importada e salva neste aparelho.");
                 } catch (error) {
                   setTransferStatus(
-                    error instanceof Error
-                      ? error.message
-                      : "Não foi possível importar a carreira.",
+                    friendlyError(error, "Não foi possível importar a carreira. Confira se o arquivo é um save do jogo.")
                   );
                 } finally {
                   event.target.value = "";

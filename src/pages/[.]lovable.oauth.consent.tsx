@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { Link } from "@tanstack/react-router";
 
 import { getRouteApi } from "@tanstack/react-router";
@@ -20,7 +21,7 @@ export function Consent() {
       : await supabase.auth.oauth.denyAuthorization(authorization_id);
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(friendlyError(error, "Não foi possível concluir a autorização. Tente de novo."));
       return;
     }
     const result = data as { redirect_url?: string; redirect_to?: string } | null;
