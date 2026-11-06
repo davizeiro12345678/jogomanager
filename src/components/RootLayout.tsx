@@ -12,7 +12,11 @@ import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "rea
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
-import { isLightweightCssPath, isPublicContentPath, shouldInitializeWorldOnEntry } from "@/lib/public-content-routes";
+import {
+  isLightweightCssPath,
+  isPublicContentPath,
+  shouldInitializeWorldOnEntry,
+} from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { RouteHeadContent } from "@/components/RouteHeadContent";
 // Reading-controls UI is only visible on the public home page. Keep it out of

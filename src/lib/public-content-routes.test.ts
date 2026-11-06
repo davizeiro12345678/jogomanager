@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isLightweightCssPath, isPublicContentPath, shouldInitializeWorldOnEntry } from "./public-content-routes";
+import {
+  isLightweightCssPath,
+  isPublicContentPath,
+  shouldInitializeWorldOnEntry,
+} from "./public-content-routes";
 
 describe("public content isolation", () => {
   it("defers the new-career world while preserving existing career startup", () => {
