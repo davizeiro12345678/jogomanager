@@ -76,3 +76,17 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [x] Busca de jogadores por nome: índice de trigramas + estatísticas atualizadas (nome raro 1.409ms → 0,24ms)
 - [x] Tabela de liga: índice por prefixo de referência (5,6ms → 4ms)
 - [x] Acessibilidade: telas cheias usam altura real do celular (30 telas); imagens e botões de ícone já têm descrição
+
+## Plano carreira/tutorial/VIP (aprovado 2026-11-06)
+- [ ] E1 Tutorial completo
+- [ ] E2 Interface fácil
+- [ ] E3 Carreiras e criador de clube
+- [ ] E4 Serviços com moedas (5 novos) e 5 pacotes
+- [ ] E5 VIP e personalização
+- [ ] E6 Estádio 3D
+- [ ] E7 Arquivos grandes
+- [ ] E8 Economia
+- [ ] E9 Retorno
+- [ ] E10 Testes e entrega
+  - [x] E4 parcial: Acelerar evolução (300) e Melhoria do estádio (500) cobrados pelo banco, na tela do elenco
+  - [ ] E4 resto: Aprimorar treino, Olheiro premium, Renegociar contrato; 5 pacotes da loja

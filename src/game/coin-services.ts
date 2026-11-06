@@ -2,7 +2,54 @@
  * Career effects of coin services. Coins are charged by the server first; these
  * pure functions only change the player's own save afterwards.
  */
-import { INJURY_RECOVERY_WEEKS } from "@/lib/wallet-rules";
+import {
+  INJURY_RECOVERY_WEEKS,
+  STADIUM_UPGRADE_MAX_LEVEL,
+  STADIUM_UPGRADE_RATE,
+  YOUTH_BOOST_MAX_AGE,
+  YOUTH_BOOST_POTENTIAL,
+} from "@/lib/wallet-rules";
+
+const POTENTIAL_CAP = 99;
+
+/** Youth players of the managed club who can still receive a potential boost. */
+export function youthBoostCandidates(career: CareerState) {
+  return Object.values(career.players)
+    .filter(
+      (p) =>
+        p.clubId === career.clubId &&
+        p.age <= YOUTH_BOOST_MAX_AGE &&
+        (p.potential ?? p.ovr) < POTENTIAL_CAP,
+    )
+    .sort((a, b) => (b.potential ?? b.ovr) - (a.potential ?? a.ovr));
+}
+
+export function applyYouthBoost(career: CareerState, playerId: string): CareerState {
+  const player = career.players[playerId];
+  if (!player || player.clubId !== career.clubId || player.age > YOUTH_BOOST_MAX_AGE) return career;
+  const base = player.potential ?? player.ovr;
+  if (base >= POTENTIAL_CAP) return career;
+  return {
+    ...career,
+    players: {
+      ...career.players,
+      [playerId]: { ...player, potential: Math.min(POTENTIAL_CAP, base + YOUTH_BOOST_POTENTIAL) },
+    },
+  };
+}
+
+export function canUpgradeStadium(career: CareerState): boolean {
+  return (career.stadiumUpgrades ?? 0) < STADIUM_UPGRADE_MAX_LEVEL;
+}
+
+export function applyStadiumUpgrade(career: CareerState): CareerState {
+  if (!canUpgradeStadium(career)) return career;
+  return {
+    ...career,
+    capacity: Math.round(career.capacity * (1 + STADIUM_UPGRADE_RATE)),
+    stadiumUpgrades: (career.stadiumUpgrades ?? 0) + 1,
+  };
+}
 import { CLUBS } from "./data/leagues";
 import { computeTable, nextFixture } from "./season";
 import type { CareerState } from "./types";

@@ -33,6 +33,7 @@ import type { Player } from "@/game/types";
 import { worldFor } from "@/game/career-world";
 import { useMarkOnboardingVisit } from "@/lib/onboarding-progress";
 import { InjuryRecoveryCard } from "@/components/game/services/InjuryRecoveryCard";
+import { CareerUpgradesCard } from "@/components/game/services/CareerUpgradesCard";
 
 function statusBadge(p: Player) {
   if (p.injuryWeeks > 0)
@@ -391,6 +392,7 @@ export function SquadPage() {
         </HudCard>
       </div>
       <InjuryRecoveryCard career={career} onApply={update} />
+      <CareerUpgradesCard career={career} onApply={update} />
       {sheet ? <PlayerSheet player={sheet} career={career} onClose={() => setSheet(null)} /> : null}
     </GameShell>
   );

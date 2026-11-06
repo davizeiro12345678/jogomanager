@@ -327,6 +327,8 @@ export interface CareerState {
   ticketPrice: number;
   /** capacidade do estádio */
   capacity: number;
+  /** níveis de melhoria do estádio comprados com moedas (0-5) */
+  stadiumUpgrades?: number;
   /** sequência atual: positivo = vitórias, negativo = derrotas */
   streak: number;
   offers: TransferOffer[];

@@ -379,6 +379,13 @@
       "when": 1793997583483,
       "tag": "0053_career_save_hash_chain",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793998601861,
+      "tag": "0054_add_youth_boost_and_stadium_upgrade_services",
+      "breakpoints": true
     }
   ]
 }
