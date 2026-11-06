@@ -71,3 +71,7 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [x] Passe anual (assinatura anual, 12 meses pelo preço de 10)
 - [x] Etapa 6 Go e C# (pilotos medidos; nenhum entra: Go 21% mais lento, .NET +1,3 MB)
 - [ ] Etapa 7 Relatório final
+
+## Banco (2026-11-06)
+- [x] Busca de jogadores por nome: índice de trigramas + estatísticas atualizadas (nome raro 1.409ms → 0,24ms)
+- [x] Tabela de liga: índice por prefixo de referência (5,6ms → 4ms)
