@@ -23,5 +23,6 @@ jobs:
           bash -n ops/vps/ssh-fido2-preflight.sh
           bash -n ops/vps/security-audit.sh
           bash -n ops/vps/erase-confirmed-malware.sh
+          bash -n ops/vps/supabase-cloudflare-preflight.sh
           python3 ops/vps/compare-results.py --self-test
           test -s ops/vps/README.md
