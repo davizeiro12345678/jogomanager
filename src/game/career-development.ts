@@ -31,7 +31,7 @@ export function applyWeeklyDevelopment(
   state: CareerState,
   won: boolean | null,
   seed: string,
-  livePids: Set<string> = new Set(),
+  livePids: Map<string, boolean> = new Map(),
   matchPlayed = true,
   evaluatedAt: number | string = Date.now(),
 ): { players: Record<string, Player>; news: NewsItem[]; attrDeltas: AttrDeltas } {
@@ -67,7 +67,7 @@ export function applyWeeklyDevelopment(
     const resilience = Math.max(0.85, Math.min(1.15, 1 - (detailed.injuryResistance - 65) * 0.006));
 
     // recuperação de lesão e suspensão cumprida
-    if (q.injuryWeeks > 0) {
+    if (q.injuryWeeks > 0 && q.injuryWeeks <= (state.players[id]?.injuryWeeks ?? 0)) {
       q.injuryWeeks = Math.max(0, q.injuryWeeks - 1);
       if (q.injuryWeeks === 0) {
         news.push({
@@ -80,7 +80,7 @@ export function applyWeeklyDevelopment(
         });
       }
     }
-    if (q.suspended) q.suspended = false;
+    if (q.suspended && matchPlayed && state.players[id]?.suspended) q.suspended = false;
 
     // condição e moral
     q.condition = Math.max(
@@ -128,8 +128,15 @@ export function applyWeeklyDevelopment(
     }
 
     // cartões e lesões da rodada (somente quem jogou; ao vivo já trouxe os dados)
-    const played = state.lineup.includes(id) || state.bench.slice(0, 3).includes(id);
     const fromLive = livePids.has(id);
+    const wasAvailable =
+      !state.players[id]?.suspended && (state.players[id]?.injuryWeeks ?? 0) <= 0;
+    const played =
+      matchPlayed &&
+      wasAvailable &&
+      (livePids.size > 0
+        ? livePids.get(id) === true
+        : state.lineup.includes(id) || state.bench.slice(0, 3).includes(id));
     if (matchPlayed && played && !fromLive) {
       if (rnd() < 0.11) {
         q.yellows += 1;
