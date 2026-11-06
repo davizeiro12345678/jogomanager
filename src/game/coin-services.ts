@@ -3,6 +3,8 @@
  * pure functions only change the player's own save afterwards.
  */
 import {
+  CONTRACT_MAX_YEARS,
+  CONTRACT_RENEWAL_YEARS,
   INJURY_RECOVERY_WEEKS,
   STADIUM_UPGRADE_MAX_LEVEL,
   STADIUM_UPGRADE_RATE,
@@ -148,5 +150,29 @@ export function opponentReport(career: CareerState): OpponentReport | null {
     strengthGap,
     approach,
     advice,
+  };
+}
+
+/** Players of the managed club whose contract can still be extended, shortest first. */
+export function contractRenewalCandidates(career: CareerState) {
+  return Object.values(career.players)
+    .filter((p) => p.clubId === career.clubId && (p.contractYears ?? 2) < CONTRACT_MAX_YEARS)
+    .sort((a, b) => (a.contractYears ?? 2) - (b.contractYears ?? 2) || b.ovr - a.ovr);
+}
+
+export function applyContractRenewal(career: CareerState, playerId: string): CareerState {
+  const player = career.players[playerId];
+  if (!player || player.clubId !== career.clubId) return career;
+  const years = player.contractYears ?? 2;
+  if (years >= CONTRACT_MAX_YEARS) return career;
+  return {
+    ...career,
+    players: {
+      ...career.players,
+      [playerId]: {
+        ...player,
+        contractYears: Math.min(CONTRACT_MAX_YEARS, years + CONTRACT_RENEWAL_YEARS),
+      },
+    },
   };
 }

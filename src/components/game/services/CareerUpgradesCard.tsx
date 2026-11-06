@@ -1,11 +1,13 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { Building2, Sprout } from "lucide-react";
+import { Building2, FileSignature, Sprout } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GuestSignInButton } from "@/components/store/GuestSignInNotice";
 import {
+  applyContractRenewal,
   applyStadiumUpgrade,
+  contractRenewalCandidates,
   applyYouthBoost,
   canUpgradeStadium,
   youthBoostCandidates,
@@ -15,6 +17,8 @@ import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { spendCoinsOnService } from "@/lib/coin-services.functions";
 import {
   CAREER_SERVICES,
+  CONTRACT_MAX_YEARS,
+  CONTRACT_RENEWAL_YEARS,
   STADIUM_UPGRADE_MAX_LEVEL,
   STADIUM_UPGRADE_RATE,
   YOUTH_BOOST_MAX_AGE,
@@ -24,6 +28,7 @@ import {
 
 const youth = CAREER_SERVICES.youth_boost;
 const stadium = CAREER_SERVICES.stadium_upgrade;
+const renewal = CAREER_SERVICES.contract_renewal;
 
 /** Coin investments: youth development and stadium expansion, charged by the server first. */
 export function CareerUpgradesCard({
@@ -39,6 +44,7 @@ export function CareerUpgradesCard({
   const [busy, setBusy] = useState<string | null>(null);
   const candidates = youthBoostCandidates(career).slice(0, 5);
   const level = career.stadiumUpgrades ?? 0;
+  const expiring = contractRenewalCandidates(career).slice(0, 5);
 
   async function buy(service: CareerService, key: string, apply: () => CareerState, done: string) {
     if (busy) return;
@@ -161,6 +167,48 @@ export function CareerUpgradesCard({
               : `Ampliar · ${stadium.cost} moedas`}
         </button>
       </div>
+      <h3 className="mt-5 flex items-center gap-2 text-sm font-semibold text-foreground">
+        <FileSignature size={16} aria-hidden="true" /> Renegociar contrato
+      </h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        +{CONTRACT_RENEWAL_YEARS} anos de contrato com o mesmo salário (máx. {CONTRACT_MAX_YEARS}) ·{" "}
+        {renewal.cost} moedas · até {renewal.weeklyLimit} por semana.
+      </p>
+      {expiring.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">Todos os contratos já estão no máximo.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-border/50">
+          {expiring.map((p) => {
+            const years = p.contractYears ?? 2;
+            return (
+              <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span>
+                  <span className="font-medium text-foreground">{p.name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Contrato: {years} →{" "}
+                    {Math.min(CONTRACT_MAX_YEARS, years + CONTRACT_RENEWAL_YEARS)} anos
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  disabled={!userId || busy !== null}
+                  onClick={() =>
+                    void buy(
+                      "contract_renewal",
+                      `c-${p.id}`,
+                      () => applyContractRenewal(career, p.id),
+                      `Contrato de ${p.name} renovado.`,
+                    )
+                  }
+                  className="min-h-11 shrink-0 rounded-lg border border-primary/50 px-3 text-xs font-semibold text-primary disabled:opacity-50"
+                >
+                  {busy === `c-${p.id}` ? "Renovando…" : `Renovar · ${renewal.cost} moedas`}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }

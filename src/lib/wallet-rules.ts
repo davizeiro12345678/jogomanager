@@ -17,7 +17,7 @@ export const SEASON_PASS_WEEKLY_COINS = 300;
 export const PREMIUM_SCOUT_REPORT_SIZE = 5;
 
 export type CareerService =
-  "injury_recovery" | "opponent_report" | "youth_boost" | "stadium_upgrade";
+  "injury_recovery" | "opponent_report" | "youth_boost" | "stadium_upgrade" | "contract_renewal";
 
 /** Coin services; cost and weekly limit are enforced by spend_coins_on_service. */
 export const CAREER_SERVICES: Record<CareerService, { cost: number; weeklyLimit: number }> = {
@@ -25,7 +25,12 @@ export const CAREER_SERVICES: Record<CareerService, { cost: number; weeklyLimit:
   opponent_report: { cost: 100, weeklyLimit: 10 },
   youth_boost: { cost: 300, weeklyLimit: 2 },
   stadium_upgrade: { cost: 500, weeklyLimit: 1 },
+  contract_renewal: { cost: 200, weeklyLimit: 3 },
 };
+
+/** Contract renewal: years added to one player's contract, never above the maximum. */
+export const CONTRACT_RENEWAL_YEARS = 2;
+export const CONTRACT_MAX_YEARS = 5;
 
 /** Youth boost: potential added to one player aged up to YOUTH_BOOST_MAX_AGE. */
 export const YOUTH_BOOST_POTENTIAL = 2;
