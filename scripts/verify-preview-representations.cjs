@@ -20,7 +20,7 @@ module.exports = async () => {
       }
       const head = html.split(/<\/head>/i)[0];
       if (
-        !/<link\b(?=[^>]*\brel=["']stylesheet["'])(?=[^>]*\bhref=["'][^"']*public-styles[^"']*\.css)[^>]*>/i.test(
+        !/<link\b(?=[^>]*\brel=["']stylesheet["'])(?=[^>]*\bhref=["'][^"']*public-(?:home-|store-|tables-)?styles[^"']*\.css)[^>]*>/i.test(
           head,
         )
       )

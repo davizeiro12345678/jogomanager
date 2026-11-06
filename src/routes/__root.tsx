@@ -8,9 +8,20 @@ import {
 } from "@/components/RootLayout";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
+import homeCss from "../public-home-styles.css?url";
+import storeCss from "../public-store-styles.css?url";
+import tablesCss from "../public-tables-styles.css?url";
 
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
+
+function stylesheetForPath(pathname: string) {
+  const path = pathname.replace(/\/$/, "") || "/";
+  if (path === "/") return homeCss;
+  if (path === "/produtos") return storeCss;
+  if (path === "/tabelas" || path.startsWith("/tabelas/")) return tablesCss;
+  return isLightweightCssPath(path) ? publicCss : appCss;
+}
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: ({ matches }) => ({
@@ -44,7 +55,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // is too late for the first styled paint on a throttled mobile device.
       {
         rel: "stylesheet",
-        href: isLightweightCssPath(matches.at(-1)?.pathname ?? "") ? publicCss : appCss,
+        href: stylesheetForPath(matches.at(-1)?.pathname ?? ""),
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },

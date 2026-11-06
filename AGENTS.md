@@ -42,6 +42,8 @@
 - Every post-processing stack runs `HdrSanitize` before bloom; one non-finite pixel spread by bloom flashes the whole frame white or black.
 
 - Reference the full game stylesheet only through `src/lib/game-stylesheet.ts` (`?url`); a second plain `import "@/styles.css"` makes server and browser builds name the asset differently and game pages link a missing stylesheet.
+- Select home, store, tables, editorial or gameplay CSS in the root SSR head; shared public sources stay explicit, so route navigation preserves first-paint styling without downloading unrelated utilities.
+- New-career catalog hydration starts at club selection, not root startup; bundled league identities remain available while optional catalog enrichment loads.
 - Go and C#/.NET WebAssembly pilots were measured and rejected (`docs/report-2026-11-03-speed-and-wasm-pilots.md`); TypeScript stays the only runtime for game logic unless a new pilot beats that baseline.
 - Move MatchSim behaviour into `src/game/sim-*.ts` modules as functions that take the sim (shared members marked `@internal`, not `private`), copying code verbatim and confirming same-seed parity against the previous engine; this shrinks sim.ts without changing draw order or replays.
 - Split oversized modules into sibling files (`career-*.ts`, `apifootball-*.server.ts`, `players/PlayerStudioScene.tsx`, `features/match/*`) while the original file re-exports the public API; existing imports stay valid and each piece can be tested alone.
