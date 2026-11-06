@@ -77,6 +77,60 @@ O banco cobra e confere o limite antes de o jogo aplicar o efeito; nenhuma moeda
 - Aviso de retorno: "Seu próximo jogo é um clássico" e "Seu jogador jovem está pronto para subir".
 - Calendário de recompensas de 7 dias (a sequência zera se você faltar um dia).
 
+## Melhorias extras por etapa
+**Etapa 1 — Tutorial**
+- Narração em texto curta, no tom de um auxiliar técnico ("Professor, escolha a formação").
+- Um capítulo bônus de bola parada (escanteio, falta e pênalti), com recompensa de 100 moedas.
+- O tutorial se adapta: quem já jogou outros jogos de técnico pode fazer a versão rápida de 3 minutos.
+- Barra de progresso e uma medalha "Formado" no perfil.
+
+**Etapa 2 — Interface**
+- Busca rápida (Ctrl+K no computador, ícone de lupa no celular) para ir a qualquer jogador ou tela.
+- Desfazer as últimas ações de escalação e treino.
+- Comparar 2 jogadores lado a lado com gráfico de atributos.
+- Barra de navegação inferior no celular, ao alcance do polegar.
+- Modo daltônico e contraste alto.
+
+**Etapa 3 — Carreiras e criador de clube**
+- Treinador: conversa com jogadores (elogiar, cobrar, prometer minutos), coletiva de imprensa com 3 respostas que mudam a moral, orçamento definido pela diretoria e demissão se as metas falharem por 2 temporadas.
+- Treinador: categoria de base com peneira anual de 5 jovens e plano de desenvolvimento individual.
+- Treinador: staff contratável (preparador físico, analista, olheiro-chefe), cada um com um bônus claro.
+- Jogador: agente que negocia por você, rivalidade com outro jogador, seleção nacional por desempenho, aposentadoria com resumo da carreira.
+- Jogador: personalidade (líder, artilheiro, criativo) que libera habilidades especiais.
+- Criador de clube: hino e mascote escolhidos numa lista, rivalidade com um clube da cidade, história gerada com o nome e o ano de fundação, e entrada em qualquer uma das 13 ligas.
+- Salvar até 3 carreiras ao mesmo tempo, com a troca entre elas no menu.
+
+**Etapa 4 — Serviços e compras**
+- Cada serviço mostra antes da compra o efeito exato ("Pedro: potencial 78 → 80").
+- Histórico de gastos com moedas na carteira.
+- Os pacotes mostram a economia em relação a comprar avulso ("economize 35%").
+- Primeira compra de cada pacote com 20% a mais de conteúdo.
+
+**Etapa 5 — VIP e personalização**
+- VIP anual com 2 meses grátis (R$ 199,00).
+- Teste grátis de 3 dias, sem cobrar antes do fim e com cancelamento a qualquer hora.
+- Coleção de personalização com raridade (comum, rara, lendária), toda obtida jogando ou comprando, sem sorteio pago.
+- Prévia de cada skin antes de comprar.
+
+**Etapa 6 — Estádio 3D**
+- 5 níveis de estádio com visual próprio (alambrado → arena moderna).
+- A torcida reage ao placar e à fase do time (estádio mais cheio quando o time vai bem).
+- Clima e horário do jogo (dia, noite, chuva) mostrados na prévia.
+- Tour do estádio com a câmera passando por vestiário, túnel e arquibancada.
+
+**Etapa 7 — Arquivos**
+- Mapa de quais partes cada tela usa, para as próximas mudanças serem mais rápidas e seguras.
+- Remoção de código que nada mais usa, depois de confirmar com uma busca.
+
+**Etapa 8 — Economia**
+- Painel interno mostrando as moedas ganhas e gastas por dia, para ajustar os preços com dados reais.
+- Ajuste dos preços só por mudança no banco, sem precisar atualizar o jogo.
+
+**Etapa 9 — Retorno**
+- Temporadas de eventos (Copa do Mundo, clássicos, mata-mata) com recompensas de personalização.
+- Ranking semanal entre amigos.
+- Notificações só sobre o que importa, com limite de 1 por dia e opção de desligar.
+
 ## Critérios de pronto por etapa
 | Etapa | Está pronta quando |
 |---|---|
