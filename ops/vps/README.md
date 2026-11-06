@@ -55,3 +55,22 @@ Após confirmação independente e exata de um binário malicioso (SHA-256, PID 
 - Porta 443 diretamente nos IPs não respondeu à sondagem, mas domínio principal e catálogo retornaram HTTP 200 via Cloudflare.
 - Tunnel `jogomanager-vps-catalog-20261026` ainda inativo, zero conexões; DNS de catálogo permanece proxied A para 194.163.188.190. Não modificar rota ou habilitar failover antes dos gates de segurança.
 - Não há benchmark CPU/RAM/NVMe atual de 06/11/2026 nas VPS; somente medições TCP/HTTP externas. A Plus 6 permanece **não elegível para produção/failover** enquanto persistir a suspeita histórica de execução de minerador root.
+
+## Preparação para integração Cloudflare + Supabase (06/11/2026)
+
+Executar **somente na VPS autenticada** (não no Windows ou WSL):
+
+    bash ops/vps/supabase-cloudflare-preflight.sh core8
+
+Na Plus 6, substituir por `plus6`, mas **não instalar segredos nem habilitar tráfego de produção** até que o incidente histórico de minerador root seja resolvido.
+
+O preflight mede HTTPS, TLS e tempos DNS/conexão/TTFB entre a VPS, a API pública do Supabase e o catálogo via Cloudflare, além do health check de `127.0.0.1:3092`. Não usa nem imprime tokens. Não altera rotas, DNS, o banco ou o firewall.
+
+Estado da infraestrutura consultado em 06/11:
+- Supabase `JogoManager - Produção`: `lguqnwvsfeefxamzeyos`, projeto saudável na região `us-west-2`. A distância potencial até as VPS europeias deve ser medida antes de decidir conexão PostgreSQL direta versus Data API/Edge Functions.
+- Cloudflare Tunnel `jogomanager-vps-catalog-20261026` inativo. O túnel `54ette54` está saudável, mas seu papel no catálogo não está confirmado.
+- O DNS do catálogo continua como A proxied para a VPS 8; ingress do túnel do catálogo aponta `https://127.0.0.1:443` com fallback 404. O gateway conhecido espera 3092. Não ativar sem verificar o proxy e health do servidor.
+- Advisors do Supabase: aviso de função pública `SECURITY DEFINER` executável por `authenticated` (`mutate_player_career`) e exposições de schema GraphQL. Esses avisos precisam de revisão de política e autorização, não de uma revogação cega. Algumas tabelas públicas de catálogo são públicas intencionalmente.
+- Sem chave SSH privada no perfil Windows auditado, agente SSH sem identidades disponíveis e sem sessão de terminal existente. Login SSH administrativo recusado por `publickey`. A recuperação deve seguir pelo painel Contabo autenticado, VNC atual ou Rescue com preservação dos dados.
+
+A configuração definitiva deve manter chaves de serviço e senhas **somente em servidores confiáveis**, nunca no frontend, no GitHub ou em outputs de logs; proteger RLS, rotas e identidades antes de habilitar o tráfego. Um teste HTTP 200 no domínio via Cloudflare não prova a saúde da origem da VPS.
