@@ -49,3 +49,4 @@
 - Split oversized modules into sibling files (`career-*.ts`, `apifootball-*.server.ts`, `players/PlayerStudioScene.tsx`, `features/match/*`) while the original file re-exports the public API; existing imports stay valid and each piece can be tested alone.
 - Keep fatigue cadence shared between gait sampling and the visual motion clock; mismatched clocks cause foot sliding across LODs.
 - Submit chat reports through the authenticated community function and validate targets and rate limits in the database; local hiding alone is not a report.
+- Every accepted career save is hash-linked to the previous one by a database trigger (`careers.chain_hash`, ledger `career_save_chain`); clients never compute or send the hash, so a forged or replayed save cannot fake the chain.

@@ -372,6 +372,13 @@
       "when": 1793997261165,
       "tag": "0052_analyze_players_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793997583483,
+      "tag": "0053_career_save_hash_chain",
+      "breakpoints": true
     }
   ]
 }

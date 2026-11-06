@@ -242,8 +242,34 @@ export type Database = {
         }
         Relationships: []
       }
+      career_save_chain: {
+        Row: {
+          chain_hash: string
+          created_at: string
+          link: number
+          prev_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          chain_hash: string
+          created_at?: string
+          link: number
+          prev_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          chain_hash?: string
+          created_at?: string
+          link?: number
+          prev_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
+          chain_hash: string | null
+          chain_length: number
           created_at: string
           id: string
           state: Json
@@ -252,6 +278,8 @@ export type Database = {
           verified_progress: boolean
         }
         Insert: {
+          chain_hash?: string | null
+          chain_length?: number
           created_at?: string
           id?: string
           state: Json
@@ -260,6 +288,8 @@ export type Database = {
           verified_progress?: boolean
         }
         Update: {
+          chain_hash?: string | null
+          chain_length?: number
           created_at?: string
           id?: string
           state?: Json
