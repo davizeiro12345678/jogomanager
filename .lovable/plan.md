@@ -67,7 +67,33 @@ O banco cobra e confere o limite antes de o jogo aplicar o efeito; nenhuma moeda
 - Separar a tela da partida, o estádio 3D e as telas grandes da carreira em partes menores, sem mudar como o jogo funciona.
 - Comparar 30 partidas com a mesma semente antes e depois (resultados idênticos) e rodar os testes.
 
-## Etapa 8 — Testes e entrega (novo)
+## Etapa 8 — Equilíbrio da economia (novo)
+- Simulação de 3 tipos de jogador (não pagante, VIP, comprador de pacotes) ao longo de 5 temporadas, conferindo que quem não paga consegue evoluir e ser campeão, só que mais devagar.
+- Teto de vantagem: nenhum serviço pago pode subir a força do time mais de 8% por temporada.
+- Moedas ganhas jogando: vitória 20, título 300, tutorial 300, sequência de 7 dias 100.
+
+## Etapa 9 — Motivos para voltar (novo)
+- Desafios semanais ("vença 3 jogos sem sofrer gol"), com moedas de prêmio dadas pelo servidor.
+- Aviso de retorno: "Seu próximo jogo é um clássico" e "Seu jogador jovem está pronto para subir".
+- Calendário de recompensas de 7 dias (a sequência zera se você faltar um dia).
+
+## Critérios de pronto por etapa
+| Etapa | Está pronta quando |
+|---|---|
+| 1 Tutorial | Uma conta nova termina os 4 capítulos sem ajuda, a recompensa só cai uma vez e pular/retomar funciona |
+| 2 Interface | Cada tela tem dica, um botão principal e estados de vazio/erro; a revisão de acessibilidade termina sem problema crítico |
+| 3 Carreiras | Criar um clube em até 2 minutos; a carreira de jogador mostra metas e propostas |
+| 4 Serviços | Cada preço e limite é recusado ou aceito pelo banco exatamente como na tabela |
+| 5 VIP | O desconto e o uso extra só valem com a assinatura ativa e somem quando ela é cancelada |
+| 6 Estádio | As melhorias aparecem na cena e a partida continua dentro do limite de desempenho |
+| 7 Arquivos | 30 partidas com a mesma semente dão resultados idênticos antes e depois |
+| 8 Economia | A simulação mostra que quem não paga é campeão em até 5 temporadas |
+| 9 Retorno | Os desafios dão moedas uma vez só, conferidas pelo servidor |
+
+## Ordem de entrega
+1 → 2 → 4 → 5 → 3 → 6 → 8 → 9 → 7 → 10. Cada etapa fica jogável antes de começar a próxima.
+
+## Etapa 10 — Testes e entrega (novo)
 - Testes automáticos para cada preço, limite semanal, regra do VIP e recompensa do tutorial (só uma vez).
 - Testes atuais, stress de 200 partidas, lint zerado e build.
 - Telas conferidas no celular e no computador, com tutorial feito do começo ao fim e compra de teste.
