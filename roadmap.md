@@ -1,10 +1,13 @@
 # Roadmap
 ## Execução restante (06/11, 21:24 UTC)
-- [ ] Tutorial retomável e ajuda contextual integrada às telas da carreira.
-- [ ] Completar serviços de treino e olheiro, com preços/limites no servidor e testes.
-- [ ] Integrar evolução do estádio à apresentação 3D e concluir extrações seguras das telas grandes.
-- [ ] Conferir VIP, pacotes, personalização, carreiras e recompensas contra as regras de entrega existentes.
-- [ ] Executar testes, acessibilidade móvel/desktop e registrar pendências reais sem publicar antes dos gates.
+- [x] Guia retomável de 4 capítulos/10 lições no treinador e orientações próprias no painel de jogador; progresso local, sem recompensa automática.
+- [x] Treino (150 moedas, 5/7 dias, +50% no exercício da rodada) e olheiro individual (120, 7/7 dias), com cobrança no servidor e testes.
+- [x] Separar cena do estádio (712 → 304 linhas no controlador) e prévia do uniforme do criador (925 → 862 linhas).
+- [x] Conferir catálogo: 15 produtos ativos; cinco pacotes propostos e VIP ainda não existem como ofertas pagáveis com entrega correspondente.
+- [x] Regressão: 311 arquivos/1.654 testes; lint sem avisos; preview/build OK; tutorial autenticado desktop/mobile sem overflow nem erros.
+- [ ] Tutorial guiado por ações com recompensa atestada, VIP/pacotes/personalização, economia/eventos, evolução visual dos níveis do estádio e restante da carreira: implementação ainda não concluída.
+- [ ] Entrega durável dos serviços ligada atomicamente ao save e recuperação de pedidos interrompidos; o fluxo atual ainda cobra antes do efeito local.
+- [ ] Gates de lançamento: stress 200 jogos atualizado, bundles/Lighthouse, replay do banco e validação gráfica; sem publicar nem certificar FPS físico.
 ## Continuação aprovada (06/11, sem publicação)
 - [x] Concluir passada com cansaço e validar contato compartilhado entre os níveis de detalhe (testes e atleta isolado).
 - [x] Enviar denúncias do chat para o servidor, com duplicatas e abuso limitados; gravação real de denúncia entre contas ainda não exercitada.
@@ -95,4 +98,5 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] E9 Retorno
 - [ ] E10 Testes e entrega
   - [x] E4 parcial: Acelerar evolução (300) e Melhoria do estádio (500) cobrados pelo banco, na tela do elenco
-  - [ ] E4 resto: Aprimorar treino, Olheiro premium, Renegociar contrato; 5 pacotes da loja
+  - [x] E4 serviços: Aprimorar treino, Olheiro individual premium e extensão de contrato disponíveis; contrato continua sendo extensão direta, não reabertura após recusa.
+  - [ ] E4 compras: cinco novos pacotes ainda dependem de implementação de inventário/entrega e ofertas reais no provedor.
