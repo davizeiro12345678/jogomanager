@@ -1,4 +1,11 @@
 # Roadmap
+## Implementação da entrevista (06/11, 22:13 UTC; sem publicação)
+- [ ] Conectar Parallel, Brevo, Telegram, GoodData e Google Cloud sem duplicatas; Google Cloud recusado nesta rodada.
+- [ ] Firebase: aproveitar configuração pública do conector, evitar pedido de permissão dentro da prévia e registrar mensagens sem substituir o modo offline.
+- [ ] Tutorial por ações reais, UX de treinador/jogador/criador e modularização incremental.
+- [ ] Melhorar voz de narração/cutscenes com modelo realmente disponível; preservar modo gráfico leve e opção pesada.
+- [ ] Diagnóstico Firebase e configuração remota, condicionados às permissões/configurações disponíveis.
+- [ ] Verificar testes, acessibilidade, desktop/celular e registrar limites; gates completos obrigatórios antes de qualquer publicação.
 ## Carreira e UI/UX (06/11, 21:43 UTC)
 - [x] Hierarquia: trabalho da semana primeiro, prévia derivada do efeito real, confirmação explícita, histórico vindo do save e propostas ligadas à diretoria.
 - [x] Modularizar escalação e simulação rápida (career.ts 762 → 542 linhas); 160 escalações, 300 resultados e 12 rodadas idênticos ao anterior. Sem alegação de ganho de CPU.
