@@ -394,7 +394,7 @@ export function AuthPage() {
     "min-h-11 w-full rounded-lg border border-input bg-background/60 px-3 py-2 text-sm outline-none focus:border-primary";
   if (mfaRequired)
     return (
-      <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
+      <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
         <Suspense fallback={<p role="status">Carregando verificação de segurança…</p>}>
           <MfaChallenge
             onVerified={async () => {
@@ -407,7 +407,7 @@ export function AuthPage() {
     );
   if (signedInAs && mode !== "update")
     return (
-      <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
+      <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
         <div className="auth-card w-full max-w-md rounded-2xl border border-border/60 bg-card/85 p-8 text-center shadow-2xl backdrop-blur-xl">
           <h1 className="font-display text-2xl font-bold">Você já está conectado</h1>
           <p className="mt-2 text-sm text-muted-foreground">{signedInAs}</p>
@@ -430,7 +430,7 @@ export function AuthPage() {
       </main>
     );
   return (
-    <main className="auth-stage grid min-h-screen place-items-center px-4 py-10">
+    <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
       <div className="auth-card grid w-full max-w-5xl overflow-hidden rounded-2xl border border-border/60 bg-card/85 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
         <section
           className="auth-hero relative hidden overflow-hidden border-r border-border/60 p-10 lg:flex lg:flex-col lg:justify-between"

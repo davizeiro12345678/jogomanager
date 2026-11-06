@@ -163,7 +163,7 @@ export function LeaguePage() {
   const { slug } = Route.useParams();
   const rows = table?.groups[0] ?? [];
   return (
-    <main className="pitch-bg min-h-screen px-4 pb-28 pt-14 sm:pb-14">
+    <main className="pitch-bg min-h-dvh px-4 pb-28 pt-14 sm:pb-14">
       <article className="mx-auto max-w-5xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">
           {label.country}

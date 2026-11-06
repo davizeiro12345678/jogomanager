@@ -71,7 +71,7 @@ export function CadastroPage() {
   const refresh = () => setData(readCustom());
 
   return (
-    <div className="pitch-bg min-h-screen px-4 py-10">
+    <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-4xl">
         <ScreenHeader title="Meus dados" />
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">

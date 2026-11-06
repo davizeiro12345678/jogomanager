@@ -120,7 +120,7 @@ export function CheckoutReturn() {
     ? `/checkout/return?session_id=${encodeURIComponent(sessionId)}`
     : "/compras";
   return (
-    <div className="pitch-bg flex min-h-screen items-center justify-center px-4 py-6">
+    <div className="pitch-bg flex min-h-dvh items-center justify-center px-4 py-6">
       <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/90 p-6 text-center">
         {userId === null ? (
           <>

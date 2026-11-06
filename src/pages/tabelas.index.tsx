@@ -9,7 +9,7 @@ import { TABELAS_INDEX_PATH as PATH } from "@/lib/public-route-paths";
 
 export function TablesIndex() {
   return (
-    <main className="pitch-bg min-h-screen px-4 py-14">
+    <main className="pitch-bg min-h-dvh px-4 py-14">
       <div className="mx-auto max-w-5xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Futebol real</p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">

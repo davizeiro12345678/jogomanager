@@ -83,7 +83,7 @@ export function ClaimGuestCheckout() {
   }, [claim, intent, sessionId]);
 
   return (
-    <main className="pitch-bg grid min-h-screen place-items-center px-4 py-10">
+    <main className="pitch-bg grid min-h-dvh place-items-center px-4 py-10">
       <section className="w-full max-w-lg rounded-3xl border border-border/60 bg-card/95 p-8 text-center shadow-2xl backdrop-blur-xl">
         {status === "loading" ? (
           <>

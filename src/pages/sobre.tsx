@@ -45,7 +45,7 @@ const FACTS = [
 
 export function SobrePage() {
   return (
-    <div className="pitch-bg min-h-screen px-4 py-14">
+    <div className="pitch-bg min-h-dvh px-4 py-14">
       <div className="mx-auto max-w-3xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Sobre</p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">

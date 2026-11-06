@@ -123,7 +123,7 @@ export function ReplaysPage() {
   return career ? (
     <GameShell career={career}>{body}</GameShell>
   ) : (
-    <div className="pitch-bg min-h-screen px-4 py-14">
+    <div className="pitch-bg min-h-dvh px-4 py-14">
       <div className="mx-auto max-w-5xl">{body}</div>
     </div>
   );

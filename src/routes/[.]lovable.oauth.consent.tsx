@@ -52,7 +52,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   },
   component: Consent,
   errorComponent: ({ error }) => (
-    <main className="pitch-bg flex min-h-screen items-center justify-center px-4">
+    <main className="pitch-bg flex min-h-dvh items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/85 p-6 text-center backdrop-blur-xl">
         <h1 className="font-display text-2xl">Não foi possível conectar</h1>
         <p className="mt-2 text-sm text-muted-foreground">

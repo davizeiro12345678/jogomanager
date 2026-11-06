@@ -75,3 +75,4 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 ## Banco (2026-11-06)
 - [x] Busca de jogadores por nome: índice de trigramas + estatísticas atualizadas (nome raro 1.409ms → 0,24ms)
 - [x] Tabela de liga: índice por prefixo de referência (5,6ms → 4ms)
+- [x] Acessibilidade: telas cheias usam altura real do celular (30 telas); imagens e botões de ícone já têm descrição

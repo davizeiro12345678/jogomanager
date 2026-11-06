@@ -42,7 +42,7 @@ const BLOCKS: { title: string; body: string }[] = [
 
 export function TermosPage() {
   return (
-    <div className="pitch-bg min-h-screen px-4 py-10">
+    <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-3xl">
         <Link to="/" className="text-xs uppercase tracking-widest text-primary">
           ← Início

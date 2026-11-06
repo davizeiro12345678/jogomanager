@@ -54,7 +54,7 @@ export const Route = createFileRoute("/tabelas/$slug")({
     };
   },
   notFoundComponent: () => (
-    <main className="pitch-bg min-h-screen px-4 py-20 text-center">
+    <main className="pitch-bg min-h-dvh px-4 py-20 text-center">
       <h1 className="font-display text-3xl">Liga não encontrada</h1>
       <Link to="/tabelas" className="mt-6 inline-block text-primary underline">
         Ver todas as tabelas
@@ -62,7 +62,7 @@ export const Route = createFileRoute("/tabelas/$slug")({
     </main>
   ),
   errorComponent: () => (
-    <main className="pitch-bg min-h-screen px-4 py-20 text-center">
+    <main className="pitch-bg min-h-dvh px-4 py-20 text-center">
       <h1 className="font-display text-3xl">Não foi possível carregar a tabela</h1>
       <p className="mt-3 text-muted-foreground">Tente novamente em alguns instantes.</p>
       <Link to="/tabelas" className="mt-6 inline-block text-primary underline">

@@ -27,7 +27,7 @@ export function SharePage() {
   }
 
   return (
-    <main className="pitch-bg min-h-screen px-4 py-12">
+    <main className="pitch-bg min-h-dvh px-4 py-12">
       <div className="mx-auto max-w-3xl">
         <Link to="/" className="text-xs uppercase text-primary">
           ← Voltar ao jogo

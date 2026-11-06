@@ -12,7 +12,7 @@ import "@/components/auth-store.css";
 
 export function LojaPage() {
   return (
-    <div className="store-stage min-h-screen px-4 py-6">
+    <div className="store-stage min-h-dvh px-4 py-6">
       <PaymentTestModeBanner />
       <div className="mx-auto max-w-5xl">
         <header

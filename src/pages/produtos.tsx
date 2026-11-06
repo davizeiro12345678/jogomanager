@@ -116,7 +116,7 @@ export function ProdutosPage() {
     : "coins";
 
   return (
-    <div className="pitch-bg min-h-screen">
+    <div className="pitch-bg min-h-dvh">
       <PaymentTestModeBanner />
       <div className="mx-auto max-w-6xl px-4 py-14">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Loja oficial</p>

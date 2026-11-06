@@ -70,7 +70,7 @@ export function Perfil() {
 
   if (!career)
     return (
-      <div className="flex min-h-screen items-center justify-center px-6">
+      <div className="flex min-h-dvh items-center justify-center px-6">
         <div className="surface-card w-full max-w-md p-8 text-center">
           <ScreenHeader title="Perfil vazio" />
           <p className="mt-2 text-sm text-muted-foreground">

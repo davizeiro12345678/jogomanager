@@ -175,7 +175,7 @@ export function MatchPage() {
   const fixture = nextFixture(career);
   if (!fixture) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-3">
         <p>Temporada concluída.</p>
         <Link to="/league" className="text-primary underline">
           Ver tabela

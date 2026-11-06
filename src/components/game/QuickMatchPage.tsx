@@ -66,7 +66,7 @@ export function QuickMatchPage() {
   // every sort comparison. Share one comparator without caching mutable leagues.
   const countryCompare = new Intl.Collator(lang).compare;
   return (
-    <div className="pitch-bg min-h-screen px-4 py-10">
+    <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-5xl">
         {/* Keep the reading control in its column when the detected language
             changes the title width; reserve the mobile title's two lines. */}
