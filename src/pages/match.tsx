@@ -100,7 +100,6 @@ import type { CareerState, ManagerLook, Player } from "@/game/types";
 
 import { Feed, Scoreboard } from "@/features/match/MatchHud";
 import { MatchManagementControls } from "@/features/match/MatchManagementControls";
-import { MatchStatsPanel } from "@/features/match/MatchStatsPanel";
 
 import { snapshot, type Snap } from "@/features/match/types";
 
@@ -127,6 +126,12 @@ const StorePanel = lazy(() =>
 
 const ChatPanel = lazy(() =>
   import("@/components/game/ChatPanel").then((module) => ({ default: module.ChatPanel })),
+);
+
+const MatchStatsPanel = lazy(() =>
+  import("@/features/match/MatchStatsPanel").then((module) => ({
+    default: module.MatchStatsPanel,
+  })),
 );
 
 const MatchReport = lazy(() =>
@@ -662,7 +667,20 @@ function LiveMatch({
       <MatchMinimap view={sim} />
 
       {/* Estatísticas ao vivo — gaveta no celular, painel lateral no desktop */}
-      {showStats ? <MatchStatsPanel snap={snap} onClose={() => setShowStats(false)} /> : null}
+      {showStats ? (
+        <Suspense
+          fallback={
+            <p
+              role="status"
+              className="absolute right-3 top-24 z-30 bg-card p-3 text-sm text-foreground"
+            >
+              Carregando estatísticas…
+            </p>
+          }
+        >
+          <MatchStatsPanel snap={snap} onClose={() => setShowStats(false)} />
+        </Suspense>
+      ) : null}
 
       {/* Barra de transporte sempre visível */}
       <div

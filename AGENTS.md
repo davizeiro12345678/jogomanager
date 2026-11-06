@@ -47,3 +47,5 @@
 - Go and C#/.NET WebAssembly pilots were measured and rejected (`docs/report-2026-11-03-speed-and-wasm-pilots.md`); TypeScript stays the only runtime for game logic unless a new pilot beats that baseline.
 - Move MatchSim behaviour into `src/game/sim-*.ts` modules as functions that take the sim (shared members marked `@internal`, not `private`), copying code verbatim and confirming same-seed parity against the previous engine; this shrinks sim.ts without changing draw order or replays.
 - Split oversized modules into sibling files (`career-*.ts`, `apifootball-*.server.ts`, `players/PlayerStudioScene.tsx`, `features/match/*`) while the original file re-exports the public API; existing imports stay valid and each piece can be tested alone.
+- Keep fatigue cadence shared between gait sampling and the visual motion clock; mismatched clocks cause foot sliding across LODs.
+- Submit chat reports through the authenticated community function and validate targets and rate limits in the database; local hiding alone is not a report.

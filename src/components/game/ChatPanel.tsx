@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
 import { MODERATION_MESSAGES, moderateMessage } from "@/lib/moderation";
 import { sendChatMessage } from "@/lib/chat.functions";
+import { reportChatMessage as submitChatReport } from "@/lib/community.functions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, ErrorPanel, SkeletonRows } from "./screen-kit";
@@ -66,9 +67,16 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(() => readIds(BLOCKED_KEY));
-  const [reported, setReported] = useState<Set<string>>(() => readIds(REPORTED_KEY));
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
+  const [reported, setReported] = useState<Set<string>>(new Set());
+  const [reporting, setReporting] = useState<Set<string>>(new Set());
+  const reportsInFlight = useRef(new Set<string>());
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setBlockedUsers(readIds(BLOCKED_KEY));
+    setReported(readIds(REPORTED_KEY));
+  }, []);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -122,7 +130,9 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   }, [signedIn, refresh]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
   }, [messages]);
 
   const visibleMessages = useMemo(
@@ -132,7 +142,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
 
   const send = useCallback(async () => {
     const body = draft.trim();
-    if (!body) return;
+    if (!body || sending) return;
     // Instant hint only; the server repeats the check and decides.
     const rule = moderateMessage(body);
     if (rule) {
@@ -159,7 +169,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       return;
     }
     setDraft("");
-  }, [draft]);
+  }, [draft, sending]);
 
   const deleteMessage = useCallback(async (id: string) => {
     const { error } = await supabase.from("chat_messages").delete().eq("id", id);
@@ -170,7 +180,24 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     setMessages((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
-  const reportMessage = useCallback((id: string) => {
+  const reportMessage = useCallback(async (id: string) => {
+    if (reportsInFlight.current.has(id)) return;
+    reportsInFlight.current.add(id);
+    setReporting(new Set(reportsInFlight.current));
+    const result = await submitChatReport({
+      data: {
+        messageId: id,
+        reason: "Mensagem denunciada pelo participante do chat",
+      },
+    }).catch(() => null);
+    reportsInFlight.current.delete(id);
+    setReporting(new Set(reportsInFlight.current));
+    if (!result?.ok) {
+      toast.error(
+        "Não foi possível enviar a denúncia. A mensagem foi preservada; tente novamente.",
+      );
+      return;
+    }
     setReported((prev) => {
       const nextIds = new Set(prev).add(id);
       writeIds(REPORTED_KEY, nextIds);
@@ -237,28 +264,35 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
                   </span>
                 </div>
                 <p className="break-words text-sm text-foreground">{m.body}</p>
-                <div className="flex gap-3 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                <div className="flex gap-1">
                   {m.user_id === userId ? (
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => void deleteMessage(m.id)}
-                      className="text-[10px] uppercase tracking-wide text-destructive hover:underline"
+                      className="min-h-11 text-xs text-destructive"
                     >
                       Apagar
-                    </button>
+                    </Button>
                   ) : (
                     <>
-                      <button
-                        onClick={() => reportMessage(m.id)}
-                        className="text-[10px] uppercase tracking-wide text-muted-foreground hover:underline"
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={reporting.has(m.id)}
+                        onClick={() => void reportMessage(m.id)}
+                        className="min-h-11 text-xs text-muted-foreground"
                       >
-                        Denunciar
-                      </button>
-                      <button
+                        {reporting.has(m.id) ? "Enviando…" : "Denunciar"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
                         onClick={() => blockUser(m.user_id)}
-                        className="text-[10px] uppercase tracking-wide text-muted-foreground hover:underline"
+                        className="min-h-11 text-xs text-muted-foreground"
                       >
                         Bloquear usuário
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>

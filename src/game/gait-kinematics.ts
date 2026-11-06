@@ -7,13 +7,18 @@ const clamp = (n: number, lo: number, hi: number) =>
 const smooth = (u: number) => u * u * u * (u * (u * 6 - 15) + 10);
 
 /** Full strides per second, scaled to each athlete's actual leg length. */
-export function gaitCadence(speed: number, legLength = 0.86): number {
+export function gaitCadence(speed: number, legLength = 0.86, stamina = 100): number {
   const s = clamp(speed, 0, 12);
   const base = (0.78 + Math.sqrt(s) * 0.43) / Math.sqrt(clamp(legLength / 0.86, 0.8, 1.25));
   const duty = 0.64 - clamp(s / 6.8, 0, 1) * 0.38;
   // If the anatomical stride limit is reached, increase cadence so support
   // still travels back at the athlete's actual world speed.
-  return Math.max(base, (s * duty) / (2 * clamp(legLength, 0.55, 1.3) * 0.48));
+  const fatigue = 1 - clamp(stamina / 100, 0, 1);
+  // Shorter tired strides require more cycles at the same actual speed;
+  // slowing only the animation would make the supporting foot skate.
+  return (
+    Math.max(base, (s * duty) / (2 * clamp(legLength, 0.55, 1.3) * 0.48)) / (1 - fatigue * 0.18)
+  );
 }
 
 export function gaitPhaseAt(time: number, seed: number): number {
@@ -77,9 +82,9 @@ export function gaitPoseAt(
   const fatigue = direction ? 1 - clamp(direction.stamina / 100, 0, 1) : 0;
   const forward = direction ? clamp(direction.forward / Math.max(0.01, s), -1, 1) : 1;
   const lateral = direction ? clamp(direction.lateral / Math.max(0.01, s), -1, 1) : 0;
-  const cadence = gaitCadence(s, length);
+  const cadence = gaitCadence(s, length, direction?.stamina);
   const duty = 0.64 - amount * 0.38;
-  const halfStride = Math.min(length * 0.48, (s * duty) / (2 * cadence));
+  const halfStride = Math.min(length * 0.48 * (1 - fatigue * 0.18), (s * duty) / (2 * cadence));
   // Leave enough vertical reach for the entire stance sweep. Asking for a
   // nearly straight leg and a long stride forced IK to shorten the step,
   // which made the planted foot slide at heel strike and toe-off.

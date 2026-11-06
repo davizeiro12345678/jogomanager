@@ -1,4 +1,13 @@
 # Roadmap
+## Continuação aprovada (06/11, sem publicação)
+- [x] Concluir passada com cansaço e validar contato compartilhado entre os níveis de detalhe (testes e atleta isolado).
+- [x] Enviar denúncias do chat para o servidor, com duplicatas e abuso limitados; gravação real de denúncia entre contas ainda não exercitada.
+- [x] Adiar estatísticas opcionais da partida sem bloquear o campo; integração visual durante partida permanece a verificar.
+- [x] Conferir encadeamento de saves: não existe; implantação requer novo contrato atômico e compatibilidade offline, não foi simulada por hash no cliente.
+- [x] Executar regressão (306 arquivos, 1.633 testes), stress de 200 partidas com replay e lint; registrar evidências.
+- [x] Índice do mercado aplicado após plano de consulta medido (varredura de 201.530 jogadores substituída por leitura ordenada).
+- [ ] Concluir hash de saves, modularização restante, demais objetivos gráficos/IA/economia e validação completa de acessibilidade.
+- [ ] Executar Quality gates completo e comparação de bundles/Lighthouse; publicação continua não autorizada neste ciclo.
 ## Plano aprovado: CSS sob demanda e segurança (06/11)
 - [x] Separar CSS público por família de página, preservando estilos críticos no primeiro carregamento.
 - [x] Carregar catálogo de /new apenas ao escolher clube; corrigir cache público sem armazenar sessões.
@@ -16,15 +25,15 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
 - [ ] E6 Idiomas (25 maiores completos)
 - [ ] E7 Proteção, anticheat e moderação
   - [x] 7.3 Moderador do chat no servidor (disfarces, links, dados pessoais, punição progressiva)
-  - [ ] 7.3b Denúncia de mensagem enviada ao servidor (hoje só oculta localmente)
+  - [x] 7.3b Denúncia enviada ao servidor antes de ocultar localmente, com validação e limite no banco
 - [ ] E8 Home, estilos e carregamento
 
 - [x] E3: 10 novas funcionalidades de física da partida (src/game/match-physics-extras.ts)
-- [ ] E3: rodar teste de estresse de 200 jogos (excede o tempo do sandbox; roda no Quality gates)
+- [x] E3: teste de estresse de 200 jogos e respectivos replays passou em 588,9 s (06/11); evidência CI estruturada ainda depende do Quality gates
 - [x] Visitantes: aviso de login obrigatório para compras/recursos de conta (loja pública e loja do jogo)
 - [x] Cutscenes: clarão branco por partícula colada na câmera (tamanho das partículas limitado)
 - [x] Física dos jogadores: rede lateral sólida (placas e bancos já ficam fora do alcance)
-  - [ ] Passada que encurta com o cansaço (animação)
+  - [x] Passada que encurta com o cansaço, com cadência sincronizada para não patinar
 - [x] Inteligência dos times: leitura do adversário no intervalo (posse, finalizações, pontas, pressão, placar)
 - [x] Moedas: tratamento de lesão (250) e relatório do adversário (100), com limites semanais, pedido único e saldo nunca negativo no banco
 - [x] Idiomas: textos da interface completos nos 25 idiomas mais falados (pacotes carregados sob demanda + teste)

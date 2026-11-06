@@ -62,13 +62,21 @@ export const reportChatMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ReportInput.parse(input))
   .handler(async ({ data, context }): Promise<SimpleResult> => {
+    const { data: message, error: messageError } = await context.supabase
+      .from("chat_messages")
+      .select("user_id")
+      .eq("id", data.messageId)
+      .eq("hidden", false)
+      .maybeSingle();
+    if (messageError || !message || message.user_id === context.userId)
+      return { ok: false, reason: "error" };
     const { error } = await context.supabase.from("chat_reports").insert({
       message_id: data.messageId,
       reporter_id: context.userId,
       reason: data.reason.trim(),
     });
     // Denúncia repetida da mesma mensagem conta como sucesso.
-    if (error && !error.message.includes("duplicate key")) {
+    if (error && error.code !== "23505") {
       console.error("reportChatMessage falhou", error.message);
       return { ok: false, reason: "error" };
     }

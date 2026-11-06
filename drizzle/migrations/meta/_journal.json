@@ -344,6 +344,20 @@
       "when": 1793924492670,
       "tag": "0048_activity_heartbeat_ignores_client_scores",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793994152781,
+      "tag": "0049_limit_chat_report_abuse",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793994683422,
+      "tag": "0050_index_playable_market_order",
+      "breakpoints": true
     }
   ]
 }

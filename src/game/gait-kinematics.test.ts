@@ -18,6 +18,24 @@ const legEnd = (pitch: number, knee: number) => ({
 });
 
 describe("physical player movement", () => {
+  it("shortens tired strides without moving the planted foot at the same speed", () => {
+    const speed = 5.5;
+    const direction = { forward: speed, lateral: 0, turnRate: 0, stamina: 100, hasBall: false };
+    const fresh = gaitPoseAt(0, speed, p, emptyPose(), direction);
+    const tired = gaitPoseAt(0, speed, p, emptyPose(), { ...direction, stamina: 0 });
+    expect(tired.strideLength).toBeCloseTo(fresh.strideLength * 0.82, 6);
+    const duty = 0.64 - Math.min(1, speed / 6.8) * 0.38;
+    const worldFoot = (u: number) => {
+      const sample = gaitPoseAt(u * duty * Math.PI * 2, speed, p, emptyPose(), {
+        ...direction,
+        stamina: 0,
+      });
+      return (
+        (speed * u * duty) / sample.cadence + legEnd(sample.pose.legLPitch, sample.pose.kneeL).z
+      );
+    };
+    expect(worldFoot(0.15)).toBeCloseTo(worldFoot(0.8), 5);
+  });
   it.each([-0.3, 0, 0.35])("reaches a target at %s m with a knee that bends anatomically", (z) => {
     const target = solveLegTarget(z, p.thigh + p.shin - 0.16, p.thigh, p.shin);
     const end = legEnd(target.pitch, target.knee);

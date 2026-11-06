@@ -22,7 +22,7 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
  * promotion keeps the current stride. A frame is sampled at most once. */
 export function visualMotionFor(
   owner: object,
-  player: { id: string; x: number; z: number; vx: number; vz: number },
+  player: { id: string; x: number; z: number; vx: number; vz: number; stamina?: number },
   ball: { x: number; z: number },
   seed: number,
   legLength: number,
@@ -84,7 +84,8 @@ export function visualMotionFor(
   // A long frame advances the stride by the full elapsed time. Clamping the
   // animation clock used to slow only the legs whenever rendering stalled.
   state.phase =
-    (state.phase + elapsed * gaitCadence(speed, legLength) * Math.PI * 2) % (Math.PI * 2);
+    (state.phase + elapsed * gaitCadence(speed, legLength, player.stamina) * Math.PI * 2) %
+    (Math.PI * 2);
   state.time = time;
   state.speed = speed;
   state.vx = player.vx;

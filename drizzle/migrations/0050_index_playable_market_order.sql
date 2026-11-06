@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS players_playable_market_order_idx ON public.players (overall DESC, id ASC) INCLUDE (age) WHERE source_kind = 'player' AND canonical_player_id IS NULL;
+COMMENT ON INDEX public.players_playable_market_order_idx IS 'Serve paginated market ranking without scanning and sorting every canonical playable athlete; retain age for early filtering.';
