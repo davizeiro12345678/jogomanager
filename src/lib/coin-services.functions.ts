@@ -14,7 +14,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const spendCoinsOnService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { service: CareerService; requestId: string }) => {
-    if (!input || !(input.service in CAREER_SERVICES)) throw new Error("Serviço inválido.");
+    if (!input || !Object.hasOwn(CAREER_SERVICES, input.service))
+      throw new Error("Serviço inválido.");
     if (typeof input.requestId !== "string" || !UUID.test(input.requestId))
       throw new Error("Pedido inválido.");
     return input;
@@ -35,7 +36,12 @@ export const spendCoinsOnService = createServerFn({ method: "POST" })
     if (!row.ok)
       return {
         ok: false,
-        reason: row.reason === "weekly_limit" ? "weekly_limit" : "not_enough_coins",
+        reason:
+          row.reason === "weekly_limit"
+            ? "weekly_limit"
+            : row.reason === "not_enough_coins"
+              ? "not_enough_coins"
+              : "error",
         coins: row.coins,
       };
     return {

@@ -286,6 +286,8 @@ export interface CareerState {
   training: TrainingFocus;
   /** intensidade do treino: 0 leve, 1 normal, 2 intenso */
   trainingIntensity?: 0 | 1 | 2;
+  /** A paid +50% multiplier for this round's tactical training; never stacks. */
+  trainingUpgradeRound?: string;
   /** relatórios compactos de resposta individual aos últimos exercícios */
   trainingReports?: TrainingReport[];
   lineup: string[]; // 11 player ids

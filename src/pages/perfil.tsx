@@ -358,7 +358,10 @@ export function Perfil() {
                   setTransferStatus("Carreira importada e salva neste aparelho.");
                 } catch (error) {
                   setTransferStatus(
-                    friendlyError(error, "Não foi possível importar a carreira. Confira se o arquivo é um save do jogo.")
+                    friendlyError(
+                      error,
+                      "Não foi possível importar a carreira. Confira se o arquivo é um save do jogo.",
+                    ),
                   );
                 } finally {
                   event.target.value = "";

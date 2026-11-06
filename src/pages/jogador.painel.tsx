@@ -31,6 +31,7 @@ import { seasonObjectives } from "@/game/player-career/objectives";
 import { Bar } from "@/components/game/athlete/PlayerStats";
 
 import { WeekTab } from "@/components/game/athlete/PlayerWeekTab";
+import { PlayerCareerGuide } from "@/components/game/athlete/PlayerCareerGuide";
 
 import "@/components/game/athlete.css";
 import { getRouteApi } from "@tanstack/react-router";
@@ -229,6 +230,7 @@ function Panel({
             </p>
           )}
         </div>
+        <PlayerCareerGuide state={state} />
         <section className="athlete-card athlete-hero">
           {showPlayerModel ? (
             <Suspense

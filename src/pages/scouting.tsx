@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { Crest } from "@/components/game/Crest";
+import { DevelopmentServicesCard } from "@/components/game/services/DevelopmentServicesCard";
 
 import { GameShell } from "@/components/game/GameShell";
 
@@ -90,6 +91,7 @@ export function ScoutingPage() {
         e são ilimitados com o passe de temporada.
       </p>
 
+      <DevelopmentServicesCard career={career} onApply={update} mode="scouting" />
       {career.scoutReports.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">
           Nenhum relatório ainda. Envie seus olheiros para mapear o mercado.

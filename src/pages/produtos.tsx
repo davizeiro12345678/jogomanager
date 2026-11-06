@@ -104,7 +104,9 @@ export function ProdutosPage() {
         document.getElementById("checkout-area")?.scrollIntoView({ behavior: "smooth" }),
       );
     } catch (err) {
-      toast.error(friendlyError(err, "Não foi possível abrir o pagamento. Tente de novo em instantes."));
+      toast.error(
+        friendlyError(err, "Não foi possível abrir o pagamento. Tente de novo em instantes."),
+      );
     } finally {
       setOpening(null);
     }

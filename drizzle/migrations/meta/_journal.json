@@ -393,6 +393,13 @@
       "when": 1793998835197,
       "tag": "0055_add_contract_renewal_service",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1794000549302,
+      "tag": "0056_complete_training_and_scout_coin_services",
+      "breakpoints": true
     }
   ]
 }

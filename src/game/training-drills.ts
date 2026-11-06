@@ -1,6 +1,7 @@
 import { CLUBS } from "./data/leagues";
 import { quickSimulate } from "./career";
 import { makeRng } from "./rng";
+import { trainingUpgradeMultiplier } from "./coin-services-training";
 import { developedPlayer, profileFor, withDevelopmentBase } from "./attributes";
 import {
   developmentResponse,
@@ -247,7 +248,7 @@ export function runDrill(state: CareerState, drillId: string): CareerState {
           attrDeltas,
           q,
           drill.attrKeys,
-          response,
+          response * trainingUpgradeMultiplier(state),
           state,
         );
         const current = q[drill.attr] as number;

@@ -205,7 +205,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         phase: "open",
         dedupeKey: "checkout-open",
       });
-      toast.error(friendlyError(error, "Não foi possível abrir o pagamento. Tente de novo em instantes."));
+      toast.error(
+        friendlyError(error, "Não foi possível abrir o pagamento. Tente de novo em instantes."),
+      );
     } finally {
       setOpeningKey(null);
     }

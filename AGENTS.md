@@ -50,3 +50,6 @@
 - Keep fatigue cadence shared between gait sampling and the visual motion clock; mismatched clocks cause foot sliding across LODs.
 - Submit chat reports through the authenticated community function and validate targets and rate limits in the database; local hiding alone is not a report.
 - Every accepted career save is hash-linked to the previous one by a database trigger (`careers.chain_hash`, ledger `career_save_chain`); clients never compute or send the hash, so a forged or replayed save cannot fake the chain.
+- Keep career tutorial guidance lazy-loaded from GameShell and separate from reward authorization; local lesson completion must never mint currency.
+- Keep stadium scene composition in `stadium/StadiumScene.tsx` and renderer lifecycle in `Stadium3D.tsx`; this preserves one Canvas owner while keeping rendering modules focused.
+- Keep paid tactical-training multipliers round-scoped and non-stacking; old saves without an upgrade retain identical training behavior.

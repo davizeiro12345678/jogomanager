@@ -11,7 +11,9 @@ describe("friendlyError", () => {
     expect(friendlyError(new TypeError("Failed to fetch"), "x")).toMatch(/internet/);
   });
   it("uses the fallback for database errors", () => {
-    expect(friendlyError(new Error('duplicate key violates constraint "a"'), "Tente de novo.")).toBe("Tente de novo.");
+    expect(
+      friendlyError(new Error('duplicate key violates constraint "a"'), "Tente de novo."),
+    ).toBe("Tente de novo.");
   });
   it("keeps short plain messages written for players", () => {
     expect(friendlyError(new Error("Cupom expirado."), "x")).toBe("Cupom expirado.");

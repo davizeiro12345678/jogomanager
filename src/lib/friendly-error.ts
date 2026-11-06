@@ -1,6 +1,7 @@
 // Converts thrown errors into short, plain-language messages for players.
 // Technical text (HTTP codes, SQL, stack traces, provider names) never reaches the screen.
-const TECHNICAL = /(unauthorized|authorization|jwt|token|fetch|network|sql|postgres|supabase|stripe|stack|undefined|null|TypeError|status \d{3}|\b[45]\d\d\b|rpc|violates|constraint|ECONN|timeout)/i;
+const TECHNICAL =
+  /(unauthorized|authorization|jwt|token|fetch|network|sql|postgres|supabase|stripe|stack|undefined|null|TypeError|status \d{3}|\b[45]\d\d\b|rpc|violates|constraint|ECONN|timeout)/i;
 
 export function friendlyError(err: unknown, fallback: string): string {
   const message = err instanceof Error ? err.message : typeof err === "string" ? err : "";

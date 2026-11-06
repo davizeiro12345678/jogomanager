@@ -1,4 +1,10 @@
 # Roadmap
+## Execução restante (06/11, 21:24 UTC)
+- [ ] Tutorial retomável e ajuda contextual integrada às telas da carreira.
+- [ ] Completar serviços de treino e olheiro, com preços/limites no servidor e testes.
+- [ ] Integrar evolução do estádio à apresentação 3D e concluir extrações seguras das telas grandes.
+- [ ] Conferir VIP, pacotes, personalização, carreiras e recompensas contra as regras de entrega existentes.
+- [ ] Executar testes, acessibilidade móvel/desktop e registrar pendências reais sem publicar antes dos gates.
 ## Continuação aprovada (06/11, sem publicação)
 - [x] Concluir passada com cansaço e validar contato compartilhado entre os níveis de detalhe (testes e atleta isolado).
 - [x] Enviar denúncias do chat para o servidor, com duplicatas e abuso limitados; gravação real de denúncia entre contas ainda não exercitada.

@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
   BarChart3,
+  BookOpen,
   Briefcase,
   ChevronRight,
   Clapperboard,
@@ -30,7 +31,16 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import { Button } from "@/components/ui/button";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { OfflineBar, SyncBadge } from "@/components/OfflineBar";
@@ -54,6 +64,7 @@ import { CommandPalette } from "./CommandPalette";
 import { Crest } from "./Crest";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import "./career-interface.css";
+const CareerTutorialDialog = lazy(() => import("./CareerTutorialDialog"));
 const prepareMatch = () =>
   import("./stadium-loading").then((module) => module.preloadStadium()).catch(() => undefined);
 
@@ -133,6 +144,7 @@ export function GameShell({
     return () => cancelAnimationFrame(frame);
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   // deslizar o menu para fora fecha (gesto natural no celular)
   const bindMenuSwipe = useDrag(
     ({ last, movement: [mx], velocity: [vx] }) => {
@@ -271,7 +283,7 @@ export function GameShell({
             </div>
           </Link>
           <nav className="career-current-page" aria-label={t("nav.menu")}>
-            <span>{t(GROUP_KEYS[current?.group ?? "Carreira"]!)}</span>
+            <span>{t(GROUP_KEYS[current?.group ?? "Carreira"] ?? "group.career")}</span>
             <ChevronRight size={13} aria-hidden="true" />
             <strong>{current ? t(current.key) : "Manager 3D"}</strong>
           </nav>
@@ -280,13 +292,22 @@ export function GameShell({
               items={TABS.map((tab) => ({
                 to: tab.to,
                 label: t(tab.key),
-                group: t(GROUP_KEYS[tab.group]!),
+                group: t(GROUP_KEYS[tab.group] ?? "group.extras"),
               }))}
             />
             <div className="hidden sm:block">
               <ShortcutsDialog />
             </div>
             <AccessibilitySettings className="career-icon-button" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="career-icon-button"
+              aria-label="Abrir tutorial da carreira"
+              onClick={() => setTutorialOpen(true)}
+            >
+              <BookOpen size={19} aria-hidden />
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger className="career-icon-button" aria-label={t("shell.account")}>
                 <Settings2 size={19} />
@@ -365,7 +386,7 @@ export function GameShell({
             {overview()}
             {NAV_GROUPS.filter((group) => group !== "Extras").map((group) => (
               <div key={group} className="career-nav-group">
-                <h2 className="career-nav-heading">{t(GROUP_KEYS[group]!)}</h2>
+                <h2 className="career-nav-heading">{t(GROUP_KEYS[group] ?? "group.extras")}</h2>
                 {navigationLinks(group)}
               </div>
             ))}
@@ -432,7 +453,7 @@ export function GameShell({
               matchingTabs.some((tab) => tab.group === group && tab.to !== "/dashboard"),
             ).map((group) => (
               <div key={group} className="career-nav-group">
-                <h2 className="career-nav-heading">{t(GROUP_KEYS[group]!)}</h2>
+                <h2 className="career-nav-heading">{t(GROUP_KEYS[group] ?? "group.extras")}</h2>
                 {navigationLinks(group, true)}
               </div>
             ))}
@@ -446,7 +467,8 @@ export function GameShell({
       </Sheet>
       <nav ref={bottomNav} aria-label={t("nav.mobile")} className="career-bottom-nav">
         {MOBILE.map((path) => {
-          const tab = TABS.find((item) => item.to === path)!;
+          const tab = TABS.find((item) => item.to === path);
+          if (!tab) return null;
           const Icon = tab.icon;
           return (
             <Link key={path} to={path} aria-current={pathname === path ? "page" : undefined}>
@@ -469,6 +491,25 @@ export function GameShell({
           <span>{t("nav.mobileMenu")}</span>
         </button>
       </nav>
+      {tutorialOpen ? (
+        <Suspense
+          fallback={
+            <span role="status" className="sr-only">
+              Abrindo tutorial…
+            </span>
+          }
+        >
+          <CareerTutorialDialog
+            open={tutorialOpen}
+            onOpenChange={setTutorialOpen}
+            careerKey={`${userCareerKey(career)}`}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
+}
+
+function userCareerKey(career: CareerState | null) {
+  return career?.clubId ?? "new";
 }
