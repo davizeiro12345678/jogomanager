@@ -1,27 +1,6 @@
 @import "tailwindcss" source(none);
-@source "./components/RootLayout.tsx";
-@source "./components/RoutePending.tsx";
-@source "./components/ArticleShell.tsx";
-@source "./components/SiteFooter.tsx";
-@source "./components/PublicLinks.tsx";
-@source "./components/CommunityInvite.tsx";
-@source "./components/DiscordLink.tsx";
-@source "./components/StickyPlayCta.tsx";
-@source "./components/LeagueDataInsights.tsx";
-@source "./components/LeagueExtras.tsx";
-@source "./components/home/FootballHome.tsx";
-@source "./components/home/HomeDetails.tsx";
-@source "./components/home/HomeLeaguePulse.tsx";
-@source "./components/privacy/ConsentBanner.tsx";
-@source "./components/privacy/ConsentCenter.tsx";
-@source "./components/privacy/FirebasePushControl.tsx";
-@source "./components/accessibility";
-@source "./components/ui/button.tsx";
-@source "./components/ui/dialog.tsx";
-@source "./components/ui/switch.tsx";
-@source "./components/ui/slider.tsx";
-@source "./components/ui/popover.tsx";
-@source "./components/ui/select.tsx";
+@import "./public-style-sources.css";
+@import "./design-system.css";
 @source "./pages/guias.tsx";
 @source "./pages/guia-de-scouting.tsx";
 @source "./pages/melhores-formacoes.tsx";
@@ -42,18 +21,6 @@
 @source "./pages/sobre.tsx";
 @source "./pages/criador.tsx";
 @source "./components/creator/CreatorStory.tsx";
-@source "./pages/produtos.tsx";
-@source "./components/store/ProdutosGuide.tsx";
-@source "./components/store/GuestSignInNotice.tsx";
-@source "./components/store/CareerValueBox.tsx";
-@source "./components/StripeCheckoutFrame.tsx";
-@source "./components/StripeEmbeddedCheckout.tsx";
-@source "./components/PaymentTestModeBanner.tsx";
-@source "./hooks/useStripeCheckout.tsx";
-@source "./components/ui/badge.tsx";
-@source "./pages/tabelas.index.tsx";
-@source "./pages/tabelas.$slug.tsx";
-@import "./design-system.css";
 
 /* Long guides retain searchable, accessible content while the browser skips
    layout/paint of sections outside the viewport. Unsupported browsers render

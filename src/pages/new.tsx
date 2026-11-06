@@ -1,5 +1,3 @@
-import { CATALOG_EVENT, loadDbCatalog } from "@/lib/db-catalog";
-
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import {
@@ -161,13 +159,27 @@ export function NewCareer() {
   }, [step]);
   const [catalog, setCatalog] = useState(() => [...LEAGUES]);
   useEffect(() => {
+    if (step !== 3) return;
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
     // The catalog hydrates the shared league list in place. Give React a new
     // snapshot so memoized discovery depends on the data it actually reads.
-    const bump = () => setCatalog([...LEAGUES]);
-    window.addEventListener(CATALOG_EVENT, bump);
-    void loadDbCatalog().then(bump);
-    return () => window.removeEventListener(CATALOG_EVENT, bump);
-  }, []);
+    const bump = () => {
+      if (active) setCatalog([...LEAGUES]);
+    };
+    void import("@/lib/db-catalog")
+      .then(({ CATALOG_EVENT, loadDbCatalog }) => {
+        if (!active) return;
+        window.addEventListener(CATALOG_EVENT, bump);
+        unsubscribe = () => window.removeEventListener(CATALOG_EVENT, bump);
+        void loadDbCatalog().then(bump);
+      })
+      .catch(() => undefined); // Bundled clubs remain available offline.
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [step]);
   useEffect(() => {
     setLimit(24);
   }, [query, leagueId, challenge, available, scopeSearch]);
@@ -190,15 +202,17 @@ export function NewCareer() {
   }, [countryQuery, catalog]);
   const clubs = useMemo(
     () =>
-      discoverClubs(catalog, {
-        query,
-        leagueId,
-        reputation,
-        challenge,
-        availableOnly: available,
-        scopeSearch,
-      }),
-    [query, leagueId, reputation, challenge, available, scopeSearch, catalog],
+      step !== 3
+        ? []
+        : discoverClubs(catalog, {
+            query,
+            leagueId,
+            reputation,
+            challenge,
+            availableOnly: available,
+            scopeSearch,
+          }),
+    [step, query, leagueId, reputation, challenge, available, scopeSearch, catalog],
   );
   const selectionLocked = !!selected && selected.reputation > reputation;
   function go(next: number) {

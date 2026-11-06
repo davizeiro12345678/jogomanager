@@ -1,0 +1,18 @@
+@import "tailwindcss" source(none);
+@import "./public-style-sources.css";
+@import "./design-system.css";
+@source "./components/home/FootballHome.tsx";
+@source "./components/home/HomeDetails.tsx";
+@source "./components/home/HomeLeaguePulse.tsx";
+@source "./pages/produtos.tsx";
+@source "./components/store/ProdutosGuide.tsx";
+@source "./components/store/GuestSignInNotice.tsx";
+@source "./components/store/CareerValueBox.tsx";
+@source "./components/StripeCheckoutFrame.tsx";
+@source "./components/StripeEmbeddedCheckout.tsx";
+@source "./components/PaymentTestModeBanner.tsx";
+@source "./hooks/useStripeCheckout.tsx";
+@source "./components/LeagueDataInsights.tsx";
+@source "./components/LeagueExtras.tsx";
+@source "./pages/tabelas.index.tsx";
+@source "./pages/tabelas.$slug.tsx";
