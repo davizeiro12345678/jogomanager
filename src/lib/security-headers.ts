@@ -81,7 +81,8 @@ export function secureResponse(response: Response, request: Request, nonce?: str
   ) {
     headers.set("cache-control", "no-store");
   } else if (
-    response.status === 200 && contentType.includes("text/html") &&
+    response.status === 200 &&
+    contentType.includes("text/html") &&
     isPublicContentPath(url.pathname) &&
     !/\b(?:private|no-store)\b/i.test(headers.get("cache-control") ?? "")
   ) {

@@ -164,14 +164,21 @@ export function NewCareer() {
     let unsubscribe: (() => void) | undefined;
     // The catalog hydrates the shared league list in place. Give React a new
     // snapshot so memoized discovery depends on the data it actually reads.
-    const bump = () => { if (active) setCatalog([...LEAGUES]); };
-    void import("@/lib/db-catalog").then(({ CATALOG_EVENT, loadDbCatalog }) => {
-      if (!active) return;
-      window.addEventListener(CATALOG_EVENT, bump);
-      unsubscribe = () => window.removeEventListener(CATALOG_EVENT, bump);
-      void loadDbCatalog().then(bump);
-    }).catch(() => undefined); // Bundled clubs remain available offline.
-    return () => { active = false; unsubscribe?.(); };
+    const bump = () => {
+      if (active) setCatalog([...LEAGUES]);
+    };
+    void import("@/lib/db-catalog")
+      .then(({ CATALOG_EVENT, loadDbCatalog }) => {
+        if (!active) return;
+        window.addEventListener(CATALOG_EVENT, bump);
+        unsubscribe = () => window.removeEventListener(CATALOG_EVENT, bump);
+        void loadDbCatalog().then(bump);
+      })
+      .catch(() => undefined); // Bundled clubs remain available offline.
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, [step]);
   useEffect(() => {
     setLimit(24);
@@ -194,15 +201,17 @@ export function NewCareer() {
       );
   }, [countryQuery, catalog]);
   const clubs = useMemo(
-    () => step !== 3 ? [] :
-      discoverClubs(catalog, {
-        query,
-        leagueId,
-        reputation,
-        challenge,
-        availableOnly: available,
-        scopeSearch,
-      }),
+    () =>
+      step !== 3
+        ? []
+        : discoverClubs(catalog, {
+            query,
+            leagueId,
+            reputation,
+            challenge,
+            availableOnly: available,
+            scopeSearch,
+          }),
     [step, query, leagueId, reputation, challenge, available, scopeSearch, catalog],
   );
   const selectionLocked = !!selected && selected.reputation > reputation;
