@@ -41,16 +41,24 @@ export function sceneVoice(
   const request = (async () => {
     const cached = await voiceWithin(readVoiceCache(key));
     if (cached) return cached;
-    const audio = await voiceWithin(Promise.resolve().then(() => loader(scene, line)));
-    if (audio)
-      void writeVoiceCache(key, audio).catch((error) => {
-        reportSilent("assets.cache", error, {
-          classification: "ignorable",
-          feature: "voice-cache",
-          phase: "write",
-          dedupeKey: "voice-cache-write",
-        });
+    // Keep late provider audio for a replay without delaying the current dialogue.
+    const transport = Promise.resolve().then(() => loader(scene, line));
+    void transport
+      .then((audio) => {
+        if (audio)
+          void writeVoiceCache(key, audio).catch((error) => {
+            reportSilent("assets.cache", error, {
+              classification: "ignorable",
+              feature: "voice-cache",
+              phase: "write",
+              dedupeKey: "voice-cache-write",
+            });
+          });
+      })
+      .catch(() => {
+        // voiceWithin reports transport failure and preserves the local fallback.
       });
+    const audio = await voiceWithin(transport);
     return audio;
   })()
     .catch((error) => {

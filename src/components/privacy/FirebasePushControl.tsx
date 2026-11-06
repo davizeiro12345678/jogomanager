@@ -28,7 +28,16 @@ export function FirebasePushControl() {
     if (browserSupportsPush) {
       void getFirebaseWebConfig()
         .then((config) => {
-          if (mounted) setConfigured(Boolean(config.apiKey && config.vapidPublicKey));
+          if (mounted)
+            setConfigured(
+              Boolean(
+                config.apiKey &&
+                config.projectId &&
+                config.appId &&
+                config.messagingSenderId &&
+                config.vapidPublicKey,
+              ),
+            );
         })
         .catch(() => undefined);
     }
@@ -48,13 +57,6 @@ export function FirebasePushControl() {
     if (busy || !configured || !signedIn) return;
     setBusy(true);
     try {
-      if (!enabled && Notification.permission !== "granted") {
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          setMessage("Permissão de notificações não concedida.");
-          return;
-        }
-      }
       const result = enabled
         ? await disableFirebaseNotifications()
         : await enableFirebaseNotifications();
@@ -74,6 +76,7 @@ export function FirebasePushControl() {
           type="button"
           variant="outline"
           size="sm"
+          className="min-h-11"
           disabled={!configured || !signedIn || busy}
           onClick={() => void change()}
         >
@@ -82,7 +85,7 @@ export function FirebasePushControl() {
         </Button>
         <span className="text-xs text-muted-foreground">
           {!configured
-            ? "Firebase Push ainda não configurado"
+            ? "Atualize a conexão Firebase com Include web push para ativar os avisos."
             : !signedIn
               ? "Entre na conta para habilitar"
               : "Opcional e revogável"}

@@ -1,3 +1,4 @@
+import { TABS, type Tab } from "@/components/game/athlete/player-tabs";
 import { Link } from "@tanstack/react-router";
 
 import { lazy, Suspense, useEffect, useState } from "react";
@@ -74,27 +75,6 @@ const HistoryTab = lazy(() =>
     default: module.HistoryTab,
   })),
 );
-
-type Tab =
-  | "semana"
-  | "calendario"
-  | "saude"
-  | "atributos"
-  | "selecao"
-  | "contrato"
-  | "noticias"
-  | "historico";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "semana", label: "Semana" },
-  { id: "calendario", label: "Calendário" },
-  { id: "saude", label: "Saúde" },
-  { id: "atributos", label: "Atributos" },
-  { id: "selecao", label: "Seleção" },
-  { id: "contrato", label: "Contrato e propostas" },
-  { id: "noticias", label: "Notícias" },
-  { id: "historico", label: "Histórico" },
-];
 
 export function AthletePanelPage() {
   const { slot, tab } = Route.useSearch();

@@ -1,11 +1,15 @@
 # Roadmap
 ## Implementação da entrevista (06/11, 22:13 UTC; sem publicação)
-- [ ] Conectar Parallel, Brevo, Telegram, GoodData e Google Cloud sem duplicatas; Google Cloud recusado nesta rodada.
-- [ ] Firebase: aproveitar configuração pública do conector, evitar pedido de permissão dentro da prévia e registrar mensagens sem substituir o modo offline.
-- [ ] Tutorial por ações reais, UX de treinador/jogador/criador e modularização incremental.
-- [ ] Melhorar voz de narração/cutscenes com modelo realmente disponível; preservar modo gráfico leve e opção pesada.
-- [ ] Diagnóstico Firebase e configuração remota, condicionados às permissões/configurações disponíveis.
-- [ ] Verificar testes, acessibilidade, desktop/celular e registrar limites; gates completos obrigatórios antes de qualquer publicação.
+- [x] Parallel e Brevo conectados sem duplicatas.
+- [ ] Telegram, GoodData e Google Cloud: conexão recusada pelo usuário; sem chamadas ou implementação que dependam delas.
+- [x] Firebase: configuração pública do conector, guarda de iframe e mensagens em worker separado do offline; pedido duplicado de permissão removido.
+- [ ] Ativar push real: Include web push ausente e atualização da conexão recusada; entrega real não verificada.
+- [x] Tutorial de treinador reconhece partidas/treinos/relatórios salvos, próximo passo destacado, marcas manuais separadas; guia do jogador reflete relatórios/participações.
+- [x] Exportador PNG do clube e metadados das abas do jogador modularizados; mensagens do criador anunciadas para leitores de tela.
+- [x] ElevenLabs v4/v4 Turbo confirmados no catálogo autenticado; defaults de partida/cena já existentes preservados; voz tardia de cutscene passa a ser guardada para replay sem aumentar espera. Cinema e modo leve existentes preservados.
+- [ ] Diagnóstico Firebase e configuração remota: Google Cloud recusado e configuração pública web indisponível; nenhuma migração de conta/save.
+- [x] Tutorial em carreira autenticada reconheceu duas lições, desktop/mobile sem overflow, Escape fecha; 29 testes focados passaram, lint zero avisos/erros, preview/build OK.
+- [ ] Reformulação ampla de estádio/carreiras, restante da modularização e gates completos de lançamento ainda não concluídos; nenhuma publicação.
 ## Carreira e UI/UX (06/11, 21:43 UTC)
 - [x] Hierarquia: trabalho da semana primeiro, prévia derivada do efeito real, confirmação explícita, histórico vindo do save e propostas ligadas à diretoria.
 - [x] Modularizar escalação e simulação rápida (career.ts 762 → 542 linhas); 160 escalações, 300 resultados e 12 rodadas idênticos ao anterior. Sem alegação de ganho de CPU.

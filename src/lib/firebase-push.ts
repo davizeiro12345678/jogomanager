@@ -19,21 +19,39 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
   ) {
     return { enabled: false, message: "Notificações não suportadas neste navegador." };
   }
+  if (window.top !== window.self) {
+    return {
+      enabled: false,
+      message:
+        "Abra o jogo em uma nova aba para ativar notificações; a prévia não permite solicitar essa permissão.",
+    };
+  }
   const { data: identity } = await supabase.auth.getUser();
   if (!identity.user) {
     return { enabled: false, message: "Entre na conta antes de ativar notificações." };
   }
   const config = await getFirebaseWebConfig();
-  if (!config.apiKey || !config.vapidPublicKey) {
+  if (
+    !config.apiKey ||
+    !config.projectId ||
+    !config.appId ||
+    !config.messagingSenderId ||
+    !config.vapidPublicKey
+  ) {
     return {
       enabled: false,
-      message: "As chaves públicas do Firebase ainda não foram configuradas.",
+      message:
+        "Atualize a conexão Firebase e selecione Include web push para configurar notificações no navegador.",
     };
   }
   if (Notification.permission !== "granted") {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      return { enabled: false, message: "Permissão de notificações não concedida." };
+      return {
+        enabled: false,
+        message:
+          "Notificações bloqueadas. Libere a permissão nas configurações deste site no navegador e tente novamente.",
+      };
     }
   }
 
@@ -43,7 +61,18 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
   if (!(await isSupported())) {
     return { enabled: false, message: "Este dispositivo não suporta Firebase Messaging." };
   }
-  const registration = await navigator.serviceWorker.register("/sw.js");
+  const query = new URLSearchParams({
+    apiKey: config.apiKey,
+    projectId: config.projectId,
+    appId: config.appId,
+    messagingSenderId: config.messagingSenderId,
+  });
+  const registration = await navigator.serviceWorker.register(
+    `/firebase-messaging-sw.js?${query}`,
+    {
+      scope: "/firebase-push/",
+    },
+  );
   const token = await getToken(getMessaging(app), {
     vapidKey: config.vapidPublicKey,
     serviceWorkerRegistration: registration,
@@ -57,7 +86,14 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
       { onConflict: "token" },
     );
   if (error) return { enabled: false, message: "Não foi possível salvar a inscrição." };
-  window.localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  try {
+    window.localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  } catch {
+    return {
+      enabled: true,
+      message: "Notificações ativadas; este navegador não permite lembrar a inscrição localmente.",
+    };
+  }
   return { enabled: true, message: "Notificações ativadas neste dispositivo." };
 }
 
@@ -83,5 +119,9 @@ export async function disableFirebaseNotifications(): Promise<PushResult> {
 }
 
 export function hasFirebasePushDeviceToken(): boolean {
-  return typeof window !== "undefined" && !!window.localStorage.getItem(DEVICE_TOKEN_KEY);
+  try {
+    return typeof window !== "undefined" && !!window.localStorage.getItem(DEVICE_TOKEN_KEY);
+  } catch {
+    return false;
+  }
 }

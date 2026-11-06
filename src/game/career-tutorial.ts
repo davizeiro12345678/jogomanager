@@ -1,4 +1,31 @@
 /** Tutorial progress is guidance only; it never authorizes currency rewards. */
+import type { CareerState } from "./types";
+import { firstMatchPlayed } from "./onboarding";
+
+export function practicedCareerLessons(
+  career: Pick<
+    CareerState,
+    | "lineup"
+    | "players"
+    | "matchLog"
+    | "round"
+    | "season"
+    | "results"
+    | "clubId"
+    | "trainingReports"
+    | "scoutReports"
+  >,
+): Set<string> {
+  const lessons = new Set<string>();
+  if (firstMatchPlayed(career)) {
+    lessons.add("prematch");
+    lessons.add("match");
+  }
+  if (career.trainingReports?.length) lessons.add("training");
+  if (career.scoutReports.length) lessons.add("scouting");
+  return lessons;
+}
+
 export interface TutorialLesson {
   id: string;
   title: string;

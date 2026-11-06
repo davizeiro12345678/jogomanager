@@ -55,3 +55,7 @@
 - Keep paid tactical-training multipliers round-scoped and non-stacking; old saves without an upgrade retain identical training behavior.
 - Keep coach office previews derived from applyWeekAction and results from matchLog; this avoids divergent effects and history lost on remount.
 - Preserve career CSS cascade through ordered shell/screens/office imports; splitting files is organization, not a claim of fewer downloaded bytes.
+- Resolve Firebase connector web identity atomically and use a dedicated messaging worker scope; this prevents mixed-project tokens and replacing the offline worker.
+- Derive tutorial completion from committed career evidence separately from manual review marks; neither grants rewards or changes a save.
+- Keep late cutscene voice responses cacheable without extending the playback deadline; optional audio must not hold up dialogue.
+- Keep club portrait export mechanics and athlete tab metadata outside their page owners; save and renderer lifecycle remain owned by the existing pages.

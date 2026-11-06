@@ -491,7 +491,7 @@ export function GameShell({
           <span>{t("nav.mobileMenu")}</span>
         </button>
       </nav>
-      {tutorialOpen ? (
+      {tutorialOpen && career ? (
         <Suspense
           fallback={
             <span role="status" className="sr-only">
@@ -503,6 +503,7 @@ export function GameShell({
             open={tutorialOpen}
             onOpenChange={setTutorialOpen}
             careerKey={`${userCareerKey(career)}`}
+            career={career}
           />
         </Suspense>
       ) : null}

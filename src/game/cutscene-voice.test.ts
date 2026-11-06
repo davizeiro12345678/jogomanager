@@ -42,6 +42,21 @@ describe("optional cutscene voice", () => {
     vi.mocked(writeVoiceCache).mockImplementationOnce(() => new Promise(() => {}));
     expect(await sceneVoice(vi.fn().mockResolvedValue("ready"), "write-test", 0)).toBe("ready");
   });
+  it("caches a late real voice for replay without extending the dialogue deadline", async () => {
+    let resolveAudio: (value: string) => void = () => {};
+    const transport = new Promise<string>((resolve) => {
+      resolveAudio = resolve;
+    });
+    const playback = sceneVoice(() => transport, "late-voice-test", 0);
+    await vi.advanceTimersByTimeAsync(SCENE_VOICE_WAIT_MS);
+    expect(await playback).toBeNull();
+    resolveAudio("late-real-voice");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(writeVoiceCache).toHaveBeenCalledWith(
+      expect.stringContaining("late-voice-test"),
+      "late-real-voice",
+    );
+  });
   it("keys cache entries by a stable dialogue id while preserving host indices", async () => {
     const loader = vi.fn().mockResolvedValue("licensed-host-audio");
     expect(await sceneVoice(loader, "arrival", 0, "arrival.line.001")).toBe("licensed-host-audio");
