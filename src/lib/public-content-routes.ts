@@ -36,3 +36,8 @@ export function isPublicContentPath(pathname: string): boolean {
 export function isLightweightCssPath(pathname: string): boolean {
   return /^\/partida-rapida\/?$/.test(pathname) || isPublicContentPath(pathname);
 }
+
+/** The creation wizard owns catalog loading at club selection. */
+export function shouldInitializeWorldOnEntry(pathname: string): boolean {
+  return !isLightweightCssPath(pathname) && pathname.replace(/\/$/, "") !== "/new";
+}

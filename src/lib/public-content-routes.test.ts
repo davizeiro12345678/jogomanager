@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { isLightweightCssPath, isPublicContentPath } from "./public-content-routes";
+import { isLightweightCssPath, isPublicContentPath, shouldInitializeWorldOnEntry } from "./public-content-routes";
 
 describe("public content isolation", () => {
+  it("defers the new-career world while preserving existing career startup", () => {
+    expect(shouldInitializeWorldOnEntry("/new")).toBe(false);
+    expect(shouldInitializeWorldOnEntry("/new/")).toBe(false);
+    expect(shouldInitializeWorldOnEntry("/dashboard")).toBe(true);
+    expect(shouldInitializeWorldOnEntry("/match")).toBe(true);
+  });
   it("keeps articles and dynamic league tables independent of the career world", () => {
     for (const path of [
       "/",

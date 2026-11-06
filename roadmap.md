@@ -1,9 +1,10 @@
 # Roadmap
 ## Plano aprovado: CSS sob demanda e segurança (06/11)
-- [ ] Separar CSS público por família de página, preservando estilos críticos no primeiro carregamento.
-- [ ] Carregar catálogo de /new apenas ao escolher clube; corrigir cache público sem armazenar sessões.
-- [ ] Executar Semgrep, scanners e testes ativos não destrutivos; corrigir vulnerabilidades confirmadas.
-- [ ] Verificar navegação móvel/desktop e registrar evidências e limites; publicação depende dos gates obrigatórios.
+- [x] Separar CSS público por família de página, preservando estilos críticos no primeiro carregamento.
+- [x] Carregar catálogo de /new apenas ao escolher clube; corrigir cache público sem armazenar sessões.
+- [x] Executar Semgrep, scanners e testes ativos não destrutivos; corrigir vulnerabilidades confirmadas.
+- [x] Verificar navegação móvel/desktop e registrar evidências e limites em docs/report-2026-11-06-css-security.md.
+- [ ] Divisão fina dos painéis de gameplay e gates publicados: requer continuidade de auditoria visual, medição e workflow Quality gates; não publicar antes disso.
 
 Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moedas-úteis-2-2026-11-03.md`
 
