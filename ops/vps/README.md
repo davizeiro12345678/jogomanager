@@ -27,3 +27,31 @@ Execute `bash ops/vps/ssh-fido2-preflight.sh` em cada VPS antes de configurar ce
 Após realizar as duas medições na mesma VPS, compare `python3 ops/vps/compare-results.py CAMINHO_BEFORE CAMINHO_AFTER`. O comparador rejeita perfis distintos e comparações entre máquinas, e não inventa categorias faltantes.
 
 Os arquivos de resultados são locais e privados; não incluí-los em commits, issues ou logs públicos sem revisão de dados operacionais.
+
+## Segurança e erradicação de malware
+
+Auditoria interna conservadora (não destrutiva, exige acesso autenticado na VPS):
+
+    bash ops/vps/security-audit.sh core8
+    bash ops/vps/security-audit.sh plus6
+
+Varredura ClamAV completa de diretórios selecionados (carga expressiva; apenas com janela aprovada):
+
+    JM_SECURITY_FULL_SCAN_APPROVED=1 bash ops/vps/security-audit.sh core8
+
+A auditoria reúne portas, processos (sem argumentos/segredos), serviços, timers, cron e executáveis temporários; ClamAV, quando disponível, não apaga arquivos por conta própria. Nomes suspeitos e resultados AV requerem confirmação para evitar falsos positivos.
+
+Após confirmação independente e exata de um binário malicioso (SHA-256, PID executando o arquivo, caminho absoluto), o script a seguir mata o processo e **apaga permanentemente o arquivo, sem quarentena**, bloqueando caminhos centrais do sistema operacional:
+
+    sudo bash ops/vps/erase-confirmed-malware.sh plus6 /caminho/absoluto/binario 64_HEX_SHA256 PID
+
+**ATENÇÃO:** se houve execução de minerador com privilégios root, apagar o binário não recupera a confiança no sistema. Preservar metadados de incidente, reprovisionar com imagem confiável e rotacionar chaves/tokens são indispensáveis. Nunca executar um processo de remoção apenas porque um nome de processo parece suspeito.
+
+### Situação externa verificada em 06/11/2026
+
+- SentinelX conectado somente ao Windows WCOM-457; não havia agente Linux autenticado disponível em nenhuma das VPS.
+- Autenticação SSH de root/jmadmin recusada por chave pública no acesso via Windows.
+- Uma sondagem externa de 19 portas TCP comuns por VPS encontrou apenas SSH/22 acessível a partir do WCOM-457; isso **não prova ausência de portas abertas fora dessas 19 nem ausência de malware**.
+- Porta 443 diretamente nos IPs não respondeu à sondagem, mas domínio principal e catálogo retornaram HTTP 200 via Cloudflare.
+- Tunnel `jogomanager-vps-catalog-20261026` ainda inativo, zero conexões; DNS de catálogo permanece proxied A para 194.163.188.190. Não modificar rota ou habilitar failover antes dos gates de segurança.
+- Não há benchmark CPU/RAM/NVMe atual de 06/11/2026 nas VPS; somente medições TCP/HTTP externas. A Plus 6 permanece **não elegível para produção/failover** enquanto persistir a suspeita histórica de execução de minerador root.
