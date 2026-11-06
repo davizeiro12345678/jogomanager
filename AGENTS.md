@@ -53,3 +53,5 @@
 - Keep career tutorial guidance lazy-loaded from GameShell and separate from reward authorization; local lesson completion must never mint currency.
 - Keep stadium scene composition in `stadium/StadiumScene.tsx` and renderer lifecycle in `Stadium3D.tsx`; this preserves one Canvas owner while keeping rendering modules focused.
 - Keep paid tactical-training multipliers round-scoped and non-stacking; old saves without an upgrade retain identical training behavior.
+- Keep coach office previews derived from applyWeekAction and results from matchLog; this avoids divergent effects and history lost on remount.
+- Preserve career CSS cascade through ordered shell/screens/office imports; splitting files is organization, not a claim of fewer downloaded bytes.

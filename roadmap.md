@@ -1,4 +1,10 @@
 # Roadmap
+## Carreira e UI/UX (06/11, 21:43 UTC)
+- [x] Hierarquia: trabalho da semana primeiro, prévia derivada do efeito real, confirmação explícita, histórico vindo do save e propostas ligadas à diretoria.
+- [x] Modularizar escalação e simulação rápida (career.ts 762 → 542 linhas); 160 escalações, 300 resultados e 12 rodadas idênticos ao anterior. Sem alegação de ganho de CPU.
+- [x] CSS separado preservando cascata, escritório adaptado ao celular, navegação sem sobreposição, indicadores acessíveis e espera inicial sem falso estado vazio.
+- [x] 312 arquivos/1.656 testes, lint sem avisos e preview/build OK; conta autenticada avançou rodada e histórico leu novamente após reabrir; desktop/mobile sem overflow ou erros.
+- [ ] Restante: tutorial com recompensa atestada, entrega atômica de serviços, VIP/pacotes, personalização, evolução visual do estádio e gates completos de lançamento; não publicados neste ciclo.
 ## Execução restante (06/11, 21:24 UTC)
 - [x] Guia retomável de 4 capítulos/10 lições no treinador e orientações próprias no painel de jogador; progresso local, sem recompensa automática.
 - [x] Treino (150 moedas, 5/7 dias, +50% no exercício da rodada) e olheiro individual (120, 7/7 dias), com cobrança no servidor e testes.

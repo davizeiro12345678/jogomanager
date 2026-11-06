@@ -1,0 +1,248 @@
+/* Page-local office composition; the match HUD stays unchanged. */
+.coach-office {
+  min-width: 0;
+}
+.coach-office-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.coach-office-header > .screen-heading {
+  flex: 1;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.coach-office-header > :first-child {
+  flex-shrink: 0;
+}
+.coach-office-nav {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  margin-top: 1.5rem;
+}
+.coach-office-nav a {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.coach-office-nav a:hover {
+  color: var(--primary);
+}
+.coach-office-band {
+  padding-block: 1.75rem;
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: calc(var(--career-header-height) + 1.5rem);
+}
+.coach-office h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0;
+}
+.coach-office :is(h1, h2, h3, button) {
+  letter-spacing: 0;
+}
+.coach-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-block: 1.25rem;
+}
+.coach-action-grid .coach-action {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: start;
+  height: auto;
+  min-height: 150px;
+  white-space: normal;
+  text-align: start;
+  padding: 1rem;
+  border-radius: 8px;
+  gap: 0.5rem;
+}
+.coach-action > span {
+  font-weight: 400;
+  line-height: 1.5;
+}
+.coach-action .coach-action-title {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 650;
+}
+.coach-action[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--career-accent-soft);
+  box-shadow: inset 3px 0 var(--primary);
+}
+.coach-week-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-block: 1rem;
+}
+.coach-week-confirm > div {
+  min-width: 0;
+  flex: 1;
+}
+.coach-week-confirm > button {
+  white-space: normal;
+  height: auto;
+  min-height: 48px;
+  max-width: 100%;
+}
+.coach-effect-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.coach-effect-list > div {
+  display: flex;
+  gap: 0.5rem;
+}
+.coach-effect-list dt {
+  color: var(--muted-foreground);
+}
+.coach-effect-list dd {
+  font-weight: 650;
+}
+.coach-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.coach-section-heading a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  color: var(--primary);
+}
+.coach-meters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-block: 1rem;
+}
+.coach-meter-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+.coach-meter-label small {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.coach-meter meter {
+  display: block;
+  width: 100%;
+  height: 1rem;
+  margin-top: 0.5rem;
+}
+.coach-meter meter::-webkit-meter-bar {
+  background: var(--border);
+  border: 0;
+  border-radius: 4px;
+}
+.coach-meter meter::-webkit-meter-optimum-value {
+  background: currentColor;
+  border-radius: 4px;
+}
+.coach-meter meter::-moz-meter-bar {
+  background: currentColor;
+  border-radius: 4px;
+}
+.coach-club-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+.coach-club-facts dt {
+  color: var(--muted-foreground);
+}
+.coach-club-facts dd {
+  font-weight: 650;
+}
+.coach-results-list {
+  margin-top: 1rem;
+}
+.coach-results-list li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.coach-results-list li > div {
+  min-width: 0;
+  flex: 1;
+}
+.coach-results-list li > :first-child {
+  flex-shrink: 0;
+}
+.coach-result-score {
+  font-size: 1.5rem;
+  font-weight: 650;
+  text-align: end;
+  flex-shrink: 0;
+}
+.coach-result-score small {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.coach-empty {
+  padding-block: 2rem;
+  color: var(--muted-foreground);
+}
+@container career-content (max-width: 52rem) {
+  .coach-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coach-meters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coach-week-confirm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+@container career-content (max-width: 30rem) {
+  .coach-action-grid,
+  .coach-meters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coach-action-grid .coach-action {
+    min-height: 120px;
+  }
+  .coach-office-header > .screen-heading {
+    flex-basis: calc(100% - 80px);
+  }
+  .coach-office-header > button {
+    margin-inline-start: auto;
+  }
+  .coach-results-list li {
+    gap: 0.75rem;
+  }
+}
+@media (forced-colors: active) {
+  .coach-action[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+}
