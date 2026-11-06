@@ -131,8 +131,8 @@ export function CareerUpgradesCard({
         <Building2 size={16} aria-hidden="true" /> Melhoria do estádio
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        +{Math.round(STADIUM_UPGRADE_RATE * 100)}% de capacidade (mais público e bilheteria) ·
-        nível {level} de {STADIUM_UPGRADE_MAX_LEVEL} · {stadium.cost} moedas · 1 por semana.
+        +{Math.round(STADIUM_UPGRADE_RATE * 100)}% de capacidade (mais público e bilheteria) · nível{" "}
+        {level} de {STADIUM_UPGRADE_MAX_LEVEL} · {stadium.cost} moedas · 1 por semana.
       </p>
       <div className="mt-2 flex items-center justify-between gap-3 text-sm">
         <span className="text-muted-foreground">

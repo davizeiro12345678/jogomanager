@@ -16,7 +16,8 @@ export const SEASON_PASS_WEEKLY_COINS = 300;
 /** Reports added to the career each time a premium scout report is used. */
 export const PREMIUM_SCOUT_REPORT_SIZE = 5;
 
-export type CareerService = "injury_recovery" | "opponent_report" | "youth_boost" | "stadium_upgrade";
+export type CareerService =
+  "injury_recovery" | "opponent_report" | "youth_boost" | "stadium_upgrade";
 
 /** Coin services; cost and weekly limit are enforced by spend_coins_on_service. */
 export const CAREER_SERVICES: Record<CareerService, { cost: number; weeklyLimit: number }> = {

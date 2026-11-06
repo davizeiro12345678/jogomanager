@@ -10,7 +10,11 @@ const career = (extra: Partial<CareerState> = {}) =>
   ({
     clubId: "c1",
     capacity: 40000,
-    players: { young: player("young", 19, 80), old: player("old", 25, 80), top: player("top", 18, 98) },
+    players: {
+      young: player("young", 19, 80),
+      old: player("old", 25, 80),
+      top: player("top", 18, 98),
+    },
     ...extra,
   }) as CareerState;
 
