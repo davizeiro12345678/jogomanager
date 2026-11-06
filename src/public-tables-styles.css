@@ -1,0 +1,7 @@
+@import "tailwindcss" source(none);
+@import "./public-style-sources.css";
+@import "./design-system.css";
+@source "./components/LeagueDataInsights.tsx";
+@source "./components/LeagueExtras.tsx";
+@source "./pages/tabelas.index.tsx";
+@source "./pages/tabelas.$slug.tsx";
