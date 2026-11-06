@@ -111,6 +111,17 @@ describe("outer response protection", () => {
       "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
     );
   });
+  it("overrides framework revalidation on anonymous public HTML only", () => {
+    const run = (cache: string, headers: HeadersInit = {}, method = "GET") => secureResponse(
+      new Response("page", { headers: { "content-type": "text/html", "cache-control": cache } }),
+      new Request("https://jogomanager.com/", { headers, method }),
+    ).headers.get("cache-control");
+    expect(run("no-cache, must-revalidate, max-age=0")).toContain("s-maxage=300");
+    expect(run("private, max-age=0")).toBe("private, max-age=0");
+    expect(run("no-store")).toBe("no-store");
+    expect(run("no-cache", { cookie: "session=fixture" })).toBe("no-store");
+    expect(run("no-cache", {}, "POST")).toBe("no-store");
+  });
   it("preserves static caching and public indexing and implements bodyless HEAD", async () => {
     const asset = secureResponse(
       new Response("asset"),

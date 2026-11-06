@@ -1,4 +1,5 @@
 import { responseIndexingPolicy } from "./public-indexing";
+import { isPublicContentPath } from "./public-content-routes";
 
 /** Supplied only by the outer server entry, never copied from an incoming header. */
 export const CSP_NONCE_HEADER = "x-manager-csp-nonce";
@@ -74,9 +75,18 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     PRIVATE_PATH.test(url.pathname) ||
     (indexing && contentType.includes("text/html")) ||
     headers.has("set-cookie") ||
-    request.headers.has("authorization")
+    request.headers.has("authorization") ||
+    (contentType.includes("text/html") && request.headers.has("cookie")) ||
+    !["GET", "HEAD"].includes(request.method)
   ) {
     headers.set("cache-control", "no-store");
+  } else if (
+    response.status === 200 && contentType.includes("text/html") &&
+    isPublicContentPath(url.pathname) &&
+    !/\b(?:private|no-store)\b/i.test(headers.get("cache-control") ?? "")
+  ) {
+    // Override the framework's default no-cache, not an explicit private policy.
+    headers.set("cache-control", "public, max-age=0, s-maxage=300, stale-while-revalidate=86400");
   } else if (!headers.has("cache-control")) {
     const cache = HASHED_PATH.test(url.pathname)
       ? "public, max-age=31536000, immutable"

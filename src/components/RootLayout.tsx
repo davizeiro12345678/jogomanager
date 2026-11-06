@@ -108,7 +108,7 @@ export function RootComponent() {
   useEffect(() => {
     // The public home needs no catalogue. Restore the campaign on entry to the
     // rest of the app, rather than downloading every club after first paint.
-    if (!isLightweightCssPath(pathname))
+    if (!isLightweightCssPath(pathname) && pathname.replace(/\/$/, "") !== "/new")
       void import("../lib/world").then((world) => world.default()).catch(() => undefined);
   }, [pathname]);
 

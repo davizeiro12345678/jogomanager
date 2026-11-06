@@ -1,4 +1,10 @@
 # Roadmap
+## Plano aprovado: CSS sob demanda e segurança (06/11)
+- [ ] Separar CSS público por família de página, preservando estilos críticos no primeiro carregamento.
+- [ ] Carregar catálogo de /new apenas ao escolher clube; corrigir cache público sem armazenar sessões.
+- [ ] Executar Semgrep, scanners e testes ativos não destrutivos; corrigir vulnerabilidades confirmadas.
+- [ ] Verificar navegação móvel/desktop e registrar evidências e limites; publicação depende dos gates obrigatórios.
+
 Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moedas-úteis-2-2026-11-03.md`
 
 - [ ] E1 Gráficos da partida 3D (salto visual)
