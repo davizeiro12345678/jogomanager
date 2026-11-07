@@ -44,14 +44,14 @@ export default function CareerTutorialDialog({
   const progress = tutorialProgress(completed);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain sm:max-w-2xl">
         <DialogTitle className="flex items-center gap-2">
           <BookOpen size={20} aria-hidden />
           Tutorial da carreira
         </DialogTitle>
         <DialogDescription>
-          Retome de onde parou. Partidas, treinos e relatórios são reconhecidos na carreira; as
-          demais lições podem ser marcadas por você.
+          Retome de onde parou. O guia usa os registros da carreira para reconhecer ações. Você
+          também pode marcar lições que revisou.
         </DialogDescription>
         <p role="status" className="text-sm text-primary">
           {progress.completed} de {progress.total} lições concluídas ou marcadas
@@ -65,7 +65,11 @@ export default function CareerTutorialDialog({
         {progress.next ? (
           <div className="border-b border-border pb-4">
             <p className="mb-2 text-sm font-semibold">Próximo passo: {progress.next.title}</p>
-            <Button asChild className="min-h-11" onClick={() => onOpenChange(false)}>
+            <Button
+              asChild
+              className="min-h-11 h-auto whitespace-normal text-left"
+              onClick={() => onOpenChange(false)}
+            >
               <Link to={progress.next.to}>Continuar: {progress.next.title}</Link>
             </Button>
           </div>
@@ -75,11 +79,19 @@ export default function CareerTutorialDialog({
           </p>
         )}
         {TUTORIAL_CHAPTERS.map((chapter, index) => (
-          <section key={chapter.title} className="border-t border-border pt-4">
-            <h2 className="font-display text-lg">
-              {index + 1}. {chapter.title}
-            </h2>
-            <ul className="mt-3 space-y-4">
+          <details
+            key={chapter.title}
+            open={chapter.lessons.some((lesson) => lesson.id === progress.next?.id)}
+            className="rounded-lg border border-border px-3 py-1 sm:px-4"
+          >
+            <summary className="min-h-11 cursor-pointer py-2.5 font-display text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+              {index + 1}. {chapter.title}{" "}
+              <span className="text-sm text-muted-foreground">
+                ({chapter.lessons.filter((lesson) => completed.has(lesson.id)).length}/
+                {chapter.lessons.length})
+              </span>
+            </summary>
+            <ul className="mt-2 space-y-4 pb-3">
               {chapter.lessons.map((lesson) => (
                 <li key={lesson.id}>
                   <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -127,7 +139,7 @@ export default function CareerTutorialDialog({
                 </li>
               ))}
             </ul>
-          </section>
+          </details>
         ))}
         <div className="flex flex-wrap gap-2 border-t border-border pt-4">
           <Button variant="ghost" size="sm" onClick={() => save(new Set())}>

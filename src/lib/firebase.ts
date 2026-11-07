@@ -1,18 +1,22 @@
 /** Firebase app is opt-in. Analytics is initialized only after analytics consent. */
 import type { FirebaseApp } from "firebase/app";
+import type { getFirebaseWebConfig } from "./firebase-config.functions";
 
 let app: FirebaseApp | null = null;
 let analyticsStarted = false;
 
 export async function initFirebase(
-  opts: { analytics?: boolean } = {},
+  opts: { analytics?: boolean; config?: Awaited<ReturnType<typeof getFirebaseWebConfig>> } = {},
 ): Promise<FirebaseApp | null> {
   if (typeof window === "undefined") return null;
   try {
-    const { getFirebaseWebConfig } = await import("./firebase-config.functions");
-    const config = await getFirebaseWebConfig();
+    const config =
+      opts.config ?? (await (await import("./firebase-config.functions")).getFirebaseWebConfig());
     if (!config.apiKey || !config.projectId || !config.appId) return null;
 
+    if (app && (app.options.projectId !== config.projectId || app.options.appId !== config.appId)) {
+      return null;
+    }
     if (!app) {
       const { getApps, initializeApp } = await import("firebase/app");
       app =

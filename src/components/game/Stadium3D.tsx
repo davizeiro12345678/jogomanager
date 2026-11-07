@@ -7,14 +7,13 @@ import {
 import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { FirstMatchFrame } from "./FirstMatchFrame";
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { CanvasLifecycle } from "./CanvasLifecycle";
-import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
-import { onTurfDetailReady } from "./stadium/textures/turf-detail";
+import { CompressedTextures, PausedCameraFrames } from "./stadium/StadiumDemandFrames";
 import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "./renderer";
 import type { CameraMode } from "@/game/camera-modes";
 import { dprFor, isCoarsePointer } from "@/game/device";
@@ -30,36 +29,6 @@ export type { CameraMode } from "@/game/camera-modes";
 import type { Quality } from "./stadium/quality";
 export type { Quality };
 const SHADOW_SETTINGS = { type: THREE.PCFShadowMap };
-
-function CompressedTextures({ enabled }: { enabled: boolean }) {
-  const invalidate = useThree((state) => state.invalidate);
-  useEffect(() => onTurfDetailReady(() => invalidate()), [invalidate]);
-  return <Ktx2CanvasAssets enabled={enabled} />;
-}
-
-/** Finish a camera transition in demand mode, then release the GPU while paused. */
-function PausedCameraFrames({
-  paused,
-  visible,
-  mode,
-}: {
-  paused: boolean;
-  visible: boolean;
-  mode: CameraMode;
-}) {
-  const invalidate = useThree((state) => state.invalidate);
-  const remaining = useRef(0);
-  useEffect(() => {
-    remaining.current = paused && visible ? 1.2 : 0;
-    if (remaining.current > 0) invalidate();
-  }, [paused, visible, mode, invalidate]);
-  useFrame((_, dt) => {
-    if (remaining.current <= 0) return;
-    remaining.current -= Math.min(dt, 0.1);
-    if (remaining.current > 0) invalidate();
-  });
-  return null;
-}
 
 function Stadium3DImpl({
   sim,
@@ -107,6 +76,7 @@ function Stadium3DImpl({
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     const onVis = () => setVisible(!document.hidden);
+    onVis();
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
   }, []);

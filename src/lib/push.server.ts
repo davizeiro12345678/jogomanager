@@ -65,7 +65,7 @@ export async function sendPushToTokens(
       deadTokens.push(token);
       continue;
     }
-    console.error(`FCM falhou [${res.status}]: ${body}`);
+    console.error(`FCM falhou [${res.status}]`);
   }
   return { sent, deadTokens };
 }

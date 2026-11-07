@@ -23,10 +23,10 @@ describe("resumable career tutorial", () => {
       }),
     ]).toEqual(["prematch", "match"]);
   });
-  it("resumes at the next unpracticed lesson across four chapters", () => {
+  it("resumes at the next unpracticed lesson across chapters", () => {
     const progress = tutorialProgress(new Set(["club", "objectives"]));
     expect(progress.completed).toBe(2);
-    expect(progress.total).toBe(10);
+    expect(progress.total).toBe(13);
     expect(progress.next?.id).toBe("squad");
   });
   it("does not accept unknown or invalid stored lesson identifiers", () => {

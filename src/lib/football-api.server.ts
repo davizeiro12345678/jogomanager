@@ -10,6 +10,8 @@
  * that source instead of failing.
  */
 
+import { admin } from "./apifootball-client.server";
+
 export interface RemoteTeam {
   source: string;
   externalId: string;
@@ -49,9 +51,14 @@ export interface RemotePlayer {
 
 const UA = { "User-Agent": "football-manager-app/1.0" };
 
-async function getJson<T>(url: string, headers: Record<string, string> = {}): Promise<T | null> {
+async function getJson<T>(
+  url: string,
+  headers: Record<string, string> = {},
+  reserve?: () => Promise<boolean>,
+): Promise<T | null> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
+      if (reserve && !(await reserve())) return null;
       const res = await fetch(url, { headers: { ...UA, ...headers } });
       if (res.ok) return (await res.json()) as T;
       // Free tiers throttle aggressively; back off and try again.
@@ -330,12 +337,19 @@ interface AfPlayer {
   photo?: string;
 }
 
+async function reserveApiFootballLookup(): Promise<boolean> {
+  const db = await admin();
+  const { data, error } = await db.rpc("reserve_api_football_quota");
+  return !error && data === true;
+}
+
 export async function apiFootballSquad(teamId: string): Promise<RemotePlayer[]> {
   const key = process.env["APIFOOTBALL_API_KEY"];
   if (!key) return [];
   const json = await getJson<{ response?: { players?: AfPlayer[] }[] }>(
     `https://v3.football.api-sports.io/players/squads?team=${encodeURIComponent(teamId)}`,
     { "x-apisports-key": key },
+    reserveApiFootballLookup,
   );
   const players = json?.response?.[0]?.players ?? [];
   return players.map((p) => ({
@@ -355,9 +369,11 @@ export async function apiFootballTeamId(name: string, country?: string): Promise
   if (!key) return null;
   const json = await getJson<{
     response?: { team?: { id?: number; name?: string; country?: string } }[];
-  }>(`https://v3.football.api-sports.io/teams?search=${encodeURIComponent(name)}`, {
-    "x-apisports-key": key,
-  });
+  }>(
+    `https://v3.football.api-sports.io/teams?search=${encodeURIComponent(name)}`,
+    { "x-apisports-key": key },
+    reserveApiFootballLookup,
+  );
   const list = json?.response ?? [];
   if (!list.length) return null;
   const wanted = normalise(name);

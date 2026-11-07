@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  isDeadToken,
-  MAX_TOKENS_PER_EVENT,
-  sendPushToTokens,
-} from "./push.server";
+import { isDeadToken, MAX_TOKENS_PER_EVENT, sendPushToTokens } from "./push.server";
 
 afterEach(() => {
   vi.unstubAllGlobals();

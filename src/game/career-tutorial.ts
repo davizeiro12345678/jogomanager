@@ -14,6 +14,8 @@ export function practicedCareerLessons(
     | "clubId"
     | "trainingReports"
     | "scoutReports"
+    | "transferredIn"
+    | "financeLedger"
   >,
 ): Set<string> {
   const lessons = new Set<string>();
@@ -23,6 +25,8 @@ export function practicedCareerLessons(
   }
   if (career.trainingReports?.length) lessons.add("training");
   if (career.scoutReports.length) lessons.add("scouting");
+  if (career.transferredIn?.length) lessons.add("transfers");
+  if (career.financeLedger?.length) lessons.add("weekly-budget");
   return lessons;
 }
 
@@ -116,6 +120,32 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
         instruction:
           "Revise contratos curtos e insatisfação no elenco; confira o efeito e o custo antes de usar um serviço.",
         to: "/squad",
+      },
+    ],
+  },
+  {
+    title: "Mercado e calendário",
+    lessons: [
+      {
+        id: "transfers",
+        title: "Contrate para uma necessidade real",
+        instruction:
+          "Identifique a posição mais fraca. Compare idade, potencial e salário de dois candidatos antes de decidir se vale fazer uma proposta.",
+        to: "/transfers",
+      },
+      {
+        id: "weekly-budget",
+        title: "Feche a semana no azul",
+        instruction:
+          "Abra o extrato após avançar a rodada. Compare bilheteria, salários e outras despesas. Se o saldo caiu, revise o custo do elenco antes da próxima contratação.",
+        to: "/finances",
+      },
+      {
+        id: "league-table",
+        title: "Leia a tabela e ajuste sua meta",
+        instruction:
+          "Compare sua posição com a meta da diretoria. Confira a diferença em pontos e o saldo de gols antes de decidir se precisa arriscar no próximo jogo.",
+        to: "/league",
       },
     ],
   },

@@ -8,8 +8,7 @@ export type PushResult = { enabled: boolean; message: string };
 
 /**
  * Only call from a user click. Never ask for push permission automatically.
- * Uses the same registered /sw.js as the offline mode, rather than creating
- * a competing Firebase worker with a different update lifecycle.
+ * Uses a separate worker scope so messaging and offline caching can coexist.
  */
 export async function enableFirebaseNotifications(): Promise<PushResult> {
   if (
@@ -55,7 +54,7 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
     }
   }
 
-  const app = await initFirebase();
+  const app = await initFirebase({ config });
   if (!app) return { enabled: false, message: "Firebase indisponível neste momento." };
   const { getMessaging, getToken, isSupported } = await import("firebase/messaging");
   if (!(await isSupported())) {
