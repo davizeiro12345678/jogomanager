@@ -132,7 +132,7 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [ ] E4 compras: cinco novos pacotes ainda dependem de implementação de inventário/entrega e ofertas reais no provedor.
 
 ## Etapa carreira/UI (07/11, 01:10 UTC; sem publicação)
-- [ ] Tabela de classificação complexa dentro da página da carreira do treinador (expansível, render só ao abrir).
-- [ ] Resultados da carreira: forma recente, filtro por competição e totais; ajustes de CSS.
-- [ ] Prints desktop/celular como evidência; testes focados e lint.
+- [x] Tabela de classificação complexa dentro da página da carreira do treinador (expansível, render só ao abrir).
+- [x] Resultados da carreira: forma recente, filtro por competição e totais; ajustes de CSS.
+- [x] Prints desktop/celular verificados (tabela com 20 clubes, sem overflow, sem erros JS); lint limpo e build OK.
 - [ ] Cutscenes, Stadium3D e rig: melhorias amplas seguem abertas para etapas seguintes.
