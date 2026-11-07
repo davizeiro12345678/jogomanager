@@ -1,0 +1,138 @@
+.creation-steps {
+  margin-block: 1rem;
+  min-width: 0;
+}
+.creation-step-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.creation-step-heading strong {
+  color: var(--foreground);
+  font-size: 1rem;
+}
+.creation-steps ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.creation-steps li {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+.creation-step-button {
+  width: 100%;
+  height: auto;
+  min-height: 48px;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  border-radius: 6px;
+}
+.creation-step-button[aria-current="step"] {
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, var(--card));
+  color: var(--foreground);
+}
+.creation-step-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.creation-step-button[aria-current="step"] .creation-step-number {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.creation-step-heading:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.creation-review {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.creation-review dl {
+  display: grid;
+  gap: 0;
+}
+.creation-review dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.creation-review dt {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.creation-review dd {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.club-creator-layout {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+.club-creator-fields {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.club-creator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--border);
+}
+.club-creator-actions > button {
+  min-height: 48px;
+  height: auto;
+  white-space: normal;
+}
+.club-creator-preview {
+  min-width: 0;
+  border-top: 3px solid var(--primary);
+  background: var(--card);
+  padding: 1rem;
+  border-radius: 6px;
+  text-align: center;
+}
+@media (min-width: 48rem) {
+  .club-creator-layout {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+  .club-creator-preview {
+    position: sticky;
+    top: 1rem;
+  }
+}
+@media (max-width: 36rem) {
+  .creation-steps li {
+    flex-basis: calc(50% - 0.5rem);
+  }
+  .creation-step-button {
+    font-size: 0.75rem;
+  }
+  .club-creator-actions > button {
+    flex: 1;
+  }
+}

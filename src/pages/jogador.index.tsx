@@ -61,115 +61,127 @@ export function AthleteHub() {
           </p>
         )}
         {!slots ? (
-          <p className="athlete-meta">Carregando…</p>
+          <p className="athlete-meta" role="status">
+            Carregando suas carreiras…
+          </p>
         ) : (
-          <div className="athlete-slots">
-            {slots.map((s, i) => {
-              const slot = (i + 1) as 1 | 2 | 3;
-              const backup = readAthleteBackup(slot, owner);
-              const conflictBackup = readAthleteConflictBackup(slot, owner);
-              if (!s)
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
+              <h2 className="font-display text-lg">Seus atletas</h2>
+              <p className="athlete-meta">
+                {slots.filter(Boolean).length} de {slots.length} espaços ocupados
+              </p>
+            </div>
+            <div className="athlete-slots">
+              {slots.map((s, i) => {
+                const slot = (i + 1) as 1 | 2 | 3;
+                const backup = readAthleteBackup(slot, owner);
+                const conflictBackup = readAthleteConflictBackup(slot, owner);
+                if (!s)
+                  return (
+                    <div
+                      key={slot}
+                      className="athlete-card grid gap-3 place-items-center text-center py-8"
+                    >
+                      <p className="athlete-meta">Espaço {slot} vazio</p>
+                      {conflictBackup && (
+                        <Button
+                          variant="outline"
+                          onClick={() => downloadAthlete(conflictBackup, "backup-conflito-nuvem")}
+                        >
+                          Baixar versão anterior em conflito
+                        </Button>
+                      )}
+                      {backup && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" onClick={() => downloadAthlete(backup)}>
+                            Baixar backup anterior
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              if (
+                                window.confirm("Restaurar este atleta a partir do backup local?")
+                              ) {
+                                restore(slot);
+                              }
+                            }}
+                          >
+                            Restaurar backup
+                          </Button>
+                        </div>
+                      )}
+                      <Button asChild size="lg">
+                        <Link to="/jogador/novo" search={{ slot }}>
+                          <Plus className="size-4" /> Criar atleta
+                        </Link>
+                      </Button>
+                    </div>
+                  );
+                const club = CLUBS[s.clubId];
                 return (
                   <div
                     key={slot}
-                    className="athlete-card grid gap-3 place-items-center text-center py-8"
+                    className="athlete-card grid gap-3"
+                    style={{ ["--club" as string]: club?.primary }}
                   >
-                    <p className="athlete-meta">Espaço {slot} vazio</p>
+                    <div className="flex items-center gap-3">
+                      {club && <Crest club={club} size={44} />}
+                      <div className="min-w-0">
+                        <h2 className="text-lg font-bold truncate">{s.nickname}</h2>
+                        <p className="athlete-meta truncate">
+                          {POSITION_LABEL[s.position]} · {s.age} anos · {club?.name ?? "Sem clube"}
+                        </p>
+                      </div>
+                      <div
+                        className="athlete-ovr ml-auto"
+                        style={{ width: "3.2rem", height: "3.2rem", fontSize: "1.3rem" }}
+                      >
+                        {overall(s)}
+                      </div>
+                    </div>
+                    <p className="athlete-meta">
+                      {s.retired ? "Aposentado" : `Temporada ${s.season} · semana ${s.week}`}
+                    </p>
                     {conflictBackup && (
                       <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => downloadAthlete(conflictBackup, "backup-conflito-nuvem")}
                       >
-                        Baixar versão anterior em conflito
+                        Exportar versão local anterior
                       </Button>
                     )}
-                    {backup && (
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => downloadAthlete(backup)}>
-                          Baixar backup anterior
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            if (window.confirm("Restaurar este atleta a partir do backup local?")) {
-                              restore(slot);
-                            }
-                          }}
-                        >
-                          Restaurar backup
-                        </Button>
-                      </div>
-                    )}
-                    <Button asChild size="lg">
-                      <Link to="/jogador/novo" search={{ slot }}>
-                        <Plus className="size-4" /> Criar atleta
-                      </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild className="flex-1">
+                        <Link to="/jogador/painel" search={{ slot }}>
+                          {s.retired ? "Ver legado" : "Continuar"}
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => downloadAthlete(s)}>
+                        Exportar JSON
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label={`Excluir ${s.nickname}`}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Excluir ${s.nickname}? Um backup local será guardado e poderá ser baixado neste aparelho.`,
+                            )
+                          )
+                            void remove(slot);
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 );
-              const club = CLUBS[s.clubId];
-              return (
-                <div
-                  key={slot}
-                  className="athlete-card grid gap-3"
-                  style={{ ["--club" as string]: club?.primary }}
-                >
-                  <div className="flex items-center gap-3">
-                    {club && <Crest club={club} size={44} />}
-                    <div className="min-w-0">
-                      <h2 className="text-lg font-bold truncate">{s.nickname}</h2>
-                      <p className="athlete-meta truncate">
-                        {POSITION_LABEL[s.position]} · {s.age} anos · {club?.name ?? "Sem clube"}
-                      </p>
-                    </div>
-                    <div
-                      className="athlete-ovr ml-auto"
-                      style={{ width: "3.2rem", height: "3.2rem", fontSize: "1.3rem" }}
-                    >
-                      {overall(s)}
-                    </div>
-                  </div>
-                  <p className="athlete-meta">
-                    {s.retired ? "Aposentado" : `Temporada ${s.season} · semana ${s.week}`}
-                  </p>
-                  {conflictBackup && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadAthlete(conflictBackup, "backup-conflito-nuvem")}
-                    >
-                      Exportar versão local anterior
-                    </Button>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild className="flex-1">
-                      <Link to="/jogador/painel" search={{ slot }}>
-                        {s.retired ? "Ver legado" : "Continuar"}
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => downloadAthlete(s)}>
-                      Exportar JSON
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-label={`Excluir ${s.nickname}`}
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Excluir ${s.nickname}? Um backup local será guardado e poderá ser baixado neste aparelho.`,
-                          )
-                        )
-                          void remove(slot);
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          </>
         )}
       </div>
     </main>

@@ -20,6 +20,9 @@ import { ClubHeritagePanel, ClubHonoursPanel } from "@/components/game/ClubHerit
 
 import { RealClubInfo } from "@/components/game/RealClubInfo";
 import { DatabaseClubInfo } from "@/components/game/DatabaseClubInfo";
+import { StadiumUpgradePreview } from "@/components/game/services/StadiumUpgradePreview";
+import { Button } from "@/components/ui/button";
+import { Building2 } from "lucide-react";
 
 const TRAININGS: { key: TrainingFocus; label: string; desc: string }[] = [
   { key: "equilibrado", label: "Equilibrado", desc: "Recuperação e ritmo estáveis" },
@@ -130,6 +133,15 @@ export function ClubHub() {
         </div>
 
         <div className="space-y-4">
+          <section className="border-y border-border py-4" aria-labelledby="club-stadium-title">
+            <h2 id="club-stadium-title" className="flex items-center gap-2 font-display text-lg">
+              <Building2 size={20} aria-hidden="true" /> Seu estádio
+            </h2>
+            <StadiumUpgradePreview career={career} />
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/board">Ver investimentos na diretoria</Link>
+            </Button>
+          </section>
           <div className="rounded-2xl border border-border/60 surface-card p-5">
             <h2 className="font-display text-lg uppercase tracking-wide">Finanças</h2>
             <dl className="mt-3 space-y-2 text-sm">

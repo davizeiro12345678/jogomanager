@@ -1,5 +1,8 @@
 import { exportClubPortrait } from "@/lib/club-portrait-export";
-import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
+import { CreationSteps } from "@/components/game/CreationSteps";
+import { ClubStyleSteps } from "@/components/game/club-creator/ClubStyleSteps";
+import { Button } from "@/components/ui/button";
+import { ScreenHeader } from "@/components/game/screen-kit";
 
 import { useNavigate } from "@tanstack/react-router";
 
@@ -10,15 +13,6 @@ import { KitPreview } from "@/components/game/ClubKitPreview";
 
 import { ManagerPortrait } from "@/components/game/ManagerPortrait";
 import { HAIR_COLORS } from "@/game/manager-look-options";
-
-import { Chips } from "@/components/game/CrestBuilder";
-import {
-  CREST_EMBLEMS,
-  CREST_PATTERNS,
-  CREST_SHAPES,
-  EMBLEM_LABEL,
-  KIT_PATTERNS,
-} from "@/game/crest-options";
 
 import { initCareer } from "@/game/career";
 
@@ -31,8 +25,6 @@ import {
 } from "@/game/manager-profile";
 
 import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/types";
-
-import type { ChantKind, RoofKind } from "@/game/customStyle";
 
 import { useCareer } from "@/hooks/useCareer";
 
@@ -54,19 +46,6 @@ import {
 } from "@/lib/myClub";
 import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
 import { containsProfanity } from "@/lib/moderation";
-
-const ROOFS: { id: RoofKind; label: string }[] = [
-  { id: "aberto", label: "Sem cobertura" },
-  { id: "parcial", label: "Cobertura parcial" },
-  { id: "total", label: "Arena fechada" },
-];
-
-const CHANTS: { id: ChantKind; label: string }[] = [
-  { id: "carnaval", label: "Carnaval — bateria o jogo inteiro" },
-  { id: "operario", label: "Operária — barulho nos momentos-chave" },
-  { id: "epico", label: "Épica — hino arrepiante antes do apito" },
-  { id: "silencioso", label: "Reservada — só explode no gol" },
-];
 
 const STEPS = ["Treinador e identidade", "Escudo", "Uniforme", "Estádio", "Torcida e revisão"];
 
@@ -107,6 +86,7 @@ export function NewClubPage() {
   const navigate = useNavigate();
   const { update } = useCareer();
   const [step, setStep] = useState(0);
+  const [furthest, setFurthest] = useState(0);
   const [manager, setManager] = useState("");
   const [nameError, setNameError] = useState("");
   const [managerAge, setManagerAge] = useState(38);
@@ -231,7 +211,7 @@ export function NewClubPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 py-8">
       <ScreenHeader title="Crie o seu clube" />
       <p className="mt-1 text-sm text-muted-foreground">
         Funde um time do zero e coloque ele para brigar em uma liga real.
@@ -256,7 +236,8 @@ export function NewClubPage() {
             Você já tem o <strong>{existing.name}</strong> em jogo
             {existing.replaced ? ` (no lugar do ${existing.replaced.name})` : ""}.
           </span>
-          <button
+          <Button
+            variant="outline"
             type="button"
             className={smallBtn}
             onClick={() =>
@@ -264,8 +245,9 @@ export function NewClubPage() {
             }
           >
             Editar como cópia
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             type="button"
             className={smallBtn}
             onClick={() => {
@@ -275,29 +257,13 @@ export function NewClubPage() {
             }}
           >
             Apagar clube
-          </button>
+          </Button>
         </div>
       )}
 
-      <ol className="mt-5 flex flex-wrap gap-2">
-        {STEPS.map((s, i) => (
-          <li
-            key={s}
-            className={`rounded-full border px-3 py-1 text-xs ${
-              i === step
-                ? "border-primary bg-primary/15 text-primary"
-                : i < step
-                  ? "border-border/60 text-muted-foreground"
-                  : "border-border/40 text-muted-foreground/60"
-            }`}
-          >
-            {i + 1}. {s}
-          </li>
-        ))}
-      </ol>
-
-      <div className="mt-6 grid gap-6 md:grid-cols-[1fr_260px]">
-        <SectionCard className="space-y-4 rounded-2xl border border-border/60 surface-card p-4">
+      <CreationSteps labels={STEPS} current={step} furthest={furthest} onSelect={setStep} />
+      <div className="club-creator-layout">
+        <section className="club-creator-fields" aria-label={STEPS[step]}>
           {step === 0 && (
             <>
               <section className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
@@ -535,203 +501,51 @@ export function NewClubPage() {
             </>
           )}
 
-          {step === 1 && (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Cor principal">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.primary}
-                    onChange={(e) => set("primary", e.target.value)}
-                  />
-                </Field>
-                <Field label="Cor secundária">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.secondary}
-                    onChange={(e) => set("secondary", e.target.value)}
-                  />
-                </Field>
-              </div>
-              <Chips
-                label="Formato"
-                value={club.crest.shape}
-                onChange={(v) => setCrest({ shape: v })}
-                options={CREST_SHAPES.map((s) => ({ id: s, label: s }))}
-              />
-              <Chips
-                label="Estampa"
-                value={club.crest.pattern}
-                onChange={(v) => setCrest({ pattern: v })}
-                options={CREST_PATTERNS.map((s) => ({ id: s, label: s }))}
-              />
-              <Chips
-                label="Símbolo"
-                value={club.crest.emblem}
-                onChange={(v) => setCrest({ emblem: v })}
-                options={CREST_EMBLEMS.map((s) => ({ id: s, label: EMBLEM_LABEL[s] }))}
-              />
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <Chips
-                label="Padrão da camisa"
-                value={club.kit.pattern}
-                onChange={(v) => setKit({ pattern: v })}
-                options={KIT_PATTERNS.map((k) => ({ id: k, label: k }))}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Calção">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.kit.shorts}
-                    onChange={(e) => setKit({ shorts: e.target.value })}
-                  />
-                </Field>
-                <Field label="Meião">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.kit.socks}
-                    onChange={(e) => setKit({ socks: e.target.value })}
-                  />
-                </Field>
-                <Field label="Camisa reserva">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.kit.awayBase}
-                    onChange={(e) => setKit({ awayBase: e.target.value })}
-                  />
-                </Field>
-                <Field label="Detalhe reserva">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.kit.awayDetail}
-                    onChange={(e) => setKit({ awayDetail: e.target.value })}
-                  />
-                </Field>
-              </div>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <Field label="Nome do estádio">
-                <input
-                  className={inputClass}
-                  value={club.stadium.name}
-                  onChange={(e) => setStadium({ name: e.target.value })}
-                />
-              </Field>
-              <Field label={`Capacidade: ${club.stadium.capacity.toLocaleString("pt-BR")} lugares`}>
-                <input
-                  type="range"
-                  min={8000}
-                  max={90000}
-                  step={1000}
-                  value={club.stadium.capacity}
-                  onChange={(e) => setStadium({ capacity: Number(e.target.value) })}
-                  className="w-full accent-primary"
-                />
-              </Field>
-              <Chips
-                label="Cobertura"
-                value={club.stadium.roof}
-                onChange={(v) => setStadium({ roof: v })}
-                options={ROOFS}
-              />
-              <Field label="Cor das cadeiras">
-                <input
-                  type="color"
-                  className={inputClass}
-                  value={club.stadium.seatColor}
-                  onChange={(e) => setStadium({ seatColor: e.target.value })}
-                />
-              </Field>
-            </>
-          )}
-
-          {step === 4 && (
-            <>
-              <Chips
-                label="Tamanho da torcida"
-                value={String(club.fans.size)}
-                onChange={(v) => setFans({ size: Number(v) })}
-                options={[
-                  { id: "0", label: "Fiel e pequena" },
-                  { id: "1", label: "Média" },
-                  { id: "2", label: "Gigante" },
-                ]}
-              />
-              <Chips
-                label="Clima na arquibancada"
-                value={club.fans.chant}
-                onChange={(v) => setFans({ chant: v })}
-                options={CHANTS}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Cor das bandeiras">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.fans.flagA}
-                    onChange={(e) => setFans({ flagA: e.target.value })}
-                  />
-                </Field>
-                <Field label="Cor do mosaico">
-                  <input
-                    type="color"
-                    className={inputClass}
-                    value={club.fans.flagB}
-                    onChange={(e) => setFans({ flagB: e.target.value })}
-                  />
-                </Field>
-              </div>
-              <div className="rounded-xl border border-border/60 bg-background/50 p-3 text-sm">
-                <p className="font-semibold">Revisão antes de fundar</p>
-                <p className="mt-1 text-muted-foreground">
-                  {manager.trim() || "Técnico"},{" "}
-                  {MANAGER_PERSONALITY_LABELS[managerPersonality].toLowerCase()} de reputação{" "}
-                  {managerReputation}, vai assumir {club.name || "seu clube"} na{" "}
-                  {LEAGUES.find((league) => league.id === club.leagueId)?.name ?? "liga escolhida"}.
-                </p>
-              </div>
-            </>
-          )}
-
-          <div className="flex justify-between pt-2">
-            <button
+          <ClubStyleSteps
+            step={step}
+            club={club}
+            manager={manager}
+            managerPersonality={managerPersonality}
+            managerReputation={managerReputation}
+            set={set}
+            setKit={setKit}
+            setCrest={setCrest}
+            setStadium={setStadium}
+            setFans={setFans}
+            onEdit={setStep}
+          />
+          <div className="club-creator-actions">
+            <Button
+              variant="outline"
               type="button"
               className="rounded-lg border border-border/60 px-4 py-2 text-sm disabled:opacity-40"
               disabled={step === 0}
               onClick={() => setStep((s) => s - 1)}
             >
               Voltar
-            </button>
+            </Button>
             {step < STEPS.length - 1 ? (
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-40"
                 disabled={step === 0 && !club.name.trim()}
-                onClick={() => setStep((s) => s + 1)}
+                onClick={() => {
+                  setFurthest((current) => Math.max(current, step + 1));
+                  setStep((current) => current + 1);
+                }}
               >
                 Continuar
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                 onClick={finish}
               >
                 Fundar clube e começar
-              </button>
+              </Button>
             )}
             {nameError ? (
               <p role="alert" className="text-sm text-destructive">
@@ -739,9 +553,9 @@ export function NewClubPage() {
               </p>
             ) : null}
           </div>
-        </SectionCard>
+        </section>
 
-        <aside className="space-y-4 rounded-2xl border border-border/60 surface-card p-4 text-center">
+        <aside className="club-creator-preview space-y-4" aria-label="Prévia do clube">
           <Crest club={preview} size={96} detail="full" />
           <div>
             <p className="font-display text-lg uppercase tracking-wide">
@@ -767,15 +581,15 @@ export function NewClubPage() {
 
           <div className="space-y-2 border-t border-border/60 pt-3 text-left">
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" className={smallBtn} onClick={saveDraft}>
+              <Button variant="outline" type="button" className={smallBtn} onClick={saveDraft}>
                 Salvar rascunho
-              </button>
-              <button type="button" className={smallBtn} onClick={exportPortrait}>
+              </Button>
+              <Button variant="outline" type="button" className={smallBtn} onClick={exportPortrait}>
                 Baixar retrato
-              </button>
-              <button type="button" className={smallBtn} onClick={exportPack}>
+              </Button>
+              <Button variant="outline" type="button" className={smallBtn} onClick={exportPack}>
                 Exportar pacote
-              </button>
+              </Button>
               <label className={`${smallBtn} cursor-pointer text-center`}>
                 Importar
                 <input
@@ -799,7 +613,8 @@ export function NewClubPage() {
               <div className="space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Rascunhos</p>
                 {drafts.map((d) => (
-                  <button
+                  <Button
+                    variant="outline"
                     key={d.key}
                     type="button"
                     onClick={() => loadDraft(d)}
@@ -807,7 +622,7 @@ export function NewClubPage() {
                   >
                     <span className="truncate">{d.club.name || "Sem nome"}</span>
                     <span className="text-muted-foreground">v{d.version}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}

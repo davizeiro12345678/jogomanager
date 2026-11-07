@@ -1,4 +1,11 @@
 # Roadmap
+## Melhorias amplas restantes (06/11, 23:52 UTC; sem publicação)
+- [x] Criadores: navegação por etapas acessível, revisão editável e separação dos painéis grandes, preservando escolhas e salvamento.
+- [x] Jogador: trabalho da semana antes de informações secundárias, metas/atributos separados e visual 3D opcional.
+- [x] Clube/estádio: capacidade e evolução reais em destaque, prévia de ampliação clara e cabine de transmissão com foco acessível.
+- [x] Verificar criação/retomada local, navegação por teclado e celular, 60 testes focados e lint sem avisos/erros; build OK. Sincronização do atleta mostrou conflito preservando o local: entrega na nuvem não confirmada.
+- [ ] Gates completos continuam obrigatórios antes de publicar; certificação física de FPS exige aparelhos reais.
+- [ ] Conexões/push/configuração remota bloqueados pelas permissões recusadas; VIP/pacotes dependem de ofertas e regras ainda não confirmadas.
 ## Implementação da entrevista (06/11, 22:13 UTC; sem publicação)
 - [x] Parallel e Brevo conectados sem duplicatas.
 - [ ] Telegram, GoodData e Google Cloud: conexão recusada pelo usuário; sem chamadas ou implementação que dependam delas.

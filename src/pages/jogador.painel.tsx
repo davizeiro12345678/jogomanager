@@ -1,7 +1,7 @@
 import { TABS, type Tab } from "@/components/game/athlete/player-tabs";
 import { Link } from "@tanstack/react-router";
 
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { ArrowLeft, Flag, HeartPulse, Sparkles } from "lucide-react";
 
@@ -11,23 +11,17 @@ import { Crest } from "@/components/game/Crest";
 
 import { CLUBS } from "@/game/data/leagues";
 
-import {
-  ATTRIBUTES,
-  GROUP_LABEL,
-  keyAttributes,
-  POSITION_LABEL,
-  TRAITS,
-} from "@/game/player-career/attributes";
+import { POSITION_LABEL } from "@/game/player-career/attributes";
 
 import { overall, seasonLength } from "@/game/player-career/engine";
 
-import type { AttributeGroup, PlayerCareerState } from "@/game/player-career/types";
+import type { PlayerCareerState } from "@/game/player-career/types";
 
 import { useAthlete } from "@/hooks/useAthlete";
 
 import { downloadAthlete } from "@/lib/player-career-export";
 
-import { seasonObjectives } from "@/game/player-career/objectives";
+import { PlayerObjectives } from "@/components/game/athlete/PlayerObjectives";
 
 import { Bar } from "@/components/game/athlete/PlayerStats";
 
@@ -46,6 +40,12 @@ const AthleteHero3D = lazy(() =>
 );
 
 // Non-default panels load only when selected, instead of adding all their UI to the weekly startup.
+const PlayerAttributesTab = lazy(() =>
+  import("@/components/game/athlete/PlayerAttributesTab").then((module) => ({
+    default: module.PlayerAttributesTab,
+  })),
+);
+
 const PlayerCalendarTab = lazy(() =>
   import("@/components/game/athlete/PlayerCalendarTab").then((module) => ({
     default: module.PlayerCalendarTab,
@@ -136,19 +136,15 @@ function Panel({
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? (state.retired ? "historico" : "semana"));
   const [showPlayerModel, setShowPlayerModel] = useState(false);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabsRef.current
+      ?.querySelector("[aria-selected=true]")
+      ?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+  }, [tab]);
   const [resolutionMessage, setResolutionMessage] = useState<string | null>(null);
   const club = CLUBS[state.clubId];
   const ovr = overall(state);
-  const objectives = seasonObjectives(state, seasonLength(state));
-  const finished = objectives.filter((objective) => objective.complete).length;
-  const groups: AttributeGroup[] =
-    state.position === "GOL"
-      ? ["goleiro", "mental", "fisico", "tecnico", "defensivo"]
-      : ["tecnico", "fisico", "mental", "defensivo"];
-  const groupAvg = (g: AttributeGroup) => {
-    const list = ATTRIBUTES.filter((a) => a.group === g);
-    return Math.round(list.reduce((s, a) => s + (state.attrs[a.key] ?? 0), 0) / list.length);
-  };
   const heroAthlete = {
     seed: state.seed,
     nickname: state.nickname,
@@ -229,6 +225,7 @@ function Panel({
                 type="button"
                 onClick={() => setShowPlayerModel(true)}
                 aria-label={`Abrir modelo 3D de ${state.nickname}`}
+                className="h-auto min-h-11 max-w-full whitespace-normal px-2 text-center"
               >
                 Ver atleta em 3D
               </Button>
@@ -276,62 +273,6 @@ function Panel({
           <Bar label="Confiança do técnico" value={state.trust} />
           <Bar label="Entrosamento" value={state.chemistry} />
         </section>
-        {!state.retired && (
-          <section
-            className="athlete-card athlete-objectives"
-            aria-labelledby="career-goals-heading"
-          >
-            <div className="athlete-objectives-heading">
-              <div>
-                <p className="athlete-eyebrow">PLANO DA TEMPORADA</p>
-                <h2 id="career-goals-heading" className="text-xl font-bold">
-                  Seus objetivos e consequências
-                </h2>
-                <p className="athlete-meta">
-                  ${finished} de ${objectives.length} metas cumpridas. Resultados são avaliados no
-                  fim da temporada e afetam moral, confiança e reputação.
-                </p>
-              </div>
-              <span
-                className="athlete-objectives-score"
-                aria-label={`${finished} de ${objectives.length} metas alcançadas`}
-              >
-                ${finished}/${objectives.length}
-              </span>
-            </div>
-            <div className="athlete-objectives-list">
-              {objectives.map((objective) => (
-                <article
-                  key={objective.id}
-                  className="athlete-objective"
-                  data-complete={objective.complete}
-                >
-                  <div className="athlete-objective-title">
-                    <h3 className="font-bold">{objective.title}</h3>
-                    <span>{objective.complete ? "Meta alcançada" : objective.display}</span>
-                  </div>
-                  <div
-                    className="athlete-objective-track"
-                    role="progressbar"
-                    aria-label={objective.title}
-                    aria-valuemin={0}
-                    aria-valuemax={objective.target}
-                    aria-valuenow={Math.max(0, Math.min(objective.current, objective.target))}
-                    aria-valuetext={objective.display}
-                  >
-                    <span
-                      style={{
-                        width: `${Math.min(100, Math.max(0, (objective.current / objective.target) * 100))}%`,
-                      }}
-                    />
-                  </div>
-                  <p className="athlete-meta">{objective.detail}</p>
-                  <p className="athlete-objective-impact">{objective.consequence}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
         {state.injury && (
           <p className="athlete-card flex items-center gap-2" role="status">
             <HeartPulse className="size-5 text-destructive" /> {state.injury.label} —{" "}
@@ -339,6 +280,7 @@ function Panel({
           </p>
         )}
         <div
+          ref={tabsRef}
           className="athlete-tabs"
           role="tablist"
           aria-label="Áreas da carreira de jogador"
@@ -352,12 +294,15 @@ function Panel({
                 : event.key === "End"
                   ? TABS.length - 1
                   : (current + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
-            setTab(TABS[next]!.id);
+            const nextTab = TABS[next];
+            if (!nextTab) return;
+            setTab(nextTab.id);
             event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
           }}
         >
           {TABS.map((t) => (
-            <button
+            <Button
+              variant="ghost"
               key={t.id}
               id={`athlete-tab-${t.id}`}
               type="button"
@@ -369,7 +314,7 @@ function Panel({
             >
               {t.label}
               {t.id === "contrato" && state.offers.length ? ` (${state.offers.length})` : ""}
-            </button>
+            </Button>
           ))}
         </div>
         <div
@@ -389,51 +334,7 @@ function Panel({
             {tab === "semana" && <WeekTab state={state} commit={commit} />}
             {tab === "calendario" && <PlayerCalendarTab state={state} />}
             {tab === "saude" && <PlayerHealthTab state={state} />}
-            {tab === "atributos" && (
-              <section className="athlete-card grid gap-4">
-                {groups.map((g) => (
-                  <div key={g}>
-                    <h2 className="font-bold mb-2">
-                      {GROUP_LABEL[g]} <span className="athlete-meta">· média {groupAvg(g)}</span>
-                    </h2>
-                    <div className="athlete-attrs">
-                      {ATTRIBUTES.filter((a) => a.group === g).map((a) => {
-                        const v = Math.round(state.attrs[a.key] ?? 0);
-                        const key = keyAttributes(state.position).slice(0, 5).includes(a.key);
-                        return (
-                          <div key={a.key} className="athlete-attr">
-                            <span>
-                              {a.label}
-                              {key ? " ★" : ""}
-                            </span>
-                            <b className={v >= 75 ? "hi" : v < 45 ? "lo" : ""}>{v}</b>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-                <div>
-                  <h2 className="font-bold mb-2">Características</h2>
-                  <div className="athlete-chips">
-                    {TRAITS.map((t) => (
-                      <span
-                        key={t.key}
-                        className="athlete-chip"
-                        aria-pressed={state.traits.includes(t.key)}
-                        title={t.hint}
-                        style={{ opacity: state.traits.includes(t.key) ? 1 : 0.45 }}
-                      >
-                        {t.label}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="athlete-meta mt-2">
-                    Características apagadas ainda não foram conquistadas.
-                  </p>
-                </div>
-              </section>
-            )}
+            {tab === "atributos" && <PlayerAttributesTab state={state} />}
             {tab === "selecao" && <NationalTeamTab state={state} />}
             {tab === "contrato" && <ContractTab state={state} commit={commit} />}
             {tab === "noticias" && (
@@ -457,6 +358,7 @@ function Panel({
             {tab === "historico" && <HistoryTab state={state} />}
           </Suspense>
         </div>
+        <PlayerObjectives state={state} />
       </div>
     </main>
   );

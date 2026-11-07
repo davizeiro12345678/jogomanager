@@ -1,3 +1,5 @@
+import { CreationSteps } from "@/components/game/CreationSteps";
+import { AthleteAppearanceFields } from "@/components/game/athlete/AthleteAppearanceFields";
 import { ScreenHeader } from "@/components/game/screen-kit";
 
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -42,23 +44,6 @@ const AthleteHero3D = lazy(() =>
     default: module.AthleteHero3D,
   })),
 );
-
-const SKINS = ["#f4d3b5", "#e2b48c", "#c68a5d", "#a0673f", "#7a4a2a", "#4e2e1a"];
-
-const HAIR_COLORS = ["#1b1410", "#4a2f1d", "#8a5a2b", "#d8b46a", "#b5b5b5"];
-
-const HAIR_STYLES = [
-  "Raspado",
-  "Degradê",
-  "Curto",
-  "Cacheado",
-  "Black",
-  "Tranças",
-  "Coque",
-  "Moicano",
-  "Ondulado",
-  "Longo",
-];
 
 const NATIONS = [
   "Brasil",
@@ -105,8 +90,8 @@ export function CreateAthletePage() {
   const [build, setBuild] = useState<BodyBuild>("atletico");
   const [personality, setPersonality] = useState<AthletePersonality>("profissional");
   const [origin, setOrigin] = useState<CareerOrigin>("base");
-  const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
-  const [clubId, setClubId] = useState(LEAGUES[0]!.clubs[0]?.id ?? "");
+  const [leagueId, setLeagueId] = useState(LEAGUES[0]?.id ?? "");
+  const [clubId, setClubId] = useState(LEAGUES[0]?.clubs[0]?.id ?? "");
   const [appearanceV1, setAppearanceV1] = useState<AthleteAppearanceV1>(() =>
     athleteAppearanceFromLegacy(
       { skin: 2, hair: 1, hairColor: 0, beard: 0, boots: 0 },
@@ -128,21 +113,22 @@ export function CreateAthletePage() {
   const setHair = (value: number) => updateLegacyAppearance({ hair: value });
   const setHairColor = (value: number) => updateLegacyAppearance({ hairColor: value });
   const setBeard = (value: number) => updateLegacyAppearance({ beard: value });
-  const [studioOpen, setStudioOpen] = useState(false);
+  const [showPlayerModel, setShowPlayerModel] = useState(false);
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
   const [shirt, setShirt] = useState(9);
   const [error, setError] = useState<string | null>(null);
 
-  const league = LEAGUES.find((l) => l.id === leagueId) ?? LEAGUES[0]!;
+  const league = LEAGUES.find((l) => l.id === leagueId) ?? LEAGUES[0];
   const clubPool = useMemo(() => {
+    if (!league) return [];
     const sorted = [...league.clubs].sort((a, b) => a.strength - b.strength);
     if (origin === "peneira") {
       const r = rngFrom(`${name}|${leagueId}|peneira`);
       const weak = sorted.slice(0, Math.max(3, Math.ceil(sorted.length / 2)));
       const pick = new Set<number>();
       while (pick.size < Math.min(3, weak.length)) pick.add(Math.floor(r() * weak.length));
-      return [...pick].map((i) => weak[i]!);
+      return weak.filter((_, index) => pick.has(index));
     }
     if (origin === "varzea") return sorted.slice(0, Math.min(4, sorted.length));
     return league.clubs;
@@ -243,29 +229,15 @@ export function CreateAthletePage() {
           Três etapas: defina quem você é, escolha sua trajetória e revise o uniforme. Você pode
           voltar sem perder suas escolhas.
         </p>
-        <nav className="athlete-creation-steps" aria-label="Etapas de criação">
-          {["Identidade e posição", "Trajetória e clube", "Visual e revisão"].map(
-            (label, index) => (
-              <button
-                key={label}
-                type="button"
-                aria-current={step === index ? "step" : undefined}
-                disabled={index > furthest}
-                onClick={() => {
-                  setStep(index);
-                  setError(null);
-                }}
-              >
-                <strong>
-                  {index + 1}. {label}
-                </strong>
-                <small>
-                  {index === step ? "Etapa atual" : index < step ? "Concluída" : "Próxima etapa"}
-                </small>
-              </button>
-            ),
-          )}
-        </nav>
+        <CreationSteps
+          labels={["Identidade e posição", "Trajetória e clube", "Visual e revisão"]}
+          current={step}
+          furthest={furthest}
+          onSelect={(index) => {
+            setStep(index);
+            setError(null);
+          }}
+        />
         <div className="athlete-grid athlete-creation-grid">
           <section
             className="athlete-card athlete-form"
@@ -312,7 +284,8 @@ export function CreateAthletePage() {
             <h2 className="text-lg font-bold">Posição e físico</h2>
             <div className="athlete-chips" role="group" aria-label="Posição">
               {POSITIONS.map((p) => (
-                <button
+                <Button
+                  variant="outline"
                   key={p}
                   type="button"
                   className="athlete-chip"
@@ -320,7 +293,7 @@ export function CreateAthletePage() {
                   onClick={() => setPosition(p)}
                 >
                   {POSITION_LABEL[p]}
-                </button>
+                </Button>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -347,7 +320,8 @@ export function CreateAthletePage() {
             </div>
             <div className="athlete-chips" role="group" aria-label="Biotipo">
               {(["leve", "atletico", "forte"] as BodyBuild[]).map((b) => (
-                <button
+                <Button
+                  variant="outline"
                   key={b}
                   type="button"
                   className="athlete-chip"
@@ -355,7 +329,7 @@ export function CreateAthletePage() {
                   onClick={() => setBuild(b)}
                 >
                   {b === "leve" ? "Leve e rápido" : b === "forte" ? "Forte" : "Atlético"}
-                </button>
+                </Button>
               ))}
             </div>
           </section>
@@ -367,7 +341,8 @@ export function CreateAthletePage() {
             <h2 className="text-lg font-bold">Personalidade</h2>
             <div className="athlete-chips" role="group" aria-label="Personalidade">
               {PERSONALITIES.map((p) => (
-                <button
+                <Button
+                  variant="outline"
                   key={p.id}
                   type="button"
                   className="athlete-chip"
@@ -377,13 +352,14 @@ export function CreateAthletePage() {
                   {p.label}
                   <br />
                   <small className="athlete-meta">{p.hint}</small>
-                </button>
+                </Button>
               ))}
             </div>
             <h2 className="text-lg font-bold">Origem e clube</h2>
             <div className="athlete-chips" role="group" aria-label="Origem">
               {ORIGINS.map((o) => (
-                <button
+                <Button
+                  variant="outline"
                   key={o.id}
                   type="button"
                   className="athlete-chip"
@@ -393,7 +369,7 @@ export function CreateAthletePage() {
                   {o.label}
                   <br />
                   <small className="athlete-meta">{o.hint}</small>
-                </button>
+                </Button>
               ))}
             </div>
             <label className="athlete-field">
@@ -414,7 +390,8 @@ export function CreateAthletePage() {
             </label>
             <div className="athlete-chips" role="group" aria-label="Clube">
               {clubPool.map((c) => (
-                <button
+                <Button
+                  variant="outline"
                   key={c.id}
                   type="button"
                   className="athlete-chip flex items-center gap-2"
@@ -422,7 +399,7 @@ export function CreateAthletePage() {
                   onClick={() => setClubId(c.id)}
                 >
                   <Crest club={c} size={26} /> {c.short}
-                </button>
+                </Button>
               ))}
             </div>
           </section>
@@ -435,81 +412,35 @@ export function CreateAthletePage() {
                 </div>
                 <span className="athlete-quality-badge">Alta qualidade</span>
               </div>
-              <Suspense
-                fallback={
-                  <div className="athlete-3d-preview grid place-items-center" role="status">
-                    Preparando visualização 3D…
-                  </div>
-                }
-              >
-                <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
-              </Suspense>
-              <div className="athlete-field">
-                <span>Tom de pele</span>
-                <div className="athlete-chips">
-                  {SKINS.map((c, i) => (
-                    <Button
-                      key={c}
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="athlete-swatch"
-                      aria-label={`Tom ${i + 1}`}
-                      aria-pressed={skin === i}
-                      style={{ background: c }}
-                      onClick={() => setSkin(i)}
-                    />
-                  ))}
+              {showPlayerModel ? (
+                <Suspense
+                  fallback={
+                    <div className="athlete-3d-preview grid place-items-center" role="status">
+                      Preparando visualização 3D…
+                    </div>
+                  }
+                >
+                  <AthleteHero3D athlete={previewAthlete} className="athlete-3d-preview" />
+                </Suspense>
+              ) : (
+                <div className="athlete-preview-fallback">
+                  <Button variant="outline" onClick={() => setShowPlayerModel(true)}>
+                    Ver atleta em 3D
+                  </Button>
                 </div>
-              </div>
-              <label className="athlete-field">
-                <span>Cabelo</span>
-                <select value={hair} onChange={(e) => setHair(Number(e.target.value))}>
-                  {HAIR_STYLES.map((h, i) => (
-                    <option key={h} value={i}>
-                      {h}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="athlete-field">
-                <span>Cor do cabelo</span>
-                <div className="athlete-chips">
-                  {HAIR_COLORS.map((c, i) => (
-                    <Button
-                      key={c}
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="athlete-swatch"
-                      aria-label={`Cor ${i + 1}`}
-                      aria-pressed={hairColor === i}
-                      style={{ background: c }}
-                      onClick={() => setHairColor(i)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <label className="athlete-field">
-                <span>Barba</span>
-                <select value={beard} onChange={(e) => setBeard(Number(e.target.value))}>
-                  {["Sem barba", "Rala", "Média", "Cheia"].map((b, i) => (
-                    <option key={b} value={i}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="athlete-field">
-                <span>Número da camisa</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={99}
-                  value={shirt}
-                  onChange={(e) => setShirt(Math.max(1, Math.min(99, Number(e.target.value) || 1)))}
-                />
-              </label>
+              )}
+              <AthleteAppearanceFields
+                skin={skin}
+                hair={hair}
+                hairColor={hairColor}
+                beard={beard}
+                shirt={shirt}
+                setSkin={setSkin}
+                setHair={setHair}
+                setHairColor={setHairColor}
+                setBeard={setBeard}
+                setShirt={setShirt}
+              />
               <div className="athlete-creation-review">
                 <h3 className="font-bold">Confira antes de entrar em campo</h3>
                 <p>

@@ -65,3 +65,43 @@ export const EMBLEM_LABEL: Record<CrestEmblem, string> = {
   mountain: "Montanha",
   bolt: "Raio",
 };
+
+export const SHAPE_LABEL: Record<CrestShape, string> = {
+  shield: "Escudo",
+  round: "Circular",
+  pointed: "Pontudo",
+  diamond: "Losango",
+  hex: "Hexagonal",
+  english: "Inglês",
+  split: "Dividido",
+  banner: "Estandarte",
+};
+export const CREST_PATTERN_LABEL: Record<CrestPattern, string> = {
+  sash: "Faixa diagonal",
+  halves: "Duas metades",
+  stripes: "Listras verticais",
+  rings: "Anéis",
+  quarters: "Quatro partes",
+  chevron: "Faixa em V",
+  hoop: "Faixa horizontal",
+  rays: "Raios",
+  solid: "Cor única",
+};
+export const KIT_PATTERN_LABEL: Record<KitPattern, string> = {
+  solid: "Cor única",
+  stripes: "Listras verticais",
+  hoops: "Listras horizontais",
+  sash: "Faixa diagonal",
+  halves: "Duas metades",
+  checks: "Quadriculado",
+  band: "Faixa central",
+  sleeves: "Mangas contrastantes",
+  gradient: "Degradê",
+  pin: "Listras finas",
+  quarters: "Quatro partes",
+  chevron: "Faixa em V",
+  diagonal: "Listras diagonais",
+  shadow: "Tom sobre tom",
+  argyle: "Losangos",
+  mesh: "Trama",
+};

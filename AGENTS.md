@@ -59,3 +59,4 @@
 - Derive tutorial completion from committed career evidence separately from manual review marks; neither grants rewards or changes a save.
 - Keep late cutscene voice responses cacheable without extending the playback deadline; optional audio must not hold up dialogue.
 - Keep club portrait export mechanics and athlete tab metadata outside their page owners; save and renderer lifecycle remain owned by the existing pages.
+- Keep creation step navigation controlled by each creator and style/objective panels presentation-only; validation, save ownership and deterministic outcomes remain in their existing owners.
