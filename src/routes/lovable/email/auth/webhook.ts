@@ -7,6 +7,7 @@ import { MagicLinkEmail } from "@/lib/email-templates/magic-link";
 import { RecoveryEmail } from "@/lib/email-templates/recovery";
 import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
+import { validateLovableSendUrl } from "@/lib/email-templates/send-email-url";
 
 // Configuration
 const SITE_NAME = "Pro Football Manager 3D";
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
           from: { name: SITE_NAME, address: `conta@${FROM_DOMAIN}` },
           replyTo: { name: "Suporte Pro Football Manager 3D", address: `contato@${FROM_DOMAIN}` },
           senderDomain: SENDER_DOMAIN,
-          sendUrl: process.env["LOVABLE_SEND_URL"],
+          sendUrl: validateLovableSendUrl(process.env["LOVABLE_SEND_URL"]),
           emails: {
             signup: {
               subject: "Confirme seu e-mail no Pro Football Manager 3D",

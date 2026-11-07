@@ -43,6 +43,29 @@ it("updates gameplay metadata and removes an unrepresentable social locale", () 
   }
 });
 
+it("replaces previous page metadata with the localized quick-match identity", () => {
+  const tag = { setAttribute: vi.fn(), remove: vi.fn(), content: "" };
+  const pageDocument = {
+    title: "Previous editorial page",
+    querySelector: vi.fn(() => tag),
+    createElement: vi.fn(() => tag),
+    head: { append: vi.fn() },
+  };
+  vi.stubGlobal("document", pageDocument);
+  try {
+    applyGamePageMetadata("/partida-rapida", "en", (key) => translate("en", key));
+    expect(pageDocument.title).toContain(translate("en", "quick.title"));
+    expect(pageDocument.title).not.toContain("Previous editorial page");
+    expect(tag.setAttribute).toHaveBeenCalledWith(
+      "content",
+      "Choose two clubs, configure the matchup and watch a quick match in 3D.",
+    );
+    expect(tag.content).toBe("en_US");
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 it("uses translated route identity for all supported languages without leaking query data", () => {
   for (const lang of LANGS) {
     const page = gamePageMetadata("/squad?save=personal-name#private", lang, (key) =>

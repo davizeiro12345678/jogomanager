@@ -44,6 +44,7 @@ export default function CareerTutorialDialog({
   const practiced = practicedCareerLessons(career);
   const completed = new Set([...learned, ...practiced]);
   const progress = tutorialProgress(completed);
+  const manuallyReviewed = Math.max(0, completed.size - practiced.size);
   const chapters = TUTORIAL_CHAPTERS.map((chapter, index) => ({
     ...chapter,
     index,
@@ -64,14 +65,15 @@ export default function CareerTutorialDialog({
         </DialogDescription>
         <p role="status" className="career-guide-progress text-sm">
           <strong>
-            {progress.completed}/{progress.total} lições
+            {progress.completed}/{progress.total} lições concluídas ou revisadas
           </strong>
           <span>
-            {practiced.size} na carreira · {progress.completed - practiced.size} revisadas
+            {practiced.size} comprovadas na carreira · {manuallyReviewed} marcadas por você
           </span>
         </p>
         <progress
-          aria-label="Lições concluídas ou marcadas"
+          aria-label="Progresso da tutorial, incluindo prática comprovada e revisão manual"
+          aria-valuetext={`${progress.completed} de ${progress.total}; ${practiced.size} comprovadas na carreira e ${manuallyReviewed} marcadas por você`}
           className="h-2 w-full accent-primary"
           max={progress.total}
           value={progress.completed}
@@ -91,7 +93,8 @@ export default function CareerTutorialDialog({
           </div>
         ) : (
           <p className="text-sm text-primary">
-            Todas as lições foram concluídas ou marcadas. Você pode rever qualquer capítulo.
+            Todas as lições têm prática registrada ou foram marcadas como revisadas. Você pode rever
+            qualquer capítulo.
           </p>
         )}
         <label className="career-guide-filter">
@@ -169,7 +172,7 @@ export default function CareerTutorialDialog({
                       {practiced.has(lesson.id)
                         ? "Concluída na carreira"
                         : learned.has(lesson.id)
-                          ? "Revisar depois"
+                          ? "Desmarcar revisão"
                           : "Marcar como revisada"}
                     </Button>
                   </div>

@@ -1,0 +1,4 @@
+Contact: mailto:contato@jogomanager.com
+Expires: 2027-05-06T23:59:59Z
+Preferred-Languages: pt-BR, en
+Canonical: https://jogomanager.com/.well-known/security.txt

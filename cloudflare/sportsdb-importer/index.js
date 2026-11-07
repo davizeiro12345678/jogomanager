@@ -6,6 +6,8 @@ import {
   reserveSportsDbApiRequest,
   retryAtFromResponse,
 } from "./api-quota.mjs";
+import { isImporterAuthorized } from "./auth.mjs";
+import { jsonResponse, optionsResponse } from "./http.mjs";
 const API_BASE = "https://www.thesportsdb.com/api/v1/json";
 const SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS sportsdb_leagues(idLeague INTEGER PRIMARY KEY,strLeague TEXT,strSport TEXT,strLeagueAlternate TEXT,strCountry TEXT,strLogo TEXT,strCurrentSeason TEXT,intFormedYear INTEGER,strWebsite TEXT,strFacebook TEXT,strTwitter TEXT,strInstagram TEXT,strYoutube TEXT,strDescriptionEN TEXT,strBanner TEXT,strBadge TEXT,strPoster TEXT,strTrophy TEXT,strNamingS TEXT,strLocked TEXT,imported_at TEXT DEFAULT(datetime('now')));
 CREATE TABLE IF NOT EXISTS sportsdb_teams(idTeam INTEGER PRIMARY KEY,strTeam TEXT,strTeamShort TEXT,strAlternate TEXT,intFormedYear INTEGER,strSport TEXT,strLeague TEXT,idLeague INTEGER,strStadium TEXT,strKeywords TEXT,strStadiumThumb TEXT,strStadiumLocation TEXT,intStadiumCapacity INTEGER,strWebsite TEXT,strFacebook TEXT,strTwitter TEXT,strInstagram TEXT,strDescriptionEN TEXT,strCountry TEXT,strTeamBadge TEXT,strTeamJersey TEXT,strTeamLogo TEXT,strTeamBanner TEXT,strTeamPoster TEXT,strYoutube TEXT,strLocked TEXT,imported_at TEXT DEFAULT(datetime('now')));
@@ -131,16 +133,8 @@ async function fa(p, env) {
   error.cause = lastErr;
   throw error;
 }
-function j(d, s = 200) {
-  return new Response(JSON.stringify(d, null, 2), {
-    status: s,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-      "Access-Control-Allow-Headers": "*",
-    },
-  });
+function j(d, s = 200, options) {
+  return jsonResponse(d, s, options);
 }
 async function logI(d, e, s, r, m) {
   try {
@@ -612,32 +606,31 @@ export default {
     const u = new URL(req.url),
       ph = u.pathname,
       p = u.searchParams;
-    if (req.method === "OPTIONS")
-      return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-          "Access-Control-Allow-Headers": "*",
-        },
-      });
-    const sec = p.get("secret") || req.headers.get("X-Import-Secret");
-    if ((ph.startsWith("/import") || ph === "/init") && sec !== e.THESPORTSDB_IMPORT_SECRET)
-      return j({ error: "Unauthorized" }, 401);
+    if (req.method === "OPTIONS") return optionsResponse();
+    const privateRoute = ph.startsWith("/import") || ph === "/init";
+    if (privateRoute && !isImporterAuthorized(req, e)) return j({ error: "Unauthorized" }, 401);
     try {
       if (ph === "/" || ph === "")
         return new Response("<h1>TheSportsDB Importer</h1>", {
           headers: { "Content-Type": "text/html" },
         });
-      if (ph === "/init") return j(await initSchema(e));
+      if (ph === "/init") return j(await initSchema(e), 200, { privateResponse: true });
       if (ph.startsWith("/import")) await initSchema(e);
-      if (ph === "/import/leagues") return j(await iL(e));
-      if (ph === "/import/teams") return j(await iT(e, p.get("leagueId")));
-      if (ph === "/import/players") return j(await iP(e, p.get("teamId")));
-      if (ph === "/import/events/next") return j(await iEN(e, p.get("leagueId")));
-      if (ph === "/import/events/past") return j(await iEP(e, p.get("leagueId")));
-      if (ph === "/import/standings") return j(await iS(e, p.get("leagueId"), p.get("season")));
-      if (ph === "/import/all") return j(await iAll(e, parseInt(p.get("stage") || "1")));
+      if (ph === "/import/leagues") return j(await iL(e), 200, { privateResponse: true });
+      if (ph === "/import/teams")
+        return j(await iT(e, p.get("leagueId")), 200, { privateResponse: true });
+      if (ph === "/import/players")
+        return j(await iP(e, p.get("teamId")), 200, { privateResponse: true });
+      if (ph === "/import/events/next")
+        return j(await iEN(e, p.get("leagueId")), 200, { privateResponse: true });
+      if (ph === "/import/events/past")
+        return j(await iEP(e, p.get("leagueId")), 200, { privateResponse: true });
+      if (ph === "/import/standings")
+        return j(await iS(e, p.get("leagueId"), p.get("season")), 200, { privateResponse: true });
+      if (ph === "/import/all")
+        return j(await iAll(e, parseInt(p.get("stage") || "1")), 200, { privateResponse: true });
       if (ph === "/api/status") {
+        if (!isImporterAuthorized(req, e)) return j({ error: "Unauthorized" }, 401);
         await initSchema(e);
         const c = {};
         for (const t of ["leagues", "teams", "players", "events", "standings"]) {
@@ -686,7 +679,9 @@ export default {
         const lg = await e.SPORTS_DB.prepare(
           "SELECT * FROM sportsdb_import_log ORDER BY id DESC LIMIT 20",
         ).all();
-        return j({ counts: c, importer, recent_imports: lg.results });
+        return j({ counts: c, importer, recent_imports: lg.results }, 200, {
+          privateResponse: true,
+        });
       }
       if (ph === "/api/leagues")
         return j(

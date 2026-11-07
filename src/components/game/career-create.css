@@ -308,6 +308,8 @@
 }
 .career-search:focus-within {
   border-color: var(--career-accent);
+  outline: 2px solid var(--career-accent);
+  outline-offset: 2px;
 }
 .career-search input {
   width: 100%;
@@ -893,9 +895,16 @@
   height: 20px;
 }
 @media (max-width: 640px) {
+  .career-steps li {
+    min-width: 0;
+  }
   .career-steps button {
     justify-content: center;
     padding: 8px 6px;
+  }
+  .career-steps button b {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .career-steps button:not([aria-current="step"]) b {
     display: none;

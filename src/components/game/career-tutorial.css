@@ -21,13 +21,13 @@
   padding-inline-start: 0.7rem;
 }
 
-.career-guide :is(a, button, summary):focus-visible {
+.career-guide :is(a, button, input, summary):focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
 
 @media (forced-colors: active) {
-  .career-guide :is(a, button, summary):focus-visible {
+  .career-guide :is(a, button, input, summary):focus-visible {
     outline-color: Highlight;
   }
 }

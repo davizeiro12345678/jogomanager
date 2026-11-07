@@ -490,6 +490,16 @@
   }
 }
 @media (max-width: 767px) {
+  .career-current-page {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .career-current-page > :is(span, strong) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .trainer-summary > a {
     border-bottom: 1px solid var(--career-line);
   }
@@ -559,8 +569,21 @@
 @media (prefers-reduced-motion: reduce) {
   .career-shell *,
   .career-menu-sheet {
+    animation: none !important;
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
+@media (forced-colors: active) {
+  .career-shell :is(button, a, summary, input, select, textarea):focus-visible,
+  .screen-table-wrap:focus-visible {
+    outline-color: Highlight;
+  }
+  .career-shell :is(.career-nav-item, .career-bottom-nav a)[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}

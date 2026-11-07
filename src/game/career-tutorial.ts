@@ -27,7 +27,9 @@ export function practicedCareerLessons(
   if (career.trainingReports?.length) lessons.add("training");
   if (career.scoutReports.length) lessons.add("scouting");
   if (career.transferredIn?.length) lessons.add("transfers");
-  if (career.financeLedger?.length) lessons.add("weekly-budget");
+  if (career.financeLedger?.some(({ kind }) => kind === "operacao")) {
+    lessons.add("weekly-budget");
+  }
   if (career.world?.memories.some(({ id }) => id.startsWith("coach-decision:"))) {
     lessons.add("coach-decisions");
   }

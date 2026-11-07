@@ -254,7 +254,7 @@
   text-overflow: ellipsis;
 }
 .career-content :is(h1, h2):focus:not(:focus-visible),
-.career-content h1:focus {
+.career-content h1:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }

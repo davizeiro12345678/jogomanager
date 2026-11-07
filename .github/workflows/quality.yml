@@ -29,7 +29,8 @@ jobs:
       - run: npm exec -- tsc --noEmit --pretty false
       # The complete deterministic stress suite runs in the required job below.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
-      - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs
+      - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
+      - run: node --test scripts/database-growth-snapshot.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
       - name: Verify Edge Function authentication and import contracts
@@ -147,6 +148,8 @@ jobs:
         run: bash scripts/start-replay-db.sh
       - name: Replay the complete canonical migration history
         run: supabase db reset --local --no-seed --yes
+      - name: Apply the forward growth-observability migration to the disposable database
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
       - name: Verify public catalog and bounded identity enrichment

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SITE_URL } from "./seo";
 import { PUBLISHED_BASE_URL } from "./site-host";
+import { PUBLIC_PAGE_INVENTORY } from "./public-page-inventory";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -18,8 +19,7 @@ describe("public site discovery contract", () => {
 
   it("keeps llms.txt valid, scoped to real public sitemap paths, and free of retired domains", () => {
     const llms = read("../../public/llms.txt");
-    const sitemap = read("../routes/sitemap[.]xml.ts");
-    const paths = new Set([...sitemap.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]));
+    const paths: ReadonlySet<string> = new Set(PUBLIC_PAGE_INVENTORY.map(({ path }) => path));
     expect(llms).toMatch(/^# JogoManager\b/);
     expect(llms).toMatch(/\n> /);
     expect(llms).not.toMatch(/futebolmanager\.xyz/i);

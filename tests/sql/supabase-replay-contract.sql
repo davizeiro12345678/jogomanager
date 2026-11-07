@@ -231,3 +231,6 @@ $mfa$;
 RESET ROLE;
 
 ROLLBACK;
+
+-- Run the private metrics contract as a separate rollback-only fixture.
+\ir database-growth-contract.sql

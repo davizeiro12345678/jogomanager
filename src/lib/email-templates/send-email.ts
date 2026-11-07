@@ -3,6 +3,8 @@ import { render } from "@react-email/render";
 import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { TEMPLATES } from "./registry";
 import { deliverViaResend } from "./resend-transport";
+import { validateLovableSendUrl } from "./send-email-url";
+export { validateLovableSendUrl } from "./send-email-url";
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
@@ -82,6 +84,7 @@ export async function sendTemplateEmail(
     return { sent: true };
   }
 
+  const lovableSendUrl = validateLovableSendUrl(process.env["LOVABLE_SEND_URL"]);
   try {
     await sendLovableEmail(
       {
@@ -96,7 +99,7 @@ export async function sendTemplateEmail(
         idempotency_key: options.idempotencyKey || crypto.randomUUID(),
         ...(options.replyTo ? { reply_to: options.replyTo } : {}),
       },
-      { apiKey: apiKey!, sendUrl: process.env["LOVABLE_SEND_URL"] },
+      { apiKey: apiKey!, sendUrl: lovableSendUrl },
     );
   } catch (error) {
     if (error instanceof EmailAPIError && error.code === "recipient_suppressed") {

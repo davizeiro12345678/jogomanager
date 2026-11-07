@@ -39,6 +39,12 @@ export function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Lightweight pages do not call toast(); the store is the intentional exception. */
+function shouldMountDeferredToaster(pathname: string) {
+  const path = pathname.replace(/\/$/, "") || "/";
+  return !isLightweightCssPath(path) || path === "/produtos";
+}
+
 // SEO/editorial pages must not download the full league and squad catalogue.
 // On navigation into gameplay we still initialize it immediately.
 export function RootComponent() {
@@ -86,7 +92,7 @@ export function RootComponent() {
             <Outlet />
             <ConsentBanner />
           </div>
-          <DeferredToaster />
+          {shouldMountDeferredToaster(pathname) ? <DeferredToaster /> : null}
         </AccessibilityProvider>
       </I18nProvider>
     </QueryClientProvider>

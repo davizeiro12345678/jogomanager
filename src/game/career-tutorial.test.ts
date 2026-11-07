@@ -23,6 +23,40 @@ describe("resumable career tutorial", () => {
       }),
     ]).toEqual(["prematch", "match"]);
   });
+  it("recognizes the weekly budget lesson only from a committed weekly operation", () => {
+    expect(
+      practicedCareerLessons({
+        ...unplayed,
+        financeLedger: [
+          {
+            id: "signing-club-1-player",
+            season: 1,
+            round: 1,
+            kind: "mercado",
+            label: "Contratação",
+            income: 0,
+            expense: 2,
+          },
+        ],
+      }),
+    ).not.toContain("weekly-budget");
+    expect(
+      practicedCareerLessons({
+        ...unplayed,
+        financeLedger: [
+          {
+            id: "operations-club-1-1",
+            season: 1,
+            round: 1,
+            kind: "operacao",
+            label: "Operação semanal e jogo em casa",
+            income: 3,
+            expense: 1,
+          },
+        ],
+      }),
+    ).toContain("weekly-budget");
+  });
   it("resumes at the next unpracticed lesson across chapters", () => {
     const progress = tutorialProgress(new Set(["club", "objectives"]));
     expect(progress.completed).toBe(2);
