@@ -1,6 +1,5 @@
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
 import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
-import { HomeSearchGuide } from "@/components/home/HomeSearchGuide";
 import { Suspense, lazy, useEffect, useState } from "react";
 import {
   ArrowDown,
@@ -519,7 +518,6 @@ export function FootballHome() {
           </Link>
         </section>
         <div className="home-guide-content">
-          <HomeSearchGuide />
           <Suspense fallback={null}>
             <HomeDetails />
           </Suspense>

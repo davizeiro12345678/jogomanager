@@ -3,6 +3,7 @@ import { createRootRouteWithContext, lazyRouteComponent } from "@tanstack/react-
 import { RootShell, RootComponent } from "@/components/RootLayout";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
+import quickCss from "../public-quick-styles.css?url";
 import homeCss from "../public-home-styles.css?url";
 import storeCss from "../public-store-styles.css?url";
 import tablesCss from "../public-tables-styles.css?url";
@@ -13,6 +14,7 @@ import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 function stylesheetForPath(pathname: string) {
   const path = pathname.replace(/\/$/, "") || "/";
   if (path === "/") return homeCss;
+  if (path === "/partida-rapida") return quickCss;
   if (path === "/produtos") return storeCss;
   if (path === "/tabelas" || path.startsWith("/tabelas/")) return tablesCss;
   return isLightweightCssPath(path) ? publicCss : appCss;

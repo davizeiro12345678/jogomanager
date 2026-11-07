@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useId, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import { LEAGUES, getLeague } from "@/game/data/leagues";
+import type { Club } from "@/game/types";
 import type { Difficulty } from "@/game/quickMatch";
 import { loadQuickLive } from "@/game/quick-match-entry";
 import { safeClub } from "@/game/club-reference";
@@ -66,7 +67,7 @@ export function QuickMatchPage() {
   // every sort comparison. Share one comparator without caching mutable leagues.
   const countryCompare = new Intl.Collator(lang).compare;
   return (
-    <div className="pitch-bg min-h-dvh px-4 py-10">
+    <main className="min-h-dvh bg-background px-4 py-8 sm:py-10">
       <div className="mx-auto max-w-5xl">
         {/* Keep the reading control in its column when the detected language
             changes the title width; reserve the mobile title's two lines. */}
@@ -88,7 +89,7 @@ export function QuickMatchPage() {
             id="quick-league"
             value={leagueId}
             onChange={(e) => chooseLeague(e.target.value)}
-            className="w-full rounded-lg border border-input bg-background/70 px-3 py-2 text-sm outline-none focus:border-primary"
+            className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {Object.entries(
               LEAGUES.reduce<Record<string, typeof LEAGUES>>((acc, l) => {
@@ -112,14 +113,14 @@ export function QuickMatchPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <TeamPicker
             title={t("quick.home")}
-            clubs={league.clubs.map((c) => c.id)}
+            clubs={league.clubs}
             value={myClub}
             onChange={setMyClub}
             disabled={oppClub}
           />
           <TeamPicker
             title={t("quick.away")}
-            clubs={league.clubs.map((c) => c.id)}
+            clubs={league.clubs}
             value={oppClub}
             onChange={setOppClub}
             disabled={myClub}
@@ -175,7 +176,7 @@ export function QuickMatchPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -187,16 +188,17 @@ function TeamPicker({
   disabled,
 }: {
   title: string;
-  clubs: string[];
+  clubs: Club[];
   value: string;
   onChange: (id: string) => void;
   disabled: string;
 }) {
+  const pickerId = useId();
   const selected = safeClub(value);
   return (
     <section className="rounded-2xl border border-border/60 surface-card p-4">
       <h2 className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
-        {title}
+        <label htmlFor={pickerId}>{title}</label>
       </h2>
       <div className="mt-3 flex items-center gap-3">
         <Crest club={selected} size={44} detail="full" />
@@ -208,23 +210,18 @@ function TeamPicker({
           Força {selected.strength}
         </span>
       </div>
-      <div className="mt-3 grid max-h-56 gap-1 overflow-y-auto pr-1">
-        {clubs.map((id) => (
-          <button
-            key={id}
-            onClick={() => onChange(id)}
-            disabled={id === disabled}
-            className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
-              id === value
-                ? "bg-primary/15 text-foreground"
-                : "text-muted-foreground hover:bg-muted/40"
-            } disabled:opacity-30`}
-          >
-            <Crest club={safeClub(id)} size={20} detail="simple" />
-            {safeClub(id).name}
-          </button>
+      <select
+        id={pickerId}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+        className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        {clubs.map((club) => (
+          <option key={club.id} value={club.id} disabled={club.id === disabled}>
+            {club.name}
+          </option>
         ))}
-      </div>
+      </select>
     </section>
   );
 }
