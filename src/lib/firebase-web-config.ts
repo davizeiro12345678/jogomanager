@@ -13,7 +13,7 @@ export function resolveFirebaseConnectorConfig(config: FirebaseConnectorConfig) 
   const projectId = config.projectId?.trim() ?? "";
   const appId = config.appId?.trim() ?? "";
   const vapidPublicKey = config.vapidPublicKey?.trim() ?? "";
-  const messagingSenderId = appId.split(":")[1] ?? "";
+  const messagingSenderId = /^1:(\d+):web:[a-z0-9]+$/i.exec(appId)?.[1] ?? "";
   return { apiKey, projectId, appId, vapidPublicKey, messagingSenderId };
 }
 

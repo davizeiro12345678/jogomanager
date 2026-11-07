@@ -57,6 +57,7 @@ import { nextFixture } from "@/game/season";
 import { useClubTheme } from "@/game/theme";
 import type { CareerState } from "@/game/types";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { useT } from "@/i18n/provider";
 import { useDrag } from "@use-gesture/react";
@@ -125,6 +126,7 @@ export function GameShell({
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const signedIn = useSignedIn();
+  const tutorialOwner = useAuthUserId();
   const { t, dir } = useT();
   const { sync } = useCareer();
   const shell = useRef<HTMLDivElement>(null);
@@ -145,6 +147,7 @@ export function GameShell({
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const tutorialTrigger = useRef<HTMLButtonElement>(null);
   // deslizar o menu para fora fecha (gesto natural no celular)
   const bindMenuSwipe = useDrag(
     ({ last, movement: [mx], velocity: [vx] }) => {
@@ -304,6 +307,8 @@ export function GameShell({
               size="icon"
               className="career-icon-button"
               aria-label="Abrir tutorial da carreira"
+              ref={tutorialTrigger}
+              disabled={!career || tutorialOwner === undefined}
               onClick={() => setTutorialOpen(true)}
             >
               <BookOpen size={19} aria-hidden />
@@ -491,7 +496,7 @@ export function GameShell({
           <span>{t("nav.mobileMenu")}</span>
         </button>
       </nav>
-      {tutorialOpen && career ? (
+      {tutorialOpen && career && tutorialOwner !== undefined ? (
         <Suspense
           fallback={
             <span role="status" className="sr-only">
@@ -501,16 +506,15 @@ export function GameShell({
         >
           <CareerTutorialDialog
             open={tutorialOpen}
-            onOpenChange={setTutorialOpen}
-            careerKey={`${userCareerKey(career)}`}
+            onOpenChange={(open) => {
+              setTutorialOpen(open);
+              if (!open) tutorialTrigger.current?.focus();
+            }}
+            careerKey={`${tutorialOwner ?? "guest"}:${career.world?.seed ?? career.clubId}`}
             career={career}
           />
         </Suspense>
       ) : null}
     </div>
   );
-}
-
-function userCareerKey(career: CareerState | null) {
-  return career?.clubId ?? "new";
 }

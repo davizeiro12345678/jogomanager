@@ -23,7 +23,21 @@ type PushAdmin = SupabaseClient<Database>;
 
 /** True when FCM says the device token is gone and the stored row must be deleted. */
 export function isDeadToken(status: number, body: string): boolean {
-  return status === 404 || (status === 400 && body.includes("INVALID_ARGUMENT"));
+  if (status !== 404 && status !== 400) return false;
+  if (status === 404 && body.trim() === "UNREGISTERED") return true;
+  try {
+    const { error } = JSON.parse(body) as {
+      error?: { details?: { "@type"?: string; errorCode?: string }[]; message?: string };
+    };
+    const code = error?.details?.find(
+      (detail) => detail["@type"] === "type.googleapis.com/google.firebase.fcm.v1.FcmError",
+    )?.errorCode;
+    return status === 404
+      ? code === "UNREGISTERED"
+      : code === "INVALID_ARGUMENT" && /registration token/i.test(error?.message ?? "");
+  } catch {
+    return false;
+  }
 }
 
 function gatewayKeys(): { lovableKey: string; fcmKey: string } | null {

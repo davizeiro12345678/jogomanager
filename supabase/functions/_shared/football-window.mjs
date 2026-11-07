@@ -1,3 +1,21 @@
+// The database enforces global quotas; these limits bound each invocation.
+export function footballWindowBudget(configuredLanes, pilot) {
+  const parsed = Number(configuredLanes);
+  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(16, parsed);
+  return {
+    lanes,
+    spacingMs: Math.max(55, Math.ceil(1050 / lanes)),
+    maxRequests: lanes * 40,
+  };
+}
+
+export function footballProviderRateError(response) {
+  if (response.status !== 429) return null;
+  return response.headers.get("x-ratelimit-requests-remaining")?.trim() === "0"
+    ? "provider_daily_quota"
+    : "provider_rate_wait";
+}
+
 export function validateFootballPage(body, job) {
   if (!body || typeof body !== "object" || (body.errors && Object.keys(body.errors).length))
     throw new Error("provider_reported_error");

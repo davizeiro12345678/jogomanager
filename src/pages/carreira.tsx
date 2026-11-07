@@ -6,7 +6,7 @@
 
 import { useMemo, useRef, useState } from "react";
 
-import { Clapperboard, Sparkles, ArrowRight } from "lucide-react";
+import { Clapperboard, Sparkles } from "lucide-react";
 
 import { GameShell } from "@/components/game/GameShell";
 
@@ -17,7 +17,7 @@ import { Crest } from "@/components/game/Crest";
 import { Cutscene } from "@/components/game/Cutscene";
 
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
+import { CoachClubOverview } from "@/components/game/coach/CoachClubOverview";
 import { CoachWeekPlanner } from "@/components/game/coach/CoachWeekPlanner";
 import { CoachLeagueTable } from "@/components/game/coach/CoachLeagueTable";
 import { CoachResults } from "@/components/game/coach/CoachResults";
@@ -48,22 +48,6 @@ const DEFAULT_LOOK: ManagerLook = {
   beard: 0,
   outfit: 0,
 };
-
-function Bar({ label, value, tone }: { label: string; value: number; tone: string }) {
-  const score = Math.max(0, Math.min(100, Math.round(value)));
-  return (
-    <div className="coach-meter">
-      <div className="coach-meter-label">
-        <span>{label}</span>
-        <strong>
-          {score}
-          <small>/100</small>
-        </strong>
-      </div>
-      <meter min={0} max={100} value={score} aria-label={label} style={{ color: tone }} />
-    </div>
-  );
-}
 
 export function CoachCareerPage() {
   const { career, update, isLoading } = useCareer();
@@ -208,42 +192,7 @@ export function CoachCareerPage() {
           error={weekError}
           onRun={run}
         />
-        <section id="coach-club" className="coach-office-band" aria-labelledby="coach-club-title">
-          <div className="coach-section-heading">
-            <h2 id="coach-club-title">Situação do clube</h2>
-            <Link to="/board">
-              Diretoria <ArrowRight size={16} />
-            </Link>
-          </div>
-          <div className="coach-meters">
-            <Bar label="Moral do elenco" value={squad.morale} tone="var(--primary)" />
-            <Bar label="Condição física" value={squad.condition} tone="var(--career-focus)" />
-            <Bar label="Forma recente" value={squad.form} tone="var(--career-warning)" />
-            <Bar label="Diretoria" value={career.approval} tone="var(--career-success)" />
-            <Bar label="Torcida" value={career.fanApproval} tone="var(--primary)" />
-            <Bar
-              label="Pressão · menor é melhor"
-              value={career.pressure}
-              tone="var(--career-danger)"
-            />
-          </div>
-          <dl className="coach-club-facts">
-            <div>
-              <dt>Caixa</dt>
-              <dd>€ {career.finances.budget.toFixed(1)}M</dd>
-            </div>
-            <div>
-              <dt>Objetivo na liga</dt>
-              <dd>{career.objective}º lugar</dd>
-            </div>
-            <div>
-              <dt>Propostas de clubes</dt>
-              <dd>
-                <Link to="/board">{career.jobOffers.length} disponíveis</Link>
-              </dd>
-            </div>
-          </dl>
-        </section>
+        <CoachClubOverview career={career} squad={squad} />
         <CoachLeagueTable career={career} />
         <section
           id="coach-story"

@@ -1,9 +1,4 @@
 /* Dedicated messaging scope: never replaces the existing offline worker. */
-importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
-
-firebase.initializeApp(Object.fromEntries(new URL(self.location).searchParams));
-
 self.addEventListener("notificationclick", (event) => {
   event.stopImmediatePropagation();
   event.notification.close();
@@ -20,6 +15,11 @@ self.addEventListener("notificationclick", (event) => {
   }
   event.waitUntil(self.clients.openWindow(destination));
 });
+
+importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
+
+firebase.initializeApp(Object.fromEntries(new URL(self.location).searchParams));
 
 firebase.messaging().onBackgroundMessage((payload) => {
   // Firebase displays notification payloads itself. Only render data-only pushes here.

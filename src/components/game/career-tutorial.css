@@ -1,0 +1,33 @@
+.career-guide {
+  scrollbar-gutter: stable;
+  scroll-padding-block: 1rem;
+}
+
+.career-guide-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  color: var(--muted-foreground);
+}
+
+.career-guide-progress strong {
+  color: var(--foreground);
+}
+
+.career-guide-exercise {
+  border-inline-start: 0.2rem solid var(--primary);
+  padding-inline-start: 0.7rem;
+}
+
+.career-guide :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+@media (forced-colors: active) {
+  .career-guide :is(a, button, summary):focus-visible {
+    outline-color: Highlight;
+  }
+}

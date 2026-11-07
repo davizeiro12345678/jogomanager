@@ -10,7 +10,9 @@ export type PushResult = { enabled: boolean; message: string };
  * Only call from a user click. Never ask for push permission automatically.
  * Uses a separate worker scope so messaging and offline caching can coexist.
  */
-export async function enableFirebaseNotifications(): Promise<PushResult> {
+export async function enableFirebaseNotifications(
+  config: Awaited<ReturnType<typeof getFirebaseWebConfig>>,
+): Promise<PushResult> {
   if (
     typeof window === "undefined" ||
     !("Notification" in window) ||
@@ -25,11 +27,6 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
         "Abra o jogo em uma nova aba para ativar notificações; a prévia não permite solicitar essa permissão.",
     };
   }
-  const { data: identity } = await supabase.auth.getUser();
-  if (!identity.user) {
-    return { enabled: false, message: "Entre na conta antes de ativar notificações." };
-  }
-  const config = await getFirebaseWebConfig();
   if (
     !config.apiKey ||
     !config.projectId ||
@@ -52,6 +49,11 @@ export async function enableFirebaseNotifications(): Promise<PushResult> {
           "Notificações bloqueadas. Libere a permissão nas configurações deste site no navegador e tente novamente.",
       };
     }
+  }
+
+  const { data: identity } = await supabase.auth.getUser();
+  if (!identity.user) {
+    return { enabled: false, message: "Entre na conta antes de ativar notificações." };
   }
 
   const app = await initFirebase({ config });

@@ -34,6 +34,7 @@ export interface TutorialLesson {
   id: string;
   title: string;
   instruction: string;
+  exercise?: string;
   to: string;
 }
 
@@ -63,6 +64,8 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
         title: "Monte seus titulares",
         instruction:
           "Abra a ficha dos jogadores e escolha 11 atletas sem lesão nem suspensão. Reserve opções para o banco.",
+        exercise:
+          "Compare a condição física de dois titulares da mesma posição antes de trocar a escalação.",
         to: "/squad",
       },
       {
@@ -70,6 +73,8 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
         title: "Defina como jogar",
         instruction:
           "Escolha formação, mentalidade e pressão de acordo com os pontos fortes do elenco.",
+        exercise:
+          "Mude apenas uma instrução e observe na partida se ela resolveu o problema que você identificou.",
         to: "/tactics",
       },
     ],
@@ -106,6 +111,8 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
         id: "scouting",
         title: "Encontre reforços",
         instruction: "Envie olheiros e compare os relatórios antes de gastar com uma contratação.",
+        exercise:
+          "Escolha uma posição carente e compare dois alvos com faixas de preço diferentes.",
         to: "/scouting",
       },
       {
@@ -146,6 +153,51 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
         instruction:
           "Compare sua posição com a meta da diretoria. Confira a diferença em pontos e o saldo de gols antes de decidir se precisa arriscar no próximo jogo.",
         to: "/league",
+      },
+    ],
+  },
+  {
+    title: "Planeje uma temporada inteira",
+    lessons: [
+      {
+        id: "cup-ties",
+        title: "Prepare uma eliminatória",
+        instruction:
+          "Veja a fase da copa e se o confronto será decidido em uma partida ou em ida e volta.",
+        exercise:
+          "Identifique um titular que precisa descansar para chegar inteiro ao próximo jogo.",
+        to: "/cup",
+      },
+      {
+        id: "coach-week",
+        title: "Faça um plano de trabalho",
+        instruction:
+          "No escritório do treinador, compare os efeitos previstos dos focos da semana.",
+        exercise: "Escolha um foco de acordo com a condição física, a moral e o adversário.",
+        to: "/carreira",
+      },
+      {
+        id: "board-expectations",
+        title: "Negocie expectativas com a diretoria",
+        instruction:
+          "Confira aprovação, pressão e a meta da temporada antes de decidir entre resultados imediatos e renovação do elenco.",
+        to: "/board",
+      },
+      {
+        id: "match-review",
+        title: "Revise o desempenho entre rodadas",
+        instruction:
+          "Use estatísticas e resultados recentes para descobrir se o problema se repete.",
+        exercise:
+          "Compare o saldo e a forma recente. Escolha um ajuste para testar na rodada seguinte.",
+        to: "/stats",
+      },
+      {
+        id: "season-review",
+        title: "Feche o ciclo da temporada",
+        instruction:
+          "Compare classificação, histórico e finanças. Defina duas prioridades para a próxima janela.",
+        to: "/history",
       },
     ],
   },

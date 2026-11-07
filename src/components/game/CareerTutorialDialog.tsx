@@ -10,6 +10,7 @@ import {
   tutorialProgress,
 } from "@/game/career-tutorial";
 import type { CareerState } from "@/game/types";
+import "./career-tutorial.css";
 
 export default function CareerTutorialDialog({
   open,
@@ -44,7 +45,7 @@ export default function CareerTutorialDialog({
   const progress = tutorialProgress(completed);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain sm:max-w-2xl">
+      <DialogContent className="career-guide max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain sm:max-w-2xl">
         <DialogTitle className="flex items-center gap-2">
           <BookOpen size={20} aria-hidden />
           Tutorial da carreira
@@ -53,8 +54,13 @@ export default function CareerTutorialDialog({
           Retome de onde parou. O guia usa os registros da carreira para reconhecer ações. Você
           também pode marcar lições que revisou.
         </DialogDescription>
-        <p role="status" className="text-sm text-primary">
-          {progress.completed} de {progress.total} lições concluídas ou marcadas
+        <p role="status" className="career-guide-progress text-sm">
+          <strong>
+            {progress.completed}/{progress.total} lições
+          </strong>
+          <span>
+            {practiced.size} na carreira · {progress.completed - practiced.size} revisadas
+          </span>
         </p>
         <progress
           aria-label="Lições concluídas ou marcadas"
@@ -64,7 +70,9 @@ export default function CareerTutorialDialog({
         />
         {progress.next ? (
           <div className="border-b border-border pb-4">
-            <p className="mb-2 text-sm font-semibold">Próximo passo: {progress.next.title}</p>
+            <p className="mb-1 text-xs text-muted-foreground">Próximo passo</p>
+            <h3 className="mb-2 text-base font-semibold">{progress.next.title}</h3>
+            <p className="mb-3 text-sm text-muted-foreground">{progress.next.instruction}</p>
             <Button
               asChild
               className="min-h-11 h-auto whitespace-normal text-left"
@@ -106,6 +114,11 @@ export default function CareerTutorialDialog({
                     </p>
                   )}
                   <p className="mt-1 text-sm text-muted-foreground">{lesson.instruction}</p>
+                  {lesson.exercise && (
+                    <p className="career-guide-exercise mt-2 text-sm">
+                      <strong>Experimente.</strong> {lesson.exercise}
+                    </p>
+                  )}
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Button
                       asChild
@@ -114,14 +127,16 @@ export default function CareerTutorialDialog({
                       variant="outline"
                       onClick={() => onOpenChange(false)}
                     >
-                      <Link to={lesson.to}>Abrir tela</Link>
+                      <Link to={lesson.to} aria-label={`Abrir tela da lição ${lesson.title}`}>
+                        Abrir tela
+                      </Link>
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
                       className="min-h-11"
                       disabled={practiced.has(lesson.id)}
-                      aria-pressed={completed.has(lesson.id)}
+                      aria-pressed={learned.has(lesson.id)}
                       onClick={() => {
                         const next = new Set(learned);
                         if (next.has(lesson.id)) next.delete(lesson.id);

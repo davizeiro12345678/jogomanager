@@ -2,7 +2,12 @@
 // neither the queue nor the provider key is available to browser clients.
 import { createClient } from "npm:@supabase/supabase-js@2.101.0";
 import { createFootballMaterializer } from "../_shared/football-materialize.mjs";
-import { loadFootballJobPage, footballErrorCode } from "../_shared/football-window.mjs";
+import {
+  footballErrorCode,
+  footballProviderRateError,
+  footballWindowBudget,
+  loadFootballJobPage,
+} from "../_shared/football-window.mjs";
 
 const hash = async (s: string) =>
   [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))]
@@ -101,9 +106,13 @@ Deno.serve(async (request: Request) => {
       };
     let stopped = false,
       nextRequest = Date.now();
-    const lanes = adminToken ? 1 : 3;
+    const { lanes, spacingMs, maxRequests } = footballWindowBudget(
+      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "3",
+      !!adminToken,
+    );
+    let scheduledRequests = 0;
     const run = async () => {
-      while (!stopped && Date.now() < deadline - 5000 && summary.requests < 120) {
+      while (!stopped && Date.now() < deadline - 5000 && scheduledRequests < maxRequests) {
         const job = await rpc("football_queue_claim");
         if (!job) break;
         let jobRequests = 0;
@@ -114,9 +123,12 @@ Deno.serve(async (request: Request) => {
               if (!job.path.startsWith("/") || job.path.startsWith("//"))
                 throw new Error("invalid_provider_path");
               const slot = Math.max(Date.now(), nextRequest);
-              nextRequest = slot + 350;
-              if (slot > deadline - 5000) throw new Error("window_budget");
+              if (stopped || scheduledRequests >= maxRequests || slot > deadline - 5000)
+                throw new Error("window_budget");
+              nextRequest = slot + spacingMs;
+              scheduledRequests++;
               await new Promise((r) => setTimeout(r, Math.max(0, slot - Date.now())));
+              if (stopped || Date.now() > deadline - 5000) throw new Error("window_budget");
             },
             requestPage: async () => {
               summary.requests++;
@@ -130,9 +142,11 @@ Deno.serve(async (request: Request) => {
               const remaining = response.headers.get("x-ratelimit-requests-remaining");
               if (remaining !== null && Number.isFinite(Number(remaining)))
                 summary.remaining = Math.min(summary.remaining ?? Infinity, Number(remaining));
-              if (response.status === 429) {
+              const rateError = footballProviderRateError(response);
+              if (rateError) {
+                stopped = true;
                 await response.body?.cancel();
-                throw new Error("provider_rate_wait");
+                throw new Error(rateError);
               }
               if (!response.ok) {
                 await response.body?.cancel();
@@ -202,6 +216,7 @@ Deno.serve(async (request: Request) => {
         } catch (error) {
           const code = footballErrorCode(error);
           const budget = /quota|rate_wait|window_budget/.test(code);
+          if (budget) stopped = true;
           const wait = /daily/.test(code)
             ? 86400
             : budget
@@ -214,10 +229,8 @@ Deno.serve(async (request: Request) => {
             p_wait: wait,
             p_budget: budget,
           });
-          if (budget) {
-            summary.deferred++;
-            stopped = true;
-          } else summary.failed++;
+          if (budget) summary.deferred++;
+          else summary.failed++;
         }
         if (adminToken) break;
       }

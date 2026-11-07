@@ -4,7 +4,11 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { createHash, webcrypto } from "node:crypto";
 import vm from "node:vm";
-import { loadFootballJobPage } from "../supabase/functions/_shared/football-window.mjs";
+import {
+  footballProviderRateError,
+  footballWindowBudget,
+  loadFootballJobPage,
+} from "../supabase/functions/_shared/football-window.mjs";
 
 // Execute the deployed handlers with isolated Deno bindings and fully mocked
 // transports. No environment credentials or live network are used by these tests.
@@ -304,6 +308,29 @@ test("SportsDB rejects a partial Cloudflare Access credential configuration befo
     "sportsdb_bridge_acquire",
     "sportsdb_bridge_release",
   ]);
+});
+
+test("API-Football bounds scheduled work and keeps the manual pilot single-lane", () => {
+  assert.deepEqual(footballWindowBudget("3", false), {
+    lanes: 3,
+    spacingMs: 350,
+    maxRequests: 120,
+  });
+  const custom = footballWindowBudget("999", false);
+  assert.equal(custom.lanes, 16);
+  assert.ok(custom.spacingMs >= 55);
+  assert.ok(custom.maxRequests * 1440 >= 445000);
+  assert.equal(footballWindowBudget("16", true).lanes, 1);
+  assert.equal(footballWindowBudget("invalid", false).lanes, 1);
+});
+
+test("API-Football distinguishes a depleted day from a transient 429", () => {
+  const response = (status, remaining) =>
+    new Response(null, { status, headers: { "x-ratelimit-requests-remaining": remaining } });
+  assert.equal(footballProviderRateError(response(429, "0")), "provider_daily_quota");
+  assert.equal(footballProviderRateError(response(429, "100")), "provider_rate_wait");
+  assert.equal(footballProviderRateError(response(429, "")), "provider_rate_wait");
+  assert.equal(footballProviderRateError(response(200, "0")), null);
 });
 
 test("API-Football cached pages are validated and reused without reserving or requesting again", async () => {

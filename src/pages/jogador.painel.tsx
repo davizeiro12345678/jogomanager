@@ -206,7 +206,15 @@ function Panel({
             </p>
           )}
         </div>
-        <PlayerCareerGuide state={state} />
+        <PlayerCareerGuide
+          state={state}
+          onOpenTab={(next) => {
+            setTab(next);
+            requestAnimationFrame(() => {
+              document.getElementById(`athlete-tab-${next}`)?.focus();
+            });
+          }}
+        />
         <section className="athlete-card athlete-hero">
           {showPlayerModel ? (
             <Suspense

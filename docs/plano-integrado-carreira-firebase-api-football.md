@@ -55,5 +55,14 @@ Evoluir o Pro Football Manager 3D sem perder saves, alterar resultados determin�
 - PR #125 é rascunho com modularização parcial de CSS e carreira e textos do tutorial; não equivale à conclusão das etapas acima.
 - A base de produção media aproximadamente 18,25 GB e `api_football_data` aproximadamente 14,97 GB na consulta pontual; falta série temporal para afirmar crescimento em bytes.
 - A fila da API-Football atingiu 74.500 reservas nos três últimos dias. Os recibos informam 74.489 inserções em 7/11, 74.496 em 6/11 e 74.500 em 5/11 (dias UTC). O estado deve ser novamente medido antes de concluir a migração.
-- A migração 0057 usa um contador diário UTC e uma janela móvel compartilhada para o importador, a fila e as consultas de clubes e elencos. A fila ainda limita cada invocação a 120 pedidos e espaça chamadas em 350 ms. A vazão efetiva depende dessa configuração e do tempo de resposta do provedor.
+- A migração 0057 usa um contador diário UTC e uma janela móvel compartilhada para o importador, a fila e as consultas de clubes e elencos. Antes da atualização, a fila limitava cada invocação a 120 pedidos e espaçava chamadas em 350 ms. Veja a configuração gradual abaixo.
 - O Firebase Cloud Messaging v1 está ativo no Sjsjs e o conector Lovable mostra Web Push vinculado ao jogo. O App ID usa o remetente do Sjsjs. Falta testar a inscrição e a entrega em um navegador com a versão publicada.
+
+## Configuração da fila Custom450
+
+A migração 0057 conserva as reservas já registradas e aplica 445.000 por dia UTC, 1.100 em uma janela móvel de minuto e até 19 reservas em um segundo. A ativação preserva a pausa e os leases existentes. Quando a fila está pausada até 00:00 UTC, a primeira retomada ocorre às 21h no horário de Vitória.
+
+- A Edge Function mantém três lanes como padrão e uma lane no piloto administrativo. A variável `FOOTBALL_IMPORT_LANES` permite subir até 16 sem alterar a frequência do cron. Avalie 3, 8, 12 e 16 com a mesma janela de medição e recue ao primeiro sinal persistente de 429, erros de escrita, contenção ou pressão sobre CPU e WAL.
+- O teto por invocação é 40 chamadas por lane, com espaçamento de pelo menos 55 ms e prazo de 45 segundos. Em 16 lanes, o teto teórico é 640 por invocação. Alcançar 445.000 por dia exige em média 309,03 chamadas por minuto no conjunto de clientes. Meça a taxa observada em produção após o canário.
+- Uma resposta 429 com saldo diário confirmado em zero pausa a fila até a próxima virada UTC. Outros 429 interrompem a janela atual e preservam o trabalho para nova tentativa.
+- Antes de aplicar, confirme o projeto, a migração ainda pendente e o limite retornado pelo provedor. Depois, compare o uso registrado, os recibos, o tamanho de `api_football_data` e do banco, os erros, a latência de gravação e a saúde do disco. Para recuar o worker, configure novamente três lanes. A reversão de quota deve ser uma migração de avanço que preserve os contadores.

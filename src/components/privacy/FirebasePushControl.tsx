@@ -11,7 +11,9 @@ import {
 
 /** FCM notification permission is requested only by clicking the opt-in button. */
 export function FirebasePushControl() {
-  const [configured, setConfigured] = useState(false);
+  const [config, setConfig] = useState<Awaited<ReturnType<typeof getFirebaseWebConfig>> | null>(
+    null,
+  );
   const [signedIn, setSignedIn] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -28,16 +30,15 @@ export function FirebasePushControl() {
     if (browserSupportsPush) {
       void getFirebaseWebConfig()
         .then((config) => {
-          if (mounted)
-            setConfigured(
-              Boolean(
-                config.apiKey &&
-                config.projectId &&
-                config.appId &&
-                config.messagingSenderId &&
-                config.vapidPublicKey,
-              ),
-            );
+          if (
+            mounted &&
+            config.apiKey &&
+            config.projectId &&
+            config.appId &&
+            config.messagingSenderId &&
+            config.vapidPublicKey
+          )
+            setConfig(config);
         })
         .catch(() => undefined);
     }
@@ -54,12 +55,12 @@ export function FirebasePushControl() {
   }, []);
 
   const change = async () => {
-    if (busy || !configured || !signedIn) return;
+    if (busy || !config || !signedIn) return;
     setBusy(true);
     try {
       const result = enabled
         ? await disableFirebaseNotifications()
-        : await enableFirebaseNotifications();
+        : await enableFirebaseNotifications(config);
       setEnabled(result.enabled);
       setMessage(result.message);
     } catch {
@@ -77,14 +78,14 @@ export function FirebasePushControl() {
           variant="outline"
           size="sm"
           className="min-h-11"
-          disabled={!configured || !signedIn || busy}
+          disabled={!config || !signedIn || busy}
           onClick={() => void change()}
         >
           {enabled ? <BellOff className="mr-1.5 h-4 w-4" /> : <Bell className="mr-1.5 h-4 w-4" />}
           {enabled ? "Desativar avisos neste aparelho" : "Ativar avisos neste aparelho"}
         </Button>
         <span className="text-xs text-muted-foreground">
-          {!configured
+          {!config
             ? "Atualize a conexão Firebase com Include web push para ativar os avisos."
             : !signedIn
               ? "Entre na conta para habilitar"
