@@ -2,6 +2,18 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { CAREER_SERVICES, type CareerService } from "@/lib/wallet-rules";
+import { notifyUsers } from "@/lib/push.server";
+
+/** Push text shown to the buyer after the database confirms a club service. */
+const SERVICE_NOTIFICATION: Record<CareerService, string> = {
+  injury_recovery: "Tratamento de lesão aplicado ao seu elenco.",
+  opponent_report: "Relatório do adversário disponível na sua carreira.",
+  youth_boost: "Impulso de jovem aplicado ao seu elenco.",
+  stadium_upgrade: "Ampliação do estádio concluída.",
+  contract_renewal: "Renovação de contrato concluída.",
+  training_upgrade: "Aprimoramento de treino aplicado à semana.",
+  premium_scout: "Relatório premium do olheiro disponível.",
+};
 
 export type CareerServiceResult =
   | { ok: true; coins: number; usedThisWeek: number; paidWith: "coins" | "stored_item" }
@@ -44,6 +56,12 @@ export const spendCoinsOnService = createServerFn({ method: "POST" })
               : "error",
         coins: row.coins,
       };
+    // Aviso por push ao comprador, sem segurar a resposta da cobrança.
+    notifyUsers(supabaseAdmin, [context.userId], {
+      title: "Seu clube",
+      body: SERVICE_NOTIFICATION[data.service],
+      path: "/clube",
+    });
     return {
       ok: true,
       coins: row.coins,

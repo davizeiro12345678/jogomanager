@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { normalizePublicText, hasVisibleText } from "./untrusted-json";
 import { MODERATION_MESSAGES, moderateMessage, type ModerationReason } from "./moderation";
 import { INFRACTION_WINDOW_MS, muteUntil } from "./chat-penalties";
+import { notifyUsers, MAX_TOKENS_PER_EVENT } from "./push.server";
 
 const SendMessageInput = z.object({
   body: z
@@ -94,5 +95,26 @@ export const sendChatMessage = createServerFn({ method: "POST" })
       console.error("send_chat_message_for falhou", error.message);
       return { ok: false, reason: "error" };
     }
+    // Aviso por push aos demais inscritos, sem segurar a resposta do envio.
+    void (async () => {
+      const { data: message } = await supabaseAdmin
+        .from("chat_messages")
+        .select("display_name")
+        .eq("id", String(id))
+        .maybeSingle();
+      const { data: subs } = await supabaseAdmin
+        .from("push_subscriptions")
+        .select("user_id")
+        .neq("user_id", context.userId)
+        .limit(MAX_TOKENS_PER_EVENT);
+      const userIds = [...new Set((subs ?? []).map((row) => row.user_id))];
+      notifyUsers(supabaseAdmin, userIds, {
+        title: "Sala dos técnicos",
+        body: `${message?.display_name ?? "Um técnico"} enviou uma mensagem no chat.`,
+        path: "/chat",
+      });
+    })().catch((pushError: unknown) =>
+      console.error("Push do chat indisponível", pushError),
+    );
     return { ok: true, id: String(id) };
   });

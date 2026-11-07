@@ -1,4 +1,11 @@
 # Roadmap
+## Push e chat (07/11, 01:00 UTC; sem publicação)
+- [x] Conexão Firebase atualizada com Include web push; chaves web chegaram ao .env e o botão de ativação destravou.
+- [x] Envio FCM no servidor (push.server.ts via gateway): chat avisa demais inscritos, serviços do clube avisam o comprador; tokens mortos removidos; 7 testes passaram; build OK.
+- [x] Chat: persistência verificada — envio grava no banco, mensagem aparece na hora (corrigido recarregamento pós-envio) e sessão nova sem cache lê o histórico; sem erros de console.
+- [ ] Push real bloqueado: App ID/chave web na conexão são do projeto Firebase antigo (sscxz-2ee8d); inscrição falha com "permission denied". Usuário precisa atualizar a conexão com os dados web do projeto sjsjs-ed490 (mesma conta de serviço).
+- [ ] Teste de chat com segunda conta: aguardando o usuário indicar qual conta (ou autorizar criar conta de teste).
+- [ ] Melhorias amplas de carreira/cutscenes/estádio/rig e tabelas complexas seguem abertas nas seções abaixo; gates completos obrigatórios antes de publicar.
 ## Melhorias amplas restantes (06/11, 23:52 UTC; sem publicação)
 - [x] Criadores: navegação por etapas acessível, revisão editável e separação dos painéis grandes, preservando escolhas e salvamento.
 - [x] Jogador: trabalho da semana antes de informações secundárias, metas/atributos separados e visual 3D opcional.

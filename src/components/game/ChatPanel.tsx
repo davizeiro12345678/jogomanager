@@ -86,27 +86,28 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     });
   }, [signedIn]);
 
+  const loadMessages = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("id, user_id, display_name, body, hidden, created_at")
+      .eq("hidden", false)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    setMessages(((data ?? []) as ChatMessage[]).reverse());
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     if (!signedIn) return;
     let alive = true;
     setLoading(true);
     setLoadError(false);
-    void supabase
-      .from("chat_messages")
-      .select("id, user_id, display_name, body, hidden, created_at")
-      .eq("hidden", false)
-      .order("created_at", { ascending: false })
-      .limit(200)
-      .then(({ data, error }) => {
-        if (!alive) return;
-        if (error) {
-          setLoadError(true);
-          setLoading(false);
-          return;
-        }
-        setMessages(((data ?? []) as ChatMessage[]).reverse());
-        setLoading(false);
-      });
+    void loadMessages();
 
     const channel = supabase
       .channel("chat_messages_room")
@@ -127,7 +128,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       alive = false;
       void supabase.removeChannel(channel);
     };
-  }, [signedIn, refresh]);
+  }, [signedIn, refresh, loadMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -169,7 +170,9 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       return;
     }
     setDraft("");
-  }, [draft, sending]);
+    // O tempo real pode atrasar; recarrega para a própria mensagem aparecer já.
+    void loadMessages();
+  }, [draft, sending, loadMessages]);
 
   const deleteMessage = useCallback(async (id: string) => {
     const { error } = await supabase.from("chat_messages").delete().eq("id", id);
