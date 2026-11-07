@@ -130,3 +130,9 @@ Plano aprovado: `.lovable/plan/plano-partida-3d-muito-melhor-ia-mais-esperta-moe
   - [x] E4 parcial: Acelerar evolução (300) e Melhoria do estádio (500) cobrados pelo banco, na tela do elenco
   - [x] E4 serviços: Aprimorar treino, Olheiro individual premium e extensão de contrato disponíveis; contrato continua sendo extensão direta, não reabertura após recusa.
   - [ ] E4 compras: cinco novos pacotes ainda dependem de implementação de inventário/entrega e ofertas reais no provedor.
+
+## Etapa carreira/UI (07/11, 01:10 UTC; sem publicação)
+- [ ] Tabela de classificação complexa dentro da página da carreira do treinador (expansível, render só ao abrir).
+- [ ] Resultados da carreira: forma recente, filtro por competição e totais; ajustes de CSS.
+- [ ] Prints desktop/celular como evidência; testes focados e lint.
+- [ ] Cutscenes, Stadium3D e rig: melhorias amplas seguem abertas para etapas seguintes.

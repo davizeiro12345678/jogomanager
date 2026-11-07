@@ -178,6 +178,83 @@
 .coach-club-facts dd {
   font-weight: 650;
 }
+.coach-results-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.coach-results-filters button {
+  min-height: 40px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+.coach-results-filters button[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 12%, var(--card));
+  color: var(--foreground);
+}
+.coach-results-filters button:focus-visible {
+  outline: 2px solid var(--career-focus, var(--ring));
+  outline-offset: 2px;
+}
+.coach-results-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--muted) 30%, var(--card));
+}
+.coach-results-summary dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+.coach-results-summary dt {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.coach-results-summary dd {
+  font-weight: 650;
+}
+.coach-results-form {
+  display: flex;
+  gap: 0.375rem;
+}
+.coach-results-form li {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.coach-results-form li[data-result="V"] {
+  background: color-mix(in oklab, var(--career-success) 25%, var(--card));
+  color: var(--career-success);
+}
+.coach-results-form li[data-result="D"] {
+  background: color-mix(in oklab, var(--career-danger) 22%, var(--card));
+  color: var(--career-danger);
+}
+.coach-result-score[data-result="V"] {
+  color: var(--career-success);
+}
+.coach-result-score[data-result="D"] {
+  color: var(--career-danger);
+}
 .coach-results-list {
   margin-top: 1rem;
 }

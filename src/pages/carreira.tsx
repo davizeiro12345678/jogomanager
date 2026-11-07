@@ -19,6 +19,7 @@ import { Cutscene } from "@/components/game/Cutscene";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { CoachWeekPlanner } from "@/components/game/coach/CoachWeekPlanner";
+import { CoachLeagueTable } from "@/components/game/coach/CoachLeagueTable";
 import { CoachResults } from "@/components/game/coach/CoachResults";
 import { summarizeCoachSquad } from "@/game/coach-office";
 
@@ -196,6 +197,7 @@ export function CoachCareerPage() {
         <nav className="coach-office-nav" aria-label="Áreas da carreira">
           <a href="#coach-week">Trabalho da semana</a>
           <a href="#coach-club">Situação do clube</a>
+          <a href="#coach-table">Classificação</a>
           <a href="#coach-story">Relações e imprensa</a>
           <a href="#coach-results">Resultados</a>
         </nav>
@@ -242,6 +244,7 @@ export function CoachCareerPage() {
             </div>
           </dl>
         </section>
+        <CoachLeagueTable career={career} />
         <section
           id="coach-story"
           className="coach-office-band"
