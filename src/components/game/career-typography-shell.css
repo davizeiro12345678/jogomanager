@@ -1,0 +1,446 @@
+/* Readable office typography scales with the user's preference, while the
+ * live scene uses one compact row rather than stacking every control. */
+.career-shell {
+  --career-body-size: 0.9375rem;
+  --career-label-size: 0.875rem;
+  --career-line: var(--input);
+  --career-header-height: 5rem;
+  --career-footer-height: 0rem;
+  --career-readable-accent: color-mix(in srgb, var(--primary) 35%, white);
+}
+.career-header-inner {
+  flex-wrap: wrap;
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+}
+.career-brand {
+  flex: 0 1 13.875rem;
+  min-width: 0;
+}
+.career-brand > div {
+  min-width: 0;
+}
+.career-header-actions {
+  flex-wrap: wrap;
+}
+.career-header-actions :where(button, a),
+.career-menu-trigger,
+.career-search-button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+.career-sidebar {
+  top: var(--career-header-height);
+  height: calc(100dvh - var(--career-header-height));
+}
+.career-nav-item {
+  font-size: 0.9375rem;
+}
+.career-nav-heading {
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+}
+.career-nav-item[aria-current="page"] > svg,
+.trainer-eyebrow {
+  color: var(--career-readable-accent);
+}
+.career-bottom-nav {
+  height: auto;
+  min-height: 4.125rem;
+}
+.career-bottom-nav span {
+  font-size: 0.8125rem;
+  white-space: normal;
+  line-height: 1.35;
+}
+.career-content {
+  padding-block-end: var(--career-content-bottom-space);
+}
+.career-content :where(p) {
+  text-wrap: pretty;
+}
+.trainer-heading > div > p:last-child {
+  max-inline-size: 68ch;
+}
+.career-content :is(.surface-card, .hud-card) {
+  border-color: var(--career-line);
+}
+.career-content
+  :where(button, select, input:not([type="range"]):not([type="checkbox"]):not([type="radio"])) {
+  min-height: 2.75rem;
+}
+.career-shell :focus-visible,
+.career-menu-sheet :focus-visible,
+.career-command-dialog :focus-visible {
+  outline: 3px solid var(--career-readable-accent, #c8f5e0);
+  outline-offset: 3px;
+}
+.career-command-dialog {
+  max-height: min(38rem, calc(100dvh - 2rem));
+  max-width: min(36rem, calc(100vw - 2rem));
+}
+.career-command-dialog [cmdk-list] {
+  max-height: min(25rem, calc(100dvh - 9rem));
+  overscroll-behavior: contain;
+}
+.career-command-dialog [cmdk-input],
+.career-command-dialog [cmdk-item] {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+.career-command-dialog [cmdk-item][data-selected="true"] {
+  box-shadow: inset 3px 0 var(--primary);
+}
+.league-filter-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 0.75rem;
+  color: var(--muted-foreground);
+}
+.league-filter-status button {
+  margin-inline-start: auto;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--career-line);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+.league-filter-status button:hover {
+  background: var(--secondary);
+}
+.career-table-scroll {
+  overscroll-behavior-inline: contain;
+  scrollbar-color: var(--muted-foreground) var(--card);
+  scrollbar-width: auto;
+}
+@media (max-width: 40rem) {
+  .career-header-inner {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: 0.5rem 0.75rem;
+    padding: 0.65rem 0.875rem;
+  }
+  .career-brand {
+    grid-column: 2;
+    width: auto;
+  }
+  .career-brand > div > p:first-child {
+    max-width: none;
+    font-size: 1rem;
+  }
+  .career-header-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-inline-start: 0;
+    gap: 0.5rem;
+  }
+  .career-header-play {
+    display: inline-flex;
+    margin-inline-start: auto;
+  }
+  .career-header-play span {
+    display: inline;
+  }
+  .career-content {
+    padding-inline: 0.875rem;
+  }
+  .career-content h1 {
+    font-size: clamp(1.5rem, 6vw, 2.125rem);
+    line-height: 1.25;
+    letter-spacing: 0.03em;
+    overflow-wrap: break-word;
+  }
+  .career-bottom-nav {
+    inset-inline: 0.5rem;
+    padding: 0.375rem;
+  }
+  .career-bottom-nav :where(a, button) {
+    padding-block: 0.35rem;
+  }
+  .career-menu-sheet {
+    width: min(24rem, calc(100vw - 1rem));
+    padding-inline: 1rem;
+  }
+  .trainer-quick-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .trainer-summary > a {
+    padding-inline: 0.875rem;
+  }
+  .career-current-page {
+    display: none;
+  }
+}
+@media (max-height: 32rem) {
+  .career-header {
+    position: relative;
+  }
+  .career-sidebar {
+    top: 0;
+    height: 100dvh;
+  }
+}
+@media (max-width: 24rem) {
+  html:is([data-text-size="large"], [data-text-size="xlarge"]) .career-bottom-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+  html:is([data-text-size="large"], [data-text-size="xlarge"]) .career-bottom-nav > :last-child {
+    grid-column: span 2;
+  }
+}
+.career-page,
+.career-content,
+.career-workspace > * {
+  min-width: 0;
+}
+.career-content :where(input, select, textarea) {
+  font-size: 1rem;
+  line-height: 1.5;
+  border-color: var(--input);
+}
+.career-content :where(p, dd, .text-xs, .text-sm) {
+  font-size: var(--career-body-size);
+  line-height: 1.65;
+}
+.career-content :where(label, table th, .hud-card > header, .trainer-task strong) {
+  font-size: var(--career-label-size);
+  line-height: 1.5;
+}
+.career-content :where(table td, .trainer-task p, .trainer-match-footer p) {
+  font-size: var(--career-body-size);
+  line-height: 1.6;
+}
+.career-current-page,
+.career-search-button,
+.career-sidebar-footer,
+.career-save-note {
+  font-size: var(--career-label-size);
+  line-height: 1.5;
+}
+.career-nav-item {
+  min-height: 44px;
+  gap: 0.7rem;
+}
+.career-nav-item span {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.career-nav-item[aria-current="page"] {
+  border-inline-start: 3px solid var(--primary);
+  box-shadow: none;
+}
+.career-content :where(h1, h2, h3) {
+  scroll-margin-block-start: 6rem;
+  overflow-wrap: anywhere;
+}
+.career-content :where(a, button, select, input, textarea):focus-visible,
+.career-sidebar :focus-visible {
+  outline: 3px solid var(--career-readable-accent);
+  outline-offset: 4px;
+}
+.career-mobile-search {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.7rem;
+  margin-block: 1rem;
+  border: 1px solid var(--input);
+  border-radius: 0.65rem;
+  font-size: 1rem;
+  background: var(--background);
+  color: var(--foreground);
+}
+.career-menu-empty {
+  padding: 1rem;
+  color: var(--muted-foreground);
+  font-size: 1rem;
+}
+html[data-contrast="high"] .career-shell {
+  --background: var(--background);
+  --card: var(--card);
+  --foreground: #fff;
+  --card-foreground: #fff;
+  --muted-foreground: var(--foreground);
+  --border: var(--muted-foreground);
+  --input: var(--foreground);
+  --career-line: var(--muted-foreground);
+}
+html[data-contrast="high"] .career-content :where(.text-muted-foreground, p, label, th) {
+  color: var(--foreground);
+}
+html[data-reading-space="true"] .career-nav-item {
+  padding-block: 0.9rem;
+}
+html[data-reading-space="true"] .career-content :where(p, dd, td) {
+  line-height: 1.85;
+}
+.quick-match {
+  --match-gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.match-quick-back {
+  inset-block-start: 12px;
+  inset-inline-start: 12px;
+}
+.match-quick-score-row > span {
+  white-space: nowrap;
+}
+.match-quick-transport {
+  position: absolute;
+  z-index: var(--career-z-match-transport, 20);
+  inset-block-end: max(var(--match-gap), env(safe-area-inset-bottom));
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100% - 16px);
+  padding: 4px;
+  border: 1px solid #b8cadd55;
+  border-radius: 14px;
+  background: #091725ed;
+  box-shadow: 0 4px 18px #0006;
+}
+html[dir="rtl"] .match-quick-transport {
+  transform: translateX(50%);
+}
+.match-quick-transport :where(button, select) {
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  max-height: 56px;
+  border-radius: 9px;
+}
+.match-quick-transport select {
+  background: var(--muted);
+  border: 1px solid #8da6bc60;
+  color: var(--foreground);
+  padding-inline: 8px;
+  font-size: 0.875rem;
+}
+.match-quick-speed {
+  width: 4rem;
+}
+.match-quick-camera {
+  width: clamp(5rem, 12vw, 9rem);
+}
+.match-quick-more {
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.match-quick-more[aria-expanded="true"] {
+  background: var(--input);
+}
+.match-quick-tools,
+.match-quick-feed {
+  position: absolute;
+  z-index: var(--career-z-match-tools, 25);
+  inset-inline-end: var(--match-gap);
+  inset-block-end: calc(72px + env(safe-area-inset-bottom));
+  width: min(21rem, calc(100% - 16px));
+  max-height: calc(100dvh - 138px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #95adbf80;
+  border-radius: 14px;
+  padding: 10px;
+  background: #0b1927fa;
+  color: var(--foreground);
+  box-shadow: 0 8px 30px #0007;
+}
+.match-quick-tools[hidden] {
+  display: none;
+}
+.match-quick-tools-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+.match-quick-tools-heading button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+}
+.match-quick-summary {
+  padding-block: 8px;
+  font-size: 0.8125rem;
+  color: #d4e4f1;
+}
+.match-tool-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  text-align: start;
+  border-radius: 9px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.match-tool-action svg {
+  flex-shrink: 0;
+}
+.match-tool-action:hover,
+.match-tool-action[aria-pressed="true"] {
+  background: var(--career-line);
+}
+@media (max-width: 640px) {
+  .match-quick-score-wrap {
+    padding-inline-start: 64px;
+    padding-inline-end: 8px;
+  }
+  .match-quick-score-row {
+    padding-inline: 8px;
+    gap: 6px;
+  }
+  .match-quick-score-row > :is(svg, img),
+  .match-quick-score-row > [role="img"] {
+    display: none;
+  }
+  .match-quick-statistics {
+    padding-inline: 8px;
+    font-size: 0.6875rem;
+    gap: 6px;
+  }
+}
+@media (max-height: 420px) {
+  .match-quick-score-wrap,
+  .match-quick-back {
+    top: 6px;
+  }
+  .match-quick-score-row {
+    padding-block: 4px;
+  }
+  .match-quick-score {
+    font-size: 1.25rem;
+  }
+  .match-quick-statistics {
+    display: none;
+  }
+  .match-quick-possession {
+    height: 3px;
+  }
+}
+@media (max-width: 340px) {
+  .match-quick-transport {
+    gap: 4px;
+  }
+  .match-quick-clock {
+    padding-inline: 5px;
+    margin-inline-start: 0;
+  }
+  .match-quick-score-row > span:not(.match-quick-score, .match-quick-clock) {
+    font-size: 0.8125rem;
+  }
+}
+

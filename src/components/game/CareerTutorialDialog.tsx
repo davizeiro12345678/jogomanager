@@ -50,14 +50,14 @@ export default function CareerTutorialDialog({
           Tutorial da carreira
         </DialogTitle>
         <DialogDescription>
-          Retome de onde parou. Partidas, treinos e relatórios concluídos são reconhecidos na sua
-          carreira.
+          Retome de onde parou. Partidas, treinos e relatórios são reconhecidos na carreira; as
+          demais lições podem ser marcadas por você.
         </DialogDescription>
         <p role="status" className="text-sm text-primary">
-          {progress.completed} de {progress.total} lições praticadas
+          {progress.completed} de {progress.total} lições concluídas ou marcadas
         </p>
         <progress
-          aria-label="Lições praticadas"
+          aria-label="Lições concluídas ou marcadas"
           className="h-2 w-full accent-primary"
           max={progress.total}
           value={progress.completed}
@@ -71,7 +71,7 @@ export default function CareerTutorialDialog({
           </div>
         ) : (
           <p className="text-sm text-primary">
-            Todas as lições praticadas. Você pode rever qualquer capítulo.
+            Todas as lições foram concluídas ou marcadas. Você pode rever qualquer capítulo.
           </p>
         )}
         {TUTORIAL_CHAPTERS.map((chapter, index) => (
@@ -84,10 +84,15 @@ export default function CareerTutorialDialog({
                 <li key={lesson.id}>
                   <h3 className="flex items-center gap-2 text-sm font-semibold">
                     {completed.has(lesson.id) ? (
-                      <Check size={16} aria-label="Praticada" className="text-primary" />
+                      <Check size={16} aria-hidden className="text-primary" />
                     ) : null}
                     {lesson.title}
                   </h3>
+                  {completed.has(lesson.id) && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {practiced.has(lesson.id) ? "Concluída na carreira" : "Marcada por você"}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">{lesson.instruction}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Button
@@ -116,7 +121,7 @@ export default function CareerTutorialDialog({
                         ? "Concluída na carreira"
                         : learned.has(lesson.id)
                           ? "Revisar depois"
-                          : "Já pratiquei"}
+                          : "Marcar como revisada"}
                     </Button>
                   </div>
                 </li>
