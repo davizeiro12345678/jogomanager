@@ -90,21 +90,46 @@ const SINGLE_WORD_TERMS = new Set(
   SQUASHED_TERMS.filter((_, i) => !BLOCKED_TERMS[i]?.includes(" ")),
 );
 const PHRASE_TERMS = SQUASHED_TERMS.filter((_, i) => BLOCKED_TERMS[i]?.includes(" "));
-/** Long terms are matched even when glued to other letters or split by dots. */
+/** Long terms are matched even when glued to other letters inside one word. */
 const MIN_EMBEDDED_LENGTH = 5;
+
+/**
+ * Ordinary words that contain a blocked term when squashed, so matching them
+ * would mute fans for normal football talk ("Nigéria", "Níger", "retardar").
+ */
+const BENIGN_WORDS = new Set([
+  "niger",
+  "nigeria",
+  "nigeriano",
+  "nigeriana",
+  "nigerianos",
+  "nigerianas",
+  "retardar",
+  "retardamento",
+]);
 
 /** True when the text contains a blocked term, including disguised spellings. */
 export function containsProfanity(text: string): boolean {
   const normalized = normalizeForModeration(text);
-  // Whole words: "porra", "p0rr4", "poooorra".
-  if (words(normalized).some((w) => SINGLE_WORD_TERMS.has(w))) return true;
+  const found = words(normalized).some(
+    (w) =>
+      !BENIGN_WORDS.has(w) &&
+      (SINGLE_WORD_TERMS.has(w) ||
+        // Glued to other letters inside one word: "seucaralho".
+        [...SINGLE_WORD_TERMS].some((t) => t.length >= MIN_EMBEDDED_LENGTH && w.includes(t))),
+  );
+  if (found) return true;
   // Letter-by-letter spellings: "p.o.r.r.a", "p o r r a".
   const spelled = normalized.match(/(?:\b[a-z]\b[^a-z]*){3,}/g) ?? [];
   if (spelled.some((run) => SINGLE_WORD_TERMS.has(squash(run)))) return true;
-  // Phrases and glued spellings: "filho-da-puta", "seucaralho".
+  // Multi-word phrases, with or without separators: "filho-da-puta", "filhodaputa".
   const glued = squash(normalized);
-  if (PHRASE_TERMS.some((t) => glued.includes(t))) return true;
-  return SQUASHED_TERMS.some((t) => t.length >= MIN_EMBEDDED_LENGTH && glued.includes(t));
+  return PHRASE_TERMS.some((t) => glued.includes(t));
+}
+
+/** Repeat comparison keeps letter runs, so "gol" and "goool" are not the same message. */
+function repeatKey(text: string): string {
+  return normalizeForModeration(text).replace(/[^a-z]/g, "");
 }
 
 export type ModerationReason = "profanity" | "link" | "contact" | "shouting" | "repeated";
@@ -136,8 +161,8 @@ export function moderateMessage(
     letters !== letters.toLowerCase()
   )
     return "shouting";
-  const key = squash(normalizeForModeration(text));
-  if (key && previous.some((p) => squash(normalizeForModeration(p)) === key)) return "repeated";
+  const key = repeatKey(text);
+  if (key && previous.some((p) => repeatKey(p) === key)) return "repeated";
   return null;
 }
 

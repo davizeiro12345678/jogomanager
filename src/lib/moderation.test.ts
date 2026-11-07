@@ -22,8 +22,24 @@ describe("chat moderation", () => {
       "computador",
       "o Palmeiras condenou o lance",
       "Pedro marcou",
+      "A Nigéria vai ganhar",
+      "o Níger jogou bem",
+      "Qual a cor nova do uniforme?",
+      "vou comer daqui a pouco",
+      "o técnico pode retardar a saída de bola",
     ])
       expect(containsProfanity(text)).toBe(false);
+  });
+
+  it("still catches glued and split offensive spellings", () => {
+    for (const text of ["seucaralho", "vsfdcaralho", "que otarios", "filhodaputa"])
+      expect(containsProfanity(text)).toBe(true);
+  });
+
+  it("does not treat goal reactions with extra letters as repeats", () => {
+    expect(moderateMessage("gol", ["goool", "boa"])).toBeNull();
+    expect(moderateMessage("kkk", ["kkkkk"])).toBeNull();
+    expect(moderateMessage("gol", ["GOL", "boa"])).toBe("repeated");
   });
 
   it("blocks links, contacts, shouting and repeats", () => {
