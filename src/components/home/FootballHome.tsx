@@ -224,9 +224,6 @@ export function FootballHome() {
   const active = SYSTEMS[system]!;
   return (
     <main className="football-home">
-      <a href="#home-content" className="home-skip">
-        Ir para o conteúdo
-      </a>
       <header className="home-nav">
         <Link to="/" className="home-brand" aria-label="jogomanager — início">
           <img
@@ -275,7 +272,7 @@ export function FootballHome() {
           </nav>
         ) : null}
       </header>
-      <section id="home-content" className="home-hero" aria-labelledby="home-title">
+      <section id="home-content" className="home-hero" aria-labelledby="home-title" tabIndex={-1}>
         <picture>
           <source
             media="(max-width: 640px)"

@@ -1,13 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ConsentBanner } from "@/components/privacy/ConsentBanner";
-import {
-  Outlet,
-  Link,
-  useRouteContext,
-  useRouter,
-  useLocation,
-  Scripts,
-} from "@tanstack/react-router";
+import { Outlet, useRouteContext, useRouter, useLocation, Scripts } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { I18nProvider, useT } from "../i18n/provider";
@@ -18,77 +11,14 @@ import {
 } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
 import { RouteHeadContent } from "@/components/RouteHeadContent";
+import { readConsent } from "@/lib/consent";
+
+let analyticsModule: Promise<typeof import("../lib/analytics")> | undefined;
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
 const AccessibilitySettings = lazy(
   () => import("@/components/accessibility/AccessibilitySettings"),
 );
-
-function PageFailure({
-  title,
-  message,
-  children,
-}: {
-  title: string;
-  message: string;
-  children?: ReactNode;
-}) {
-  return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {children}
-          <Link
-            to="/"
-            className="inline-flex min-h-11 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent"
-          >
-            Voltar ao início
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-export function NotFoundComponent() {
-  return (
-    <PageFailure
-      title="Página não encontrada"
-      message="Esta página mudou de endereço ou foi removida."
-    />
-  );
-}
-
-export function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
-  const router = useRouter();
-  useEffect(() => {
-    void import("../lib/lovable-error-reporting")
-      .then(({ reportLovableError }) =>
-        reportLovableError(error, { boundary: "tanstack_root_error_component" }),
-      )
-      .catch(() => undefined);
-  }, [error]);
-
-  return (
-    <PageFailure
-      title="Não foi possível carregar esta página"
-      message="Tente carregar novamente ou volte ao início."
-    >
-      <button
-        type="button"
-        onClick={() => {
-          void router.invalidate();
-          reset();
-        }}
-        className="min-h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
-      >
-        Tentar novamente
-      </button>
-    </PageFailure>
-  );
-}
 
 export function RootShell({ children }: { children: ReactNode }) {
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -125,7 +55,15 @@ export function RootComponent() {
   useEffect(() => {
     // Estatísticas de uso não podem competir com a primeira pintura: só sobem
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
-    const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
+    const start = () => {
+      if (!analyticsModule && !readConsent().analytics) return;
+      analyticsModule ??= import("../lib/analytics");
+      void analyticsModule
+        .then((module) => module.initAnalytics())
+        .catch(() => {
+          analyticsModule = undefined;
+        });
+    };
     window.addEventListener("consent-changed", start);
     const idle = typeof window.requestIdleCallback === "function";
     const handle = idle
@@ -143,7 +81,6 @@ export function RootComponent() {
       <I18nProvider>
         <AccessibilityProvider>
           <RootReadingControls pathname={pathname} />
-          <SkipContentLink />
           <div id="conteudo" tabIndex={-1}>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
@@ -156,13 +93,6 @@ export function RootComponent() {
   );
 }
 
-function SkipContentLink() {
-  return (
-    <a href="#conteudo" className="skip-to-content">
-      {useT().t("common.skip")}
-    </a>
-  );
-}
 function RootReadingControls({ pathname }: { pathname: string }) {
   const { lang, t } = useT();
   const router = useRouter();
@@ -208,13 +138,20 @@ function RootReadingControls({ pathname }: { pathname: string }) {
       cancelAnimationFrame(frame);
     };
   }, [router]);
-  return pathname === "/" ? (
-    <div className="public-reading-controls">
-      <Suspense fallback={null}>
-        <AccessibilitySettings />
-      </Suspense>
-    </div>
-  ) : null;
+  return (
+    <>
+      <a href={pathname === "/" ? "#home-content" : "#conteudo"} className="skip-to-content">
+        {t("common.skip")}
+      </a>
+      {pathname === "/" ? (
+        <div className="public-reading-controls">
+          <Suspense fallback={null}>
+            <AccessibilitySettings />
+          </Suspense>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 const LazyToaster = lazy(() =>

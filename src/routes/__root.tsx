@@ -1,11 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext } from "@tanstack/react-router";
-import {
-  NotFoundComponent,
-  ErrorComponent,
-  RootShell,
-  RootComponent,
-} from "@/components/RootLayout";
+import { createRootRouteWithContext, lazyRouteComponent } from "@tanstack/react-router";
+import { RootShell, RootComponent } from "@/components/RootLayout";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
 import homeCss from "../public-home-styles.css?url";
@@ -68,6 +63,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
   shellComponent: RootShell,
   component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  notFoundComponent: lazyRouteComponent(
+    () => import("@/components/RootFailure"),
+    "NotFoundComponent",
+  ),
+  errorComponent: lazyRouteComponent(() => import("@/components/RootFailure"), "ErrorComponent"),
 });

@@ -95,14 +95,17 @@ export function loadOfficialAssets(): Promise<void> {
       const cached = await readCache();
       if (cached) cache = cached;
       else {
-        // Isolated/local crest rendering never initializes the server runtime.
-        const { getOfficialAssets } = await import("./football.functions");
-        const data = await getOfficialAssets();
-        if (data && (Object.keys(data.crests).length || Object.keys(data.kits).length)) {
-          cache = data;
+        // These URLs are public. Fetch them without the authenticated RPC middleware.
+        const response = await fetch("/api/public/football-assets", { credentials: "omit" });
+        if (!response.ok) throw new Error("Catálogo de escudos indisponível.");
+        const data: Partial<OfficialAssets> | null = await response.json();
+        if (!data || !stringRecord(data.crests) || !stringRecord(data.kits))
+          throw new Error("Catálogo de escudos inválido.");
+        if (Object.keys(data.crests).length || Object.keys(data.kits).length) {
+          cache = { crests: data.crests, kits: data.kits };
           // Persist the structured catalogue asynchronously. Synchronous JSON +
           // localStorage writes stalled the selection UI on slower devices.
-          void set(CACHE_KEY, { at: Date.now(), data }).catch((error) => {
+          void set(CACHE_KEY, { at: Date.now(), data: cache }).catch((error) => {
             reportCacheError(error, "write");
           });
         }
