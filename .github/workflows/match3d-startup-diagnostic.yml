@@ -39,7 +39,9 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          # Baseline dependencies must come from its own lockfile. Reusing HEAD
+          # node_modules can break the historical build for unrelated upgrades.
+          (cd "$RUNNER_TEMP/startup-base" && npm ci --no-audit --no-fund)
       - name: Profile baseline then candidate with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright

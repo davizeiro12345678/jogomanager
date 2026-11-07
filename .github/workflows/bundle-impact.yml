@@ -61,12 +61,24 @@ jobs:
           # keep their own source files and identical installed dependencies.
           cp "$RUNNER_TEMP/bundle-package.json" package.json
           cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
+          # The old global "entities" alias breaks nested entities/decode with the
+          # candidate lockfile. Normalize only that resolver compatibility line;
+          # no performance or application logic is changed in the baseline.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("vite.config.ts")
+          src = p.read_text()
+          line = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
+          if src.count(line) != 1:
+              raise SystemExit("Baseline entities alias contract changed")
+          p.write_text(src.replace(line, "", 1))
+          PY
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
-          git restore scripts/bundle-report.mjs package.json package-lock.json
+          git restore scripts/bundle-report.mjs package.json package-lock.json vite.config.ts
       - name: Build proposed commit on the same runner
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}

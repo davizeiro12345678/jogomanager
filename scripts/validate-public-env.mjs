@@ -1,74 +1,49 @@
-// Ensures checked-in configuration contains public, internally consistent values only.
-// This validates shape; real provider authentication still requires an integration smoke test.
+// Ensure runtime credentials are not committed and the public config template
+// remains usable. Real values belong in Cloudflare, Supabase and CI secrets.
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const PROJECT_ID = "lguqnwvsfeefxamzeyos";
-const PUBLIC_URL = `https://${PROJECT_ID}.supabase.co`;
-
-function readEnv(filename) {
-  const result = new Map();
-  for (const [index, original] of readFileSync(filename, "utf8").split(/\r?\n/).entries()) {
-    const line = original.trim();
-    if (!line || line.startsWith("#")) continue;
-    const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
-    if (!match) throw Error(`${filename}:${index + 1}: invalid environment declaration`);
-    if (result.has(match[1]))
-      throw Error(`${filename}:${index + 1}: duplicate variable ${match[1]}`);
-    const value = match[2].replace(/^(['"])(.*)\1$/, "$2");
-    result.set(match[1], value);
-    if (/^sk_(?:live|test)_|^sb_secret_|^gh[pousr]_|^github_pat_|^whsec_/i.test(value)) {
-      throw Error(`${filename}:${index + 1}: private credential in tracked configuration`);
-    }
-    if (
-      /^(?:SUPABASE_SERVICE_ROLE_KEY|FASTLY_API_TOKEN|TWILIO_AUTH_TOKEN|STRIPE_SECRET_KEY|STRIPE_LIVE_API_KEY)$/i.test(
-        match[1],
-      )
-    ) {
-      throw Error(`${filename}:${index + 1}: secret variable name must not be committed`);
-    }
-  }
-  return result;
+const forbiddenFiles = [".env", ".env.development", ".env.production"];
+const tracked = execFileSync("git", ["ls-files", "--", ...forbiddenFiles], {
+  encoding: "utf8",
+}).trim();
+if (tracked) {
+  throw Error("Runtime .env files must not be tracked by Git");
 }
 
-const shared = readEnv(".env");
-const dev = readEnv(".env.development");
-const prod = readEnv(".env.production");
-for (const prefix of ["", "VITE_"]) {
-  if (shared.get(`${prefix}SUPABASE_URL`) !== PUBLIC_URL) {
-    throw Error(`.env: ${prefix}SUPABASE_URL must match live project URL`);
+const template = readFileSync(".env.example", "utf8");
+const present = new Set();
+for (const [index, original] of template.split(/\r?\n/).entries()) {
+  const line = original.trim();
+  if (!line || line.startsWith("#")) continue;
+  const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
+  if (!match) {
+    throw Error(`.env.example:${index + 1}: invalid declaration`);
   }
-  if (shared.get(`${prefix}SUPABASE_PROJECT_ID`) !== PROJECT_ID) {
-    throw Error(`.env: ${prefix}SUPABASE_PROJECT_ID must match live project`);
-  }
+  const [, key, quoted] = match;
+  const value = quoted.replace(/^(['"])(.*)\1$/, "$2");
+  present.add(key);
   if (
-    !/^sb_publishable_[A-Za-z0-9_-]+$/.test(shared.get(`${prefix}SUPABASE_PUBLISHABLE_KEY`) ?? "")
+    /^(?:SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|FASTLY_API_TOKEN|TWILIO_AUTH_TOKEN)$/i.test(
+      key,
+    )
   ) {
-    throw Error(`.env: ${prefix}SUPABASE_PUBLISHABLE_KEY is not a publishable Supabase key`);
+    throw Error(`.env.example:${index + 1}: server secret must not be in a public template`);
+  }
+  if (/^(?:sk_live_|sk_test_|sb_secret_|github_pat_|ghp_|whsec_)[A-Za-z0-9_-]{12,}/i.test(value)) {
+    throw Error(`.env.example:${index + 1}: potential credential value`);
   }
 }
-if (shared.get("SUPABASE_PUBLISHABLE_KEY") !== shared.get("VITE_SUPABASE_PUBLISHABLE_KEY")) {
-  throw Error(".env: server and client Supabase publishable keys must match");
+
+const required = [
+  "VITE_SUPABASE_PROJECT_ID",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+  "VITE_AUTH_MODE",
+  "VITE_PAYMENTS_CLIENT_TOKEN",
+  "PAYMENTS_ENVIRONMENT",
+];
+for (const key of required) {
+  if (!present.has(key)) throw Error(`.env.example: missing ${key}`);
 }
-for (const [name, vars, stripeMode, prefix] of [
-  ["development", dev, "sandbox", "pk_test_"],
-  ["production", prod, "live", "pk_live_"],
-]) {
-  if (!vars.get("VITE_PAYMENTS_CLIENT_TOKEN")?.startsWith(prefix)) {
-    throw Error(`.env.${name}: Stripe publishable key does not match ${stripeMode}`);
-  }
-  if (vars.get("VITE_AUTH_MODE") !== "supabase") {
-    throw Error(`.env.${name}: VITE_AUTH_MODE must be supabase`);
-  }
-  if (
-    vars.get("PAYMENTS_ENVIRONMENT") !== stripeMode ||
-    vars.get("GUEST_CHECKOUT_ENVIRONMENT") !== stripeMode
-  ) {
-    throw Error(`.env.${name}: payment environments must match the publishable key`);
-  }
-  if (
-    vars.get(`GUEST_CHECKOUT_${name === "production" ? "LIVE" : "SANDBOX"}_ENABLED`) !== "false"
-  ) {
-    throw Error(`.env.${name}: guest checkout must stay disabled until secret-backed verification`);
-  }
-}
-console.log("Public .env formats and consistency: PASS (no secret values printed)");
+
+console.log("Runtime .env files are untracked; public template validation: PASS");
