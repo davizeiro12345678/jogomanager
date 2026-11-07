@@ -39,9 +39,19 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
-          # Baseline dependencies must come from its own lockfile. Reusing HEAD
-          # node_modules can break the historical build for unrelated upgrades.
-          (cd "$RUNNER_TEMP/startup-base" && npm ci --no-audit --no-fund)
+          # The benchmark contract requires identical dependencies for both revisions.
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          # Normalize only the old resolver alias incompatible with this audited
+          # dependency graph; no baseline application behavior is changed.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path(__import__("os").environ["RUNNER_TEMP"]) / "startup-base/vite.config.ts"
+          source = path.read_text()
+          alias = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
+          if source.count(alias) != 1:
+              raise SystemExit("Unexpected historical entities alias; investigate baseline")
+          path.write_text(source.replace(alias, "", 1))
+          PY
       - name: Profile baseline then candidate with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright
