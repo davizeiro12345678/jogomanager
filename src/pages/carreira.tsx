@@ -18,6 +18,7 @@ import { Cutscene } from "@/components/game/Cutscene";
 
 import { Button } from "@/components/ui/button";
 import { CoachClubOverview } from "@/components/game/coach/CoachClubOverview";
+import { CoachDecisionDesk } from "@/components/game/coach/CoachDecisionDesk";
 import { CoachWeekPlanner } from "@/components/game/coach/CoachWeekPlanner";
 import { CoachLeagueTable } from "@/components/game/coach/CoachLeagueTable";
 import { CoachResults } from "@/components/game/coach/CoachResults";
@@ -38,6 +39,7 @@ import { applyChoiceEffect } from "@/game/choice-effects";
 import { worldFor } from "@/game/career-world";
 
 import { useCareer } from "@/hooks/useCareer";
+import { track } from "@/lib/analytics";
 
 import type { ManagerLook } from "@/game/types";
 
@@ -133,6 +135,7 @@ export function CoachCareerPage() {
   }
 
   const seen = new Set(career.seenScenes ?? []);
+  const weekKey = `${career.clubId}-${career.season}-${career.round}`;
 
   return (
     <GameShell career={career}>
@@ -179,19 +182,23 @@ export function CoachCareerPage() {
           </Button>
         </header>
         <nav className="coach-office-nav" aria-label="Áreas da carreira">
+          <a href="#coach-decisions">Decisões</a>
           <a href="#coach-week">Trabalho da semana</a>
           <a href="#coach-club">Situação do clube</a>
           <a href="#coach-table">Classificação</a>
           <a href="#coach-story">Relações e imprensa</a>
           <a href="#coach-results">Resultados</a>
         </nav>
-        <CoachWeekPlanner
-          key={`${career.clubId}-${career.season}-${career.round}`}
+        <CoachDecisionDesk
+          key={weekKey}
           career={career}
           busy={busy}
-          error={weekError}
-          onRun={run}
+          onCommit={(next) => {
+            update(next);
+            track("decisao_bastidor_confirmada");
+          }}
         />
+        <CoachWeekPlanner key={weekKey} career={career} busy={busy} error={weekError} onRun={run} />
         <CoachClubOverview career={career} squad={squad} />
         <CoachLeagueTable career={career} />
         <section

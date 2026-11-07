@@ -23,6 +23,7 @@ export default function CareerTutorialDialog({
   careerKey: string;
   career: CareerState;
 }) {
+  const [onlyPending, setOnlyPending] = useState(false);
   const [learned, setLearned] = useState<Set<string>>(() => new Set());
   const storageKey = `jm.tutorial:${careerKey}`;
   useEffect(() => {
@@ -43,6 +44,13 @@ export default function CareerTutorialDialog({
   const practiced = practicedCareerLessons(career);
   const completed = new Set([...learned, ...practiced]);
   const progress = tutorialProgress(completed);
+  const chapters = TUTORIAL_CHAPTERS.map((chapter, index) => ({
+    ...chapter,
+    index,
+    reviewed: chapter.lessons.filter(({ id }) => completed.has(id)).length,
+    total: chapter.lessons.length,
+    lessons: onlyPending ? chapter.lessons.filter(({ id }) => !completed.has(id)) : chapter.lessons,
+  })).filter(({ lessons }) => lessons.length > 0);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="career-guide max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain sm:max-w-2xl">
@@ -86,17 +94,31 @@ export default function CareerTutorialDialog({
             Todas as lições foram concluídas ou marcadas. Você pode rever qualquer capítulo.
           </p>
         )}
-        {TUTORIAL_CHAPTERS.map((chapter, index) => (
+        <label className="career-guide-filter">
+          <input
+            type="checkbox"
+            checked={onlyPending}
+            onChange={(event) => setOnlyPending(event.target.checked)}
+          />
+          Mostrar apenas lições pendentes
+        </label>
+        {chapters.length === 0 && onlyPending ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Nenhuma lição pendente.
+          </p>
+        ) : null}
+        {chapters.map((chapter) => (
           <details
             key={chapter.title}
             open={chapter.lessons.some((lesson) => lesson.id === progress.next?.id)}
-            className="rounded-lg border border-border px-3 py-1 sm:px-4"
+            className="career-guide-chapter"
           >
-            <summary className="min-h-11 cursor-pointer py-2.5 font-display text-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
-              {index + 1}. {chapter.title}{" "}
-              <span className="text-sm text-muted-foreground">
-                ({chapter.lessons.filter((lesson) => completed.has(lesson.id)).length}/
-                {chapter.lessons.length})
+            <summary className="career-guide-chapter-heading">
+              <span>
+                {chapter.index + 1}. {chapter.title}
+              </span>
+              <span className="career-guide-chapter-count">
+                {chapter.reviewed}/{chapter.total}
               </span>
             </summary>
             <ul className="mt-2 space-y-4 pb-3">

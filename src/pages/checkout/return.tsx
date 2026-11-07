@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { CheckCircle, Coins, Loader2, XCircle } from "lucide-react";
 
@@ -14,8 +15,6 @@ import { claimCheckoutSession } from "@/lib/checkout-claim.functions";
 
 import { checkoutErrorMessage, withPaymentTimeout } from "@/lib/embedded-checkout";
 
-import { getPurchases } from "@/lib/purchases.functions";
-
 import { track } from "@/lib/analytics";
 import { getRouteApi } from "@tanstack/react-router";
 const Route = getRouteApi("/checkout/return");
@@ -25,7 +24,7 @@ const MAX_TRIES = 15;
 export function CheckoutReturn() {
   const { session_id: sessionId } = Route.useSearch();
   const userId = useAuthUserId();
-  const fetchPurchases = useServerFn(getPurchases);
+  const queryClient = useQueryClient();
   const claimSession = useServerFn(claimCheckoutSession);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">("loading");
@@ -68,32 +67,26 @@ export function CheckoutReturn() {
           } catch {
             // Storage blocked: still record this confirmation.
           }
-          if (!seen)
-            window.__lovableEvents?.track?.("project.store_purchase_completed", {
-              product_key: result.productKey,
-              amount_cents: result.amountCents,
-              currency: result.currency,
-              purchase_mode: "account",
-              kind: result.kind === "subscription" ? "subscription" : "one_time",
-            });
+          if (!seen) {
+            try {
+              window.__lovableEvents?.track?.("project.store_purchase_completed", {
+                product_key: result.productKey,
+                amount_cents: result.amountCents,
+                currency: result.currency,
+                purchase_mode: "account",
+                kind: result.kind === "subscription" ? "subscription" : "one_time",
+              });
+            } catch {
+              // Analytics cannot change the outcome of verified delivery.
+            }
+            track("compra_concluida", { produto: result.productKey });
+          }
         }
-        if (result.status === "delivered" && result.kind === "subscription") {
-          setSubscriptionDelivered(true);
+        if (result.status === "delivered") {
+          void queryClient.invalidateQueries({ queryKey: ["purchases", userId] });
+          setCoins(result.coins ?? null);
+          setSubscriptionDelivered(result.kind === "subscription");
           setStatus("delivered");
-          return;
-        }
-        const data = await withPaymentTimeout(fetchPurchases());
-        if (!alive) return;
-        setCoins(data.coins);
-        const purchase = data.purchases.find((item) => item.reference === sessionId);
-        if (purchase?.status === "completed") {
-          setStatus("delivered");
-          track("compra_concluida", { produto: purchase.productKey });
-          return;
-        }
-        if (purchase?.status === "failed") {
-          setMessage(purchase.error || "Não foi possível concluir esta compra.");
-          setStatus("error");
           return;
         }
         tries += 1;
@@ -114,7 +107,7 @@ export function CheckoutReturn() {
       alive = false;
       clearTimeout(timer);
     };
-  }, [attempt, userId, sessionId, fetchPurchases, claimSession]);
+  }, [attempt, userId, sessionId, claimSession, queryClient]);
 
   const next = sessionId
     ? `/checkout/return?session_id=${encodeURIComponent(sessionId)}`
@@ -138,7 +131,7 @@ export function CheckoutReturn() {
           </>
         ) : userId === undefined || status === "loading" ? (
           <>
-            <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-primary" />
+            <Loader2 className="mx-auto mb-4 h-10 w-10 motion-safe:animate-spin text-primary" />
             <h1 className="font-display text-xl uppercase tracking-wide">Confirmando…</h1>
             <p role="status" className="mt-2 text-sm text-muted-foreground">
               Verificando a confirmação do pagamento e a entrega na sua conta.
@@ -152,11 +145,13 @@ export function CheckoutReturn() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Passe de temporada ativo na sua conta.
               </p>
-            ) : (
+            ) : coins !== null ? (
               <p className="mt-2 flex items-center justify-center gap-1 text-sm text-muted-foreground">
-                <Coins size={16} className="text-primary" />
-                Saldo agora: <strong className="text-foreground">{coins ?? 0}</strong> moedas
+                <Coins size={16} className="text-primary" aria-hidden="true" />
+                Saldo agora: <strong className="text-foreground">{coins}</strong> moedas
               </p>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Compra entregue na sua conta.</p>
             )}
           </>
         ) : (

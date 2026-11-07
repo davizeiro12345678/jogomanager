@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useServerFn } from "@tanstack/react-start";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 
@@ -31,6 +31,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { withPaymentTimeout } from "@/lib/embedded-checkout";
+
+const PURCHASE_FILTERS = {
+  all: "Todas",
+  pending: "Em processamento",
+  completed: "Entregues",
+  failed: "Não concluídas",
+  review: "Reembolsos em revisão",
+} as const;
 
 const PRODUCT_NAMES: Record<string, string> = {
   coins_starter: "Punhado de moedas",
@@ -112,12 +120,19 @@ export function ComprasPage() {
   const signedIn = userId === undefined ? null : userId !== null;
   const { career } = useCareer();
   const fetchPurchases = useServerFn(getPurchases);
+  const [filter, setFilter] = useState<keyof typeof PURCHASE_FILTERS>("all");
 
   const query = useQuery({
     queryKey: ["purchases", userId],
     enabled: signedIn === true,
     queryFn: () => withPaymentTimeout(fetchPurchases()),
-    refetchInterval: (q) => ((q.state.data?.pendingCount ?? 0) > 0 ? 5000 : false),
+    staleTime: 20_000,
+    refetchInterval: ({ state }) =>
+      state.data?.purchases.some(
+        (row) => row.status === "pending" && Date.now() - Date.parse(row.createdAt) < 5 * 60_000,
+      )
+        ? 15_000
+        : false,
   });
 
   useEffect(() => {
@@ -125,6 +140,14 @@ export function ComprasPage() {
   }, [signedIn]);
 
   const data = query.data;
+  const visible =
+    data?.purchases.filter(
+      (purchase) =>
+        filter === "all" ||
+        (filter === "review"
+          ? purchase.paymentReview === "refund_review"
+          : purchase.status === filter),
+    ) ?? [];
 
   return (
     <GameShell career={career}>
@@ -151,7 +174,7 @@ export function ComprasPage() {
           <div className="mt-6">
             <SkeletonRows rows={4} label="Carregando compras" />
           </div>
-        ) : query.isError ? (
+        ) : query.isError && !data ? (
           <div className="mt-6">
             <ErrorPanel
               hint="Não foi possível carregar suas compras agora."
@@ -163,7 +186,7 @@ export function ComprasPage() {
             <div className="mt-6">
               <StatStrip
                 stats={[
-                  { label: "Total gasto", value: money(data?.totalSpentCents ?? 0) },
+                  { label: "Total no histórico", value: money(data?.totalSpentCents ?? 0) },
                   { label: "Compras entregues", value: String(data?.completedCount ?? 0) },
                   { label: "Pendentes", value: String(data?.pendingCount ?? 0) },
                   { label: "Saldo de moedas", value: String(data?.coins ?? 0) },
@@ -173,35 +196,92 @@ export function ComprasPage() {
 
             {data?.seasonPass ? (
               <p className="mt-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm">
-                Passe de temporada ativo na sua conta.
+                Passe de temporada ativo
+                {data.seasonPassUntil ? (
+                  <>
+                    {" "}
+                    até <time dateTime={data.seasonPassUntil}>{when(data.seasonPassUntil)}</time>
+                  </>
+                ) : null}
+                .
               </p>
             ) : null}
 
             {(data?.pendingCount ?? 0) > 0 && (
               <p className="mt-4 rounded-xl border border-border/60 surface-card px-4 py-3 text-xs text-muted-foreground">
-                Uma compra está sendo confirmada pelo banco. A entrega costuma levar poucos segundos
-                — esta página atualiza sozinha.
+                O pagamento ou a entrega ainda está em processamento. Compras recentes são
+                verificadas automaticamente. Você também pode atualizar agora.
               </p>
             )}
 
-            <h2 className="mt-8 font-display text-sm uppercase tracking-wide">Histórico</h2>
-            {data && data.purchases.length > 0 ? (
-              <ul className="mt-3 flex flex-col gap-2">
-                {data.purchases.map((p) => (
-                  <PurchaseLine key={p.id} purchase={p} />
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                title="Nenhuma compra neste histórico"
-                hint="Veja os pacotes e cosméticos disponíveis para seu clube."
-                action={
-                  <Button asChild>
-                    <Link to="/loja">Ver a loja</Link>
-                  </Button>
-                }
-              />
-            )}
+            <section aria-labelledby="purchase-history-title" className="mt-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2
+                    id="purchase-history-title"
+                    className="font-display text-sm uppercase tracking-wide"
+                  >
+                    Histórico
+                  </h2>
+                  <p className="text-sm text-muted-foreground">Até 100 compras recentes.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={query.isFetching}
+                  onClick={() => void query.refetch()}
+                >
+                  {query.isFetching ? "Consultando…" : "Atualizar histórico"}
+                </Button>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <label htmlFor="purchase-filter">Filtrar por situação</label>
+                <select
+                  id="purchase-filter"
+                  value={filter}
+                  onChange={(event) =>
+                    setFilter(event.target.value as keyof typeof PURCHASE_FILTERS)
+                  }
+                  className="min-h-11 max-w-full rounded-md border border-input bg-background px-3"
+                >
+                  {Object.entries(PURCHASE_FILTERS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-muted-foreground" role="status">
+                  {visible.length} {visible.length === 1 ? "compra exibida" : "compras exibidas"}
+                </p>
+              </div>
+              {query.isRefetchError ? (
+                <p role="alert" className="mt-3 text-sm text-destructive">
+                  A atualização falhou. Exibindo a última consulta concluída.
+                </p>
+              ) : null}
+              {visible.length > 0 ? (
+                <ul className="mt-3 flex flex-col gap-2">
+                  {visible.map((p) => (
+                    <PurchaseLine key={p.id} purchase={p} />
+                  ))}
+                </ul>
+              ) : filter !== "all" && data?.purchases.length ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Nenhuma compra com essa situação.
+                </p>
+              ) : (
+                <EmptyState
+                  title="Nenhuma compra neste histórico"
+                  hint="Veja os pacotes e cosméticos disponíveis para seu clube."
+                  action={
+                    <Button asChild>
+                      <Link to="/loja">Ver a loja</Link>
+                    </Button>
+                  }
+                />
+              )}
+            </section>
           </>
         )}
       </div>

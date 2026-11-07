@@ -16,6 +16,7 @@ export function practicedCareerLessons(
     | "scoutReports"
     | "transferredIn"
     | "financeLedger"
+    | "world"
   >,
 ): Set<string> {
   const lessons = new Set<string>();
@@ -27,6 +28,9 @@ export function practicedCareerLessons(
   if (career.scoutReports.length) lessons.add("scouting");
   if (career.transferredIn?.length) lessons.add("transfers");
   if (career.financeLedger?.length) lessons.add("weekly-budget");
+  if (career.world?.memories.some(({ id }) => id.startsWith("coach-decision:"))) {
+    lessons.add("coach-decisions");
+  }
   return lessons;
 }
 
@@ -167,6 +171,15 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
         exercise:
           "Identifique um titular que precisa descansar para chegar inteiro ao próximo jogo.",
         to: "/cup",
+      },
+      {
+        id: "coach-decisions",
+        title: "Conduza uma decisão de bastidor",
+        instruction:
+          "Abra a mesa de decisões da carreira e compare o efeito de cada resposta na diretoria, no elenco e na torcida.",
+        exercise:
+          "Antes de confirmar, identifique quem ganha com a escolha e quem terá de lidar com o custo dela.",
+        to: "/carreira",
       },
       {
         id: "coach-week",

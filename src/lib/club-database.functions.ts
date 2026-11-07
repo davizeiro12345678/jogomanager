@@ -73,7 +73,7 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
           db
             .from("official_events")
             .select(
-              "source_id,starts_at,home_team_name,away_team_name,home_score,away_score,status",
+              "source_id,starts_at,home_team_name,away_team_name,home_team_source_id,away_team_source_id,home_score,away_score,status",
             )
             .in(side, ids)
             .in("status", ["FT", "AET", "PEN"])
@@ -90,7 +90,13 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
         const unique = [
           ...new Map(
             [...(home.data ?? []), ...(away.data ?? [])]
-              .filter((event) => event.source_id)
+              .filter(
+                (event) =>
+                  event.source_id &&
+                  (!event.source_id.startsWith("af:") ||
+                    !event.home_team_source_id ||
+                    event.home_team_source_id !== event.away_team_source_id),
+              )
               .map((event) => [event.source_id, event]),
           ).values(),
         ];
@@ -101,7 +107,26 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
                 (b.starts_at ?? "").localeCompare(a.starts_at ?? "") ||
                 (a.source_id ?? "").localeCompare(b.source_id ?? ""),
             )
-            .slice(0, 6),
+            .slice(0, 6)
+            .map(
+              ({
+                source_id,
+                starts_at,
+                home_team_name,
+                away_team_name,
+                home_score,
+                away_score,
+                status,
+              }) => ({
+                source_id,
+                starts_at,
+                home_team_name,
+                away_team_name,
+                home_score,
+                away_score,
+                status,
+              }),
+            ),
         );
       }
       return {

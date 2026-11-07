@@ -8,6 +8,7 @@ import {
   footballProviderRateError,
   footballWindowBudget,
   loadFootballJobPage,
+  validateFootballPage,
 } from "../supabase/functions/_shared/football-window.mjs";
 
 // Execute the deployed handlers with isolated Deno bindings and fully mocked
@@ -412,4 +413,41 @@ test("API-Football cache persistence failure prevents returning a page for catal
     returned = true;
   }, /database_cache_failure/);
   assert.equal(returned, false);
+});
+
+test("API-Football rejects corrupt pages and filters self-opponents before materialization", () => {
+  const job = { kind: "fixtures", path: "/fixtures?league=71&season=2026" };
+  const fixture = {
+    fixture: { id: 100 },
+    league: { id: 71, season: 2026 },
+    teams: { home: { id: 1 }, away: { id: 2 } },
+  };
+  assert.equal(validateFootballPage({ response: [fixture] }, job).response.length, 1);
+  assert.deepEqual(validateFootballPage({ response: [fixture, fixture] }, job).response, [fixture]);
+  assert.throws(
+    () =>
+      validateFootballPage({ response: [{ ...fixture, league: { id: 72, season: 2026 } }] }, job),
+    /invalid_fixture/,
+  );
+  assert.deepEqual(
+    validateFootballPage(
+      {
+        response: [
+          fixture,
+          { ...fixture, fixture: { id: 102 }, teams: { home: { id: 1 }, away: { id: 1 } } },
+          { ...fixture, fixture: { id: 103 }, teams: { home: { id: 1 }, away: { id: null } } },
+        ],
+      },
+      job,
+    ).response,
+    [fixture],
+  );
+  assert.throws(
+    () =>
+      validateFootballPage(
+        { response: [fixture] },
+        { kind: "fixture_detail", path: "/fixtures?ids=101" },
+      ),
+    /invalid_fixture/,
+  );
 });

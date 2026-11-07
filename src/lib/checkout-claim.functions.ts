@@ -12,6 +12,7 @@ export type ClaimResult =
       productKey: string | null;
       amountCents: number;
       currency: string;
+      coins?: number;
     }
   | { status: "pending" }
   | { status: "error"; message: string };
@@ -28,7 +29,11 @@ export type ClaimResult =
 export const claimCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { sessionId: string }) => {
-    if (!/^cs_[a-zA-Z0-9_]+$/.test(data.sessionId)) {
+    if (
+      typeof data?.sessionId !== "string" ||
+      data.sessionId.length > 255 ||
+      !/^cs_[a-zA-Z0-9_]+$/.test(data.sessionId)
+    ) {
       throw new Error("Invalid sessionId");
     }
     return data;
@@ -110,14 +115,22 @@ export const claimCheckoutSession = createServerFn({ method: "POST" })
         .eq("reference", session.id)
         .maybeSingle();
       if (purchaseError) throw new Error("Não foi possível consultar a entrega da compra.");
-      return purchase?.status === "completed"
-        ? {
-            status: "delivered",
-            productKey: purchase.product_key,
-            amountCents: purchase.amount_cents,
-            currency: (owner.currency ?? session.currency ?? "").toUpperCase(),
-          }
-        : { status: "pending" };
+      if (purchase?.status === "failed") {
+        return { status: "error", message: "Não foi possível concluir a entrega desta compra." };
+      }
+      if (purchase?.status !== "completed") return { status: "pending" };
+      const { data: wallet } = await context.supabase
+        .from("user_wallet")
+        .select("coins")
+        .eq("user_id", context.userId)
+        .maybeSingle();
+      return {
+        status: "delivered",
+        productKey: purchase.product_key,
+        amountCents: purchase.amount_cents,
+        currency: (owner.currency ?? session.currency ?? "").toUpperCase(),
+        ...(wallet ? { coins: wallet.coins } : {}),
+      };
     } catch (err) {
       console.error("claimCheckoutSession falhou", err);
       return {

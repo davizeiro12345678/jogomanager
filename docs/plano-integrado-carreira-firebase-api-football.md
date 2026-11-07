@@ -66,3 +66,11 @@ A migração 0057 conserva as reservas já registradas e aplica 445.000 por dia 
 - O teto por invocação é 40 chamadas por lane, com espaçamento de pelo menos 55 ms e prazo de 45 segundos. Em 16 lanes, o teto teórico é 640 por invocação. Alcançar 445.000 por dia exige em média 309,03 chamadas por minuto no conjunto de clientes. Meça a taxa observada em produção após o canário.
 - Uma resposta 429 com saldo diário confirmado em zero pausa a fila até a próxima virada UTC. Outros 429 interrompem a janela atual e preservam o trabalho para nova tentativa.
 - Antes de aplicar, confirme o projeto, a migração ainda pendente e o limite retornado pelo provedor. Depois, compare o uso registrado, os recibos, o tamanho de `api_football_data` e do banco, os erros, a latência de gravação e a saúde do disco. Para recuar o worker, configure novamente três lanes. A reversão de quota deve ser uma migração de avanço que preserve os contadores.
+
+## Bastidores, compras e qualidade dos dados
+
+- A mesa de decisões apresenta situações de diretoria, comissão técnica, vestiário e torcida. Cada rodada aceita uma escolha por clube. A meta de somar pontos é revisada após a partida e seu resultado fica na memória da carreira.
+- O histórico oferece filtros, atualização manual e consulta automática espaçada para pagamentos recentes. O retorno consulta a entrega pelo identificador da sessão na conta autenticada. As permissões de entrega continuam no webhook.
+- Uma amostra de 16.870 partidas da API-Football encontrou dois registros com o mesmo clube nos dois lados. A migração 0058 protege novas gravações e preserva o histórico para correção. O catálogo descarta esses jogos do painel do clube e os importadores filtram registros com oponentes inválidos.
+- Na amostra operacional de 7 de novembro, havia 9 conexões de cliente para o limite de 90, nenhuma espera por bloqueio e nenhum alerta no assessor de saúde. A atualização dos agregados de lesões rodou 24 vezes em 24 horas, com média de 31,22 s e máximo de 33,48 s. A leitura usa o índice existente. Antes de redimensionar, confirme CPU, memória, IOPS e latência em janelas de importação e de pico.
+- O projeto PostHog conectado registrou 393 eventos do domínio em 14 dias. A configuração mantém o consentimento revogável, remove parâmetros e fragmentos das URLs e evita carregar recursos de coleta que o jogo não usa.

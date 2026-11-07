@@ -323,3 +323,130 @@
     outline: 2px solid Highlight;
   }
 }
+
+.coach-decisions {
+  margin-block-start: 1rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--primary);
+  border-radius: 0.9rem;
+  background: var(--card);
+}
+
+.coach-decisions h2,
+.coach-decision-receipt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.coach-decisions h3 {
+  margin-block: 0.4rem;
+  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+  font-weight: 650;
+}
+
+.coach-decision-kicker {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.coach-decision-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.75rem;
+  min-inline-size: 0;
+  margin-block: 1rem;
+}
+
+.coach-decision-options legend {
+  padding-block-end: 0.6rem;
+  font-weight: 600;
+}
+
+.coach-decision-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-block-size: 3rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.coach-decision-option :is(strong, span) {
+  display: block;
+}
+
+.coach-decision-option span span,
+.coach-decision-footer p {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.coach-decision-option input {
+  margin-block-start: 0.2rem;
+  accent-color: var(--primary);
+}
+
+.coach-decision-option:has(:checked) {
+  border-color: var(--primary);
+  background: var(--career-accent-soft);
+}
+
+.coach-decision-option:focus-within {
+  outline: 2px solid var(--career-focus);
+  outline-offset: 3px;
+}
+
+.coach-decision-options:disabled .coach-decision-option {
+  cursor: default;
+}
+
+.coach-decision-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.coach-decision-footer button {
+  min-height: 44px;
+  white-space: normal;
+}
+
+.coach-decision-receipt strong {
+  display: block;
+}
+
+@media (forced-colors: active) {
+  .coach-decision-option:has(:checked),
+  .coach-decision-option:focus-within {
+    border-color: Highlight;
+    outline-color: Highlight;
+  }
+}
+
+.coach-office-nav {
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  padding: 0.35rem 0.15rem 0.55rem;
+  overflow: visible;
+}
+
+.coach-office-nav a {
+  min-height: 44px;
+  max-width: 100%;
+  padding-inline: 0.6rem;
+  white-space: normal;
+  border-radius: 0.4rem;
+}
+
+.coach-office-nav a:hover,
+.coach-office-nav a:focus-visible {
+  background: var(--career-accent-soft);
+}

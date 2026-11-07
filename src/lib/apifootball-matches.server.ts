@@ -36,7 +36,16 @@ export async function fixturesFor(id: string, season: string) {
   // API-Football can supply null venue/score objects for unplayed fixtures.
   // One incomplete match must not abort a complete league-season import.
   const mapped = list
-    .filter((f) => f?.fixture?.id && f.fixture.date && f?.teams?.home?.id && f?.teams?.away?.id)
+    .filter(
+      (f) =>
+        f?.fixture?.id &&
+        f.fixture.date &&
+        f?.teams?.home?.id &&
+        f?.teams?.away?.id &&
+        f.teams.home.id !== f.teams.away.id &&
+        (f.league?.id == null || String(f.league.id) === id) &&
+        (f.league?.season == null || String(f.league.season) === season),
+    )
     .map((f) => ({
       source_id: `af:${f.fixture.id}`,
       league_source_id: `af:${id}`,

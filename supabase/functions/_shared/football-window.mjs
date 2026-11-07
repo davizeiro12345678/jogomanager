@@ -35,6 +35,30 @@ export function validateFootballPage(body, job) {
       body.paging.total < expected)
   )
     throw new Error("provider_page_mismatch");
+  if (job.kind === "fixtures" || job.kind === "fixture_detail") {
+    const parameters = new URL(job.path, "https://provider.invalid").searchParams;
+    const league = parameters.get("league");
+    const season = parameters.get("season");
+    const requestedIds = new Set(parameters.get("ids")?.split("-") ?? []);
+    const validRows = new Map();
+    const validId = (value) => Number.isSafeInteger(value) && value > 0;
+    for (const row of body.response) {
+      const id = row?.fixture?.id;
+      const home = row?.teams?.home?.id;
+      const away = row?.teams?.away?.id;
+      if (
+        !validId(id) ||
+        (league !== null && String(row.league?.id) !== league) ||
+        (season !== null && String(row.league?.season) !== season) ||
+        (requestedIds.size > 0 && !requestedIds.has(String(id)))
+      )
+        throw new Error("provider_invalid_fixture");
+      // Upcoming fixtures can contain placeholders. Keep the valid entries
+      // and deduplicate repeated provider IDs before materialization.
+      if (validId(home) && validId(away) && home !== away) validRows.set(id, row);
+    }
+    return { ...body, response: [...validRows.values()] };
+  }
   return body;
 }
 
@@ -53,7 +77,7 @@ export async function loadFootballJobPage(job, { rpc, beforeRequest, requestPage
 
 export function footballErrorCode(error) {
   const value = error instanceof Error ? error.message : "unknown_error";
-  return /^(football_(daily_|minute_)?quota_wait|provider_(rate_wait|daily_quota|http_[0-9]{3}|reported_error|invalid_list|page_mismatch)|window_budget|database_[A-Za-z0-9_]+|invalid_provider_path)$/.test(
+  return /^(football_(daily_|minute_)?quota_wait|provider_(rate_wait|daily_quota|http_[0-9]{3}|reported_error|invalid_list|page_mismatch|invalid_fixture)|window_budget|database_[A-Za-z0-9_]+|invalid_provider_path)$/.test(
     value,
   )
     ? value

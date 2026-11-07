@@ -7,7 +7,6 @@ export interface PurchaseRow {
   productKey: string;
   amountCents: number;
   status: string;
-  reference: string | null;
   error: string | null;
   createdAt: string;
   paymentReview?: "payment_failed" | "refund_review" | null;
@@ -21,6 +20,7 @@ export interface PurchasesSummary {
   pendingCount: number;
   coins: number;
   seasonPass: boolean;
+  seasonPassUntil: string | null;
 }
 
 /** Histórico de compras do usuário logado (RLS garante que é só o dele). */
@@ -36,7 +36,7 @@ export const getPurchases = createServerFn({ method: "GET" })
         .limit(100),
       context.supabase
         .from("user_wallet")
-        .select("coins, season_pass")
+        .select("coins, season_pass, season_pass_until")
         .eq("user_id", context.userId)
         .maybeSingle(),
     ]);
@@ -64,8 +64,7 @@ export const getPurchases = createServerFn({ method: "GET" })
       productKey: r.product_key,
       amountCents: r.amount_cents,
       status: r.status,
-      reference: r.reference ?? null,
-      error: (r as { error: string | null }).error ?? null,
+      error: r.error ? "A entrega desta compra precisa de revisão." : null,
       createdAt: r.created_at,
       paymentReview: r.reference
         ? ((reviewByReference.get(r.reference)?.review_status as PurchaseRow["paymentReview"]) ??
@@ -76,6 +75,9 @@ export const getPurchases = createServerFn({ method: "GET" })
         : 0,
     }));
 
+    const until = wallet?.season_pass_until;
+    const seasonPassUntil =
+      wallet?.season_pass && until && Date.parse(until) > Date.now() ? until : null;
     return {
       purchases,
       totalSpentCents: purchases
@@ -84,6 +86,7 @@ export const getPurchases = createServerFn({ method: "GET" })
       completedCount: purchases.filter((p) => p.status === "completed").length,
       pendingCount: purchases.filter((p) => p.status === "pending").length,
       coins: wallet?.coins ?? 0,
-      seasonPass: wallet?.season_pass ?? false,
+      seasonPass: seasonPassUntil !== null,
+      seasonPassUntil,
     };
   });

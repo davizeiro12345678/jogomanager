@@ -407,6 +407,13 @@
       "when": 1794063000000,
       "tag": "0057_api_football_custom450_quota",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1794084300000,
+      "tag": "0058_reject_api_football_self_matches",
+      "breakpoints": true
     }
   ]
 }

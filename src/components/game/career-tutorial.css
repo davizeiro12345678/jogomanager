@@ -31,3 +31,37 @@
     outline-color: Highlight;
   }
 }
+
+.career-guide-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-block-size: 44px;
+  font-size: 0.9rem;
+}
+
+.career-guide-filter input {
+  accent-color: var(--primary);
+}
+
+.career-guide-chapter {
+  min-inline-size: 0;
+  padding-inline: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+}
+
+.career-guide-chapter-heading {
+  min-block-size: 44px;
+  padding-block: 0.65rem;
+  font-weight: 650;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.career-guide-chapter-count {
+  margin-inline-start: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
