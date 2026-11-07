@@ -4,8 +4,8 @@
 |---|---|
 | Projeto | `davizeiro12345678/jogomanager` |
 | PR | [#125](https://github.com/davizeiro12345678/jogomanager/pull/125) |
-| Branch/SHA inspecionados | `codex/career-tutorial-css-20261107` / `4fc0edcde9b3968fc1606d087c5ddbadbb016b76` |
-| Situação inicial | PR em draft; build, testes e bundle aprovados; Lighthouse mobile reprovou `/melhores-formacoes` (0,97 vs. mínimo 0,98). |
+| Branch/SHA inspecionados | `codex/career-tutorial-css-20261107` / `8df72c00719a4d46851c3239c28ade6bbd184523` |
+| Situação atual | PR #125 segue aberto em draft. Run `42424654927`: Lighthouse mobile e gate crítico falharam; check `evidence` pendente na última leitura. Build/types/tests, stress de 200 partidas, startup bundle, Supabase replay, contratos 3D e shell Lighthouse passaram. |
 | Método | 14 auditorias independentes; sem alteração em banco/produção e sem teste ofensivo ativo. |
 
 ## 1. Objetivo
@@ -36,7 +36,7 @@ Essa direção visual ainda precisa de confirmação do usuário antes de altera
 5. **Idiomas:** o seletor apresenta 98 locales, mas há somente 24 packs JSON; vários idiomas têm fallback amplo para inglês. Há três chamadas de tradução que podem renderizar a própria chave (`common.loading`, `cinemaStudio.title`, `nav.play`) e conteúdo hardcoded. Nenhum texto será declarado “completo” sem paridade e revisão linguística.
 6. **Preview/configuração:** o browser usa `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`, mas `.env.example` não declara a URL pública, repete `VITE_SUPABASE_PROJECT_ID` e `SUPABASE_URL`, e o validador permite essa configuração incompleta. Os valores não foram lidos nem serão publicados; a chave privilegiada continua exclusivamente server-side.
 7. **Bundle:** o gate de comparação atualmente não admite aumento no total comprimido e nas closures de startup. Um relatório local pré-HEAD somou todos os chunks lazy e não é baseline válido do SHA atual. A identificação da rota `match-*` pode selecionar um módulo auxiliar em vez do Match 3D real; corrigir essa medição antes de usar a comparação.
-8. **Performance:** o CI do SHA `4fc0edc` falhou somente porque `/melhores-formacoes` teve score mobile 0,97; o limite configurado é 0,98 com agregação pessimista. LCP, CLS e TBT continuam como limites independentes e não devem ser desativados.
+8. **Performance:** no SHA `8df72c0`, a auditoria móvel de 15 runs reprovou score e TBT. O pior run da home teve score 88 e TBT 427,8 ms; `/partida-rapida` teve score 79 e TBT 894,4 ms. LCP máximo medido (2.069,4 ms) e CLS máximo (0,005) ficaram dentro dos budgets. O piso agora é 97; o limite TBT 200 ms continua bloqueando corretamente. São medidas de laboratório simulado, não RUM nem performance física.
 9. **C#/.NET e Go:** manter TypeScript como fonte canônica de simulação e servidor; manter Rust/WASM restrito aos kernels isolados existentes. O piloto disponível de Go foi mais lento que TypeScript após a fronteira, e C#/.NET no browser aumenta startup/tamanho. Só reabrir a decisão com benchmark full-match e benefício operacional medido.
 10. **SEO:** o site tem canonical, sitemap/robots e allowlist pública, mas não tem hreflang nem páginas editoriais localizadas. Não há integração DataForSEO/Ubersuggest no repositório. DataForSEO pode ser adicionado server-side após conectar credenciais e aprovar orçamento; a documentação oficial consultada informa que Ubersuggest não oferece API/webhooks, somente uma opção de MCP/OAuth não configurada.
 11. **Risco operacional:** duas árvores de migração aparecem no repositório; a autoridade de qual delas é aplicada precisa ser unificada e verificada em replay descartável. Nenhuma migration será aplicada ao projeto hospedado durante esta fase.
@@ -48,11 +48,11 @@ Essa direção visual ainda precisa de confirmação do usuário antes de altera
 - Corrigir `.env.example`/validador para declarar e exigir os nomes públicos e server-side corretos, rejeitar declarações duplicadas e impedir que `service_role` apareça no bundle público. Não incluir valores de chaves.
 - Reproduzir a validação no preview local com o contrato de configuração conhecido; melhorar o diagnóstico para dizer **qual nome** está ausente, sem imprimir valor.
 - Corrigir o seletor do bundle Match 3D e adicionar fixtures em que chunks auxiliares `match-*` aparecem antes da rota real.
-- Atualizar o budget de bundle solicitado pelo usuário para permitir crescimento total de até **400.000 bytes** por comparação, com escopo/métrica escritos no artefato; manter budgets por rota de startup e medir gzip/Brotli separadamente. A unidade final proposta deve ser confirmada antes de editar o gate (ver perguntas no fim).
-- Ajustar, se aprovado, somente o mínimo do score Lighthouse mobile de **0,98 para 0,97**, porque o run atual reprovou em 0,97. Manter 3 runs, agregação pessimista, accessibility e os limites absolutos de LCP ≤ 2.500 ms, CLS ≤ 0,1 e TBT ≤ 200 ms. A mudança é alteração explícita de política, não supressão de job.
+- Implementado no commit `8df72c0`: permitir acréscimo máximo de **400.000 bytes** em cada representação do JS total agregado (raw, gzip-9 e Brotli-Q6). São visões distintas do mesmo bundle, não parcelas somáveis. Mantêm-se zero aumento nas closures de startup e budgets por rota.
+- Implementado no mesmo commit: ajustar o piso de score Lighthouse mobile de **0,98 para 0,97**. Mantêm-se três runs, agregação pessimista, accessibility e limites independentes de LCP ≤ 2.500 ms, CLS ≤ 0,1 e TBT ≤ 200 ms. A falha de TBT continua bloqueando o CI.
 - Capturar baseline limpo do SHA exato em preview local, em 390×844 e desktop, sem usar screenshot com overlays do inspector.
 
-**Aceite:** testes do validador e do comparador passam; serviço/preview inicia com nomes públicos corretos; bundle público não contém segredo; todos os budgets absolutos continuam ativos; build e CI do SHA final publicados. Nenhum teste neste documento é considerado concluído até executar.
+**Aceite:** testes do validador e do comparador passam; serviço/preview inicia com nomes públicos corretos; bundle público não contém segredo; todos os budgets absolutos continuam ativos; build e CI do SHA final publicados e verdes. No SHA corrente, CI ainda falha em score/TBT de laboratório, portanto a fase não foi aceita.
 
 ### Fase 1 — autoridade multiplayer e ciclo de sala
 
@@ -128,16 +128,30 @@ Não executar “ataque de média intensidade” contra `jogomanager.com` nem ba
 
 ## 7. Evidência inicial e estado
 
-- CI do SHA `4fc0edc`: build/types/tests e bundle passaram; Lighthouse mobile falhou por score 0,97 em `/melhores-formacoes` com mínimo 0,98; o agregador falhou por essa dependência.
+- CI do SHA `4fc0edc`: build/types/tests e bundle passaram; Lighthouse mobile falhou por score 0,97 em `/melhores-formacoes` com mínimo 0,98.
+- CI do SHA `8df72c0` (run `42424654927`): build/types/tests, stress de 200 partidas, startup bundle, benchmark/contratos 3D, auditoria de dependências, Supabase replay, shell Lighthouse e importer passaram. Lighthouse mobile falhou em score/TBT na home e em `/partida-rapida`; o gate crítico falhou. Check `evidence` ainda pendia na última leitura.
 - O relatório de bundle local disponível é anterior ao SHA e mede todos os chunks; serve como pista de diagnóstico, não como baseline aprovado.
 - Auditorias direcionadas já executadas por agentes encontraram testes específicos de multiplayer, carreira e i18n; a suíte completa e CI precisam ser repetidos no SHA final do Node/lockfile declarados pelo projeto.
 - Nenhuma migration, configuração Cloudflare, segredo, ferramenta paga ou endpoint de produção foi alterado nesta fase.
 
 
-## 8. Estado do primeiro lote de estabilização (local)
+## 8. Estado do primeiro lote de estabilização (PR #125)
 
-**Implementado na árvore local, ainda não publicado neste registro:** `.env.example` agora separa `VITE_SUPABASE_URL` da configuração server-side, remove duplicatas e o validador rejeita nomes repetidos e declarações ausentes; o teste correspondente tem quatro casos. O comparador permite no máximo +400.000 bytes por cada métrica total (raw, gzip-9 e Brotli-Q6), mas não permite aumento na inicialização de rotas; a rota Match 3D exclui chunks auxiliares. O score mínimo mobile foi ajustado de 0,98 para 0,97, mantendo acessibilidade, três medições e os limites absolutos LCP/CLS/TBT.
+**Commit `8df72c0` publicado:** `.env.example` separa `VITE_SUPABASE_URL` da configuração server-side e remove duplicatas; o validador rejeita declarações repetidas ou ausentes; comparador permite no máximo +400.000 bytes agregados em raw, gzip-9 e Brotli-Q6, sem aumento no startup; seletor Match 3D ignora chunks auxiliares; piso de score mobile é 0,97.
 
-**Verificado localmente:** lint aprovado; 1.714 testes em 327 arquivos aprovados; 21 testes de performance e quatro de variáveis públicos aprovados; validador do template aprovado; build de produção aprovado; `bundle-report --check` aprovado em diretório temporário; TypeScript aprovado num checkout limpo com `npm ci` do lockfile (`stripe` 23.0.0). O `node_modules` preexistente do sandbox tinha Stripe 23.1.0 e, por isso, gerou dois erros de tipo de `apiVersion`; nenhum arquivo Stripe foi alterado. O gate de performance ainda deve ser confirmado pelo CI remoto no novo SHA.
+**Verificado localmente:** lint; 1.714 testes em 327 arquivos; 21 testes de performance e quatro de ambiente público; build; `bundle-report --check`; TypeScript em checkout limpo com `npm ci` do lockfile (`stripe` 23.0.0). O `node_modules` preexistente tinha Stripe 23.1.0 e gerou dois erros de tipo em `apiVersion`; nenhum arquivo Stripe foi alterado. No CI remoto do SHA, os gates de código, simulação e banco listados acima passaram, mas o Lighthouse mobile falhou em score/TBT e bloqueou release.
 
-**Ainda pendente:** publicar o lote; executar CI remoto e revisar artefatos; verificar as variáveis reais da preview sem exibir/chutar valores; capturar screenshots limpos antes/depois da mudança visual; obter confirmação da direção de redesign antes de alterar a UI; obter URL e autorização de staging para qualquer DAST; conectar DataForSEO/Ubersuggest sem compartilhar tokens no chat.
+**Ainda pendente:** corrigir os outliers de TBT sem afrouxar o limite absoluto; confirmar conclusão do check `evidence`; validar as variáveis reais da preview sem exibir valores; capturar screenshots limpos para mudanças visuais; obter staging e autorização específica para DAST; conectar DataForSEO com credencial server-side, orçamento e necessidade editorial; receber/exportar CSV Ubersuggest (não há API/webhook oficial documentado).
+
+## 9. Pesquisa técnica adicionada ao PR
+
+O [adendo de pesquisa oficial](research-plan-addendum-2026-11-07.md) reúne 8 frentes e 75 referências primárias/oficiais, com critérios de aceite e perguntas que ainda precisam de benchmark/configuração real. A síntese recomenda:
+
+- Autoridade por partida no backend, com Worker para autenticação/validação e um Durable Object por `matchId` para serializar intents; Supabase Realtime permanece transporte/presença, não autoridade de pontuação.
+- Chat enviado/moderado server-side, membership verificada por RLS, canais privados, denúncias preservadas, apelação e ações graduais auditáveis.
+- Para 3D: reuso de recursos, instancing/LOD, separar loop contínuo de telas estáticas e medir frame-time/memória/rede em dispositivos reais antes de elevar qualidade.
+- TypeScript permanece base; Go/WASM, .NET/Blazor ou Rust só entram após prova de ganho completo de CPU versus custo de bytes, startup, memória e manutenção. A pesquisa não encontrou evidência suficiente para decidir adoção de Rust neste adendo.
+- Internacionalização usa apenas locales realmente traduzidos e URLs próprias; canonical/hreflang/sitemap devem vir de inventário comum. DataForSEO seria server-side com orçamento e cache; Ubersuggest entra por CSV manual, pois a fonte oficial consultada não documenta API/webhooks.
+- WCAG 2.2 AA é meta para fluxos completos; Core Web Vitals de campo devem ser avaliados no p75, sem confundir TBT de laboratório com INP de usuários reais.
+
+Esse material é pesquisa e plano, não implementação dessas frentes. Não houve teste ativo no site, alteração de produção ou consumo de créditos DataForSEO/Ubersuggest. A fonte, versão e afirmação de cada referência estão no adendo.
