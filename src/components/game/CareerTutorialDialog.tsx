@@ -15,11 +15,13 @@ import "./career-tutorial.css";
 export default function CareerTutorialDialog({
   open,
   onOpenChange,
+  onReturnFocus,
   careerKey,
   career,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onReturnFocus?: () => boolean;
   careerKey: string;
   career: CareerState;
 }) {
@@ -54,7 +56,12 @@ export default function CareerTutorialDialog({
   })).filter(({ lessons }) => lessons.length > 0);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="career-guide max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain sm:max-w-2xl">
+      <DialogContent
+        className="career-guide max-h-[85dvh] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain sm:max-w-2xl"
+        onCloseAutoFocus={(event) => {
+          if (onReturnFocus?.()) event.preventDefault();
+        }}
+      >
         <DialogTitle className="flex items-center gap-2">
           <BookOpen size={20} aria-hidden />
           Tutorial da carreira

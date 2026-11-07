@@ -45,3 +45,17 @@ A conclusão deve separar o que está no PR do que foi aplicado. É proibido dec
 - [Observabilidade de crescimento](database-growth-observability.md): aplicação e uso server-only.
 - [Auditoria de dependências](dependency-audit-2026-11-07.md): advisory residual, decisões e fontes.
 - [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116.html): contato, validade e localização de security.txt.
+
+## Atualização de execução — 7 nov 2026, 22:32 UTC
+
+O lote adicional de nove frentes foi enviado no commit `51a96d4`. Nesse SHA, o CI aprovou build/types/tests, comparação de startup bundle, stress determinístico real de 200 partidas, construção MatchSim, replay SQL/acesso, auditoria de dependências de produção e contratos gráficos/lifecycle. O Lighthouse mobile e o agregador de release falharam; não houve merge. No snapshot mobile, `/guias` chegou a LCP de 2.688 ms contra budget de 2.500 ms, e a homepage teve score mínimo 0,97 contra 0,98. Os budgets permaneceram intactos.
+
+Uma tentativa de usar fonte nativa em todas as páginas públicas mobile eliminou downloads de fontes, mas não resolveu os guias e piorou cenários; foi retirada integralmente. Não faz parte do código final.
+
+A validação visual configurada capturou criação de treinador, estado sem carreira e partida rápida em desktop/mobile. O preview inicial falhou por ausência de configuração pública Supabase; a leitura autorizada de uma chave publishable do projeto correto permitiu o teste anônimo, sem chave service_role no browser. Essa configuração ficou fora do Git e não é ativação de produção.
+
+O fluxo real de convidado percorreu identidade, aparência, perfil, escolha de clube e uma carreira sintética somente no perfil temporário do Chromium. O tutorial exibiu 19 lições. Uma correção adicional moveu retorno de foco para o fechamento efetivo do modal, com fallback para o heading se o trigger estiver removido, desabilitado ou indisponível. Há sete casos executáveis do helper, regressão do contrato do diálogo e prova real de Tab/Escape/retorno normal/fallback. A revisão independente aprovou o código condicionada à prova Chromium, realizada em seguida. A captura mobile usa uma nova aba touch 390×844 com o botão real; não é uma imagem do loader nem certificação de dispositivo físico.
+
+Após esse patch, lint, TypeScript, build, bundle e os contratos locais passaram, e a suíte completa aprovou **327 arquivos e 1.714 testes**. O CI ainda deve ser verificado no novo SHA publicado; os resultados de `51a96d4` não são automaticamente atribuídos a ele. Os arquivos operacionais de screenshots, vídeos e métricas detalhadas foram mantidos fora deste repositório público.
+
+Continuam abertos: estabilidade e metas Lighthouse mobile; CI completo do SHA final; modularização dos monólitos restantes; testes em hardware físico; aplicação aprovada de migrations e medição do workload; validação de quota contratual e rollout do importador; valores/entrega FCM em homologação; DNS/entregabilidade de email; dados da API de backlinks escolhida e revisão exata de eventual disavow. A auditoria de produção foi somente leitura; não houve expurgo, exploração ativa, alteração de WAF/DNS, pagamento ou email externo.

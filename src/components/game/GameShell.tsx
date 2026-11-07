@@ -41,6 +41,7 @@ import {
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { restoreDialogFocus } from "@/lib/dialog-return-focus";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { OfflineBar, SyncBadge } from "@/components/OfflineBar";
@@ -506,10 +507,13 @@ export function GameShell({
         >
           <CareerTutorialDialog
             open={tutorialOpen}
-            onOpenChange={(open) => {
-              setTutorialOpen(open);
-              if (!open) tutorialTrigger.current?.focus();
-            }}
+            onOpenChange={setTutorialOpen}
+            onReturnFocus={() =>
+              restoreDialogFocus(
+                tutorialTrigger.current,
+                document.querySelector<HTMLElement>("main h1, #conteudo h1"),
+              )
+            }
             careerKey={`${tutorialOwner ?? "guest"}:${career.world?.seed ?? career.clubId}`}
             career={career}
           />
