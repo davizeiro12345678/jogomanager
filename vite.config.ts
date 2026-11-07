@@ -173,7 +173,8 @@ const projectConfig = defineConfig({
           import.meta.dirname,
           "node_modules/entities/lib/encode.js",
         ),
-        entities: path.resolve(import.meta.dirname, "node_modules/entities"),
+        // Resolve bare "entities" by the importing package to support nested
+        // versions required by htmlparser2; the global alias breaks entities/decode.
       },
     },
   },

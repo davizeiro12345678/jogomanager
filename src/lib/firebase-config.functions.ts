@@ -22,10 +22,10 @@ export const getFirebaseWebConfig = createServerFn({ method: "GET" }).handler(as
     };
   }
   const standalone = resolveFirebaseConnectorConfig({
-    apiKey: process.env["FIREBASE_WEB_API_KEY"],
-    projectId: process.env["FIREBASE_PROJECT_ID"],
-    appId: process.env["FIREBASE_WEB_APP_ID"],
-    vapidPublicKey: process.env["FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY"],
+    apiKey: process.env["FIREBASE_WEB_API_KEY"] ?? "",
+    projectId: process.env["FIREBASE_PROJECT_ID"] ?? "",
+    appId: process.env["FIREBASE_WEB_APP_ID"] ?? "",
+    vapidPublicKey: process.env["FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY"] ?? "",
   });
   return {
     ...standalone,

@@ -35,12 +35,12 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Checkout candidate with complete base history
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ inputs.candidate_ref }}
           fetch-depth: 0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -84,7 +84,7 @@ jobs:
             verification/bundle-2026-10-01/candidate.json --check
       - name: Upload reproducible comparison
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: bundle-before-after
           path: |
