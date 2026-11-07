@@ -522,3 +522,25 @@
     cursor: not-allowed;
   }
 }
+
+.skip-to-content {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.skip-to-content:focus {
+  inset-block-start: 1rem;
+  inset-inline-start: 1rem;
+  z-index: 60;
+  inline-size: auto;
+  block-size: auto;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  clip-path: none;
+  color: var(--primary-foreground);
+  background: var(--primary);
+}

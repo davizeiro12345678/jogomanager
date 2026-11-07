@@ -8,7 +8,7 @@ import { HudCard, HudChip, HudStat, SparkBars, Sparkline } from "@/components/ui
 
 import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/formations";
 
-import { pickLineup } from "@/game/career";
+import { pickLineup } from "@/game/career-lineup";
 
 import { useCareer } from "@/hooks/useCareer";
 

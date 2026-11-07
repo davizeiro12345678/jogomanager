@@ -5,7 +5,7 @@
  * Não enviamos e-mail, nome ou qualquer dado pessoal — apenas eventos de jogo
  * (partida iniciada, carreira criada, compra concluída) e navegação.
  */
-import type { PostHog } from "posthog-js";
+import type { PostHog } from "posthog-js/dist/module.slim.no-external.js";
 import { readConsent } from "./consent";
 
 let client: PostHog | null = null;
@@ -67,7 +67,8 @@ export async function initAnalytics(): Promise<PostHog | null> {
   if (!token || starting) return null;
   starting = true;
   try {
-    const { default: posthog } = await import("posthog-js");
+    // Explicit event capture needs only the bundled core, without remote feature code.
+    const { default: posthog } = await import("posthog-js/dist/module.slim.no-external.js");
     if (!readConsent().analytics) return null;
     posthog.init(token, {
       api_host: apiHost(),

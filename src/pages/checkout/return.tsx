@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
 
 import { CheckCircle, Coins, Loader2, XCircle } from "lucide-react";
 
@@ -24,7 +23,7 @@ const MAX_TRIES = 15;
 export function CheckoutReturn() {
   const { session_id: sessionId } = Route.useSearch();
   const userId = useAuthUserId();
-  const queryClient = useQueryClient();
+  const { queryClient } = Route.useRouteContext();
   const claimSession = useServerFn(claimCheckoutSession);
   const [attempt, setAttempt] = useState(0);
   const [status, setStatus] = useState<"loading" | "delivered" | "slow" | "error">("loading");

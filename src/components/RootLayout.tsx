@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
 import {
   isLightweightCssPath,
@@ -25,62 +24,69 @@ const AccessibilitySettings = lazy(
   () => import("@/components/accessibility/AccessibilitySettings"),
 );
 
-export function NotFoundComponent() {
+function PageFailure({
+  title,
+  message,
+  children,
+}: {
+  title: string;
+  message: string;
+  children?: ReactNode;
+}) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <p className="text-7xl font-bold text-foreground">404</p>
-        <h1 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Esta página não existe ou mudou de endereço.
-        </p>
-        <div className="mt-6">
+        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          {children}
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex min-h-11 items-center rounded-md border border-input px-4 text-sm font-medium hover:bg-accent"
           >
             Voltar ao início
           </Link>
         </div>
       </div>
-    </div>
+    </main>
+  );
+}
+
+export function NotFoundComponent() {
+  return (
+    <PageFailure
+      title="Página não encontrada"
+      message="Esta página mudou de endereço ou foi removida."
+    />
   );
 }
 
 export function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    void import("../lib/lovable-error-reporting")
+      .then(({ reportLovableError }) =>
+        reportLovableError(error, { boundary: "tanstack_root_error_component" }),
+      )
+      .catch(() => undefined);
   }, [error]);
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Não foi possível carregar esta página
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tente carregar novamente ou volte ao início para continuar.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              void router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Tentar novamente
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Voltar ao início
-          </a>
-        </div>
-      </div>
-    </div>
+    <PageFailure
+      title="Não foi possível carregar esta página"
+      message="Tente carregar novamente ou volte ao início."
+    >
+      <button
+        type="button"
+        onClick={() => {
+          void router.invalidate();
+          reset();
+        }}
+        className="min-h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+      >
+        Tentar novamente
+      </button>
+    </PageFailure>
   );
 }
 
@@ -121,10 +127,10 @@ export function RootComponent() {
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
     const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
     window.addEventListener("consent-changed", start);
-    const ric = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
-      .requestIdleCallback;
-    const idle = typeof ric === "function";
-    const handle = idle ? ric(start, { timeout: 5000 }) : window.setTimeout(start, 3000);
+    const idle = typeof window.requestIdleCallback === "function";
+    const handle = idle
+      ? window.requestIdleCallback(start, { timeout: 5000 })
+      : window.setTimeout(start, 3000);
     return () => {
       window.removeEventListener("consent-changed", start);
       if (idle) window.cancelIdleCallback?.(handle);
@@ -137,12 +143,7 @@ export function RootComponent() {
       <I18nProvider>
         <AccessibilityProvider>
           <RootReadingControls pathname={pathname} />
-          <a
-            href="#conteudo"
-            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:font-display focus:text-sm focus:uppercase focus:tracking-widest focus:text-primary-foreground"
-          >
-            <SkipContentLabel />
-          </a>
+          <SkipContentLink />
           <div id="conteudo" tabIndex={-1}>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
@@ -155,8 +156,12 @@ export function RootComponent() {
   );
 }
 
-function SkipContentLabel() {
-  return <>{useT().t("common.skip")}</>;
+function SkipContentLink() {
+  return (
+    <a href="#conteudo" className="skip-to-content">
+      {useT().t("common.skip")}
+    </a>
+  );
 }
 function RootReadingControls({ pathname }: { pathname: string }) {
   const { lang, t } = useT();

@@ -1,4 +1,4 @@
-import { migrateCareer } from "@/game/career";
+import { migrateCareer } from "@/game/career-migration";
 import type { CareerState } from "@/game/types";
 import { assertUntrustedJson } from "@/lib/untrusted-json";
 

@@ -2,7 +2,7 @@
  * Cliente do Web Worker de simulação, com retorno automático para a thread
  * principal se o navegador não suportar workers (ou se o worker falhar).
  */
-import { advanceRound, type MatchPerformance } from "./career";
+import type { MatchPerformance } from "./career-round";
 import type { AutoWeek } from "./autoplay";
 import {
   WorkerMatchView,
@@ -37,7 +37,6 @@ import { recoverMatch } from "./match-recovery";
 import { LIVE_CONTROL_RESPONSE_TIMEOUT_MS, validMatchCommand } from "./match-command-validation";
 import { MAX_PENDING_SIMULATION_COMMANDS } from "./sequential-worker-queue";
 import { initializeMatchExecution } from "./match-execution";
-import { autoSeasonCooperative } from "./season-cooperative";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -678,8 +677,12 @@ export function advanceRoundAsync(
   performances: MatchPerformance[] = [],
 ): Promise<CareerState> {
   const evaluatedAt = Date.now();
-  return call<CareerState>({ type: "advance", career, result, performances, evaluatedAt }, () =>
-    advanceRound(career, result, performances, "Liga", evaluatedAt),
+  return call<CareerState>(
+    { type: "advance", career, result, performances, evaluatedAt },
+    async () => {
+      const { advanceRound } = await import("./career-round");
+      return advanceRound(career, result, performances, "Liga", evaluatedAt);
+    },
   );
 }
 
@@ -691,7 +694,10 @@ export function autoSeasonAsync(
   const evaluatedAt = Date.now();
   return call(
     { type: "autoSeason", career, maxWeeks, evaluatedAt },
-    () => autoSeasonCooperative(career, maxWeeks, evaluatedAt),
+    async () => {
+      const { autoSeasonCooperative } = await import("./season-cooperative");
+      return autoSeasonCooperative(career, maxWeeks, evaluatedAt);
+    },
     90_000,
   );
 }

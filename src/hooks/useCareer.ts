@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { migrateCareer } from "@/game/career";
+import { migrateCareer } from "@/game/career-migration";
 import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { loadCareer, saveCareer, deleteCareer } from "@/lib/career.functions";

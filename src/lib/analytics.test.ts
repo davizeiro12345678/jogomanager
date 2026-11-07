@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   has_opted_out_capturing: vi.fn(),
 }));
 
-vi.mock("posthog-js", () => ({ default: mocks }));
+vi.mock("posthog-js/dist/module.slim.no-external.js", () => ({ default: mocks }));
 vi.mock("./firebase", () => ({ initFirebase: vi.fn() }));
 
 let allowed = false;

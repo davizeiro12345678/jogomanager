@@ -8,7 +8,7 @@ import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 
 import { Canvas } from "@react-three/fiber";
-import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { FirstMatchFrame } from "./FirstMatchFrame";
 import { GraphicsBoundary } from "./GraphicsBoundary";
@@ -22,16 +22,13 @@ import { matchLook } from "@/game/matchday";
 import type { SimView } from "@/game/sim-contracts";
 import { FIELD_Z } from "@/game/sim-rules";
 import { useResolvedVisual } from "@/game/visual-settings";
-import type { FpsSample } from "./stadium/StadiumFpsMeter";
+import { FpsMeter, type FpsSample } from "./stadium/StadiumFpsMeter";
 import { StadiumScene } from "./stadium/StadiumScene";
 
 export type { CameraMode } from "@/game/camera-modes";
 import type { Quality } from "./stadium/quality";
 export type { Quality };
 const SHADOW_SETTINGS = { type: THREE.PCFShadowMap };
-const FpsMeter = lazy(() =>
-  import("./stadium/StadiumFpsMeter").then((module) => ({ default: module.FpsMeter })),
-);
 
 function Stadium3DImpl({
   sim,
@@ -251,9 +248,7 @@ function Stadium3DImpl({
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>
           {vis.showFps && !paused ? (
-            <Suspense fallback={null}>
-              <FpsMeter onSample={setFps} backend={backend} quality={eff} />
-            </Suspense>
+            <FpsMeter onSample={setFps} backend={backend} quality={eff} />
           ) : null}
         </Canvas>
       </GraphicsBoundary>

@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { reportLovableError } from "@/lib/lovable-error-reporting";
 
 /** A rendering fault can be retried without replacing the live match or save. */
 export class GraphicsBoundary extends Component<
@@ -11,7 +10,11 @@ export class GraphicsBoundary extends Component<
     return { failed: true };
   }
   override componentDidCatch(error: unknown, info: ErrorInfo) {
-    reportLovableError(error, { boundary: "graphics", componentStack: info.componentStack });
+    void import("@/lib/lovable-error-reporting")
+      .then(({ reportLovableError }) =>
+        reportLovableError(error, { boundary: "graphics", componentStack: info.componentStack }),
+      )
+      .catch(() => undefined);
   }
   override render() {
     if (this.state.failed && this.props.fallback) return this.props.fallback;

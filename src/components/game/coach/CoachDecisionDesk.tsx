@@ -18,6 +18,10 @@ export function CoachDecisionDesk({
   const [selected, setSelected] = useState("");
   const event = coachDecision(career);
   const latest = career.world?.memories.find(({ id }) => id === coachDecisionId(career));
+  const review = career.world?.memories.find(
+    ({ id, clubId }) =>
+      clubId === career.clubId && id.startsWith("coach-decision:") && id.endsWith(":review"),
+  );
   const activeChoice = event?.options.find(({ id }) => id === selected);
   return (
     <section
@@ -31,6 +35,15 @@ export function CoachDecisionDesk({
         </h2>
         <span className="coach-decision-kicker">Rodada {career.round}</span>
       </div>
+      {review ? (
+        <details className="coach-decision-review">
+          <summary>Última avaliação da diretoria</summary>
+          <p>
+            <strong>{review.title}</strong> · Rodada {review.round}
+          </p>
+          <p className="text-muted-foreground">{review.detail}</p>
+        </details>
+      ) : null}
       {latest ? (
         <p className="coach-decision-receipt" role="status">
           <CheckCircle2 size={18} aria-hidden="true" />
