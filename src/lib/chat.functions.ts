@@ -113,8 +113,6 @@ export const sendChatMessage = createServerFn({ method: "POST" })
         body: `${message?.display_name ?? "Um técnico"} enviou uma mensagem no chat.`,
         path: "/chat",
       });
-    })().catch((pushError: unknown) =>
-      console.error("Push do chat indisponível", pushError),
-    );
+    })().catch((pushError: unknown) => console.error("Push do chat indisponível", pushError));
     return { ok: true, id: String(id) };
   });

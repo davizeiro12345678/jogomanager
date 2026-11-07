@@ -4,7 +4,6 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSignedIn } from "@/hooks/useCareer";
-import { MODERATION_MESSAGES, moderateMessage } from "@/lib/moderation";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { reportChatMessage as submitChatReport } from "@/lib/community.functions";
 import { Button } from "@/components/ui/button";
@@ -144,12 +143,8 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   const send = useCallback(async () => {
     const body = draft.trim();
     if (!body || sending) return;
-    // Instant hint only; the server repeats the check and decides.
-    const rule = moderateMessage(body);
-    if (rule) {
-      toast.error(MODERATION_MESSAGES[rule]);
-      return;
-    }
+    // O servidor sempre decide e registra a infração; sem isso o bloqueio
+    // local impediria a contagem que leva ao silenciamento progressivo.
     setSending(true);
     // Envio pelo servidor: a identidade vem do token verificado (não do
     // navegador) e há moderação, silenciamento e limite por minuto.
