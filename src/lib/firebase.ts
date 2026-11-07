@@ -1,6 +1,7 @@
 /** Firebase app is opt-in. Analytics is initialized only after analytics consent. */
 import type { FirebaseApp } from "firebase/app";
 import type { getFirebaseWebConfig } from "./firebase-config.functions";
+import { sameFirebaseProjectIdentity } from "./firebase-web-config";
 
 let app: FirebaseApp | null = null;
 let analyticsStarted = false;
@@ -14,14 +15,21 @@ export async function initFirebase(
       opts.config ?? (await (await import("./firebase-config.functions")).getFirebaseWebConfig());
     if (!config.apiKey || !config.projectId || !config.appId) return null;
 
-    if (app && (app.options.projectId !== config.projectId || app.options.appId !== config.appId)) {
-      return null;
-    }
+    const identity = {
+      apiKey: config.apiKey,
+      projectId: config.projectId,
+      appId: config.appId,
+      messagingSenderId: config.messagingSenderId,
+    };
+    if (app && !sameFirebaseProjectIdentity(app.options, identity)) return null;
     if (!app) {
       const { getApps, initializeApp } = await import("firebase/app");
-      app =
-        getApps().find((existing) => existing.name === "pfm3d") ??
-        initializeApp(
+      const existing = getApps().find((candidate) => candidate.name === "pfm3d");
+      if (existing) {
+        if (!sameFirebaseProjectIdentity(existing.options, identity)) return null;
+        app = existing;
+      } else {
+        app = initializeApp(
           {
             apiKey: config.apiKey,
             authDomain: config.authDomain,
@@ -33,6 +41,7 @@ export async function initFirebase(
           },
           "pfm3d",
         );
+      }
     }
     if (opts.analytics && !analyticsStarted && config.measurementId) {
       try {
