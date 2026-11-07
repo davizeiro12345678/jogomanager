@@ -1,0 +1,24 @@
+/* Navigation and content remain usable with a keyboard and at high zoom. */
+.career-shell :where(a, button, input, select, textarea, [role="tab"]):focus-visible {
+  outline: 3px solid var(--career-focus, #a5e8ff);
+  outline-offset: 3px;
+}
+
+.career-shell :where(p, li) {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .career-shell :where(*, *::before, *::after) {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .career-shell :where(a, button, [role="tab"]):focus-visible {
+    outline-color: Highlight;
+  }
+}

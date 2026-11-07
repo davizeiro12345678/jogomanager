@@ -119,6 +119,59 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
       },
     ],
   },
+
+  {
+    title: "Mercado e planejamento",
+    lessons: [
+      {
+        id: "market",
+        title: "Avalie o mercado",
+        instruction:
+          "Antes de contratar, identifique posições carentes, compare idade e atributos e confira salário e custo. Evite comprometer o caixa com uma única negociação.",
+        to: "/transfers",
+      },
+      {
+        id: "development",
+        title: "Desenvolva o elenco",
+        instruction:
+          "Compare condição, potencial e necessidades da equipe. Alterne o foco do treino e acompanhe os relatórios ao longo das rodadas.",
+        to: "/training",
+      },
+    ],
+  },
+  {
+    title: "Competições e decisões",
+    lessons: [
+      {
+        id: "standings",
+        title: "Leia a classificação",
+        instruction:
+          "Acompanhe pontos, saldo e próximos adversários. As posições de acesso, queda e classificação dependem do regulamento da competição.",
+        to: "/league",
+      },
+      {
+        id: "calendar",
+        title: "Organize os compromissos",
+        instruction:
+          "Confira jogos da liga e da copa antes de avançar. Considere o cansaço e prepare alternativas para a sequência de partidas.",
+        to: "/dashboard",
+      },
+      {
+        id: "board",
+        title: "Acompanhe a diretoria",
+        instruction:
+          "Revise expectativas e pressão regularmente. Resultados, finanças e decisões de elenco podem afetar sua continuidade no clube.",
+        to: "/board",
+      },
+      {
+        id: "history",
+        title: "Reveja sua trajetória",
+        instruction:
+          "Use o histórico e as estatísticas para comparar temporadas, identificar tendências e planejar seus próximos objetivos.",
+        to: "/history",
+      },
+    ],
+  },
 ];
 
 export function tutorialProgress(learned: ReadonlySet<string>) {

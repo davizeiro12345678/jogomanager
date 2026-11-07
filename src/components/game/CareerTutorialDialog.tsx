@@ -50,14 +50,14 @@ export default function CareerTutorialDialog({
           Tutorial da carreira
         </DialogTitle>
         <DialogDescription>
-          Retome de onde parou. Partidas, treinos e relatórios concluídos são reconhecidos na sua
-          carreira.
+          Retome de onde parou. Partidas, treinos e relatórios são reconhecidos na carreira; as
+          demais lições podem ser marcadas manualmente neste aparelho.
         </DialogDescription>
         <p role="status" className="text-sm text-primary">
-          {progress.completed} de {progress.total} lições praticadas
+          {progress.completed} de {progress.total} lições concluídas ou marcadas
         </p>
         <progress
-          aria-label="Lições praticadas"
+          aria-label="Lições concluídas ou marcadas"
           className="h-2 w-full accent-primary"
           max={progress.total}
           value={progress.completed}
@@ -71,7 +71,7 @@ export default function CareerTutorialDialog({
           </div>
         ) : (
           <p className="text-sm text-primary">
-            Todas as lições praticadas. Você pode rever qualquer capítulo.
+            Todas as lições concluídas ou marcadas. Você pode rever qualquer capítulo.
           </p>
         )}
         {TUTORIAL_CHAPTERS.map((chapter, index) => (
@@ -79,12 +79,22 @@ export default function CareerTutorialDialog({
             <h2 className="font-display text-lg">
               {index + 1}. {chapter.title}
             </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {chapter.lessons.filter((lesson) => completed.has(lesson.id)).length} de{" "}
+              {chapter.lessons.length} concluídas ou marcadas
+            </p>
             <ul className="mt-3 space-y-4">
               {chapter.lessons.map((lesson) => (
                 <li key={lesson.id}>
                   <h3 className="flex items-center gap-2 text-sm font-semibold">
                     {completed.has(lesson.id) ? (
-                      <Check size={16} aria-label="Praticada" className="text-primary" />
+                      <Check
+                        size={16}
+                        aria-label={
+                          practiced.has(lesson.id) ? "Concluída na carreira" : "Marcada manualmente"
+                        }
+                        className="text-primary"
+                      />
                     ) : null}
                     {lesson.title}
                   </h3>
