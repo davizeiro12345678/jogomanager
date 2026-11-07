@@ -22,6 +22,9 @@ for (const [index, original] of template.split(/\r?\n/).entries()) {
   }
   const [, key, quoted] = match;
   const value = quoted.replace(/^(['"])(.*)\1$/, "$2");
+  if (present.has(key)) {
+    throw Error(`.env.example:${index + 1}: duplicate declaration for ${key}`);
+  }
   present.add(key);
   if (
     /^(?:SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|FASTLY_API_TOKEN|TWILIO_AUTH_TOKEN)$/i.test(
@@ -37,10 +40,13 @@ for (const [index, original] of template.split(/\r?\n/).entries()) {
 
 const required = [
   "VITE_SUPABASE_PROJECT_ID",
+  "VITE_SUPABASE_URL",
   "VITE_SUPABASE_PUBLISHABLE_KEY",
   "VITE_AUTH_MODE",
   "VITE_PAYMENTS_CLIENT_TOKEN",
   "PAYMENTS_ENVIRONMENT",
+  "SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
 ];
 for (const key of required) {
   if (!present.has(key)) throw Error(`.env.example: missing ${key}`);

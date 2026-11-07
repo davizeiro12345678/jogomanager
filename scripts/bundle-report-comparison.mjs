@@ -1,3 +1,11 @@
+const matchRouteHelper =
+  /^match-(?:command-validation|execution-contract|physics-extras|probability|readiness)(?:-|\.|$)/;
+
 export function isMatchRouteEntry(entry) {
-  return entry.name.startsWith("match-") && !entry.name.startsWith("match-command-validation-");
+  if (entry?.surface === "match") return true;
+  return (
+    typeof entry?.name === "string" &&
+    entry.name.startsWith("match-") &&
+    !matchRouteHelper.test(entry.name)
+  );
 }
