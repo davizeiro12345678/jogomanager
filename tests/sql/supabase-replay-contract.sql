@@ -98,9 +98,12 @@ $rls_matrix$;
 INSERT INTO auth.users (id, email, raw_user_meta_data, email_confirmed_at) VALUES
  ('22222222-2222-4222-8222-222222222221', 'replay-unverified@example.invalid', '{}', NULL),
  ('22222222-2222-4222-8222-222222222222', 'replay-verified@example.invalid', '{}', now());
+-- The auth.users trigger has already created these profile rows; set deterministic fixture names.
 INSERT INTO public.profiles (user_id, display_name) VALUES
  ('22222222-2222-4222-8222-222222222221', 'Replay owner'),
- ('22222222-2222-4222-8222-222222222222', 'Replay other');
+ ('22222222-2222-4222-8222-222222222222', 'Replay other')
+ON CONFLICT (user_id) DO UPDATE
+SET display_name = EXCLUDED.display_name;
 INSERT INTO public.player_careers (user_id, slot, state) VALUES
  ('22222222-2222-4222-8222-222222222221', 1,
   '{"version":1,"slot":1,"seed":"owner-fixture","season":1,"week":1}');
