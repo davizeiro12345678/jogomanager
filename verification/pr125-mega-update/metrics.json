@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T06:02:36.331Z",
+  "generatedAt": "2026-11-08T06:25:05.857Z",
   "source": {
     "repository": "davizeiro12345678/jogomanager",
     "pullRequest": 125,
@@ -177,8 +177,40 @@
       "severity": "error"
     },
     "baselineRun": 42429874392,
-    "afterCandidate": null,
-    "afterCandidateNote": "Awaiting a fresh GitHub Lighthouse CI run on the threshold-policy follow-up SHA; e21cae4a was measured under the previous thresholds.",
+    "afterCandidate": {
+      "commit": "bdcc61c3ec53497670f3b53a2dfa1b49a316db54",
+      "workflowRun": 42453137353,
+      "result": {
+        "status": "passed",
+        "reportsPassing": 15,
+        "reportsFailing": 0,
+        "runtimeErrors": 0
+      },
+      "observedExtrema": {
+        "performanceScore": {
+          "min": 0.96,
+          "max": 1
+        },
+        "accessibilityScore": {
+          "min": 0.97,
+          "max": 1
+        },
+        "totalBlockingTimeMs": {
+          "min": 17,
+          "max": 198
+        },
+        "largestContentfulPaintMs": {
+          "min": 1249.1118,
+          "max": 2492.1776
+        },
+        "cumulativeLayoutShift": {
+          "min": 0,
+          "max": 0.004963949596819479
+        }
+      },
+      "evidence": "lighthouse/bdcc61c3-run-42453137353.json"
+    },
+    "afterCandidateNote": "Fresh mobile Lighthouse CI run on the threshold-policy commit; the five routes and three runs each passed with pessimistic aggregation and error severity.",
     "diagnosticTraceOutlier": {
       "workflowRun": 42444890644,
       "sample": "melhores-formacoes-1",
@@ -186,14 +218,16 @@
       "performanceScore": null,
       "subsequentSameRouteScores": [0.99, 0.99],
       "retryPolicy": "Preserve original; retry once only for first NO_NAVSTART; other/persistent failures remain blocking.",
-      "reverifiedOnFollowupSha": false
+      "reverifiedOnFollowupSha": true,
+      "followupSha": "bdcc61c3ec53497670f3b53a2dfa1b49a316db54",
+      "followupStatus": "passed"
     },
     "previousThresholds": {
       "performanceScoreMinimum": 0.97,
       "tbtMaximumMs": 200,
       "changeAuthorizedByProjectOwner": true
     },
-    "lastObservedCiRun": {
+    "preRelaxationCiRun": {
       "sha": "e21cae4a5b953249c48bd5ead69bbda10fed9283",
       "run": 42451063358,
       "resultUnderPreviousPolicy": "failed",
@@ -228,7 +262,48 @@
         "note": "Re-evaluation applies the new thresholds to measurements collected under the previous configuration; it is not a new Lighthouse run and does not prove runtime improvement."
       },
       "artifactSummary": "lighthouse/e21cae4a-run-42451063358.json",
-      "freshRunOnUpdatedPolicy": "pending"
+      "freshRunOnUpdatedPolicy": "passed-on-bdcc61c3"
+    },
+    "lastObservedCiRun": {
+      "sha": "bdcc61c3ec53497670f3b53a2dfa1b49a316db54",
+      "run": 42453137353,
+      "qualityGate": "passed",
+      "checks": {
+        "successful": 25,
+        "failed": 0,
+        "skipped": 1,
+        "pending": 0
+      },
+      "skippedCheck": "Supabase Preview",
+      "lighthouseMobile": {
+        "status": "passed",
+        "reportsPassing": 15,
+        "reportsFailing": 0,
+        "runtimeErrors": 0
+      },
+      "observedExtrema": {
+        "performanceScore": {
+          "min": 0.96,
+          "max": 1
+        },
+        "accessibilityScore": {
+          "min": 0.97,
+          "max": 1
+        },
+        "totalBlockingTimeMs": {
+          "min": 17,
+          "max": 198
+        },
+        "largestContentfulPaintMs": {
+          "min": 1249.1118,
+          "max": 2492.1776
+        },
+        "cumulativeLayoutShift": {
+          "min": 0,
+          "max": 0.004963949596819479
+        }
+      },
+      "artifactSummary": "lighthouse/bdcc61c3-run-42453137353.json"
     }
   },
   "i18n": {
@@ -308,16 +383,30 @@
       "scope": "retry only first NO_NAVSTART"
     },
     "lighthousePolicyChange": {
-      "status": "pending-new-sha-ci",
+      "status": "verified-by-passed-ci",
+      "verifiedOnCommit": "bdcc61c3ec53497670f3b53a2dfa1b49a316db54",
+      "workflowRun": 42453137353,
       "floorChangedFrom": 0.97,
       "floorChangedTo": 0.9,
       "tbtMaximumChangedFromMs": 200,
       "tbtMaximumChangedToMs": 400,
+      "reportsPassing": 15,
+      "reportsTotal": 15,
       "routesRemoved": 0,
       "runsRemoved": 0,
       "lcpClsAccessibilityChanged": false,
       "aggregationChanged": false,
       "severityChanged": false
+    },
+    "remoteQualityGate": {
+      "status": "passed",
+      "commit": "bdcc61c3ec53497670f3b53a2dfa1b49a316db54",
+      "workflowRun": 42453137353,
+      "checksSuccessful": 25,
+      "checksFailed": 0,
+      "checksSkipped": 1,
+      "checksPending": 0,
+      "skippedCheck": "Supabase Preview"
     }
   },
   "safety": {

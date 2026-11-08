@@ -76,21 +76,25 @@ O perfil médio foi afrouxado em **10 draws (+9,1%)** conforme pedido. A mesma c
 
 ## Lighthouse e preview
 
-No SHA `e21cae4a`, o workflow Quality teve **22 checks aprovados, 2 reprovados e 2 skipped**. O Lighthouse mobile reprovou sob os critérios anteriores (`score ≥0,97`, `TBT ≤200 ms`); o `Critical performance release gate` só propagou essa falha. O build/testes, comparador de bundle, inventário mobile, evidência visual e trace diagnóstico passaram.
+No SHA `e21cae4a`, o workflow Quality teve **22 checks aprovados, 2 reprovados e 2 skipped**. O Lighthouse mobile reprovou sob os critérios anteriores (`score ≥0,97`, `TBT ≤200 ms`); o `Critical performance release gate` propagou essa falha. O build/testes, comparador de bundle, inventário mobile, evidência visual e trace diagnóstico passaram.
 
-O artifact do Lighthouse contém 15 execuções (cinco rotas × três). Os valores são medidos, não inferidos. O responsável pediu explicitamente afrouxar os requisitos porque estavam difíceis de cumprir: o score mínimo passou de 0,97 para **0,90**, e TBT máximo de 200 para **400 ms**. Os dois continuam com severidade `error` e agregação pessimista, logo cada execução ainda precisa passar. Acessibilidade ≥0,90, LCP ≤2.500 ms, CLS ≤0,1, rotas e repetições permanecem inalterados.
+O responsável pediu explicitamente afrouxar os requisitos porque estavam difíceis de cumprir: o score mínimo passou de 0,97 para **0,90**, e TBT máximo de 200 para **400 ms**. Os dois continuam com severidade `error` e agregação pessimista, logo cada execução ainda precisa passar. Acessibilidade ≥0,90, LCP ≤2.500 ms, CLS ≤0,1, rotas e repetições permanecem inalterados.
 
-| Rota                  | Scores de performance (3 runs) |    TBT (ms, 3 runs) | LCP máximo (ms) |      CLS | Resultado observado sob a nova política |
-| --------------------- | -----------------------------: | ------------------: | --------------: | -------: | --------------------------------------- |
-| `/`                   |               0,90; 0,98; 0,98 |   338,9; 35,5; 32,0 |         2.157,2 |        0 | 3/3 passa                               |
-| `/guias`              |               1,00; 1,00; 1,00 |    58,0; 54,0; 56,0 |         1.413,5 |        0 | 3/3 passa                               |
-| `/guia-de-scouting`   |               1,00; 1,00; 1,00 |    54,0; 59,0; 54,0 |         1.413,9 |        0 | 3/3 passa                               |
-| `/melhores-formacoes` |               1,00; 1,00; 1,00 |    59,0; 62,0; 51,0 |         1.410,3 |        0 | 3/3 passa                               |
-| `/partida-rapida`     |               0,95; 0,98; 0,98 | 243,0; 144,0; 156,0 |         1.415,1 | 0,004964 | 3/3 passa                               |
+O artifact do run que falhou contém 15 medições (cinco rotas × três). Reavaliadas post-hoc nos novos limites, 15/15 passariam; isso não era uma nova execução. A tabela preserva os valores e o resultado original sob a política que estava configurada naquele SHA.
 
-A avaliação post-hoc dos 15 JSONs sob os novos limites passa 15/15 (acessibilidade mínima observada 0,97; LCP máximo 2.157,2 ms; CLS máximo 0,004964; zero runtime errors). Isso **não** é uma nova execução e não comprova melhoria do runtime; o workflow precisa repetir no próximo SHA. O detalhe por relatório está em [`lighthouse/e21cae4a-run-42451063358.json`](lighthouse/e21cae4a-run-42451063358.json). O limite relaxado é mudança de política deliberada, registrada também em `docs/critical-performance.md` e `docs/qa/critical-performance-gates.md`.
+| Rota                  |  Scores (3 runs) |  TBT em ms (3 runs) | LCP máximo (ms) | CLS máximo | Resultado na política original |
+| --------------------- | ---------------: | ------------------: | --------------: | ---------: | ------------------------------ |
+| `/`                   | 0,90; 0,98; 0,98 |   338,9; 35,5; 32,0 |         2.157,2 |          0 | Falha original                 |
+| `/guias`              | 1,00; 1,00; 1,00 |    58,0; 54,0; 56,0 |         1.413,5 |          0 | Passa                          |
+| `/guia-de-scouting`   | 1,00; 1,00; 1,00 |    54,0; 59,0; 54,0 |         1.413,9 |          0 | Passa                          |
+| `/melhores-formacoes` | 1,00; 1,00; 1,00 |    59,0; 62,0; 51,0 |         1.410,3 |          0 | Passa                          |
+| `/partida-rapida`     | 0,95; 0,98; 0,98 | 243,0; 144,0; 156,0 |         1.415,1 |   0,004964 | Falha original                 |
 
-O SHA anterior `308bc386` teve `NO_NAVSTART` em uma captura diagnóstica separada, e duas repetições de `/melhores-formacoes` marcaram 0,99. O coletor foi reforçado para repetir uma vez somente o `NO_NAVSTART` inicial, preservar o primeiro artifact e falhar se o erro persistir ou se faltar JSON válido. O job de trace do SHA `e21cae4a` passou.
+No SHA `bdcc61c3`, o run real `42453137353` executou de novo as mesmas cinco rotas, três vezes cada, já com os limites atualizados. **Os 15/15 relatórios passaram**, com performance mínima 0,96, acessibilidade mínima 0,97, TBT máximo 198 ms, LCP máximo 2.492,2 ms, CLS máximo 0,004964 e zero runtime errors. Esta é a verificação CI efetiva da nova política (não uma avaliação post-hoc); os dados por relatório estão em [`lighthouse/bdcc61c3-run-42453137353.json`](lighthouse/bdcc61c3-run-42453137353.json). O limite relaxado continua sendo uma mudança de política, não uma alegação de melhoria do runtime.
+
+O run final reportou **25 checks aprovados, zero reprovados, um skipped e zero pendentes**. O `Critical performance release gate` e o Lighthouse multipágina passaram; `Supabase Preview` foi o check skipped. O PR permanece aberto em draft, sem merge nem publicação em produção.
+
+O SHA anterior `308bc386` teve `NO_NAVSTART` em uma captura diagnóstica separada, e duas repetições de `/melhores-formacoes` marcaram 0,99. O coletor foi reforçado para repetir uma vez somente o `NO_NAVSTART` inicial, preservar o primeiro artifact e falhar se o erro persistir ou se faltar JSON válido. O job de trace do SHA `bdcc61c3` passou.
 
 O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produzido em `.output`, em vez de procurar `dist/server/server.js`. No build final, o preview respondeu HTTP 200 e verificou 5 rotas (`/`, `/guias`, `/guia-de-scouting`, `/melhores-formacoes`, `/partida-rapida`) em `identity` e `gzip`: **10/10 representações**.
 
@@ -105,7 +109,8 @@ O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produ
 | Performance gates                                                    | PASS — 24/24; score 0,90/TBT 400 continuam como assertions pessimistas `error` |
 | Inventário mobile de draws                                           | PASS local — 74/75 baixa; 114/120 média                                        |
 | Coletor de traces Lighthouse                                         | PASS em teste — retry 1× só para NO_NAVSTART                                   |
-| Lighthouse CI em `e21cae4a`                                          | FAIL sob política antiga; 15/15 passam post-hoc sob 0,90/400 ms; aguarda rerun |
+| Lighthouse CI (`bdcc61c3`, run `42453137353`)                        | PASS — 15/15 medições; performance mínima 0,96, TBT máximo 198 ms              |
+| `Critical performance release gate` (SHA `bdcc61c3`)                 | PASS — 25 checks bem-sucedidos, 0 falhos, 1 skipped (`Supabase Preview`)       |
 | Build de produção local e `bundle:check`                             | PASS                                                                           |
 | Comparação bundle baseline/candidato                                 | PASS — 0 violações                                                             |
 | Validação de ambiente público e scanner de credenciais privilegiadas | PASS                                                                           |
