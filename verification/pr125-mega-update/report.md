@@ -30,7 +30,7 @@ Os pares `before/after` de home e seleção de partida rápida preservam o mesmo
 
 ![Campo, estádio e jogadores 3D](after/match-3d.webp)
 
-O console Playwright da tela de partida rápida final não apresentou erros nem avisos. O Firefox disponível no runner não habilitou WebGL2; por isso a evidência 3D vem do Chromium, que criou o contexto e renderizou a cena. Não foi encontrada ferramenta de gravação contínua de browser: **nenhum vídeo de gameplay foi fabricado ou apresentado como gravação completa**.
+O console Playwright da tela de partida rápida final não apresentou erros nem avisos. O Firefox disponível no runner não habilitou WebGL2; por isso a evidência 3D vem do Chromium, que criou o contexto e renderizou a cena. O artifact de QA também contém seis clipes autênticos de ações isoladas do rig (1,5 s cada): [defesa](after/video-samples/diveLeft.mp4), [cabeceio](after/video-samples/header.mp4), [passe](after/video-samples/pass.mp4), [chute](after/video-samples/shotPower.mp4), [carrinho](after/video-samples/slide.mp4) e [domínio](after/video-samples/trap.mp4). São amostras sobre fundo simples, **não** uma partida completa nem uma gravação contínua do estádio.
 
 ## Escopo implementado nesta branch
 
@@ -49,25 +49,34 @@ Os relatórios completos de baseline/candidato e o comparativo máquina-legível
 
 | JavaScript emitido |    Baseline | Build final |           Variação |
 | ------------------ | ----------: | ----------: | -----------------: |
-| Total raw          | 7.341.649 B | 7.251.245 B | −90.404 B (−1,23%) |
-| Total gzip         | 2.389.550 B | 2.366.489 B | −23.061 B (−0,97%) |
-| Total Brotli Q6    | 2.254.273 B | 2.235.357 B | −18.916 B (−0,84%) |
+| Total raw          | 7.341.649 B | 7.253.065 B | −88.584 B (−1,21%) |
+| Total gzip         | 2.389.550 B | 2.366.894 B | −22.656 B (−0,95%) |
+| Total Brotli Q6    | 2.254.273 B | 2.235.758 B | −18.515 B (−0,82%) |
 
 | Superfície de startup |         Raw: baseline → final (Δ) |    Gzip: baseline → final (Δ) | Brotli Q6: baseline → final (Δ) |
 | --------------------- | --------------------------------: | ----------------------------: | ------------------------------: |
-| Home                  |     539.444 → 523.994 (−15.450) B |  179.911 → 175.741 (−4.170) B |    170.635 → 166.746 (−3.889) B |
-| Nova carreira         | 1.344.640 → 1.283.464 (−61.176) B | 451.168 → 431.785 (−19.383) B |   426.737 → 409.132 (−17.605) B |
-| Partida rápida        |      915.739 → 907.139 (−8.600) B |  311.994 → 309.932 (−2.062) B |    295.749 → 293.910 (−1.839) B |
-| Match 3D              | 1.737.195 → 1.686.597 (−50.598) B | 594.783 → 578.966 (−15.817) B |   563.247 → 549.089 (−14.158) B |
-| Palco cinematográfico |  1.805.357 → 1.797.527 (−7.830) B |  546.856 → 544.973 (−1.883) B |    513.671 → 512.071 (−1.600) B |
-| Editor                |      565.221 → 555.789 (−9.432) B |  188.943 → 186.464 (−2.479) B |    179.051 → 176.824 (−2.227) B |
+| Home                  |     539.444 → 523.994 (−15.450) B |  179.911 → 175.741 (−4.170) B |    170.635 → 166.753 (−3.882) B |
+| Nova carreira         | 1.344.640 → 1.283.744 (−60.896) B | 451.168 → 431.829 (−19.339) B |   426.737 → 409.181 (−17.556) B |
+| Partida rápida        |      915.739 → 907.139 (−8.600) B |  311.994 → 309.929 (−2.065) B |    295.749 → 293.917 (−1.832) B |
+| Match 3D              | 1.737.195 → 1.686.877 (−50.318) B | 594.783 → 579.012 (−15.771) B |   563.247 → 549.139 (−14.108) B |
+| Palco cinematográfico |  1.805.357 → 1.797.527 (−7.830) B |  546.856 → 544.973 (−1.883) B |    513.671 → 512.078 (−1.593) B |
+| Editor                |      565.221 → 555.789 (−9.432) B |  188.943 → 186.464 (−2.479) B |    179.051 → 176.831 (−2.220) B |
 | Worker de simulação   |             89.540 → 89.540 (0) B |        29.958 → 29.956 (−2) B |          28.857 → 28.858 (+1) B |
 
 **Orçamentos atuais:** o comparador já permitia crescimento agregado de até **400.000 bytes por representação** (raw, gzip e Brotli); esse teto não foi aumentado neste lote. Conforme pedido, foi adicionada uma margem explícita máxima de **2.048 bytes para cada métrica gzip/Brotli de startup por rota**. O Worker Brotli cresce 1 byte, dentro dessa margem. Tetos absolutos de `bundle:check`, rotas obrigatórias e medições ausentes continuam bloqueantes. O comparador final passou sem violações.
 
+### Draw calls mobile do Match 3D
+
+| Perfil móvel | Teto anterior | Teto atualizado | Pico local final | Frames amostrados | Margem no pico |
+| ------------ | ------------: | --------------: | ---------------: | ----------------: | -------------: |
+| Baixa        |            75 |              75 |               74 |                59 |              1 |
+| Média        |           110 |             120 |              114 |                 9 |              6 |
+
+O perfil médio foi afrouxado em **10 draws (+9,1%)** conforme pedido. A mesma cena havia medido 106 draws no baseline CI e 112 no candidato anterior; o comparator atualizado aceitou o artifact com zero violações. Duas capturas locais prévias ficaram entre 113 e 114 draws. Os limites de triângulos (130.000/260.000), os perfis Studio e Lighthouse permanecem inalterados. O inventário versionado está em [`graphics/`](graphics/); renderização por software não certifica FPS em aparelho físico.
+
 ## Lighthouse e preview
 
-O baseline Lighthouse do CI (run `42429874392`) tinha três execuções móveis por rota. Home: score [0,95; 0,98; 0,98], TBT [195; 27,5; 41] ms, LCP ~2.002–2.040 ms e CLS 0. Partida rápida: score [0,96; 0,98; 0,98], TBT [201; 157; 145] ms, LCP ~1.408–1.567 ms e CLS ~0,00496. Ainda não há amostra Lighthouse **depois** desta atualização; ela depende do workflow do GitHub após o push e não foi estimada por screenshot.
+O baseline Lighthouse do CI (run `42429874392`) tinha três execuções móveis por rota. Home: score [0,95; 0,98; 0,98], TBT [195; 27,5; 41] ms, LCP ~2.002–2.040 ms e CLS 0. Partida rápida: score [0,96; 0,98; 0,98], TBT [201; 157; 145] ms, LCP ~1.408–1.567 ms e CLS ~0,00496. No SHA `308bc386`, o job Lighthouse obrigatório do workflow **Quality gates passou**. Uma captura do job diagnóstico separado saiu sem score com `runtimeError: NO_NAVSTART`; as duas repetições seguintes de `/melhores-formacoes` marcaram score 0,99. O coletor agora preserva o artifact original, repete uma vez somente esse erro transitório e continua falhando em erros diferentes ou persistentes. A verificação remota da nova revisão aguarda o CI pós-push.
 
 O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produzido em `.output`, em vez de procurar `dist/server/server.js`. No build final, o preview respondeu HTTP 200 e verificou 5 rotas (`/`, `/guias`, `/guia-de-scouting`, `/melhores-formacoes`, `/partida-rapida`) em `identity` e `gzip`: **10/10 representações**.
 
@@ -75,11 +84,13 @@ O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produ
 
 | Verificação                                                          | Resultado final                                           |
 | -------------------------------------------------------------------- | --------------------------------------------------------- |
-| Suíte completa (`npm test`)                                          | PASS — 335 arquivos, 1.786/1.786 testes                   |
+| Suíte completa (`npm test`)                                          | PASS — 336 arquivos, 1.792/1.792 testes                   |
 | Regressão focada de batching do estádio                              | PASS — 6/6 testes                                         |
 | Lint (`npm run lint`)                                                | PASS — zero avisos                                        |
 | TypeScript (`npx tsc --noEmit --pretty false`)                       | PASS                                                      |
 | Performance gates                                                    | PASS — 24/24; inclui a fronteira exata de +2.048/+2.049 B |
+| Inventário mobile de draws                                           | PASS local — 74/75 baixa; 114/120 média                   |
+| Coletor de traces Lighthouse                                         | PASS em teste — retry 1× só para NO_NAVSTART              |
 | Build de produção local e `bundle:check`                             | PASS                                                      |
 | Comparação bundle baseline/candidato                                 | PASS — 0 violações                                        |
 | Validação de ambiente público e scanner de credenciais privilegiadas | PASS                                                      |
@@ -109,7 +120,7 @@ Pendências antes de considerar o pedido original concluído:
 1. Implementar autoridade real de partidas no servidor (validação de comandos, snapshots assinados/validados e estado online persistente) e testar com clientes adversariais em staging.
 2. Completar deduplicação/moderação persistentes no backend com RLS/migration/RPC e retentativas seguras.
 3. Completar, revisar nativamente e publicar as traduções pendentes.
-4. Gravar um vídeo contínuo de uma partida completa quando houver ferramenta de captura contínua disponível; as evidências atuais são screenshots reais.
+4. Gravar um vídeo contínuo de uma partida completa no estádio; os seis arquivos disponíveis são apenas amostras de ações de 1,5 s.
 5. Aguardar e revisar Lighthouse/CI do SHA final no GitHub.
 
 O PR #125 continua sendo o PR existente desta branch; não houve merge nem publicação em `jogomanager.com`.

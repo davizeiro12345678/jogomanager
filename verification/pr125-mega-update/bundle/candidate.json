@@ -1,10 +1,10 @@
 {
   "label": "current",
-  "generatedAt": "2026-11-08T03:53:11.645Z",
+  "generatedAt": "2026-11-08T05:15:58.510Z",
   "assets": "/home/ubuntu/jogomanager/.output/public/assets",
-  "totalBytes": 7251245,
-  "totalGzipBytes": 2366489,
-  "totalBrotliBytes": 2235357,
+  "totalBytes": 7253065,
+  "totalGzipBytes": 2366894,
+  "totalBrotliBytes": 2235758,
   "wasmAssets": [
     {
       "name": "basis_transcoder-VXdx5NbI.wasm",
@@ -171,7 +171,7 @@
       ],
       "startupBytes": 1797527,
       "startupGzipBytes": 544973,
-      "startupBrotliBytes": 512071,
+      "startupBrotliBytes": 512078,
       "startupDependencies": [
         "CinematicStage3D-2rtjMKgZ.js",
         "rolldown-runtime-qXqUbbKo.js",
@@ -205,7 +205,7 @@
         "cinematic-artwork-7XHb_cVa.js",
         "registry-D6gFdMgP.js",
         "device--sdEPQNt.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "useSelector-B2iAmda2.js",
         "not-found-Cr0cA9y4.js",
@@ -228,31 +228,31 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
-      "name": "client-CaE85xdE.js",
+      "name": "client-BpytpZG-.js",
       "surface": null,
-      "bytes": 217692,
-      "gzipBytes": 55599,
-      "brotliBytes": 51389,
-      "staticBytes": 219534,
-      "staticGzipBytes": 56575,
-      "staticBrotliBytes": 52285,
+      "bytes": 217972,
+      "gzipBytes": 55646,
+      "brotliBytes": 51434,
+      "staticBytes": 219814,
+      "staticGzipBytes": 56622,
+      "staticBrotliBytes": 52330,
       "dependencies": [
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "tslib.es6-Tae09705.js"
       ],
-      "startupBytes": 716056,
-      "startupGzipBytes": 221283,
-      "startupBrotliBytes": 208613,
+      "startupBytes": 716336,
+      "startupGzipBytes": 221330,
+      "startupBrotliBytes": 208665,
       "startupDependencies": [
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "tslib.es6-Tae09705.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
         "browser-shared-data-CVFFpBDH.js",
@@ -278,27 +278,27 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
-      "name": "dashboard-VeNhdsy9.js",
+      "name": "dashboard-Cpy8jvdV.js",
       "surface": null,
       "bytes": 26006,
       "gzipBytes": 7711,
-      "brotliBytes": 7471,
-      "staticBytes": 1120549,
-      "staticGzipBytes": 387689,
-      "staticBrotliBytes": 367608,
+      "brotliBytes": 7474,
+      "staticBytes": 1120829,
+      "staticGzipBytes": 387738,
+      "staticBrotliBytes": 367660,
       "dependencies": [
-        "dashboard-VeNhdsy9.js",
+        "dashboard-Cpy8jvdV.js",
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "browser-shared-data-CVFFpBDH.js",
         "link-BvnPKVlo.js",
         "useSelector-B2iAmda2.js",
         "useRouter-G9CwxfwK.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -319,15 +319,15 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "custom-data-storage-DljiYLDG.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
         "store-wSL6Ch1F.js",
         "dist-gW0amlhb.js",
-        "screen-kit-jLBSTiuU.js",
+        "screen-kit-Dun89PsN.js",
         "vite-preload-DjzSQ1t3.js",
         "useNavigate-cAx2DSMq.js",
         "useLocation-BC5KSily.js",
@@ -365,7 +365,7 @@
         "dist-uGZ6DfwW.js",
         "Crest-P-wTLjvv.js",
         "arrow-right-CHwGEGK2.js",
-        "ClubHeritagePanel-Cvw0wmPi.js",
+        "ClubHeritagePanel-BmWRGB_D.js",
         "building-complex-CuUhgGq0.js",
         "hud-kRs9X6zg.js",
         "circle-check-BRCMYbcj.js",
@@ -378,26 +378,26 @@
         "achievements-DOAJfhSH.js",
         "onboarding-CsQ0TUn7.js",
         "career-analytics-id-BBwYe80f.js",
-        "training-drills-CQNZ_sRQ.js",
+        "training-drills-BzvFhrYI.js",
         "career-quick-sim-CJ651Bhm.js",
         "career-lineup-DTGQLBqt.js",
         "match-readiness-DGGH_E1j.js",
-        "coin-services-training-BLHUm28a.js",
+        "coin-services-training-D4FBkbi9.js",
         "wallet-rules-DTFVcilw.js",
         "onboarding-progress-EU5Nyd8d.js"
       ],
-      "startupBytes": 1498880,
-      "startupGzipBytes": 507973,
-      "startupBrotliBytes": 481389,
+      "startupBytes": 1499160,
+      "startupGzipBytes": 508022,
+      "startupBrotliBytes": 481448,
       "startupDependencies": [
-        "dashboard-VeNhdsy9.js",
+        "dashboard-Cpy8jvdV.js",
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "browser-shared-data-CVFFpBDH.js",
         "link-BvnPKVlo.js",
         "useSelector-B2iAmda2.js",
         "useRouter-G9CwxfwK.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -418,15 +418,15 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "custom-data-storage-DljiYLDG.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
         "store-wSL6Ch1F.js",
         "dist-gW0amlhb.js",
-        "screen-kit-jLBSTiuU.js",
+        "screen-kit-Dun89PsN.js",
         "vite-preload-DjzSQ1t3.js",
         "useNavigate-cAx2DSMq.js",
         "useLocation-BC5KSily.js",
@@ -464,7 +464,7 @@
         "dist-uGZ6DfwW.js",
         "Crest-P-wTLjvv.js",
         "arrow-right-CHwGEGK2.js",
-        "ClubHeritagePanel-Cvw0wmPi.js",
+        "ClubHeritagePanel-BmWRGB_D.js",
         "building-complex-CuUhgGq0.js",
         "hud-kRs9X6zg.js",
         "circle-check-BRCMYbcj.js",
@@ -477,14 +477,14 @@
         "achievements-DOAJfhSH.js",
         "onboarding-CsQ0TUn7.js",
         "career-analytics-id-BBwYe80f.js",
-        "training-drills-CQNZ_sRQ.js",
+        "training-drills-BzvFhrYI.js",
         "career-quick-sim-CJ651Bhm.js",
         "career-lineup-DTGQLBqt.js",
         "match-readiness-DGGH_E1j.js",
-        "coin-services-training-BLHUm28a.js",
+        "coin-services-training-D4FBkbi9.js",
         "wallet-rules-DTFVcilw.js",
         "onboarding-progress-EU5Nyd8d.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "useRouteContext-CaleAzWt.js",
         "route-DGzBVhU7.js",
@@ -493,7 +493,7 @@
         "real-football.functions-BJt9mIdj.js",
         "faq-DJ306U-j.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -522,7 +522,7 @@
       ],
       "startupBytes": 555789,
       "startupGzipBytes": 186464,
-      "startupBrotliBytes": 176824,
+      "startupBrotliBytes": 176831,
       "startupDependencies": [
         "editor-BKiZywlF.js",
         "rolldown-runtime-qXqUbbKo.js",
@@ -537,7 +537,7 @@
         "dist-BDooeKFh.js",
         "custom-data-storage-DljiYLDG.js",
         "world-scope-h-EL1iu3.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "useSelector-B2iAmda2.js",
         "not-found-Cr0cA9y4.js",
@@ -560,29 +560,26 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
-      "name": "index-DvBpEzsZ.js",
+      "name": "index-Ba3iyM9O.js",
       "surface": null,
       "bytes": 1446,
       "gzipBytes": 817,
-      "brotliBytes": 759,
+      "brotliBytes": 760,
       "staticBytes": 2829,
       "staticGzipBytes": 1566,
-      "staticBrotliBytes": 1439,
-      "dependencies": [
-        "index-DvBpEzsZ.js",
-        "vite-preload-DjzSQ1t3.js"
-      ],
+      "staticBrotliBytes": 1440,
+      "dependencies": ["index-Ba3iyM9O.js", "vite-preload-DjzSQ1t3.js"],
       "startupBytes": 497295,
       "startupGzipBytes": 165157,
-      "startupBrotliBytes": 156745,
+      "startupBrotliBytes": 156752,
       "startupDependencies": [
-        "index-DvBpEzsZ.js",
+        "index-Ba3iyM9O.js",
         "vite-preload-DjzSQ1t3.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "browser-shared-data-CVFFpBDH.js",
@@ -611,16 +608,16 @@
       ]
     },
     {
-      "name": "jogador.index-CxeLBb6a.js",
+      "name": "jogador.index-BHgMLF3s.js",
       "surface": null,
       "bytes": 4442,
       "gzipBytes": 1668,
-      "brotliBytes": 1578,
-      "staticBytes": 1181906,
-      "staticGzipBytes": 366034,
-      "staticBrotliBytes": 343232,
+      "brotliBytes": 1576,
+      "staticBytes": 1182186,
+      "staticGzipBytes": 366082,
+      "staticBrotliBytes": 343277,
       "dependencies": [
-        "jogador.index-CxeLBb6a.js",
+        "jogador.index-BHgMLF3s.js",
         "browser-react-Bc96TmvK.js",
         "rolldown-runtime-qXqUbbKo.js",
         "browser-shared-data-CVFFpBDH.js",
@@ -631,9 +628,9 @@
         "plus-QlgREj4B.js",
         "trash-DYjcRZnQ.js",
         "leagues-BR5n06uY.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "button-CDR1XxzM.js",
         "utils-bDc2aGUK.js",
@@ -642,7 +639,7 @@
         "customStyle-B55yYDvc.js",
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
-        "athlete-vayM_u4J.js",
+        "athlete-CYrodQ6e.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -657,11 +654,11 @@
         "visual-settings-Bln6QbLu.js",
         "player-career-export-qKudrpEm.js"
       ],
-      "startupBytes": 1581160,
-      "startupGzipBytes": 494162,
-      "startupBrotliBytes": 464444,
+      "startupBytes": 1581440,
+      "startupGzipBytes": 494210,
+      "startupBrotliBytes": 464496,
       "startupDependencies": [
-        "jogador.index-CxeLBb6a.js",
+        "jogador.index-BHgMLF3s.js",
         "browser-react-Bc96TmvK.js",
         "rolldown-runtime-qXqUbbKo.js",
         "browser-shared-data-CVFFpBDH.js",
@@ -672,9 +669,9 @@
         "plus-QlgREj4B.js",
         "trash-DYjcRZnQ.js",
         "leagues-BR5n06uY.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "button-CDR1XxzM.js",
         "utils-bDc2aGUK.js",
@@ -683,7 +680,7 @@
         "customStyle-B55yYDvc.js",
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
-        "athlete-vayM_u4J.js",
+        "athlete-CYrodQ6e.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -697,7 +694,7 @@
         "three.core-CqqFKHSV.js",
         "visual-settings-Bln6QbLu.js",
         "player-career-export-qKudrpEm.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "vite-preload-DjzSQ1t3.js",
         "hero-stadium-PScAb1CK.js",
         "useRouteContext-CaleAzWt.js",
@@ -713,20 +710,20 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
-      "name": "jogador.painel-Cl7-yJmp.js",
+      "name": "jogador.painel-SxKH57mt.js",
       "surface": null,
       "bytes": 19758,
-      "gzipBytes": 6438,
-      "brotliBytes": 6208,
-      "staticBytes": 1206254,
-      "staticGzipBytes": 374993,
-      "staticBrotliBytes": 351687,
+      "gzipBytes": 6437,
+      "brotliBytes": 6207,
+      "staticBytes": 1206534,
+      "staticGzipBytes": 375040,
+      "staticBrotliBytes": 351733,
       "dependencies": [
-        "jogador.painel-Cl7-yJmp.js",
+        "jogador.painel-SxKH57mt.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -755,11 +752,11 @@
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
         "PlayerStats-CFSomRb4.js",
-        "athlete-vayM_u4J.js",
+        "athlete-CYrodQ6e.js",
         "createClientRpc-BAN5BKDq.js",
         "qss-JC7fkHHg.js",
-        "useAuthUserId-BYayuVvE.js",
-        "client-CaE85xdE.js",
+        "useAuthUserId-FsPsmZmI.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
@@ -772,11 +769,11 @@
         "career-analytics-id-BBwYe80f.js",
         "player-career-export-qKudrpEm.js"
       ],
-      "startupBytes": 1599062,
-      "startupGzipBytes": 500350,
-      "startupBrotliBytes": 470362,
+      "startupBytes": 1599342,
+      "startupGzipBytes": 500397,
+      "startupBrotliBytes": 470415,
       "startupDependencies": [
-        "jogador.painel-Cl7-yJmp.js",
+        "jogador.painel-SxKH57mt.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -805,11 +802,11 @@
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
         "PlayerStats-CFSomRb4.js",
-        "athlete-vayM_u4J.js",
+        "athlete-CYrodQ6e.js",
         "createClientRpc-BAN5BKDq.js",
         "qss-JC7fkHHg.js",
-        "useAuthUserId-BYayuVvE.js",
-        "client-CaE85xdE.js",
+        "useAuthUserId-FsPsmZmI.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
@@ -821,7 +818,7 @@
         "visual-settings-Bln6QbLu.js",
         "career-analytics-id-BBwYe80f.js",
         "player-career-export-qKudrpEm.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "public-content-routes-CuoWt6Aj.js",
         "useLocation-BC5KSily.js",
@@ -832,20 +829,20 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
-      "name": "match-YsL8WtoD.js",
+      "name": "match-B8rnskG_.js",
       "surface": null,
       "bytes": 51705,
-      "gzipBytes": 16537,
-      "brotliBytes": 15944,
-      "staticBytes": 1307031,
-      "staticGzipBytes": 457892,
-      "staticBrotliBytes": 434618,
+      "gzipBytes": 16534,
+      "brotliBytes": 15939,
+      "staticBytes": 1307311,
+      "staticGzipBytes": 457938,
+      "staticBrotliBytes": 434661,
       "dependencies": [
-        "match-YsL8WtoD.js",
+        "match-B8rnskG_.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -854,7 +851,7 @@
         "useSelector-B2iAmda2.js",
         "useRouter-G9CwxfwK.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -875,9 +872,9 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "custom-data-storage-DljiYLDG.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
@@ -899,7 +896,7 @@
         "copy-Bt8959Bd.js",
         "pause-CYkj-dS7.js",
         "play-p80js3ec.js",
-        "NarrationSettings-BiKxkgJB.js",
+        "NarrationSettings-C4w1H1lO.js",
         "settings-2-re7J7nXT.js",
         "narrator-Dl7hdJzE.js",
         "audio-cache-DqhgVBlY.js",
@@ -937,18 +934,18 @@
         "live-match-buffer-B8xmf43q.js",
         "live-match-DXbQRxY4.js",
         "match-command-validation-B6DQ-zS3.js",
-        "quickMatch-C40tnRUS.js",
+        "quickMatch-Dn8rjeGO.js",
         "career-lineup-DTGQLBqt.js",
-        "stadium-loading-Cd-tmUhc.js",
+        "stadium-loading-qlVDoKZu.js",
         "MatchHud-Du0quOyn.js",
         "MatchLoading-CHQevYwj.js",
         "replay-BTTgkJ9s.js"
       ],
-      "startupBytes": 1686597,
-      "startupGzipBytes": 578966,
-      "startupBrotliBytes": 549089,
+      "startupBytes": 1686877,
+      "startupGzipBytes": 579012,
+      "startupBrotliBytes": 549139,
       "startupDependencies": [
-        "match-YsL8WtoD.js",
+        "match-B8rnskG_.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -957,7 +954,7 @@
         "useSelector-B2iAmda2.js",
         "useRouter-G9CwxfwK.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -978,9 +975,9 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "custom-data-storage-DljiYLDG.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
@@ -1002,7 +999,7 @@
         "copy-Bt8959Bd.js",
         "pause-CYkj-dS7.js",
         "play-p80js3ec.js",
-        "NarrationSettings-BiKxkgJB.js",
+        "NarrationSettings-C4w1H1lO.js",
         "settings-2-re7J7nXT.js",
         "narrator-Dl7hdJzE.js",
         "audio-cache-DqhgVBlY.js",
@@ -1040,13 +1037,13 @@
         "live-match-buffer-B8xmf43q.js",
         "live-match-DXbQRxY4.js",
         "match-command-validation-B6DQ-zS3.js",
-        "quickMatch-C40tnRUS.js",
+        "quickMatch-Dn8rjeGO.js",
         "career-lineup-DTGQLBqt.js",
-        "stadium-loading-Cd-tmUhc.js",
+        "stadium-loading-qlVDoKZu.js",
         "MatchHud-Du0quOyn.js",
         "MatchLoading-CHQevYwj.js",
         "replay-BTTgkJ9s.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "useRouteContext-CaleAzWt.js",
         "useMatch-CEsUHTXG.js",
@@ -1058,7 +1055,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1070,15 +1067,13 @@
       "staticBytes": 3156,
       "staticGzipBytes": 1327,
       "staticBrotliBytes": 1267,
-      "dependencies": [
-        "match-command-validation-B6DQ-zS3.js"
-      ],
+      "dependencies": ["match-command-validation-B6DQ-zS3.js"],
       "startupBytes": 500451,
       "startupGzipBytes": 166484,
-      "startupBrotliBytes": 158012,
+      "startupBrotliBytes": 158019,
       "startupDependencies": [
         "match-command-validation-B6DQ-zS3.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1105,7 +1100,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1117,15 +1112,13 @@
       "staticBytes": 190,
       "staticGzipBytes": 145,
       "staticBrotliBytes": 122,
-      "dependencies": [
-        "match-execution-contract-9hHF8ABD.js"
-      ],
+      "dependencies": ["match-execution-contract-9hHF8ABD.js"],
       "startupBytes": 497485,
       "startupGzipBytes": 165302,
-      "startupBrotliBytes": 156867,
+      "startupBrotliBytes": 156874,
       "startupDependencies": [
         "match-execution-contract-9hHF8ABD.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1152,7 +1145,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1164,17 +1157,14 @@
       "staticBytes": 1988,
       "staticGzipBytes": 1078,
       "staticBrotliBytes": 1004,
-      "dependencies": [
-        "match-physics-extras-BTJPrMQK.js",
-        "rng-CzXaq355.js"
-      ],
+      "dependencies": ["match-physics-extras-BTJPrMQK.js", "rng-CzXaq355.js"],
       "startupBytes": 499283,
       "startupGzipBytes": 166235,
-      "startupBrotliBytes": 157749,
+      "startupBrotliBytes": 157756,
       "startupDependencies": [
         "match-physics-extras-BTJPrMQK.js",
         "rng-CzXaq355.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1201,7 +1191,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1213,17 +1203,14 @@
       "staticBytes": 1703,
       "staticGzipBytes": 1023,
       "staticBrotliBytes": 954,
-      "dependencies": [
-        "match-probability-7MyZRe-m.js",
-        "rng-CzXaq355.js"
-      ],
+      "dependencies": ["match-probability-7MyZRe-m.js", "rng-CzXaq355.js"],
       "startupBytes": 498998,
       "startupGzipBytes": 166180,
-      "startupBrotliBytes": 157699,
+      "startupBrotliBytes": 157706,
       "startupDependencies": [
         "match-probability-7MyZRe-m.js",
         "rng-CzXaq355.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1250,7 +1237,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1270,13 +1257,13 @@
       ],
       "startupBytes": 505287,
       "startupGzipBytes": 168895,
-      "startupBrotliBytes": 160318,
+      "startupBrotliBytes": 160325,
       "startupDependencies": [
         "match-readiness-DGGH_E1j.js",
         "rng-CzXaq355.js",
         "player-match-attributes-D67tjs-B.js",
         "match-probability-7MyZRe-m.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1303,7 +1290,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1315,27 +1302,23 @@
       "staticBytes": 89540,
       "staticGzipBytes": 29956,
       "staticBrotliBytes": 28858,
-      "dependencies": [
-        "match.worker-BzCJABGQ.js"
-      ],
+      "dependencies": ["match.worker-BzCJABGQ.js"],
       "startupBytes": 89540,
       "startupGzipBytes": 29956,
       "startupBrotliBytes": 28858,
-      "startupDependencies": [
-        "match.worker-BzCJABGQ.js"
-      ]
+      "startupDependencies": ["match.worker-BzCJABGQ.js"]
     },
     {
-      "name": "new-3_aeq09U.js",
+      "name": "new-BpveDkAw.js",
       "surface": "new",
       "bytes": 19872,
-      "gzipBytes": 6888,
-      "brotliBytes": 6667,
-      "staticBytes": 903898,
-      "staticGzipBytes": 310711,
-      "staticBrotliBytes": 294661,
+      "gzipBytes": 6886,
+      "brotliBytes": 6663,
+      "staticBytes": 904178,
+      "staticGzipBytes": 310755,
+      "staticBrotliBytes": 294703,
       "dependencies": [
-        "new-3_aeq09U.js",
+        "new-BpveDkAw.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1344,7 +1327,7 @@
         "useSelector-B2iAmda2.js",
         "useRouter-G9CwxfwK.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -1365,9 +1348,9 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "custom-data-storage-DljiYLDG.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
@@ -1383,25 +1366,25 @@
         "shield-BqzYrC9j.js",
         "star-AQnSpmqN.js",
         "trophy-CUC8CaGj.js",
-        "career-CbHI7Xad.js",
+        "career-DurrweKQ.js",
         "career-lineup-DTGQLBqt.js",
         "formations-bQjyPzU7.js",
         "match-readiness-DGGH_E1j.js",
         "Crest-P-wTLjvv.js",
         "cinematic-loading-Do9krzc8.js",
-        "world-CNy9p6PB.js",
-        "db-catalog-DMagNkMU.js",
+        "world-DfDjUzpY.js",
+        "db-catalog-BamQwLZu.js",
         "my-club-storage-C-jvUuTX.js",
         "ManagerPortrait-Dt50aZn0.js",
         "moderation-BJEbd3mx.js",
         "career-analytics-id-BBwYe80f.js",
         "Flag-hMbE_du_.js"
       ],
-      "startupBytes": 1283464,
-      "startupGzipBytes": 431785,
-      "startupBrotliBytes": 409132,
+      "startupBytes": 1283744,
+      "startupGzipBytes": 431829,
+      "startupBrotliBytes": 409181,
       "startupDependencies": [
-        "new-3_aeq09U.js",
+        "new-BpveDkAw.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1410,7 +1393,7 @@
         "useSelector-B2iAmda2.js",
         "useRouter-G9CwxfwK.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "createClientRpc-BAN5BKDq.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -1431,9 +1414,9 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "custom-data-storage-DljiYLDG.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "tslib.es6-Tae09705.js",
         "auth-middleware-jScsstZa.js",
         "createMiddleware-DQnh37QV.js",
@@ -1449,20 +1432,20 @@
         "shield-BqzYrC9j.js",
         "star-AQnSpmqN.js",
         "trophy-CUC8CaGj.js",
-        "career-CbHI7Xad.js",
+        "career-DurrweKQ.js",
         "career-lineup-DTGQLBqt.js",
         "formations-bQjyPzU7.js",
         "match-readiness-DGGH_E1j.js",
         "Crest-P-wTLjvv.js",
         "cinematic-loading-Do9krzc8.js",
-        "world-CNy9p6PB.js",
-        "db-catalog-DMagNkMU.js",
+        "world-DfDjUzpY.js",
+        "db-catalog-BamQwLZu.js",
         "my-club-storage-C-jvUuTX.js",
         "ManagerPortrait-Dt50aZn0.js",
         "moderation-BJEbd3mx.js",
         "career-analytics-id-BBwYe80f.js",
         "Flag-hMbE_du_.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "useRouteContext-CaleAzWt.js",
         "useMatch-CEsUHTXG.js",
@@ -1474,20 +1457,20 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
-      "name": "partida-rapida-BXvUw3qL.js",
+      "name": "partida-rapida-DKaEhVoh.js",
       "surface": null,
       "bytes": 9164,
-      "gzipBytes": 3849,
+      "gzipBytes": 3846,
       "brotliBytes": 3653,
       "staticBytes": 471571,
-      "staticGzipBytes": 169324,
+      "staticGzipBytes": 169321,
       "staticBrotliBytes": 160610,
       "dependencies": [
-        "partida-rapida-BXvUw3qL.js",
+        "partida-rapida-DKaEhVoh.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1508,10 +1491,10 @@
         "MatchLoading-CHQevYwj.js"
       ],
       "startupBytes": 907139,
-      "startupGzipBytes": 309932,
-      "startupBrotliBytes": 293910,
+      "startupGzipBytes": 309929,
+      "startupBrotliBytes": 293917,
       "startupDependencies": [
-        "partida-rapida-BXvUw3qL.js",
+        "partida-rapida-DKaEhVoh.js",
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
@@ -1530,7 +1513,7 @@
         "career-analytics-id-BBwYe80f.js",
         "Flag-hMbE_du_.js",
         "MatchLoading-CHQevYwj.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "hero-stadium-PScAb1CK.js",
         "not-found-Cr0cA9y4.js",
         "qss-JC7fkHHg.js",
@@ -1550,7 +1533,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     },
     {
@@ -1595,7 +1578,7 @@
       ],
       "startupBytes": 523994,
       "startupGzipBytes": 175741,
-      "startupBrotliBytes": 166746,
+      "startupBrotliBytes": 166753,
       "startupDependencies": [
         "routes-DpguIIFA.js",
         "rolldown-runtime-qXqUbbKo.js",
@@ -1626,7 +1609,7 @@
         "SiteFooter-C2r4qw_g.js",
         "share-BWNHBJhL.js",
         "creator-pvFOfpGx.js",
-        "hydrate-app-Djgifvpc.js",
+        "hydrate-app-y8GH5r9-.js",
         "createClientRpc-BAN5BKDq.js",
         "public-content-routes-CuoWt6Aj.js",
         "useLocation-BC5KSily.js",
@@ -1638,7 +1621,7 @@
         "faq-DJ306U-j.js",
         "wallet-rules-DTFVcilw.js",
         "store-catalog-NTaSHAXH.js",
-        "index-DvBpEzsZ.js"
+        "index-Ba3iyM9O.js"
       ]
     }
   ],
@@ -1649,9 +1632,7 @@
       "gzipBytes": 195352,
       "brotliBytes": 176560,
       "surface": null,
-      "imports": [
-        "three.core-CqqFKHSV.js"
-      ],
+      "imports": ["three.core-CqqFKHSV.js"],
       "dynamicImports": []
     },
     {
@@ -1673,9 +1654,7 @@
       "gzipBytes": 168664,
       "brotliBytes": 160154,
       "surface": null,
-      "imports": [
-        "match.worker-BzCJABGQ.js"
-      ],
+      "imports": ["match.worker-BzCJABGQ.js"],
       "dynamicImports": []
     },
     {
@@ -1693,16 +1672,14 @@
       "gzipBytes": 129991,
       "brotliBytes": 123194,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js"],
       "dynamicImports": []
     },
     {
-      "name": "hydrate-app-Djgifvpc.js",
+      "name": "hydrate-app-y8GH5r9-.js",
       "bytes": 290586,
       "gzipBytes": 88001,
-      "brotliBytes": 82404,
+      "brotliBytes": 82410,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -1728,81 +1705,81 @@
         "faq-DJ306U-j.js"
       ],
       "dynamicImports": [
-        "client-CaE85xdE.js",
-        "RootLayout-BgOiFYAY.js",
+        "client-BpytpZG-.js",
+        "RootLayout-s8NzA6Yv.js",
         "RootFailure-DQ44oPjl.js",
         "RootFailure-DQ44oPjl.js",
         "routes-DpguIIFA.js",
         "analise-de-partida-de-futebol-CdNPN-c6.js",
-        "assistente-yBaa59-v.js",
-        "auth-D3YEWJdm.js",
-        "board-DaE--aZR.js",
-        "cadastro-uuQWwEeO.js",
-        "carreira-Brk4Obhc.js",
-        "carreiras-CLzswPW0.js",
-        "chat-BVIAkW_W.js",
+        "assistente-CfJdieiZ.js",
+        "auth-Bax0O3Et.js",
+        "board-DH2BqJZU.js",
+        "cadastro-Be0IIUCY.js",
+        "carreira-CBEVeiYt.js",
+        "carreiras-CgAEJc53.js",
+        "chat-DpXq0MBZ.js",
         "game-page-metadata-Cn1Mk2rn.js",
-        "club-BH4pNrv_.js",
-        "coletiva-BJjgNLRo.js",
+        "club-CofrXMWO.js",
+        "coletiva-Cm2QnS-A.js",
         "comparativo-jogos-manager-Cg92ukRL.js",
         "compartilhar-DuKQCJ3C.js",
-        "compras-CuBtZigs.js",
-        "conquistas-DYckxElV.js",
+        "compras-DR6lw8-Q.js",
+        "conquistas-D0rG9UTk.js",
         "contato-DKk7_2aP.js",
         "criador-BMOINkRk.js",
-        "cup-COKGLle6.js",
-        "dashboard-VeNhdsy9.js",
+        "cup-D9p8Ux6V.js",
+        "dashboard-Cpy8jvdV.js",
         "dicas-de-gestao-xzFtOgSd.js",
         "editor-BKiZywlF.js",
-        "finances-Bng2c6kj.js",
+        "finances-S0kXiL9X.js",
         "glossario-do-futebol-TRewG6vZ.js",
         "guia-de-scouting-CEJN8xPv.js",
         "guias-ydehWK2C.js",
-        "history-Ckio1KQb.js",
+        "history-DAV4z_u9.js",
         "jogar-offline-BB-96hQp.js",
         "jogo-de-manager-de-futebol-BWxyHc4F.js",
-        "league-CXU4lEo4.js",
-        "loja-DFBQy_Oh.js",
-        "match-YsL8WtoD.js",
+        "league-ak9NNMBC.js",
+        "loja-DUU43w7m.js",
+        "match-B8rnskG_.js",
         "melhores-formacoes-DkYZJa-X.js",
         "mercado-de-transferencias-phwbSoDx.js",
         "modo-carreira-de-jogador-BWi9-uza.js",
-        "multiplayer-gbXDcbmV.js",
-        "new-3_aeq09U.js",
-        "news-DXkJ81XV.js",
-        "partida-rapida-BXvUw3qL.js",
-        "perfil-jtYdSUKK.js",
+        "multiplayer-CDfjV4fJ.js",
+        "new-BpveDkAw.js",
+        "news-BbpobzzG.js",
+        "partida-rapida-DKaEhVoh.js",
+        "perfil-0Q1oeBqs.js",
         "perguntas-frequentes-D9-elhxv.js",
         "planejamento-de-elenco-EqfWvjN8.js",
-        "pre-jogo-DfiBvYaN.js",
-        "privacidade-B3xr6yO5.js",
-        "produtos-Bjm4WOq2.js",
+        "pre-jogo-CaQzhFYo.js",
+        "privacidade-Cqr8JgVB.js",
+        "produtos-Cc3cAxPr.js",
         "regras-CKPPbV3j.js",
-        "replays-CHidOedl.js",
-        "scouting-DHrBhAId.js",
+        "replays-nDhd4R51.js",
+        "scouting-CCBphpXg.js",
         "sobre-SvQCBnIx.js",
-        "squad-CWC99D23.js",
-        "stats-Dj336Qdw.js",
-        "tactics-DoosyD6S.js",
-        "temporada-automatica-DLXNNiNv.js",
+        "squad-6gDf8mpL.js",
+        "stats-Br4A87nH.js",
+        "tactics-DXXHiTZm.js",
+        "temporada-automatica-BMw2uguc.js",
         "termos-B2H9d2_O.js",
-        "training-DlNHoRL0.js",
-        "transfers-fOOixGbD.js",
-        "visual-B2TXdR2i.js",
-        "claim-BJSitZXA.js",
-        "guest-CFG4LsYw.js",
-        "return-RwrO6GxE.js",
-        "clube.novo-Ciq-IElj.js",
-        "jogador.index-CxeLBb6a.js",
-        "jogador.novo-DfkzxG0Z.js",
-        "jogador.painel-Cl7-yJmp.js",
+        "training-JCv9cRXO.js",
+        "transfers-DSacIk0S.js",
+        "visual-Dr0PNaFl.js",
+        "claim-C0F3qNMd.js",
+        "guest-4nkHXHg2.js",
+        "return-BWz7xPv0.js",
+        "clube.novo-BwQKRprZ.js",
+        "jogador.index-BHgMLF3s.js",
+        "jogador.novo-Bk1GuQxr.js",
+        "jogador.painel-SxKH57mt.js",
         "tabelas.index-iwx2hKCX.js",
         "tabelas._slug-CbrksdxD.js",
         "tabelas._slug-BYZCQ5xn.js",
         "tabelas._slug-VzgHrey4.js",
-        "client-CaE85xdE.js",
-        "client-CaE85xdE.js",
-        "_._lovable.oauth.consent-E-agXoM-.js",
+        "client-BpytpZG-.js",
+        "client-BpytpZG-.js",
+        "_._lovable.oauth.consent-Cfgb_19g.js",
         "_._lovable.oauth.consent-E-8wQNG-.js"
       ]
     },
@@ -1822,22 +1799,19 @@
       "dynamicImports": []
     },
     {
-      "name": "client-CaE85xdE.js",
-      "bytes": 217692,
-      "gzipBytes": 55599,
-      "brotliBytes": 51389,
+      "name": "client-BpytpZG-.js",
+      "bytes": 217972,
+      "gzipBytes": 55646,
+      "brotliBytes": 51434,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "tslib.es6-Tae09705.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "tslib.es6-Tae09705.js"],
       "dynamicImports": []
     },
     {
-      "name": "Stadium3D-BGCo1vSW.js",
-      "bytes": 194396,
-      "gzipBytes": 64664,
-      "brotliBytes": 60274,
+      "name": "Stadium3D-DO48KF2v.js",
+      "bytes": 194676,
+      "gzipBytes": 64743,
+      "brotliBytes": 60341,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -1930,10 +1904,7 @@
       "gzipBytes": 18559,
       "brotliBytes": 17202,
       "surface": null,
-      "imports": [
-        "rapier-bindings-0662abc031a65bdd.js",
-        "rapier-bindings-0662abc031a65bdd.js"
-      ],
+      "imports": ["rapier-bindings-0662abc031a65bdd.js", "rapier-bindings-0662abc031a65bdd.js"],
       "dynamicImports": []
     },
     {
@@ -1952,9 +1923,9 @@
       ]
     },
     {
-      "name": "screen-kit-jLBSTiuU.js",
+      "name": "screen-kit-Dun89PsN.js",
       "bytes": 84255,
-      "gzipBytes": 26665,
+      "gzipBytes": 26667,
       "brotliBytes": 25292,
       "surface": null,
       "imports": [
@@ -1964,7 +1935,7 @@
         "link-BvnPKVlo.js",
         "useNavigate-cAx2DSMq.js",
         "useLocation-BC5KSily.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "AccessibilitySettings-D3GwUBXu.js",
         "book-open-C6a1JvU0.js",
         "sheet-CX8HAvyf.js",
@@ -1994,16 +1965,16 @@
         "tabs-CLQ55sc0.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
-        "client-CaE85xdE.js",
-        "useAuthUserId-BYayuVvE.js",
+        "client-BpytpZG-.js",
+        "useAuthUserId-FsPsmZmI.js",
         "button-CDR1XxzM.js",
         "dist-CxsyPTr-.js",
         "Crest-P-wTLjvv.js"
       ],
       "dynamicImports": [
         "CareerTutorialDialog-CAa2W6h5.js",
-        "stadium-loading-Cd-tmUhc.js",
-        "logout-CXFx_Nxz.js"
+        "stadium-loading-qlVDoKZu.js",
+        "logout-hx8n0hyg.js"
       ]
     },
     {
@@ -2062,10 +2033,7 @@
         "cinematic-overlay-5if_X0Fw.js",
         "cinematic-loading-Do9krzc8.js"
       ],
-      "dynamicImports": [
-        "CutsceneBackdrop-Cd_OoWFY.js",
-        "CutsceneSettings-BZPfvtHE.js"
-      ]
+      "dynamicImports": ["CutsceneBackdrop-Cd_OoWFY.js", "CutsceneSettings-BZPfvtHE.js"]
     },
     {
       "name": "surface-context-state-CFL1RBc9.js",
@@ -2112,9 +2080,7 @@
         "registry-D6gFdMgP.js",
         "device--sdEPQNt.js"
       ],
-      "dynamicImports": [
-        "CinematicLens-cWMW9OWD.js"
-      ]
+      "dynamicImports": ["CinematicLens-cWMW9OWD.js"]
     },
     {
       "name": "messages-DVpeFLhg.js",
@@ -2122,10 +2088,7 @@
       "gzipBytes": 25269,
       "brotliBytes": 22760,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "browser-shared-data-CVFFpBDH.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "browser-shared-data-CVFFpBDH.js"],
       "dynamicImports": []
     },
     {
@@ -2186,10 +2149,10 @@
       "dynamicImports": []
     },
     {
-      "name": "match-YsL8WtoD.js",
+      "name": "match-B8rnskG_.js",
       "bytes": 51705,
-      "gzipBytes": 16537,
-      "brotliBytes": 15944,
+      "gzipBytes": 16534,
+      "brotliBytes": 15939,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -2197,7 +2160,7 @@
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "activity-CUO5wBZh.js",
         "sheet-CX8HAvyf.js",
         "check-D1CHMYLn.js",
@@ -2206,7 +2169,7 @@
         "copy-Bt8959Bd.js",
         "pause-CYkj-dS7.js",
         "play-p80js3ec.js",
-        "NarrationSettings-BiKxkgJB.js",
+        "NarrationSettings-C4w1H1lO.js",
         "sparkles-BzHYJz09.js",
         "star-AQnSpmqN.js",
         "volume-2-CmvQ1Eug.js",
@@ -2233,20 +2196,20 @@
         "Cutscene-D7-BmFNh.js",
         "ceremony-prefs-CTfMFcZt.js",
         "simWorkerClient-BLH11Pyq.js",
-        "quickMatch-C40tnRUS.js",
+        "quickMatch-Dn8rjeGO.js",
         "live-match-DXbQRxY4.js",
-        "stadium-loading-Cd-tmUhc.js",
+        "stadium-loading-qlVDoKZu.js",
         "MatchHud-Du0quOyn.js",
         "MatchLoading-CHQevYwj.js",
         "replay-BTTgkJ9s.js"
       ],
       "dynamicImports": [
-        "screen-kit-jLBSTiuU.js",
+        "screen-kit-Dun89PsN.js",
         "PrematchCeremony-CzVQPiPz.js",
-        "StorePanel-Da4PBYn9.js",
-        "ChatPanel-VbSKmALt.js",
+        "StorePanel-CpmlQIph.js",
+        "ChatPanel-NhigEe8T.js",
         "MatchStatsPanel-BLJqoY3X.js",
-        "MatchReport-GjKtRYqt.js"
+        "MatchReport-UQHcRUQg.js"
       ]
     },
     {
@@ -2261,9 +2224,7 @@
         "browser-shared-data-CVFFpBDH.js",
         "audio-cache-DqhgVBlY.js"
       ],
-      "dynamicImports": [
-        "tts.functions-CQ-sOmXQ.js"
-      ]
+      "dynamicImports": ["tts.functions-CQ-sOmXQ.js"]
     },
     {
       "name": "PlayerStudio-1Ng4W9xt.js",
@@ -2306,18 +2267,18 @@
       "dynamicImports": []
     },
     {
-      "name": "carreira-Brk4Obhc.js",
+      "name": "carreira-CBEVeiYt.js",
       "bytes": 44008,
-      "gzipBytes": 14809,
-      "brotliBytes": 14392,
+      "gzipBytes": 14808,
+      "brotliBytes": 14391,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "arrow-right-CHwGEGK2.js",
         "book-open-C6a1JvU0.js",
         "check-D1CHMYLn.js",
@@ -2337,14 +2298,12 @@
         "cast-Cmg2DYi8.js",
         "Cutscene-D7-BmFNh.js",
         "autoplay-Bo_9dbTJ.js",
-        "analytics-DoJbQJ6H.js",
+        "analytics-BrznRwee.js",
         "LeagueStandings-BuOi4Nbi.js",
         "choice-effects-CHYrLn_o.js",
         "unhappy-C3oYH013.js"
       ],
-      "dynamicImports": [
-        "simWorkerClient-BLH11Pyq.js"
-      ]
+      "dynamicImports": ["simWorkerClient-BLH11Pyq.js"]
     },
     {
       "name": "browser-react-Bc96TmvK.js",
@@ -2352,10 +2311,7 @@
       "gzipBytes": 13818,
       "brotliBytes": 13260,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-shared-data-CVFFpBDH.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-shared-data-CVFFpBDH.js"],
       "dynamicImports": []
     },
     {
@@ -2364,11 +2320,7 @@
       "gzipBytes": 12383,
       "brotliBytes": 12024,
       "surface": null,
-      "imports": [
-        "not-found-Cr0cA9y4.js",
-        "qss-JC7fkHHg.js",
-        "redirect-DmtLUW0N.js"
-      ],
+      "imports": ["not-found-Cr0cA9y4.js", "qss-JC7fkHHg.js", "redirect-DmtLUW0N.js"],
       "dynamicImports": []
     },
     {
@@ -2377,14 +2329,11 @@
       "gzipBytes": 9331,
       "brotliBytes": 8887,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "useCareer-BVdmVrRW.js",
+      "name": "useCareer-Dbb5PsJf.js",
       "bytes": 32215,
       "gzipBytes": 12018,
       "brotliBytes": 11671,
@@ -2404,7 +2353,7 @@
         "rng-CzXaq355.js",
         "attributes-BONyCLzq.js",
         "customData-BqRFWjPJ.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "auth-middleware-jScsstZa.js",
         "store-wSL6Ch1F.js"
       ],
@@ -2416,16 +2365,13 @@
       "gzipBytes": 9946,
       "brotliBytes": 9418,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "produtos-Bjm4WOq2.js",
+      "name": "produtos-Cc3cAxPr.js",
       "bytes": 30458,
-      "gzipBytes": 9378,
+      "gzipBytes": 9379,
       "brotliBytes": 9115,
       "surface": null,
       "imports": [
@@ -2437,12 +2383,12 @@
         "browser-shared-data-CVFFpBDH.js",
         "clipboard-list-BYgXOOVq.js",
         "coins-BxhF2bgg.js",
-        "CareerValueBox-CN7SvujL.js",
+        "CareerValueBox-DBfb3KqE.js",
         "dumbbell-DrSinrwk.js",
         "heart-pulse-GP1BJs98.js",
         "GuestSignInNotice-uqV05HpB.js",
         "search-zH7kM-rd.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "button-CDR1XxzM.js",
         "dist-C0qdD--j.js",
         "friendly-error-CjYPWD3f.js",
@@ -2450,24 +2396,22 @@
         "badge-9OjtI1_f.js",
         "store-catalog-NTaSHAXH.js",
         "PublicLinks-DeaCYdVW.js",
-        "PaymentTestModeBanner-BNgKiyf-.js"
+        "PaymentTestModeBanner-DYAjANAS.js"
       ],
-      "dynamicImports": [
-        "PackScene-BZkQIAvO.js"
-      ]
+      "dynamicImports": ["PackScene-BZkQIAvO.js"]
     },
     {
-      "name": "squad-CWC99D23.js",
+      "name": "squad-6gDf8mpL.js",
       "bytes": 29044,
       "gzipBytes": 8591,
-      "brotliBytes": 8258,
+      "brotliBytes": 8260,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "QueryClientProvider-Cmy5sDBR.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "building-complex-CuUhgGq0.js",
         "heart-pulse-GP1BJs98.js",
         "GuestSignInNotice-uqV05HpB.js",
@@ -2478,7 +2422,7 @@
         "attributes-BONyCLzq.js",
         "formations-bQjyPzU7.js",
         "overall-DQJqOWrv.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "button-CDR1XxzM.js",
         "dist-C0qdD--j.js",
         "player-model-BGNiaAl5.js",
@@ -2489,7 +2433,7 @@
         "coin-services-DrM8PTm0.js",
         "StadiumUpgradePreview-DPYVmnJB.js",
         "onboarding-progress-EU5Nyd8d.js",
-        "useStoredServices-EeVm2Nqp.js",
+        "useStoredServices-BpC800EM.js",
         "coin-services.functions-BoeEdkUU.js"
       ],
       "dynamicImports": []
@@ -2517,19 +2461,19 @@
       "dynamicImports": []
     },
     {
-      "name": "dashboard-VeNhdsy9.js",
+      "name": "dashboard-Cpy8jvdV.js",
       "bytes": 26006,
       "gzipBytes": 7711,
-      "brotliBytes": 7471,
+      "brotliBytes": 7474,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "arrow-right-CHwGEGK2.js",
-        "ClubHeritagePanel-Cvw0wmPi.js",
+        "ClubHeritagePanel-BmWRGB_D.js",
         "check-D1CHMYLn.js",
         "circle-check-BRCMYbcj.js",
         "clipboard-list-BYgXOOVq.js",
@@ -2551,29 +2495,29 @@
         "Crest-P-wTLjvv.js",
         "hud-kRs9X6zg.js",
         "career-analytics-id-BBwYe80f.js",
-        "training-drills-CQNZ_sRQ.js",
+        "training-drills-BzvFhrYI.js",
         "onboarding-progress-EU5Nyd8d.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "transfers-fOOixGbD.js",
+      "name": "transfers-DSacIk0S.js",
       "bytes": 25955,
-      "gzipBytes": 8746,
-      "brotliBytes": 8519,
+      "gzipBytes": 8744,
+      "brotliBytes": 8517,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "useQuery-DpKvODJ2.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "useServerFn-BmSY69Fb.js",
         "leagues-BR5n06uY.js",
         "rng-CzXaq355.js",
         "player-match-attributes-D67tjs-B.js",
         "attributes-BONyCLzq.js",
-        "career-jobs-4e97yKy9.js",
+        "career-jobs-BeeUpeAT.js",
         "finance-forecast-C-gvP2mY.js",
         "Crest-P-wTLjvv.js"
       ],
@@ -2661,25 +2605,25 @@
       "dynamicImports": []
     },
     {
-      "name": "clube.novo-Ciq-IElj.js",
+      "name": "clube.novo-BwQKRprZ.js",
       "bytes": 21354,
-      "gzipBytes": 6557,
-      "brotliBytes": 6286,
+      "gzipBytes": 6552,
+      "brotliBytes": 6283,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
-        "career-CbHI7Xad.js",
+        "career-DurrweKQ.js",
         "button-CDR1XxzM.js",
         "Crest-P-wTLjvv.js",
         "CrestBuilder-BaxsmSgU.js",
         "crest-options-DWa3Jn1K.js",
         "my-club-storage-C-jvUuTX.js",
-        "world-CNy9p6PB.js",
+        "world-DfDjUzpY.js",
         "CreationSteps-m6-XWAVO.js",
         "ManagerPortrait-Dt50aZn0.js",
         "moderation-BJEbd3mx.js",
@@ -2716,37 +2660,34 @@
       "gzipBytes": 7953,
       "brotliBytes": 7765,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js",
-        "attributes-M6gOkELq.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js", "attributes-M6gOkELq.js"],
       "dynamicImports": []
     },
     {
-      "name": "multiplayer-gbXDcbmV.js",
+      "name": "multiplayer-CDfjV4fJ.js",
       "bytes": 20313,
-      "gzipBytes": 6425,
-      "brotliBytes": 6187,
+      "gzipBytes": 6422,
+      "brotliBytes": 6183,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "silent-errors-BgCdvtAb.js",
-        "screen-kit-jLBSTiuU.js",
+        "screen-kit-Dun89PsN.js",
         "copy-Bt8959Bd.js",
         "play-p80js3ec.js",
         "refresh-cw-1gHxuIna.js",
         "users-Dm3V4pRC.js",
         "leagues-BR5n06uY.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "Crest-P-wTLjvv.js",
-        "Stadium3D-BGCo1vSW.js",
+        "Stadium3D-DO48KF2v.js",
         "device--sdEPQNt.js",
         "simWorkerClient-BLH11Pyq.js",
-        "quickMatch-C40tnRUS.js",
+        "quickMatch-Dn8rjeGO.js",
         "live-match-DXbQRxY4.js"
       ],
       "dynamicImports": [
@@ -2758,10 +2699,10 @@
       ]
     },
     {
-      "name": "new-3_aeq09U.js",
+      "name": "new-BpveDkAw.js",
       "bytes": 19872,
-      "gzipBytes": 6888,
-      "brotliBytes": 6667,
+      "gzipBytes": 6886,
+      "brotliBytes": 6663,
       "surface": "new",
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -2769,7 +2710,7 @@
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
         "useNavigate-cAx2DSMq.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "arrow-left-BGQ9SaTX.js",
         "arrow-right-CHwGEGK2.js",
         "check-D1CHMYLn.js",
@@ -2781,25 +2722,54 @@
         "star-AQnSpmqN.js",
         "trophy-CUC8CaGj.js",
         "leagues-BR5n06uY.js",
-        "career-CbHI7Xad.js",
+        "career-DurrweKQ.js",
         "Crest-P-wTLjvv.js",
         "cinematic-loading-Do9krzc8.js",
-        "world-CNy9p6PB.js",
+        "world-DfDjUzpY.js",
         "ManagerPortrait-Dt50aZn0.js",
         "moderation-BJEbd3mx.js",
         "career-analytics-id-BBwYe80f.js",
         "Flag-hMbE_du_.js"
       ],
+      "dynamicImports": ["Cutscene-D7-BmFNh.js", "db-catalog-BamQwLZu.js"]
+    },
+    {
+      "name": "auth-Bax0O3Et.js",
+      "bytes": 19811,
+      "gzipBytes": 6451,
+      "brotliBytes": 6245,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-Bc96TmvK.js",
+        "link-BvnPKVlo.js",
+        "route-DGzBVhU7.js",
+        "useNavigate-cAx2DSMq.js",
+        "circle-check-BRCMYbcj.js",
+        "cloud-DfUeQcUc.js",
+        "eye-_DkozNRM.js",
+        "passkey-auth-DcI0OK9s.js",
+        "gamepad-2-DeeSRryN.js",
+        "mail-BvooS9wR.js",
+        "shield-check-Cz1LnhVi.js",
+        "client-BpytpZG-.js",
+        "button-CDR1XxzM.js",
+        "mfa-session-1m0rNkVv.js"
+      ],
       "dynamicImports": [
-        "Cutscene-D7-BmFNh.js",
-        "db-catalog-DMagNkMU.js"
+        "PhoneAuthPanel-BzwrhWds.js",
+        "MfaChallenge-ixYPy9yl.js",
+        "lovable-9VoV0d20.js",
+        "lovable-9VoV0d20.js",
+        "logout-hx8n0hyg.js"
       ]
     },
     {
-      "name": "jogador.painel-Cl7-yJmp.js",
+      "name": "jogador.painel-SxKH57mt.js",
       "bytes": 19758,
-      "gzipBytes": 6438,
-      "brotliBytes": 6208,
+      "gzipBytes": 6437,
+      "brotliBytes": 6207,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -2818,7 +2788,7 @@
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
         "PlayerStats-CFSomRb4.js",
-        "athlete-vayM_u4J.js",
+        "athlete-CYrodQ6e.js",
         "career-analytics-id-BBwYe80f.js",
         "player-career-export-qKudrpEm.js"
       ],
@@ -2830,38 +2800,6 @@
         "PlayerNationalTab-pvlVgWnu.js",
         "PlayerContractTab-CF1Uj5BG.js",
         "PlayerHistoryTab-ZEX60t1I.js"
-      ]
-    },
-    {
-      "name": "auth-D3YEWJdm.js",
-      "bytes": 19671,
-      "gzipBytes": 6381,
-      "brotliBytes": 6177,
-      "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "vite-preload-DjzSQ1t3.js",
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js",
-        "route-DGzBVhU7.js",
-        "useNavigate-cAx2DSMq.js",
-        "circle-check-BRCMYbcj.js",
-        "cloud-DfUeQcUc.js",
-        "eye-_DkozNRM.js",
-        "passkey-auth-BTJL16gr.js",
-        "gamepad-2-DeeSRryN.js",
-        "mail-BvooS9wR.js",
-        "shield-check-Cz1LnhVi.js",
-        "client-CaE85xdE.js",
-        "button-CDR1XxzM.js",
-        "mfa-session-1m0rNkVv.js"
-      ],
-      "dynamicImports": [
-        "PhoneAuthPanel-BHFZLX7V.js",
-        "MfaChallenge-BJ3fKxd5.js",
-        "lovable-CyasDUSS.js",
-        "lovable-CyasDUSS.js",
-        "logout-CXFx_Nxz.js"
       ]
     },
     {
@@ -2883,9 +2821,9 @@
       "dynamicImports": []
     },
     {
-      "name": "perfil-jtYdSUKK.js",
+      "name": "perfil-0Q1oeBqs.js",
       "bytes": 18599,
-      "gzipBytes": 6508,
+      "gzipBytes": 6503,
       "brotliBytes": 6288,
       "surface": null,
       "imports": [
@@ -2893,30 +2831,30 @@
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
-        "ClubHeritagePanel-Cvw0wmPi.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
+        "ClubHeritagePanel-BmWRGB_D.js",
         "sheet-CX8HAvyf.js",
         "download-DWREEsMM.js",
-        "passkey-auth-BTJL16gr.js",
-        "AdZones-Cm1x29bW.js",
+        "passkey-auth-DcI0OK9s.js",
+        "AdZones-lFT1cv8u.js",
         "shield-check-Cz1LnhVi.js",
         "leagues-BR5n06uY.js",
         "attributes-BONyCLzq.js",
         "achievements-DOAJfhSH.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "button-CDR1XxzM.js",
         "Crest-P-wTLjvv.js",
-        "GuestCloudPrompt-CchyCP47.js",
-        "ad-manager-RC3gBjS_.js",
+        "GuestCloudPrompt-MnevTSgt.js",
+        "ad-manager-DZdrMCku.js",
         "friendly-error-CjYPWD3f.js",
         "hud-kRs9X6zg.js",
         "ManagerPortrait-Dt50aZn0.js"
       ],
       "dynamicImports": [
-        "AuthenticatorSettings-CwWXXykC.js",
+        "AuthenticatorSettings-CHEnF3UB.js",
         "PhoneMFASettings-BMTVpQyJ.js",
-        "VerifiedPhoneSettings-dlqlokvG.js"
+        "VerifiedPhoneSettings-DqJNCMH2.js"
       ]
     },
     {
@@ -2925,10 +2863,7 @@
       "gzipBytes": 5834,
       "brotliBytes": 5577,
       "surface": null,
-      "imports": [
-        "index.esm-DK2PWSuD.js",
-        "index.esm-DFriaTyf.js"
-      ],
+      "imports": ["index.esm-DK2PWSuD.js", "index.esm-DFriaTyf.js"],
       "dynamicImports": []
     },
     {
@@ -2997,7 +2932,7 @@
       "dynamicImports": []
     },
     {
-      "name": "StorePanel-Da4PBYn9.js",
+      "name": "StorePanel-CpmlQIph.js",
       "bytes": 17256,
       "gzipBytes": 6307,
       "brotliBytes": 6063,
@@ -3013,7 +2948,7 @@
         "silent-errors-BgCdvtAb.js",
         "clipboard-list-BYgXOOVq.js",
         "coins-BxhF2bgg.js",
-        "CareerValueBox-CN7SvujL.js",
+        "CareerValueBox-DBfb3KqE.js",
         "dumbbell-DrSinrwk.js",
         "heart-pulse-GP1BJs98.js",
         "GuestSignInNotice-uqV05HpB.js",
@@ -3022,12 +2957,12 @@
         "utils-bDc2aGUK.js",
         "dist-B9dTK-yb.js",
         "useServerFn-BmSY69Fb.js",
-        "client-CaE85xdE.js",
-        "useAuthUserId-BYayuVvE.js",
+        "client-BpytpZG-.js",
+        "useAuthUserId-FsPsmZmI.js",
         "auth-middleware-jScsstZa.js",
         "button-CDR1XxzM.js",
         "dist-C0qdD--j.js",
-        "ad-manager-RC3gBjS_.js",
+        "ad-manager-DZdrMCku.js",
         "friendly-error-CjYPWD3f.js",
         "embedded-checkout-BNqb1ylJ.js",
         "input-7hH7714V.js",
@@ -3035,9 +2970,7 @@
         "wallet-rules-DTFVcilw.js",
         "badge-9OjtI1_f.js"
       ],
-      "dynamicImports": [
-        "analytics-DoJbQJ6H.js"
-      ]
+      "dynamicImports": ["analytics-BrznRwee.js"]
     },
     {
       "name": "dicas-de-gestao-xzFtOgSd.js",
@@ -3061,10 +2994,7 @@
       "gzipBytes": 4077,
       "brotliBytes": 3855,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -3098,17 +3028,17 @@
       "dynamicImports": []
     },
     {
-      "name": "visual-B2TXdR2i.js",
+      "name": "visual-Dr0PNaFl.js",
       "bytes": 16555,
       "gzipBytes": 5424,
-      "brotliBytes": 5233,
+      "brotliBytes": 5237,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "sheet-CX8HAvyf.js",
         "check-D1CHMYLn.js",
         "clapperboard-CM9MzFMb.js",
@@ -3121,10 +3051,7 @@
         "grass-CPFnpd9O.js",
         "CrestBuilder-BaxsmSgU.js"
       ],
-      "dynamicImports": [
-        "PlayerStudio-1Ng4W9xt.js",
-        "CinematicStudio-DPvP_Tg0.js"
-      ]
+      "dynamicImports": ["PlayerStudio-1Ng4W9xt.js", "CinematicStudio-DPvP_Tg0.js"]
     },
     {
       "name": "th-BCDOvE7-.js",
@@ -3205,10 +3132,10 @@
       "dynamicImports": []
     },
     {
-      "name": "privacidade-B3xr6yO5.js",
+      "name": "privacidade-Cqr8JgVB.js",
       "bytes": 14898,
-      "gzipBytes": 5988,
-      "brotliBytes": 5767,
+      "gzipBytes": 5987,
+      "brotliBytes": 5769,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -3222,11 +3149,11 @@
         "dist-DtBXnKyZ.js",
         "utils-bDc2aGUK.js",
         "dist-B9dTK-yb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "button-CDR1XxzM.js",
         "dist-uGZ6DfwW.js",
         "firebase-config.functions-BRS5RHAj.js",
-        "firebase-push-DF7J8f7O.js",
+        "firebase-push-DDKFwR7f.js",
         "PublicLinks-DeaCYdVW.js",
         "SiteFooter-C2r4qw_g.js"
       ],
@@ -3256,10 +3183,7 @@
       "gzipBytes": 6012,
       "brotliBytes": 5906,
       "surface": null,
-      "imports": [
-        "wallet-rules-DTFVcilw.js",
-        "store-catalog-NTaSHAXH.js"
-      ],
+      "imports": ["wallet-rules-DTFVcilw.js", "store-catalog-NTaSHAXH.js"],
       "dynamicImports": []
     },
     {
@@ -3296,16 +3220,16 @@
       "dynamicImports": []
     },
     {
-      "name": "athlete-vayM_u4J.js",
+      "name": "athlete-CYrodQ6e.js",
       "bytes": 13844,
-      "gzipBytes": 4750,
+      "gzipBytes": 4751,
       "brotliBytes": 4600,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "createClientRpc-BAN5BKDq.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "auth-middleware-jScsstZa.js",
         "store-wSL6Ch1F.js",
         "appearance-BwiqRcBu.js"
@@ -3313,39 +3237,10 @@
       "dynamicImports": []
     },
     {
-      "name": "jogador.novo-DfkzxG0Z.js",
-      "bytes": 13624,
-      "gzipBytes": 4746,
-      "brotliBytes": 4573,
-      "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "vite-preload-DjzSQ1t3.js",
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js",
-        "route-DGzBVhU7.js",
-        "useNavigate-cAx2DSMq.js",
-        "screen-kit-jLBSTiuU.js",
-        "arrow-left-BGQ9SaTX.js",
-        "leagues-BR5n06uY.js",
-        "button-CDR1XxzM.js",
-        "Crest-P-wTLjvv.js",
-        "attributes-M6gOkELq.js",
-        "engine-Otr2Asr2.js",
-        "appearance-BwiqRcBu.js",
-        "athlete-vayM_u4J.js",
-        "CreationSteps-m6-XWAVO.js",
-        "career-analytics-id-BBwYe80f.js"
-      ],
-      "dynamicImports": [
-        "AthleteHero3D-BKpJOCln.js"
-      ]
-    },
-    {
-      "name": "CareerValueBox-CN7SvujL.js",
-      "bytes": 13575,
-      "gzipBytes": 5989,
-      "brotliBytes": 5777,
+      "name": "CareerValueBox-DBfb3KqE.js",
+      "bytes": 13715,
+      "gzipBytes": 6057,
+      "brotliBytes": 5847,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -3358,13 +3253,40 @@
         "heart-pulse-GP1BJs98.js",
         "search-zH7kM-rd.js",
         "useServerFn-BmSY69Fb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "auth-middleware-jScsstZa.js",
         "button-CDR1XxzM.js",
         "embedded-checkout-BNqb1ylJ.js",
         "wallet-rules-DTFVcilw.js"
       ],
       "dynamicImports": []
+    },
+    {
+      "name": "jogador.novo-Bk1GuQxr.js",
+      "bytes": 13624,
+      "gzipBytes": 4744,
+      "brotliBytes": 4573,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-react-Bc96TmvK.js",
+        "link-BvnPKVlo.js",
+        "route-DGzBVhU7.js",
+        "useNavigate-cAx2DSMq.js",
+        "screen-kit-Dun89PsN.js",
+        "arrow-left-BGQ9SaTX.js",
+        "leagues-BR5n06uY.js",
+        "button-CDR1XxzM.js",
+        "Crest-P-wTLjvv.js",
+        "attributes-M6gOkELq.js",
+        "engine-Otr2Asr2.js",
+        "appearance-BwiqRcBu.js",
+        "athlete-CYrodQ6e.js",
+        "CreationSteps-m6-XWAVO.js",
+        "career-analytics-id-BBwYe80f.js"
+      ],
+      "dynamicImports": ["AthleteHero3D-BKpJOCln.js"]
     },
     {
       "name": "melhores-formacoes-DkYZJa-X.js",
@@ -3381,10 +3303,10 @@
       "dynamicImports": []
     },
     {
-      "name": "training-DlNHoRL0.js",
+      "name": "training-JCv9cRXO.js",
       "bytes": 12863,
-      "gzipBytes": 4044,
-      "brotliBytes": 3918,
+      "gzipBytes": 4042,
+      "brotliBytes": 3916,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -3393,16 +3315,16 @@
         "createClientRpc-BAN5BKDq.js",
         "QueryClientProvider-Cmy5sDBR.js",
         "useQuery-DpKvODJ2.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "dumbbell-DrSinrwk.js",
         "useServerFn-BmSY69Fb.js",
         "leagues-BR5n06uY.js",
         "attributes-BONyCLzq.js",
         "auth-middleware-jScsstZa.js",
         "dist-C0qdD--j.js",
-        "training-drills-CQNZ_sRQ.js",
-        "DevelopmentServicesCard-CBBOrVWi.js"
+        "training-drills-BzvFhrYI.js",
+        "DevelopmentServicesCard-uRDKv65B.js"
       ],
       "dynamicImports": []
     },
@@ -3421,11 +3343,7 @@
       "gzipBytes": 5258,
       "brotliBytes": 5112,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js",
-        "rng-CzXaq355.js",
-        "player-match-attributes-D67tjs-B.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js", "rng-CzXaq355.js", "player-match-attributes-D67tjs-B.js"],
       "dynamicImports": []
     },
     {
@@ -3456,9 +3374,9 @@
       "dynamicImports": []
     },
     {
-      "name": "club-BH4pNrv_.js",
+      "name": "club-CofrXMWO.js",
       "bytes": 12016,
-      "gzipBytes": 3725,
+      "gzipBytes": 3726,
       "brotliBytes": 3567,
       "surface": null,
       "imports": [
@@ -3466,10 +3384,10 @@
         "link-BvnPKVlo.js",
         "createClientRpc-BAN5BKDq.js",
         "useQuery-DpKvODJ2.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "building-complex-CuUhgGq0.js",
-        "ClubHeritagePanel-Cvw0wmPi.js",
+        "ClubHeritagePanel-BmWRGB_D.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "attributes-BONyCLzq.js",
@@ -3481,16 +3399,16 @@
       "dynamicImports": []
     },
     {
-      "name": "cadastro-uuQWwEeO.js",
+      "name": "cadastro-Be0IIUCY.js",
       "bytes": 11826,
-      "gzipBytes": 3165,
+      "gzipBytes": 3164,
       "brotliBytes": 2996,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "screen-kit-jLBSTiuU.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
         "custom-data-storage-DljiYLDG.js",
         "customData-BqRFWjPJ.js",
@@ -3504,10 +3422,7 @@
       "gzipBytes": 3332,
       "brotliBytes": 3186,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -3530,9 +3445,7 @@
       "gzipBytes": 4600,
       "brotliBytes": 4391,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -3568,10 +3481,10 @@
       "dynamicImports": []
     },
     {
-      "name": "pre-jogo-DfiBvYaN.js",
+      "name": "pre-jogo-CaQzhFYo.js",
       "bytes": 10364,
       "gzipBytes": 4004,
-      "brotliBytes": 3880,
+      "brotliBytes": 3882,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -3579,8 +3492,8 @@
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
         "QueryClientProvider-Cmy5sDBR.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "GuestSignInNotice-uqV05HpB.js",
         "play-p80js3ec.js",
         "users-Dm3V4pRC.js",
@@ -3589,7 +3502,7 @@
         "useServerFn-BmSY69Fb.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "dist-C0qdD--j.js",
         "Crest-P-wTLjvv.js",
         "cinematic-loading-Do9krzc8.js",
@@ -3598,25 +3511,23 @@
         "coin-services-DrM8PTm0.js",
         "career-analytics-id-BBwYe80f.js",
         "onboarding-progress-EU5Nyd8d.js",
-        "useStoredServices-EeVm2Nqp.js",
+        "useStoredServices-BpC800EM.js",
         "coin-services.functions-BoeEdkUU.js"
       ],
-      "dynamicImports": [
-        "tts.functions-CQ-sOmXQ.js"
-      ]
+      "dynamicImports": ["tts.functions-CQ-sOmXQ.js"]
     },
     {
-      "name": "assistente-yBaa59-v.js",
+      "name": "assistente-CfJdieiZ.js",
       "bytes": 10354,
-      "gzipBytes": 3619,
-      "brotliBytes": 3467,
+      "gzipBytes": 3618,
+      "brotliBytes": 3466,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "createClientRpc-BAN5BKDq.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "useServerFn-BmSY69Fb.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
@@ -3655,10 +3566,7 @@
         "silent-errors-BgCdvtAb.js",
         "presentation-lanes-ba9gThZ4.js"
       ],
-      "dynamicImports": [
-        "three.webgpu-V5MP-uBd.js",
-        "react-three-fiber.esm-xY6QsaKg.js"
-      ]
+      "dynamicImports": ["three.webgpu-V5MP-uBd.js", "react-three-fiber.esm-xY6QsaKg.js"]
     },
     {
       "name": "ko-BygGiYFB.js",
@@ -3670,10 +3578,10 @@
       "dynamicImports": []
     },
     {
-      "name": "QuickLive-C_xhx-ng.js",
+      "name": "QuickLive-g96nEjUS.js",
       "bytes": 10152,
-      "gzipBytes": 3712,
-      "brotliBytes": 3532,
+      "gzipBytes": 3714,
+      "brotliBytes": 3529,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -3682,18 +3590,18 @@
         "career-interface-C6HF0rGX.js",
         "pause-CYkj-dS7.js",
         "play-p80js3ec.js",
-        "NarrationSettings-BiKxkgJB.js",
+        "NarrationSettings-C4w1H1lO.js",
         "volume-2-CmvQ1Eug.js",
         "volume-x-1VjB1Cht.js",
         "x-CKEOH7_U.js",
         "club-reference-ciXdP64N.js",
         "Crest-P-wTLjvv.js",
-        "Stadium3D-BGCo1vSW.js",
+        "Stadium3D-DO48KF2v.js",
         "visual-settings-Bln6QbLu.js",
         "device--sdEPQNt.js",
-        "MatchReport-GjKtRYqt.js",
+        "MatchReport-UQHcRUQg.js",
         "simWorkerClient-BLH11Pyq.js",
-        "quickMatch-C40tnRUS.js",
+        "quickMatch-Dn8rjeGO.js",
         "live-match-DXbQRxY4.js"
       ],
       "dynamicImports": []
@@ -3718,10 +3626,7 @@
       "gzipBytes": 3755,
       "brotliBytes": 3543,
       "surface": null,
-      "imports": [
-        "index.esm-DK2PWSuD.js",
-        "index.esm-DFriaTyf.js"
-      ],
+      "imports": ["index.esm-DK2PWSuD.js", "index.esm-DFriaTyf.js"],
       "dynamicImports": []
     },
     {
@@ -3739,24 +3644,20 @@
       "gzipBytes": 3206,
       "brotliBytes": 3152,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js",
-        "arrow-right-CHwGEGK2.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "link-BvnPKVlo.js", "arrow-right-CHwGEGK2.js"],
       "dynamicImports": []
     },
     {
-      "name": "carreiras-CLzswPW0.js",
+      "name": "carreiras-CgAEJc53.js",
       "bytes": 9656,
-      "gzipBytes": 3147,
+      "gzipBytes": 3146,
       "brotliBytes": 3042,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "arrow-left-BGQ9SaTX.js",
         "arrow-right-CHwGEGK2.js",
         "cloud-DfUeQcUc.js",
@@ -3768,7 +3669,7 @@
         "Crest-P-wTLjvv.js",
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
-        "athlete-vayM_u4J.js"
+        "athlete-CYrodQ6e.js"
       ],
       "dynamicImports": []
     },
@@ -3809,16 +3710,16 @@
       "dynamicImports": []
     },
     {
-      "name": "coletiva-BJjgNLRo.js",
+      "name": "coletiva-Cm2QnS-A.js",
       "bytes": 9448,
-      "gzipBytes": 3865,
-      "brotliBytes": 3758,
+      "gzipBytes": 3863,
+      "brotliBytes": 3757,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "cast-Cmg2DYi8.js",
@@ -3845,10 +3746,10 @@
       "dynamicImports": []
     },
     {
-      "name": "RootLayout-BgOiFYAY.js",
+      "name": "RootLayout-s8NzA6Yv.js",
       "bytes": 9304,
-      "gzipBytes": 3550,
-      "brotliBytes": 3333,
+      "gzipBytes": 3546,
+      "brotliBytes": 3327,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -3889,27 +3790,27 @@
         "zh-CN-Be0YiBcb.js",
         "messages-DVpeFLhg.js",
         "AccessibilitySettings-D3GwUBXu.js",
-        "world-CNy9p6PB.js",
-        "analytics-DoJbQJ6H.js",
+        "world-DfDjUzpY.js",
+        "analytics-BrznRwee.js",
         "game-page-metadata-Cn1Mk2rn.js",
         "sonner-D-ofVtxS.js"
       ]
     },
     {
-      "name": "ChatPanel-VbSKmALt.js",
+      "name": "ChatPanel-NhigEe8T.js",
       "bytes": 9208,
-      "gzipBytes": 3701,
-      "brotliBytes": 3503,
+      "gzipBytes": 3702,
+      "brotliBytes": 3502,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
         "createClientRpc-BAN5BKDq.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "utils-bDc2aGUK.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "auth-middleware-jScsstZa.js",
         "button-CDR1XxzM.js",
         "dist-C0qdD--j.js"
@@ -3917,9 +3818,9 @@
       "dynamicImports": []
     },
     {
-      "name": "partida-rapida-BXvUw3qL.js",
+      "name": "partida-rapida-DKaEhVoh.js",
       "bytes": 9164,
-      "gzipBytes": 3849,
+      "gzipBytes": 3846,
       "brotliBytes": 3653,
       "surface": null,
       "imports": [
@@ -3937,8 +3838,8 @@
         "MatchLoading-CHQevYwj.js"
       ],
       "dynamicImports": [
-        "QuickLive-C_xhx-ng.js",
-        "world-CNy9p6PB.js",
+        "QuickLive-g96nEjUS.js",
+        "world-DfDjUzpY.js",
         "game-stylesheet-BkcTCJ1b.js"
       ]
     },
@@ -3966,10 +3867,7 @@
       "gzipBytes": 3220,
       "brotliBytes": 3109,
       "surface": null,
-      "imports": [
-        "three.core-CqqFKHSV.js",
-        "customStyle-B55yYDvc.js"
-      ],
+      "imports": ["three.core-CqqFKHSV.js", "customStyle-B55yYDvc.js"],
       "dynamicImports": []
     },
     {
@@ -3982,16 +3880,16 @@
       "dynamicImports": []
     },
     {
-      "name": "tactics-DoosyD6S.js",
+      "name": "tactics-DXXHiTZm.js",
       "bytes": 8778,
-      "gzipBytes": 3317,
-      "brotliBytes": 3158,
+      "gzipBytes": 3319,
+      "brotliBytes": 3156,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "attributes-BONyCLzq.js",
         "formations-bQjyPzU7.js",
         "career-lineup-DTGQLBqt.js",
@@ -4025,9 +3923,7 @@
       "brotliBytes": 3042,
       "surface": null,
       "imports": [],
-      "dynamicImports": [
-        "crowd_visibility_wasm-9l9rN_DD.js"
-      ]
+      "dynamicImports": ["crowd_visibility_wasm-9l9rN_DD.js"]
     },
     {
       "name": "LeagueStandings-BuOi4Nbi.js",
@@ -4084,9 +3980,7 @@
       "gzipBytes": 3416,
       "brotliBytes": 3172,
       "surface": null,
-      "imports": [
-        "three.core-CqqFKHSV.js"
-      ],
+      "imports": ["three.core-CqqFKHSV.js"],
       "dynamicImports": []
     },
     {
@@ -4117,10 +4011,7 @@
       "gzipBytes": 3206,
       "brotliBytes": 3089,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js",
-        "events-D4NqERbT.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js", "events-D4NqERbT.js"],
       "dynamicImports": []
     },
     {
@@ -4217,9 +4108,7 @@
       "gzipBytes": 2832,
       "brotliBytes": 2705,
       "surface": null,
-      "imports": [
-        "index.esm-DK2PWSuD.js"
-      ],
+      "imports": ["index.esm-DK2PWSuD.js"],
       "dynamicImports": []
     },
     {
@@ -4303,10 +4192,10 @@
       "dynamicImports": []
     },
     {
-      "name": "compras-CuBtZigs.js",
+      "name": "compras-DR6lw8-Q.js",
       "bytes": 7444,
-      "gzipBytes": 3001,
-      "brotliBytes": 2891,
+      "gzipBytes": 2999,
+      "brotliBytes": 2889,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -4314,17 +4203,17 @@
         "link-BvnPKVlo.js",
         "createClientRpc-BAN5BKDq.js",
         "useQuery-DpKvODJ2.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "circle-check-BRCMYbcj.js",
         "triangle-alert-C8-4J6Vn.js",
         "useServerFn-BmSY69Fb.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "auth-middleware-jScsstZa.js",
         "button-CDR1XxzM.js",
         "embedded-checkout-BNqb1ylJ.js",
         "badge-9OjtI1_f.js",
-        "analytics-DoJbQJ6H.js"
+        "analytics-BrznRwee.js"
       ],
       "dynamicImports": []
     },
@@ -4343,10 +4232,10 @@
       "dynamicImports": []
     },
     {
-      "name": "guest-CFG4LsYw.js",
+      "name": "guest-4nkHXHg2.js",
       "bytes": 7257,
       "gzipBytes": 2635,
-      "brotliBytes": 2523,
+      "brotliBytes": 2524,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -4359,7 +4248,7 @@
         "mail-BvooS9wR.js",
         "refresh-cw-1gHxuIna.js",
         "useServerFn-BmSY69Fb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "button-CDR1XxzM.js",
         "guest-checkout.functions-D3QI6NcM.js"
       ],
@@ -4394,15 +4283,15 @@
       "dynamicImports": []
     },
     {
-      "name": "finances-Bng2c6kj.js",
+      "name": "finances-S0kXiL9X.js",
       "bytes": 6691,
       "gzipBytes": 2524,
       "brotliBytes": 2408,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "attributes-BONyCLzq.js",
@@ -4431,10 +4320,7 @@
       "gzipBytes": 2382,
       "brotliBytes": 2256,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -4443,9 +4329,7 @@
       "gzipBytes": 2718,
       "brotliBytes": 2589,
       "surface": null,
-      "imports": [
-        "browser-shared-data-CVFFpBDH.js"
-      ],
+      "imports": ["browser-shared-data-CVFFpBDH.js"],
       "dynamicImports": []
     },
     {
@@ -4487,25 +4371,23 @@
       "gzipBytes": 2279,
       "brotliBytes": 2214,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js"],
       "dynamicImports": []
     },
     {
-      "name": "MatchReport-GjKtRYqt.js",
+      "name": "MatchReport-UQHcRUQg.js",
       "bytes": 6254,
-      "gzipBytes": 2217,
-      "brotliBytes": 2112,
+      "gzipBytes": 2214,
+      "brotliBytes": 2110,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "AdZones-Cm1x29bW.js",
+        "AdZones-lFT1cv8u.js",
         "leagues-BR5n06uY.js",
         "button-CDR1XxzM.js",
         "Crest-P-wTLjvv.js",
-        "GuestCloudPrompt-CchyCP47.js"
+        "GuestCloudPrompt-MnevTSgt.js"
       ],
       "dynamicImports": []
     },
@@ -4526,10 +4408,10 @@
       "dynamicImports": []
     },
     {
-      "name": "training-drills-CQNZ_sRQ.js",
+      "name": "training-drills-BzvFhrYI.js",
       "bytes": 6230,
-      "gzipBytes": 2843,
-      "brotliBytes": 2738,
+      "gzipBytes": 2842,
+      "brotliBytes": 2740,
       "surface": null,
       "imports": [
         "leagues-BR5n06uY.js",
@@ -4537,7 +4419,7 @@
         "player-match-attributes-D67tjs-B.js",
         "attributes-BONyCLzq.js",
         "career-quick-sim-CJ651Bhm.js",
-        "coin-services-training-BLHUm28a.js"
+        "coin-services-training-D4FBkbi9.js"
       ],
       "dynamicImports": []
     },
@@ -4577,11 +4459,7 @@
       "gzipBytes": 2276,
       "brotliBytes": 2139,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "utils-bDc2aGUK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "utils-bDc2aGUK.js"],
       "dynamicImports": []
     },
     {
@@ -4590,23 +4468,21 @@
       "gzipBytes": 1925,
       "brotliBytes": 1827,
       "surface": null,
-      "imports": [
-        "live-match-buffer-B8xmf43q.js"
-      ],
+      "imports": ["live-match-buffer-B8xmf43q.js"],
       "dynamicImports": []
     },
     {
-      "name": "ClubHeritagePanel-Cvw0wmPi.js",
+      "name": "ClubHeritagePanel-BmWRGB_D.js",
       "bytes": 5777,
       "gzipBytes": 2127,
-      "brotliBytes": 2023,
+      "brotliBytes": 2022,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
         "useQuery-DpKvODJ2.js",
         "building-complex-CuUhgGq0.js",
         "trophy-CUC8CaGj.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "hud-kRs9X6zg.js"
       ],
       "dynamicImports": []
@@ -4632,10 +4508,7 @@
       "gzipBytes": 2060,
       "brotliBytes": 1991,
       "surface": null,
-      "imports": [
-        "_pfm-rapier-source-By09ajC3.js",
-        "match.worker-BzCJABGQ.js"
-      ],
+      "imports": ["_pfm-rapier-source-By09ajC3.js", "match.worker-BzCJABGQ.js"],
       "dynamicImports": []
     },
     {
@@ -4644,9 +4517,7 @@
       "gzipBytes": 1667,
       "brotliBytes": 1574,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -4655,10 +4526,7 @@
       "gzipBytes": 2083,
       "brotliBytes": 2016,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "link-BvnPKVlo.js"],
       "dynamicImports": []
     },
     {
@@ -4680,52 +4548,65 @@
       "dynamicImports": []
     },
     {
-      "name": "replays-CHidOedl.js",
+      "name": "passkey-auth-DcI0OK9s.js",
       "bytes": 5438,
-      "gzipBytes": 2119,
-      "brotliBytes": 2014,
+      "gzipBytes": 2384,
+      "brotliBytes": 2293,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
-        "Stadium3D-BGCo1vSW.js",
+        "silent-errors-BgCdvtAb.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "name": "replays-nDhd4R51.js",
+      "bytes": 5438,
+      "gzipBytes": 2119,
+      "brotliBytes": 2016,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "browser-react-Bc96TmvK.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
+        "Stadium3D-DO48KF2v.js",
         "device--sdEPQNt.js",
         "replay-BTTgkJ9s.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "board-DaE--aZR.js",
+      "name": "board-DH2BqJZU.js",
       "bytes": 5418,
-      "gzipBytes": 1709,
-      "brotliBytes": 1612,
+      "gzipBytes": 1704,
+      "brotliBytes": 1607,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "attributes-BONyCLzq.js",
-        "career-jobs-4e97yKy9.js",
-        "career-staff-B7U7YWHb.js",
+        "career-jobs-BeeUpeAT.js",
+        "career-staff-DN7an9Se.js",
         "Crest-P-wTLjvv.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "stats-Dj336Qdw.js",
+      "name": "stats-Br4A87nH.js",
       "bytes": 5411,
-      "gzipBytes": 1954,
+      "gzipBytes": 1953,
       "brotliBytes": 1862,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "Crest-P-wTLjvv.js"
@@ -4768,21 +4649,19 @@
       "gzipBytes": 2179,
       "brotliBytes": 2115,
       "surface": null,
-      "imports": [
-        "rng-CzXaq355.js"
-      ],
+      "imports": ["rng-CzXaq355.js"],
       "dynamicImports": []
     },
     {
-      "name": "league-CXU4lEo4.js",
+      "name": "league-ak9NNMBC.js",
       "bytes": 5259,
-      "gzipBytes": 2040,
-      "brotliBytes": 1943,
+      "gzipBytes": 2037,
+      "brotliBytes": 1942,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "LeagueStandings-BuOi4Nbi.js",
@@ -4793,15 +4672,15 @@
       "dynamicImports": []
     },
     {
-      "name": "cup-COKGLle6.js",
+      "name": "cup-D9p8Ux6V.js",
       "bytes": 5255,
-      "gzipBytes": 1975,
+      "gzipBytes": 1973,
       "brotliBytes": 1907,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "trophy-CUC8CaGj.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
@@ -4825,10 +4704,10 @@
       "dynamicImports": []
     },
     {
-      "name": "return-RwrO6GxE.js",
+      "name": "return-BWz7xPv0.js",
       "bytes": 5173,
-      "gzipBytes": 2153,
-      "brotliBytes": 2080,
+      "gzipBytes": 2150,
+      "brotliBytes": 2077,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -4840,11 +4719,11 @@
         "coins-BxhF2bgg.js",
         "loader-circle-D-6jl7JR.js",
         "useServerFn-BmSY69Fb.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "auth-middleware-jScsstZa.js",
         "button-CDR1XxzM.js",
         "embedded-checkout-BNqb1ylJ.js",
-        "analytics-DoJbQJ6H.js"
+        "analytics-BrznRwee.js"
       ],
       "dynamicImports": []
     },
@@ -4858,43 +4737,26 @@
       "dynamicImports": []
     },
     {
-      "name": "passkey-auth-BTJL16gr.js",
-      "bytes": 5018,
-      "gzipBytes": 2321,
-      "brotliBytes": 2227,
-      "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "silent-errors-BgCdvtAb.js"
-      ],
-      "dynamicImports": []
-    },
-    {
       "name": "finance-forecast-C-gvP2mY.js",
       "bytes": 4994,
       "gzipBytes": 2221,
       "brotliBytes": 2123,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js",
-        "events-D4NqERbT.js",
-        "attributes-BONyCLzq.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js", "events-D4NqERbT.js", "attributes-BONyCLzq.js"],
       "dynamicImports": []
     },
     {
-      "name": "conquistas-DYckxElV.js",
+      "name": "conquistas-D0rG9UTk.js",
       "bytes": 4937,
-      "gzipBytes": 1941,
-      "brotliBytes": 1824,
+      "gzipBytes": 1938,
+      "brotliBytes": 1822,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "createClientRpc-BAN5BKDq.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "useServerFn-BmSY69Fb.js",
         "achievements-DOAJfhSH.js",
         "auth-middleware-jScsstZa.js"
@@ -4907,10 +4769,7 @@
       "gzipBytes": 2411,
       "brotliBytes": 2303,
       "surface": null,
-      "imports": [
-        "kits-XnZCwkSA.js",
-        "visual-settings-Bln6QbLu.js"
-      ],
+      "imports": ["kits-XnZCwkSA.js", "visual-settings-Bln6QbLu.js"],
       "dynamicImports": []
     },
     {
@@ -4947,17 +4806,17 @@
       "dynamicImports": []
     },
     {
-      "name": "AuthenticatorSettings-CwWXXykC.js",
+      "name": "AuthenticatorSettings-CHEnF3UB.js",
       "bytes": 4657,
       "gzipBytes": 1917,
-      "brotliBytes": 1826,
+      "brotliBytes": 1824,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "mfa-session-1m0rNkVv.js",
-        "MfaChallenge-BJ3fKxd5.js"
+        "MfaChallenge-ixYPy9yl.js"
       ],
       "dynamicImports": []
     },
@@ -5012,10 +4871,10 @@
       "dynamicImports": []
     },
     {
-      "name": "jogador.index-CxeLBb6a.js",
+      "name": "jogador.index-BHgMLF3s.js",
       "bytes": 4442,
       "gzipBytes": 1668,
-      "brotliBytes": 1578,
+      "brotliBytes": 1576,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
@@ -5024,12 +4883,12 @@
         "plus-QlgREj4B.js",
         "trash-DYjcRZnQ.js",
         "leagues-BR5n06uY.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "button-CDR1XxzM.js",
         "Crest-P-wTLjvv.js",
         "attributes-M6gOkELq.js",
         "engine-Otr2Asr2.js",
-        "athlete-vayM_u4J.js",
+        "athlete-CYrodQ6e.js",
         "player-career-export-qKudrpEm.js"
       ],
       "dynamicImports": []
@@ -5040,10 +4899,7 @@
       "gzipBytes": 1815,
       "brotliBytes": 1687,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -5076,16 +4932,16 @@
       "dynamicImports": []
     },
     {
-      "name": "temporada-automatica-DLXNNiNv.js",
+      "name": "temporada-automatica-BMw2uguc.js",
       "bytes": 4180,
-      "gzipBytes": 1749,
+      "gzipBytes": 1748,
       "brotliBytes": 1661,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "sheet-CX8HAvyf.js",
         "play-p80js3ec.js",
         "rotate-ccw-Z8FS_dln.js",
@@ -5121,13 +4977,13 @@
       "dynamicImports": []
     },
     {
-      "name": "career-jobs-4e97yKy9.js",
+      "name": "career-jobs-BeeUpeAT.js",
       "bytes": 4120,
       "gzipBytes": 1728,
       "brotliBytes": 1640,
       "surface": null,
       "imports": [
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "rng-CzXaq355.js",
@@ -5151,28 +5007,36 @@
       "gzipBytes": 1578,
       "brotliBytes": 1518,
       "surface": null,
-      "imports": [
-        "_pfm-rapier-source-By09ajC3.js",
-        "match.worker-BzCJABGQ.js"
-      ],
+      "imports": ["_pfm-rapier-source-By09ajC3.js", "match.worker-BzCJABGQ.js"],
       "dynamicImports": []
     },
     {
-      "name": "MfaChallenge-BJ3fKxd5.js",
+      "name": "MfaChallenge-ixYPy9yl.js",
       "bytes": 4036,
-      "gzipBytes": 1893,
-      "brotliBytes": 1794,
+      "gzipBytes": 1891,
+      "brotliBytes": 1791,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "mfa-session-1m0rNkVv.js"
       ],
-      "dynamicImports": [
-        "logout-CXFx_Nxz.js"
-      ]
+      "dynamicImports": ["logout-hx8n0hyg.js"]
+    },
+    {
+      "name": "analytics-BrznRwee.js",
+      "bytes": 3994,
+      "gzipBytes": 1580,
+      "brotliBytes": 1459,
+      "surface": null,
+      "imports": [
+        "rolldown-runtime-qXqUbbKo.js",
+        "vite-preload-DjzSQ1t3.js",
+        "browser-shared-data-CVFFpBDH.js"
+      ],
+      "dynamicImports": ["firebase-zUPmWf11.js", "module.slim.no-external-CKfnRY3N.js"]
     },
     {
       "name": "rig-geometry.worker-2jH9LDFL.js",
@@ -5181,9 +5045,7 @@
       "brotliBytes": 1786,
       "surface": null,
       "imports": [],
-      "dynamicImports": [
-        "crowd_visibility_wasm-9l9rN_DD.js"
-      ]
+      "dynamicImports": ["crowd_visibility_wasm-9l9rN_DD.js"]
     },
     {
       "name": "route-DGzBVhU7.js",
@@ -5219,10 +5081,7 @@
       "gzipBytes": 1802,
       "brotliBytes": 1693,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -5231,9 +5090,7 @@
       "gzipBytes": 1099,
       "brotliBytes": 1029,
       "surface": null,
-      "imports": [
-        "three.core-CqqFKHSV.js"
-      ],
+      "imports": ["three.core-CqqFKHSV.js"],
       "dynamicImports": []
     },
     {
@@ -5246,19 +5103,17 @@
       "dynamicImports": []
     },
     {
-      "name": "db-catalog-DMagNkMU.js",
+      "name": "db-catalog-BamQwLZu.js",
       "bytes": 3639,
       "gzipBytes": 1799,
-      "brotliBytes": 1718,
+      "brotliBytes": 1717,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "leagues-BR5n06uY.js"
       ],
-      "dynamicImports": [
-        "client-CaE85xdE.js"
-      ]
+      "dynamicImports": ["client-BpytpZG-.js"]
     },
     {
       "name": "termos-B2H9d2_O.js",
@@ -5289,7 +5144,7 @@
       "dynamicImports": []
     },
     {
-      "name": "AdZones-Cm1x29bW.js",
+      "name": "AdZones-lFT1cv8u.js",
       "bytes": 3583,
       "gzipBytes": 1401,
       "brotliBytes": 1290,
@@ -5302,36 +5157,20 @@
         "x-CKEOH7_U.js",
         "utils-bDc2aGUK.js",
         "button-CDR1XxzM.js",
-        "ad-manager-RC3gBjS_.js"
+        "ad-manager-DZdrMCku.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "analytics-DoJbQJ6H.js",
-      "bytes": 3574,
-      "gzipBytes": 1507,
-      "brotliBytes": 1389,
-      "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "vite-preload-DjzSQ1t3.js",
-        "browser-shared-data-CVFFpBDH.js"
-      ],
-      "dynamicImports": [
-        "firebase-zUPmWf11.js",
-        "module.slim.no-external-CKfnRY3N.js"
-      ]
-    },
-    {
-      "name": "NarrationPreferences-AGRvRESH.js",
+      "name": "NarrationPreferences-BFQWpjAl.js",
       "bytes": 3548,
-      "gzipBytes": 1356,
-      "brotliBytes": 1261,
+      "gzipBytes": 1357,
+      "brotliBytes": 1262,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "LanguagePicker-BJ3qzZuZ.js",
         "volume-2-CmvQ1Eug.js",
         "tabs-CLQ55sc0.js",
@@ -5355,21 +5194,18 @@
       "dynamicImports": []
     },
     {
-      "name": "firebase-push-DF7J8f7O.js",
+      "name": "firebase-push-DDKFwR7f.js",
       "bytes": 3505,
       "gzipBytes": 1367,
-      "brotliBytes": 1305,
+      "brotliBytes": 1303,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "firebase-zUPmWf11.js"
       ],
-      "dynamicImports": [
-        "index.esm-BlO81b7Y.js",
-        "index.esm-BlO81b7Y.js"
-      ]
+      "dynamicImports": ["index.esm-BlO81b7Y.js", "index.esm-BlO81b7Y.js"]
     },
     {
       "name": "sheet-CX8HAvyf.js",
@@ -5393,15 +5229,13 @@
       "gzipBytes": 1134,
       "brotliBytes": 1073,
       "surface": null,
-      "imports": [
-        "query-DvNyyp9C.js"
-      ],
+      "imports": ["query-DvNyyp9C.js"],
       "dynamicImports": []
     },
     {
-      "name": "claim-BJSitZXA.js",
+      "name": "claim-C0F3qNMd.js",
       "bytes": 3440,
-      "gzipBytes": 1408,
+      "gzipBytes": 1409,
       "brotliBytes": 1326,
       "surface": null,
       "imports": [
@@ -5413,16 +5247,16 @@
         "circle-x-6I3X95zv.js",
         "loader-circle-D-6jl7JR.js",
         "useServerFn-BmSY69Fb.js",
-        "client-CaE85xdE.js",
+        "client-BpytpZG-.js",
         "button-CDR1XxzM.js",
         "guest-checkout.functions-D3QI6NcM.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "DevelopmentServicesCard-CBBOrVWi.js",
+      "name": "DevelopmentServicesCard-uRDKv65B.js",
       "bytes": 3379,
-      "gzipBytes": 1746,
+      "gzipBytes": 1745,
       "brotliBytes": 1660,
       "surface": null,
       "imports": [
@@ -5433,24 +5267,22 @@
         "GuestSignInNotice-uqV05HpB.js",
         "search-zH7kM-rd.js",
         "useServerFn-BmSY69Fb.js",
-        "useAuthUserId-BYayuVvE.js",
+        "useAuthUserId-FsPsmZmI.js",
         "button-CDR1XxzM.js",
         "dist-C0qdD--j.js",
         "wallet-rules-DTFVcilw.js",
-        "coin-services-training-BLHUm28a.js",
+        "coin-services-training-D4FBkbi9.js",
         "coin-services.functions-BoeEdkUU.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "lovable-CyasDUSS.js",
+      "name": "lovable-9VoV0d20.js",
       "bytes": 3356,
       "gzipBytes": 1585,
-      "brotliBytes": 1466,
+      "brotliBytes": 1465,
       "surface": null,
-      "imports": [
-        "client-CaE85xdE.js"
-      ],
+      "imports": ["client-BpytpZG-.js"],
       "dynamicImports": []
     },
     {
@@ -5468,46 +5300,42 @@
       "dynamicImports": []
     },
     {
-      "name": "ad-manager-RC3gBjS_.js",
+      "name": "ad-manager-DZdrMCku.js",
       "bytes": 3321,
-      "gzipBytes": 1499,
-      "brotliBytes": 1416,
+      "gzipBytes": 1497,
+      "brotliBytes": 1414,
       "surface": null,
-      "imports": [
-        "vite-preload-DjzSQ1t3.js"
-      ],
-      "dynamicImports": [
-        "analytics-DoJbQJ6H.js"
-      ]
+      "imports": ["vite-preload-DjzSQ1t3.js"],
+      "dynamicImports": ["analytics-BrznRwee.js"]
     },
     {
-      "name": "scouting-DHrBhAId.js",
+      "name": "scouting-CCBphpXg.js",
       "bytes": 3318,
-      "gzipBytes": 1470,
-      "brotliBytes": 1402,
+      "gzipBytes": 1467,
+      "brotliBytes": 1400,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
         "useServerFn-BmSY69Fb.js",
         "leagues-BR5n06uY.js",
         "attributes-BONyCLzq.js",
-        "career-staff-B7U7YWHb.js",
-        "career-CbHI7Xad.js",
+        "career-staff-DN7an9Se.js",
+        "career-DurrweKQ.js",
         "dist-C0qdD--j.js",
         "Crest-P-wTLjvv.js",
         "wallet-items.functions-VRDgTpGE.js",
-        "DevelopmentServicesCard-CBBOrVWi.js"
+        "DevelopmentServicesCard-uRDKv65B.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "world-CNy9p6PB.js",
+      "name": "world-DfDjUzpY.js",
       "bytes": 3278,
-      "gzipBytes": 1534,
+      "gzipBytes": 1532,
       "brotliBytes": 1441,
       "surface": null,
       "imports": [
@@ -5516,7 +5344,7 @@
         "customStyle-B55yYDvc.js",
         "world-scope-h-EL1iu3.js",
         "customData-BqRFWjPJ.js",
-        "db-catalog-DMagNkMU.js",
+        "db-catalog-BamQwLZu.js",
         "my-club-storage-C-jvUuTX.js"
       ],
       "dynamicImports": []
@@ -5547,10 +5375,7 @@
       "gzipBytes": 1085,
       "brotliBytes": 998,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "MatchHud-Du0quOyn.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "MatchHud-Du0quOyn.js"],
       "dynamicImports": []
     },
     {
@@ -5568,11 +5393,7 @@
       "gzipBytes": 1357,
       "brotliBytes": 1269,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "dist-DtBXnKyZ.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "dist-DtBXnKyZ.js"],
       "dynamicImports": []
     },
     {
@@ -5596,10 +5417,7 @@
       "gzipBytes": 1574,
       "brotliBytes": 1491,
       "surface": null,
-      "imports": [
-        "events-D4NqERbT.js",
-        "rng-CzXaq355.js"
-      ],
+      "imports": ["events-D4NqERbT.js", "rng-CzXaq355.js"],
       "dynamicImports": []
     },
     {
@@ -5652,28 +5470,28 @@
       "dynamicImports": []
     },
     {
-      "name": "PhoneAuthPanel-BHFZLX7V.js",
+      "name": "PhoneAuthPanel-BzwrhWds.js",
       "bytes": 3060,
       "gzipBytes": 1356,
-      "brotliBytes": 1269,
+      "brotliBytes": 1268,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "client-CaE85xdE.js"
+        "client-BpytpZG-.js"
       ],
       "dynamicImports": []
     },
     {
-      "name": "VerifiedPhoneSettings-dlqlokvG.js",
+      "name": "VerifiedPhoneSettings-DqJNCMH2.js",
       "bytes": 2980,
-      "gzipBytes": 1416,
-      "brotliBytes": 1320,
+      "gzipBytes": 1414,
+      "brotliBytes": 1319,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
-        "client-CaE85xdE.js"
+        "client-BpytpZG-.js"
       ],
       "dynamicImports": []
     },
@@ -5711,9 +5529,7 @@
       "gzipBytes": 1161,
       "brotliBytes": 1104,
       "surface": null,
-      "imports": [
-        "vite-preload-DjzSQ1t3.js"
-      ],
+      "imports": ["vite-preload-DjzSQ1t3.js"],
       "dynamicImports": [
         "LockerRoom-6t1a90of.js",
         "Tunnel-BGtrjIQC.js",
@@ -5725,16 +5541,16 @@
       ]
     },
     {
-      "name": "history-Ckio1KQb.js",
+      "name": "history-DAV4z_u9.js",
       "bytes": 2804,
-      "gzipBytes": 1023,
-      "brotliBytes": 951,
+      "gzipBytes": 1024,
+      "brotliBytes": 953,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
-        "ClubHeritagePanel-Cvw0wmPi.js",
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
+        "ClubHeritagePanel-BmWRGB_D.js",
         "leagues-BR5n06uY.js",
         "Crest-P-wTLjvv.js"
       ],
@@ -5752,9 +5568,7 @@
         "browser-react-Bc96TmvK.js",
         "silent-errors-BgCdvtAb.js"
       ],
-      "dynamicImports": [
-        "AccessibilityDialog-BDx7hc4T.js"
-      ]
+      "dynamicImports": ["AccessibilityDialog-BDx7hc4T.js"]
     },
     {
       "name": "shared-BB1RT5nS.js",
@@ -5779,9 +5593,7 @@
       "gzipBytes": 1214,
       "brotliBytes": 1157,
       "surface": null,
-      "imports": [
-        "player-model-BGNiaAl5.js"
-      ],
+      "imports": ["player-model-BGNiaAl5.js"],
       "dynamicImports": []
     },
     {
@@ -5790,30 +5602,25 @@
       "gzipBytes": 1009,
       "brotliBytes": 962,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "link-BvnPKVlo.js"],
       "dynamicImports": []
     },
     {
-      "name": "NarrationSettings-BiKxkgJB.js",
+      "name": "NarrationSettings-C4w1H1lO.js",
       "bytes": 2715,
-      "gzipBytes": 1356,
-      "brotliBytes": 1273,
+      "gzipBytes": 1357,
+      "brotliBytes": 1274,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "settings-2-re7J7nXT.js",
         "dialog-DmhVGHk7.js",
         "narrator-Dl7hdJzE.js"
       ],
-      "dynamicImports": [
-        "NarrationPreferences-AGRvRESH.js"
-      ]
+      "dynamicImports": ["NarrationPreferences-BFQWpjAl.js"]
     },
     {
       "name": "PlayerContractTab-CF1Uj5BG.js",
@@ -5832,10 +5639,10 @@
       "dynamicImports": []
     },
     {
-      "name": "_._lovable.oauth.consent-E-agXoM-.js",
+      "name": "_._lovable.oauth.consent-Cfgb_19g.js",
       "bytes": 2600,
-      "gzipBytes": 1279,
-      "brotliBytes": 1205,
+      "gzipBytes": 1278,
+      "brotliBytes": 1204,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
@@ -5845,9 +5652,7 @@
         "route-DGzBVhU7.js",
         "friendly-error-CjYPWD3f.js"
       ],
-      "dynamicImports": [
-        "client-CaE85xdE.js"
-      ]
+      "dynamicImports": ["client-BpytpZG-.js"]
     },
     {
       "name": "cinematic-loading-Do9krzc8.js",
@@ -5861,10 +5666,7 @@
         "browser-react-Bc96TmvK.js",
         "silent-errors-BgCdvtAb.js"
       ],
-      "dynamicImports": [
-        "registry-D6gFdMgP.js",
-        "CinematicStage3D-2rtjMKgZ.js"
-      ]
+      "dynamicImports": ["registry-D6gFdMgP.js", "CinematicStage3D-2rtjMKgZ.js"]
     },
     {
       "name": "coin-services-DrM8PTm0.js",
@@ -5872,11 +5674,7 @@
       "gzipBytes": 1265,
       "brotliBytes": 1197,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js",
-        "events-D4NqERbT.js",
-        "wallet-rules-DTFVcilw.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js", "events-D4NqERbT.js", "wallet-rules-DTFVcilw.js"],
       "dynamicImports": []
     },
     {
@@ -5893,13 +5691,13 @@
       "dynamicImports": []
     },
     {
-      "name": "career-CbHI7Xad.js",
+      "name": "career-DurrweKQ.js",
       "bytes": 2310,
-      "gzipBytes": 1289,
+      "gzipBytes": 1290,
       "brotliBytes": 1216,
       "surface": null,
       "imports": [
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "rng-CzXaq355.js",
@@ -5914,9 +5712,7 @@
       "gzipBytes": 908,
       "brotliBytes": 832,
       "surface": null,
-      "imports": [
-        "dist-gW0amlhb.js"
-      ],
+      "imports": ["dist-gW0amlhb.js"],
       "dynamicImports": []
     },
     {
@@ -5954,10 +5750,7 @@
       "gzipBytes": 1032,
       "brotliBytes": 971,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "users-Dm3V4pRC.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "users-Dm3V4pRC.js"],
       "dynamicImports": []
     },
     {
@@ -6019,24 +5812,20 @@
       "gzipBytes": 854,
       "brotliBytes": 801,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "leagues-BR5n06uY.js",
-        "engine-Otr2Asr2.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "leagues-BR5n06uY.js", "engine-Otr2Asr2.js"],
       "dynamicImports": []
     },
     {
-      "name": "news-DXkJ81XV.js",
+      "name": "news-BbpobzzG.js",
       "bytes": 2002,
-      "gzipBytes": 952,
-      "brotliBytes": 897,
+      "gzipBytes": 953,
+      "brotliBytes": 893,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
-        "AdZones-Cm1x29bW.js"
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
+        "AdZones-lFT1cv8u.js"
       ],
       "dynamicImports": []
     },
@@ -6060,11 +5849,7 @@
       "gzipBytes": 970,
       "brotliBytes": 890,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "utils-bDc2aGUK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "utils-bDc2aGUK.js"],
       "dynamicImports": []
     },
     {
@@ -6074,9 +5859,7 @@
       "brotliBytes": 1018,
       "surface": null,
       "imports": [],
-      "dynamicImports": [
-        "crowd_visibility_wasm-9l9rN_DD.js"
-      ]
+      "dynamicImports": ["crowd_visibility_wasm-9l9rN_DD.js"]
     },
     {
       "name": "choice-effects-CHYrLn_o.js",
@@ -6084,9 +5867,7 @@
       "gzipBytes": 1005,
       "brotliBytes": 950,
       "surface": null,
-      "imports": [
-        "events-D4NqERbT.js"
-      ],
+      "imports": ["events-D4NqERbT.js"],
       "dynamicImports": []
     },
     {
@@ -6095,10 +5876,7 @@
       "gzipBytes": 845,
       "brotliBytes": 794,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "vite-preload-DjzSQ1t3.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "vite-preload-DjzSQ1t3.js"],
       "dynamicImports": [
         "firebase-config.functions-BRS5RHAj.js",
         "index.esm-DDoHq4tN.js",
@@ -6111,10 +5889,7 @@
       "gzipBytes": 989,
       "brotliBytes": 939,
       "surface": null,
-      "imports": [
-        "match.worker-BzCJABGQ.js",
-        "career-By_pVW9V.js"
-      ],
+      "imports": ["match.worker-BzCJABGQ.js", "career-By_pVW9V.js"],
       "dynamicImports": []
     },
     {
@@ -6123,10 +5898,7 @@
       "gzipBytes": 729,
       "brotliBytes": 687,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "engine-Otr2Asr2.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "engine-Otr2Asr2.js"],
       "dynamicImports": []
     },
     {
@@ -6150,25 +5922,22 @@
       "gzipBytes": 979,
       "brotliBytes": 918,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "loja-DFBQy_Oh.js",
+      "name": "loja-DUU43w7m.js",
       "bytes": 1824,
-      "gzipBytes": 913,
+      "gzipBytes": 914,
       "brotliBytes": 853,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
         "shield-check-Cz1LnhVi.js",
-        "StorePanel-Da4PBYn9.js",
+        "StorePanel-CpmlQIph.js",
         "trophy-CUC8CaGj.js",
-        "PaymentTestModeBanner-BNgKiyf-.js"
+        "PaymentTestModeBanner-DYAjANAS.js"
       ],
       "dynamicImports": []
     },
@@ -6187,11 +5956,7 @@
       "gzipBytes": 604,
       "brotliBytes": 538,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "utils-bDc2aGUK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "utils-bDc2aGUK.js"],
       "dynamicImports": []
     },
     {
@@ -6225,9 +5990,7 @@
       "gzipBytes": 772,
       "brotliBytes": 727,
       "surface": null,
-      "imports": [
-        "rng-CzXaq355.js"
-      ],
+      "imports": ["rng-CzXaq355.js"],
       "dynamicImports": []
     },
     {
@@ -6260,18 +6023,13 @@
       "dynamicImports": []
     },
     {
-      "name": "stadium-loading-Cd-tmUhc.js",
+      "name": "stadium-loading-qlVDoKZu.js",
       "bytes": 1483,
       "gzipBytes": 839,
       "brotliBytes": 794,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "vite-preload-DjzSQ1t3.js"
-      ],
-      "dynamicImports": [
-        "Stadium3D-BGCo1vSW.js"
-      ]
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "vite-preload-DjzSQ1t3.js"],
+      "dynamicImports": ["Stadium3D-DO48KF2v.js"]
     },
     {
       "name": "audio-cache-DqhgVBlY.js",
@@ -6279,10 +6037,7 @@
       "gzipBytes": 775,
       "brotliBytes": 718,
       "surface": null,
-      "imports": [
-        "silent-errors-BgCdvtAb.js",
-        "dist-gW0amlhb.js"
-      ],
+      "imports": ["silent-errors-BgCdvtAb.js", "dist-gW0amlhb.js"],
       "dynamicImports": []
     },
     {
@@ -6291,24 +6046,17 @@
       "gzipBytes": 665,
       "brotliBytes": 613,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "attributes-M6gOkELq.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "attributes-M6gOkELq.js"],
       "dynamicImports": []
     },
     {
-      "name": "index-DvBpEzsZ.js",
+      "name": "index-Ba3iyM9O.js",
       "bytes": 1446,
       "gzipBytes": 817,
-      "brotliBytes": 759,
+      "brotliBytes": 760,
       "surface": null,
-      "imports": [
-        "vite-preload-DjzSQ1t3.js"
-      ],
-      "dynamicImports": [
-        "hydrate-app-Djgifvpc.js"
-      ]
+      "imports": ["vite-preload-DjzSQ1t3.js"],
+      "dynamicImports": ["hydrate-app-y8GH5r9-.js"]
     },
     {
       "name": "Ktx2CanvasAssets-Qi9SL4_8.js",
@@ -6377,12 +6125,8 @@
       "gzipBytes": 683,
       "brotliBytes": 618,
       "surface": null,
-      "imports": [
-        "vite-preload-DjzSQ1t3.js"
-      ],
-      "dynamicImports": [
-        "detect-gpu.esm-Bj-Kifyj.js"
-      ]
+      "imports": ["vite-preload-DjzSQ1t3.js"],
+      "dynamicImports": ["detect-gpu.esm-Bj-Kifyj.js"]
     },
     {
       "name": "GraphicsBoundary-GvUQ4o7z.js",
@@ -6395,20 +6139,18 @@
         "vite-preload-DjzSQ1t3.js",
         "browser-react-Bc96TmvK.js"
       ],
-      "dynamicImports": [
-        "lovable-error-reporting-CJGbe3WH.js"
-      ]
+      "dynamicImports": ["lovable-error-reporting-CJGbe3WH.js"]
     },
     {
-      "name": "GuestCloudPrompt-CchyCP47.js",
+      "name": "GuestCloudPrompt-MnevTSgt.js",
       "bytes": 1334,
-      "gzipBytes": 670,
-      "brotliBytes": 609,
+      "gzipBytes": 667,
+      "brotliBytes": 607,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
         "link-BvnPKVlo.js",
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "cloud-DfUeQcUc.js",
         "shield-check-Cz1LnhVi.js"
       ],
@@ -6420,9 +6162,16 @@
       "gzipBytes": 717,
       "brotliBytes": 677,
       "surface": null,
-      "imports": [
-        "rng-CzXaq355.js"
-      ],
+      "imports": ["rng-CzXaq355.js"],
+      "dynamicImports": []
+    },
+    {
+      "name": "PaymentTestModeBanner-DYAjANAS.js",
+      "bytes": 1251,
+      "gzipBytes": 762,
+      "brotliBytes": 701,
+      "surface": null,
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6431,10 +6180,7 @@
       "gzipBytes": 569,
       "brotliBytes": 514,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "coin-services-DrM8PTm0.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "coin-services-DrM8PTm0.js"],
       "dynamicImports": []
     },
     {
@@ -6452,13 +6198,13 @@
       "dynamicImports": []
     },
     {
-      "name": "career-staff-B7U7YWHb.js",
+      "name": "career-staff-DN7an9Se.js",
       "bytes": 1213,
-      "gzipBytes": 725,
-      "brotliBytes": 672,
+      "gzipBytes": 724,
+      "brotliBytes": 671,
       "surface": null,
       "imports": [
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "leagues-BR5n06uY.js",
         "events-D4NqERbT.js",
         "rng-CzXaq355.js",
@@ -6473,10 +6219,7 @@
       "gzipBytes": 601,
       "brotliBytes": 561,
       "surface": null,
-      "imports": [
-        "formations-bQjyPzU7.js",
-        "match-readiness-DGGH_E1j.js"
-      ],
+      "imports": ["formations-bQjyPzU7.js", "match-readiness-DGGH_E1j.js"],
       "dynamicImports": []
     },
     {
@@ -6498,27 +6241,12 @@
       "dynamicImports": []
     },
     {
-      "name": "PaymentTestModeBanner-BNgKiyf-.js",
-      "bytes": 1111,
-      "gzipBytes": 693,
-      "brotliBytes": 639,
-      "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
-      "dynamicImports": []
-    },
-    {
-      "name": "coin-services-training-BLHUm28a.js",
+      "name": "coin-services-training-D4FBkbi9.js",
       "bytes": 1097,
-      "gzipBytes": 589,
-      "brotliBytes": 546,
+      "gzipBytes": 590,
+      "brotliBytes": 547,
       "surface": null,
-      "imports": [
-        "useCareer-BVdmVrRW.js",
-        "leagues-BR5n06uY.js",
-        "wallet-rules-DTFVcilw.js"
-      ],
+      "imports": ["useCareer-Dbb5PsJf.js", "leagues-BR5n06uY.js", "wallet-rules-DTFVcilw.js"],
       "dynamicImports": []
     },
     {
@@ -6596,9 +6324,7 @@
         "Crest-P-wTLjvv.js",
         "CutsceneStage-qMW_7vUP.js"
       ],
-      "dynamicImports": [
-        "tts.functions-CQ-sOmXQ.js"
-      ]
+      "dynamicImports": ["tts.functions-CQ-sOmXQ.js"]
     },
     {
       "name": "graphics-renderer-metadata-BM_DB4rR.js",
@@ -6647,9 +6373,7 @@
       "gzipBytes": 390,
       "brotliBytes": 345,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6658,10 +6382,7 @@
       "gzipBytes": 433,
       "brotliBytes": 389,
       "surface": null,
-      "imports": [
-        "createClientRpc-BAN5BKDq.js",
-        "auth-middleware-jScsstZa.js"
-      ],
+      "imports": ["createClientRpc-BAN5BKDq.js", "auth-middleware-jScsstZa.js"],
       "dynamicImports": []
     },
     {
@@ -6679,11 +6400,7 @@
       "gzipBytes": 481,
       "brotliBytes": 422,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "dist-DtBXnKyZ.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "dist-DtBXnKyZ.js"],
       "dynamicImports": []
     },
     {
@@ -6724,19 +6441,17 @@
       "gzipBytes": 414,
       "brotliBytes": 380,
       "surface": null,
-      "imports": [
-        "rng-CzXaq355.js"
-      ],
+      "imports": ["rng-CzXaq355.js"],
       "dynamicImports": []
     },
     {
-      "name": "quickMatch-C40tnRUS.js",
+      "name": "quickMatch-Dn8rjeGO.js",
       "bytes": 733,
-      "gzipBytes": 471,
+      "gzipBytes": 472,
       "brotliBytes": 433,
       "surface": null,
       "imports": [
-        "useCareer-BVdmVrRW.js",
+        "useCareer-Dbb5PsJf.js",
         "club-reference-ciXdP64N.js",
         "career-lineup-DTGQLBqt.js"
       ],
@@ -6748,11 +6463,7 @@
       "gzipBytes": 488,
       "brotliBytes": 438,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "utils-bDc2aGUK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "utils-bDc2aGUK.js"],
       "dynamicImports": []
     },
     {
@@ -6761,9 +6472,7 @@
       "gzipBytes": 370,
       "brotliBytes": 346,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6772,11 +6481,7 @@
       "gzipBytes": 416,
       "brotliBytes": 363,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js",
-        "utils-bDc2aGUK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js", "utils-bDc2aGUK.js"],
       "dynamicImports": []
     },
     {
@@ -6800,22 +6505,20 @@
       "gzipBytes": 408,
       "brotliBytes": 370,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "useAuthUserId-BYayuVvE.js",
+      "name": "useAuthUserId-FsPsmZmI.js",
       "bytes": 654,
       "gzipBytes": 413,
-      "brotliBytes": 375,
+      "brotliBytes": 377,
       "surface": null,
       "imports": [
         "rolldown-runtime-qXqUbbKo.js",
         "browser-react-Bc96TmvK.js",
         "silent-errors-BgCdvtAb.js",
-        "client-CaE85xdE.js"
+        "client-BpytpZG-.js"
       ],
       "dynamicImports": []
     },
@@ -6825,9 +6528,7 @@
       "gzipBytes": 377,
       "brotliBytes": 325,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6836,22 +6537,20 @@
       "gzipBytes": 316,
       "brotliBytes": 283,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "chat-BVIAkW_W.js",
+      "name": "chat-DpXq0MBZ.js",
       "bytes": 585,
-      "gzipBytes": 372,
-      "brotliBytes": 340,
+      "gzipBytes": 371,
+      "brotliBytes": 339,
       "surface": null,
       "imports": [
         "browser-react-Bc96TmvK.js",
-        "useCareer-BVdmVrRW.js",
-        "screen-kit-jLBSTiuU.js",
-        "ChatPanel-VbSKmALt.js"
+        "useCareer-Dbb5PsJf.js",
+        "screen-kit-Dun89PsN.js",
+        "ChatPanel-NhigEe8T.js"
       ],
       "dynamicImports": []
     },
@@ -6861,10 +6560,7 @@
       "gzipBytes": 357,
       "brotliBytes": 321,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6882,9 +6578,7 @@
       "gzipBytes": 317,
       "brotliBytes": 294,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6893,10 +6587,7 @@
       "gzipBytes": 283,
       "brotliBytes": 243,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "dist-C0qdD--j.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "dist-C0qdD--j.js"],
       "dynamicImports": []
     },
     {
@@ -6905,24 +6596,17 @@
       "gzipBytes": 311,
       "brotliBytes": 282,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "logout-CXFx_Nxz.js",
+      "name": "logout-hx8n0hyg.js",
       "bytes": 534,
       "gzipBytes": 361,
-      "brotliBytes": 325,
+      "brotliBytes": 324,
       "surface": null,
-      "imports": [
-        "vite-preload-DjzSQ1t3.js",
-        "client-CaE85xdE.js"
-      ],
-      "dynamicImports": [
-        "firebase-push-DF7J8f7O.js"
-      ]
+      "imports": ["vite-preload-DjzSQ1t3.js", "client-BpytpZG-.js"],
+      "dynamicImports": ["firebase-push-DDKFwR7f.js"]
     },
     {
       "name": "tabelas._slug-BYZCQ5xn.js",
@@ -6930,10 +6614,7 @@
       "gzipBytes": 349,
       "brotliBytes": 319,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "link-BvnPKVlo.js"],
       "dynamicImports": []
     },
     {
@@ -6942,9 +6623,7 @@
       "gzipBytes": 349,
       "brotliBytes": 309,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -6953,10 +6632,7 @@
       "gzipBytes": 330,
       "brotliBytes": 300,
       "surface": null,
-      "imports": [
-        "createClientRpc-BAN5BKDq.js",
-        "auth-middleware-jScsstZa.js"
-      ],
+      "imports": ["createClientRpc-BAN5BKDq.js", "auth-middleware-jScsstZa.js"],
       "dynamicImports": []
     },
     {
@@ -6974,21 +6650,16 @@
       "gzipBytes": 314,
       "brotliBytes": 292,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
-      "name": "useStoredServices-EeVm2Nqp.js",
+      "name": "useStoredServices-BpC800EM.js",
       "bytes": 507,
-      "gzipBytes": 334,
+      "gzipBytes": 332,
       "brotliBytes": 289,
       "surface": null,
-      "imports": [
-        "useQuery-DpKvODJ2.js",
-        "client-CaE85xdE.js"
-      ],
+      "imports": ["useQuery-DpKvODJ2.js", "client-BpytpZG-.js"],
       "dynamicImports": []
     },
     {
@@ -6997,9 +6668,7 @@
       "gzipBytes": 359,
       "brotliBytes": 304,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js"],
       "dynamicImports": []
     },
     {
@@ -7008,10 +6677,7 @@
       "gzipBytes": 310,
       "brotliBytes": 286,
       "surface": null,
-      "imports": [
-        "createClientRpc-BAN5BKDq.js",
-        "auth-middleware-jScsstZa.js"
-      ],
+      "imports": ["createClientRpc-BAN5BKDq.js", "auth-middleware-jScsstZa.js"],
       "dynamicImports": []
     },
     {
@@ -7020,10 +6686,7 @@
       "gzipBytes": 336,
       "brotliBytes": 298,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7032,9 +6695,7 @@
       "gzipBytes": 262,
       "brotliBytes": 231,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7043,10 +6704,7 @@
       "gzipBytes": 315,
       "brotliBytes": 282,
       "surface": null,
-      "imports": [
-        "createClientRpc-BAN5BKDq.js",
-        "auth-middleware-jScsstZa.js"
-      ],
+      "imports": ["createClientRpc-BAN5BKDq.js", "auth-middleware-jScsstZa.js"],
       "dynamicImports": []
     },
     {
@@ -7078,10 +6736,7 @@
       "gzipBytes": 357,
       "brotliBytes": 320,
       "surface": null,
-      "imports": [
-        "match-command-validation-B6DQ-zS3.js",
-        "autoplay-Bo_9dbTJ.js"
-      ],
+      "imports": ["match-command-validation-B6DQ-zS3.js", "autoplay-Bo_9dbTJ.js"],
       "dynamicImports": []
     },
     {
@@ -7090,9 +6745,7 @@
       "gzipBytes": 280,
       "brotliBytes": 251,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7101,9 +6754,7 @@
       "gzipBytes": 285,
       "brotliBytes": 250,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7112,10 +6763,7 @@
       "gzipBytes": 323,
       "brotliBytes": 274,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "link-BvnPKVlo.js"],
       "dynamicImports": []
     },
     {
@@ -7147,9 +6795,7 @@
       "gzipBytes": 294,
       "brotliBytes": 266,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7158,10 +6804,7 @@
       "gzipBytes": 301,
       "brotliBytes": 272,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7170,10 +6813,7 @@
       "gzipBytes": 296,
       "brotliBytes": 246,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "world-scope-h-EL1iu3.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "world-scope-h-EL1iu3.js"],
       "dynamicImports": []
     },
     {
@@ -7182,9 +6822,7 @@
       "gzipBytes": 266,
       "brotliBytes": 242,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7193,10 +6831,7 @@
       "gzipBytes": 249,
       "brotliBytes": 218,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7205,10 +6840,7 @@
       "gzipBytes": 299,
       "brotliBytes": 263,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js",
-        "link-BvnPKVlo.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js", "link-BvnPKVlo.js"],
       "dynamicImports": []
     },
     {
@@ -7235,9 +6867,7 @@
       "gzipBytes": 287,
       "brotliBytes": 255,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7246,9 +6876,7 @@
       "gzipBytes": 278,
       "brotliBytes": 251,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7257,9 +6885,7 @@
       "gzipBytes": 283,
       "brotliBytes": 262,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7277,9 +6903,7 @@
       "gzipBytes": 251,
       "brotliBytes": 227,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7288,9 +6912,7 @@
       "gzipBytes": 274,
       "brotliBytes": 246,
       "surface": null,
-      "imports": [
-        "createClientRpc-BAN5BKDq.js"
-      ],
+      "imports": ["createClientRpc-BAN5BKDq.js"],
       "dynamicImports": []
     },
     {
@@ -7308,9 +6930,7 @@
       "gzipBytes": 280,
       "brotliBytes": 255,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7328,9 +6948,7 @@
       "gzipBytes": 250,
       "brotliBytes": 217,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7339,9 +6957,7 @@
       "gzipBytes": 274,
       "brotliBytes": 249,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7350,9 +6966,7 @@
       "gzipBytes": 248,
       "brotliBytes": 223,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7370,9 +6984,7 @@
       "gzipBytes": 250,
       "brotliBytes": 225,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7381,9 +6993,7 @@
       "gzipBytes": 247,
       "brotliBytes": 223,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7392,9 +7002,7 @@
       "gzipBytes": 249,
       "brotliBytes": 226,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7403,9 +7011,7 @@
       "gzipBytes": 250,
       "brotliBytes": 226,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7423,10 +7029,7 @@
       "gzipBytes": 243,
       "brotliBytes": 201,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "world-scope-h-EL1iu3.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "world-scope-h-EL1iu3.js"],
       "dynamicImports": []
     },
     {
@@ -7435,9 +7038,7 @@
       "gzipBytes": 235,
       "brotliBytes": 207,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7446,9 +7047,7 @@
       "gzipBytes": 219,
       "brotliBytes": 193,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7470,9 +7069,7 @@
       "gzipBytes": 233,
       "brotliBytes": 204,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7481,9 +7078,7 @@
       "gzipBytes": 225,
       "brotliBytes": 197,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7492,9 +7087,7 @@
       "gzipBytes": 219,
       "brotliBytes": 189,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7503,10 +7096,7 @@
       "gzipBytes": 235,
       "brotliBytes": 206,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "createClientRpc-BAN5BKDq.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "createClientRpc-BAN5BKDq.js"],
       "dynamicImports": []
     },
     {
@@ -7515,9 +7105,7 @@
       "gzipBytes": 214,
       "brotliBytes": 189,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7544,9 +7132,7 @@
       "gzipBytes": 222,
       "brotliBytes": 197,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7555,9 +7141,7 @@
       "gzipBytes": 187,
       "brotliBytes": 163,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7566,9 +7150,7 @@
       "gzipBytes": 213,
       "brotliBytes": 184,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7577,9 +7159,7 @@
       "gzipBytes": 217,
       "brotliBytes": 187,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7588,9 +7168,7 @@
       "gzipBytes": 212,
       "brotliBytes": 187,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7599,10 +7177,7 @@
       "gzipBytes": 213,
       "brotliBytes": 184,
       "surface": null,
-      "imports": [
-        "createClientRpc-BAN5BKDq.js",
-        "auth-middleware-jScsstZa.js"
-      ],
+      "imports": ["createClientRpc-BAN5BKDq.js", "auth-middleware-jScsstZa.js"],
       "dynamicImports": []
     },
     {
@@ -7611,9 +7186,7 @@
       "gzipBytes": 209,
       "brotliBytes": 182,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7631,9 +7204,7 @@
       "gzipBytes": 201,
       "brotliBytes": 177,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7642,9 +7213,7 @@
       "gzipBytes": 179,
       "brotliBytes": 155,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7662,9 +7231,7 @@
       "gzipBytes": 191,
       "brotliBytes": 166,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7673,9 +7240,7 @@
       "gzipBytes": 185,
       "brotliBytes": 159,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7684,9 +7249,7 @@
       "gzipBytes": 184,
       "brotliBytes": 160,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7695,9 +7258,7 @@
       "gzipBytes": 188,
       "brotliBytes": 167,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7706,9 +7267,7 @@
       "gzipBytes": 187,
       "brotliBytes": 161,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7717,11 +7276,7 @@
       "gzipBytes": 165,
       "brotliBytes": 139,
       "surface": null,
-      "imports": [
-        "useSelector-B2iAmda2.js",
-        "useRouter-G9CwxfwK.js",
-        "useMatch-CEsUHTXG.js"
-      ],
+      "imports": ["useSelector-B2iAmda2.js", "useRouter-G9CwxfwK.js", "useMatch-CEsUHTXG.js"],
       "dynamicImports": []
     },
     {
@@ -7730,10 +7285,7 @@
       "gzipBytes": 168,
       "brotliBytes": 140,
       "surface": null,
-      "imports": [
-        "rolldown-runtime-qXqUbbKo.js",
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["rolldown-runtime-qXqUbbKo.js", "browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7751,9 +7303,7 @@
       "gzipBytes": 174,
       "brotliBytes": 151,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7771,9 +7321,7 @@
       "gzipBytes": 173,
       "brotliBytes": 147,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7782,9 +7330,7 @@
       "gzipBytes": 177,
       "brotliBytes": 143,
       "surface": null,
-      "imports": [
-        "leagues-BR5n06uY.js"
-      ],
+      "imports": ["leagues-BR5n06uY.js"],
       "dynamicImports": []
     },
     {
@@ -7811,9 +7357,7 @@
       "gzipBytes": 162,
       "brotliBytes": 138,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7822,9 +7366,7 @@
       "gzipBytes": 161,
       "brotliBytes": 138,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7833,9 +7375,7 @@
       "gzipBytes": 147,
       "brotliBytes": 124,
       "surface": null,
-      "imports": [
-        "useMatch-CEsUHTXG.js"
-      ],
+      "imports": ["useMatch-CEsUHTXG.js"],
       "dynamicImports": []
     },
     {
@@ -7844,9 +7384,7 @@
       "gzipBytes": 164,
       "brotliBytes": 136,
       "surface": null,
-      "imports": [
-        "browser-react-Bc96TmvK.js"
-      ],
+      "imports": ["browser-react-Bc96TmvK.js"],
       "dynamicImports": []
     },
     {
@@ -7855,9 +7393,7 @@
       "gzipBytes": 133,
       "brotliBytes": 106,
       "surface": null,
-      "imports": [
-        "index.esm-DK2PWSuD.js"
-      ],
+      "imports": ["index.esm-DK2PWSuD.js"],
       "dynamicImports": []
     },
     {
@@ -7866,9 +7402,7 @@
       "gzipBytes": 104,
       "brotliBytes": 82,
       "surface": null,
-      "imports": [
-        "createMiddleware-DQnh37QV.js"
-      ],
+      "imports": ["createMiddleware-DQnh37QV.js"],
       "dynamicImports": []
     },
     {
@@ -7895,9 +7429,7 @@
       "gzipBytes": 84,
       "brotliBytes": 73,
       "surface": null,
-      "imports": [
-        "store-wSL6Ch1F.js"
-      ],
+      "imports": ["store-wSL6Ch1F.js"],
       "dynamicImports": []
     }
   ]

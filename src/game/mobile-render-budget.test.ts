@@ -30,7 +30,7 @@ describe("mobile framebuffer budget", () => {
       studioTriangles: 90000,
     });
     expect(mobileRenderBudget("media", true)).toMatchObject({
-      maxDrawCalls: 110,
+      maxDrawCalls: 120,
       maxTriangles: 260000,
     });
   });

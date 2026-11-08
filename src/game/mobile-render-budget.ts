@@ -13,7 +13,7 @@ export function mobileRenderBudget(tier: GraphicsTier, mobile: boolean) {
   return {
     id: basic ? "mobile-basic-2020" : "mobile-mid-2020",
     ...mobileFramebufferSize(tier),
-    maxDrawCalls: basic ? 75 : 110,
+    maxDrawCalls: basic ? 75 : 120,
     maxTriangles: basic ? 130000 : 260000,
     studioDrawCalls: basic ? 40 : 50,
     studioTriangles: basic ? 90000 : 140000,

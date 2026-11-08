@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { shouldRetryNoNavStart } from "./trace-mobile-startup-retry.mjs";
 
 // Diagnostic only. Preserve all fifteen raw traces behind the protected
 // mobile fixtures; Quality's independent assertions remain the release gate.
@@ -51,32 +52,59 @@ try {
   for (const url of collect.url) {
     const route = new URL(url).pathname;
     for (let run = 1; run <= collect.numberOfRuns; run++) {
-      const id = `${route === "/" ? "home" : route.slice(1)}-${run}`,
-        log = [];
-      const child = spawn(
-        process.execPath,
-        [
-          process.env.LIGHTHOUSE_CLI,
-          url,
-          "--config-path",
-          configPath,
-          "--output=json",
-          "--output-path",
-          path.join(output, `${id}.json`),
-          "--save-assets",
-          "--chrome-flags=--headless=new",
-        ],
-        { stdio: ["ignore", "pipe", "pipe"] },
+      const id = `${route === "/" ? "home" : route.slice(1)}-${run}`;
+      let code = 1;
+      let runtimeErrorCode;
+      let reportValid = false;
+      let attempts = 0;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        attempts = attempt + 1;
+        reportValid = false;
+        runtimeErrorCode = undefined;
+        const captureId = attempt === 0 ? id : `${id}-retry-${attempt}`;
+        const log = [];
+        const child = spawn(
+          process.execPath,
+          [
+            process.env.LIGHTHOUSE_CLI,
+            url,
+            "--config-path",
+            configPath,
+            "--output=json",
+            "--output-path",
+            path.join(output, `${captureId}.json`),
+            "--save-assets",
+            "--chrome-flags=--headless=new",
+          ],
+          { stdio: ["ignore", "pipe", "pipe"] },
+        );
+        for (const stream of [child.stdout, child.stderr])
+          stream.on("data", (data) => log.push(data));
+        code = await new Promise((resolve, reject) => {
+          child.once("error", reject);
+          child.once("close", resolve);
+        });
+        await writeFile(path.join(output, `${captureId}.log`), Buffer.concat(log));
+        try {
+          const report = JSON.parse(await readFile(path.join(output, `${captureId}.json`), "utf8"));
+          reportValid = true;
+          runtimeErrorCode = report.runtimeError?.code;
+        } catch {
+          reportValid = false;
+        }
+        if (shouldRetryNoNavStart(code, runtimeErrorCode, attempt)) {
+          console.warn(JSON.stringify({ id, retry: attempt + 1, reason: runtimeErrorCode }));
+          continue;
+        }
+        break;
+      }
+      if (code !== 0 || runtimeErrorCode || !reportValid)
+        failures.push(
+          `${id}: Lighthouse exited ${code}${runtimeErrorCode ? ` (${runtimeErrorCode})` : ""}${!reportValid ? " (missing/invalid JSON report)" : ""}`,
+        );
+      console.log(
+        JSON.stringify({ id, traceSaved: reportValid, exitCode: code, attempts, runtimeErrorCode }),
       );
-      for (const stream of [child.stdout, child.stderr])
-        stream.on("data", (data) => log.push(data));
-      const code = await new Promise((resolve, reject) => {
-        child.once("error", reject);
-        child.once("close", resolve);
-      });
-      await writeFile(path.join(output, `${id}.log`), Buffer.concat(log));
-      if (code !== 0) failures.push(`${id}: Lighthouse exited ${code}`);
-      console.log(JSON.stringify({ id, traceSaved: true, exitCode: code }));
     }
   }
   if (failures.length) throw new Error(failures.join("; "));

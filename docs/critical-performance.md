@@ -40,6 +40,8 @@ Os valores são definidos em `src/game/contracts/graphics-profile.ts` e continua
 
 O governador reduz o trabalho visual quando há pressão. Testes de contrato e imagens de um navegador com renderização por software não comprovam esses limites em um aparelho físico. Mudanças do rig ou do renderizador exigem comparação no mesmo cenário, semente, resolução, qualidade, dispositivo e caminho gráfico, com erros e perdas visuais examinados. Registrar explicitamente quando essa certificação não foi realizada.
 
+O teto complementar de draw calls em mobile é **75 no perfil baixa e 120 no perfil médio**. O limite médio foi elevado de 110 para 120 (+9,1%) por decisão explícita deste PR: a comparação visual CI mediu pico 112 e duas capturas do inventário local variaram de 113 a 114. O teto 120 mantém seis draws de folga sobre o pico local. O teto de triângulos mobile (130.000/260.000), os perfis Studio e os gates Lighthouse não foram alterados; isso é uma tolerância de software, não certificação em aparelho físico.
+
 ## Release do Supabase e do Cloudflare
 
 A migração `20261020101601` deve ser entregue pelo fluxo canônico, sem reaplicar as 47 versões históricas. Antes de promover uma branch Supabase, comparar também as Edge Functions: o merge publica funções além de SQL e pode reintroduzir implementações antigas. Não trocar segredos ou configurações de produção como efeito secundário de uma migração.

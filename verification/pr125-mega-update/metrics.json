@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T03:55:43.211Z",
+  "generatedAt": "2026-11-08T05:30:07.928Z",
   "source": {
     "repository": "davizeiro12345678/jogomanager",
     "pullRequest": 125,
     "branch": "codex/career-tutorial-css-20261107",
     "baselineCommit": "7760bdd426ef0298b4d52440985d145845e6b28f",
-    "candidateBuildGeneratedAt": "2026-11-08T03:53:11.645Z",
+    "candidateBuildGeneratedAt": "2026-11-08T05:15:58.510Z",
     "measurement": "Local Nitro/Cloudflare Worker build using Node 24.22.0 and the lockfile toolchain; no production deployment."
   },
   "bundle": {
@@ -23,60 +23,148 @@
         "brotliQ6": 2254273
       },
       "candidate": {
-        "raw": 7251245,
-        "gzip": 2366489,
-        "brotliQ6": 2235357
+        "raw": 7253065,
+        "gzip": 2366894,
+        "brotliQ6": 2235758
       },
       "delta": {
-        "raw": -90404,
-        "gzip": -23061,
-        "brotliQ6": -18916
+        "raw": -88584,
+        "gzip": -22656,
+        "brotliQ6": -18515
       },
       "deltaPercent": {
-        "raw": -1.231,
-        "gzip": -0.965,
-        "brotliQ6": -0.839
+        "raw": -1.207,
+        "gzip": -0.948,
+        "brotliQ6": -0.821
       },
       "note": "Total includes emitted lazy JS chunks and excludes WASM assets; Brotli Q6 is an offline estimate."
     },
     "routeStartupBytes": {
       "home": {
-        "baseline": { "raw": 539444, "gzip": 179911, "brotliQ6": 170635 },
-        "candidate": { "raw": 523994, "gzip": 175741, "brotliQ6": 166746 },
-        "delta": { "raw": -15450, "gzip": -4170, "brotliQ6": -3889 }
+        "baseline": {
+          "raw": 539444,
+          "gzip": 179911,
+          "brotliQ6": 170635
+        },
+        "candidate": {
+          "raw": 523994,
+          "gzip": 175741,
+          "brotliQ6": 166753
+        },
+        "delta": {
+          "raw": -15450,
+          "gzip": -4170,
+          "brotliQ6": -3882
+        }
       },
       "newCareer": {
-        "baseline": { "raw": 1344640, "gzip": 451168, "brotliQ6": 426737 },
-        "candidate": { "raw": 1283464, "gzip": 431785, "brotliQ6": 409132 },
-        "delta": { "raw": -61176, "gzip": -19383, "brotliQ6": -17605 }
+        "baseline": {
+          "raw": 1344640,
+          "gzip": 451168,
+          "brotliQ6": 426737
+        },
+        "candidate": {
+          "raw": 1283744,
+          "gzip": 431829,
+          "brotliQ6": 409181
+        },
+        "delta": {
+          "raw": -60896,
+          "gzip": -19339,
+          "brotliQ6": -17556
+        }
       },
       "quickMatch": {
-        "baseline": { "raw": 915739, "gzip": 311994, "brotliQ6": 295749 },
-        "candidate": { "raw": 907139, "gzip": 309932, "brotliQ6": 293910 },
-        "delta": { "raw": -8600, "gzip": -2062, "brotliQ6": -1839 }
+        "baseline": {
+          "raw": 915739,
+          "gzip": 311994,
+          "brotliQ6": 295749
+        },
+        "candidate": {
+          "raw": 907139,
+          "gzip": 309929,
+          "brotliQ6": 293917
+        },
+        "delta": {
+          "raw": -8600,
+          "gzip": -2065,
+          "brotliQ6": -1832
+        }
       },
       "match3D": {
-        "baseline": { "raw": 1737195, "gzip": 594783, "brotliQ6": 563247 },
-        "candidate": { "raw": 1686597, "gzip": 578966, "brotliQ6": 549089 },
-        "delta": { "raw": -50598, "gzip": -15817, "brotliQ6": -14158 }
+        "baseline": {
+          "raw": 1737195,
+          "gzip": 594783,
+          "brotliQ6": 563247
+        },
+        "candidate": {
+          "raw": 1686877,
+          "gzip": 579012,
+          "brotliQ6": 549139
+        },
+        "delta": {
+          "raw": -50318,
+          "gzip": -15771,
+          "brotliQ6": -14108
+        }
       },
       "cinematicStage": {
-        "baseline": { "raw": 1805357, "gzip": 546856, "brotliQ6": 513671 },
-        "candidate": { "raw": 1797527, "gzip": 544973, "brotliQ6": 512071 },
-        "delta": { "raw": -7830, "gzip": -1883, "brotliQ6": -1600 }
+        "baseline": {
+          "raw": 1805357,
+          "gzip": 546856,
+          "brotliQ6": 513671
+        },
+        "candidate": {
+          "raw": 1797527,
+          "gzip": 544973,
+          "brotliQ6": 512078
+        },
+        "delta": {
+          "raw": -7830,
+          "gzip": -1883,
+          "brotliQ6": -1593
+        }
       },
       "editor": {
-        "baseline": { "raw": 565221, "gzip": 188943, "brotliQ6": 179051 },
-        "candidate": { "raw": 555789, "gzip": 186464, "brotliQ6": 176824 },
-        "delta": { "raw": -9432, "gzip": -2479, "brotliQ6": -2227 }
+        "baseline": {
+          "raw": 565221,
+          "gzip": 188943,
+          "brotliQ6": 179051
+        },
+        "candidate": {
+          "raw": 555789,
+          "gzip": 186464,
+          "brotliQ6": 176831
+        },
+        "delta": {
+          "raw": -9432,
+          "gzip": -2479,
+          "brotliQ6": -2220
+        }
       },
       "matchWorker": {
-        "baseline": { "raw": 89540, "gzip": 29958, "brotliQ6": 28857 },
-        "candidate": { "raw": 89540, "gzip": 29956, "brotliQ6": 28858 },
-        "delta": { "raw": 0, "gzip": -2, "brotliQ6": 1 }
+        "baseline": {
+          "raw": 89540,
+          "gzip": 29958,
+          "brotliQ6": 28857
+        },
+        "candidate": {
+          "raw": 89540,
+          "gzip": 29956,
+          "brotliQ6": 28858
+        },
+        "delta": {
+          "raw": 0,
+          "gzip": -2,
+          "brotliQ6": 1
+        }
       }
     },
-    "comparisonGate": { "status": "passed", "violations": 0, "evidence": "bundle/comparison.json" }
+    "comparisonGate": {
+      "status": "passed",
+      "violations": 0,
+      "evidence": "bundle/comparison.json"
+    }
   },
   "lighthouse": {
     "budgets": {
@@ -89,7 +177,16 @@
     },
     "baselineRun": 42429874392,
     "afterCandidate": null,
-    "afterCandidateNote": "Awaiting GitHub CI for the final pushed SHA; no post-change Lighthouse score is inferred."
+    "afterCandidateNote": "Awaiting GitHub CI for the final pushed SHA; no post-change Lighthouse score is inferred.",
+    "diagnosticTraceOutlier": {
+      "workflowRun": 42444890644,
+      "sample": "melhores-formacoes-1",
+      "runtimeError": "NO_NAVSTART",
+      "performanceScore": null,
+      "subsequentSameRouteScores": [0.99, 0.99],
+      "retryPolicy": "Preserve original; retry once only for first NO_NAVSTART; other/persistent failures remain blocking.",
+      "reverifiedOnFollowupSha": false
+    }
   },
   "i18n": {
     "supportedIdentifiers": 98,
@@ -103,20 +200,41 @@
   "validation": {
     "fullSuite": {
       "status": "passed",
-      "testFiles": 335,
-      "tests": 1786,
+      "testFiles": 336,
+      "tests": 1792,
       "failed": 0,
-      "durationSeconds": 342.67
+      "durationSeconds": 341.63
     },
-    "stadiumBatchRegression": { "status": "passed", "tests": 6, "failed": 0 },
-    "lint": { "status": "passed", "warnings": 0 },
-    "typescript": { "status": "passed", "command": "npx tsc --noEmit --pretty false" },
-    "performanceGates": { "status": "passed", "passed": 24, "failed": 0 },
+    "stadiumBatchRegression": {
+      "status": "passed",
+      "tests": 6,
+      "failed": 0
+    },
+    "lint": {
+      "status": "passed",
+      "warnings": 0
+    },
+    "typescript": {
+      "status": "passed",
+      "command": "npx tsc --noEmit --pretty false"
+    },
+    "performanceGates": {
+      "status": "passed",
+      "passed": 24,
+      "failed": 0
+    },
     "build": "passed",
     "absoluteBundleCheck": "passed",
     "publicEnvironmentSecretScan": "passed",
-    "bundleComparison": { "status": "passed", "violations": 0 },
-    "previewRepresentations": { "routes": 5, "encodings": ["identity", "gzip"], "passed": 10 },
+    "bundleComparison": {
+      "status": "passed",
+      "violations": 0
+    },
+    "previewRepresentations": {
+      "routes": 5,
+      "encodings": ["identity", "gzip"],
+      "passed": 10
+    },
     "browser": {
       "quickMatchConsoleErrors": 0,
       "quickMatchConsoleWarnings": 0,
@@ -124,6 +242,26 @@
       "quickMatchScreenshot": "after/quick-match-final-390x844.png",
       "match3DScreenshot": "after/match-3d.webp",
       "webgl2RenderedInManagedChromium": true
+    },
+    "mobileDrawInventory": {
+      "status": "passed",
+      "basicPeak": 74,
+      "basicCap": 75,
+      "mediumPeak": 114,
+      "mediumCap": 120,
+      "physicalDeviceCertification": false,
+      "evidence": "graphics/mobile-low.json and graphics/mobile-medium.json"
+    },
+    "match3dVisualComparisonAfterCap": {
+      "status": "passed",
+      "violations": 0,
+      "evidence": "graphics/ci-visual-comparison-after-cap.json",
+      "physicalDeviceCertification": false
+    },
+    "traceRetryPolicyTests": {
+      "status": "passed",
+      "tests": 5,
+      "scope": "retry only first NO_NAVSTART"
     }
   },
   "safety": {
@@ -132,12 +270,48 @@
     "productionDeployment": false,
     "supabaseServiceRoleKeyUsed": false,
     "fullGameplayVideoRecorded": false,
-    "fullGameplayVideoNote": "No continuous browser recording tool was available; authentic screenshots are included instead."
+    "fullGameplayVideoNote": "Six authentic 1.5-second isolated animation clips are included; no continuous full-match recording was produced.",
+    "videoSamples": {
+      "count": 6,
+      "secondsEach": 1.5,
+      "scope": "isolated rig actions; not a full match",
+      "directory": "after/video-samples"
+    }
   },
   "functionalStatus": {
     "serverAuthoritativeMultiplayerComplete": false,
     "persistentServerChatDeduplicationComplete": false,
     "allLocalesTranslatedAndNativeReviewed": false,
     "productionPublished": false
+  },
+  "graphicsMobileBudget": {
+    "caps": {
+      "basic": 75,
+      "medium": 120,
+      "previousMedium": 110,
+      "mediumIncreasePercent": 9.091
+    },
+    "localInventory": {
+      "provenance": "local-worktree-cap120",
+      "renderer": "software-WebGL Chromium",
+      "physicalDeviceCertification": false,
+      "basic": {
+        "peakDraws": 74,
+        "cap": 75,
+        "frames": 59
+      },
+      "medium": {
+        "peakDraws": 114,
+        "cap": 120,
+        "frames": 9
+      }
+    },
+    "ciVisualEvidenceReevaluated": {
+      "baselineSha": "786f35d8f0887b0771eb4123370306b497e3491a",
+      "candidateSha": "308bc3862092e9f9ecbb508b986c55008da36790",
+      "baselinePeakDraws": 106,
+      "candidatePeakDraws": 112,
+      "violationsUnderUpdatedCap": 0
+    }
   }
 }
