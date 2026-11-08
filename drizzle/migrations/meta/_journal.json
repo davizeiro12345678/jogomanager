@@ -400,6 +400,41 @@
       "when": 1794000549302,
       "tag": "0056_complete_training_and_scout_coin_services",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1794063000000,
+      "tag": "0057_api_football_custom450_quota",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1794084300000,
+      "tag": "0058_reject_api_football_self_matches",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1794084600000,
+      "tag": "0059_index_public_league_standings",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1794086489539,
+      "tag": "0060_database_growth_observability",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1794148523000,
+      "tag": "0062_room_chat_rate_limits",
+      "breakpoints": true
     }
   ]
 }

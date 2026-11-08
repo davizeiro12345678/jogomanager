@@ -1,20 +1,21 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
 import type { CareerState } from "@/game/types";
-import { parseCareerInput } from "@/lib/career-input";
+import { parseCareerSaveRequest } from "@/lib/career-input";
 
 export default defineTool({
   name: "save_career",
   title: "Save manager career",
   description:
-    "Create or update the signed-in user's Manager 3D career state, preserving newer saved season progress.",
+    "Update an existing signed-in Manager 3D career at its observed generation, preserving newer progress and rejecting deleted or replaced careers.",
   inputSchema: {
     state: z
       .record(z.string(), z.unknown())
       .describe("Full career state object as used by the game."),
+    expectedGeneration: z.number().int().positive().describe("Generation returned by get_career."),
   },
   annotations: { readOnlyHint: false, destructiveHint: true },
-  handler: async ({ state }, ctx) => {
+  handler: async ({ state, expectedGeneration }, ctx) => {
     if (!ctx.isAuthenticated())
       return {
         content: [{ type: "text", text: "Not authenticated" }],
@@ -27,25 +28,32 @@ export default defineTool({
         isError: true,
       };
     try {
-      const input = parseCareerInput({ state });
+      const input = parseCareerSaveRequest({
+        state,
+        expectedGeneration,
+        expectedOwnerId: userId,
+      });
       const { saveValidatedCareer } = await import("@/lib/career-save.server");
       // MCP imports remain personal saves; they cannot attest official progress.
       const result = await saveValidatedCareer(
         userId,
         input.state as unknown as CareerState,
         false,
+        input.expectedGeneration ?? null,
       );
-      if (result.stale)
+      if (!result.ok) {
+        const message =
+          "deleted" in result
+            ? "This career was deleted. Read the current career before creating a new one."
+            : "stale" in result && result.stale
+              ? "Newer career progress is already saved. Read the current career before updating it."
+              : "Career generation changed. Read the current career before retrying.";
         return {
-          content: [
-            {
-              type: "text",
-              text: "Newer career progress is already saved. Read the current career before updating it.",
-            },
-          ],
-          structuredContent: { ok: false, stale: true },
+          content: [{ type: "text", text: message }],
+          structuredContent: { ok: false, result },
           isError: true,
         };
+      }
       return {
         content: [{ type: "text", text: "Career saved." }],
         structuredContent: { ok: true },

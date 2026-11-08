@@ -22,7 +22,7 @@ export function PlayerObjectives({ state }: { state: PlayerCareerState }) {
             </div>
             <span
               className="athlete-objectives-score"
-              aria-label={`{finished} de {objectives.length} metas alcançadas`}
+              aria-label={`${finished} de ${objectives.length} metas alcançadas`}
             >
               {finished}/{objectives.length}
             </span>

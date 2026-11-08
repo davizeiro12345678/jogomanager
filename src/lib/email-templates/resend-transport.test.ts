@@ -39,6 +39,31 @@ describe("resilient Resend transport", () => {
     expect(fetchMock.mock.calls[0]![1].body).toBe(fetchMock.mock.calls[1]![1].body);
   });
 
+  it("retries a transient network failure with the same key", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await deliverViaResend(fixture);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]![1].headers["Idempotency-Key"]).toBe(
+      fetchMock.mock.calls[1]![1].headers["Idempotency-Key"],
+    );
+  });
+
+  it("rejects malformed recipient and reply-to before contacting the provider", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(
+      deliverViaResend({ ...fixture, recipient: "javascript:alert(1)" }),
+    ).rejects.toThrow(/recipient/i);
+    await expect(
+      deliverViaResend({ ...fixture, replyTo: "support\r\nBcc:attacker@example.test" }),
+    ).rejects.toThrow(/reply-to/i);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("does not retry invalid requests or rejected recipients", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 422 }));
     vi.stubGlobal("fetch", fetchMock);

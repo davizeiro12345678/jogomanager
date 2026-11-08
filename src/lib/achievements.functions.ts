@@ -17,8 +17,9 @@ export const syncAchievements = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { data: career, error: careerError } = await context.supabase
       .from("careers")
-      .select("state, verified_progress")
+      .select("state, verified_progress, deleted_at")
       .eq("user_id", context.userId)
+      .is("deleted_at", null)
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();

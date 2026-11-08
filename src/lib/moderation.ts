@@ -63,12 +63,47 @@ const LOOKALIKES: Record<string, string> = {
   $: "s",
 };
 
-/** Lowercase, strip accents and map look-alike characters to letters. */
+/** Characters that can hide a token without adding visible content. */
+const INVISIBLE_FORMAT_CHARACTERS =
+  /[\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]/g;
+
+/** Common Cyrillic/Greek look-alikes used to disguise ASCII words. */
+const UNICODE_LOOKALIKES: Record<string, string> = {
+  "\u0430": "a",
+  "\u0435": "e",
+  "\u043a": "k",
+  "\u043c": "m",
+  "\u043e": "o",
+  "\u0440": "p",
+  "\u0441": "c",
+  "\u0442": "t",
+  "\u0445": "x",
+  "\u0443": "y",
+  "\u0456": "i",
+  "\u0458": "j",
+  "\u0455": "s",
+  "\u04bb": "h",
+  "\u03b1": "a",
+  "\u03b5": "e",
+  "\u03bf": "o",
+  "\u03c1": "p",
+  "\u03c4": "t",
+  "\u03c7": "x",
+  "\u03bd": "v",
+};
+
+/** Canonicalize compatibility forms, accents, invisibles and look-alikes. */
 export function normalizeForModeration(text: string): string {
   return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .normalize("NFKC")
+    .replace(INVISIBLE_FORMAT_CHARACTERS, "")
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(
+      /[\u0430\u0435\u043a\u043c\u043e\u0440\u0441\u0442\u0445\u0443\u0456\u0458\u0455\u04bb\u03b1\u03b5\u03bf\u03c1\u03c4\u03c7\u03bd]/gu,
+      (c) => UNICODE_LOOKALIKES[c] ?? c,
+    )
     .replace(/[0-9@$]/g, (c) => LOOKALIKES[c] ?? c);
 }
 

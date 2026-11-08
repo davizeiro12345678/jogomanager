@@ -6,6 +6,33 @@ import type { AttributeSource } from "./player-development";
 import { effectivePlayer } from "./player-effective";
 import { normalizedPlayerRatings } from "./player-rating-inputs";
 
+/**
+ * Admission gate for a starting XI. This deliberately does no repair or
+ * random work: invalid saves must be rejected before MatchSim is constructed.
+ */
+export function isMatchEligible(players: readonly Player[], expectedClubId?: string): boolean {
+  if (!Array.isArray(players) || players.length !== 11) return false;
+
+  const ids = new Set<string>();
+  const clubId = expectedClubId ?? players[0]?.clubId;
+  if (typeof clubId !== "string") return false;
+  let hasGoalkeeper = false;
+  for (const player of players) {
+    if (
+      !player ||
+      typeof player.id !== "string" ||
+      player.clubId !== clubId ||
+      ids.has(player.id) ||
+      player.injuryWeeks !== 0 ||
+      player.suspended !== false
+    )
+      return false;
+    ids.add(player.id);
+    hasGoalkeeper ||= player.pos === "GK";
+  }
+  return hasGoalkeeper;
+}
+
 /** Select fit starters without turning recent results into permanent overall changes. */
 export function selectionRating(p: Player, source?: AttributeSource): number {
   p = normalizedPlayerRatings(effectivePlayer(p, source));

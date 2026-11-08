@@ -23,8 +23,14 @@ import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context"
 import type { Weather } from "@/game/matchday";
 import { censusRef } from "@/game/scene-census";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
+import {
+  createStadiumCosmeticRng,
+  DEFAULT_STADIUM_FIXTURE,
+  poolVisibleCount,
+} from "./stadium-cosmetics";
 
 const POINT_CAP = capPointSize(10);
+export const DUST_POOL_CAPACITY = 420;
 
 export type AtmosQuality = "alta" | "media" | "baixa";
 export type AtmosTime = "dia" | "entardecer" | "noite";
@@ -234,28 +240,34 @@ function LampGlow({
  */
 function DustMotes({
   count,
+  seed,
   color,
   wind,
   opacity,
+  fixtureKey,
 }: {
   count: number;
+  seed: number | string;
   color: string;
   wind: number;
   opacity: number;
+  fixtureKey: string;
 }) {
   const points = useRef<THREE.Points>(null);
   const tex = moteTexture();
   const { positions, speeds } = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const speeds = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() * 2 - 1) * FIELD_X * 1.1;
-      positions[i * 3 + 1] = Math.random() * 16 + 0.4;
-      positions[i * 3 + 2] = (Math.random() * 2 - 1) * FIELD_Z * 1.15;
-      speeds[i] = 0.25 + Math.random() * 0.85;
+    const positions = new Float32Array(DUST_POOL_CAPACITY * 3);
+    const speeds = new Float32Array(DUST_POOL_CAPACITY);
+    for (let i = 0; i < DUST_POOL_CAPACITY; i++) {
+      // Keep the local visual seed in the stream without advancing MatchSim.
+      const rand = createStadiumCosmeticRng(fixtureKey, "dust-mote", seed, i);
+      positions[i * 3] = (rand() * 2 - 1) * FIELD_X * 1.1;
+      positions[i * 3 + 1] = rand() * 16 + 0.4;
+      positions[i * 3 + 2] = (rand() * 2 - 1) * FIELD_Z * 1.15;
+      speeds[i] = 0.25 + rand() * 0.85;
     }
     return { positions, speeds };
-  }, [count]);
+  }, [fixtureKey, seed]);
 
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry();
@@ -269,7 +281,8 @@ function DustMotes({
     const arr = attr.array as Float32Array;
     const t = state.clock.elapsedTime;
     const step = Math.min(0.05, dt);
-    for (let i = 0; i < speeds.length; i++) {
+    mesh.geometry.setDrawRange(0, count);
+    for (let i = 0; i < count; i++) {
       const s = speeds[i]!;
       const ix = i * 3;
       const iy = ix + 1;
@@ -310,12 +323,14 @@ export const Atmosphere = memo(function Atmosphere({
   quality,
   weather = "seco",
   webgl2 = true,
+  fixtureKey = DEFAULT_STADIUM_FIXTURE,
 }: {
   time: AtmosTime;
   quality: AtmosQuality;
   /** clima da partida (`matchday.ts`) */
   weather?: Weather;
   webgl2?: boolean;
+  fixtureKey?: string;
 }) {
   const budget = useRuntimeSceneBudget();
 
@@ -364,10 +379,12 @@ export const Atmosphere = memo(function Atmosphere({
         : null}
       {moteCount > 0 ? (
         <DustMotes
-          count={moteCount}
+          count={poolVisibleCount(moteCount, DUST_POOL_CAPACITY)}
+          seed={0}
           color={night ? "#cfe0ff" : "#fff6e6"}
           wind={wind}
           opacity={moteOpacity}
+          fixtureKey={fixtureKey}
         />
       ) : null}
     </group>

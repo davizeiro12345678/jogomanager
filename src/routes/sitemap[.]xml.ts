@@ -1,57 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
+import { PUBLIC_PAGE_INVENTORY } from "@/lib/public-page-inventory";
 import { publicBaseUrlFor as baseUrlFor } from "@/lib/site-host";
-
-interface SitemapEntry {
-  path: string;
-  changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
-  priority?: string;
-}
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async ({ request }) => {
         const BASE_URL = baseUrlFor(request);
-        const entries: SitemapEntry[] = [
-          { path: "/", changefreq: "weekly", priority: "1.0" },
-          { path: "/jogo-de-manager-de-futebol", changefreq: "weekly", priority: "0.9" },
-          { path: "/tabelas", changefreq: "daily", priority: "0.9" },
-          { path: "/tabelas/brasileirao-serie-a", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/brasileirao-serie-b", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/premier-league", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/la-liga", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/serie-a-italia", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/bundesliga", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/ligue-1", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/liga-portugal", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/eredivisie", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/liga-argentina", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/mls", changefreq: "daily", priority: "0.8" },
-          { path: "/tabelas/liga-mx", changefreq: "daily", priority: "0.8" },
-          { path: "/mercado-de-transferencias", changefreq: "weekly", priority: "0.8" },
-          { path: "/guias", changefreq: "weekly", priority: "0.8" },
-          { path: "/melhores-formacoes", changefreq: "monthly", priority: "0.8" },
-          { path: "/guia-de-scouting", changefreq: "monthly", priority: "0.8" },
-          { path: "/dicas-de-gestao", changefreq: "monthly", priority: "0.8" },
-          { path: "/planejamento-de-elenco", changefreq: "weekly", priority: "0.8" },
-          { path: "/analise-de-partida-de-futebol", changefreq: "weekly", priority: "0.8" },
-          { path: "/modo-carreira-de-jogador", changefreq: "weekly", priority: "0.8" },
-          { path: "/regras", changefreq: "monthly", priority: "0.8" },
-          { path: "/glossario-do-futebol", changefreq: "monthly", priority: "0.7" },
-          { path: "/jogar-offline", changefreq: "monthly", priority: "0.7" },
-          { path: "/comparativo-jogos-manager", changefreq: "monthly", priority: "0.7" },
-          { path: "/perguntas-frequentes", changefreq: "monthly", priority: "0.7" },
-          { path: "/produtos", changefreq: "monthly", priority: "0.7" },
-          { path: "/sobre", changefreq: "monthly", priority: "0.7" },
-          { path: "/criador", changefreq: "monthly", priority: "0.5" },
-          { path: "/contato", changefreq: "monthly", priority: "0.5" },
-          { path: "/privacidade", changefreq: "yearly", priority: "0.4" },
-          { path: "/termos", changefreq: "yearly", priority: "0.4" },
-        ];
-
-        const urls = entries.map((e) =>
+        const urls = PUBLIC_PAGE_INVENTORY.map((e) =>
           [
             `  <url>`,
             `    <loc>${BASE_URL}${e.path}</loc>`,

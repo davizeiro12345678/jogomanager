@@ -8,6 +8,7 @@ import { CLUBS } from "@/game/data/leagues";
 import {
   advanceRound,
   careerMatchContext,
+  careerMatchSelection,
   quickSimulate,
   type MatchPerformance,
 } from "@/game/career";
@@ -52,10 +53,7 @@ export function buildPerformances(
   seed: string,
 ): MatchPerformance[] {
   const rnd = makeRng(seed);
-  const starters = state.lineup
-    .map((id) => state.players[id])
-    .filter(Boolean)
-    .map((p) => effectivePlayer(p!, state)) as Player[];
+  const starters = careerMatchSelection(state).players.map((p) => effectivePlayer(p, state));
   if (!starters.length) return [];
 
   const perf = new Map<string, MatchPerformance>();
@@ -119,18 +117,20 @@ export function autoWeek(
   }
 
   const seed = `${state.clubId}-auto-${state.season}-${state.round}`;
+  const selection = careerMatchSelection(state);
+  const matchState = { ...state, lineup: selection.lineup, bench: selection.bench };
   const { hg, ag } = quickSimulate(
     fixture.home,
     fixture.away,
     seed,
-    careerMatchContext(state, fixture.home, fixture.away),
+    careerMatchContext(matchState, fixture.home, fixture.away),
   );
   const home = fixture.home === state.clubId;
   const gf = home ? hg : ag;
   const ga = home ? ag : hg;
 
-  const perf = buildPerformances(state, gf, `${seed}-perf`);
-  const next = advanceRound(state, { hg, ag }, perf, "Liga", evaluatedAt);
+  const perf = buildPerformances(matchState, gf, `${seed}-perf`);
+  const next = advanceRound(matchState, { hg, ag }, perf, "Liga", evaluatedAt);
 
   const scorers = perf
     .filter((p) => p.goals > 0)

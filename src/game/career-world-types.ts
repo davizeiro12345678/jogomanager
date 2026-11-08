@@ -51,6 +51,7 @@ export interface CareerMemory {
   sentiment: number;
   weight: number;
   playerId?: string;
+  followUp?: "board-match-target";
 }
 export interface CareerWorld {
   version: 1;

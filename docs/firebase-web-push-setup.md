@@ -15,18 +15,18 @@ O SDK modular **firebase** já está presente no `package.json` e traz os submó
 
 Adicionar ao runtime do Worker Cloudflare / Lovable, com os valores **reais do mesmo projeto Firebase**:
 
-| Variável | Origem e observação |
-| --- | --- |
-| `FIREBASE_WEB_API_KEY` | Configuração web do Firebase Console (chave de projeto pública). Não usar credenciais de Admin. |
-| `FIREBASE_WEB_APP_ID` | ID do app web registrado no Firebase. |
-| `FIREBASE_PROJECT_ID` | Identificador do projeto Firebase correspondente. |
-| `FIREBASE_AUTH_DOMAIN` | Domínio de autenticação associado ao mesmo app. |
-| `FIREBASE_STORAGE_BUCKET` | Bucket associado ao projeto. |
-| `FIREBASE_MESSAGING_SENDER_ID` | Número do remetente do FCM. |
-| `FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY` | Chave pública VAPID de Web Push no Firebase Console. **Indispensável para push.** |
-| `FIREBASE_MEASUREMENT_ID` | Opcional: ID de Analytics, somente para usuários que aceitaram. |
+| Variável                             | Origem e observação                                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `FIREBASE_WEB_API_KEY`               | Configuração web do Firebase Console (chave de projeto pública). Não usar credenciais de Admin. |
+| `FIREBASE_WEB_APP_ID`                | ID do app web registrado no Firebase.                                                           |
+| `FIREBASE_PROJECT_ID`                | Identificador do projeto Firebase correspondente.                                               |
+| `FIREBASE_AUTH_DOMAIN`               | Domínio de autenticação associado ao mesmo app.                                                 |
+| `FIREBASE_STORAGE_BUCKET`            | Bucket associado ao projeto.                                                                    |
+| `FIREBASE_MESSAGING_SENDER_ID`       | Número do remetente do FCM.                                                                     |
+| `FIREBASE_WEB_PUSH_VAPID_PUBLIC_KEY` | Chave pública VAPID de Web Push no Firebase Console. **Indispensável para push.**               |
+| `FIREBASE_MEASUREMENT_ID`            | Opcional: ID de Analytics, somente para usuários que aceitaram.                                 |
 
-Os valores de identificação que já existiam no código são usados como defaults; a API key e a VAPID **não** têm defaults. O runtime recusa habilitar push se faltarem.
+O runtime usa a identidade completa do conector ou as variáveis próprias de um único projeto Firebase. Para o projeto Sjsjs, use os valores do mesmo aplicativo Web de `sjsjs-ed490`. Se a configuração estiver incompleta, o jogo mostra a opção de reconfigurar as notificações.
 
 **Para ENVIAR push** será necessário integrar no servidor o Firebase Admin / FCM HTTP v1, com conta de serviço autenticada, permissões mínimas, logs, rate limit e escolha de audiência. Nunca exponha a conta de serviço ao navegador. Este PR não inventa credenciais nem envia notificações sem a configuração.
 

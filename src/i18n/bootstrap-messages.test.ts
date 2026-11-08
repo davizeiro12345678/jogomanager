@@ -31,3 +31,10 @@ it("renders new transport and save controls before any optional locale pack down
   expect(translateBootstrap("pt-BR", "shell.cloudSave")).toBe("Salvar na nuvem");
   expect(translateBootstrap("en", "nav.mobile")).toBe("Main navigation on mobile");
 });
+
+it("does not expose raw loading and play keys in the offline interface", () => {
+  expect(translateBootstrap("en", "common.loading")).toBe("Loading");
+  expect(translateBootstrap("pt-BR", "common.loading")).toBe("Carregando");
+  expect(translateBootstrap("en", "nav.play")).toBe("Play");
+  expect(translateBootstrap("pt-BR", "nav.play")).toBe("Jogar");
+});

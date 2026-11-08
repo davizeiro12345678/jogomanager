@@ -1,3 +1,7 @@
 @import "./career-shell.css";
+@import "./career-office-shell.css";
+@import "./career-content-shell.css";
+@import "./career-typography-shell.css";
+@import "./career-interaction.css";
 @import "./career-screens.css";
 @import "./coach/coach-office.css";

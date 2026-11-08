@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "davizeiro12345678/jogomanager",
+    "pullRequest": 125,
+    "commit": "e0f89049137fc626a4f81d315f82c0c9cd32bf4c",
+    "workflowRun": 42457831194,
+    "job": "Lighthouse mobile multi-page audit",
+    "artifactId": 13608412053,
+    "artifact": "lighthouse-results",
+    "artifactReports": 15
+  },
+  "method": {
+    "routes": 5,
+    "runsPerRoute": 3,
+    "aggregation": "pessimistic",
+    "viewport": "390x844 CSS px; DPR 2.75",
+    "throttling": "simulated mobile"
+  },
+  "configurationAtMeasurement": {
+    "performanceScoreMinimum": 0.9,
+    "accessibilityScoreMinimum": 0.9,
+    "totalBlockingTimeMaximumMs": 400,
+    "largestContentfulPaintMaximumMs": 2700,
+    "cumulativeLayoutShiftMaximum": 0.1
+  },
+  "result": {
+    "status": "failed",
+    "reportsPassing": 14,
+    "reportsFailing": 1,
+    "assertionFailures": [
+      {
+        "name": "minScore",
+        "expected": 0.9,
+        "actual": 0.75,
+        "values": [0.75, 0.98, 0.98],
+        "operator": ">=",
+        "passed": false,
+        "auditProperty": "performance",
+        "auditId": "categories",
+        "level": "error",
+        "url": "http://127.0.0.1:4173/"
+      },
+      {
+        "name": "maxNumericValue",
+        "expected": 400,
+        "actual": 1117.9328999999998,
+        "values": [1117.9328999999998, 16, 17],
+        "operator": "<=",
+        "passed": false,
+        "auditId": "total-blocking-time",
+        "level": "error",
+        "url": "http://127.0.0.1:4173/",
+        "auditTitle": "Total Blocking Time",
+        "auditDocumentationLink": "https://developer.chrome.com/docs/lighthouse/performance/lighthouse-total-blocking-time/"
+      }
+    ],
+    "runtimeErrors": 0
+  },
+  "observedExtrema": {
+    "performanceScore": {
+      "min": 0.75,
+      "max": 1
+    },
+    "accessibilityScore": {
+      "min": 0.97,
+      "max": 1
+    },
+    "totalBlockingTimeMs": {
+      "min": 16,
+      "max": 1117.9328999999998
+    },
+    "largestContentfulPaintMs": {
+      "min": 1096.2177,
+      "max": 2414.3738000000003
+    },
+    "cumulativeLayoutShift": {
+      "min": 0,
+      "max": 0.004963949596819479
+    }
+  },
+  "routeSummary": [
+    {
+      "route": "/",
+      "performanceScores": [0.75, 0.98, 0.98],
+      "tbtMs": [1117.9328999999998, 16, 17],
+      "lcpMs": [1915.4848499999998, 2000.0535, 1993.4827500000001],
+      "cls": [0, 0, 0],
+      "passCount": 2,
+      "total": 3
+    },
+    {
+      "route": "/guias",
+      "performanceScores": [0.96, 0.97, 0.99],
+      "tbtMs": [40, 38.999999999999545, 36],
+      "lcpMs": [2414.3738000000003, 2262.3106, 1547.2245],
+      "cls": [0, 0, 0],
+      "passCount": 3,
+      "total": 3
+    },
+    {
+      "route": "/guia-de-scouting",
+      "performanceScores": [1, 0.98, 1],
+      "tbtMs": [36, 36, 42.99999999999932],
+      "lcpMs": [1393.61535, 1975.929, 1388.3075999999999],
+      "cls": [0, 0, 0],
+      "passCount": 3,
+      "total": 3
+    },
+    {
+      "route": "/melhores-formacoes",
+      "performanceScores": [0.99, 1, 1],
+      "tbtMs": [38, 34.00000000000023, 43.999999999999545],
+      "lcpMs": [1545.9933, 1096.2177, 1385.34675],
+      "cls": [0, 0, 0],
+      "passCount": 3,
+      "total": 3
+    },
+    {
+      "route": "/partida-rapida",
+      "performanceScores": [0.96, 0.99, 0.98],
+      "tbtMs": [191, 111, 131],
+      "lcpMs": [1648.5996, 1390.4454, 1566.6662999999999],
+      "cls": [0.004963949596819479, 0.004963949596819479, 0.004963949596819479],
+      "passCount": 3,
+      "total": 3
+    }
+  ],
+  "outlierAnalysis": {
+    "route": "/",
+    "report": "lhr-1794122025946.json",
+    "performanceScore": 0.75,
+    "totalBlockingTimeMs": 1117.9328999999998,
+    "otherHomeRuns": [
+      {
+        "report": "lhr-1794122037946.json",
+        "performanceScore": 0.98,
+        "totalBlockingTimeMs": 16,
+        "largestContentfulPaintMs": 2000.0535
+      },
+      {
+        "report": "lhr-1794122049355.json",
+        "performanceScore": 0.98,
+        "totalBlockingTimeMs": 17,
+        "largestContentfulPaintMs": 1993.4827500000001
+      }
+    ],
+    "longTaskCount": 11,
+    "longTasks": [
+      {
+        "duration": 655.9999999999995,
+        "startTime": 4079.134200000002,
+        "url": "http://127.0.0.1:4173/assets/hydrate-app-ydh6J2UC.js"
+      },
+      {
+        "duration": 540,
+        "startTime": 761.5671,
+        "url": "Unattributable"
+      },
+      {
+        "duration": 350,
+        "startTime": 1529.5671,
+        "url": "Unattributable"
+      },
+      {
+        "duration": 234.99999999999977,
+        "startTime": 1920.5671,
+        "url": "http://127.0.0.1:4173/"
+      },
+      {
+        "duration": 220,
+        "startTime": 1309.5671,
+        "url": "http://127.0.0.1:4173/"
+      },
+      {
+        "duration": 188.00000000000045,
+        "startTime": 2155.5670999999998,
+        "url": "http://127.0.0.1:4173/"
+      },
+      {
+        "duration": 130,
+        "startTime": 2417.5671,
+        "url": "Unattributable"
+      },
+      {
+        "duration": 105,
+        "startTime": 2547.5671,
+        "url": "Unattributable"
+      },
+      {
+        "duration": 64,
+        "startTime": 4735.134200000001,
+        "url": "http://127.0.0.1:4173/assets/browser-react-Bc96TmvK.js"
+      },
+      {
+        "duration": 53,
+        "startTime": 2343.5671,
+        "url": "Unattributable"
+      },
+      {
+        "duration": 53,
+        "startTime": 2652.5671,
+        "url": "Unattributable"
+      }
+    ],
+    "mainThreadWorkBreakdownMs": {
+      "other": 1920.1119999999917,
+      "scriptEvaluation": 1003.979999999998,
+      "styleLayout": 321.28000000000014,
+      "parseHTML": 277.26800000000003,
+      "paintCompositeRender": 130.67600000000007,
+      "garbageCollection": 33.407999999999994,
+      "scriptParseCompile": 11.487999999999994
+    },
+    "totalMainThreadWorkMs": 3698.2119999999895,
+    "javascriptBootupMs": 1006.8959999999992,
+    "bootupByResourceMs": [
+      {
+        "url": "Unattributable",
+        "scripting": 77.84799999999997,
+        "scriptParseCompile": 0
+      },
+      {
+        "url": "http://127.0.0.1:4173/",
+        "scripting": 14.367999999999993,
+        "scriptParseCompile": 4.532
+      },
+      {
+        "url": "http://127.0.0.1:4173/assets/hydrate-app-ydh6J2UC.js",
+        "scripting": 656.2279999999984,
+        "scriptParseCompile": 1.284
+      },
+      {
+        "url": "http://127.0.0.1:4173/assets/browser-react-Bc96TmvK.js",
+        "scripting": 252.10000000000088,
+        "scriptParseCompile": 0.536
+      }
+    ],
+    "serverResponseTime": "Root document took 60 ms",
+    "lcpMs": 1915.4848499999998,
+    "runtimeError": null,
+    "assessment": "Single severe sample; two same-route repetitions and the other twelve measurements pass. Hydration JS is attributable in the trace, but unattributable main-thread tasks are also present; the trace does not establish whether the 655 ms hydration task is a reproducible application regression or runner contention. Do not relax the gate further without root-cause evidence."
+  },
+  "relatedChecks": {
+    "criticalPerformanceReleaseGate": "failed because Lighthouse mobile failed",
+    "match3dStartupTrace": "passed on this SHA; retry policy was not shown to be exercised by this check",
+    "checksSummary": {
+      "success": 22,
+      "failure": 2,
+      "skipped": 2,
+      "pending": 0
+    },
+    "skippedChecks": ["CodSpeed Performance Analysis", "Supabase Preview"]
+  },
+  "reports": [
+    {
+      "report": "lhr-1794122025946.json",
+      "route": "/",
+      "performanceScore": 0.75,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 1117.9328999999998,
+      "largestContentfulPaintMs": 1915.4848499999998,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122037946.json",
+      "route": "/",
+      "performanceScore": 0.98,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 16,
+      "largestContentfulPaintMs": 2000.0535,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122049355.json",
+      "route": "/",
+      "performanceScore": 0.98,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 17,
+      "largestContentfulPaintMs": 1993.4827500000001,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122059930.json",
+      "route": "/guias",
+      "performanceScore": 0.96,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 40,
+      "largestContentfulPaintMs": 2414.3738000000003,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122070377.json",
+      "route": "/guias",
+      "performanceScore": 0.97,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 38.999999999999545,
+      "largestContentfulPaintMs": 2262.3106,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122080872.json",
+      "route": "/guias",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 36,
+      "largestContentfulPaintMs": 1547.2245,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122091446.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 36,
+      "largestContentfulPaintMs": 1393.61535,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122101909.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 0.98,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 36,
+      "largestContentfulPaintMs": 1975.929,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122112386.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 42.99999999999932,
+      "largestContentfulPaintMs": 1388.3075999999999,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122123023.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 38,
+      "largestContentfulPaintMs": 1545.9933,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122133507.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 34.00000000000023,
+      "largestContentfulPaintMs": 1096.2177,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122143943.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 43.999999999999545,
+      "largestContentfulPaintMs": 1385.34675,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122197970.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.96,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 191,
+      "largestContentfulPaintMs": 1648.5996,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122251967.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 111,
+      "largestContentfulPaintMs": 1390.4454,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794122306113.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.98,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 131,
+      "largestContentfulPaintMs": 1566.6662999999999,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    }
+  ]
+}

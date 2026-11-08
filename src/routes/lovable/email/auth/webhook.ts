@@ -1,3 +1,4 @@
+import "@tanstack/react-start/server-only";
 import * as React from "react";
 import { createAuthEmailHandler } from "@lovable.dev/email-js";
 import { createFileRoute } from "@tanstack/react-router";
@@ -7,6 +8,7 @@ import { MagicLinkEmail } from "@/lib/email-templates/magic-link";
 import { RecoveryEmail } from "@/lib/email-templates/recovery";
 import { EmailChangeEmail } from "@/lib/email-templates/email-change";
 import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
+import { validateEmailAddress, validateLovableSendUrl } from "@/lib/email-templates/send-email-url";
 
 // Configuration
 const SITE_NAME = "Pro Football Manager 3D";
@@ -14,6 +16,12 @@ const SENDER_DOMAIN = "notify.jogomanager.com";
 const ROOT_DOMAIN = "jogomanager.com";
 const FROM_DOMAIN = "jogomanager.com";
 const SITE_URL = `https://${ROOT_DOMAIN}`;
+const FROM_ADDRESS = validateEmailAddress(`conta@${FROM_DOMAIN}`, "From");
+const REPLY_TO_ADDRESS = validateEmailAddress(`contato@${FROM_DOMAIN}`, "Reply-To");
+
+function validateAuthRecipient(data: { email: unknown }): void {
+  validateEmailAddress(data.email, "Recipient");
+}
 
 // The SDK handler owns verification, dispatch, and retry semantics; this file
 // owns only the email decisions: subjects, templates, and per-type props.
@@ -23,61 +31,73 @@ export const Route = createFileRoute("/lovable/email/auth/webhook")({
       POST: ({ request }) => {
         const handler = createAuthEmailHandler({
           apiKey: process.env["LOVABLE_API_KEY"]!,
-          from: { name: SITE_NAME, address: `conta@${FROM_DOMAIN}` },
-          replyTo: { name: "Suporte Pro Football Manager 3D", address: `contato@${FROM_DOMAIN}` },
+          from: { name: SITE_NAME, address: FROM_ADDRESS },
+          replyTo: { name: "Suporte Pro Football Manager 3D", address: REPLY_TO_ADDRESS },
           senderDomain: SENDER_DOMAIN,
-          sendUrl: process.env["LOVABLE_SEND_URL"],
+          sendUrl: validateLovableSendUrl(process.env["LOVABLE_SEND_URL"]),
           emails: {
             signup: {
               subject: "Confirme seu e-mail no Pro Football Manager 3D",
-              render: (data) =>
-                React.createElement(SignupEmail, {
+              render: (data) => {
+                const recipient = validateEmailAddress(data.email, "Recipient");
+                return React.createElement(SignupEmail, {
                   siteName: SITE_NAME,
                   siteUrl: SITE_URL,
-                  recipient: data.email,
+                  recipient,
                   confirmationUrl: data.url,
-                }),
+                });
+              },
             },
             invite: {
               subject: "Você foi convidado para o Pro Football Manager 3D",
-              render: (data) =>
-                React.createElement(InviteEmail, {
+              render: (data) => {
+                validateAuthRecipient(data);
+                return React.createElement(InviteEmail, {
                   siteName: SITE_NAME,
                   siteUrl: SITE_URL,
                   confirmationUrl: data.url,
-                }),
+                });
+              },
             },
             magiclink: {
               subject: "Seu link de acesso ao Pro Football Manager 3D",
-              render: (data) =>
-                React.createElement(MagicLinkEmail, {
+              render: (data) => {
+                validateAuthRecipient(data);
+                return React.createElement(MagicLinkEmail, {
                   siteName: SITE_NAME,
                   confirmationUrl: data.url,
-                }),
+                });
+              },
             },
             recovery: {
               subject: "Redefinir sua senha do Pro Football Manager 3D",
-              render: (data) =>
-                React.createElement(RecoveryEmail, {
+              render: (data) => {
+                validateAuthRecipient(data);
+                return React.createElement(RecoveryEmail, {
                   siteName: SITE_NAME,
                   confirmationUrl: data.url,
-                }),
+                });
+              },
             },
             email_change: {
               subject: "Confirme a troca do seu e-mail",
-              render: (data) =>
-                React.createElement(EmailChangeEmail, {
+              render: (data) => {
+                validateAuthRecipient(data);
+                return React.createElement(EmailChangeEmail, {
                   siteName: SITE_NAME,
                   oldEmail: data.old_email ?? "",
                   email: data.email,
                   newEmail: data.new_email ?? "",
                   confirmationUrl: data.url,
-                }),
+                });
+              },
             },
             reauthentication: {
               subject: "Seu código de verificação",
-              render: (data) =>
-                React.createElement(ReauthenticationEmail, { token: data.token ?? "" }),
+              render: (data) => {
+                validateAuthRecipient(data);
+                return React.createElement(ReauthenticationEmail, { token: data.token ?? "" });
+              },
             },
           },
         });

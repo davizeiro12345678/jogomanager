@@ -17,7 +17,7 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("careers")
-      .select("state, updated_at")
+      .select("state, updated_at, generation, deleted_at")
       .eq("user_id", ctx.getUserId())
       .maybeSingle();
     if (error)
@@ -34,9 +34,24 @@ export default defineTool({
           },
         ],
       };
+    if (data.deleted_at)
+      return {
+        content: [
+          { type: "text", text: "Career deleted. Start a new career explicitly to replace it." },
+        ],
+        structuredContent: {
+          state: null,
+          generation: data.generation,
+          deletedAt: data.deleted_at,
+        },
+      };
     return {
       content: [{ type: "text", text: JSON.stringify(data.state) }],
-      structuredContent: { state: data.state, updatedAt: data.updated_at },
+      structuredContent: {
+        state: data.state,
+        updatedAt: data.updated_at,
+        generation: data.generation,
+      },
     };
   },
 });

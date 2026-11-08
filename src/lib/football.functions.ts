@@ -1,49 +1,6 @@
-import type { AppDb } from "@/lib/app-db";
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
-
-function publicClient(): AppDb {
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
-  const url = process.env["SUPABASE_URL"];
-  if (!key || !url) throw new Error("Os dados públicos de futebol estão indisponíveis.");
-  return createClient<Database>(url, key, {
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
-          h.delete("Authorization");
-        h.set("apikey", key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
-}
-
-/** A server-configured row cap can be smaller than our requested page size. */
-async function readPublicPages<T extends { id: string }>(
-  load: (cursor: string | undefined) => PromiseLike<{ data: T[] | null; error: unknown }>,
-  maxRows = 100_000,
-): Promise<T[]> {
-  const rows: T[] = [];
-  const cursors = new Set<string>();
-  let cursor: string | undefined;
-  for (let page = 0; page < Math.min(maxRows + 1, 2_048); page++) {
-    const result = await load(cursor);
-    if (result.error || !result.data)
-      throw new Error("Não foi possível carregar os dados completos de futebol.");
-    if (result.data.length === 0) return rows;
-    const next = result.data.at(-1)!.id;
-    if (!next || cursors.has(next) || rows.length + result.data.length > maxRows)
-      throw new Error("A paginação dos dados de futebol excedeu o limite seguro.");
-    rows.push(...result.data);
-    cursors.add(next);
-    cursor = next;
-  }
-  throw new Error("A paginação dos dados de futebol excedeu o limite seguro.");
-}
+import { publicClient, readPublicPages } from "./football-public-db.server";
 
 export interface OfficialAssets {
   crests: Record<string, string>;
@@ -53,50 +10,8 @@ export interface OfficialAssets {
 /** Public read: official crest + kit image URLs, keyed by the game's club id. */
 export const getOfficialAssets = createServerFn({ method: "GET" }).handler(
   async (): Promise<OfficialAssets> => {
-    const { cachedPublicRead } = await import("./public-read-cache.server");
-    return cachedPublicRead("assets", "official-v2", async () => {
-      const db = publicClient();
-      const crests: Record<string, string> = {};
-      const kits: Record<string, string> = {};
-      const logoToken = process.env["LOGO_DEV_API_KEY"];
-      // Independent catalogs load together. Walk their primary keys until an
-      // empty page, so a lower Data API cap never becomes a cached partial list.
-      const [clubs, kitRows] = await Promise.all([
-        (async () => {
-          // Opt-in canary: use VPS only for anonymous crest projections. Logo.dev
-          // fallback still requires the full authoritative Supabase projection.
-          if (!logoToken) {
-            const { fetchVpsPublicCrests } = await import("./vps-public-catalog.server");
-            const fromVps = await fetchVpsPublicCrests();
-            if (fromVps) return fromVps.map((club) => ({ ...club, website: null }));
-          }
-          return readPublicPages((cursor) => {
-            let query = db.from("clubs").select("id, crest_url, website").order("id").limit(1_000);
-            query = logoToken
-              ? query.or("crest_url.not.is.null,website.not.is.null")
-              : query.not("crest_url", "is", null);
-            return cursor ? query.gt("id", cursor) : query;
-          });
-        })(),
-        readPublicPages((cursor) => {
-          const query = db
-            .from("kits")
-            .select("id, club_id, image_url")
-            .eq("kind", "home")
-            .not("image_url", "is", null)
-            .order("id")
-            .limit(1_000);
-          return cursor ? query.gt("id", cursor) : query;
-        }),
-      ]);
-      for (const c of clubs) {
-        if (c.crest_url) crests[c.id] = c.crest_url;
-        else if (c.website && logoToken)
-          crests[c.id] = `https://img.logo.dev/${c.website}?token=${logoToken}&size=256&format=png`;
-      }
-      for (const k of kitRows) if (k.image_url) kits[k.club_id] = k.image_url;
-      return { crests, kits };
-    });
+    const { readOfficialAssets } = await import("./football-assets.server");
+    return readOfficialAssets();
   },
 );
 

@@ -1,12 +1,13 @@
 /** Independent cinematic camera director, authored scene logic only. */
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { Cutscene, SceneArt, Speaker } from "@/content/cutscene-types";
 import type { ShotSize } from "@/game/cutscene-director";
 import { cinematicIdleAt } from "@/game/cinematic-actor";
 import {
   cinematicCameraTransition,
+  type TransitionController,
   type CinematicCameraTransitionInput,
 } from "@/game/cinematic-camera-transition";
 import { cinematicShotFor } from "@/game/cinematic-shot";
@@ -34,6 +35,7 @@ export function CinematicDirector({
   climax = false,
   speaker = null,
   festive = false,
+  transitionController,
 }: {
   business?: Cutscene["business"];
   kind: SetKind;
@@ -46,13 +48,22 @@ export function CinematicDirector({
   climax?: boolean;
   speaker?: Speaker | null;
   festive?: boolean;
+  transitionController: TransitionController;
 }) {
   const runtime = useCinematicRuntime();
+  const invalidate = useThree((state) => state.invalidate);
   const position = useMemo(() => new THREE.Vector3(), []);
   const target = useMemo(() => new THREE.Vector3(), []);
   const lastFraming = useRef<CinematicCameraTransitionInput | null>(null);
+  const lastCutRequest = useRef<CinematicCameraTransitionInput | null>(null);
+  const appliedTransitionGeneration = useRef(0);
+  const appliedCameraGeneration = useRef(0);
   const lastCue = useRef<string | undefined>(undefined);
   const lastAspect = useRef(0);
+  useLayoutEffect(() => {
+    transitionController.setInvalidator(invalidate);
+    return () => transitionController.setInvalidator(null);
+  }, [invalidate, transitionController]);
   useFrame(({ camera }) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
     // Pausing audio must not accidentally trigger the end-of-line reaction cut.
@@ -112,6 +123,19 @@ export function CinematicDirector({
     };
     const cut = cinematicCameraTransition(lastFraming.current, framing) === "cut";
     lastFraming.current = framing;
+    const repeatedCutRequest =
+      lastCutRequest.current?.scene === framing.scene &&
+      lastCutRequest.current?.framing === framing.framing &&
+      lastCutRequest.current?.subject === framing.subject &&
+      lastCutRequest.current?.size === framing.size &&
+      lastCutRequest.current?.reaction === framing.reaction &&
+      lastCutRequest.current?.opening === framing.opening;
+    if (cut && !repeatedCutRequest) {
+      lastCutRequest.current = framing;
+      void transitionController.transition((_signal, generation) => {
+        appliedTransitionGeneration.current = generation;
+      });
+    }
     const focus = shotSize !== "geral" && shot.framing === "dialogue";
     if (focus && kind === "locker" && art !== "gym" && art !== "medical" && subject === "captain") {
       const idle = cinematicIdleAt(time, 5, true);
@@ -130,8 +154,28 @@ export function CinematicDirector({
       position.y += Math.sin(time * 1.3) * intensity * 0.003;
       position.z += Math.sin(lineTime * 0.2) * motion * 0.5;
     }
+    const transition = transitionController.snapshot;
+    const transitionHold = transition.state === "fade-out";
+    const transitionSnap =
+      appliedTransitionGeneration.current > appliedCameraGeneration.current && !transitionHold;
+    camera.userData["cinematicTransitionState"] = transition.state;
+    camera.userData["cinematicTransitionGeneration"] = transition.generation;
+    if (transitionHold) {
+      // Keep the previous composed shot under the opaque matte. The next shot
+      // is committed only by the controller's swap callback.
+      camera.userData["cinematicFraming"] = shot.framing;
+      camera.userData["cinematicSubject"] = stagedActor?.role ?? "environment";
+      camera.userData["cinematicActorPresence"] = stagedActor?.presence ?? "environment";
+      camera.userData["cinematicShotType"] =
+        opening || shot.framing === "establishing" ? "master" : reaction ? "reaction" : "dialogue";
+      return;
+    }
     // A cut snaps to a composed shot. Only the movement inside that shot drifts.
-    if (cut || runtime.stopped || runtime.reduced) {
+    if (transitionSnap) {
+      appliedCameraGeneration.current = appliedTransitionGeneration.current;
+      camera.position.copy(position);
+      runtime.focus.copy(target);
+    } else if (cut || runtime.stopped || runtime.reduced) {
       camera.position.copy(position);
       runtime.focus.copy(target);
     } else {

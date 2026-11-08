@@ -41,6 +41,7 @@ import {
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { restoreDialogFocus } from "@/lib/dialog-return-focus";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { OfflineBar, SyncBadge } from "@/components/OfflineBar";
@@ -57,6 +58,7 @@ import { nextFixture } from "@/game/season";
 import { useClubTheme } from "@/game/theme";
 import type { CareerState } from "@/game/types";
 import { useCareer, useSignedIn } from "@/hooks/useCareer";
+import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useServiceWorker } from "@/hooks/useServiceWorker";
 import { useT } from "@/i18n/provider";
 import { useDrag } from "@use-gesture/react";
@@ -125,6 +127,7 @@ export function GameShell({
   const navigate = useNavigate();
   const pathname = useLocation({ select: (location) => location.pathname });
   const signedIn = useSignedIn();
+  const tutorialOwner = useAuthUserId();
   const { t, dir } = useT();
   const { sync } = useCareer();
   const shell = useRef<HTMLDivElement>(null);
@@ -145,6 +148,7 @@ export function GameShell({
   }, []);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const tutorialTrigger = useRef<HTMLButtonElement>(null);
   // deslizar o menu para fora fecha (gesto natural no celular)
   const bindMenuSwipe = useDrag(
     ({ last, movement: [mx], velocity: [vx] }) => {
@@ -174,8 +178,9 @@ export function GameShell({
     if (bottomNav.current) observer.observe(bottomNav.current);
     measure();
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   useEffect(() => {
     try {
       if (localStorage.getItem("manager3d.career-density") === "compact") setDensity("compact");
@@ -304,6 +309,8 @@ export function GameShell({
               size="icon"
               className="career-icon-button"
               aria-label="Abrir tutorial da carreira"
+              ref={tutorialTrigger}
+              disabled={!career || tutorialOwner === undefined}
               onClick={() => setTutorialOpen(true)}
             >
               <BookOpen size={19} aria-hidden />
@@ -345,7 +352,12 @@ export function GameShell({
                 {signedIn ? (
                   <DropdownMenuItem
                     onSelect={async () => {
-                      await (await import("@/lib/logout")).signOutAndCleanDevice();
+                      setSignOutError(null);
+                      const result = await (await import("@/lib/logout")).signOutAndCleanDevice();
+                      if (result.error) {
+                        setSignOutError(result.error.message);
+                        return;
+                      }
                       void navigate({ to: "/" });
                     }}
                   >
@@ -379,6 +391,11 @@ export function GameShell({
           </div>
         </div>
       </header>
+      {signOutError ? (
+        <p role="alert" className="mx-auto max-w-7xl px-4 pt-3 text-sm text-destructive">
+          {signOutError}
+        </p>
+      ) : null}
 
       <div className="career-workspace">
         <aside className="career-sidebar" aria-label={t("nav.menu")}>
@@ -491,7 +508,7 @@ export function GameShell({
           <span>{t("nav.mobileMenu")}</span>
         </button>
       </nav>
-      {tutorialOpen && career ? (
+      {tutorialOpen && career && tutorialOwner !== undefined ? (
         <Suspense
           fallback={
             <span role="status" className="sr-only">
@@ -502,15 +519,17 @@ export function GameShell({
           <CareerTutorialDialog
             open={tutorialOpen}
             onOpenChange={setTutorialOpen}
-            careerKey={`${userCareerKey(career)}`}
+            onReturnFocus={() =>
+              restoreDialogFocus(
+                tutorialTrigger.current,
+                document.querySelector<HTMLElement>("main h1, #conteudo h1"),
+              )
+            }
+            careerKey={`${tutorialOwner ?? "guest"}:${career.world?.seed ?? career.clubId}`}
             career={career}
           />
         </Suspense>
       ) : null}
     </div>
   );
-}
-
-function userCareerKey(career: CareerState | null) {
-  return career?.clubId ?? "new";
 }

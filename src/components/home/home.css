@@ -14,18 +14,6 @@
   outline: 2px solid var(--home-lime);
   outline-offset: 5px;
 }
-.home-skip {
-  position: absolute;
-  top: -80px;
-  left: 20px;
-  z-index: 80;
-  background: var(--home-lime);
-  color: #12200e;
-  padding: 14px;
-}
-.home-skip:focus {
-  top: 8px;
-}
 .home-nav {
   height: 86px;
   max-width: 1360px;

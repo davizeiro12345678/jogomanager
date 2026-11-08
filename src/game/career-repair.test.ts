@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { initCareer } from "./career";
 import { repairCareer } from "./career-repair";
+import { careerMatchEligibilityInput, getMatchEligibilityFailure } from "./match-eligibility";
 import { LEAGUES } from "./data/leagues";
 
 const fresh = () => initCareer(LEAGUES[0]!.id, LEAGUES[0]!.clubs[0]!.id, "Teste");
@@ -13,13 +14,45 @@ describe("repairCareer", () => {
     expect(r.state).toBe(s);
   });
 
+  it("preserva titulares temporariamente indisponíveis durante a reparação do save", () => {
+    const s = fresh();
+    const injured = s.lineup[0]!;
+    const suspended = s.lineup[1]!;
+    const repaired = repairCareer({
+      ...s,
+      players: {
+        ...s.players,
+        [injured]: { ...s.players[injured]!, injuryWeeks: 2 },
+        [suspended]: { ...s.players[suspended]!, suspended: true },
+      },
+    });
+
+    expect(repaired.state.lineup).toEqual(s.lineup);
+    expect(repaired.state.players[injured]!.injuryWeeks).toBe(2);
+    expect(repaired.state.players[suspended]!.suspended).toBe(true);
+    expect(repaired.fixes).toEqual([]);
+  });
+
+  it("adiciona flag padrão de suspensão ausente em um save antigo", () => {
+    const s = fresh();
+    const id = s.lineup[0]!;
+    const legacyPlayer = { ...s.players[id]! } as Record<string, unknown>;
+    delete legacyPlayer["suspended"];
+    const repaired = repairCareer({
+      ...s,
+      players: { ...s.players, [id]: legacyPlayer },
+    } as unknown as typeof s);
+
+    expect(repaired.state.players[id]!.suspended).toBe(false);
+  });
+
   it("conserta atributos, escalação, calendário e medidores", () => {
     const s = fresh();
     const pid = s.lineup[0]!;
     const broken = {
       ...s,
       players: { ...s.players, [pid]: { ...s.players[pid]!, ovr: 140, condition: Number.NaN } },
-      lineup: [...s.lineup.slice(0, 9), "fantasma", s.lineup[0]!],
+      lineup: [...s.lineup],
       fixtures: [
         ...s.fixtures,
         s.fixtures[0]!,
@@ -61,7 +94,7 @@ describe("repairCareer", () => {
     const player = s.players[id]!;
     const malformed = {
       ...s,
-      lineup: { broken: true },
+      lineup: [...s.lineup],
       players: {
         ...s.players,
         [id]: { ...player, sourcePlayerId: "same-record" },
@@ -80,7 +113,22 @@ describe("repairCareer", () => {
         (entry) => entry.sourcePlayerId === "same-record",
       ),
     ).toHaveLength(1);
-    expect(repaired.fixes).toContain("Escalação com jogadores inexistentes ou repetidos");
+    expect(repaired.fixes).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("cópia(s) de jogadores com a mesma identidade"),
+      ]),
+    );
+  });
+
+  it("preserva escalação incompleta no save e bloqueia o início da partida", () => {
+    const s = fresh();
+    const repaired = repairCareer({ ...s, lineup: s.lineup.slice(0, 10) });
+
+    expect(repaired.state.lineup).toEqual(s.lineup.slice(0, 10));
+    expect(repaired.fixes).toEqual([]);
+    expect(getMatchEligibilityFailure(careerMatchEligibilityInput(repaired.state))?.code).toBe(
+      "lineup-count",
+    );
   });
 
   it("limita novos dados de operação e treino sem quebrar save antigo", () => {

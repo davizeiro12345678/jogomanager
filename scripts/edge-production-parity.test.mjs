@@ -4,7 +4,14 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import { createHash, webcrypto } from "node:crypto";
 import vm from "node:vm";
-import { loadFootballJobPage } from "../supabase/functions/_shared/football-window.mjs";
+import {
+  footballProviderRetryAfterMs,
+  footballProviderRateError,
+  footballWindowBudget,
+  loadFootballJobPage,
+  parseRetryAfterMs,
+  validateFootballPage,
+} from "../supabase/functions/_shared/football-window.mjs";
 
 // Execute the deployed handlers with isolated Deno bindings and fully mocked
 // transports. No environment credentials or live network are used by these tests.
@@ -306,6 +313,57 @@ test("SportsDB rejects a partial Cloudflare Access credential configuration befo
   ]);
 });
 
+test("API-Football bounds scheduled work and keeps the manual pilot single-lane", () => {
+  assert.deepEqual(footballWindowBudget("3", false), {
+    lanes: 3,
+    spacingMs: 350,
+    maxRequests: 120,
+  });
+  const custom = footballWindowBudget("999", false);
+  assert.equal(custom.lanes, 16);
+  assert.ok(custom.spacingMs >= 55);
+  assert.ok(custom.maxRequests * 1440 >= 445000);
+  assert.equal(footballWindowBudget("16", true).lanes, 1);
+  assert.equal(footballWindowBudget("invalid", false).lanes, 1);
+});
+
+test("API-Football distinguishes a depleted day from a transient 429", () => {
+  const response = (status, remaining) =>
+    new Response(null, { status, headers: { "x-ratelimit-requests-remaining": remaining } });
+  assert.equal(footballProviderRateError(response(429, "0")), "provider_daily_quota");
+  assert.equal(footballProviderRateError(response(429, "100")), "provider_rate_wait");
+  assert.equal(footballProviderRateError(response(429, "")), "provider_rate_wait");
+  assert.equal(footballProviderRateError(response(200, "0")), null);
+});
+
+test("API-Football parses bounded Retry-After delta-seconds", () => {
+  assert.equal(parseRetryAfterMs(" 5 ", 0), 5_000);
+  assert.equal(parseRetryAfterMs("0", 0), 0);
+  assert.equal(parseRetryAfterMs("1.5", 0), null);
+  assert.equal(parseRetryAfterMs("-1", 0), null);
+  assert.equal(parseRetryAfterMs("999999999999999999999", 0), 8_000);
+});
+
+test("API-Football parses Retry-After HTTP-date using the supplied clock", () => {
+  const now = Date.parse("Wed, 21 Oct 2015 07:28:00 GMT");
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:05 GMT", now), 5_000);
+  assert.equal(parseRetryAfterMs("Wed Oct 21 07:28:05 2015", now), 5_000);
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:27:59 GMT", now), 0);
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:30 GMT", now), 8_000);
+  assert.equal(parseRetryAfterMs("not-a-date", now), null);
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:05 GMT", Number.NaN), null);
+  assert.equal(
+    footballProviderRetryAfterMs(
+      new Response(null, {
+        status: 429,
+        headers: { "retry-after": "Wed, 21 Oct 2015 07:28:05 GMT" },
+      }),
+      now,
+    ),
+    5_000,
+  );
+});
+
 test("API-Football cached pages are validated and reused without reserving or requesting again", async () => {
   const forbidden = () => assert.fail("Cached responses must not consume another provider request");
   assert.equal(
@@ -385,4 +443,41 @@ test("API-Football cache persistence failure prevents returning a page for catal
     returned = true;
   }, /database_cache_failure/);
   assert.equal(returned, false);
+});
+
+test("API-Football rejects corrupt pages and filters self-opponents before materialization", () => {
+  const job = { kind: "fixtures", path: "/fixtures?league=71&season=2026" };
+  const fixture = {
+    fixture: { id: 100 },
+    league: { id: 71, season: 2026 },
+    teams: { home: { id: 1 }, away: { id: 2 } },
+  };
+  assert.equal(validateFootballPage({ response: [fixture] }, job).response.length, 1);
+  assert.deepEqual(validateFootballPage({ response: [fixture, fixture] }, job).response, [fixture]);
+  assert.throws(
+    () =>
+      validateFootballPage({ response: [{ ...fixture, league: { id: 72, season: 2026 } }] }, job),
+    /invalid_fixture/,
+  );
+  assert.deepEqual(
+    validateFootballPage(
+      {
+        response: [
+          fixture,
+          { ...fixture, fixture: { id: 102 }, teams: { home: { id: 1 }, away: { id: 1 } } },
+          { ...fixture, fixture: { id: 103 }, teams: { home: { id: 1 }, away: { id: null } } },
+        ],
+      },
+      job,
+    ).response,
+    [fixture],
+  );
+  assert.throws(
+    () =>
+      validateFootballPage(
+        { response: [fixture] },
+        { kind: "fixture_detail", path: "/fixtures?ids=101" },
+      ),
+    /invalid_fixture/,
+  );
 });

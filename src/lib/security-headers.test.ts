@@ -133,7 +133,7 @@ describe("outer response protection", () => {
       new Response("page", { headers: { "content-type": "text/html" } }),
       new Request("http://localhost:3000/taticas-e-formacoes", { method: "HEAD" }),
     );
-    expect(page.headers.get("x-robots-tag")).toBeNull();
+    expect(page.headers.get("x-robots-tag")).toBe("noindex, follow");
     expect(page.headers.get("strict-transport-security")).toBeNull();
     expect(await page.text()).toBe("");
   });

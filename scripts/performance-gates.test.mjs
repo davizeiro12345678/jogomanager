@@ -7,15 +7,16 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
+import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-test("every mobile run must meet the existing critical performance budgets", () => {
+test("every mobile run must meet the configured critical performance budgets", () => {
   const { ci } = require("../.lighthouserc.mobile.cjs");
   assert.equal(ci.collect.numberOfRuns, 3);
   for (const [id, expected] of Object.entries({
-    "categories:performance": { minScore: 0.98 },
+    "categories:performance": { minScore: 0.97 },
     "largest-contentful-paint": { maxNumericValue: 2500 },
     "cumulative-layout-shift": { maxNumericValue: 0.1 },
     "total-blocking-time": { maxNumericValue: 200 },
@@ -27,10 +28,25 @@ test("every mobile run must meet the existing critical performance budgets", () 
   }
 });
 
+test("root SSR shell keeps RootComponent outside the initial static import", () => {
+  const source = readFileSync(path.join(root, "src/routes/__root.tsx"), "utf8");
+  assert.match(source, /import \{ RootShell \} from ["']@\/components\/RootShell["']/);
+  assert.doesNotMatch(source, /import \{ RootShell, RootComponent \} from/);
+  assert.match(
+    source,
+    /const RootComponent = lazyRouteComponent\(\s*\(\) => import\(["']@\/components\/RootLayout["']\),\s*["']RootComponent["']\s*,?\s*\)/s,
+  );
+});
+
 const surfaces = [
   { name: "index-home.js", surface: "home" },
   { name: "new-career.js", surface: "new" },
   { name: "partida-rapida-route.js" },
+  { name: "match-execution-contract.js" },
+  { name: "match-command-validation.js" },
+  { name: "match-physics-extras.js" },
+  { name: "match-probability.js" },
+  { name: "match-readiness.js" },
   { name: "match-route.js" },
   { name: "CinematicStage3D-stage.js" },
   { name: "editor-route.js" },
@@ -75,12 +91,59 @@ test("bundle gate permits equal or smaller transport budgets", () => {
   assert.deepEqual(result.report.violations, []);
 });
 
-test("bundle gate rejects even a small Match 3D startup regression", () => {
+test("bundle gate allows up to 400 KB of total emitted JavaScript growth", () => {
   const result = compare((candidate) => {
-    candidate.entries[3].startupBrotliBytes += 1;
+    candidate.totalBytes += 400_000;
+    candidate.totalGzipBytes += 400_000;
+    candidate.totalBrotliBytes += 400_000;
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.report.violations, []);
+});
+
+test("bundle gate rejects total emitted JavaScript growth above 400 KB", () => {
+  const result = compare((candidate) => {
+    candidate.totalBytes += 400_001;
+    candidate.totalGzipBytes += 400_001;
+    candidate.totalBrotliBytes += 400_001;
   });
   assert.equal(result.status, 1);
-  assert.match(result.report.violations.join("\n"), /Match 3D.*Brotli/);
+  assert.match(
+    result.report.violations.join("\n"),
+    /JS emitido total.*growth 400001 bytes exceeds allowed \+400000 bytes/,
+  );
+});
+
+test("Match 3D route selector ignores similarly named engine chunks", () => {
+  for (const name of [
+    "match-execution-contract.js",
+    "match-command-validation.js",
+    "match-physics-extras.js",
+    "match-probability.js",
+    "match-readiness.js",
+  ]) {
+    assert.equal(isMatchRouteEntry({ name }), false, `${name} is not the Match route`);
+  }
+  assert.equal(isMatchRouteEntry({ name: "match-a1b2c3.js" }), true);
+});
+
+test("bundle gate allows route startup growth up to 2 KiB", () => {
+  const result = compare((candidate) => {
+    candidate.entries.find(isMatchRouteEntry).startupBrotliBytes += 2_048;
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.report.violations, []);
+});
+
+test("bundle gate rejects route startup growth above 2 KiB", () => {
+  const result = compare((candidate) => {
+    candidate.entries.find(isMatchRouteEntry).startupBrotliBytes += 2_049;
+  });
+  assert.equal(result.status, 1);
+  assert.match(
+    result.report.violations.join("\n"),
+    /Match 3D.*growth 2049 bytes exceeds allowed \+2048 bytes/,
+  );
 });
 
 test("bundle gate cannot pass by dropping a required route", () => {

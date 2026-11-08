@@ -28,5 +28,12 @@ export function RigidActorBatch({
     if (!batch.current) batch.current = batchRigidActors(root.current);
     else batch.current.sync();
   }, -10);
-  return <group ref={root}>{children}</group>;
+  // Actor poses are copied into bones every frame. A surrounding static
+  // stadium batch must stop at this boundary instead of baking the first pose
+  // and hiding the sources that the rigid batch still needs to read.
+  return (
+    <group ref={root} userData={{ cinematicDynamic: true }}>
+      {children}
+    </group>
+  );
 }

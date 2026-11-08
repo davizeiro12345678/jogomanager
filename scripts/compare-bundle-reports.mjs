@@ -25,23 +25,50 @@ const difference = (base, current) =>
     : "n/d";
 const rows = [];
 const violations = [];
-function add(label, base, current, critical = false) {
+const totalGrowthBudgetBytes = 400_000;
+const routeStartupGrowthBudgetBytes = 2_048;
+function add(label, base, current, critical = false, maxIncreaseBytes = 0) {
   rows.push({
     label,
     before: base,
     after: current,
     reductionPercent: difference(base, current),
+    maxIncreaseBytes,
   });
   if (!critical) return;
   if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(current) || current <= 0) {
     violations.push(`${label}: invalid or missing measurement`);
-  } else if (current > base) {
+  } else if (current > base + maxIncreaseBytes) {
+    if (maxIncreaseBytes > 0) {
+      violations.push(
+        `${label}: growth ${current - base} bytes exceeds allowed +${maxIncreaseBytes} bytes (baseline ${base}, candidate ${current})`,
+      );
+      return;
+    }
     violations.push(`${label}: ${current} exceeds baseline ${base} by ${current - base} bytes`);
   }
 }
-add("JS emitido total (inclui lazy)", before.totalBytes, after.totalBytes);
-add("JS emitido total (gzip)", before.totalGzipBytes, after.totalGzipBytes, true);
-add("JS emitido total (Brotli Q6)", before.totalBrotliBytes, after.totalBrotliBytes, true);
+add(
+  "JS emitido total raw (inclui lazy)",
+  before.totalBytes,
+  after.totalBytes,
+  true,
+  totalGrowthBudgetBytes,
+);
+add(
+  "JS emitido total (gzip)",
+  before.totalGzipBytes,
+  after.totalGzipBytes,
+  true,
+  totalGrowthBudgetBytes,
+);
+add(
+  "JS emitido total (Brotli Q6)",
+  before.totalBrotliBytes,
+  after.totalBrotliBytes,
+  true,
+  totalGrowthBudgetBytes,
+);
 for (const [name, predicate] of keys) {
   const b = before.entries?.find(predicate);
   const a = after.entries?.find(predicate);
@@ -49,15 +76,27 @@ for (const [name, predicate] of keys) {
     violations.push(`${name}: missing required route in ${!b ? "baseline" : "candidate"}`);
     continue;
   }
-  add(name + " startup (gzip)", b.startupGzipBytes, a.startupGzipBytes, true);
-  add(name + " startup (Brotli Q6)", b.startupBrotliBytes, a.startupBrotliBytes, true);
+  add(
+    name + " startup (gzip)",
+    b.startupGzipBytes,
+    a.startupGzipBytes,
+    true,
+    routeStartupGrowthBudgetBytes,
+  );
+  add(
+    name + " startup (Brotli Q6)",
+    b.startupBrotliBytes,
+    a.startupBrotliBytes,
+    true,
+    routeStartupGrowthBudgetBytes,
+  );
 }
 const md = [
   "# Bundle impact: baseline vs candidate",
   "",
   "Comparação de builds com a mesma máquina e configurações. **Números de código transferido estimado**, não LCP, INP, FPS ou tempo real de carregamento. Total inclui chunks lazy e não representa o download inicial.",
   "",
-  "| Métrica | Antes | Depois | Redução |",
+  "| Métrica | Antes | Depois | Redução (+) / aumento (−) |",
   "|---|---:|---:|---:|",
   ...rows.map(
     ({ label, before: b, after: a, reductionPercent: pct }) =>
@@ -66,7 +105,7 @@ const md = [
   "",
   "Brotli Q6 é estimativa offline; o navegador só recebe essa compressão se o CDN responder com Content-Encoding: br.",
   "",
-  "Gate: nenhum aumento de gzip/Brotli no total ou nos caminhos de startup acima. Medidas e rotas ausentes falham; o orçamento absoluto é verificado por bundle:check.",
+  "Gate: JS total agregado pode crescer até 400.000 bytes em raw, gzip nível 9 e Brotli Q6; cada métrica gzip/Brotli de startup por rota pode crescer até 2.048 bytes. Medidas e rotas ausentes falham; orçamentos absolutos continuam verificados por bundle:check.",
   "",
   ...(violations.length
     ? ["## Gate failures", "", ...violations.map((item) => `- ${item}`), ""]

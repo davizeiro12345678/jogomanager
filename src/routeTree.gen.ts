@@ -87,6 +87,7 @@ import { Route as JogadorPainelRouteImport } from './routes/jogador.painel'
 import { Route as TabelasIndexRouteImport } from './routes/tabelas.index'
 import { Route as TabelasSlugRouteImport } from './routes/tabelas.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicFootballAssetsRouteImport } from './routes/api/public/football-assets'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -485,6 +486,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicFootballAssetsRoute = ApiPublicFootballAssetsRouteImport.update({
+  id: '/api/public/football-assets',
+  path: '/api/public/football-assets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSyncFootballRoute = ApiPublicSyncFootballRouteImport.update({
   id: '/api/public/sync-football',
   path: '/api/public/sync-football',
@@ -592,6 +598,7 @@ export interface FileRoutesByFullPath {
   '/jogador/': typeof JogadorIndexRoute
   '/tabelas/': typeof TabelasIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -677,6 +684,7 @@ export interface FileRoutesByTo {
   '/jogador': typeof JogadorIndexRoute
   '/tabelas': typeof TabelasIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -763,6 +771,7 @@ export interface FileRoutesById {
   '/jogador/': typeof JogadorIndexRoute
   '/tabelas/': typeof TabelasIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -850,6 +859,7 @@ export interface FileRouteTypes {
     | '/jogador/'
     | '/tabelas/'
     | '/.lovable/oauth/consent'
+    | '/api/public/football-assets'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -935,6 +945,7 @@ export interface FileRouteTypes {
     | '/jogador'
     | '/tabelas'
     | '/.lovable/oauth/consent'
+    | '/api/public/football-assets'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -1020,6 +1031,7 @@ export interface FileRouteTypes {
     | '/jogador/'
     | '/tabelas/'
     | '/.lovable/oauth/consent'
+    | '/api/public/football-assets'
     | '/api/public/sync-football'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -1106,6 +1118,7 @@ export interface RootRouteChildren {
   JogadorIndexRoute: typeof JogadorIndexRoute
   TabelasIndexRoute: typeof TabelasIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ApiPublicFootballAssetsRoute: typeof ApiPublicFootballAssetsRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -1661,6 +1674,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/football-assets': {
+      id: '/api/public/football-assets'
+      path: '/api/public/football-assets'
+      fullPath: '/api/public/football-assets'
+      preLoaderRoute: typeof ApiPublicFootballAssetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/sync-football': {
       id: '/api/public/sync-football'
       path: '/api/public/sync-football'
@@ -1779,6 +1799,7 @@ const rootRouteChildren: RootRouteChildren = {
   JogadorIndexRoute: JogadorIndexRoute,
   TabelasIndexRoute: TabelasIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ApiPublicFootballAssetsRoute: ApiPublicFootballAssetsRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,

@@ -120,7 +120,7 @@ const projectConfig = defineConfig({
                 // Pure helpers already used by every route share one transport.
                 // Avoid tiny shared chunks without importing gameplay or UI.
                 name: "browser-shared-data",
-                test: /[\\/]src[\\/](?:lib[\\/](?:seo|public-route-paths|league-faq|league-labels|consent|auth-next|lovable-error-reporting)|i18n[\\/](?:bootstrap-messages|locale-identifiers))\.ts$/,
+                test: /[\\/]src[\\/](?:lib[\\/](?:seo|public-route-paths|league-faq|league-labels|consent|auth-next)|i18n[\\/](?:bootstrap-messages|locale-identifiers))\.ts$/,
                 includeDependenciesRecursively: false,
               },
               {
@@ -173,7 +173,8 @@ const projectConfig = defineConfig({
           import.meta.dirname,
           "node_modules/entities/lib/encode.js",
         ),
-        entities: path.resolve(import.meta.dirname, "node_modules/entities"),
+        // Resolve bare "entities" by the importing package to support nested
+        // versions required by htmlparser2; the global alias breaks entities/decode.
       },
     },
   },

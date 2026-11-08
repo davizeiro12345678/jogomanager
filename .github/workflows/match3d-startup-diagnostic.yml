@@ -23,11 +23,11 @@ jobs:
       BASE_SHA: "5a75fef3662e3750917df1c2259169e4ed9f24d3"
       CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -39,7 +39,19 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
+          # The benchmark contract requires identical dependencies for both revisions.
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          # Normalize only the old resolver alias incompatible with this audited
+          # dependency graph; no baseline application behavior is changed.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path(__import__("os").environ["RUNNER_TEMP"]) / "startup-base/vite.config.ts"
+          source = path.read_text()
+          alias = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
+          if source.count(alias) != 1:
+              raise SystemExit("Unexpected historical entities alias; investigate baseline")
+          path.write_text(source.replace(alias, "", 1))
+          PY
       - name: Profile baseline then candidate with identical public fixtures
         env:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/startup-profile/node_modules/playwright
@@ -49,7 +61,7 @@ jobs:
           node scripts/profile-public-startup.mjs "$RUNNER_TEMP/startup-base" "$RUNNER_TEMP/startup-evidence/baseline" 4175 "$BASE_SHA"
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/profile-public-startup.mjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/startup-evidence/candidate" 4176 "$CANDIDATE_SHA"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: match3d-startup-cpu

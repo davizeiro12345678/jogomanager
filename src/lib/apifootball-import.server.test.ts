@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runApiFootballImport } from "./apifootball-import.server";
+import { parseRetryAfterMs, runApiFootballImport } from "./apifootball-import.server";
 import { FIXTURE_ENDPOINTS, LEADER_ENDPOINTS } from "./apifootball-phases";
 
 const db = vi.hoisted(() => ({
@@ -380,4 +380,22 @@ describe("API-Football high-yield importer", () => {
       expect(db.rpc).not.toHaveBeenCalled();
     },
   );
+
+  it("parses bounded delta-seconds without accepting fractional or negative values", () => {
+    expect(parseRetryAfterMs(" 5 ", 0)).toBe(5_000);
+    expect(parseRetryAfterMs("0", 0)).toBe(0);
+    expect(parseRetryAfterMs("1.5", 0)).toBeNull();
+    expect(parseRetryAfterMs("-1", 0)).toBeNull();
+    expect(parseRetryAfterMs("999999999999999999999", 0)).toBe(8_000);
+  });
+
+  it("parses HTTP-date against the injected clock and clamps safely", () => {
+    const now = Date.parse("Wed, 21 Oct 2015 07:28:00 GMT");
+    expect(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:05 GMT", now)).toBe(5_000);
+    expect(parseRetryAfterMs("Wed Oct 21 07:28:05 2015", now)).toBe(5_000);
+    expect(parseRetryAfterMs("Wed, 21 Oct 2015 07:27:59 GMT", now)).toBe(0);
+    expect(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:30 GMT", now)).toBe(8_000);
+    expect(parseRetryAfterMs("not-a-date", now)).toBeNull();
+    expect(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:05 GMT", Number.NaN)).toBeNull();
+  });
 });

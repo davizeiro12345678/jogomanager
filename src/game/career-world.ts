@@ -114,6 +114,7 @@ export function worldFor(state: CareerState): CareerWorld {
       sentiment: Math.max(-100, Math.min(100, number(item.sentiment, 0))),
       weight: worldClamp(number(item.weight, 30)),
       ...(item.playerId ? { playerId: text(item.playerId, "", 100) } : {}),
+      ...(item.followUp === "board-match-target" ? { followUp: item.followUp } : {}),
     }));
   return {
     version: 1,
@@ -238,6 +239,7 @@ interface WorldEvent {
   season?: number;
   round?: number;
   newsKind?: NewsKind;
+  followUp?: CareerMemory["followUp"];
 }
 function retainMemories(memories: CareerMemory[]): CareerMemory[] {
   const recent = memories.slice(0, 58);
@@ -281,6 +283,7 @@ export function rememberWorldEvent(state: CareerState, event: WorldEvent): Caree
     sentiment: event.sentiment,
     weight: event.weight ?? 40,
     ...(event.playerId ? { playerId: event.playerId } : {}),
+    ...(event.followUp ? { followUp: event.followUp } : {}),
   };
   return {
     ...state,
@@ -397,6 +400,29 @@ export function recordWorldMatch(state: CareerState, match: MatchLogEntry): Care
       },
     },
   };
+  const target = world.memories.find(
+    (memory) =>
+      memory.followUp === "board-match-target" &&
+      memory.clubId === state.clubId &&
+      memory.season === match.season &&
+      memory.round === match.round,
+  );
+  if (target) {
+    next = rememberWorldEvent(next, {
+      id: `${target.id}:review`,
+      kind: "promise",
+      season: match.season,
+      round: match.round,
+      title: lost ? "A diretoria volta a cobrar uma reação" : "A meta de curto prazo foi cumprida",
+      detail: lost
+        ? "A meta era somar pelo menos um ponto. A derrota reduziu o apoio da diretoria."
+        : "O time somou pontos. A diretoria deu mais espaço à comissão para seguir o plano.",
+      sentiment: lost ? -4 : 4,
+      board: lost ? -5 : 3,
+      pressure: lost ? 4 : -2,
+      weight: 65,
+    });
+  }
   return next;
 }
 

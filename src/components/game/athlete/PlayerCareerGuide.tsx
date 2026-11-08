@@ -1,9 +1,17 @@
 import { BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { Tab } from "./player-tabs";
 import type { PlayerCareerState } from "@/game/player-career/types";
 import { playerGuideProgress } from "@/game/player-career/guide-progress";
 
 /** Contextual guidance stays outside the athlete render and simulation loops. */
-export function PlayerCareerGuide({ state }: { state: PlayerCareerState }) {
+export function PlayerCareerGuide({
+  state,
+  onOpenTab,
+}: {
+  state: PlayerCareerState;
+  onOpenTab: (tab: Tab) => void;
+}) {
   const progress = playerGuideProgress(state);
   return (
     <details className="athlete-card mt-4">
@@ -49,7 +57,49 @@ export function PlayerCareerGuide({ state }: { state: PlayerCareerState }) {
             Calendário ajudam a avaliar sua trajetória.
           </p>
         </li>
+        <li>
+          <h2 className="font-semibold">5. Planeje jogos e recuperação</h2>
+          <p className="athlete-meta mt-1">
+            Compare o calendário com seu risco de lesão. Se houver jogos próximos, reduza o esforço
+            no treino e confira a evolução na aba Saúde.
+          </p>
+        </li>
+        <li>
+          <h2 className="font-semibold">6. Revise a temporada</h2>
+          <p className="athlete-meta mt-1">
+            Use o Histórico para comparar partidas, notas e participação entre temporadas. Escolha
+            um atributo para priorizar com base no seu papel em campo.
+          </p>
+        </li>
       </ol>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {!state.retired && (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => onOpenTab("semana")}
+          >
+            Abrir Semana
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={() => onOpenTab("saude")}
+        >
+          Abrir Saúde
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={() => onOpenTab("historico")}
+        >
+          Abrir Histórico
+        </Button>
+      </div>
     </details>
   );
 }

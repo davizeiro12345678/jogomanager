@@ -25,6 +25,7 @@ const capture = () => ({
   })),
   matchScenes: Array.from({ length: 6 }, (_, i) => ({
     label: `match-${i}`,
+    fixture: { canvas: [1280, 720] },
     authoritativeSnapshot: { seq: 2, time: 36 },
     scene: { scenario: { seed: `s${i}` }, simulation: { score: [0, 0], ball: { x: 1 } } },
     certification: false,
@@ -41,6 +42,20 @@ it("keeps software samples uncertified even when measurements and fixtures pass"
     violations: [],
     physicalDeviceCertification: false,
   });
+});
+it("applies the explicit 110-draw ceiling to mobile medium evidence", () => {
+  const before = capture(),
+    after = capture();
+  before.matchScenes[0]!.label = "match-mobile-mid";
+  after.matchScenes[0]!.label = "match-mobile-mid";
+  after.matchScenes[0]!.peakDraws = 110;
+  expect(compareMatch3dEvidence(before, after).violations).not.toContain(
+    "match-mobile-mid: 110 draws exceed 110",
+  );
+  after.matchScenes[0]!.peakDraws = 111;
+  expect(compareMatch3dEvidence(before, after).violations).toContain(
+    "match-mobile-mid: 111 draws exceed 110",
+  );
 });
 it("rejects missing captures, changed authority, unequal resolution and over-budget scenes", () => {
   const before = capture(),

@@ -27,6 +27,7 @@ import { SkyDome } from "./StadiumSky";
 import { GoalFx } from "./StadiumGoalFx";
 import { Officials } from "./StadiumOfficials";
 import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
 import { cameraOption, type CameraMode } from "@/game/camera-modes";
 import type { SupporterMatchday } from "@/game/career-world-types";
 import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
@@ -64,6 +65,7 @@ export function StadiumScene({
     interpolated.renderTick?.();
   });
   const time = look.time;
+  const fixtureKey = stadiumFixtureKey(sim.home.clubId, sim.away.clubId);
   const pressure = useQualityPressure();
   const budget = useRuntimeSceneBudget();
   // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
@@ -241,6 +243,7 @@ export function StadiumScene({
           wind={look.wind}
           quality={quality}
           density={budget.weatherDensity}
+          fixtureKey={fixtureKey}
         />
       ) : null}
       {quality !== "baixa" ? <Officials sim={sim} quality={quality} /> : null}
@@ -253,6 +256,7 @@ export function StadiumScene({
         quality={quality}
         weather={look.weather}
         webgl2={backend === "webgl2"}
+        fixtureKey={fixtureKey}
       />
       {/* Batch only fixed scenery. Players, ball, officials, weather and
           reactions retain their existing independent animation ownership. */}
@@ -282,7 +286,7 @@ export function StadiumScene({
           sim={sim}
         />
         <Scoreboard sim={sim} replay={replay} goalPulse={goalPulse} />
-        <SidelineLife goalPulse={goalPulse} />
+        <SidelineLife goalPulse={goalPulse} fixtureKey={fixtureKey} />
       </StaticBatch>
       <CrowdReaction
         sim={sim}
@@ -290,6 +294,7 @@ export function StadiumScene({
         night={time === "noite"}
         color={sim.home.primary}
         supporters={supporters}
+        fixtureKey={fixtureKey}
       />
       <AmbientLife time={time} />
       <Ball sim={sim} quality={quality} hiVis={look.hiVisBall} wet={look.wet} />
@@ -311,7 +316,12 @@ export function StadiumScene({
           budget={budget}
         />
       </MatchSurfaceProvider>
-      <GoalFx goalPulse={goalPulse} quality={quality} density={budget.goalFxDensity} />
+      <GoalFx
+        goalPulse={goalPulse}
+        quality={quality}
+        density={budget.goalFxDensity}
+        fixtureKey={fixtureKey}
+      />
       <Rig sim={sim} mode={mode} goalPulse={goalPulse} goalFocus={goalFocus} />
       <PostFX
         grading={

@@ -9,6 +9,7 @@ import {
   type MatchSeat,
   type PresentationEventV1,
 } from "./match-protocol";
+import { GENESIS_SESSION_HASH, appendCommandHash } from "./session-hash";
 import {
   AuthoritativeMatchSession,
   type AuthoritativeMatchEngine,
@@ -101,11 +102,14 @@ function command(
 }
 
 function createSession(
-  options: { limits?: Partial<Record<"set_tactics", { limit: number; windowMs: number }>> } = {},
+  options: {
+    limits?: Partial<Record<"set_tactics", { limit: number; windowMs: number }>>;
+    signer?: MatchReceiptSigner;
+  } = {},
 ) {
   const engine = new FakeEngine();
   let signatures = 0;
-  const signer: MatchReceiptSigner = {
+  const signer: MatchReceiptSigner = options.signer ?? {
     sign: async () => {
       signatures += 1;
       return "authoritative-server-receipt-signature";
@@ -122,6 +126,14 @@ function createSession(
     commandLimits: options.limits,
   });
   return { session, engine, signatureCount: () => signatures };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
 }
 
 describe("AuthoritativeMatchSession", () => {
@@ -217,6 +229,19 @@ describe("AuthoritativeMatchSession", () => {
     expect(session.phase).toBe("finalized");
   });
 
+  it("includes the accepted forfeit command in the signed receipt hash", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    const forfeit = command(1, "forfeit");
+    const expectedHash = await appendCommandHash(GENESIS_SESSION_HASH, forfeit);
+
+    const outcome = await session.receive(home, forfeit, issuedAt + 1);
+    const receipt = await session.finalize("forfeit", issuedAt + 2);
+
+    expect(outcome).toEqual({ accepted: true });
+    expect(receipt).toMatchObject({ closureReason: "forfeit", commandHash: expectedHash.hash });
+  });
+
   it("creates a final receipt once even when finalization is retried", async () => {
     const { session, signatureCount } = createSession();
 
@@ -225,6 +250,46 @@ describe("AuthoritativeMatchSession", () => {
 
     expect(first).toEqual(repeated);
     expect(first.idempotencyKey).toBe("42711d45-34a3-4d6b-81bb-a67db8b7e4f0");
+    expect(signatureCount()).toBe(1);
+  });
+
+  it("shares one in-flight finalization when concurrent callers request different receipts", async () => {
+    const signature = deferred<string>();
+    let signatureCount = 0;
+    const { session } = createSession({
+      signer: {
+        sign: async () => {
+          signatureCount += 1;
+          return signature.promise;
+        },
+      },
+    });
+
+    const firstPromise = session.finalize("completed", issuedAt + 1);
+    const secondPromise = session.finalize("forfeit", issuedAt + 2, "home");
+
+    expect(signatureCount).toBe(1);
+    signature.resolve("one-authoritative-signature");
+    const [first, second] = await Promise.all([firstPromise, secondPromise]);
+
+    expect(second).toEqual(first);
+    expect(first).toMatchObject({ closureReason: "completed", issuedAt: issuedAt + 1 });
+    expect(first.result).toEqual({ homeGoals: 1, awayGoals: 0, winner: "home" });
+  });
+
+  it("includes forfeit in the command hash and replays the same receipt", async () => {
+    const { session, signatureCount } = createSession();
+    const home = ticket("home");
+    const forfeit = command(1, "forfeit");
+    const expectedHash = await appendCommandHash(GENESIS_SESSION_HASH, forfeit);
+
+    const outcome = await session.receive(home, forfeit, issuedAt + 1);
+    const first = await session.finalize("forfeit", issuedAt + 2);
+    const replay = await session.finalize("forfeit", issuedAt + 3);
+
+    expect(outcome).toEqual({ accepted: true });
+    expect(first.commandHash).toBe(expectedHash.hash);
+    expect(replay).toEqual(first);
     expect(signatureCount()).toBe(1);
   });
 

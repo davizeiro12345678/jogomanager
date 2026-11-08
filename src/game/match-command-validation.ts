@@ -24,7 +24,7 @@ const text = (v: unknown, max: number): v is string => {
   for (let index = 0; index < v.length; index++) if (v.charCodeAt(index) < 32) return false;
   return true;
 };
-const id = (v: unknown) => text(v, 160) && !RESERVED.has(v);
+const id = (v: unknown): v is string => text(v, 160) && !RESERVED.has(v);
 const integer = (v: unknown, min: number, max: number) =>
   finite(v, min, max) && Number.isSafeInteger(v);
 const side = (v: unknown) => v === "home" || v === "away";
@@ -51,56 +51,122 @@ export function validMatchPlayer(v: unknown): boolean {
     ["GK", "DF", "MF", "FW"].includes(v["pos"] as string) &&
     ["ovr", "pace", "shooting", "passing", "defending", "physical", "condition", "morale"].every(
       (key) => finite(v[key], 0, 100),
-    )
+    ) &&
+    typeof v["suspended"] === "boolean" &&
+    integer(v["injuryWeeks"], 0, 104)
   );
 }
 
 export function validMatchTeam(v: unknown): boolean {
   if (
     !object(v) ||
-    !id(v["clubId"]) ||
     !text(v["name"], 240) ||
     !validMatchTactics(v["tactics"]) ||
     !Array.isArray(v["players"]) ||
-    v["players"].length < 1 ||
-    v["players"].length > 11 ||
-    !Array.from(v["players"]).every(validMatchPlayer) ||
+    v["players"].length !== 11 ||
     (v["bench"] !== undefined &&
-      (!Array.isArray(v["bench"]) ||
-        v["bench"].length > MAX_MATCH_BENCH_PLAYERS ||
-        !Array.from(v["bench"]).every(validMatchPlayer))) ||
+      (!Array.isArray(v["bench"]) || v["bench"].length > MAX_MATCH_BENCH_PLAYERS)) ||
     (v["morale"] !== undefined && !finite(v["morale"], 0, 100)) ||
     (v["cpu"] !== undefined && typeof v["cpu"] !== "boolean")
   )
     return false;
   const roster = [...v["players"], ...((v["bench"] ?? []) as unknown[])];
   const ids = new Set<string>();
-  return roster.every((player) => {
-    const p = player as Record<string, unknown>;
-    if (ids.has(p["id"] as string)) return false;
-    ids.add(p["id"] as string);
-    return p["clubId"] === v["clubId"];
-  });
+  let goalkeeper = false;
+  return (
+    roster.every((player, index) => {
+      if (!validMatchPlayer(player)) return false;
+      const p = player as Record<string, unknown>;
+      if (ids.has(p["id"] as string)) return false;
+      ids.add(p["id"] as string);
+      if (index < 11) {
+        // validMatchPlayer already constrains both fields to their valid types and ranges.
+        if (p["suspended"] || p["injuryWeeks"]) return false;
+        goalkeeper ||= p["pos"] === "GK";
+      }
+      return p["clubId"] === v["clubId"];
+    }) && goalkeeper
+  );
 }
 
-function validCareerEnvelope(v: unknown): boolean {
+type CareerEnvelope = {
+  clubId: string;
+  players: Record<string, unknown>;
+};
+
+function validCareerEnvelope(
+  v: unknown,
+  options: { allowUnavailableLineup?: boolean } = {},
+): v is CareerEnvelope {
+  if (!object(v)) return false;
+  const clubId = v["clubId"];
+  const players = v["players"];
+  const fixtures = v["fixtures"];
+  const lineup = v["lineup"];
+  const finances = v["finances"];
+  if (
+    !id(clubId) ||
+    !integer(v["round"], 1, 1000) ||
+    !integer(v["season"], 1, 10000) ||
+    !object(players) ||
+    Object.keys(players).length > 30000 ||
+    !Array.isArray(fixtures) ||
+    fixtures.length > 30000 ||
+    !Array.from(fixtures).every(object) ||
+    !Array.isArray(lineup) ||
+    lineup.length !== 11 ||
+    !object(finances) ||
+    !finite(finances["budget"], -1e9, 1e9) ||
+    !finite(finances["spent"], 0, 1e9) ||
+    !finite(finances["income"], 0, 1e9)
+  )
+    return false;
+
+  const playerIds = new Set<string>();
+  let goalkeeper = false;
+  for (const lineupId of lineup) {
+    if (!id(lineupId)) return false;
+    if (!Object.hasOwn(players, lineupId)) return false;
+    const player = players[lineupId];
+    if (!object(player)) return false;
+    const playerId = player["id"];
+    if (
+      !id(playerId) ||
+      playerId !== lineupId ||
+      playerIds.has(playerId) ||
+      player["clubId"] !== clubId ||
+      typeof player["suspended"] !== "boolean" ||
+      !integer(player["injuryWeeks"], 0, 104) ||
+      (!options.allowUnavailableLineup &&
+        (player["suspended"] !== false || player["injuryWeeks"] !== 0))
+    )
+      return false;
+    playerIds.add(playerId);
+    if (player["pos"] === "GK") goalkeeper = true;
+  }
+  return goalkeeper;
+}
+
+function validCareerPerformance(
+  v: unknown,
+  career: CareerEnvelope,
+  seenPids: Set<string>,
+): boolean {
+  if (!object(v) || !id(v["pid"]) || seenPids.has(v["pid"])) return false;
+  const pid = v["pid"];
+  if (!Object.hasOwn(career.players, pid)) return false;
+  const player = career.players[pid];
+  if (!object(player) || player["id"] !== pid || player["clubId"] !== career.clubId) return false;
+  seenPids.add(pid);
   return (
-    object(v) &&
-    id(v["clubId"]) &&
-    integer(v["round"], 1, 1000) &&
-    integer(v["season"], 1, 10000) &&
-    object(v["players"]) &&
-    Object.keys(v["players"]).length <= 30000 &&
-    Array.isArray(v["fixtures"]) &&
-    v["fixtures"].length <= 30000 &&
-    Array.from(v["fixtures"]).every(object) &&
-    Array.isArray(v["lineup"]) &&
-    v["lineup"].length <= 11 &&
-    Array.from(v["lineup"]).every(id) &&
-    object(v["finances"]) &&
-    finite(v["finances"]["budget"], -1e9, 1e9) &&
-    finite(v["finances"]["spent"], 0, 1e9) &&
-    finite(v["finances"]["income"], 0, 1e9)
+    integer(v["goals"], 0, 50) &&
+    integer(v["assists"], 0, 50) &&
+    typeof v["played"] === "boolean" &&
+    (v["minutes"] === undefined || finite(v["minutes"], 0, 150)) &&
+    (v["rating"] === undefined || finite(v["rating"], 0, 10)) &&
+    (v["yellow"] === undefined || integer(v["yellow"], 0, 2)) &&
+    (v["red"] === undefined || typeof v["red"] === "boolean") &&
+    (v["injuryWeeks"] === undefined || integer(v["injuryWeeks"], 0, 104))
   );
 }
 
@@ -151,33 +217,28 @@ export function validMatchCommand(v: unknown): v is LiveWorkerRequest {
       return true;
     case "autoSeason":
       return (
-        validCareerEnvelope(v["career"]) &&
+        validCareerEnvelope(v["career"], { allowUnavailableLineup: true }) &&
         integer(v["maxWeeks"], 1, 60) &&
         validCareerEvaluationTime(v["evaluatedAt"])
       );
-    case "advance":
-      return (
-        validCareerEnvelope(v["career"]) &&
-        validCareerEvaluationTime(v["evaluatedAt"]) &&
-        object(v["result"]) &&
-        integer(v["result"]["hg"], 0, 50) &&
-        integer(v["result"]["ag"], 0, 50) &&
-        Array.isArray(v["performances"]) &&
-        v["performances"].length <= 32 &&
-        Array.from(v["performances"]).every(
-          (p) =>
-            object(p) &&
-            id(p["pid"]) &&
-            integer(p["goals"], 0, 50) &&
-            integer(p["assists"], 0, 50) &&
-            typeof p["played"] === "boolean" &&
-            (p["minutes"] === undefined || finite(p["minutes"], 0, 150)) &&
-            (p["rating"] === undefined || finite(p["rating"], 0, 10)) &&
-            (p["yellow"] === undefined || integer(p["yellow"], 0, 2)) &&
-            (p["red"] === undefined || typeof p["red"] === "boolean") &&
-            (p["injuryWeeks"] === undefined || integer(p["injuryWeeks"], 0, 104)),
-        )
-      );
+    case "advance": {
+      const career = v["career"];
+      const performances = v["performances"];
+      if (
+        !validCareerEnvelope(career) ||
+        !validCareerEvaluationTime(v["evaluatedAt"]) ||
+        !object(v["result"]) ||
+        !integer(v["result"]["hg"], 0, 50) ||
+        !integer(v["result"]["ag"], 0, 50) ||
+        !Array.isArray(performances) ||
+        performances.length > 32
+      )
+        return false;
+      const seenPids = new Set<string>();
+      for (const performance of performances)
+        if (!validCareerPerformance(performance, career, seenPids)) return false;
+      return true;
+    }
     default:
       return false;
   }

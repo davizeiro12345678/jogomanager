@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/i18n/provider";
 import { useSignedIn } from "@/hooks/useCareer";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { reportChatMessage as submitChatReport } from "@/lib/community.functions";
@@ -17,6 +18,34 @@ interface ChatMessage {
   body: string;
   hidden: boolean;
   created_at: string;
+}
+
+type ChatConnectionStatus = "connecting" | "connected" | "disconnected";
+
+function chatConnectionMessage(status: ChatConnectionStatus): string {
+  if (status === "connecting") return "Conectando ao chat…";
+  if (status === "disconnected") return "A conexão do chat caiu. Tente reconectar.";
+  return "Chat conectado.";
+}
+
+type ChatSendFailure = {
+  ok: false;
+  reason: "blocked" | "muted" | "rate_limited" | "invalid_length" | "error";
+  message?: string;
+};
+
+function chatSendFailureMessage(result: ChatSendFailure | null): string {
+  if (!result) return "Não foi possível enviar a mensagem.";
+  if (result.reason === "blocked" || result.reason === "muted") {
+    return result.message ?? "Não foi possível enviar a mensagem.";
+  }
+  if (result.reason === "rate_limited") {
+    return "Calma! Você está enviando mensagens rápido demais.";
+  }
+  if (result.reason === "invalid_length") {
+    return "A mensagem precisa ter entre 1 e 500 caracteres.";
+  }
+  return "Não foi possível enviar a mensagem.";
 }
 
 const BLOCKED_KEY = "manager3d.chat.blockedUsers";
@@ -58,13 +87,18 @@ function relativeTime(iso: string): string {
  * partida, numa gaveta. `next` define para onde voltar após o login.
  */
 export function ChatPanel({ next = "/chat" }: { next?: string }) {
+  const { t } = useT();
   const signedIn = useSignedIn();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<ChatConnectionStatus>("connecting");
   const [refresh, setRefresh] = useState(0);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: "status" | "error"; message: string } | null>(
+    null,
+  );
   const [userId, setUserId] = useState<string | null>(null);
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const [reported, setReported] = useState<Set<string>>(new Set());
@@ -86,19 +120,25 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   }, [signedIn]);
 
   const loadMessages = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("chat_messages")
-      .select("id, user_id, display_name, body, hidden, created_at")
-      .eq("hidden", false)
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) {
+    try {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("id, user_id, display_name, body, hidden, created_at")
+        .eq("hidden", false)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) {
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
+      setMessages(((data ?? []) as ChatMessage[]).reverse());
+      setLoadError(false);
+      setLoading(false);
+    } catch {
       setLoadError(true);
       setLoading(false);
-      return;
     }
-    setMessages(((data ?? []) as ChatMessage[]).reverse());
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -106,6 +146,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     let alive = true;
     setLoading(true);
     setLoadError(false);
+    setConnectionStatus("connecting");
     void loadMessages();
 
     const channel = supabase
@@ -121,7 +162,10 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
           );
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (!alive) return;
+        setConnectionStatus(status === "SUBSCRIBED" ? "connected" : "disconnected");
+      });
 
     return () => {
       alive = false;
@@ -146,25 +190,19 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     // O servidor sempre decide e registra a infração; sem isso o bloqueio
     // local impediria a contagem que leva ao silenciamento progressivo.
     setSending(true);
+    setFeedback({ kind: "status", message: "Enviando mensagem…" });
     // Envio pelo servidor: a identidade vem do token verificado (não do
     // navegador) e há moderação, silenciamento e limite por minuto.
     const result = await sendChatMessage({ data: { body } }).catch(() => null);
     setSending(false);
     if (!result || !result.ok) {
-      toast.error(
-        !result
-          ? "Não foi possível enviar a mensagem."
-          : result.reason === "blocked" || result.reason === "muted"
-            ? result.message
-            : result.reason === "rate_limited"
-              ? "Calma! Você está enviando mensagens rápido demais."
-              : result.reason === "invalid_length"
-                ? "A mensagem precisa ter entre 1 e 500 caracteres."
-                : "Não foi possível enviar a mensagem.",
-      );
+      const message = chatSendFailureMessage(result);
+      setFeedback({ kind: "error", message });
+      toast.error(message);
       return;
     }
     setDraft("");
+    setFeedback({ kind: "status", message: "Mensagem enviada." });
     // O tempo real pode atrasar; recarrega para a própria mensagem aparecer já.
     void loadMessages();
   }, [draft, sending, loadMessages]);
@@ -172,10 +210,12 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
   const deleteMessage = useCallback(async (id: string) => {
     const { error } = await supabase.from("chat_messages").delete().eq("id", id);
     if (error) {
+      setFeedback({ kind: "error", message: "Não foi possível apagar a mensagem." });
       toast.error("Não foi possível apagar a mensagem.");
       return;
     }
     setMessages((prev) => prev.filter((m) => m.id !== id));
+    setFeedback({ kind: "status", message: "Mensagem apagada." });
   }, []);
 
   const reportMessage = useCallback(async (id: string) => {
@@ -191,6 +231,10 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
     reportsInFlight.current.delete(id);
     setReporting(new Set(reportsInFlight.current));
     if (!result?.ok) {
+      setFeedback({
+        kind: "error",
+        message: "Não foi possível enviar a denúncia. A mensagem foi preservada; tente novamente.",
+      });
       toast.error(
         "Não foi possível enviar a denúncia. A mensagem foi preservada; tente novamente.",
       );
@@ -201,6 +245,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       writeIds(REPORTED_KEY, nextIds);
       return nextIds;
     });
+    setFeedback({ kind: "status", message: "Mensagem denunciada e ocultada para você." });
     toast.success("Mensagem denunciada e ocultada para você.");
   }, []);
 
@@ -209,6 +254,10 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
       const nextIds = new Set(prev).add(id);
       writeIds(BLOCKED_KEY, nextIds);
       return nextIds;
+    });
+    setFeedback({
+      kind: "status",
+      message: "Usuário bloqueado. Você não verá mais mensagens dele.",
     });
     toast.success("Usuário bloqueado. Você não verá mais mensagens dele.");
   }, []);
@@ -236,7 +285,38 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border/60 surface-card p-4">
+      {connectionStatus === "connecting" ? (
+        <p role="status" className="mb-2 text-xs text-muted-foreground">
+          {chatConnectionMessage(connectionStatus)}
+        </p>
+      ) : connectionStatus === "disconnected" ? (
+        <div
+          role="alert"
+          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-muted-foreground"
+        >
+          <span>{chatConnectionMessage(connectionStatus)}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setRefresh((value) => value + 1)}
+            className="min-h-11 text-xs text-primary"
+          >
+            {t("common.retry")}
+          </Button>
+        </div>
+      ) : (
+        <p role="status" className="sr-only">
+          {chatConnectionMessage(connectionStatus)}
+        </p>
+      )}
+
+      <div
+        role="log"
+        aria-label={t("nav.chat")}
+        aria-live="polite"
+        aria-busy={loading}
+        className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border/60 surface-card p-4"
+      >
         {loading ? (
           <SkeletonRows label="Carregando mensagens" />
         ) : loadError ? (
@@ -246,8 +326,12 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
           />
         ) : visibleMessages.length === 0 ? (
           <EmptyState
-            title="A conversa começa aqui"
-            hint="Escreva uma mensagem para cumprimentar os treinadores."
+            title={messages.length > 0 ? "Nenhuma mensagem visível" : "A conversa começa aqui"}
+            hint={
+              messages.length > 0
+                ? "As mensagens foram ocultadas pelas suas ações de moderação neste aparelho."
+                : "Escreva uma mensagem para cumprimentar os treinadores."
+            }
           />
         ) : (
           <ul className="flex flex-col gap-3">
@@ -278,6 +362,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
                         type="button"
                         variant="ghost"
                         disabled={reporting.has(m.id)}
+                        aria-busy={reporting.has(m.id)}
                         onClick={() => void reportMessage(m.id)}
                         className="min-h-11 text-xs text-muted-foreground"
                       >
@@ -306,6 +391,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
           e.preventDefault();
           void send();
         }}
+        aria-busy={sending}
         className="mt-3 flex items-end gap-2"
       >
         <Textarea
@@ -322,10 +408,24 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
           maxLength={500}
           aria-label="Mensagem"
         />
-        <Button type="submit" disabled={sending || !draft.trim()}>
-          Enviar
+        <Button type="submit" disabled={sending || !draft.trim()} aria-busy={sending}>
+          {sending ? "Enviando…" : "Enviar"}
         </Button>
       </form>
+      {feedback ? (
+        <p
+          role={feedback.kind === "error" ? "alert" : "status"}
+          aria-live={feedback.kind === "error" ? "assertive" : "polite"}
+          className={`mt-2 text-xs ${feedback.kind === "error" ? "text-destructive" : "text-muted-foreground"}`}
+        >
+          {feedback.message}
+        </p>
+      ) : null}
     </div>
   );
 }
+
+Object.assign(ChatPanel, {
+  chatConnectionMessage,
+  chatSendFailureMessage,
+});

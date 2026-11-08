@@ -1,13 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext } from "@tanstack/react-router";
-import {
-  NotFoundComponent,
-  ErrorComponent,
-  RootShell,
-  RootComponent,
-} from "@/components/RootLayout";
+import { createRootRouteWithContext, lazyRouteComponent } from "@tanstack/react-router";
+import { RootShell } from "@/components/RootShell";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
+import quickCss from "../public-quick-styles.css?url";
 import homeCss from "../public-home-styles.css?url";
 import storeCss from "../public-store-styles.css?url";
 import tablesCss from "../public-tables-styles.css?url";
@@ -15,9 +11,12 @@ import tablesCss from "../public-tables-styles.css?url";
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 
+const RootComponent = lazyRouteComponent(() => import("@/components/RootLayout"), "RootComponent");
+
 function stylesheetForPath(pathname: string) {
   const path = pathname.replace(/\/$/, "") || "/";
   if (path === "/") return homeCss;
+  if (path === "/partida-rapida") return quickCss;
   if (path === "/produtos") return storeCss;
   if (path === "/tabelas" || path.startsWith("/tabelas/")) return tablesCss;
   return isLightweightCssPath(path) ? publicCss : appCss;
@@ -68,6 +67,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
   shellComponent: RootShell,
   component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
+  notFoundComponent: lazyRouteComponent(
+    () => import("@/components/RootFailure"),
+    "NotFoundComponent",
+  ),
+  errorComponent: lazyRouteComponent(() => import("@/components/RootFailure"), "ErrorComponent"),
 });

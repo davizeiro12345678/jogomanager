@@ -2,7 +2,7 @@
  * Cliente do Web Worker de simulação, com retorno automático para a thread
  * principal se o navegador não suportar workers (ou se o worker falhar).
  */
-import { advanceRound, type MatchPerformance } from "./career";
+import type { MatchPerformance } from "./career-round";
 import type { AutoWeek } from "./autoplay";
 import {
   WorkerMatchView,
@@ -37,7 +37,7 @@ import { recoverMatch } from "./match-recovery";
 import { LIVE_CONTROL_RESPONSE_TIMEOUT_MS, validMatchCommand } from "./match-command-validation";
 import { MAX_PENDING_SIMULATION_COMMANDS } from "./sequential-worker-queue";
 import { initializeMatchExecution } from "./match-execution";
-import { autoSeasonCooperative } from "./season-cooperative";
+import { getMatchEligibilityFailure } from "./match-eligibility";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -231,6 +231,9 @@ function bootstrapView(view: WorkerMatchView, options: LiveMatchOptions): void {
  * apenas snapshots a 10 Hz e interpola as posições no próprio Canvas.
  */
 export function createLiveMatchController(options: LiveMatchOptions): LiveMatchController {
+  const setupFailure =
+    getMatchEligibilityFailure(options.home) ?? getMatchEligibilityFailure(options.away);
+  if (setupFailure) throw new Error(setupFailure.message);
   if (!validMatchCommand({ ...options, id: 0, type: "startLive" }))
     throw new Error("Comando de simulação inválido");
   const view = options.view ?? new WorkerMatchView(options.home, options.away);
@@ -389,6 +392,15 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         restored.dispose();
         return;
       }
+      const setupFailure =
+        getMatchEligibilityFailure(restored.home) ?? getMatchEligibilityFailure(restored.away);
+      if (setupFailure) {
+        restored.dispose();
+        recovering = false;
+        localPaused = true;
+        options.onError?.(setupFailure.message);
+        return;
+      }
       for (const [side, tactics] of deferredTactics) {
         (side === "home" ? restored.home : restored.away).tactics = { ...tactics };
       }
@@ -451,6 +463,12 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
           }
         });
     } else {
+      const setupFailure =
+        getMatchEligibilityFailure(options.home) ?? getMatchEligibilityFailure(options.away);
+      if (setupFailure) {
+        options.onError?.(setupFailure.message);
+        return;
+      }
       const initial = new MatchSim(options.home, options.away, options.seed, {
         knockout: options.knockout,
         weather: options.weather,
@@ -678,8 +696,12 @@ export function advanceRoundAsync(
   performances: MatchPerformance[] = [],
 ): Promise<CareerState> {
   const evaluatedAt = Date.now();
-  return call<CareerState>({ type: "advance", career, result, performances, evaluatedAt }, () =>
-    advanceRound(career, result, performances, "Liga", evaluatedAt),
+  return call<CareerState>(
+    { type: "advance", career, result, performances, evaluatedAt },
+    async () => {
+      const { advanceRound } = await import("./career-round");
+      return advanceRound(career, result, performances, "Liga", evaluatedAt);
+    },
   );
 }
 
@@ -691,7 +713,10 @@ export function autoSeasonAsync(
   const evaluatedAt = Date.now();
   return call(
     { type: "autoSeason", career, maxWeeks, evaluatedAt },
-    () => autoSeasonCooperative(career, maxWeeks, evaluatedAt),
+    async () => {
+      const { autoSeasonCooperative } = await import("./season-cooperative");
+      return autoSeasonCooperative(career, maxWeeks, evaluatedAt);
+    },
     90_000,
   );
 }

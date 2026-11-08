@@ -1,0 +1,3421 @@
+{
+  "sha": "local-worktree-cap120",
+  "config": {
+    "quality": "media",
+    "cores": 6,
+    "memory": 6,
+    "css": [
+      1280,
+      720
+    ],
+    "pixels": [
+      1280,
+      720
+    ],
+    "cap": 120
+  },
+  "basis": "frozen-scene software WebGL submissions",
+  "physicalDeviceCertification": false,
+  "peak": 114,
+  "inventory": {
+    "frames": [
+      {
+        "now": 47711,
+        "draws": 114,
+        "triangles": 107400,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 47731.40000000037,
+        "draws": 114,
+        "triangles": 107400,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 48200.699999999255,
+        "draws": 114,
+        "triangles": 107400,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 48721.09999999963,
+        "draws": 114,
+        "triangles": 107400,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 49763.199999999255,
+        "draws": 112,
+        "triangles": 107396,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 50359,
+        "draws": 112,
+        "triangles": 107396,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 51001.199999999255,
+        "draws": 112,
+        "triangles": 107396,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 51569.79999999888,
+        "draws": 112,
+        "triangles": 107396,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      {
+        "now": 52081.90000000037,
+        "draws": 112,
+        "triangles": 107396,
+        "geometries": 232,
+        "textures": 44,
+        "programs": 46,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      }
+    ],
+    "objects": [
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "MeshLine",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 108,
+        "material": "MeshLineMaterial",
+        "color": "dff2ff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": true,
+        "attributes": [
+          "position",
+          "previous",
+          "next",
+          "side",
+          "width",
+          "uv",
+          "counters"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "SphereGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2592,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 1,
+        "forceSinglePass": false,
+        "map": "e1532afb-1eb1-4c7e-879a-2d944000fa65",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          -0.04,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "124a2a",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.94,
+        "metalness": 0,
+        "map": "68e5e4da-ebd7-4e47-8bd0-4019ae6bcadb",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "goal"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          52.5,
+          0,
+          0
+        ],
+        "triangles": 296,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.22,
+        "metalness": 0.08,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "goal"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          52.5,
+          0,
+          0
+        ],
+        "triangles": 1440,
+        "material": "MeshStandardMaterial",
+        "color": "f4f8ff",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "roughness": 0.65,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "goal"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -52.5,
+          0,
+          0
+        ],
+        "triangles": 296,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.22,
+        "metalness": 0.08,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "goal"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -52.5,
+          0,
+          0
+        ],
+        "triangles": 1440,
+        "material": "MeshStandardMaterial",
+        "color": "f4f8ff",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "roughness": 0.65,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CylinderGeometry",
+        "position": [
+          52.49999874849247,
+          0.749988374944818,
+          -34.00417581681409
+        ],
+        "triangles": 24,
+        "material": "MeshStandardMaterial",
+        "color": "f5f5f5",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          52.49991388163004,
+          1.3184205682222718,
+          -34.28734508499727
+        ],
+        "triangles": 48,
+        "material": "MeshStandardMaterial",
+        "color": "f5c400",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CylinderGeometry",
+        "position": [
+          -52.49999974615725,
+          0.749999521750637,
+          -33.99915302080822
+        ],
+        "triangles": 24,
+        "material": "MeshStandardMaterial",
+        "color": "f5f5f5",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          -52.50008347020067,
+          1.3203153638602538,
+          -34.278509125500925
+        ],
+        "triangles": 48,
+        "material": "MeshStandardMaterial",
+        "color": "f5c400",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "pitch-response"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": true,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "1734fe62-ac4c-4a12-91fa-c9cb8d5511eb",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -4.6812946045796675,
+          -0.026251434157287295,
+          7.5932031114637315
+        ],
+        "triangles": 4448,
+        "material": "MeshStandardMaterial",
+        "color": "172126",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.78,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "color",
+          "normal",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -4.6812946045796675,
+          -0.026251434157287295,
+          7.5932031114637315
+        ],
+        "triangles": 1960,
+        "material": "MeshStandardMaterial",
+        "color": "39cbd5",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.86,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -4.6812946045796675,
+          -0.026251434157287295,
+          7.5932031114637315
+        ],
+        "triangles": 3456,
+        "material": "MeshStandardMaterial",
+        "color": "8d5524",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "handR",
+          "foreR",
+          "armR",
+          "clavR",
+          "chest",
+          "spine",
+          "hips",
+          "other"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CylinderGeometry",
+        "position": [
+          1.4184120966383231,
+          2.2282036758577295,
+          35.332137998814495
+        ],
+        "triangles": 20,
+        "material": "MeshStandardMaterial",
+        "color": "263339",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "handR",
+          "foreR",
+          "armR",
+          "clavR",
+          "chest",
+          "spine",
+          "hips",
+          "other"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          1.2931751022547051,
+          2.342559278063198,
+          35.316694829386485
+        ],
+        "triangles": 8,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          1.36,
+          0.008558361746852603,
+          35.6
+        ],
+        "triangles": 4300,
+        "material": "MeshStandardMaterial",
+        "color": "172126",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.78,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "color",
+          "normal",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          1.36,
+          0.008558361746852603,
+          35.6
+        ],
+        "triangles": 1960,
+        "material": "MeshStandardMaterial",
+        "color": "39cbd5",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.86,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          1.36,
+          0.008558361746852603,
+          35.6
+        ],
+        "triangles": 3456,
+        "material": "MeshStandardMaterial",
+        "color": "f1c27d",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "handR",
+          "foreR",
+          "armR",
+          "clavR",
+          "chest",
+          "spine",
+          "hips",
+          "other"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CylinderGeometry",
+        "position": [
+          -1.5167605034789444,
+          2.2410111633959837,
+          -35.37083937770838
+        ],
+        "triangles": 20,
+        "material": "MeshStandardMaterial",
+        "color": "263339",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "handR",
+          "foreR",
+          "armR",
+          "clavR",
+          "chest",
+          "spine",
+          "hips",
+          "other"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -1.4073732725734571,
+          2.3553667656014516,
+          -35.30793286008854
+        ],
+        "triangles": 8,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -1.36,
+          0.008558361746852603,
+          -35.6
+        ],
+        "triangles": 4288,
+        "material": "MeshStandardMaterial",
+        "color": "172126",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.78,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "color",
+          "normal",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -1.36,
+          0.008558361746852603,
+          -35.6
+        ],
+        "triangles": 1960,
+        "material": "MeshStandardMaterial",
+        "color": "39cbd5",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.86,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "official-core",
+        "ancestors": [
+          "other"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          -1.36,
+          0.008558361746852603,
+          -35.6
+        ],
+        "triangles": 3456,
+        "material": "MeshStandardMaterial",
+        "color": "e0ac69",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "bench-life"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 216,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.9,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "bench-life"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 1256,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "bench-life"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4656,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "bench-life"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 624,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.75,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BoxGeometry",
+        "position": [
+          0,
+          0.62,
+          -39
+        ],
+        "triangles": 12,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.35,
+        "metalness": 0,
+        "map": "7a0ea7fe-2484-4392-b0bb-6d51ac37a6d0",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BoxGeometry",
+        "position": [
+          0,
+          0.62,
+          39
+        ],
+        "triangles": 12,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.35,
+        "metalness": 0,
+        "map": "7250f9f3-e31b-459c-8174-2ef0c8ed8283",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "atmosphere"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "ConeGeometry",
+        "position": [
+          -48.300000000000004,
+          17,
+          -35.7
+        ],
+        "triangles": 14,
+        "material": "ShaderMaterial",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "atmosphere"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "ConeGeometry",
+        "position": [
+          48.300000000000004,
+          17,
+          -35.7
+        ],
+        "triangles": 14,
+        "material": "ShaderMaterial",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "atmosphere"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "ConeGeometry",
+        "position": [
+          -48.300000000000004,
+          17,
+          35.7
+        ],
+        "triangles": 14,
+        "material": "ShaderMaterial",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "atmosphere"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "ConeGeometry",
+        "position": [
+          48.300000000000004,
+          17,
+          35.7
+        ],
+        "triangles": 14,
+        "material": "ShaderMaterial",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "static"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BoxGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 12,
+        "material": "MeshLambertMaterial",
+        "color": "eceded",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "0c199e79-769f-4120-8029-3c5e02fc288a",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "static"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 12,
+        "material": "MeshLambertMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "a0e1bcdc-7b3d-4a6a-80b4-6b3ff94bcd92",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "static"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshLambertMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "1188ae98-0285-4a44-8b36-ab9976823ddf",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2640,
+        "material": "MeshStandardMaterial",
+        "color": "5a6672",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.7,
+        "metalness": 0.35,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 1128,
+        "material": "MeshStandardMaterial",
+        "color": "c52613",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.65,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 3000,
+        "material": "MeshStandardMaterial",
+        "color": "abb3b8",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.55,
+        "metalness": 0.4,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 8,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "map": "86e29b43-5f68-4fbd-9490-df3ae5fd6bad",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          -63.5,
+          7.0875,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "roughness": 0.95,
+        "metalness": 0,
+        "map": "49eff615-4766-4bb4-a55a-4c82c6e34fb1",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          63.5,
+          7.0875,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "roughness": 0.95,
+        "metalness": 0,
+        "map": "49eff615-4766-4bb4-a55a-4c82c6e34fb1",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 144,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "crowd"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 560,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.93,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color",
+          "crowdRegion",
+          "crowdLimb",
+          "crowdSkin",
+          "crowdStyle"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "crowd"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 40,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.93,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "crowdRegion",
+          "crowdLimb",
+          "crowdSkin",
+          "crowdStyle"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "crowd"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshLambertMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "map": "029b0a09-d44a-46d9-97e1-035138fe3db3",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "crowdRegion",
+          "crowdLimb",
+          "crowdSkin",
+          "crowdStyle"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          -14,
+          1.7,
+          -39.45
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "8fb6cf",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "roughness": 0.08,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          14,
+          1.7,
+          -39.45
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "8fb6cf",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": true,
+        "roughness": 0.08,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BoxGeometry",
+        "position": [
+          0,
+          1.9,
+          -43.5
+        ],
+        "triangles": 12,
+        "material": "MeshStandardMaterial",
+        "color": "12161b",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          1.6,
+          -39.95
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "0a0d10",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          1.1,
+          -41.6
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "b9c2cb",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.5,
+        "metalness": 0.6,
+        "map": "5b3f59ba-5b46-49c6-a45c-2afa5e63c659",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          1.1,
+          41.6
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "b9c2cb",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.5,
+        "metalness": 0.6,
+        "map": "5b3f59ba-5b46-49c6-a45c-2afa5e63c659",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          -62.1,
+          1.1,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "b9c2cb",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.5,
+        "metalness": 0.6,
+        "map": "5b3f59ba-5b46-49c6-a45c-2afa5e63c659",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          62.1,
+          1.1,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "b9c2cb",
+        "transparent": true,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.5,
+        "metalness": 0.6,
+        "map": "5b3f59ba-5b46-49c6-a45c-2afa5e63c659",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 360,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 60,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.7,
+        "metalness": 0.2,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 240,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.4,
+        "metalness": 0.5,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 60,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.6,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 560,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.9,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "props"
+        ],
+        "count": 9,
+        "type": "SkinnedMesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 700,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.75,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color",
+          "skinIndex",
+          "skinWeight"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BoxGeometry",
+        "position": [
+          0,
+          22,
+          -60
+        ],
+        "triangles": 12,
+        "material": "MeshStandardMaterial",
+        "color": "0b0e12",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.55,
+        "metalness": 0.25,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          22,
+          -59.45
+        ],
+        "triangles": 2,
+        "material": "MeshStandardMaterial",
+        "color": "04070b",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          22,
+          -59.38
+        ],
+        "triangles": 2,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "3d86b9b8-70f8-4a90-9ffc-64b67db5426a",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "sideline-life"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          2.2,
+          1.75,
+          36.85
+        ],
+        "triangles": 2,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "ede95eec-c866-4625-ad23-2230a9784f86",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 128,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0.35,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 1328,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0.4,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 384,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 1,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 48,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.96,
+        "metalness": 0.02,
+        "map": "c395cddf-0122-42d0-86c3-9fcef2931aff",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 48,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.75,
+        "metalness": 0.25,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 8,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.9,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 48,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.8,
+        "metalness": 0.2,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 936,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.95,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.92,
+        "metalness": 0,
+        "map": "82f8c059-8924-4497-afd4-feff12743523",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.92,
+        "metalness": 0,
+        "map": "763faf12-d6f5-4b14-a70f-da3d56e55536",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.92,
+        "metalness": 0,
+        "map": "9f1e2597-4ed2-43e1-9013-f0bb0d3df682",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.92,
+        "metalness": 0,
+        "map": "f3eb32af-6681-4b41-8e36-8dccaa39576e",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 432,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.7,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 76,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.55,
+        "metalness": 0.65,
+        "map": "775509af-9889-41a2-bc37-13b86e5febd8",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "roughness": 0.95,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 76,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.55,
+        "metalness": 0.65,
+        "map": "03bf69b3-0cc3-4bc9-8d91-f8975ec1df47",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 120,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 24,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 6636,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.92,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "ambient-life"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 4,
+        "material": "MeshBasicMaterial",
+        "color": "3a4048",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "ambient-life"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshBasicMaterial",
+        "color": "e8e4d8",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "ball"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "SphereGeometry",
+        "position": [
+          -7.086849315487354,
+          0.12,
+          5.358779601584048
+        ],
+        "triangles": 720,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.65,
+        "metalness": 0,
+        "map": "aaf9ec38-19d6-4d94-9c12-c03e0f6411a0",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "ball"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CircleGeometry",
+        "position": [
+          -7.086849315487354,
+          0.015,
+          5.358779601584048
+        ],
+        "triangles": 16,
+        "material": "MeshBasicMaterial",
+        "color": "000000",
+        "transparent": true,
+        "side": 0,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 80,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "lowKit"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 192,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "openingLeg",
+          "color",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 128,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 144,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 144,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 224,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CylinderGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 24,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CircleGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 12,
+        "material": "MeshBasicMaterial",
+        "color": "050806",
+        "transparent": true,
+        "side": 0,
+        "forceSinglePass": false,
+        "map": "d255b839-8752-40d0-9b81-964ff39ae1da",
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 84,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 108,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "SphereGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 36,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "CylinderGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 12,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 108,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 108,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.82,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal",
+          "color"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 36,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 48,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 60,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.85,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [
+          "playerLow"
+        ],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "BufferGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 84,
+        "material": "MeshStandardMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 0,
+        "forceSinglePass": false,
+        "roughness": 0.35,
+        "metalness": 0,
+        "attributes": [
+          "position",
+          "uv",
+          "normal"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshBasicMaterial",
+        "color": "ffffff",
+        "transparent": false,
+        "side": 2,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      },
+      {
+        "name": "",
+        "ancestors": [],
+        "count": 9,
+        "type": "Mesh",
+        "geometry": "PlaneGeometry",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "triangles": 2,
+        "material": "MeshBasicMaterial",
+        "color": "ff6a3d",
+        "transparent": true,
+        "side": 0,
+        "forceSinglePass": false,
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ]
+      }
+    ]
+  },
+  "scene": {
+    "scenario": {
+      "id": "broadcast",
+      "label": "Alto · transmissão · dia",
+      "seed": "graphics-broadcast-v1",
+      "quality": "media",
+      "presetCamera": "broadcast",
+      "camera": "broadcast",
+      "time": "dia",
+      "weather": "seco",
+      "mow": "stripes",
+      "fixture": {
+        "homeClubId": "fla",
+        "awayClubId": "pal",
+        "label": "Flamengo x Palmeiras"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "requested": {
+        "scenario": "broadcast",
+        "seed": null,
+        "quality": "media",
+        "camera": null
+      }
+    },
+    "mode": "broadcast",
+    "worker": true,
+    "simulation": {
+      "minute": 0,
+      "ball": {
+        "x": -7.09,
+        "z": 5.36,
+        "height": 0.12
+      },
+      "score": [
+        0,
+        0
+      ],
+      "possession": "home"
+    },
+    "metrics": {
+      "frames": 2,
+      "meanMs": 15000,
+      "fps": 0.06666666666666667,
+      "onePercentLow": 0.040005280697053204,
+      "p50": 5003.300000000745,
+      "p95": 24996.699999999255,
+      "p99": 24996.699999999255,
+      "maxMs": 24996.699999999255,
+      "stalls": 2,
+      "elapsed": 35.2575,
+      "complete": true,
+      "protocol": {
+        "warmupMs": 5000,
+        "measurementMs": 30000,
+        "interruptions": 0,
+        "coveredMs": 30000,
+        "contractChanged": false,
+        "adaptive": false,
+        "longTasksScope": "whole run including warmup"
+      },
+      "acceptance": {
+        "target": {
+          "quality": "alta",
+          "width": 1280,
+          "height": 720,
+          "dpr": 1,
+          "fps": 45,
+          "p95Ms": 28
+        },
+        "passes": false,
+        "reasons": [
+          "short-protocol",
+          "quality-contract-mismatch",
+          "native-gpu-unverified",
+          "mean-fps-below-45",
+          "p95-above-28ms"
+        ],
+        "stretch": {
+          "targetFps": 69,
+          "passes": false,
+          "reasons": [
+            "short-protocol",
+            "quality-contract-mismatch",
+            "native-gpu-unverified",
+            "mean-fps-below-45",
+            "p95-above-28ms",
+            "extended-protocol-incomplete",
+            "mean-fps-below-69",
+            "p95-above-20ms",
+            "one-percent-low-below-50"
+          ]
+        },
+        "scope": "single run; three equivalent runs and both GPUs required for campaign acceptance"
+      },
+      "draws": 156.5,
+      "maxDraws": 199,
+      "triangles": 106820,
+      "heapUsedBytes": 35494343,
+      "geometries": 232,
+      "textures": 44,
+      "programs": 46,
+      "materials": 113,
+      "staticBatches": [
+        {
+          "eligible": 6,
+          "merged": 6,
+          "draws": 1,
+          "visibleSources": 0,
+          "detachedSources": 0
+        },
+        {
+          "eligible": 6,
+          "merged": 6,
+          "draws": 1,
+          "visibleSources": 0,
+          "detachedSources": 0
+        },
+        {
+          "eligible": 151,
+          "merged": 142,
+          "draws": 19,
+          "visibleSources": 0,
+          "detachedSources": 0
+        }
+      ],
+      "actorBatches": [
+        {
+          "sources": 64,
+          "draws": 4,
+          "bones": 64,
+          "visibleSources": 0
+        },
+        {
+          "sources": 40,
+          "draws": 6,
+          "bones": 40,
+          "visibleSources": 0
+        }
+      ],
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 18,
+            "draws": 18,
+            "triangles": 38552,
+            "shadowCasters": 0,
+            "geometryBytes": 126912,
+            "textureBytes": 16384
+          },
+          "crowd": {
+            "meshes": 3,
+            "draws": 3,
+            "triangles": 1398,
+            "shadowCasters": 0,
+            "geometryBytes": 168724,
+            "textureBytes": 43691
+          },
+          "grass": {
+            "meshes": 1,
+            "draws": 1,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 140,
+            "textureBytes": 21846
+          },
+          "props": {
+            "meshes": 30,
+            "draws": 30,
+            "triangles": 8956,
+            "shadowCasters": 1,
+            "geometryBytes": 1790136,
+            "textureBytes": 502445
+          },
+          "static": {
+            "meshes": 22,
+            "draws": 22,
+            "triangles": 14292,
+            "shadowCasters": 0,
+            "geometryBytes": 1363004,
+            "textureBytes": 12233394
+          },
+          "goal": {
+            "meshes": 4,
+            "draws": 4,
+            "triangles": 3472,
+            "shadowCasters": 0,
+            "geometryBytes": 148928,
+            "textureBytes": 699052
+          },
+          "ball": {
+            "meshes": 2,
+            "draws": 2,
+            "triangles": 736,
+            "shadowCasters": 0,
+            "geometryBytes": 18592,
+            "textureBytes": 2097153
+          },
+          "sky": {
+            "meshes": 1,
+            "draws": 1,
+            "triangles": 2592,
+            "shadowCasters": 0,
+            "geometryBytes": 61024,
+            "textureBytes": 2796203
+          },
+          "other": {
+            "meshes": 38,
+            "draws": 38,
+            "triangles": 37602,
+            "shadowCasters": 0,
+            "geometryBytes": 1939728,
+            "textureBytes": 21321053
+          }
+        },
+        "total": {
+          "meshes": 119,
+          "draws": 119,
+          "triangles": 107600,
+          "shadowCasters": 1,
+          "geometryBytes": 5617188,
+          "textureBytes": 39731221
+        },
+        "budgetUse": 0.7,
+        "fitsBudget": true
+      },
+      "firstFrameMs": 4498.9000000003725,
+      "longTasks": 2,
+      "longTaskMs": 6068,
+      "width": 1280,
+      "height": 720,
+      "dpr": 1,
+      "scenario": {
+        "id": "broadcast",
+        "label": "Alto · transmissão · dia",
+        "seed": "graphics-broadcast-v1",
+        "quality": "media",
+        "presetCamera": "broadcast",
+        "camera": "broadcast",
+        "time": "dia",
+        "weather": "seco",
+        "mow": "stripes",
+        "fixture": {
+          "homeClubId": "fla",
+          "awayClubId": "pal",
+          "label": "Flamengo x Palmeiras"
+        },
+        "viewport": {
+          "width": 1280,
+          "height": 720,
+          "dpr": 1
+        },
+        "requested": {
+          "scenario": "broadcast",
+          "seed": null,
+          "quality": "media",
+          "camera": null
+        }
+      },
+      "browser": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "platform": "Linux",
+        "language": "pt-BR",
+        "mobile": false
+      },
+      "hardware": {
+        "hardwareConcurrency": 6,
+        "deviceMemoryGiB": 6,
+        "devicePixelRatio": 1,
+        "screen": {
+          "width": 1440,
+          "height": 1000,
+          "colorDepth": 24
+        },
+        "maxTextureSize": 8192,
+        "maxAnisotropy": 16
+      },
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 16.0.0) (0x0000C0DE)), SwiftShader driver)",
+        "gpuVendor": "Google Inc. (Google)",
+        "rendererClass": "software"
+      }
+    }
+  }
+}

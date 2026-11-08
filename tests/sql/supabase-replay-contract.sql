@@ -34,14 +34,201 @@ BEGIN
 END;
 $contract$;
 
+-- The local replay has database-role fixtures for anonymous, authenticated and
+-- service sessions. Keep the access matrix explicit instead of relying only on
+-- a policy definition or a SECURITY DEFINER text search.
+DO $rls_matrix$
+DECLARE private_table regclass;
+BEGIN
+  FOREACH private_table IN ARRAY ARRAY[
+    'public.profiles'::regclass,
+    'public.player_careers'::regclass,
+    'public.push_subscriptions'::regclass
+  ] LOOP
+    ASSERT (SELECT relrowsecurity FROM pg_class WHERE oid = private_table),
+      format('%s must keep RLS enabled', private_table);
+    ASSERT NOT has_table_privilege('anon', private_table::text, 'SELECT'),
+      format('anon must not read %s', private_table);
+    ASSERT NOT has_table_privilege('anon', private_table::text, 'INSERT'),
+      format('anon must not insert into %s', private_table);
+    IF private_table = 'public.push_subscriptions'::regclass THEN
+      ASSERT NOT has_table_privilege('authenticated', private_table::text, 'SELECT,INSERT,UPDATE,DELETE'),
+        'authenticated must not access push_subscriptions directly';
+    ELSE
+      ASSERT has_table_privilege('authenticated', private_table::text, 'SELECT'),
+        format('authenticated must retain SELECT on %s', private_table);
+    END IF;
+    ASSERT has_table_privilege('service_role', private_table::text, 'SELECT'),
+      format('service_role must retain SELECT on %s', private_table);
+  END LOOP;
+
+  ASSERT NOT has_function_privilege(
+    'anon', 'public.mutate_player_career(integer,bigint,text,jsonb)', 'EXECUTE'
+  ), 'anon must not execute the career mutation RPC';
+  ASSERT has_function_privilege(
+    'authenticated', 'public.mutate_player_career(integer,bigint,text,jsonb)', 'EXECUTE'
+  ), 'authenticated must execute the career mutation RPC';
+  ASSERT has_function_privilege(
+    'service_role', 'public.mutate_player_career(integer,bigint,text,jsonb)', 'EXECUTE'
+  ), 'service_role must execute the career mutation RPC';
+  ASSERT (SELECT prosecdef
+    FROM pg_proc
+    WHERE oid = 'public.mutate_player_career(integer,bigint,text,jsonb)'::regprocedure),
+    'Career mutation must retain its SECURITY DEFINER boundary';
+
+  ASSERT has_table_privilege(
+    'authenticated', 'public.profiles', 'SELECT,INSERT,UPDATE,DELETE'
+  ), 'authenticated profile CRUD grants must remain available to RLS';
+  ASSERT NOT has_table_privilege(
+    'authenticated', 'public.player_careers', 'INSERT,UPDATE,DELETE'
+  ), 'authenticated career writes must remain behind the CAS RPC';
+  ASSERT NOT has_table_privilege(
+    'authenticated', 'public.push_subscriptions', 'SELECT,INSERT,UPDATE,DELETE'
+  ), 'authenticated push subscription access must remain server-only';
+  ASSERT has_table_privilege(
+    'service_role', 'public.profiles', 'SELECT,INSERT,UPDATE,DELETE'
+  ) AND has_table_privilege(
+    'service_role', 'public.player_careers', 'SELECT,INSERT,UPDATE,DELETE'
+  ) AND has_table_privilege(
+    'service_role', 'public.push_subscriptions', 'SELECT,INSERT,UPDATE,DELETE'
+  ), 'service_role must retain backend table access';
+END;
+$rls_matrix$;
+
 INSERT INTO auth.users (id, email, raw_user_meta_data, email_confirmed_at) VALUES
  ('22222222-2222-4222-8222-222222222221', 'replay-unverified@example.invalid', '{}', NULL),
  ('22222222-2222-4222-8222-222222222222', 'replay-verified@example.invalid', '{}', now());
+-- The auth.users trigger has already created these profile rows; set deterministic fixture names.
+INSERT INTO public.profiles (user_id, display_name) VALUES
+ ('22222222-2222-4222-8222-222222222221', 'Replay owner'),
+ ('22222222-2222-4222-8222-222222222222', 'Replay other')
+ON CONFLICT (user_id) DO UPDATE
+SET display_name = EXCLUDED.display_name;
+INSERT INTO public.player_careers (user_id, slot, state) VALUES
+ ('22222222-2222-4222-8222-222222222221', 1,
+  '{"version":1,"slot":1,"seed":"owner-fixture","season":1,"week":1}');
+INSERT INTO public.push_subscriptions (user_id, token) VALUES
+ ('22222222-2222-4222-8222-222222222221', 'replay-owner-token'),
+ ('22222222-2222-4222-8222-222222222222', 'replay-other-token');
 INSERT INTO public.activity_rankings (user_id, public_name, opted_in, weekly_active_seconds) VALUES
  ('22222222-2222-4222-8222-222222222221', 'ReplayPrivate', false, 120),
  ('22222222-2222-4222-8222-222222222222', 'ReplayPublic', true, 60);
 INSERT INTO public.game_coupons (code, description, coins, active)
 VALUES ('REPLAYTEST', 'Isolated migration regression fixture', 100, true);
+
+SELECT set_config('request.jwt.claim.role', 'authenticated', true);
+SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222221', true);
+SET LOCAL ROLE authenticated;
+DO $owner_boundary$
+DECLARE changed integer;
+BEGIN
+  ASSERT (SELECT count(*) FROM public.profiles) = 1,
+    'An owner must read exactly its own profile';
+  ASSERT (SELECT count(*) FROM public.player_careers) = 1,
+    'An owner must read exactly its own career';
+  ASSERT NOT has_table_privilege(current_user, 'public.push_subscriptions', 'SELECT'),
+    'authenticated push subscriptions must be inaccessible directly';
+
+  UPDATE public.profiles SET display_name = 'Replay owner updated'
+  WHERE user_id = '22222222-2222-4222-8222-222222222221';
+  GET DIAGNOSTICS changed = ROW_COUNT;
+  ASSERT changed = 1, 'An owner must be able to update its own profile';
+
+  UPDATE public.profiles SET display_name = 'Cross-owner update'
+  WHERE user_id = '22222222-2222-4222-8222-222222222222';
+  GET DIAGNOSTICS changed = ROW_COUNT;
+  ASSERT changed = 0, 'An owner must not update another profile';
+
+  BEGIN
+    PERFORM (SELECT count(*) FROM public.push_subscriptions);
+    RAISE EXCEPTION 'An owner read push subscriptions directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    DELETE FROM public.push_subscriptions
+    WHERE user_id = '22222222-2222-4222-8222-222222222222';
+    RAISE EXCEPTION 'An owner deleted another push subscription';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END;
+$owner_boundary$;
+RESET ROLE;
+
+SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
+SET LOCAL ROLE authenticated;
+DO $non_owner_boundary$
+DECLARE changed integer;
+BEGIN
+  ASSERT (SELECT count(*) FROM public.profiles) = 1,
+    'A non-owner must not read another profile';
+  ASSERT (SELECT count(*) FROM public.player_careers) = 0,
+    'A non-owner must not read another career';
+  BEGIN
+    PERFORM (SELECT count(*) FROM public.push_subscriptions);
+    RAISE EXCEPTION 'A non-owner read push subscriptions directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  UPDATE public.profiles SET display_name = 'Cross-owner update'
+  WHERE user_id = '22222222-2222-4222-8222-222222222221';
+  GET DIAGNOSTICS changed = ROW_COUNT;
+  ASSERT changed = 0, 'A non-owner must not update another profile';
+
+  BEGIN
+    DELETE FROM public.push_subscriptions
+    WHERE user_id = '22222222-2222-4222-8222-222222222221';
+    RAISE EXCEPTION 'A non-owner deleted another push subscription';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    INSERT INTO public.player_careers (user_id, slot, state)
+    VALUES ('22222222-2222-4222-8222-222222222221', 2, '{}');
+    RAISE EXCEPTION 'A non-owner inserted another career';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+END;
+$non_owner_boundary$;
+RESET ROLE;
+
+-- This replay models the anon database role, not Auth's anonymous sign-in
+-- issuance. The local project config does not define an anonymous_users fixture,
+-- so no anonymous-user session result is claimed here.
+SELECT set_config('request.jwt.claim.role', 'anon', true);
+SELECT set_config('request.jwt.claim.sub', '', true);
+SET LOCAL ROLE anon;
+DO $anon_boundary$
+BEGIN
+  BEGIN
+    PERFORM (SELECT count(*) FROM public.profiles);
+    RAISE EXCEPTION 'anon read a private profile table';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.mutate_player_career(1, 0, 'save', '{}');
+    RAISE EXCEPTION 'anon executed the career mutation RPC';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+  ASSERT NOT has_table_privilege('anon', 'public.player_careers', 'SELECT'),
+    'anon must not receive career table access';
+  ASSERT NOT has_table_privilege('anon', 'public.push_subscriptions', 'SELECT'),
+    'anon must not receive push subscription access';
+END;
+$anon_boundary$;
+RESET ROLE;
+
+SET LOCAL ROLE service_role;
+DO $service_boundary$
+BEGIN
+  ASSERT (SELECT count(*) FROM public.profiles) = 2,
+    'service_role must bypass owner RLS for profiles';
+  ASSERT (SELECT count(*) FROM public.player_careers) = 1,
+    'service_role must bypass owner RLS for careers';
+  ASSERT (SELECT count(*) FROM public.push_subscriptions) = 2,
+    'service_role must bypass owner RLS for subscriptions';
+END;
+$service_boundary$;
+RESET ROLE;
 
 SELECT set_config('request.jwt.claim.role', 'authenticated', true);
 SELECT set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222221', true);
@@ -231,3 +418,6 @@ $mfa$;
 RESET ROLE;
 
 ROLLBACK;
+
+-- Run the private metrics contract as a separate rollback-only fixture.
+\ir database-growth-contract.sql

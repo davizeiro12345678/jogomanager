@@ -419,7 +419,11 @@ export function AuthPage() {
               size="lg"
               variant="outline"
               onClick={async () => {
-                await (await import("@/lib/logout")).signOutAndCleanDevice();
+                const result = await (await import("@/lib/logout")).signOutAndCleanDevice();
+                if (result.error) {
+                  setError(result.error.message);
+                  return;
+                }
                 setSignedInAs(null);
               }}
             >

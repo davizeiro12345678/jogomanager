@@ -24,17 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
       - name: Re-resolve patched dependency tree without lifecycle scripts
         run: npm install --package-lock-only --ignore-scripts --no-audit
       - name: Verify clean npm installation
         run: npm ci --ignore-scripts --no-audit
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
       - name: Sync the Bun lockfile without package scripts
         run: bun install --lockfile-only --ignore-scripts
       - name: Restrict generated changes to lockfiles

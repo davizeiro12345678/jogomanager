@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { CareerState } from "@/game/types";
-import { parseCareerOwner, parseCareerSaveRequest } from "./career-input";
+import { parseCareerCreateRequest, parseCareerOwner, parseCareerSaveRequest } from "./career-input";
 import { CLUBS, getLeague } from "@/game/data/leagues";
 import { initCareer } from "@/game/career";
+import { createCareerByUser, deleteCareerByUser } from "./career-lifecycle.server";
 
 // A newly started career has no result to attest. Offline/imported results
 // remain personal saves, not trusted achievements or official progress.
@@ -45,15 +46,17 @@ export const loadCareer = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("careers")
-      .select("state, updated_at, verified_progress")
+      .select("state, updated_at, verified_progress, generation, deleted_at")
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error("Não foi possível carregar a carreira.");
-    if (!data?.state) return null;
+    if (!data) return null;
     return {
-      state: data.state as unknown as CareerState,
+      state: data.deleted_at ? null : (data.state as unknown as CareerState),
       updatedAt: (data.updated_at as string | null) ?? null,
       verifiedProgress: data.verified_progress,
+      generation: data.generation,
+      deletedAt: data.deleted_at,
     };
   });
 
@@ -74,7 +77,23 @@ export const saveCareer = createServerFn({ method: "POST" })
     } catch {
       verified = false;
     }
-    return saveValidatedCareer(context.userId, incoming, verified);
+    return saveValidatedCareer(context.userId, incoming, verified, data.expectedGeneration ?? null);
+  });
+
+export const createCareer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(parseCareerCreateRequest)
+  .handler(async ({ data, context }) => {
+    if (data.expectedOwnerId !== context.userId)
+      throw new Error("A conta mudou. Reabra a criação antes de começar.");
+    const incoming = data.state as unknown as CareerState;
+    let verified: boolean;
+    try {
+      verified = verifyCareerProgress(incoming);
+    } catch {
+      verified = false;
+    }
+    return createCareerByUser(context.userId, incoming, verified, data.expectedGeneration ?? null);
   });
 
 export const deleteCareer = createServerFn({ method: "POST" })
@@ -83,8 +102,6 @@ export const deleteCareer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     if (data.expectedOwnerId !== context.userId)
       throw new Error("A conta mudou. Reabra a carreira antes de excluir.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("careers").delete().eq("user_id", context.userId);
-    if (error) throw new Error("Não foi possível excluir a carreira.");
-    return { ok: true };
+    const tombstone = await deleteCareerByUser(context.userId);
+    return { ok: true as const, ...tombstone };
   });

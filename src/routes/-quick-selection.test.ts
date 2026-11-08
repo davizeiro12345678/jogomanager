@@ -61,14 +61,15 @@ function visitStaticImports(file: string, visited: Set<string>) {
   visit(parsed);
 }
 
-it("keeps named player rosters out of the quick-match selection's static imports", () => {
+it("keeps the full catalog and named player rosters out of quick-match startup", () => {
   const visited = new Set<string>();
   visitStaticImports(entry, visited);
   const startupSources = [...visited].map((file) =>
     path.relative(projectRoot, file).replaceAll("\\", "/"),
   );
 
-  expect(startupSources).toContain("src/game/data/leagues.ts");
+  expect(startupSources).toContain("src/game/data/quick-match-catalog.ts");
+  expect(startupSources).not.toContain("src/game/data/leagues.ts");
   expect(startupSources).not.toContain("src/game/data/squads.ts");
   expect(startupSources).not.toContain("src/game/data/names.ts");
 });

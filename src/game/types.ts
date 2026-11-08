@@ -306,6 +306,8 @@ export interface CareerState {
   operatingPlan?: OperatingPlan;
   /** razão agregada de receitas e despesas, idempotente por rodada */
   financeLedger?: FinanceLedgerEntry[];
+  /** IDs de eventos financeiros já aplicados; sobrevive à retenção visual do ledger. */
+  financeAppliedEventIds?: string[];
   /** Durable monotonic settlement cursor survives bounded ledger truncation. */
   financeSettledThrough?: { clubId: string; season: number; round: number } | undefined;
   /** satisfação da diretoria, 0-100 */

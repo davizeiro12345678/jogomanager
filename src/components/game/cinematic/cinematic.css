@@ -25,6 +25,15 @@
   background: linear-gradient(to bottom, oklch(0.06 0.01 210) 0 1.3dvh, transparent 1.3dvh 96.5dvh, oklch(0.06 0.01 210) 96.5dvh);
   box-shadow: inset 0 0 10dvw oklch(0 0 0 / 0.18);
 }
+.cutscene-transition-matte {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: rgb(0 0 0 / 1);
+  opacity: 0;
+  will-change: opacity;
+}
 .cutscene-slate {
   position: absolute;
   top: 19%;

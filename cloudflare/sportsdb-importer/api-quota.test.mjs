@@ -157,7 +157,9 @@ test("imports with the configured key and records actual provider responses", as
 
   try {
     const response = await Worker.fetch(
-      new Request("https://worker.test/import/leagues?secret=import-token"),
+      new Request("https://worker.test/import/leagues", {
+        headers: { Authorization: "Bearer import-token" },
+      }),
       {
         SPORTS_DB: db,
         THESPORTSDB_API_KEY: "configured-provider-key",
@@ -191,7 +193,10 @@ test("stops on an upstream 429 and does not make another request while paused", 
     THESPORTSDB_API_KEY: "configured-provider-key",
     THESPORTSDB_IMPORT_SECRET: "import-token",
   };
-  const request = () => new Request("https://worker.test/import/leagues?secret=import-token");
+  const request = () =>
+    new Request("https://worker.test/import/leagues", {
+      headers: { Authorization: "Bearer import-token" },
+    });
 
   try {
     const first = await Worker.fetch(request(), env, {});
@@ -214,10 +219,23 @@ test("status is active only with recent provider success and cursor progress", a
     THESPORTSDB_API_KEY: "configured-provider-key",
     THESPORTSDB_IMPORT_SECRET: "import-token",
   };
-  const status = async () => Worker.fetch(new Request("https://worker.test/api/status"), env, {});
+  const status = async () =>
+    Worker.fetch(
+      new Request("https://worker.test/api/status", {
+        headers: { Authorization: "Bearer import-token" },
+      }),
+      env,
+      {},
+    );
 
   try {
-    await Worker.fetch(new Request("https://worker.test/init?secret=import-token"), env, {});
+    await Worker.fetch(
+      new Request("https://worker.test/init", {
+        headers: { Authorization: "Bearer import-token" },
+      }),
+      env,
+      {},
+    );
     const now = Date.now();
     await db
       .prepare(
@@ -231,7 +249,9 @@ test("status is active only with recent provider success and cursor progress", a
       )
       .run();
 
-    const active = await (await status()).json();
+    const activeResponse = await status();
+    assert.equal(activeResponse.headers.get("Cache-Control"), "no-store");
+    const active = await activeResponse.json();
     assert.equal(active.importer.status, "active");
     assert.equal(active.importer.api_requests.limit_per_minute, 450);
     assert.equal(active.importer.api_requests.limit_per_24_hours, 75_000);

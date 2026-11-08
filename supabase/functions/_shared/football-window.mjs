@@ -1,3 +1,49 @@
+// The database enforces global quotas; these limits bound each invocation.
+export function footballWindowBudget(configuredLanes, pilot) {
+  const parsed = Number(configuredLanes);
+  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(16, parsed);
+  return {
+    lanes,
+    spacingMs: Math.max(55, Math.ceil(1050 / lanes)),
+    maxRequests: lanes * 40,
+  };
+}
+
+export const MAX_RETRY_AFTER_MS = 8_000;
+const HTTP_DATE =
+  /^(?:[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT|[A-Z][a-z]+, \d{2}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2} GMT|[A-Z][a-z]{2} [A-Z][a-z]{2} {1,2}\d{1,2} \d{2}:\d{2}:\d{2} \d{4})$/;
+
+// Keep Retry-After bounded: a provider must not be able to hold a worker
+// indefinitely, and an injected clock keeps HTTP-date cases deterministic.
+export function parseRetryAfterMs(value, nowMs, maxMs = MAX_RETRY_AFTER_MS) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return null;
+
+  const limit = Number.isFinite(maxMs) && maxMs >= 0 ? Math.floor(maxMs) : MAX_RETRY_AFTER_MS;
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    if (!Number.isFinite(seconds)) return limit;
+    return Math.min(seconds * 1_000, limit);
+  }
+
+  if (!Number.isFinite(nowMs)) return null;
+  if (!HTTP_DATE.test(raw)) return null;
+  const timestamp = Date.parse(raw.includes(" GMT") ? raw : `${raw} GMT`);
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.min(Math.max(0, timestamp - nowMs), limit);
+}
+
+export function footballProviderRetryAfterMs(response, nowMs) {
+  return parseRetryAfterMs(response.headers.get("retry-after"), nowMs);
+}
+
+export function footballProviderRateError(response) {
+  if (response.status !== 429) return null;
+  return response.headers.get("x-ratelimit-requests-remaining")?.trim() === "0"
+    ? "provider_daily_quota"
+    : "provider_rate_wait";
+}
+
 export function validateFootballPage(body, job) {
   if (!body || typeof body !== "object" || (body.errors && Object.keys(body.errors).length))
     throw new Error("provider_reported_error");
@@ -17,6 +63,30 @@ export function validateFootballPage(body, job) {
       body.paging.total < expected)
   )
     throw new Error("provider_page_mismatch");
+  if (job.kind === "fixtures" || job.kind === "fixture_detail") {
+    const parameters = new URL(job.path, "https://provider.invalid").searchParams;
+    const league = parameters.get("league");
+    const season = parameters.get("season");
+    const requestedIds = new Set(parameters.get("ids")?.split("-") ?? []);
+    const validRows = new Map();
+    const validId = (value) => Number.isSafeInteger(value) && value > 0;
+    for (const row of body.response) {
+      const id = row?.fixture?.id;
+      const home = row?.teams?.home?.id;
+      const away = row?.teams?.away?.id;
+      if (
+        !validId(id) ||
+        (league !== null && String(row.league?.id) !== league) ||
+        (season !== null && String(row.league?.season) !== season) ||
+        (requestedIds.size > 0 && !requestedIds.has(String(id)))
+      )
+        throw new Error("provider_invalid_fixture");
+      // Upcoming fixtures can contain placeholders. Keep the valid entries
+      // and deduplicate repeated provider IDs before materialization.
+      if (validId(home) && validId(away) && home !== away) validRows.set(id, row);
+    }
+    return { ...body, response: [...validRows.values()] };
+  }
   return body;
 }
 
@@ -35,7 +105,7 @@ export async function loadFootballJobPage(job, { rpc, beforeRequest, requestPage
 
 export function footballErrorCode(error) {
   const value = error instanceof Error ? error.message : "unknown_error";
-  return /^(football_(daily_|minute_)?quota_wait|provider_(rate_wait|daily_quota|http_[0-9]{3}|reported_error|invalid_list|page_mismatch)|window_budget|database_[A-Za-z0-9_]+|invalid_provider_path)$/.test(
+  return /^(football_(daily_|minute_)?quota_wait|provider_(rate_wait|daily_quota|http_[0-9]{3}|reported_error|invalid_list|page_mismatch|invalid_fixture)|window_budget|database_[A-Za-z0-9_]+|invalid_provider_path)$/.test(
     value,
   )
     ? value

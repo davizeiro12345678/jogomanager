@@ -1,13 +1,13 @@
-import type { Lang } from "./locale-identifiers";
-export {
-  BASE_LANGS,
+import {
   ADDED_LANGS,
+  BASE_LANGS,
   LANGS,
   RTL_LANGS,
   resolveLang,
-  type Lang,
   type AddedLang,
+  type Lang,
 } from "./locale-identifiers";
+export { BASE_LANGS, ADDED_LANGS, LANGS, RTL_LANGS, resolveLang, type Lang, type AddedLang };
 export const LANG_NAMES: Record<Lang, string> = {
   "pt-BR": "Português (Brasil)",
   "pt-PT": "Português (Portugal)",
@@ -108,6 +108,98 @@ export const LANG_NAMES: Record<Lang, string> = {
   ug: "ئۇيغۇرچە",
   dv: "ދިވެހި",
 };
+
+export const TRANSLATION_STATUSES = ["draft", "reviewed", "approved"] as const;
+export type TranslationStatus = (typeof TRANSLATION_STATUSES)[number];
+export type LocaleSource = "source" | "pack" | "fallback";
+
+/** JSON packs currently present under src/i18n/packs/. Keep this list in sync with the files. */
+export const LOCALE_PACKS = [
+  "ar",
+  "bn",
+  "de",
+  "es",
+  "fa",
+  "fr",
+  "hi",
+  "id",
+  "it",
+  "ja",
+  "ko",
+  "mr",
+  "pa",
+  "pl",
+  "pt-PT",
+  "ru",
+  "sw",
+  "ta",
+  "te",
+  "th",
+  "tr",
+  "ur",
+  "vi",
+  "zh-CN",
+] as const satisfies readonly Lang[];
+
+export interface LocaleCatalogEntry {
+  locale: Lang;
+  name: string;
+  direction: "ltr" | "rtl";
+  source: LocaleSource;
+  hasPack: boolean;
+  fallbackLocale: "en" | null;
+  status: TranslationStatus;
+  translationComplete: boolean;
+}
+
+const PACKED_LOCALES: ReadonlySet<Lang> = new Set(LOCALE_PACKS);
+const SOURCE_LOCALES: ReadonlySet<Lang> = new Set(["pt-BR", "en"]);
+
+function sourceFor(locale: Lang): LocaleSource {
+  if (SOURCE_LOCALES.has(locale)) return "source";
+  return PACKED_LOCALES.has(locale) ? "pack" : "fallback";
+}
+
+export const LOCALE_CATALOG: Readonly<Record<Lang, LocaleCatalogEntry>> = LANGS.reduce(
+  (catalog, locale) => {
+    const source = sourceFor(locale);
+    catalog[locale] = {
+      locale,
+      name: LANG_NAMES[locale],
+      direction: RTL_LANGS.has(locale) ? "rtl" : "ltr",
+      source,
+      hasPack: source === "pack",
+      fallbackLocale: source === "source" ? null : "en",
+      // Generated packs and fallback dictionaries remain draft until native review.
+      status: source === "source" ? "approved" : "draft",
+      translationComplete: source === "source",
+    };
+    return catalog;
+  },
+  {} as Record<Lang, LocaleCatalogEntry>,
+);
+
+export interface LocalePackParity {
+  announcedWithoutPack: Lang[];
+  catalogPacksMissingOnDisk: Lang[];
+  actualPacksNotCatalogued: string[];
+  fallbackLocales: Lang[];
+}
+
+/** Compare announced identifiers with the JSON packs found by the caller. */
+export function compareLocalePacks(realPackLocales: readonly string[]): LocalePackParity {
+  const actualPacks = new Set(realPackLocales);
+  const announced = new Set<string>(LANGS);
+  return {
+    announcedWithoutPack: LANGS.filter((locale) => !actualPacks.has(locale)),
+    catalogPacksMissingOnDisk: LOCALE_PACKS.filter((locale) => !actualPacks.has(locale)),
+    actualPacksNotCatalogued: [...actualPacks].filter((locale) => !announced.has(locale)),
+    fallbackLocales: LANGS.filter(
+      (locale) => locale !== "pt-BR" && locale !== "en" && !actualPacks.has(locale),
+    ),
+  };
+}
+
 export function languageSearchText(lang: Lang, displayLocale: string): string {
   let displayName = "";
   try {

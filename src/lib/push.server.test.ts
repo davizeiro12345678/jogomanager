@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  isDeadToken,
-  MAX_TOKENS_PER_EVENT,
-  sendPushToTokens,
-} from "./push.server";
+import { isDeadToken, MAX_TOKENS_PER_EVENT, sendPushToTokens } from "./push.server";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -13,11 +9,26 @@ afterEach(() => {
 });
 
 describe("isDeadToken", () => {
-  it("marks 404 as dead", () => {
+  it("marks explicitly unregistered tokens as dead", () => {
     expect(isDeadToken(404, "UNREGISTERED")).toBe(true);
   });
-  it("marks 400 INVALID_ARGUMENT as dead", () => {
-    expect(isDeadToken(400, "INVALID_ARGUMENT: bad token")).toBe(true);
+  it("keeps tokens when a gateway route or message payload is invalid", () => {
+    expect(isDeadToken(404, "Not Found")).toBe(false);
+    expect(isDeadToken(400, "INVALID_ARGUMENT")).toBe(false);
+  });
+  it("removes a token on a structured Firebase registration error", () => {
+    const body = JSON.stringify({
+      error: {
+        message: "The registration token is not a valid FCM registration token",
+        details: [
+          {
+            "@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError",
+            errorCode: "INVALID_ARGUMENT",
+          },
+        ],
+      },
+    });
+    expect(isDeadToken(400, body)).toBe(true);
   });
   it("keeps other 400 errors", () => {
     expect(isDeadToken(400, "BAD_REQUEST")).toBe(false);

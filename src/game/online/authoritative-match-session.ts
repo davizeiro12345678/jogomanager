@@ -79,6 +79,7 @@ export class AuthoritativeMatchSession {
   private tick = 0;
   private revision = 0;
   private receipt: MatchReceiptV1 | null = null;
+  private finalizationPromise: Promise<MatchReceiptV1> | null = null;
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
@@ -130,6 +131,7 @@ export class AuthoritativeMatchSession {
     }
 
     let applied = true;
+    let closureReason: MatchClosureReason | undefined;
     switch (command.kind) {
       case "set_tactics":
         applied = this.options.engine.applyTactics(seat, command.payload);
@@ -143,7 +145,7 @@ export class AuthoritativeMatchSession {
         );
         break;
       case "forfeit":
-        await this.finalize("forfeit", now, seat);
+        closureReason = "forfeit";
         break;
       case "ready":
         this.readySeats.add(seat);
@@ -156,6 +158,7 @@ export class AuthoritativeMatchSession {
     if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     this.lastSequence.set(ticket.userId, command.sequence);
     this.commandHash = (await appendCommandHash(this.commandHash, command)).hash;
+    if (closureReason) await this.finalize(closureReason, now, seat);
     return { accepted: true };
   }
 
@@ -196,20 +199,32 @@ export class AuthoritativeMatchSession {
     loser?: MatchSeat,
   ): Promise<MatchReceiptV1> {
     if (this.receipt) return this.receipt;
-    const unsigned = {
-      version: MATCH_PROTOCOL_VERSION,
-      roomId: this.options.roomId,
-      simulationVersion: this.options.simulationVersion,
-      commandHash: this.commandHash,
-      result: this.options.engine.finalResult(loser),
-      closureReason,
-      idempotencyKey: this.options.idempotencyKey,
-      issuedAt: now,
-    } as const;
-    const signature = await this.options.signer.sign(unsigned);
-    this.receipt = parseMatchReceiptV1({ ...unsigned, signature });
-    this.phase = "finalized";
-    return this.receipt;
+    const finalizationPromise =
+      this.finalizationPromise ??
+      (this.finalizationPromise = (async () => {
+        const unsigned = {
+          version: MATCH_PROTOCOL_VERSION,
+          roomId: this.options.roomId,
+          simulationVersion: this.options.simulationVersion,
+          commandHash: this.commandHash,
+          result: this.options.engine.finalResult(loser),
+          closureReason,
+          idempotencyKey: this.options.idempotencyKey,
+          issuedAt: now,
+        } as const;
+        const signature = await this.options.signer.sign(unsigned);
+        const receipt = parseMatchReceiptV1({ ...unsigned, signature });
+        this.receipt = receipt;
+        this.phase = "finalized";
+        return receipt;
+      })());
+
+    try {
+      return await finalizationPromise;
+    } catch (error) {
+      if (this.finalizationPromise === finalizationPromise) this.finalizationPromise = null;
+      throw error;
+    }
   }
 
   private assertBoundTicket(ticket: MatchTicketV1, now: number): void {

@@ -1,16 +1,8 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ConsentBanner } from "@/components/privacy/ConsentBanner";
-import {
-  Outlet,
-  Link,
-  useRouteContext,
-  useRouter,
-  useLocation,
-  Scripts,
-} from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Outlet, useRouteContext, useRouter, useLocation } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useT } from "../i18n/provider";
 import {
   isLightweightCssPath,
@@ -18,89 +10,19 @@ import {
   shouldInitializeWorldOnEntry,
 } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
-import { RouteHeadContent } from "@/components/RouteHeadContent";
+import { readConsent } from "@/lib/consent";
+
+let analyticsModule: Promise<typeof import("../lib/analytics")> | undefined;
 // Reading-controls UI is only visible on the public home page. Keep it out of
 // the shared initial JS closure for every gameplay and editorial route.
 const AccessibilitySettings = lazy(
   () => import("@/components/accessibility/AccessibilitySettings"),
 );
 
-export function NotFoundComponent() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <p className="text-7xl font-bold text-foreground">404</p>
-        <h1 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Esta página não existe ou mudou de endereço.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Voltar ao início
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
-  const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
-
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Não foi possível carregar esta página
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tente carregar novamente ou volte ao início para continuar.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              void router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Tentar novamente
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Voltar ao início
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function RootShell({ children }: { children: ReactNode }) {
-  const pathname = useLocation({ select: (location) => location.pathname });
-  return (
-    <html
-      lang="pt-BR"
-      className="dark"
-      data-public-shell={isLightweightCssPath(pathname) || undefined}
-    >
-      <head>
-        <RouteHeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
+/** Lightweight pages do not call toast(); the store is the intentional exception. */
+function shouldMountDeferredToaster(pathname: string) {
+  const path = pathname.replace(/\/$/, "") || "/";
+  return !isLightweightCssPath(path) || path === "/produtos";
 }
 
 // SEO/editorial pages must not download the full league and squad catalogue.
@@ -119,12 +41,20 @@ export function RootComponent() {
   useEffect(() => {
     // Estatísticas de uso não podem competir com a primeira pintura: só sobem
     // quando o navegador fica ocioso (fallback por timer onde não há idle).
-    const start = () => void import("../lib/analytics").then((m) => m.initAnalytics());
+    const start = () => {
+      if (!analyticsModule && !readConsent().analytics) return;
+      analyticsModule ??= import("../lib/analytics");
+      void analyticsModule
+        .then((module) => module.initAnalytics())
+        .catch(() => {
+          analyticsModule = undefined;
+        });
+    };
     window.addEventListener("consent-changed", start);
-    const ric = (window as unknown as { requestIdleCallback?: typeof requestIdleCallback })
-      .requestIdleCallback;
-    const idle = typeof ric === "function";
-    const handle = idle ? ric(start, { timeout: 5000 }) : window.setTimeout(start, 3000);
+    const idle = typeof window.requestIdleCallback === "function";
+    const handle = idle
+      ? window.requestIdleCallback(start, { timeout: 5000 })
+      : window.setTimeout(start, 3000);
     return () => {
       window.removeEventListener("consent-changed", start);
       if (idle) window.cancelIdleCallback?.(handle);
@@ -137,27 +67,18 @@ export function RootComponent() {
       <I18nProvider>
         <AccessibilityProvider>
           <RootReadingControls pathname={pathname} />
-          <a
-            href="#conteudo"
-            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:font-display focus:text-sm focus:uppercase focus:tracking-widest focus:text-primary-foreground"
-          >
-            <SkipContentLabel />
-          </a>
           <div id="conteudo" tabIndex={-1}>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
             <ConsentBanner />
           </div>
-          <DeferredToaster />
+          {shouldMountDeferredToaster(pathname) ? <DeferredToaster /> : null}
         </AccessibilityProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
 }
 
-function SkipContentLabel() {
-  return <>{useT().t("common.skip")}</>;
-}
 function RootReadingControls({ pathname }: { pathname: string }) {
   const { lang, t } = useT();
   const router = useRouter();
@@ -203,13 +124,20 @@ function RootReadingControls({ pathname }: { pathname: string }) {
       cancelAnimationFrame(frame);
     };
   }, [router]);
-  return pathname === "/" ? (
-    <div className="public-reading-controls">
-      <Suspense fallback={null}>
-        <AccessibilitySettings />
-      </Suspense>
-    </div>
-  ) : null;
+  return (
+    <>
+      <a href={pathname === "/" ? "#home-content" : "#conteudo"} className="skip-to-content">
+        {t("common.skip")}
+      </a>
+      {pathname === "/" ? (
+        <div className="public-reading-controls">
+          <Suspense fallback={null}>
+            <AccessibilitySettings />
+          </Suspense>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 const LazyToaster = lazy(() =>

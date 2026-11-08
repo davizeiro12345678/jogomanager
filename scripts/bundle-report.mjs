@@ -9,6 +9,7 @@ const brotliBytes = (data) =>
     params: { [constants.BROTLI_PARAM_QUALITY]: 6 },
   }).length;
 import { init, parse } from "es-module-lexer";
+import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const cinematicSetChunkPrefixes = [
   { set: "locker", prefix: "LockerRoom-" },
@@ -188,7 +189,7 @@ if (process.argv.includes("--check")) {
   const newCareer = entries.find((e) => e.surface === "new");
   const playerCareer = entries.find((e) => e.name.startsWith("jogador.painel-"));
   const editor = entries.find((e) => e.name.startsWith("editor-"));
-  const match = entries.find((e) => e.name.startsWith("match-"));
+  const match = entries.find(isMatchRouteEntry);
   const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
   const deferredEditorTabs = /^(?:roster-|clubs-|competitions-|import-export-)/;
   if (

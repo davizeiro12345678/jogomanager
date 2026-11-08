@@ -17,6 +17,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { censusRef } from "@/game/scene-census";
 import { SidelineFlashBatch } from "@/game/sideline-flash-batch";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
+import { createStadiumCosmeticRng, DEFAULT_STADIUM_FIXTURE } from "./stadium-cosmetics";
 
 type FigureOpts = {
   /** altura total aproximada */
@@ -111,8 +112,10 @@ const skinMaterial = () =>
 
 export const SidelineLife = memo(function SidelineLife({
   goalPulse,
+  fixtureKey = DEFAULT_STADIUM_FIXTURE,
 }: {
   goalPulse: React.MutableRefObject<number>;
+  fixtureKey?: string;
 }) {
   const photographers = useMemo(() => {
     const geos: THREE.BufferGeometry[] = [];
@@ -191,13 +194,17 @@ export const SidelineLife = memo(function SidelineLife({
   const flashes = useRef<THREE.InstancedMesh>(null);
   const flashState = useMemo(
     () =>
-      Array.from({ length: 6 }, (_, i) => ({
-        x: (i < 3 ? 1 : -1) * (FIELD_X + 3.1),
-        z: [-4.2, 0, 4.2][i % 3]!,
-        next: Math.random() * 3,
-        heat: 0,
-      })),
-    [],
+      Array.from({ length: 6 }, (_, i) => {
+        const rand = createStadiumCosmeticRng(fixtureKey, "sideline-flash", i, 0);
+        return {
+          x: (i < 3 ? 1 : -1) * (FIELD_X + 3.1),
+          z: [-4.2, 0, 4.2][i % 3]!,
+          next: rand() * 3,
+          heat: 0,
+          beat: 0,
+        };
+      }),
+    [fixtureKey],
   );
   const flashBatch = useMemo(() => new SidelineFlashBatch(6), []);
   useFrame((_, rawDt) => {
@@ -209,7 +216,9 @@ export const SidelineLife = memo(function SidelineLife({
       const f = flashState[i]!;
       f.next -= dt * frenzy;
       if (f.next <= 0) {
-        f.next = 0.4 + Math.random() * 3.2;
+        f.beat += 1;
+        const rand = createStadiumCosmeticRng(fixtureKey, "sideline-flash", i, f.beat);
+        f.next = 0.4 + rand() * 3.2;
         f.heat = 1;
       }
       f.heat = Math.max(0, f.heat - dt * 9);
@@ -229,6 +238,7 @@ export const SidelineLife = memo(function SidelineLife({
       </mesh>
       <instancedMesh
         ref={flashes}
+        userData={{ cinematicDynamic: true }}
         args={[undefined, undefined, 6]}
         frustumCulled={false}
         visible={false}

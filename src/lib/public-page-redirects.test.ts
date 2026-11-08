@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { Page as CreatorPage } from "../pages/criador";
 import { ContatoPage } from "../pages/contato";
+import { PUBLIC_PAGE_INVENTORY } from "./public-page-inventory";
 import { PUBLIC_PAGE_REDIRECTS, publicPageRedirect } from "./public-page-redirects";
 
 const ssrFetch = vi.hoisted(() => vi.fn(() => new Response("SSR")));
@@ -55,10 +56,9 @@ describe("retired public pages", () => {
   }
 
   it("keeps canonical discovery resources free of retired URLs", () => {
-    const sitemap = readFileSync(new URL("../routes/sitemap[.]xml.ts", import.meta.url), "utf8");
     const navigation = readFileSync(new URL("./public-pages.ts", import.meta.url), "utf8");
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
-    const indexedPaths = [...sitemap.matchAll(/path: "([^"]+)"/g)].map((match) => match[1]);
+    const indexedPaths = PUBLIC_PAGE_INVENTORY.map(({ path }) => path);
     expect(new Set(indexedPaths).size).toBe(indexedPaths.length);
     for (const [source, target] of Object.entries(PUBLIC_PAGE_REDIRECTS)) {
       expect(indexedPaths).not.toContain(source);

@@ -1,4 +1,5 @@
 @source "./components/RootLayout.tsx";
+@source "./components/RootFailure.tsx";
 @source "./components/RoutePending.tsx";
 @source "./components/ArticleShell.tsx";
 @source "./components/SiteFooter.tsx";

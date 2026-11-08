@@ -11,6 +11,7 @@ import type {
   Player,
   TrainingReport,
 } from "./types";
+import { MAX_TRACKED_FINANCE_EVENT_IDS } from "./career-finances";
 import {
   repairPlayerIdentities,
   repairShirtNumbers,
@@ -77,6 +78,32 @@ function normalizedLedger(value: unknown): {
     });
   }
   return { entries: entries.slice(0, 96), dropped: dropped + Math.max(0, entries.length - 96) };
+}
+
+function normalizedFinanceEventIds(value: unknown, ledgerIds: string[]) {
+  if (value === undefined && ledgerIds.length === 0) return { ids: undefined, dropped: 0 };
+  const source = Array.isArray(value) ? value : [];
+  let dropped = value !== undefined && !Array.isArray(value) ? 1 : 0;
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const candidate of [...source, ...ledgerIds]) {
+    if (
+      typeof candidate !== "string" ||
+      candidate.trim().length === 0 ||
+      candidate.length > 180 ||
+      seen.has(candidate)
+    ) {
+      dropped++;
+      continue;
+    }
+    seen.add(candidate);
+    ids.push(candidate);
+  }
+  const bounded = ids.slice(-MAX_TRACKED_FINANCE_EVENT_IDS);
+  return {
+    ids: bounded,
+    dropped: dropped + Math.max(0, ids.length - bounded.length),
+  };
 }
 
 function normalizedTrainingReports(value: unknown): {
@@ -161,24 +188,23 @@ export function repairCareer(input: CareerState): RepairResult {
         changed = true;
       }
     }
+    const suspended = (p as unknown as Record<string, unknown>)["suspended"];
+    if (suspended === undefined || suspended === null) {
+      next.suspended = false;
+      changed = true;
+    }
     if (changed) badPlayers++;
     players[id] = next;
   }
   if (badPlayers) fixes.push(`${badPlayers} jogador(es) com atributos fora da faixa`);
   if (badIds) fixes.push(`${badIds} ID(s) de jogadores inconsistentes corrigido(s)`);
 
-  const lineupWasValid =
-    Array.isArray(input.lineup) && input.lineup.every((id) => typeof id === "string");
-  const benchWasValid =
-    Array.isArray(input.bench) && input.bench.every((id) => typeof id === "string");
   const identityLineup = Array.isArray(input.lineup)
     ? input.lineup.filter((id): id is string => typeof id === "string")
     : [];
   const identityBench = Array.isArray(input.bench)
     ? input.bench.filter((id): id is string => typeof id === "string")
     : [];
-  if (!lineupWasValid || !benchWasValid)
-    input = { ...input, lineup: identityLineup, bench: identityBench };
 
   const identity = repairPlayerIdentities(players, identityLineup, declaredIds);
   const removedPlayers = Object.keys(players).length - Object.keys(identity.players).length;
@@ -197,36 +223,15 @@ export function repairCareer(input: CareerState): RepairResult {
   if (shirts.changed)
     fixes.push(`${shirts.changed} número(s) de camisa repetido(s) ou inválido(s) corrigido(s)`);
 
-  // 2. escalação e banco: sem ids órfãos, sem repetição, banco sem titulares
-  const own = (id: string) => players[id]?.clubId === input.clubId;
-  const rawLineup = input.lineup;
-  const rawBench = input.bench;
-  const uniq = (ids: string[]) => [...new Set(ids)].filter(own);
-  const lineup = uniq(rawLineup).slice(0, 11);
-  let bench = uniq(rawBench).filter((id) => !lineup.includes(id));
-  if (lineup.length < 11) {
-    const pool = Object.values(players)
-      .filter(
-        (p) =>
-          p.clubId === input.clubId &&
-          !lineup.includes(p.id) &&
-          !p.suspended &&
-          p.injuryWeeks === 0,
-      )
-      .sort((a, b) => b.ovr - a.ovr || a.id.localeCompare(b.id));
-    for (const p of pool) {
-      if (lineup.length >= 11) break;
-      lineup.push(p.id);
-    }
-    bench = bench.filter((id) => !lineup.includes(id));
-  }
-  if (
-    lineup.join() !== rawLineup.join() ||
-    bench.join() !== rawBench.join() ||
-    !lineupWasValid ||
-    !benchWasValid
-  )
-    fixes.push("Escalação com jogadores inexistentes ou repetidos");
+  // 2. Referências de escalação: remapeie aliases provados, mas não confunda
+  // estado salvo (inclusive lesões/suspensões) com admissão para uma partida.
+  // A disponibilidade é validada na fronteira de início da partida.
+  const lineup = Array.isArray(input.lineup)
+    ? input.lineup.filter((id): id is string => typeof id === "string")
+    : [];
+  const bench = Array.isArray(input.bench)
+    ? input.bench.filter((id): id is string => typeof id === "string")
+    : [];
 
   // 3. calendário: sem partidas duplicadas, contra si mesmo ou com placar pela metade
   const seen = new Set<string>();
@@ -333,6 +338,13 @@ export function repairCareer(input: CareerState): RepairResult {
   const trainingResult = normalizedTrainingReports(
     (input as unknown as Record<string, unknown>)["trainingReports"],
   );
+  const financeIdsResult = normalizedFinanceEventIds(
+    (input as unknown as Record<string, unknown>)["financeAppliedEventIds"],
+    ledgerResult.entries?.map((entry) => entry.id) ?? [],
+  );
+  const financeIdsChanged =
+    JSON.stringify((input as unknown as Record<string, unknown>)["financeAppliedEventIds"]) !==
+    JSON.stringify(financeIdsResult.ids);
   if (planResult.changed) fixes.push("Plano operacional com valores inválidos corrigido");
   if (
     ledgerResult.dropped ||
@@ -344,8 +356,9 @@ export function repairCareer(input: CareerState): RepairResult {
     JSON.stringify(input.trainingReports) !== JSON.stringify(trainingResult.reports)
   )
     fixes.push("Relatórios de treino inválidos corrigidos");
+  if (financeIdsResult.dropped) fixes.push("IDs de eventos financeiros inválidos corrigidos");
 
-  if (!fixes.length) return { state: input, fixes };
+  if (!fixes.length && !financeIdsChanged) return { state: input, fixes };
   return {
     state: {
       ...input,
@@ -358,6 +371,9 @@ export function repairCareer(input: CareerState): RepairResult {
       ...meters,
       ...(planResult.plan !== undefined ? { operatingPlan: planResult.plan } : {}),
       ...(ledgerResult.entries !== undefined ? { financeLedger: ledgerResult.entries } : {}),
+      ...(financeIdsResult.ids !== undefined
+        ? { financeAppliedEventIds: financeIdsResult.ids }
+        : {}),
       ...(trainingResult.reports !== undefined ? { trainingReports: trainingResult.reports } : {}),
     },
     fixes,

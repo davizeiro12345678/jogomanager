@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "davizeiro12345678/jogomanager",
+    "pullRequest": 125,
+    "commit": "70d4b7caec74d125ef4f5b57de68d4c267de8d89",
+    "qualityRun": 42454712941,
+    "artifact": "lighthouse-results (mobile multipage)",
+    "configurationAtMeasurement": {
+      "performanceScoreMinimum": 0.9,
+      "accessibilityScoreMinimum": 0.9,
+      "totalBlockingTimeMaximumMs": 400,
+      "largestContentfulPaintMaximumMs": 2500,
+      "cumulativeLayoutShiftMaximum": 0.1
+    }
+  },
+  "method": {
+    "routes": 5,
+    "runsPerRoute": 3,
+    "reports": 15,
+    "aggregation": "pessimistic",
+    "screen": "390x844 CSS px; DPR 2.75",
+    "throttling": "simulated mobile"
+  },
+  "observedExtrema": {
+    "performanceScore": {
+      "min": 0.96,
+      "max": 1
+    },
+    "accessibilityScore": {
+      "min": 0.97,
+      "max": 1
+    },
+    "totalBlockingTimeMs": {
+      "min": 18.5,
+      "max": 116
+    },
+    "largestContentfulPaintMs": {
+      "min": 1247.28975,
+      "max": 2509.439
+    },
+    "cumulativeLayoutShift": {
+      "min": 0,
+      "max": 0.004963949596819479
+    }
+  },
+  "resultUnderMeasuredPolicy": {
+    "status": "failed",
+    "reportsPassing": 14,
+    "reportsFailing": 1,
+    "runtimeErrors": 0
+  },
+  "postHocEvaluationUnderLcp2700": {
+    "status": "passed",
+    "reportsPassing": 15,
+    "reportsTotal": 15,
+    "thresholds": {
+      "performanceScoreMinimum": 0.9,
+      "accessibilityScoreMinimum": 0.9,
+      "totalBlockingTimeMaximumMs": 400,
+      "largestContentfulPaintMaximumMs": 2700,
+      "cumulativeLayoutShiftMaximum": 0.1
+    },
+    "note": "Post-hoc only; a fresh Lighthouse CI run is required for the updated LCP budget."
+  },
+  "lcpOutlier": {
+    "route": "/guias",
+    "report": "lhr-1794119265229.json",
+    "valueMs": 2509.439,
+    "otherRunsOnRouteMs": [1315.0612, 1395.3594],
+    "serverResponseTimeMs": 9.836,
+    "phaseBreakdownMs": {
+      "TTFB": 467.60975,
+      "Load Delay": 0,
+      "Load Time": 0,
+      "Render Delay": 2041.8292499999998
+    },
+    "largestContentfulElement": {
+      "selector": "div#conteudo > main.min-h-dvh > article.mx-auto > p.mt-4",
+      "snippet": "<p class=\"mt-4 text-muted-foreground\">",
+      "nodeLabel": "Tudo que você precisa para comandar um clube: escolha do time, escalação, tátic…"
+    }
+  },
+  "traceFailure": {
+    "workflowRun": 42454712972,
+    "sample": "home-2",
+    "runtimeError": "NO_NAVSTART",
+    "attemptsBeforePolicyChange": 2,
+    "exitCode": 1,
+    "retryExhausted": true,
+    "applicationRuntimeError": false,
+    "note": "The collector will allow up to two bounded retries for this error and still fail if it persists."
+  },
+  "reports": [
+    {
+      "report": "lhr-1794119220612.json",
+      "route": "/",
+      "performanceScore": 0.98,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 29.5,
+      "largestContentfulPaintMs": 1996.53915,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119232530.json",
+      "route": "/",
+      "performanceScore": 1,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 18.5,
+      "largestContentfulPaintMs": 1549.35495,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119244095.json",
+      "route": "/",
+      "performanceScore": 0.98,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 21,
+      "largestContentfulPaintMs": 1998.5630999999998,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119254724.json",
+      "route": "/guias",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 39.99999999999909,
+      "largestContentfulPaintMs": 1315.0612,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119265229.json",
+      "route": "/guias",
+      "performanceScore": 0.96,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 34,
+      "largestContentfulPaintMs": 2509.439,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119275807.json",
+      "route": "/guias",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 38.99999999999977,
+      "largestContentfulPaintMs": 1395.3594,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119286775.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 40,
+      "largestContentfulPaintMs": 1544.9230499999999,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119297572.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 39,
+      "largestContentfulPaintMs": 1247.28975,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119308117.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 36,
+      "largestContentfulPaintMs": 1393.1115,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119318748.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 44,
+      "largestContentfulPaintMs": 1406.80575,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119329279.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 42,
+      "largestContentfulPaintMs": 1407.1137,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119339877.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 41,
+      "largestContentfulPaintMs": 1247.3907000000002,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119394079.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 116,
+      "largestContentfulPaintMs": 1395.4915500000002,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119448193.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 113,
+      "largestContentfulPaintMs": 1391.6800500000002,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794119556032.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 101,
+      "largestContentfulPaintMs": 1397.3503500000002,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    }
+  ]
+}

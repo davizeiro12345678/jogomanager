@@ -15,6 +15,7 @@ export const ptBR: Record<string, string> = {
   "nav.stats": "Estatísticas",
   "nav.news": "Notícias",
   "nav.press": "Coletiva",
+  "nav.play": "Jogar partida",
   "ceremony.pregame": "Pré-jogo",
   "ceremony.skip": "Pular cerimônia",
   "ceremony.hide": "Não mostrar mais",
@@ -47,6 +48,7 @@ export const ptBR: Record<string, string> = {
   "shell.round": "Rodada",
   "shell.language": "Idioma",
   "shell.more": "Mais",
+  "common.loading": "Carregando…",
 };
 export const en: Record<string, string> = {
   "nav.panel": "Dashboard",
@@ -70,6 +72,7 @@ export const en: Record<string, string> = {
   "nav.profile": "Profile",
   "nav.editor": "Editor",
   "nav.ai": "Assistant",
+  "nav.play": "Play match",
   "ceremony.pregame": "Pre-match",
   "ceremony.skip": "Skip ceremony",
   "ceremony.hide": "Don't show again",
@@ -93,6 +96,7 @@ export const en: Record<string, string> = {
   "shell.round": "Round",
   "shell.language": "Language",
   "shell.more": "More",
+  "common.loading": "Loading…",
 };
 /** Default Portuguese and English work offline without fetching 96 other packs. */
 export function translateBootstrap(lang: Lang, key: string): string {

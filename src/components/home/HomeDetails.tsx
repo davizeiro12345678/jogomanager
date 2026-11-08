@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { HomeSearchGuide } from "./HomeSearchGuide";
 
 const DECISIONS = [
   {
@@ -57,6 +58,7 @@ const FAQ = [
 export function HomeDetails() {
   return (
     <>
+      <HomeSearchGuide />
       <section className="mt-14" aria-labelledby="manager-routine">
         <p className="font-display text-xs uppercase tracking-widest text-primary">
           Além do placar
