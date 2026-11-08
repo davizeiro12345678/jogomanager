@@ -16,13 +16,13 @@ O fluxo visual é definido em [`.github/workflows/match3d-visual-qa.yml`](https:
 
 Fonte: os 15 relatórios JSON do artifact `lighthouse-results` associado ao run [42428747855](https://github.com/davizeiro12345678/jogomanager/actions/runs/42428747855). Configuração versionada em [`.lighthouserc.mobile.cjs`](https://github.com/davizeiro12345678/jogomanager/blob/b8df3cb1aa905ddc93e39f694cf53f15ea2fcc56/.lighthouserc.mobile.cjs): cinco URLs, três execuções por URL, mobile simulado a 390×844/DPR 2,75, agregação pessimista. Os budgets relevantes são score de performance mínimo 0,97, TBT máximo 200 ms, LCP máximo 2.500 ms e CLS máximo 0,1.
 
-| Rota | Score de performance nas 3 execuções | TBT (ms) | LCP (ms) | CLS | Leitura |
-|---|---:|---:|---:|---:|---|
-| `/` | 87, 98, 98 | 459,1; 22,5; 22,5 | 2.062,4; 1.997,3; 2.003,3 | 0; 0; 0 | **Falha real:** primeira execução abaixo de 0,97 e TBT acima de 200 ms. As outras duas passam estes budgets. |
-| `/guias` | 100, 100, 100 | 41; 40; 51 | 1.399,3; 934,5; 1.394,5 | 0; 0; 0 | Dentro dos budgets observados. |
-| `/guia-de-scouting` | 100, 100, 100 | 42; 46; 44 | 1.400,2; 1.405,8; 1.397,3 | 0; 0; 0 | Dentro dos budgets observados. |
-| `/melhores-formacoes` | 100, 100, 100 | 39; 45; 44 | 1.398,7; 1.401,5; 1.535,9 | 0; 0; 0 | Dentro dos budgets observados. |
-| `/partida-rapida` | 99, 99, 99 | 114; 107; 110 | 1.520,2; 1.404,3; 1.397,7 | 0,004964 em cada | Dentro dos budgets observados. |
+| Rota                  | Score de performance nas 3 execuções |          TBT (ms) |                  LCP (ms) |              CLS | Leitura                                                                                                      |
+| --------------------- | -----------------------------------: | ----------------: | ------------------------: | ---------------: | ------------------------------------------------------------------------------------------------------------ |
+| `/`                   |                           87, 98, 98 | 459,1; 22,5; 22,5 | 2.062,4; 1.997,3; 2.003,3 |          0; 0; 0 | **Falha real:** primeira execução abaixo de 0,97 e TBT acima de 200 ms. As outras duas passam estes budgets. |
+| `/guias`              |                        100, 100, 100 |        41; 40; 51 |   1.399,3; 934,5; 1.394,5 |          0; 0; 0 | Dentro dos budgets observados.                                                                               |
+| `/guia-de-scouting`   |                        100, 100, 100 |        42; 46; 44 | 1.400,2; 1.405,8; 1.397,3 |          0; 0; 0 | Dentro dos budgets observados.                                                                               |
+| `/melhores-formacoes` |                        100, 100, 100 |        39; 45; 44 | 1.398,7; 1.401,5; 1.535,9 |          0; 0; 0 | Dentro dos budgets observados.                                                                               |
+| `/partida-rapida`     |                           99, 99, 99 |     114; 107; 110 | 1.520,2; 1.404,3; 1.397,7 | 0,004964 em cada | Dentro dos budgets observados.                                                                               |
 
 A reprovação móvel concentra-se no outlier da home: 1 de 3 execuções marca performance 87/100 e TBT 459,1 ms, acima do limite de 200 ms. LCP (2.062,4 ms no pior run) e CLS (0) permanecem dentro dos limites. O LCP desse run é a imagem `.home-hero-image`; ela não explica por si só a reprovação de TBT.
 
@@ -46,3 +46,7 @@ Nas outras duas execuções da home, TBT foi 22,5 ms; cada uma ainda reporta tar
 3. Fazer uma alteração de performance por vez, manter o comportamento/metadata da página e repetir o mesmo teste. Só considerar a correção quando os três runs atenderem aos budgets pessimistas e os testes/build/bundle permanecerem verdes; complementar com dados de campo (INP/RUM) quando disponíveis, sem equiparar TBT laboratorial a INP.
 4. Registrar a conclusão final de `evidence` separadamente. Ela ainda estava ativa na última observação; este documento não certifica a comparação visual desse run.
 5. Não fazer merge nem promoção. O PR continua em draft até uma correção medida, a nova CI do SHA candidato e todos os checks e artifacts exigidos terminarem no estado aprovado.
+
+## Adendo posterior — 2026-11-08
+
+O registro acima descreve corretamente a política vigente no SHA histórico e não foi reescrito. Na atualização posterior do PR #125, o responsável pelo projeto pediu explicitamente que os requisitos fossem afrouxados porque estavam difíceis de cumprir. O run `42451063358` mediu score/TBT mínimos/máximos de 0,90/338,9 ms na home e 0,95/243 ms em partida rápida; as outras três rotas passaram os limites anteriores. Como resultado, a política foi atualizada para score mínimo 0,90 e TBT máximo 400 ms, mantendo as cinco rotas, três medições, agregação pessimista, severidade de erro, LCP/CLS/acessibilidade e o gate crítico fail-closed. A alteração ajusta a aceitação por instrução explícita do dono; não deve ser descrita como correção da latência ou como prova de melhoria do runtime.

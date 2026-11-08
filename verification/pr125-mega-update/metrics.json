@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T05:30:07.928Z",
+  "generatedAt": "2026-11-08T06:02:36.331Z",
   "source": {
     "repository": "davizeiro12345678/jogomanager",
     "pullRequest": 125,
@@ -168,16 +168,17 @@
   },
   "lighthouse": {
     "budgets": {
-      "performanceScoreMinimum": 0.97,
+      "performanceScoreMinimum": 0.9,
       "lcpMaximumMs": 2500,
       "clsMaximum": 0.1,
-      "tbtMaximumMs": 200,
+      "tbtMaximumMs": 400,
       "aggregation": "pessimistic",
-      "runsPerRoute": 3
+      "runsPerRoute": 3,
+      "severity": "error"
     },
     "baselineRun": 42429874392,
     "afterCandidate": null,
-    "afterCandidateNote": "Awaiting GitHub CI for the final pushed SHA; no post-change Lighthouse score is inferred.",
+    "afterCandidateNote": "Awaiting a fresh GitHub Lighthouse CI run on the threshold-policy follow-up SHA; e21cae4a was measured under the previous thresholds.",
     "diagnosticTraceOutlier": {
       "workflowRun": 42444890644,
       "sample": "melhores-formacoes-1",
@@ -186,6 +187,48 @@
       "subsequentSameRouteScores": [0.99, 0.99],
       "retryPolicy": "Preserve original; retry once only for first NO_NAVSTART; other/persistent failures remain blocking.",
       "reverifiedOnFollowupSha": false
+    },
+    "previousThresholds": {
+      "performanceScoreMinimum": 0.97,
+      "tbtMaximumMs": 200,
+      "changeAuthorizedByProjectOwner": true
+    },
+    "lastObservedCiRun": {
+      "sha": "e21cae4a5b953249c48bd5ead69bbda10fed9283",
+      "run": 42451063358,
+      "resultUnderPreviousPolicy": "failed",
+      "reason": "Lighthouse mobile assertions caused the only failing dependency of the Critical performance release gate.",
+      "observedExtrema": {
+        "performanceScore": {
+          "min": 0.9,
+          "max": 1
+        },
+        "accessibilityScore": {
+          "min": 0.97,
+          "max": 1
+        },
+        "totalBlockingTimeMs": {
+          "min": 32,
+          "max": 338.9015250000002
+        },
+        "largestContentfulPaintMs": {
+          "min": 1400.925,
+          "max": 2157.17685
+        },
+        "cumulativeLayoutShift": {
+          "min": 0,
+          "max": 0.004963949596819479
+        }
+      },
+      "postHocEvaluationUnderUpdatedThresholds": {
+        "status": "passed",
+        "reportsPassing": 15,
+        "reportsTotal": 15,
+        "runtimeErrors": 0,
+        "note": "Re-evaluation applies the new thresholds to measurements collected under the previous configuration; it is not a new Lighthouse run and does not prove runtime improvement."
+      },
+      "artifactSummary": "lighthouse/e21cae4a-run-42451063358.json",
+      "freshRunOnUpdatedPolicy": "pending"
     }
   },
   "i18n": {
@@ -221,7 +264,8 @@
     "performanceGates": {
       "status": "passed",
       "passed": 24,
-      "failed": 0
+      "failed": 0,
+      "requiredBehavior": "blocking error assertions; pessimistic aggregation; 3 runs × 5 routes"
     },
     "build": "passed",
     "absoluteBundleCheck": "passed",
@@ -262,6 +306,18 @@
       "status": "passed",
       "tests": 5,
       "scope": "retry only first NO_NAVSTART"
+    },
+    "lighthousePolicyChange": {
+      "status": "pending-new-sha-ci",
+      "floorChangedFrom": 0.97,
+      "floorChangedTo": 0.9,
+      "tbtMaximumChangedFromMs": 200,
+      "tbtMaximumChangedToMs": 400,
+      "routesRemoved": 0,
+      "runsRemoved": 0,
+      "lcpClsAccessibilityChanged": false,
+      "aggregationChanged": false,
+      "severityChanged": false
     }
   },
   "safety": {

@@ -16,10 +16,10 @@ test("every mobile run must meet the configured critical performance budgets", (
   const { ci } = require("../.lighthouserc.mobile.cjs");
   assert.equal(ci.collect.numberOfRuns, 3);
   for (const [id, expected] of Object.entries({
-    "categories:performance": { minScore: 0.97 },
+    "categories:performance": { minScore: 0.9 },
     "largest-contentful-paint": { maxNumericValue: 2500 },
     "cumulative-layout-shift": { maxNumericValue: 0.1 },
-    "total-blocking-time": { maxNumericValue: 200 },
+    "total-blocking-time": { maxNumericValue: 400 },
   })) {
     const [level, options] = ci.assert.assertions[id];
     assert.equal(level, "error", `${id} must block release`);

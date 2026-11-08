@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "davizeiro12345678/jogomanager",
+    "pullRequest": 125,
+    "commit": "e21cae4a5b953249c48bd5ead69bbda10fed9283",
+    "workflowRun": 42451063358,
+    "job": "Lighthouse mobile multi-page audit",
+    "artifact": "lighthouse-results",
+    "configurationAtMeasurement": {
+      "performanceScoreMinimum": 0.97,
+      "totalBlockingTimeMaximumMs": 200,
+      "largestContentfulPaintMaximumMs": 2500,
+      "cumulativeLayoutShiftMaximum": 0.1,
+      "accessibilityScoreMinimum": 0.9
+    }
+  },
+  "method": {
+    "routes": 5,
+    "runsPerRoute": 3,
+    "reports": 15,
+    "aggregation": "pessimistic",
+    "screen": "390x844 CSS px; DPR 2.75",
+    "throttling": "simulated mobile"
+  },
+  "observedExtrema": {
+    "performanceScore": {
+      "min": 0.9,
+      "max": 1
+    },
+    "accessibilityScore": {
+      "min": 0.97,
+      "max": 1
+    },
+    "totalBlockingTimeMs": {
+      "min": 32,
+      "max": 338.9015250000002
+    },
+    "largestContentfulPaintMs": {
+      "min": 1400.925,
+      "max": 2157.17685
+    },
+    "cumulativeLayoutShift": {
+      "min": 0,
+      "max": 0.004963949596819479
+    }
+  },
+  "updatedPolicy": {
+    "thresholds": {
+      "performanceScoreMinimum": 0.9,
+      "totalBlockingTimeMaximumMs": 400,
+      "largestContentfulPaintMaximumMs": 2500,
+      "cumulativeLayoutShiftMaximum": 0.1,
+      "accessibilityScoreMinimum": 0.9
+    },
+    "explicitOwnerRequest": true,
+    "postHocReevaluation": {
+      "status": "passed",
+      "reportsPassing": 15,
+      "reportsTotal": 15,
+      "runtimeErrors": 0,
+      "note": "Re-evaluation applies the new thresholds to measurements collected under the previous configuration; it is not a new Lighthouse run and does not prove runtime improvement."
+    }
+  },
+  "reports": [
+    {
+      "report": "lhr-1794115930475.json",
+      "route": "/",
+      "performanceScore": 0.9,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 338.9015250000002,
+      "largestContentfulPaintMs": 2062.69695,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794115943203.json",
+      "route": "/",
+      "performanceScore": 0.98,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 35.5,
+      "largestContentfulPaintMs": 2004.4184999999998,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794115955417.json",
+      "route": "/",
+      "performanceScore": 0.98,
+      "accessibilityScore": 0.97,
+      "totalBlockingTimeMs": 32,
+      "largestContentfulPaintMs": 2157.17685,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794115966646.json",
+      "route": "/guias",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 57.99999999999932,
+      "largestContentfulPaintMs": 1405.68525,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794115977737.json",
+      "route": "/guias",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 53.99999999999977,
+      "largestContentfulPaintMs": 1413.5131500000002,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794115988867.json",
+      "route": "/guias",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 56,
+      "largestContentfulPaintMs": 1410.82215,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116008182.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 54,
+      "largestContentfulPaintMs": 1409.8132500000002,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116019295.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 58.99999999999977,
+      "largestContentfulPaintMs": 1413.8907000000002,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116030452.json",
+      "route": "/guia-de-scouting",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 54,
+      "largestContentfulPaintMs": 1400.925,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116041637.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 58.99999999999977,
+      "largestContentfulPaintMs": 1408.58865,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116052667.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 62,
+      "largestContentfulPaintMs": 1410.3327,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116063749.json",
+      "route": "/melhores-formacoes",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 51,
+      "largestContentfulPaintMs": 1403.19945,
+      "cumulativeLayoutShift": 0,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116118544.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.95,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 242.99999999999955,
+      "largestContentfulPaintMs": 1409.3055,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116173248.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.98,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 144,
+      "largestContentfulPaintMs": 1401.8094,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    },
+    {
+      "report": "lhr-1794116227913.json",
+      "route": "/partida-rapida",
+      "performanceScore": 0.98,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 156,
+      "largestContentfulPaintMs": 1415.0787,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "runtimeError": null
+    }
+  ]
+}
