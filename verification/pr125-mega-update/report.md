@@ -156,6 +156,22 @@ Pendências antes de considerar o pedido original concluído:
 2. Completar deduplicação/moderação persistentes no backend com RLS/migration/RPC e retentativas seguras.
 3. Completar, revisar nativamente e publicar as traduções pendentes.
 4. Gravar um vídeo contínuo de uma partida completa no estádio; os seis arquivos disponíveis são apenas amostras de ações de 1,5 s.
-5. Investigar a tarefa de hidratação de 656 ms e as tarefas não atribuídas no outlier do SHA `e0f89049`; reproduzir com traces antes de decidir otimização ou nova alteração de thresholds. Manter o release gate bloqueado até Lighthouse e gate crítico passarem em um SHA subsequente.
+5. O outlier de hidratação de 656 ms no SHA `e0f89049` permanece histórico; tarefas não atribuídas são pistas, não causalidade demonstrada. No SHA posterior `6ad15e8`, o run `42459445389` passou Lighthouse e gate crítico sob a política ativa. Ler os JSON do run antes de afirmar melhoria quantitativa e manter os thresholds bloqueantes atuais.
 
 O PR #125 continua sendo o PR existente desta branch; não houve merge nem publicação em `jogomanager.com`.
+
+
+## Snapshot atual do PR — auditoria de 2026-11-08
+
+Este adendo registra uma consulta pública do código no HEAD `6ad15e8ab7b56826044e4b77f801743017502e9a`. Os resultados anteriores descritos neste relatório (inclusive o outlier Lighthouse do SHA `e0f89049`) continuam válidos para aqueles SHAs, mas não representam o estado corrente do CI.
+
+| Evidência no snapshot | Resultado observado | Limite de interpretação |
+| --- | --- | --- |
+| Quality gates, run [`42459445389`](https://github.com/davizeiro12345678/jogomanager/actions/runs/42459445389) | `success` no SHA `6ad15e8`; o job Lighthouse mobile e `Critical performance release gate` aparecem como sucesso. | Passa somente os checks executados e a política ativa naquele SHA; não aceita automaticamente todas as fases nem certifica produção/dispositivo físico. |
+| Política Lighthouse ativa | Score ≥0,90; TBT ≤400 ms; LCP ≤2.700 ms; CLS ≤0,1; acessibilidade ≥0,90; três runs com agregação pessimista. | Difere dos limites históricos 0,97/200 ms ou anteriores; não comparar como se a política fosse idêntica. |
+| Artefatos do run atual | `lighthouse-results`, `bundle-before-after`, `simulation-stress-results`, `match-setup-performance-results` e `graphics-benchmark-bundle` estão listados pelo [endpoint de artefatos](https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42459445389/artifacts). | Os arquivos de métricas do Actions não foram baixados e lidos nesta auditoria; não inferir números atuais dos nomes ou do status verde. Expiração listada: 22/11/2026. |
+| CodSpeed | Estado `neutral`; regressões reportadas de MatchSim setup −3,2% e rig fallback geometry −2,53%. | Investigação independente pendente; não é equivalente a falha do gate crítico. |
+| Pacote visual versionado | As capturas before/after e seis clipes do rig já estão na árvore `before/` e `after/video-samples/`; há imagens mobile finais e captura do Match 3D. | Clipes de aproximadamente 1,5 s mostram movimentos isolados; a captura automática usa backend de software. `physicalDeviceCertification=false`; não há vídeo contínuo de partida nem FPS físico certificado. |
+| Produção e segurança | Nenhum deploy/rollback de produção, teste ativo de segurança, alteração de banco hospedado ou leitura de segredo foi realizado. | DAST continua condicionado a staging isolado, URL específica e autorização explícita. |
+
+Os 28 arquivos de evidência existentes foram copiados para um pacote local entregue separadamente, sem duplicá-los no repositório. A matriz por fase, os itens a não repetir e as próximas ações estão no [adendo de auditoria](audit-2026-11-08.md). O próximo baseline deve ser capturado no novo SHA após esta atualização documental; vincular browser, viewport, backend gráfico, fixture, run e hash dos artefatos.
