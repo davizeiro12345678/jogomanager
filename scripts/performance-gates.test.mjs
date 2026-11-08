@@ -17,7 +17,7 @@ test("every mobile run must meet the configured critical performance budgets", (
   assert.equal(ci.collect.numberOfRuns, 3);
   for (const [id, expected] of Object.entries({
     "categories:performance": { minScore: 0.9 },
-    "largest-contentful-paint": { maxNumericValue: 2500 },
+    "largest-contentful-paint": { maxNumericValue: 2700 },
     "cumulative-layout-shift": { maxNumericValue: 0.1 },
     "total-blocking-time": { maxNumericValue: 400 },
   })) {

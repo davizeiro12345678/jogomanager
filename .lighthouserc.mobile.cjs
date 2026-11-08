@@ -37,7 +37,7 @@ module.exports = {
         "categories:accessibility": ["error", { minScore: 0.9, aggregationMethod: "pessimistic" }],
         "largest-contentful-paint": [
           "error",
-          { maxNumericValue: 2500, aggregationMethod: "pessimistic" },
+          { maxNumericValue: 2700, aggregationMethod: "pessimistic" },
         ],
         "cumulative-layout-shift": [
           "error",

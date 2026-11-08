@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { shouldRetryNoNavStart } from "./trace-mobile-startup-retry.mjs";
+import { MAX_NO_NAVSTART_RETRIES, shouldRetryNoNavStart } from "./trace-mobile-startup-retry.mjs";
 
 // Diagnostic only. Preserve all fifteen raw traces behind the protected
 // mobile fixtures; Quality's independent assertions remain the release gate.
@@ -57,7 +57,7 @@ try {
       let runtimeErrorCode;
       let reportValid = false;
       let attempts = 0;
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt <= MAX_NO_NAVSTART_RETRIES; attempt++) {
         attempts = attempt + 1;
         reportValid = false;
         runtimeErrorCode = undefined;

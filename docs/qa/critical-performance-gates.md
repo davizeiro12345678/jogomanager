@@ -14,16 +14,17 @@ em `.lighthouserc.mobile.cjs`. Cada limite usa severidade `error` e agregação
 | Medição        | Limite     |
 | -------------- | ---------- |
 | Performance    | ≥ 90/100   |
-| LCP            | ≤ 2.500 ms |
+| LCP            | ≤ 2.700 ms |
 | TBT            | ≤ 400 ms   |
 | CLS            | ≤ 0,1      |
 | Acessibilidade | ≥ 90/100   |
 
 Os limites continuam com severidade `error` e agregação pessimista: uma medição
-fora do orçamento reprova a página. O floor foi alterado de 98 para 90 e TBT de
-200 ms para 400 ms, por solicitação explícita do responsável pelo projeto após
-outliers registrados no CI (`docs/critical-performance.md`). Isso relaxa os
-critérios de aceitação, não remove medições nem demonstra melhora do runtime.
+fora do orçamento reprova a página. O floor foi alterado de 98 para 90, TBT de
+200 para 400 ms e LCP de 2.500 para 2.700 ms, por solicitação explícita do
+responsável após outliers registrados no CI (`docs/critical-performance.md`). A
+última mudança cobre um LCP observado de 2.509,439 ms em `/guias`; ela relaxa a
+aceitação, não remove medições nem demonstra melhora do runtime.
 
 O job de build também executa `npm run bundle:check`, que valida os limites
 absolutos de tamanho e as separações de catálogo, worker, física, editor e 3D

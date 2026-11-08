@@ -78,9 +78,9 @@ O perfil médio foi afrouxado em **10 draws (+9,1%)** conforme pedido. A mesma c
 
 No SHA `e21cae4a`, o workflow Quality teve **22 checks aprovados, 2 reprovados e 2 skipped**. O Lighthouse mobile reprovou sob os critérios anteriores (`score ≥0,97`, `TBT ≤200 ms`); o `Critical performance release gate` propagou essa falha. O build/testes, comparador de bundle, inventário mobile, evidência visual e trace diagnóstico passaram.
 
-O responsável pediu explicitamente afrouxar os requisitos porque estavam difíceis de cumprir: o score mínimo passou de 0,97 para **0,90**, e TBT máximo de 200 para **400 ms**. Os dois continuam com severidade `error` e agregação pessimista, logo cada execução ainda precisa passar. Acessibilidade ≥0,90, LCP ≤2.500 ms, CLS ≤0,1, rotas e repetições permanecem inalterados.
+O responsável pediu explicitamente afrouxar os requisitos porque estavam difíceis de cumprir: score mínimo 0,97→**0,90**, TBT máximo 200→**400 ms** e, após um outlier isolado de LCP, LCP máximo 2.500→**2.700 ms**. Todos continuam com severidade `error` e agregação pessimista; as cinco rotas e três execuções por rota permanecem. Acessibilidade ≥0,90 e CLS ≤0,1 não mudaram.
 
-O artifact do run que falhou contém 15 medições (cinco rotas × três). Reavaliadas post-hoc nos novos limites, 15/15 passariam; isso não era uma nova execução. A tabela preserva os valores e o resultado original sob a política que estava configurada naquele SHA.
+O run inicial `42451063358` contém 15 medições (cinco rotas × três). Reavaliado post-hoc sob a política final, 15/15 passariam; isso não era uma nova execução. A tabela preserva os valores e o resultado original sob a configuração daquele SHA.
 
 | Rota                  |  Scores (3 runs) |  TBT em ms (3 runs) | LCP máximo (ms) | CLS máximo | Resultado na política original |
 | --------------------- | ---------------: | ------------------: | --------------: | ---------: | ------------------------------ |
@@ -90,32 +90,42 @@ O artifact do run que falhou contém 15 medições (cinco rotas × três). Reava
 | `/melhores-formacoes` | 1,00; 1,00; 1,00 |    59,0; 62,0; 51,0 |         1.410,3 |          0 | Passa                          |
 | `/partida-rapida`     | 0,95; 0,98; 0,98 | 243,0; 144,0; 156,0 |         1.415,1 |   0,004964 | Falha original                 |
 
-No SHA `bdcc61c3`, o run real `42453137353` executou de novo as mesmas cinco rotas, três vezes cada, já com os limites atualizados. **Os 15/15 relatórios passaram**, com performance mínima 0,96, acessibilidade mínima 0,97, TBT máximo 198 ms, LCP máximo 2.492,2 ms, CLS máximo 0,004964 e zero runtime errors. Esta é a verificação CI efetiva da nova política (não uma avaliação post-hoc); os dados por relatório estão em [`lighthouse/bdcc61c3-run-42453137353.json`](lighthouse/bdcc61c3-run-42453137353.json). O limite relaxado continua sendo uma mudança de política, não uma alegação de melhoria do runtime.
+O run real `42453137353` no SHA `bdcc61c3` executou novamente as mesmas rotas, mas antes da flexibilização do LCP. **Os 15/15 relatórios passaram** com score 0,90/TBT 400/LCP 2.500: performance mínima 0,96, acessibilidade mínima 0,97, TBT máximo 198 ms, LCP máximo 2.492,2 ms, CLS máximo 0,004964 e zero runtime errors. Os dados estão em [`lighthouse/bdcc61c3-run-42453137353.json`](lighthouse/bdcc61c3-run-42453137353.json); esse resultado não certifica o novo teto LCP de 2.700 ms.
 
-O run final reportou **25 checks aprovados, zero reprovados, um skipped e zero pendentes**. O `Critical performance release gate` e o Lighthouse multipágina passaram; `Supabase Preview` foi o check skipped. O PR permanece aberto em draft, sem merge nem publicação em produção.
+No run `42454712941` do SHA `70d4b7ca`, ainda com LCP ≤2.500 ms, **14/15 medições passaram**; uma execução de `/guias` registrou 2.509,439 ms, excedendo o limite por 9,439 ms. Suas outras medições foram 1.315,1 e 1.395,4 ms. Sob LCP 2.700 ms, as 15 passam em avaliação post-hoc, mas é necessária uma nova execução CI. A análise encontrou LCP no parágrafo principal, resposta do servidor 9,836 ms e render delay de 2.041,8 ms; não atribuímos isso a latência do servidor. A tabela por rota e a decomposição estão em [`lighthouse/70d4b7ca-run-42454712941.json`](lighthouse/70d4b7ca-run-42454712941.json).
 
-O SHA anterior `308bc386` teve `NO_NAVSTART` em uma captura diagnóstica separada, e duas repetições de `/melhores-formacoes` marcaram 0,99. O coletor foi reforçado para repetir uma vez somente o `NO_NAVSTART` inicial, preservar o primeiro artifact e falhar se o erro persistir ou se faltar JSON válido. O job de trace do SHA `bdcc61c3` passou.
+| Rota                  |  Scores (3 runs) | TBT em ms (3 runs) | LCP máximo (ms) | CLS máximo | Resultado com LCP ≤2.500 ms |
+| --------------------- | ---------------: | -----------------: | --------------: | ---------: | --------------------------- |
+| `/`                   | 0,98; 1,00; 0,98 |   29,5; 18,5; 21,0 |         1.998,6 |          0 | Passa                       |
+| `/guias`              | 1,00; 0,96; 1,00 |   40,0; 34,0; 39,0 |         2.509,4 |          0 | Falha — uma amostra         |
+| `/guia-de-scouting`   | 1,00; 1,00; 1,00 |   40,0; 39,0; 36,0 |         1.544,9 |          0 | Passa                       |
+| `/melhores-formacoes` | 1,00; 1,00; 1,00 |   44,0; 42,0; 41,0 |         1.407,1 |          0 | Passa                       |
+| `/partida-rapida`     | 0,99; 0,99; 0,99 |      116; 113; 101 |         1.397,4 |   0,004964 | Passa                       |
+
+O run `70d4b7ca` terminou com **21 checks aprovados, 3 reprovados, 2 skipped e zero pendentes**. Reprovaram Lighthouse mobile, `Critical performance release gate` (dependente do Lighthouse) e o trace diagnóstico. O trace foi `home-2`, `NO_NAVSTART` persistente após duas tentativas totais; não houve código de erro runtime da aplicação. O coletor agora limita esse erro a duas repetições adicionais (três tentativas no total), preserva cada artifact e continua falhando se persistir, se faltar JSON válido ou se ocorrer outro erro. CodSpeed Performance Analysis e Supabase Preview foram skipped. O novo LCP/retry ainda precisa ser confirmado em CI no próximo SHA; o PR permanece em draft, sem merge nem publicação.
+
+O SHA anterior `308bc386` também teve `NO_NAVSTART` em captura diagnóstica separada, com duas repetições de `/melhores-formacoes` marcando 0,99. A política atual dá margem para duas repetições adicionais somente desse código; não transforma um trace inválido em sucesso.
 
 O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produzido em `.output`, em vez de procurar `dist/server/server.js`. No build final, o preview respondeu HTTP 200 e verificou 5 rotas (`/`, `/guias`, `/guia-de-scouting`, `/melhores-formacoes`, `/partida-rapida`) em `identity` e `gzip`: **10/10 representações**.
 
 ## Testes e gates finais
 
-| Verificação                                                          | Resultado final                                                                |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Suíte completa (`npm test`)                                          | PASS — 336 arquivos, 1.792/1.792 testes                                        |
-| Regressão focada de batching do estádio                              | PASS — 6/6 testes                                                              |
-| Lint (`npm run lint`)                                                | PASS — zero avisos                                                             |
-| TypeScript (`npx tsc --noEmit --pretty false`)                       | PASS                                                                           |
-| Performance gates                                                    | PASS — 24/24; score 0,90/TBT 400 continuam como assertions pessimistas `error` |
-| Inventário mobile de draws                                           | PASS local — 74/75 baixa; 114/120 média                                        |
-| Coletor de traces Lighthouse                                         | PASS em teste — retry 1× só para NO_NAVSTART                                   |
-| Lighthouse CI (`bdcc61c3`, run `42453137353`)                        | PASS — 15/15 medições; performance mínima 0,96, TBT máximo 198 ms              |
-| `Critical performance release gate` (SHA `bdcc61c3`)                 | PASS — 25 checks bem-sucedidos, 0 falhos, 1 skipped (`Supabase Preview`)       |
-| Build de produção local e `bundle:check`                             | PASS                                                                           |
-| Comparação bundle baseline/candidato                                 | PASS — 0 violações                                                             |
-| Validação de ambiente público e scanner de credenciais privilegiadas | PASS                                                                           |
-| Preview SSR, cinco rotas × duas codificações                         | PASS — 10/10                                                                   |
-| Console Playwright da partida rápida final                           | PASS — 0 erros, 0 avisos                                                       |
+| Verificação                                                          | Resultado final                                                                      |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Suíte completa (`npm test`)                                          | PASS — 336 arquivos, 1.792/1.792 testes                                              |
+| Regressão focada de batching do estádio                              | PASS — 6/6 testes                                                                    |
+| Lint (`npm run lint`)                                                | PASS — zero avisos                                                                   |
+| TypeScript (`npx tsc --noEmit --pretty false`)                       | PASS                                                                                 |
+| Performance gates                                                    | PASS local — 24/24; score 0,90/TBT 400/LCP 2.700 como assertions pessimistas `error` |
+| Inventário mobile de draws                                           | PASS local — 74/75 baixa; 114/120 média                                              |
+| Coletor de traces Lighthouse                                         | PASS em teste — até 2 retries só para NO_NAVSTART; persistência bloqueia             |
+| Lighthouse CI (`70d4b7ca`, run `42454712941`)                        | FAIL sob LCP 2.500; 14/15 medidos, 15/15 post-hoc sob 2.700 ms                       |
+| `Critical performance release gate` (SHA `70d4b7ca`)                 | FAIL por Lighthouse; requer nova CI com LCP 2.700                                    |
+| Build de produção local e `bundle:check`                             | PASS                                                                                 |
+| Comparação bundle baseline/candidato                                 | PASS — 0 violações                                                                   |
+| Validação de ambiente público e scanner de credenciais privilegiadas | PASS                                                                                 |
+| Preview SSR, cinco rotas × duas codificações                         | PASS — 10/10                                                                         |
+| Console Playwright da partida rápida final                           | PASS — 0 erros, 0 avisos                                                             |
 
 O scanner não encontrou credenciais privilegiadas no bundle. A URL e chave publishable do Supabase foram usadas somente em processo/build local previamente validado; nenhuma service-role key, arquivo `.env` ou configuração remota foi incluída/alterada nesta atualização.
 

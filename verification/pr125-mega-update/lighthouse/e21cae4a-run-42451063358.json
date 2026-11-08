@@ -49,7 +49,7 @@
     "thresholds": {
       "performanceScoreMinimum": 0.9,
       "totalBlockingTimeMaximumMs": 400,
-      "largestContentfulPaintMaximumMs": 2500,
+      "largestContentfulPaintMaximumMs": 2700,
       "cumulativeLayoutShiftMaximum": 0.1,
       "accessibilityScoreMinimum": 0.9
     },
@@ -59,7 +59,7 @@
       "reportsPassing": 15,
       "reportsTotal": 15,
       "runtimeErrors": 0,
-      "note": "Re-evaluation applies the new thresholds to measurements collected under the previous configuration; it is not a new Lighthouse run and does not prove runtime improvement."
+      "note": "Re-evaluation applies final owner-approved thresholds (score 0.90, TBT 400 ms, LCP 2700 ms) to measurements collected under the previous configuration; it is not a new Lighthouse run and does not prove runtime improvement."
     }
   },
   "reports": [
