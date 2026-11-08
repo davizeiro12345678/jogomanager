@@ -1,10 +1,16 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   ADDED_LANGS,
   BASE_LANGS,
   LANGS,
   LANG_NAMES,
+  LOCALE_CATALOG,
+  LOCALE_PACKS,
+  TRANSLATION_STATUSES,
   RTL_LANGS,
+  compareLocalePacks,
   languageSearchText,
   resolveLang,
 } from "./locale-catalog";
@@ -23,6 +29,39 @@ describe("98-language product catalogue", () => {
     for (const lang of LANGS) {
       expect(LANG_NAMES[lang].length).toBeGreaterThan(1);
       expect(() => new Intl.Locale(lang)).not.toThrow();
+    }
+  });
+  it("keeps the 98 announced locales explicit about packs, fallback and review status", () => {
+    const realPacks = readdirSync(join(__dirname, "packs"))
+      .filter((file) => file.endsWith(".json"))
+      .map((file) => file.replace(/\.json$/, ""))
+      .sort();
+    const report = compareLocalePacks(realPacks);
+
+    expect(realPacks).toEqual([...LOCALE_PACKS].sort());
+    expect(report.actualPacksNotCatalogued).toEqual([]);
+    expect(report.catalogPacksMissingOnDisk).toEqual([]);
+    expect(report.announcedWithoutPack).toHaveLength(74);
+    expect(report.fallbackLocales).toHaveLength(72);
+    expect(Object.keys(LOCALE_CATALOG).sort()).toEqual([...LANGS].sort());
+    expect(TRANSLATION_STATUSES).toEqual(["draft", "reviewed", "approved"]);
+
+    for (const lang of LANGS) {
+      const entry = LOCALE_CATALOG[lang];
+      expect(entry.locale).toBe(lang);
+      expect(entry.name).toBe(LANG_NAMES[lang]);
+      expect(entry.status).toBeOneOf([...TRANSLATION_STATUSES]);
+      if (entry.source === "fallback") {
+        expect(entry.hasPack).toBe(false);
+        expect(entry.fallbackLocale).toBe("en");
+        expect(entry.translationComplete).toBe(false);
+        expect(entry.status).toBe("draft");
+      }
+      if (entry.source === "pack") {
+        expect(entry.hasPack).toBe(true);
+        expect(entry.translationComplete).toBe(false);
+        expect(entry.status).toBe("draft");
+      }
     }
   });
   it("provides real core messages and every match event for each added language", () => {

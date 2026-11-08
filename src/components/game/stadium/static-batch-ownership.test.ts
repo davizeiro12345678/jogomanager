@@ -57,3 +57,29 @@ it.each([true, false])(
     expect(spy).toHaveBeenCalledTimes(enabled ? 1 : 2);
   },
 );
+
+it("rebuilds without rebatching a source whose transform changes", () => {
+  const root = new THREE.Group();
+  const moving = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+  const fixed = [
+    new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+    new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+  ];
+  root.add(moving, ...fixed);
+  const spy = vi.spyOn(batching, "batchStaticStadium");
+
+  renderToStaticMarkup(createElement(StaticBatch, { children: createElement("group") }));
+  hooks.refs[0]!.current = root;
+  for (let frame = 0; frame < 4; frame++) for (const callback of hooks.frames) callback();
+  expect(spy).toHaveBeenCalledTimes(1);
+  expect(moving.visible).toBe(false);
+
+  moving.position.x = 2;
+  for (const callback of hooks.frames) callback();
+  expect(moving.visible).toBe(true);
+
+  for (let frame = 0; frame < 3; frame++) for (const callback of hooks.frames) callback();
+  expect(spy).toHaveBeenCalledTimes(2);
+  expect(moving.visible).toBe(true);
+  expect(root.children).toContain(moving);
+});

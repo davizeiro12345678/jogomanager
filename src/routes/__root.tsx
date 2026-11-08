@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, lazyRouteComponent } from "@tanstack/react-router";
-import { RootShell, RootComponent } from "@/components/RootLayout";
+import { RootShell } from "@/components/RootLayout";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
 import quickCss from "../public-quick-styles.css?url";
@@ -10,6 +10,8 @@ import tablesCss from "../public-tables-styles.css?url";
 
 import { isLightweightCssPath } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
+
+const RootComponent = lazyRouteComponent(() => import("@/components/RootLayout"), "RootComponent");
 
 function stylesheetForPath(pathname: string) {
   const path = pathname.replace(/\/$/, "") || "/";

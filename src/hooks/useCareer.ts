@@ -22,6 +22,36 @@ import type { CareerState } from "@/game/types";
 export const CAREER_KEY = ["career"] as const;
 
 export type SyncState = "local" | "syncing" | "synced" | "pending" | "offline";
+export type CareerHydrationStatus = "loading" | "empty" | "ready" | "offline" | "error";
+
+type CareerQueryData = {
+  career: CareerState | null;
+  sync: SyncState;
+  hydration?: Exclude<CareerHydrationStatus, "loading">;
+};
+
+type CareerHydrationInput = {
+  userId: string | null | undefined;
+  isPending: boolean;
+  hasError: boolean;
+  data?: (Omit<CareerQueryData, "career"> & { career: unknown }) | undefined;
+};
+
+export function deriveCareerHydrationStatus({
+  userId,
+  isPending,
+  hasError,
+  data,
+}: CareerHydrationInput): CareerHydrationStatus {
+  if (userId === undefined || isPending || (!data && !hasError)) return "loading";
+  if (hasError || data?.hydration === "error") return "error";
+  if (data?.hydration === "offline" || data?.sync === "offline") return "offline";
+  return data?.career ? "ready" : "empty";
+}
+
+export function canMutateCareer(status: CareerHydrationStatus) {
+  return status !== "loading" && status !== "error";
+}
 
 /** Tracks whether a Supabase session exists. `null` while unknown. */
 export function useSignedIn() {
@@ -62,7 +92,7 @@ export function useCareer() {
   const query = useQuery({
     queryKey: [...CAREER_KEY, scope],
     enabled: userId !== undefined,
-    queryFn: async ({ signal }): Promise<{ career: CareerState | null; sync: SyncState }> => {
+    queryFn: async ({ signal }): Promise<CareerQueryData> => {
       const isActive = () => !signal.aborted && isCurrentOwner(owner);
       const local = await loadLocalCareer(owner);
       // Migration is in memory only: rewriting the save here would bump its
@@ -82,7 +112,9 @@ export function useCareer() {
           cloudAt = raw.updatedAt ? Date.parse(raw.updatedAt) : 0;
         }
       } catch {
-        return { career: local ? await repairLocal(local) : null, sync: "offline" };
+        const migrated = local ? await repairLocal(local) : null;
+        if (!isOnline()) return { career: migrated, sync: "offline", hydration: "offline" };
+        return { career: migrated, sync: "local", hydration: "error" };
       }
 
       const localAt = await localSavedAt(owner);
@@ -116,7 +148,18 @@ export function useCareer() {
       return { career: null, sync: "local" };
     },
     staleTime: 30_000,
+    retry: false,
   });
+
+  const hydrationStatus = deriveCareerHydrationStatus({
+    userId,
+    isPending: query.isPending || query.isLoading,
+    hasError: !!query.error,
+    data: query.data,
+  });
+  const canMutate = canMutateCareer(hydrationStatus);
+  const refetch = query.refetch;
+  const retry = useCallback(() => refetch(), [refetch]);
 
   // Clear the previous account's status immediately. Query data is separately
   // keyed, but an old pending label must not appear during the identity switch.
@@ -210,6 +253,7 @@ export function useCareer() {
   const mutate = mutation.mutate;
   const update = useCallback(
     (next: CareerState) => {
+      if (!canMutate) return;
       // An older reconciliation must not replace this optimistic update or
       // enqueue its stale local snapshot after a slow cloud read finishes.
       void qc.cancelQueries({ queryKey: [...CAREER_KEY, scope], exact: true }, { revert: false });
@@ -223,13 +267,17 @@ export function useCareer() {
       qc.setQueryData([...CAREER_KEY, scope], { career: prepared, sync: old?.sync ?? "local" });
       mutate(prepared);
     },
-    [qc, mutate, scope],
+    [canMutate, qc, mutate, scope],
   );
 
   const reset = useCallback(async () => {
+    if (!canMutate) return;
     const resetOwner = owner;
     const resetUser = userId;
+    await qc.cancelQueries({ queryKey: [...CAREER_KEY, scope], exact: true }, { revert: false });
+    if (!isCurrentOwner(resetOwner)) return;
     await clearLocalCareer(resetOwner);
+    if (!isCurrentOwner(resetOwner)) return;
     if (resetUser && isOnline() && isCurrentOwner(resetOwner)) {
       try {
         await wipe({ data: { expectedOwnerId: resetUser } });
@@ -243,11 +291,13 @@ export function useCareer() {
         sync: old?.sync ?? "local",
       }));
     }
-  }, [isCurrentOwner, owner, qc, scope, userId, wipe]);
+  }, [canMutate, isCurrentOwner, owner, qc, scope, userId, wipe]);
 
   return {
     career: (query.data?.career ?? null) as CareerState | null,
-    isLoading: userId === undefined || query.isLoading,
+    isLoading: hydrationStatus === "loading",
+    status: hydrationStatus,
+    retry,
     saving: mutation.isPending,
     signedIn,
     sync,

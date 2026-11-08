@@ -7,13 +7,15 @@ import { MODERATION_MESSAGES, moderateMessage, type ModerationReason } from "./m
 import { INFRACTION_WINDOW_MS, muteUntil } from "./chat-penalties";
 import { notifyUsers, MAX_TOKENS_PER_EVENT } from "./push.server";
 
-const SendMessageInput = z.object({
-  body: z
-    .string()
-    .transform(normalizePublicText)
-    .pipe(z.string().min(1).max(500))
-    .refine(hasVisibleText),
-});
+const SendMessageInput = z
+  .object({
+    body: z
+      .string()
+      .transform(normalizePublicText)
+      .pipe(z.string().min(1).max(500))
+      .refine(hasVisibleText),
+  })
+  .strict();
 
 /** Recent own messages checked by the repeat rule. */
 const REPEAT_LOOKBACK = 3;

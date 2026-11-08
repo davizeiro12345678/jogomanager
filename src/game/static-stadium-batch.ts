@@ -12,13 +12,156 @@ function bucketFor(object: THREE.Object3D): CensusBucket {
   return "static";
 }
 
-export type StaticStadiumBatch = (() => void) & { hideSources: () => void };
+type StaticStadiumPolicy = {
+  bucket?: CensusBucket;
+  shadows?: boolean;
+  exclude?: ReadonlySet<THREE.Mesh>;
+};
+
+function field<T>(material: THREE.Material, name: string): T | undefined {
+  return (material as unknown as Record<string, unknown>)[name] as T | undefined;
+}
+
+function vectorKey(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const toArray = (value as { toArray?: () => unknown[] }).toArray;
+  return typeof toArray === "function" ? toArray.call(value).join(",") : "";
+}
+
+function colorKey(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const color = value as THREE.Color;
+  return typeof color.toArray === "function" ? color.toArray().join(",") : "";
+}
+
+function textureKey(value: unknown): string {
+  const texture = value as THREE.Texture | undefined;
+  if (!texture?.isTexture) return "";
+  return [
+    texture.uuid,
+    texture.version,
+    texture.matrixAutoUpdate,
+    vectorKey(texture.offset),
+    vectorKey(texture.repeat),
+    vectorKey(texture.center),
+    texture.rotation,
+    texture.wrapS,
+    texture.wrapT,
+    texture.flipY,
+    texture.channel,
+    texture.colorSpace,
+  ].join(",");
+}
+
+function materialKey(material: THREE.Material): string {
+  return [
+    material.type,
+    material.version,
+    colorKey(field(material, "emissive")),
+    colorKey(field(material, "sheenColor")),
+    colorKey(field(material, "specularColor")),
+    colorKey(field(material, "attenuationColor")),
+    vectorKey(field(material, "normalScale")),
+    vectorKey(field(material, "clearcoatNormalScale")),
+    textureKey(field(material, "map")),
+    textureKey(field(material, "normalMap")),
+    textureKey(field(material, "roughnessMap")),
+    textureKey(field(material, "metalnessMap")),
+    textureKey(field(material, "alphaMap")),
+    textureKey(field(material, "envMap")),
+    textureKey(field(material, "emissiveMap")),
+    textureKey(field(material, "aoMap")),
+    textureKey(field(material, "lightMap")),
+    textureKey(field(material, "bumpMap")),
+    textureKey(field(material, "displacementMap")),
+    field(material, "roughness"),
+    field(material, "metalness"),
+    field(material, "emissiveIntensity"),
+    field(material, "envMapIntensity"),
+    field(material, "clearcoat"),
+    field(material, "clearcoatRoughness"),
+    field(material, "sheen"),
+    field(material, "specularIntensity"),
+    field(material, "ior"),
+    field(material, "transmission"),
+    field(material, "thickness"),
+    field(material, "attenuationDistance"),
+    field(material, "side"),
+    field(material, "alphaTest"),
+    material.opacity,
+    material.transparent,
+    material.depthWrite,
+    material.depthTest,
+    material.toneMapped,
+    field(material, "fog"),
+    field(material, "vertexColors"),
+    field(material, "wireframe"),
+    field(material, "wireframeLinewidth"),
+    field(material, "dithering"),
+    field(material, "premultipliedAlpha"),
+    field(material, "flatShading"),
+    material.polygonOffset,
+    material.polygonOffsetFactor,
+    material.polygonOffsetUnits,
+  ].join("|");
+}
+
+function materialStateKey(material: THREE.Material): string {
+  return [materialKey(material), colorKey(field(material, "color"))].join("|");
+}
+
+/** Stable render-state signature used to reject a source that moves or changes
+ * its material while the descendants are settling or after they were merged. */
+export function staticStadiumMeshSignature(mesh: THREE.Mesh): string {
+  const material = Array.isArray(mesh.material)
+    ? mesh.material.map((item) => materialStateKey(item)).join("~")
+    : materialStateKey(mesh.material);
+  return [
+    mesh.geometry.uuid,
+    mesh.matrixWorld.elements.join(","),
+    material,
+    mesh.castShadow,
+    mesh.receiveShadow,
+    mesh.renderOrder,
+    mesh.layers.mask,
+    mesh.frustumCulled,
+  ].join("|");
+}
+
+function isBatchableMesh(
+  mesh: THREE.Mesh,
+  group: THREE.Group,
+  policy: StaticStadiumPolicy,
+  orderedAncestor: boolean,
+): mesh is THREE.Mesh & { material: THREE.Material } {
+  const material = mesh.material;
+  return (
+    mesh.isMesh &&
+    !(mesh as THREE.InstancedMesh).isInstancedMesh &&
+    !(mesh as THREE.SkinnedMesh).isSkinnedMesh &&
+    !Array.isArray(material) &&
+    !(material as THREE.ShaderMaterial).isShaderMaterial &&
+    !(material.transparent && material.alphaTest === 0) &&
+    !Object.hasOwn(material, "onBeforeCompile") &&
+    !Object.hasOwn(mesh, "onBeforeRender") &&
+    !Object.hasOwn(mesh, "onAfterRender") &&
+    mesh.userData["staticBatchDynamic"] !== true &&
+    !policy.exclude?.has(mesh) &&
+    !orderedAncestor &&
+    mesh.layers.mask === group.layers.mask
+  );
+}
+
+export type StaticStadiumBatch = (() => void) & {
+  hideSources: () => void;
+  changedSources: () => THREE.Mesh[];
+};
 
 /** Immutable opaque objects only. Cleanup restores the source meshes; their
  * original geometry and materials always remain owned by the renderer. */
 export function batchStaticStadium(
   group: THREE.Group,
-  policy: { bucket?: CensusBucket; shadows?: boolean } = {},
+  policy: StaticStadiumPolicy = {},
 ): StaticStadiumBatch {
   group.updateWorldMatrix(true, true);
   const inverse = group.matrixWorld.clone().invert();
@@ -26,56 +169,20 @@ export function batchStaticStadium(
     string,
     { material: THREE.Material; meshes: THREE.Mesh[]; bucket: CensusBucket }
   >();
-  const visit = (object: THREE.Object3D) => {
-    if (!object.visible || object.userData["cinematicDynamic"] === true) return;
-    const mesh = object as THREE.Mesh;
+  const visit = (object: THREE.Object3D, orderedAncestor = false) => {
     if (
-      mesh.isMesh &&
-      !(mesh as THREE.InstancedMesh).isInstancedMesh &&
-      !(mesh as THREE.SkinnedMesh).isSkinnedMesh &&
-      !Array.isArray(mesh.material) &&
-      !(mesh.material as THREE.ShaderMaterial).isShaderMaterial &&
-      !(mesh.material.transparent && mesh.material.alphaTest === 0) &&
-      !Object.hasOwn(mesh.material, "onBeforeCompile")
-    ) {
-      const material = mesh.material as THREE.MeshPhysicalMaterial;
+      !object.visible ||
+      object.userData["cinematicDynamic"] === true ||
+      object.userData["staticBatchDynamic"] === true
+    )
+      return;
+    const ordered = orderedAncestor || object.renderOrder !== 0;
+    const mesh = object as THREE.Mesh;
+    if (isBatchableMesh(mesh, group, policy, ordered)) {
+      const material = mesh.material;
       const bucket = policy.bucket ?? bucketFor(mesh);
       const key = [
-        material.type,
-        material.map?.uuid,
-        material.normalMap?.uuid,
-        material.roughnessMap?.uuid,
-        material.metalnessMap?.uuid,
-        material.alphaMap?.uuid,
-        material.envMap?.uuid,
-        material.emissiveMap?.uuid,
-        material.aoMap?.uuid,
-        material.lightMap?.uuid,
-        material.bumpMap?.uuid,
-        material.displacementMap?.uuid,
-        material.normalScale?.toArray().join(","),
-        material.roughness,
-        material.metalness,
-        material.emissive?.getHexString(),
-        material.emissiveIntensity,
-        material.envMapIntensity,
-        material.clearcoat,
-        material.clearcoatRoughness,
-        material.sheen,
-        material.sheenColor?.getHexString(),
-        material.specularIntensity,
-        material.specularColor?.getHexString(),
-        material.side,
-        material.alphaTest,
-        material.opacity,
-        material.depthWrite,
-        material.depthTest,
-        material.toneMapped,
-        material.fog,
-        material.flatShading,
-        material.polygonOffset,
-        material.polygonOffsetFactor,
-        material.polygonOffsetUnits,
+        materialKey(material),
         policy.shadows !== false && mesh.castShadow,
         policy.shadows !== false && mesh.receiveShadow,
         bucket,
@@ -84,7 +191,7 @@ export function batchStaticStadium(
       if (batch) batch.meshes.push(mesh);
       else batches.set(key, { material, meshes: [mesh], bucket });
     }
-    for (const child of object.children) visit(child);
+    for (const child of object.children) visit(child, ordered);
   };
   visit(group);
   const created: THREE.Mesh[] = [];
@@ -131,7 +238,13 @@ export function batchStaticStadium(
     batches: created.length,
     eligible: Array.from(batches.values()).reduce((total, batch) => total + batch.meshes.length, 0),
   };
+  const sourceSignatures = new Map<THREE.Mesh, string>(
+    hidden.map((mesh) => [mesh, staticStadiumMeshSignature(mesh)]),
+  );
+  let disposed = false;
   const dispose = () => {
+    if (disposed) return;
+    disposed = true;
     delete group.userData["staticBatch"];
     hidden.forEach((mesh) => {
       mesh.visible = true;
@@ -145,7 +258,15 @@ export function batchStaticStadium(
   // React can reapply `visible` while reconciling the source tree. Keep only
   // the merged sources hidden; animated and unbatched children retain control.
   return Object.assign(dispose, {
+    changedSources: () => {
+      if (disposed) return [];
+      group.updateWorldMatrix(true, true);
+      return hidden.filter(
+        (mesh) => staticStadiumMeshSignature(mesh) !== sourceSignatures.get(mesh),
+      );
+    },
     hideSources: () => {
+      if (disposed) return;
       for (const mesh of hidden) mesh.visible = false;
     },
   });

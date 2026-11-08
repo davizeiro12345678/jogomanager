@@ -45,6 +45,12 @@ import { cinematicSetFor } from "@/game/cinematic-set";
 import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
 import { CutsceneDialogue } from "./CutsceneDialogue";
 import { GraphicsBoundary } from "../GraphicsBoundary";
+import {
+  cutsceneMatteStyle,
+  createCutsceneTransitionController,
+  CUTSCENE_TRANSITION_TIMING,
+  type CutsceneTransitionSnapshot,
+} from "./cutscene-transition";
 import { Button } from "@/components/ui/button";
 import { audioBlobUrl } from "@/game/audio-cache";
 import {
@@ -101,6 +107,8 @@ interface Props {
   startPaused?: boolean;
 }
 
+type CutsceneMode = "3d" | "2d";
+
 // Load the SVG scene in a separate chunk. The 3D canvas and its controls do
 // not need to parse the many SVG illustrations at startup.
 const Backdrop = lazy(() =>
@@ -150,7 +158,7 @@ export function CutsceneStage({
   const [branchReaction, setBranchReaction] = useState<CutsceneChoiceReaction | undefined>();
   const [branchLines, setBranchLines] = useState<readonly CutsceneLine[]>([]);
   const chosenRef = useRef<number | null>(null);
-  const [mode, setMode] = useState<"3d" | "2d">(cinematic ? "3d" : "2d");
+  const [mode, setMode] = useState<CutsceneMode>(cinematic ? "3d" : "2d");
   const [paused, setPaused] = useState(startPaused);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
@@ -160,8 +168,22 @@ export function CutsceneStage({
   const [mountStage, setMountStage] = useState(false);
   const [stageLoadError, setStageLoadError] = useState<unknown>(null);
   const [stageAttempt, setStageAttempt] = useState(0);
+  const stageKey = `${mode}:${data?.id ?? scene}:${stageAttempt}`;
+  const stageIdentityRef = useRef({ key: stageKey, generation: 0 });
+  if (stageIdentityRef.current.key !== stageKey) {
+    stageIdentityRef.current = {
+      key: stageKey,
+      generation: stageIdentityRef.current.generation + 1,
+    };
+  }
+  const stageIdentity = `${stageKey}:${stageIdentityRef.current.generation}`;
   const sceneStartedAt = useRef(0);
-  const onStageReady = useCallback(() => {
+  const onStageReady = useCallback((identity?: string) => {
+    if (
+      identity &&
+      identity !== `${stageIdentityRef.current.key}:${stageIdentityRef.current.generation}`
+    )
+      return;
     if (dialogRef.current) {
       dialogRef.current.dataset["sceneLoadMs"] = (
         performance.now() - sceneStartedAt.current
@@ -172,13 +194,23 @@ export function CutsceneStage({
     }
     setStageReady(true);
   }, []);
-  const onStageVisible = useCallback(() => {
+  const onStageVisible = useCallback((identity?: string) => {
+    if (
+      identity &&
+      identity !== `${stageIdentityRef.current.key}:${stageIdentityRef.current.generation}`
+    )
+      return;
     if (dialogRef.current && !dialogRef.current.dataset["sceneVisibleMs"])
       dialogRef.current.dataset["sceneVisibleMs"] = (
         performance.now() - sceneStartedAt.current
       ).toFixed(1);
   }, []);
-  const onUnavailable = useCallback(() => {
+  const onUnavailable = useCallback((identity?: string) => {
+    if (
+      identity &&
+      identity !== `${stageIdentityRef.current.key}:${stageIdentityRef.current.generation}`
+    )
+      return;
     setStageLoadError(null);
     setMode("2d");
   }, []);
@@ -253,6 +285,76 @@ export function CutsceneStage({
   const [typed, setTyped] = useState(0);
   const [systemReduced, setSystemReduced] = useState(() => prefersReducedMotion());
   const reduced = reduceMotion || systemReduced;
+  const presentationScene = data?.id ?? scene;
+  const transitionTargetRef = useRef<{
+    scene: string;
+    beat: number;
+    mode: CutsceneMode;
+  }>({ scene: presentationScene, beat: i, mode });
+  const transitionControllerRef = useRef<ReturnType<
+    typeof createCutsceneTransitionController
+  > | null>(null);
+  if (transitionControllerRef.current === null)
+    transitionControllerRef.current = createCutsceneTransitionController();
+  const transitionController = transitionControllerRef.current;
+  const transitionTimerRef = useRef<number | null>(null);
+  const [transition, setTransition] = useState<CutsceneTransitionSnapshot>({
+    generation: 0,
+    phase: "stable",
+    opacity: 0,
+    durationMs: 0,
+  });
+  const clearTransitionTimer = useCallback(() => {
+    if (transitionTimerRef.current !== null) {
+      window.clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+  }, []);
+  useEffect(() => {
+    const target = { scene: presentationScene, beat: i, mode };
+    const previous = transitionTargetRef.current;
+    const changed =
+      previous.scene !== target.scene ||
+      previous.beat !== target.beat ||
+      previous.mode !== target.mode;
+    if (!changed) {
+      if (reduced) {
+        clearTransitionTimer();
+        setTransition(transitionController.start(true));
+      }
+      return;
+    }
+
+    transitionTargetRef.current = target;
+    clearTransitionTimer();
+    const started = transitionController.start(reduced);
+    setTransition(started);
+    if (started.phase === "stable") return;
+
+    const generation = started.generation;
+    transitionTimerRef.current = window.setTimeout(() => {
+      transitionTimerRef.current = null;
+      const fadingIn = transitionController.advance(generation, "fading-in");
+      if (!fadingIn) return;
+      setTransition(fadingIn);
+      transitionTimerRef.current = window.setTimeout(() => {
+        transitionTimerRef.current = null;
+        const settled = transitionController.advance(generation, "stable");
+        if (settled) setTransition(settled);
+      }, CUTSCENE_TRANSITION_TIMING.fadeInMs);
+    }, CUTSCENE_TRANSITION_TIMING.fadeOutMs);
+
+    return () => {
+      clearTransitionTimer();
+      transitionController.cancel(generation);
+    };
+  }, [clearTransitionTimer, i, mode, presentationScene, reduced, transitionController]);
+  const transitionPending =
+    transitionTargetRef.current.scene !== presentationScene ||
+    transitionTargetRef.current.beat !== i ||
+    transitionTargetRef.current.mode !== mode;
+  const mattePhase = transitionPending && !reduced ? "fading-out" : transition.phase;
+  const matteStyle = cutsceneMatteStyle(mattePhase, reduced, transitionPending);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
   const stageRef = useRef<HTMLDivElement>(null);
@@ -730,6 +832,7 @@ export function CutsceneStage({
       data-scene-mode={mode}
       data-scene-paused={paused || hidden}
       data-scene-reduced={reduced}
+      data-scene-transition={mattePhase}
       data-scene-loading={mode === "3d" && !stageReady}
       data-scene-art={data.art}
       data-scene-mood={lineMood}
@@ -763,7 +866,11 @@ export function CutsceneStage({
         {mode === "3d" && !stageLoadError && mountStage ? (
           <GraphicsBoundary
             fallback={
-              <button type="button" onClick={onUnavailable} className="cutscene-loading z-10">
+              <button
+                type="button"
+                onClick={() => onUnavailable(stageIdentity)}
+                className="cutscene-loading z-10"
+              >
                 A cena 3D não carregou. Abrir cena ilustrada.
               </button>
             }
@@ -794,9 +901,9 @@ export function CutsceneStage({
                 reduced={reduced}
                 look={look}
                 cast={cast}
-                onUnavailable={onUnavailable}
-                onVisible={onStageVisible}
-                onReady={onStageReady}
+                onUnavailable={() => onUnavailable(stageIdentity)}
+                onVisible={() => onStageVisible(stageIdentity)}
+                onReady={() => onStageReady(stageIdentity)}
                 qualityMode={renderQuality}
                 manner={manner}
                 previewTime={previewTime}
@@ -813,7 +920,7 @@ export function CutsceneStage({
           </p>
         ) : null}
       </div>
-      <div className="cutscene-matte" aria-hidden="true" />
+      <div className="cutscene-matte" style={matteStyle} aria-hidden="true" />
       {stageReady && i === 0 && (
         <div className="cutscene-slate" aria-hidden="true">
           <span>{club?.short ?? "Futebol. Bastidores. História."}</span>

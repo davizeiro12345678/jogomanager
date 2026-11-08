@@ -15,7 +15,7 @@ import {
 } from "./competition-season";
 import { calendarYear } from "./competition-regulations";
 import { developedPlayer, evolveSeason, evolveSeasonV2, withDevelopmentBase } from "./attributes";
-import { addMoney } from "./financial-inputs";
+import { settleSeasonPrize } from "./finance-forecast";
 import { computeTable, generateFixtures } from "./season";
 import type { CareerState, NewsItem, Player } from "./types";
 import { pickLineup } from "./career";
@@ -39,6 +39,7 @@ export function endSeason(state: CareerState): CareerState {
   const league = getLeague(state.leagueId);
 
   const prize = seasonPrize(position, club.strength);
+  const prizeSettlement = settleSeasonPrize(state, prize);
   const metObjective = position <= state.objective;
   const approval = Math.max(
     5,
@@ -243,10 +244,13 @@ export function endSeason(state: CareerState): CareerState {
     results: [],
     cups: [],
     finances: {
-      budget: addMoney(state.finances.budget, prize),
+      budget: prizeSettlement.state.finances.budget,
       spent: 0,
       income: 0,
     },
+    ...(prizeSettlement.state.financeLedger
+      ? { financeLedger: prizeSettlement.state.financeLedger }
+      : {}),
     approval,
     trophies:
       championId === state.clubId

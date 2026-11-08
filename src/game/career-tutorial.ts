@@ -2,7 +2,7 @@
 import type { CareerState } from "./types";
 import { firstMatchPlayed } from "./onboarding";
 
-export function practicedCareerLessons(
+export function verifiedCareerLessons(
   career: Pick<
     CareerState,
     | "lineup"
@@ -36,12 +36,25 @@ export function practicedCareerLessons(
   return lessons;
 }
 
+/** @deprecated Use verifiedCareerLessons; kept for callers compiled against the legacy API. */
+export const practicedCareerLessons = verifiedCareerLessons;
+
 export interface TutorialLesson {
   id: string;
   title: string;
   instruction: string;
   exercise?: string;
   to: string;
+}
+
+export interface TutorialProgress {
+  completed: number;
+  total: number;
+  next: TutorialLesson | null;
+  /** Local guidance marks; these are never evidence of a career action. */
+  reviewed: Set<string>;
+  /** Career records produced by persisted game actions. */
+  verified: Set<string>;
 }
 
 export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] = [
@@ -218,13 +231,21 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
   },
 ];
 
-export function tutorialProgress(learned: ReadonlySet<string>) {
+export function tutorialProgress(
+  reviewed: ReadonlySet<string>,
+  verified: ReadonlySet<string> = new Set(),
+): TutorialProgress {
   const lessons = TUTORIAL_CHAPTERS.flatMap((chapter) => chapter.lessons);
-  const completed = lessons.filter((lesson) => learned.has(lesson.id)).length;
+  const lessonIds = new Set(lessons.map((lesson) => lesson.id));
+  const reviewedIds = new Set([...reviewed].filter((id) => lessonIds.has(id)));
+  const verifiedIds = new Set([...verified].filter((id) => lessonIds.has(id)));
+  const completedIds = new Set([...reviewedIds, ...verifiedIds]);
   return {
-    completed,
+    completed: completedIds.size,
     total: lessons.length,
-    next: lessons.find((lesson) => !learned.has(lesson.id)) ?? null,
+    next: lessons.find((lesson) => !completedIds.has(lesson.id)) ?? null,
+    reviewed: reviewedIds,
+    verified: verifiedIds,
   };
 }
 

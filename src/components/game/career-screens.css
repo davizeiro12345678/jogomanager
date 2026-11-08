@@ -229,15 +229,6 @@
     background: transparent;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .trainer-live-dot {
-    animation: none;
-  }
-  .career-primary-button:hover,
-  .trainer-task:hover {
-    transform: none;
-  }
-}
 /* Programmatically focused headings (route change) should not show a ring box. */
 .career-shell :is(h1, h2)[tabindex="-1"]:focus:not(:focus-visible) {
   outline: none;
@@ -253,8 +244,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.career-content :is(h1, h2):focus:not(:focus-visible),
-.career-content h1:focus:not(:focus-visible) {
+.career-content :is(h1, h2):focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }
@@ -431,14 +421,17 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .screen-tabs *,
-  .game-section,
-  .screen-empty,
-  .screen-table-wrap *,
-  .career-shell :is(button, a, input, select, textarea) {
-    animation: none !important;
-    transition: none !important;
+  .career-shell *,
+  .career-shell *::before,
+  .career-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .career-primary-button:hover,
+  .trainer-task:hover {
+    transform: none;
   }
 }
 
@@ -501,4 +494,15 @@ html[data-text-size="xlarge"] .career-content {
 [dir="rtl"] .career-sidebar {
   border-inline-end: 1px solid var(--border);
   border-left: 0;
+}
+
+@media (forced-colors: active) {
+  .career-shell :is(button, a, summary, input, select, textarea):focus-visible,
+  .screen-table-wrap:focus-visible {
+    outline-color: Highlight;
+  }
+  .career-shell :is([aria-current="page"], [aria-selected="true"], [aria-pressed="true"]) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }

@@ -166,27 +166,38 @@
   position: sticky;
   top: 20px;
   border: 1px solid #acc5a825;
-  background: #15251a;
+  background: linear-gradient(180deg, #1a2e20 0%, #121f17 100%);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow:
+    0 24px 60px -30px #000000cc,
+    inset 0 1px 0 #ffffff0d;
 }
 .career-portrait {
-  min-height: 215px;
+  min-height: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
+  border-bottom: 1px solid #b5ec7022;
   background:
     radial-gradient(ellipse at 50% 40%, #56733a55, transparent 72%),
     repeating-linear-gradient(45deg, #a5ca7205 0 1px, transparent 1px 12px);
 }
+.career-portrait svg {
+  filter: drop-shadow(0 14px 22px #000000aa);
+}
 .career-portrait > span {
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 0.3em;
   color: #9bb783;
   position: absolute;
   bottom: 17px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #0b140e99;
+  border: 1px solid #b5ec7033;
 }
 .career-identity-copy {
   padding: 23px;
@@ -194,7 +205,7 @@
 }
 .career-identity h2 {
   font-family: var(--font-display);
-  font-size: 23px;
+  font-size: 28px;
   line-height: 1.2;
   overflow-wrap: anywhere;
   margin: 7px 0 10px;
@@ -211,7 +222,12 @@
   display: inline-block;
   font-size: 11px;
   margin-top: 16px;
-  color: #c2d6b8;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #b5ec7014;
+  border: 1px solid #b5ec7033;
+  color: var(--career-accent);
+  font-weight: 600;
 }
 .career-stars {
   display: flex;
@@ -219,6 +235,10 @@
   gap: 5px;
   color: #d3d08b;
   margin: 12px 0 15px;
+}
+.career-stars svg {
+  width: 20px;
+  height: 20px;
 }
 .career-reputation-note {
   padding-top: 15px;
@@ -242,7 +262,7 @@
   letter-spacing: -0.025em;
   margin: 10px 0;
 }
-.career-step-heading h2:focus {
+.career-step-heading h2:focus-visible {
   width: fit-content;
   max-width: 100%;
   outline: 2px solid var(--career-accent);
@@ -854,45 +874,14 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .career-create * {
-    animation: none !important;
-    transition: none !important;
+  .career-create *,
+  .career-create *::before,
+  .career-create *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-}
-
-/* Coach card polish: broadcast-style identity plate with depth and clearer hierarchy. */
-.career-identity {
-  background: linear-gradient(180deg, #1a2e20 0%, #121f17 100%);
-  box-shadow: 0 24px 60px -30px #000000cc, inset 0 1px 0 #ffffff0d;
-}
-.career-portrait {
-  min-height: 240px;
-  border-bottom: 1px solid #b5ec7022;
-}
-.career-portrait svg {
-  filter: drop-shadow(0 14px 22px #000000aa);
-}
-.career-portrait > span {
-  font-size: 9px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #0b140e99;
-  border: 1px solid #b5ec7033;
-}
-.career-identity h2 {
-  font-size: 28px;
-}
-.career-personality {
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: #b5ec7014;
-  border: 1px solid #b5ec7033;
-  color: var(--career-accent);
-  font-weight: 600;
-}
-.career-stars svg {
-  width: 20px;
-  height: 20px;
 }
 @media (max-width: 640px) {
   .career-steps li {
@@ -934,5 +923,23 @@
   }
   .career-identity h2 {
     font-size: 22px;
+  }
+}
+
+@media (forced-colors: active) {
+  .career-create :is(button, a, input, select):focus-visible,
+  .career-search:focus-within {
+    outline-color: Highlight;
+  }
+  .career-create
+    :is(
+      .career-steps button[aria-current="step"],
+      .career-chip[aria-pressed="true"],
+      .career-color[aria-pressed="true"],
+      .career-personality-grid button[aria-pressed="true"],
+      .career-club[aria-pressed="true"]
+    ) {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 }

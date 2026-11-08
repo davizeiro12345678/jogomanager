@@ -23,3 +23,12 @@ test("rejects public SSR pages that depend on hydration for their critical CSS",
 test("accepts an explicit critical stylesheet before client hydration", async () => {
   await preview('<link href="/assets/public-styles-fixture.css" rel="stylesheet">', verify);
 });
+
+test("default preview uses the local Nitro Worker output", () => {
+  const { scripts } = require("../package.json");
+  assert.equal(scripts.preview, "npm run preview:worker --");
+  assert.match(
+    scripts["preview:worker"],
+    /wrangler dev --config \.output\/server\/wrangler\.json --local/,
+  );
+});

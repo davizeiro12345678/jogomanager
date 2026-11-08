@@ -15,14 +15,32 @@ import { buildSquad } from "./squad";
 import type { CareerState } from "./types";
 import { pickLineup, withCustomPlayers, withRealPlayers, defaultV3 } from "./career";
 
+type TimedOffer = { season: number; round: number; expiresRound: number };
+
+function isOfferActive(state: CareerState, offer: TimedOffer): boolean {
+  return (
+    offer.season === state.season &&
+    Number.isFinite(offer.round) &&
+    Number.isFinite(offer.expiresRound) &&
+    offer.round <= state.round &&
+    state.round <= offer.expiresRound
+  );
+}
+
+function isOfferExpired(state: CareerState, offer: TimedOffer): boolean {
+  return (
+    offer.season < state.season ||
+    (offer.season === state.season && offer.expiresRound < state.round)
+  );
+}
+
 /** Aceita uma proposta por um dos seus jogadores. */
 export function acceptOffer(state: CareerState, offerId: string): CareerState {
-  if (!validFinancialState(state)) return state;
+  if (state.sacked || !validFinancialState(state)) return state;
   const offer = (state.offers ?? []).find((o) => o.id === offerId);
   if (
     !offer ||
-    offer.season !== state.season ||
-    offer.expiresRound < state.round ||
+    !isOfferActive(state, offer) ||
     !finiteAmount(offer.amount) ||
     !CLUBS[offer.clubId] ||
     offer.clubId === state.clubId
@@ -74,9 +92,15 @@ export function acceptOffer(state: CareerState, offerId: string): CareerState {
 
 export function rejectOffer(state: CareerState, offerId: string): CareerState {
   const offer = (state.offers ?? []).find((o) => o.id === offerId);
+  if (state.sacked || !offer) return state;
+  if (!isOfferActive(state, offer)) {
+    return isOfferExpired(state, offer)
+      ? { ...state, offers: (state.offers ?? []).filter((o) => o.id !== offerId) }
+      : state;
+  }
   const rejected = new Set(state.rejectedOffers ?? []);
   // recusar a saída magoa: o jogador entra na lista de insatisfeitos
-  if (offer && !rejected.has(offer.playerId)) {
+  if (!rejected.has(offer.playerId)) {
     const p = state.players[offer.playerId];
     if (p && p.ovr >= 74) {
       rejected.add(offer.playerId);
@@ -97,13 +121,7 @@ export function rejectOffer(state: CareerState, offerId: string): CareerState {
 /** Assume um novo clube (após demissão, pedido de demissão ou convite). */
 export function takeJob(state: CareerState, jobId: string): CareerState {
   const job = (state.jobOffers ?? []).find((j) => j.id === jobId);
-  if (
-    !job ||
-    job.season !== state.season ||
-    job.expiresRound < state.round ||
-    !finiteAmount(job.budget)
-  )
-    return state;
+  if (!job || !isOfferActive(state, job) || !finiteAmount(job.budget)) return state;
   const club = CLUBS[job.clubId];
   const leagueId =
     Object.entries(state.leagueClubs ?? {}).find(([, ids]) => ids.includes(job.clubId))?.[0] ??
@@ -171,25 +189,37 @@ export function takeJob(state: CareerState, jobId: string): CareerState {
 
 /** Pede demissão: fica sem clube e recebe convites. */
 export function resign(state: CareerState): CareerState {
+  if (state.sacked) return state;
   const rnd = makeRng(`resign-${state.clubId}-${state.season}-${state.round}`);
-  const offers = state.jobOffers?.length ? state.jobOffers : [];
-  return {
-    ...state,
-    sacked: true,
-    jobOffers: offers.length
-      ? offers
-      : [
+  const offers = (state.jobOffers ?? []).filter(
+    (job) =>
+      isOfferActive(state, job) &&
+      finiteAmount(job.budget) &&
+      Boolean(CLUBS[job.clubId]) &&
+      job.clubId !== state.clubId,
+  );
+  const jobOffers = offers.length
+    ? offers
+    : (() => {
+        const clubId = pickRandomClubId(rnd, state.clubId);
+        return [
           {
             id: `job-open-${state.season}-${state.round}`,
-            clubId: pickRandomClubId(rnd, state.clubId),
-            leagueId: state.leagueId,
+            clubId,
+            leagueId: CLUBS[clubId]?.league ?? state.leagueId,
             season: state.season,
             round: state.round,
             expiresRound: state.round + 99,
             budget: 20,
             objective: 10,
           },
-        ],
+        ];
+      })();
+  return {
+    ...state,
+    sacked: true,
+    offers: [],
+    jobOffers,
     managerHistory: closeSpell(state, "Pediu demissão"),
     news: [
       {

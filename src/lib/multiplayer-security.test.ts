@@ -82,4 +82,22 @@ describe("server-managed multiplayer results", () => {
     );
     expect(leave).toContain('room.status === "settling"');
   });
+
+  it("checks the leave CAS row before deleting the private seed", () => {
+    const leave = functionsSource.slice(
+      functionsSource.indexOf("export const leaveMatchRoom"),
+      functionsSource.indexOf("export const finishMatchRoom"),
+    );
+    const update = leave.indexOf('.update({ status: "done"');
+    const affectedRowRead = leave.indexOf('.select("id")', update);
+    const affectedRowGuard = leave.indexOf("if (!updatedRoom)");
+    const secretDelete = leave.indexOf('.from("match_room_secrets").delete');
+
+    expect(update).toBeGreaterThanOrEqual(0);
+    expect(leave).toContain("const { data: updatedRoom, error }");
+    expect(affectedRowRead).toBeGreaterThan(update);
+    expect(leave.indexOf(".maybeSingle()", affectedRowRead)).toBeGreaterThan(affectedRowRead);
+    expect(affectedRowGuard).toBeGreaterThan(affectedRowRead);
+    expect(secretDelete).toBeGreaterThan(affectedRowGuard);
+  });
 });

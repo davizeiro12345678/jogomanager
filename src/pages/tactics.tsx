@@ -11,6 +11,7 @@ import { FORMATIONS, MENTALITIES, PRESSING, TEMPOS, WIDTHS } from "@/game/format
 import { pickLineup } from "@/game/career-lineup";
 
 import { useCareer } from "@/hooks/useCareer";
+import { tacticsSyncMessage } from "./tactics-sync";
 
 import type { FormationKey, Player, Tactics } from "@/game/types";
 
@@ -55,7 +56,7 @@ function fit(player: Player, slotPos: string) {
 }
 
 export function TacticsPage() {
-  const { career, update } = useCareer();
+  const { career, update, saving, sync } = useCareer();
   const [picked, setPicked] = useState<number | null>(null);
   useMarkOnboardingVisit(career?.clubId, "tactics");
 
@@ -144,6 +145,14 @@ export function TacticsPage() {
           <ScreenHeader title="Plano de jogo" />
           <p className="hud-num mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             Arraste um jogador sobre outro para trocar — no celular, toque nos dois.
+          </p>
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="mt-2 text-xs text-muted-foreground"
+          >
+            {tacticsSyncMessage(sync, saving)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-4">

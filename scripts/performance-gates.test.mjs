@@ -28,6 +28,16 @@ test("every mobile run must meet the configured critical performance budgets", (
   }
 });
 
+test("root SSR shell keeps RootComponent outside the initial static import", () => {
+  const source = readFileSync(path.join(root, "src/routes/__root.tsx"), "utf8");
+  assert.match(source, /import \{ RootShell \} from ["']@\/components\/RootLayout["']/);
+  assert.doesNotMatch(source, /import \{ RootShell, RootComponent \} from/);
+  assert.match(
+    source,
+    /const RootComponent = lazyRouteComponent\(\s*\(\) => import\(["']@\/components\/RootLayout["']\),\s*["']RootComponent["']\s*,?\s*\)/s,
+  );
+});
+
 const surfaces = [
   { name: "index-home.js", surface: "home" },
   { name: "new-career.js", surface: "new" },

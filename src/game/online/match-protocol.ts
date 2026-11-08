@@ -233,9 +233,66 @@ export const MatchSnapshotV1Schema = z
     publicState: MatchPublicStateV1Schema,
     presentationEvents: z.array(PresentationEventV1Schema).max(64),
   })
-  .strict();
+  .strict()
+  .superRefine((snapshot, context) => {
+    const eventIds = new Set<string>();
+
+    snapshot.presentationEvents.forEach((event, index) => {
+      if (eventIds.has(event.id)) {
+        context.addIssue({
+          code: "custom",
+          message: "presentation event ids must be unique within a snapshot",
+          path: ["presentationEvents", index, "id"],
+        });
+      }
+      eventIds.add(event.id);
+
+      if (event.tick > snapshot.tick) {
+        context.addIssue({
+          code: "custom",
+          message: "presentation event tick cannot be ahead of the snapshot tick",
+          path: ["presentationEvents", index, "tick"],
+        });
+      }
+    });
+  });
 
 export type MatchSnapshotV1 = z.infer<typeof MatchSnapshotV1Schema>;
+
+type MatchSnapshotProgressionV1 = Pick<
+  MatchSnapshotV1,
+  "version" | "roomId" | "tick" | "revision" | "phase"
+>;
+
+export function assertMatchCommandSequenceV1(
+  command: Pick<MatchCommandV1, "sequence">,
+  previousSequence: number,
+): void {
+  if (!Number.isSafeInteger(previousSequence) || previousSequence < 0) {
+    throw new Error("previous command sequence must be a non-negative safe integer");
+  }
+  if (command.sequence <= previousSequence) {
+    throw new Error("match command sequence must be strictly monotonic; replay rejected");
+  }
+}
+
+export function assertMatchSnapshotProgressionV1(
+  previous: MatchSnapshotProgressionV1,
+  current: MatchSnapshotProgressionV1,
+): void {
+  if (previous.version !== current.version || previous.roomId !== current.roomId) {
+    throw new Error("match snapshots must belong to the same protocol version and room");
+  }
+  if (current.revision < previous.revision) {
+    throw new Error("stale match snapshot revision rejected");
+  }
+  if (current.tick < previous.tick) {
+    throw new Error("stale match snapshot tick rejected");
+  }
+  if (previous.phase === "finalized" && current.phase !== "finalized") {
+    throw new Error("finalized match snapshot cannot regress to an active phase");
+  }
+}
 
 const MatchResultSchema = z
   .object({
@@ -290,12 +347,23 @@ export function assertCurrentTicket(ticket: MatchTicketV1, now: number): MatchTi
   return ticket;
 }
 
-export function parseMatchCommandV1(input: unknown): MatchCommandV1 {
-  return MatchCommandV1Schema.parse(input);
+export function parseMatchCommandV1(input: unknown, previousSequence?: number): MatchCommandV1 {
+  const command = MatchCommandV1Schema.parse(input);
+  if (previousSequence !== undefined) {
+    assertMatchCommandSequenceV1(command, previousSequence);
+  }
+  return command;
 }
 
-export function parseMatchSnapshotV1(input: unknown): MatchSnapshotV1 {
-  return MatchSnapshotV1Schema.parse(input);
+export function parseMatchSnapshotV1(
+  input: unknown,
+  previousSnapshot?: MatchSnapshotProgressionV1,
+): MatchSnapshotV1 {
+  const snapshot = MatchSnapshotV1Schema.parse(input);
+  if (previousSnapshot !== undefined) {
+    assertMatchSnapshotProgressionV1(previousSnapshot, snapshot);
+  }
+  return snapshot;
 }
 
 export function parseMatchReceiptV1(input: unknown): MatchReceiptV1 {

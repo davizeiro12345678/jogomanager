@@ -6,8 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import {
   TUTORIAL_CHAPTERS,
   parseTutorialLessons,
-  practicedCareerLessons,
   tutorialProgress,
+  verifiedCareerLessons,
 } from "@/game/career-tutorial";
 import type { CareerState } from "@/game/types";
 import "./career-tutorial.css";
@@ -26,27 +26,28 @@ export default function CareerTutorialDialog({
   career: CareerState;
 }) {
   const [onlyPending, setOnlyPending] = useState(false);
-  const [learned, setLearned] = useState<Set<string>>(() => new Set());
+  const [reviewed, setReviewed] = useState<Set<string>>(() => new Set());
   const storageKey = `jm.tutorial:${careerKey}`;
   useEffect(() => {
     try {
-      setLearned(parseTutorialLessons(JSON.parse(localStorage.getItem(storageKey) ?? "[]")));
+      // Legacy arrays contain local review marks, never verified career evidence.
+      setReviewed(parseTutorialLessons(JSON.parse(localStorage.getItem(storageKey) ?? "[]")));
     } catch {
-      setLearned(new Set());
+      setReviewed(new Set());
     }
   }, [storageKey]);
   function save(next: Set<string>) {
-    setLearned(next);
+    setReviewed(next);
     try {
       localStorage.setItem(storageKey, JSON.stringify([...next]));
     } catch {
       /* Session guidance still works. */
     }
   }
-  const practiced = practicedCareerLessons(career);
-  const completed = new Set([...learned, ...practiced]);
-  const progress = tutorialProgress(completed);
-  const manuallyReviewed = Math.max(0, completed.size - practiced.size);
+  const verified = verifiedCareerLessons(career);
+  const progress = tutorialProgress(reviewed, verified);
+  const completed = new Set([...progress.reviewed, ...progress.verified]);
+  const manuallyReviewed = [...progress.reviewed].filter((id) => !progress.verified.has(id)).length;
   const chapters = TUTORIAL_CHAPTERS.map((chapter, index) => ({
     ...chapter,
     index,
@@ -75,12 +76,12 @@ export default function CareerTutorialDialog({
             {progress.completed}/{progress.total} lições concluídas ou revisadas
           </strong>
           <span>
-            {practiced.size} comprovadas na carreira · {manuallyReviewed} marcadas por você
+            {progress.verified.size} comprovadas na carreira · {manuallyReviewed} marcadas por você
           </span>
         </p>
         <progress
           aria-label="Progresso da tutorial, incluindo prática comprovada e revisão manual"
-          aria-valuetext={`${progress.completed} de ${progress.total}; ${practiced.size} comprovadas na carreira e ${manuallyReviewed} marcadas por você`}
+          aria-valuetext={`${progress.completed} de ${progress.total}; ${progress.verified.size} comprovadas na carreira e ${manuallyReviewed} marcadas por você`}
           className="h-2 w-full accent-primary"
           max={progress.total}
           value={progress.completed}
@@ -142,7 +143,9 @@ export default function CareerTutorialDialog({
                   </h3>
                   {completed.has(lesson.id) && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {practiced.has(lesson.id) ? "Concluída na carreira" : "Marcada por você"}
+                      {progress.verified.has(lesson.id)
+                        ? "Concluída na carreira"
+                        : "Marcada por você"}
                     </p>
                   )}
                   <p className="mt-1 text-sm text-muted-foreground">{lesson.instruction}</p>
@@ -167,18 +170,18 @@ export default function CareerTutorialDialog({
                       size="sm"
                       variant="ghost"
                       className="min-h-11"
-                      disabled={practiced.has(lesson.id)}
-                      aria-pressed={learned.has(lesson.id)}
+                      disabled={progress.verified.has(lesson.id)}
+                      aria-pressed={progress.reviewed.has(lesson.id)}
                       onClick={() => {
-                        const next = new Set(learned);
+                        const next = new Set(reviewed);
                         if (next.has(lesson.id)) next.delete(lesson.id);
                         else next.add(lesson.id);
                         save(next);
                       }}
                     >
-                      {practiced.has(lesson.id)
+                      {progress.verified.has(lesson.id)
                         ? "Concluída na carreira"
-                        : learned.has(lesson.id)
+                        : progress.reviewed.has(lesson.id)
                           ? "Desmarcar revisão"
                           : "Marcar como revisada"}
                     </Button>

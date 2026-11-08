@@ -35,6 +35,7 @@ export const en: Record<string, string> = {
   "nav.mobile": "Main navigation on mobile",
   "nav.mobileMenu": "Menu",
   "nav.results": "Navigation results",
+  "nav.play": "Play",
   "quick.title": "Quick match",
   "quick.description":
     "Choose your team and opponent. The computer controls the other side. Your career is unchanged.",
@@ -54,6 +55,7 @@ export const en: Record<string, string> = {
   "common.close": "Close",
   "common.retry": "Try again",
   "common.reload": "Refresh page",
+  "common.loading": "Loading",
   "common.search": "Search",
   "common.empty": "No results. Try another name.",
   "common.reset": "Restore defaults",
@@ -237,6 +239,7 @@ export const pt: Record<string, string> = {
   "nav.mobile": "Navegação principal no celular",
   "nav.mobileMenu": "Menu",
   "nav.results": "Resultados da navegação",
+  "nav.play": "Jogar",
   "quick.title": "Partida rápida",
   "quick.description":
     "Escolha seu time e o adversário. O computador comanda o outro lado. Sua carreira não é afetada.",
@@ -252,6 +255,7 @@ export const pt: Record<string, string> = {
   "common.close": "Fechar",
   "common.retry": "Tentar novamente",
   "common.reload": "Atualizar página",
+  "common.loading": "Carregando",
   "common.search": "Buscar",
   "common.empty": "Nenhum resultado. Tente outro nome.",
   "common.reset": "Restaurar padrões",

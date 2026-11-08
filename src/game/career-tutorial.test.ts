@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseTutorialLessons, practicedCareerLessons, tutorialProgress } from "./career-tutorial";
+import {
+  parseTutorialLessons,
+  practicedCareerLessons,
+  tutorialProgress,
+  verifiedCareerLessons,
+} from "./career-tutorial";
 
 describe("resumable career tutorial", () => {
   const unplayed = {
@@ -22,6 +27,33 @@ describe("resumable career tutorial", () => {
         results: [{ round: 1, home: "club", away: "opponent", hg: 1, ag: 0 }],
       }),
     ]).toEqual(["prematch", "match"]);
+  });
+  it("keeps local review marks distinct from verified career events", () => {
+    const reviewed = parseTutorialLessons(["training", "not-a-lesson"]);
+    const verified = verifiedCareerLessons({
+      ...unplayed,
+      trainingReports: [
+        {
+          id: "training-1",
+          season: 1,
+          round: 1,
+          drillId: "posse",
+          load: 2,
+          recovery: 80,
+          responders: [],
+        },
+      ],
+    });
+    const progress = tutorialProgress(reviewed, verified);
+
+    expect(progress.reviewed).toEqual(new Set(["training"]));
+    expect(progress.verified).toEqual(new Set(["training"]));
+    expect(progress.completed).toBe(1);
+  });
+  it("adapts legacy array marks as reviewed and not verified", () => {
+    const reviewed = parseTutorialLessons(["coach-decisions", "reward"]);
+    expect([...reviewed]).toEqual(["coach-decisions"]);
+    expect(tutorialProgress(reviewed).verified).toEqual(new Set());
   });
   it("recognizes the weekly budget lesson only from a committed weekly operation", () => {
     expect(

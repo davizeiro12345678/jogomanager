@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "davizeiro12345678/jogomanager",
+    "pullRequest": 125,
+    "branch": "codex/career-tutorial-css-20261107",
+    "baselineCommit": "7760bdd426ef0298b4d52440985d145845e6b28f",
+    "baselineLighthouseRun": 42429874392,
+    "currentBundleReportGeneratedAt": "2026-11-08T02:06:20.228Z",
+    "candidateMeasurement": "local Nitro/Cloudflare Worker build; Supabase publishable configuration supplied only to the local process/build"
+  },
+  "bundle": {
+    "totalEmittedJavaScriptBytes": {
+      "growthBudgetPerEncoding": 400000,
+      "budgetChange": "Unchanged from PR baseline; regression tests added to confirm the existing cap.",
+      "baseline": {
+        "raw": 7252912,
+        "gzip": 2359628,
+        "brotliQ6": 2228070
+      },
+      "current": {
+        "raw": 7255709,
+        "gzip": 2361267,
+        "brotliQ6": 2229943
+      },
+      "delta": {
+        "raw": 2797,
+        "gzip": 1639,
+        "brotliQ6": 1873
+      },
+      "budgetUsedPercent": {
+        "raw": 0.6992,
+        "gzip": 0.4097,
+        "brotliQ6": 0.4682
+      }
+    },
+    "chunks": {
+      "hydrateApp": {
+        "baseline": {
+          "raw": 379661,
+          "gzip": 118488,
+          "brotliQ6": 111374
+        },
+        "current": {
+          "raw": 326457,
+          "gzip": 100544,
+          "brotliQ6": 94061
+        },
+        "delta": {
+          "raw": -53204,
+          "gzip": -17944,
+          "brotliQ6": -17313
+        }
+      },
+      "stadium3D": {
+        "baseline": {
+          "raw": 194235,
+          "gzip": 64649,
+          "brotliQ6": 60223
+        },
+        "current": {
+          "raw": 194515,
+          "gzip": 64723,
+          "brotliQ6": 60292
+        },
+        "delta": {
+          "raw": 280,
+          "gzip": 74,
+          "brotliQ6": 69
+        }
+      }
+    },
+    "routeStartupBytes": {
+      "home": {
+        "baseline": {
+          "raw": 502676,
+          "gzip": 164335,
+          "brotliQ6": 155479
+        },
+        "current": {
+          "raw": 503237,
+          "gzip": 165443,
+          "brotliQ6": 156664
+        },
+        "delta": {
+          "raw": 561,
+          "gzip": 1108,
+          "brotliQ6": 1185
+        }
+      },
+      "quickMatch": {
+        "baseline": {
+          "raw": 911034,
+          "gzip": 308340,
+          "brotliQ6": 291907
+        },
+        "current": {
+          "raw": 911594,
+          "gzip": 309441,
+          "brotliQ6": 293104
+        },
+        "delta": {
+          "raw": 560,
+          "gzip": 1101,
+          "brotliQ6": 1197
+        }
+      },
+      "match3D": {
+        "baseline": {
+          "raw": 1690608,
+          "gzip": 574891,
+          "brotliQ6": 544494
+        },
+        "current": {
+          "raw": 1691612,
+          "gzip": 576096,
+          "brotliQ6": 545799
+        },
+        "delta": {
+          "raw": 1004,
+          "gzip": 1205,
+          "brotliQ6": 1305
+        }
+      }
+    }
+  },
+  "lighthouse": {
+    "budgets": {
+      "performanceScoreMinimum": 0.97,
+      "lcpMaximumMs": 2500,
+      "clsMaximum": 0.1,
+      "tbtMaximumMs": 200,
+      "aggregation": "pessimistic",
+      "runsPerRoute": 3
+    },
+    "baseline": {
+      "home": {
+        "performanceScores": [0.95, 0.98, 0.98],
+        "tbtMs": [195, 27.5, 41],
+        "lcpMsRange": [2002, 2040],
+        "cls": 0
+      },
+      "quickMatch": {
+        "performanceScores": [0.96, 0.98, 0.98],
+        "tbtMs": [201, 157, 145],
+        "lcpMsRange": [1408, 1567],
+        "cls": 0.00496
+      }
+    },
+    "afterCandidate": null,
+    "afterCandidateNote": "Awaiting GitHub CI after push; no post-change Lighthouse score has been inferred."
+  },
+  "i18n": {
+    "supportedIdentifiers": 98,
+    "sourceLocales": 2,
+    "jsonPacks": 24,
+    "fallbackLocales": 72,
+    "nativeReviewComplete": false
+  },
+  "validation": {
+    "fullSuite": {
+      "status": "passed",
+      "testFiles": 335,
+      "tests": 1785
+    },
+    "focusedSuite": {
+      "status": "passed",
+      "testFiles": 14,
+      "tests": 98
+    },
+    "lint": "passed, zero warnings",
+    "performanceGates": {
+      "status": "passed",
+      "passed": 23,
+      "failed": 0
+    },
+    "previewRegressionNodeTests": {
+      "status": "passed",
+      "passed": 3,
+      "failed": 0
+    },
+    "buildAndBundleCheck": "passed",
+    "publicEnvironmentSecretScan": "passed",
+    "previewRepresentations": {
+      "routes": 5,
+      "encodings": ["identity", "gzip"],
+      "passed": 10
+    },
+    "typescript": {
+      "status": "failed_on_preexisting_stripe_sdk_type_mismatch",
+      "errors": 2,
+      "file": "src/lib/stripe.server.ts",
+      "detail": "Pinned API version 2026-09-30.endive is not assignable to installed SDK type 2026-10-28.endive; runtime pin was not changed."
+    }
+  },
+  "safety": {
+    "activeProductionPenTest": false,
+    "productionWrites": false,
+    "productionDeployment": false,
+    "match3DRenderedInManagedChromium": true,
+    "playwrightFirefoxWebGL2Available": false,
+    "fullGameplayVideoRecorded": false,
+    "fullGameplayVideoNote": "No continuous browser recording tool was available; only authentic screenshots are included."
+  }
+}

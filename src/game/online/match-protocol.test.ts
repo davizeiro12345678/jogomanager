@@ -67,6 +67,20 @@ describe("Match protocol V1", () => {
     expect(parsed).toMatchObject({ sequence: 3, kind: "set_tactics" });
   });
 
+  it("rejects a command replay when a prior sequence is supplied without requiring contiguous sequences", () => {
+    const command = {
+      version: MATCH_PROTOCOL_VERSION,
+      roomId,
+      sequence: 4,
+      kind: "ready" as const,
+      payload: { ready: true },
+    };
+
+    expect(parseMatchCommandV1(command, 3).sequence).toBe(4);
+    expect(() => parseMatchCommandV1(command, 4)).toThrow(/monotonic|replay/i);
+    expect(() => parseMatchCommandV1(command, 5)).toThrow(/monotonic|replay/i);
+  });
+
   it.each([
     { sequence: 0 },
     { sequence: -1 },
@@ -108,6 +122,75 @@ describe("Match protocol V1", () => {
         publicState: { ...snapshot.publicState, seed: "secret" },
       }),
     ).toThrow();
+  });
+
+  it("rejects snapshot events that are future-dated or reuse an event id", () => {
+    const base = {
+      version: MATCH_PROTOCOL_VERSION,
+      roomId,
+      tick: 10,
+      revision: 2,
+      phase: "live" as const,
+      publicState: {
+        minute: 10,
+        score: { home: 0, away: 0 },
+        possession: { home: 50, away: 50 },
+      },
+    };
+
+    expect(() =>
+      parseMatchSnapshotV1({
+        ...base,
+        presentationEvents: [{ id: "future", type: "chance", tick: 11, team: "home" }],
+      }),
+    ).toThrow(/tick|future/i);
+
+    expect(() =>
+      parseMatchSnapshotV1({
+        ...base,
+        presentationEvents: [
+          { id: "event-1", type: "chance", tick: 4, team: "home" },
+          { id: "event-1", type: "card", tick: 5, team: "away" },
+        ],
+      }),
+    ).toThrow(/id|duplicate/i);
+  });
+
+  it("rejects a stale snapshot when a prior revision is supplied", () => {
+    const previous = parseMatchSnapshotV1({
+      version: MATCH_PROTOCOL_VERSION,
+      roomId,
+      tick: 10,
+      revision: 2,
+      phase: "live",
+      publicState: {
+        minute: 10,
+        score: { home: 0, away: 0 },
+        possession: { home: 50, away: 50 },
+      },
+      presentationEvents: [],
+    });
+
+    expect(() =>
+      parseMatchSnapshotV1(
+        {
+          ...previous,
+          tick: 9,
+          revision: 1,
+        },
+        previous,
+      ),
+    ).toThrow(/revision|replay|older/i);
+    expect(
+      parseMatchSnapshotV1(
+        {
+          ...previous,
+          tick: 11,
+          revision: 3,
+        },
+        previous,
+      ).revision,
+    ).toBe(3);
   });
 
   it("accepts only a signed, idempotent receipt with a server result", () => {

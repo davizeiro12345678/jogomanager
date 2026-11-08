@@ -14,6 +14,7 @@ import {
   type AuthoritativeMatchEngine,
   type MatchReceiptSigner,
 } from "./authoritative-match-session";
+import { GENESIS_SESSION_HASH, appendCommandHash } from "./session-hash";
 
 const roomId = "45fd1d08-4f81-44bc-9072-1e35ce9d1d94";
 const homeUserId = "7b40bcbe-a4ca-430c-9b49-61aa9c5118e9";
@@ -215,6 +216,19 @@ describe("AuthoritativeMatchSession", () => {
 
     expect(receipt).toMatchObject({ closureReason: "abandoned", result: { winner: "away" } });
     expect(session.phase).toBe("finalized");
+  });
+
+  it("includes the accepted forfeit command in the signed receipt hash", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    const forfeit = command(1, "forfeit");
+    const expectedHash = await appendCommandHash(GENESIS_SESSION_HASH, forfeit);
+
+    const outcome = await session.receive(home, forfeit, issuedAt + 1);
+    const receipt = await session.finalize("forfeit", issuedAt + 2);
+
+    expect(outcome).toEqual({ accepted: true });
+    expect(receipt).toMatchObject({ closureReason: "forfeit", commandHash: expectedHash.hash });
   });
 
   it("creates a final receipt once even when finalization is retried", async () => {

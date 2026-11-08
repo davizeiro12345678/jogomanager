@@ -173,12 +173,25 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
     // claim. Ending the room here would race the result publication and could
     // remove the private seed while it is in use.
     if (room.status === "settling") return { ok: false, reason: "settling" };
-    const { error } = await supabaseAdmin
+    const { data: updatedRoom, error } = await supabaseAdmin
       .from("match_rooms")
       .update({ status: "done", state: {}, updated_at: new Date().toISOString() })
       .eq("id", data.roomId)
-      .eq("status", room.status);
+      .eq("status", room.status)
+      .select("id")
+      .maybeSingle();
     if (error) return { ok: false, reason: "leave_failed" };
+    if (!updatedRoom) {
+      const { data: latestRoom, error: latestError } = await supabaseAdmin
+        .from("match_rooms")
+        .select("status")
+        .eq("id", data.roomId)
+        .maybeSingle();
+      if (latestError || !latestRoom) return { ok: false, reason: "not_found" };
+      if (latestRoom.status === "settling") return { ok: false, reason: "settling" };
+      if (latestRoom.status === "done") return { ok: true };
+      return { ok: false, reason: "leave_failed" };
+    }
     await supabaseAdmin.from("match_room_secrets").delete().eq("room_id", data.roomId);
     return { ok: true };
   });

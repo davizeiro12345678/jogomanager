@@ -263,6 +263,37 @@ export interface FinanceSettlement {
   settled: boolean;
 }
 
+export interface FinanceEventSettlement {
+  state: CareerState;
+  settled: boolean;
+}
+
+/** Registra uma receita de fechamento sem duplicá-la ao reprocessar o save. */
+export function settleSeasonPrize(state: CareerState, prize: number): FinanceEventSettlement {
+  const id = `season-prize-${state.clubId}-${state.season}`;
+  const finances = financialChange(state, prize, 0);
+  if (!finances || financeLedgerFor(state).some((entry) => entry.id === id))
+    return { state, settled: false };
+
+  const entry: FinanceLedgerEntry = {
+    id,
+    season: state.season,
+    round: state.round,
+    kind: "premio",
+    label: "Premiação de fim de temporada",
+    income: safeMoney(prize),
+    expense: 0,
+  };
+  return {
+    settled: true,
+    state: {
+      ...state,
+      finances,
+      financeLedger: [entry, ...financeLedgerFor(state)].slice(0, 96),
+    },
+  };
+}
+
 /**
  * Aplica uma única operação por rodada. A chave imutável impede que uma tela
  * reprocessada ou uma reconexão cobre a semana duas vezes.

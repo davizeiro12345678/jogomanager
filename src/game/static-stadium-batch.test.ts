@@ -100,4 +100,30 @@ describe("immutable stadium batching", () => {
     cleanup();
     expect(materialDispose).not.toHaveBeenCalled();
   });
+
+  it("reports mutated sources before disposing an immutable batch and disposes only once", () => {
+    const group = new THREE.Group();
+    const moving = box("white", 0);
+    const fixed = box("white", 2);
+    group.add(moving, fixed);
+
+    const cleanup = batchStaticStadium(group);
+    const merged = group.children.find(
+      (child) => child !== moving && child !== fixed,
+    ) as THREE.Mesh;
+    const materialDispose = vi.spyOn(merged.material as THREE.Material, "dispose");
+
+    expect(cleanup.changedSources()).toEqual([]);
+    moving.position.x = 4;
+    (fixed.material as THREE.MeshStandardMaterial).roughness = 0.2;
+    group.updateWorldMatrix(true, true);
+    expect(cleanup.changedSources()).toEqual([moving, fixed]);
+    expect(cleanup.changedSources()).toEqual([moving, fixed]);
+
+    cleanup();
+    cleanup();
+    expect(materialDispose).toHaveBeenCalledTimes(1);
+    expect(moving.visible).toBe(true);
+    expect(fixed.visible).toBe(true);
+  });
 });

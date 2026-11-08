@@ -130,6 +130,7 @@ export class AuthoritativeMatchSession {
     }
 
     let applied = true;
+    let closureReason: MatchClosureReason | null = null;
     switch (command.kind) {
       case "set_tactics":
         applied = this.options.engine.applyTactics(seat, command.payload);
@@ -143,7 +144,7 @@ export class AuthoritativeMatchSession {
         );
         break;
       case "forfeit":
-        await this.finalize("forfeit", now, seat);
+        closureReason = "forfeit";
         break;
       case "ready":
         this.readySeats.add(seat);
@@ -156,6 +157,7 @@ export class AuthoritativeMatchSession {
     if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     this.lastSequence.set(ticket.userId, command.sequence);
     this.commandHash = (await appendCommandHash(this.commandHash, command)).hash;
+    if (closureReason) await this.finalize(closureReason, now, seat);
     return { accepted: true };
   }
 

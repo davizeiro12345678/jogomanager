@@ -27,6 +27,8 @@ import * as THREE from "three";
 
 import { censusRef } from "@/game/scene-census";
 
+import { makeRng } from "@/game/rng";
+
 import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
 
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
@@ -40,6 +42,22 @@ import {
 import type { SupporterMatchday } from "@/game/career-world-types";
 
 const POINT_CAP = capPointSize(14);
+
+function createFlashCloudPositions(count: number, seed: number | string): Float32Array {
+  const safeCount = Math.max(0, Math.floor(count));
+  const random = makeRng(seed);
+  const positions = new Float32Array(safeCount * 3);
+  for (let i = 0; i < safeCount; i++) {
+    // anel da arquibancada: atrás dos gols e nas laterais
+    const along = random() * 2 - 1;
+    const side = random() < 0.5 ? -1 : 1;
+    const depth = 0.86 + random() * 0.22;
+    positions[i * 3] = along * FIELD_X * 0.96;
+    positions[i * 3 + 1] = 6 + random() * 12;
+    positions[i * 3 + 2] = side * FIELD_Z * depth;
+  }
+  return positions;
+}
 
 /** Decaimento por segundo de cada humor. */
 const DECAY: Record<CrowdMood, number> = {
@@ -273,10 +291,12 @@ function SmokePlumes({
 function FlashBursts({
   reaction,
   count,
+  seed,
   enabled,
 }: {
   reaction: React.MutableRefObject<CrowdReactionState>;
   count: number;
+  seed: number | string;
   enabled: boolean;
 }) {
   const groups = useRef<(THREE.Object3D | null)[]>([]);
@@ -285,23 +305,12 @@ function FlashBursts({
   const clouds = useMemo(() => {
     const per = Math.max(12, Math.floor(count / phases.length));
     return phases.map((_, index) => {
-      const positions = new Float32Array(per * 3);
-      for (let i = 0; i < per; i++) {
-        // anel da arquibancada: atrás dos gols e nas laterais
-        const along = Math.random() * 2 - 1;
-        const side = Math.random() < 0.5 ? -1 : 1;
-        const depth = 0.86 + Math.random() * 0.22;
-        positions[i * 3] = along * FIELD_X * 0.96;
-        positions[i * 3 + 1] = 6 + Math.random() * 12;
-        positions[i * 3 + 2] = side * FIELD_Z * depth;
-      }
+      const positions = createFlashCloudPositions(per, `${seed}:${index}`);
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       return geometry;
     });
-    // `phases` é constante: incluí-la só silencia o lint de dependências
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count]);
+  }, [count, phases, seed]);
 
   useFrame((state) => {
     if (!enabled) return;
@@ -401,7 +410,14 @@ export const CrowdReaction = memo(function CrowdReaction({
   return (
     <CrowdReactionContext.Provider value={reaction}>
       <group ref={censusRef("crowd")} name="crowd-reaction">
-        {night && flashes > 0 ? <FlashBursts reaction={reaction} count={flashes} enabled /> : null}
+        {night && flashes > 0 ? (
+          <FlashBursts
+            reaction={reaction}
+            count={flashes}
+            seed={`stadium-crowd:${sim.home.clubId}:${sim.away.clubId}`}
+            enabled
+          />
+        ) : null}
         {smoke ? <SmokePlumes reaction={reaction} color={color} enabled /> : null}
       </group>
     </CrowdReactionContext.Provider>

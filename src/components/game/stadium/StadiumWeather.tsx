@@ -1,9 +1,35 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { makeRng } from "@/game/rng";
 import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 import { useVisual } from "@/game/visual-settings";
 import type { Quality } from "../Stadium3D";
+
+type WeatherDrop = { x: number; y: number; z: number; s: number; p: number };
+
+type RandomSource = () => number;
+
+function spawnWeatherDrop(random: RandomSource): WeatherDrop {
+  return {
+    x: (random() * 2 - 1) * (FIELD_X + 26),
+    y: random() * 34,
+    z: (random() * 2 - 1) * (FIELD_Z + 24),
+    s: 0.6 + random() * 0.9,
+    p: random() * 6.28,
+  };
+}
+
+function createWeatherDrops(count: number, seed: number | string): WeatherDrop[] {
+  const random = makeRng(seed);
+  return Array.from({ length: Math.max(0, Math.floor(count)) }, () => spawnWeatherDrop(random));
+}
+
+function respawnWeatherDrop(drop: WeatherDrop, random: RandomSource) {
+  drop.y = 30 + random() * 6;
+  drop.x = (random() * 2 - 1) * (FIELD_X + 26);
+  drop.z = (random() * 2 - 1) * (FIELD_Z + 24);
+}
 
 export function Weather({
   weather,
@@ -27,17 +53,9 @@ export function Weather({
   );
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const drops = useMemo(
-    () =>
-      Array.from({ length: count }, () => ({
-        x: (Math.random() * 2 - 1) * (FIELD_X + 26),
-        y: Math.random() * 34,
-        z: (Math.random() * 2 - 1) * (FIELD_Z + 24),
-        s: 0.6 + Math.random() * 0.9,
-        p: Math.random() * 6.28,
-      })),
-    [count],
-  );
+  const visualSeed = `${weather}:${quality}:${count}`;
+  const respawnRandom = useMemo(() => makeRng(`${visualSeed}:respawn`), [visualSeed]);
+  const drops = useMemo(() => createWeatherDrops(count, visualSeed), [count, visualSeed]);
 
   useFrame((_, rawDt) => {
     const mesh = ref.current;
@@ -49,11 +67,7 @@ export function Weather({
       d.y -= fall * dt * d.s;
       d.x += wind * dt * (rain ? 5 : 1.6);
       if (!rain) d.z += Math.sin(d.p + d.y * 0.4) * dt * 0.9;
-      if (d.y < 0) {
-        d.y = 30 + Math.random() * 6;
-        d.x = (Math.random() * 2 - 1) * (FIELD_X + 26);
-        d.z = (Math.random() * 2 - 1) * (FIELD_Z + 24);
-      }
+      if (d.y < 0) respawnWeatherDrop(d, respawnRandom);
       dummy.position.set(d.x, d.y, d.z);
       dummy.rotation.set(0, 0, rain ? wind * 0.28 : 0);
       dummy.scale.set(1, rain ? 1 : 0.5, 1);
