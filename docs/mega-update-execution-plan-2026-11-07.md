@@ -4,8 +4,8 @@
 |---|---|
 | Projeto | `davizeiro12345678/jogomanager` |
 | PR | [#125](https://github.com/davizeiro12345678/jogomanager/pull/125) |
-| Branch/SHA de referência | `codex/career-tutorial-css-20261107`; baseline de código `8df72c0`; head documental observado antes desta atualização `b72a2fd423e9cc6f39185b6099543095f6f117d5` |
-| Situação atual | PR #125 aberto em draft. No run `42426452442` do SHA `b72a2fd`, build/types/tests, stress, bundle, Supabase replay, contratos 3D, auditoria de dependências e importer passaram; Lighthouse mobile e `Critical performance release gate` falharam; `evidence` estava pendente na última consulta. Novo commit documental requer CI próprio. |
+| Branch/SHA de referência | `codex/career-tutorial-css-20261107`; baseline histórico de código `8df72c0`; checkout documental anterior `b72a2fd`; último SHA medido antes desta correção `b8df3cb1aa905ddc93e39f694cf53f15ea2fcc56` |
+| Situação atual | PR #125 continua aberto em draft. No run `42428747855` do SHA `b8df3cb`, build/types/tests, stress, bundle, Supabase replay, contratos 3D, dependências, importer e Lighthouse shell passaram; Lighthouse mobile falhou por um outlier em `/` (87/100 e TBT 459,1 ms numa de três execuções), e o agregador crítico propagou a falha corretamente. O fluxo visual separado `42428747827` ainda estava `in_progress` no baseline capture às 00:24 UTC; ver [diagnóstico dos checks e métricas](ci-diagnosis-b8df3cb-2026-11-07.md). |
 | Método | 15 auditorias estáticas anteriores (captura do usuário), 8 frentes de pesquisa oficial/75 referências e 25 aprofundamentos técnicos independentes + síntese; esta rodada não alterou código, banco ou produção e não executou ataque. |
 
 ## 1. Objetivo
@@ -131,6 +131,7 @@ Não executar “ataque de média intensidade” contra `jogomanager.com` nem ba
 - CI do SHA `4fc0edc`: build/types/tests e bundle passaram; Lighthouse mobile falhou por score 0,97 em `/melhores-formacoes` com mínimo 0,98.
 - CI do SHA `8df72c0` (run `42424654927`): build/types/tests, stress de 200 partidas, startup bundle, benchmark/contratos 3D, auditoria de dependências, Supabase replay, shell Lighthouse e importer passaram. Lighthouse mobile falhou em score/TBT na home e em `/partida-rapida`; o gate crítico falhou. Check `evidence` ainda pendia na última leitura.
 - CI do head documental `b72a2fd` (run `42426452442`): build/types/tests, stress, bundle de startup, replay Supabase, contratos 3D, auditoria de dependências, importer e demais checks listados no PR passaram; Lighthouse mobile e `Critical performance release gate` falharam; `evidence` estava pendente na última consulta. A falha impede promoção; não é corrigida por documentação.
+- Reexecução do head `b8df3cb` (run `42428747855`, commit documental sem mudança de código): confirmou que 14 das 15 execuções móveis observadas passam os budgets de performance/TBT; uma execução da home marcou score 87 e TBT 459,1 ms, acima dos limites 0,97/200 ms. O job crítico concluiu `failure` por `lighthouse-mobile: failure`, conforme projetado. O job visual separado ainda estava em andamento; a análise das medições e a correção da interpretação do observador estão em [diagnóstico detalhado](ci-diagnosis-b8df3cb-2026-11-07.md).
 - O relatório de bundle local disponível é anterior ao SHA e mede todos os chunks; serve como pista de diagnóstico, não como baseline aprovado.
 - Foram concluídas 15 auditorias estáticas por domínio e 25 revisões técnicas adicionais, sintetizadas no [plano de implementação ampliado](mega-update-implementation-plan-2026-11-07.md) e no [índice detalhado das 15 auditorias](prior-static-audits-summary-2026-11-07.md). Ambas as rodadas foram somente leitura/pesquisa; não equivalem a testes de aceitação. Reexecutar o CI no SHA documental seguinte.
 - Nenhuma migration, configuração Cloudflare, segredo, ferramenta paga ou endpoint de produção foi alterado nesta fase.
@@ -142,7 +143,7 @@ Não executar “ataque de média intensidade” contra `jogomanager.com` nem ba
 
 **Verificado localmente:** lint; 1.714 testes em 327 arquivos; 21 testes de performance e quatro de ambiente público; build; `bundle-report --check`; TypeScript em checkout limpo com `npm ci` do lockfile (`stripe` 23.0.0). O `node_modules` preexistente tinha Stripe 23.1.0 e gerou dois erros de tipo em `apiVersion`; nenhum arquivo Stripe foi alterado. No CI remoto do SHA, os gates de código, simulação e banco listados acima passaram, mas o Lighthouse mobile falhou em score/TBT e bloqueou release.
 
-**Ainda pendente:** corrigir os outliers de TBT sem afrouxar o limite absoluto; confirmar conclusão do check `evidence`; validar as variáveis reais da preview sem exibir valores; capturar screenshots limpos para mudanças visuais; obter staging e autorização específica para DAST; conectar DataForSEO com credencial server-side, orçamento e necessidade editorial; receber/exportar CSV Ubersuggest (não há API/webhook oficial documentado).
+**Ainda pendente:** traçar o outlier de TBT da home (`hydrate-app` e tarefas sem atribuição são pistas, não causalidade provada) sem afrouxar limites; confirmar conclusão do job `evidence` separado; validar as variáveis reais da preview sem exibir valores; capturar screenshots limpos para mudanças visuais; obter staging e autorização específica para DAST; conectar DataForSEO com credencial server-side, orçamento e necessidade editorial; receber/exportar CSV Ubersuggest (não há API/webhook oficial documentado).
 
 ## 9. Pesquisa técnica adicionada ao PR
 
