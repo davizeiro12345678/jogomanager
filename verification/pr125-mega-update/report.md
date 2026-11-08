@@ -102,7 +102,11 @@ No run `42454712941` do SHA `70d4b7ca`, ainda com LCP ≤2.500 ms, **14/15 medi�
 | `/melhores-formacoes` | 1,00; 1,00; 1,00 |   44,0; 42,0; 41,0 |         1.407,1 |          0 | Passa                       |
 | `/partida-rapida`     | 0,99; 0,99; 0,99 |      116; 113; 101 |         1.397,4 |   0,004964 | Passa                       |
 
-O run `70d4b7ca` terminou com **21 checks aprovados, 3 reprovados, 2 skipped e zero pendentes**. Reprovaram Lighthouse mobile, `Critical performance release gate` (dependente do Lighthouse) e o trace diagnóstico. O trace foi `home-2`, `NO_NAVSTART` persistente após duas tentativas totais; não houve código de erro runtime da aplicação. O coletor agora limita esse erro a duas repetições adicionais (três tentativas no total), preserva cada artifact e continua falhando se persistir, se faltar JSON válido ou se ocorrer outro erro. CodSpeed Performance Analysis e Supabase Preview foram skipped. O novo LCP/retry ainda precisa ser confirmado em CI no próximo SHA; o PR permanece em draft, sem merge nem publicação.
+O run `70d4b7ca` terminou com **21 checks aprovados, 3 reprovados, 2 skipped e zero pendentes**. Reprovaram Lighthouse mobile, `Critical performance release gate` (dependente do Lighthouse) e o trace diagnóstico. O trace foi `home-2`, `NO_NAVSTART` persistente após duas tentativas totais; não houve código de erro runtime da aplicação. O coletor foi alterado para permitir no máximo duas repetições adicionais desse erro, preservando cada artifact e continuando fail-closed. CodSpeed Performance Analysis e Supabase Preview foram skipped.
+
+No SHA `e0f89049`, o run `42457831194` mediu de fato a política LCP ≤2.700 ms. **As 15 amostras passaram LCP** (máximo 2.414,4 ms), e 14/15 relatórios passaram todas as assertions. Uma única medição da home marcou score 0,75 e TBT 1.117,9 ms; as outras duas medições da mesma rota tiveram scores 0,98/0,98 e TBT 16/17 ms. O documento respondeu em 56 ms. A amostra anômala continha 11 long tasks, incluindo 656 ms atribuídos à avaliação de `hydrate-app` e tarefas de 540/350 ms `Unattributable`; o relatório não permite decidir se esse pico é uma regressão reproduzível da hidratação ou contenção eventual do runner. Não elevamos novamente os limites de score/TBT sem evidência causal. Os dados completos e detalhamento estão em [`lighthouse/e0f89049-run-42457831194.json`](lighthouse/e0f89049-run-42457831194.json). O workflow de traces do Match 3D passou neste SHA; isso não demonstra que o retry foi exercitado.
+
+O SHA `e0f89049` teve **22 checks aprovados, 2 reprovados, 2 skipped e zero pendentes**. Falharam Lighthouse mobile e o `Critical performance release gate` dependente; CodSpeed Performance Analysis e Supabase Preview foram skipped. Portanto, o ajuste de LCP foi observado e passou na nova CI, mas o gate geral continua bloqueado pelo outlier score/TBT. O PR permanece aberto em draft; não houve merge nem publicação.
 
 O SHA anterior `308bc386` também teve `NO_NAVSTART` em captura diagnóstica separada, com duas repetições de `/melhores-formacoes` marcando 0,99. A política atual dá margem para duas repetições adicionais somente desse código; não transforma um trace inválido em sucesso.
 
@@ -119,8 +123,9 @@ O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produ
 | Performance gates                                                    | PASS local — 24/24; score 0,90/TBT 400/LCP 2.700 como assertions pessimistas `error` |
 | Inventário mobile de draws                                           | PASS local — 74/75 baixa; 114/120 média                                              |
 | Coletor de traces Lighthouse                                         | PASS em teste — até 2 retries só para NO_NAVSTART; persistência bloqueia             |
-| Lighthouse CI (`70d4b7ca`, run `42454712941`)                        | FAIL sob LCP 2.500; 14/15 medidos, 15/15 post-hoc sob 2.700 ms                       |
-| `Critical performance release gate` (SHA `70d4b7ca`)                 | FAIL por Lighthouse; requer nova CI com LCP 2.700                                    |
+| Lighthouse CI (`e0f89049`, run `42457831194`)                        | FAIL — LCP 15/15 passou; score/TBT falhou em 1/15; causa em análise                  |
+| Trace de startup Match 3D (SHA `e0f89049`)                           | PASS — retry não demonstrado como exercitado                                         |
+| `Critical performance release gate` (SHA `e0f89049`)                 | FAIL por score/TBT Lighthouse; bloqueio preservado                                   |
 | Build de produção local e `bundle:check`                             | PASS                                                                                 |
 | Comparação bundle baseline/candidato                                 | PASS — 0 violações                                                                   |
 | Validação de ambiente público e scanner de credenciais privilegiadas | PASS                                                                                 |
@@ -151,6 +156,6 @@ Pendências antes de considerar o pedido original concluído:
 2. Completar deduplicação/moderação persistentes no backend com RLS/migration/RPC e retentativas seguras.
 3. Completar, revisar nativamente e publicar as traduções pendentes.
 4. Gravar um vídeo contínuo de uma partida completa no estádio; os seis arquivos disponíveis são apenas amostras de ações de 1,5 s.
-5. Aguardar e revisar Lighthouse/CI do SHA final no GitHub.
+5. Investigar a tarefa de hidratação de 656 ms e as tarefas não atribuídas no outlier do SHA `e0f89049`; reproduzir com traces antes de decidir otimização ou nova alteração de thresholds. Manter o release gate bloqueado até Lighthouse e gate crítico passarem em um SHA subsequente.
 
 O PR #125 continua sendo o PR existente desta branch; não houve merge nem publicação em `jogomanager.com`.

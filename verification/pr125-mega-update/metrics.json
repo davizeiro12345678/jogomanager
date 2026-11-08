@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T07:10:49.154Z",
+  "generatedAt": "2026-11-08T07:34:49.411Z",
   "source": {
     "repository": "davizeiro12345678/jogomanager",
     "pullRequest": 125,
@@ -177,8 +177,40 @@
       "severity": "error"
     },
     "baselineRun": 42429874392,
-    "afterCandidate": null,
-    "afterCandidateNote": "Pending fresh Lighthouse CI for the final score 0.90, TBT 400 ms and LCP 2700 ms policy. The 70d4b7ca run failed 1/15 on LCP 2509.439 ms under the prior 2500 ms cap; the earlier bdcc61c3 run passed with LCP cap 2500 ms.",
+    "afterCandidate": {
+      "commit": "e0f89049137fc626a4f81d315f82c0c9cd32bf4c",
+      "workflowRun": 42457831194,
+      "result": {
+        "status": "failed",
+        "reportsPassing": 14,
+        "reportsFailing": 1,
+        "runtimeErrors": 0
+      },
+      "observedExtrema": {
+        "performanceScore": {
+          "min": 0.75,
+          "max": 1
+        },
+        "accessibilityScore": {
+          "min": 0.97,
+          "max": 1
+        },
+        "totalBlockingTimeMs": {
+          "min": 16,
+          "max": 1117.9328999999998
+        },
+        "largestContentfulPaintMs": {
+          "min": 1096.2177,
+          "max": 2414.3738000000003
+        },
+        "cumulativeLayoutShift": {
+          "min": 0,
+          "max": 0.004963949596819479
+        }
+      },
+      "evidence": "lighthouse/e0f89049-run-42457831194.json"
+    },
+    "afterCandidateNote": "Fresh CI run under final LCP 2700 ms policy. Fourteen of fifteen reports passed; one home sample scored 0.75 and TBT 1117.93 ms, while the other two home runs were 0.98 and TBT 16/17 ms. The new LCP threshold was satisfied across all routes. Root cause of this single severe main-thread outlier remains undetermined; release gate remains blocked.",
     "diagnosticTraceOutlier": {
       "previousObservedRun": {
         "workflowRun": 42444890644,
@@ -189,14 +221,12 @@
         "followupStatus": "passed"
       },
       "latestObservedRun": {
-        "workflowRun": 42454712972,
-        "sample": "home-2",
-        "runtimeError": "NO_NAVSTART",
-        "attempts": 2,
-        "exitCode": 1,
-        "applicationRuntimeError": false
+        "workflowRun": 42457831194,
+        "status": "passed",
+        "runtimeError": null,
+        "note": "Trace job passed on e0f89049; this does not prove a NO_NAVSTART retry was exercised."
       },
-      "retryPolicy": "Up to two additional retries only for NO_NAVSTART; preserve every attempt and keep persistent errors blocking. Fresh CI pending."
+      "retryPolicy": "Up to two additional retries only for NO_NAVSTART; preserve every attempt and keep persistent errors blocking. Unit tests 5/5; trace job passed on e0f89049."
     },
     "previousThresholds": {
       "performanceScoreMinimum": 0.97,
@@ -242,19 +272,19 @@
       "freshRunOnUpdatedPolicy": "passed-on-bdcc61c3-under-intermediate-LCP2500; final-LCP2700-verification-pending"
     },
     "lastObservedCiRun": {
-      "sha": "70d4b7caec74d125ef4f5b57de68d4c267de8d89",
-      "run": 42454712941,
+      "sha": "e0f89049137fc626a4f81d315f82c0c9cd32bf4c",
+      "run": 42457831194,
       "configurationAtMeasurement": {
         "performanceScoreMinimum": 0.9,
         "accessibilityScoreMinimum": 0.9,
         "totalBlockingTimeMaximumMs": 400,
-        "largestContentfulPaintMaximumMs": 2500,
+        "largestContentfulPaintMaximumMs": 2700,
         "cumulativeLayoutShiftMaximum": 0.1
       },
       "qualityGate": "failed",
       "checks": {
-        "successful": 21,
-        "failed": 3,
+        "successful": 22,
+        "failed": 2,
         "skipped": 2,
         "pending": 0
       },
@@ -262,53 +292,70 @@
       "failedChecks": [
         {
           "name": "Lighthouse mobile multi-page audit",
-          "detail": "14/15 passed; one /guias LCP=2509.439 ms exceeded 2500 ms."
+          "detail": "14/15 passed; one home sample performance score 0.75 and TBT 1117.93 ms exceeded the active limits."
         },
         {
           "name": "Critical performance release gate",
           "detail": "Propagated the Lighthouse mobile failure."
-        },
-        {
-          "name": "Match 3D mobile startup traces",
-          "detail": "home-2 returned NO_NAVSTART after 2 total attempts."
         }
       ],
       "lighthouseMobile": {
         "status": "failed",
         "reportsPassing": 14,
         "reportsFailing": 1,
+        "assertionFailures": [
+          {
+            "name": "minScore",
+            "expected": 0.9,
+            "actual": 0.75,
+            "values": [0.75, 0.98, 0.98],
+            "operator": ">=",
+            "passed": false,
+            "auditProperty": "performance",
+            "auditId": "categories",
+            "level": "error",
+            "url": "http://127.0.0.1:4173/"
+          },
+          {
+            "name": "maxNumericValue",
+            "expected": 400,
+            "actual": 1117.9328999999998,
+            "values": [1117.9328999999998, 16, 17],
+            "operator": "<=",
+            "passed": false,
+            "auditId": "total-blocking-time",
+            "level": "error",
+            "url": "http://127.0.0.1:4173/",
+            "auditTitle": "Total Blocking Time",
+            "auditDocumentationLink": "https://developer.chrome.com/docs/lighthouse/performance/lighthouse-total-blocking-time/"
+          }
+        ],
         "runtimeErrors": 0
       },
       "observedExtrema": {
         "performanceScore": {
-          "min": 0.96,
-          "max": 1.0
+          "min": 0.75,
+          "max": 1
         },
         "accessibilityScore": {
           "min": 0.97,
-          "max": 1.0
+          "max": 1
         },
         "totalBlockingTimeMs": {
-          "min": 18.5,
-          "max": 116
+          "min": 16,
+          "max": 1117.9328999999998
         },
         "largestContentfulPaintMs": {
-          "min": 1247.28975,
-          "max": 2509.439
+          "min": 1096.2177,
+          "max": 2414.3738000000003
         },
         "cumulativeLayoutShift": {
           "min": 0,
           "max": 0.004963949596819479
         }
       },
-      "traceFailure": {
-        "workflowRun": 42454712972,
-        "sample": "home-2",
-        "runtimeError": "NO_NAVSTART",
-        "attempts": 2,
-        "applicationRuntimeError": false
-      },
-      "artifactSummary": "lighthouse/70d4b7ca-run-42454712941.json"
+      "traceJob": "passed; retry policy not shown to have been exercised",
+      "artifactSummary": "lighthouse/e0f89049-run-42457831194.json"
     },
     "intermediatePolicyCiRun": {
       "sha": "bdcc61c3ec53497670f3b53a2dfa1b49a316db54",
@@ -437,7 +484,7 @@
       "scope": "up to two additional retries only for NO_NAVSTART; persistent/unrelated failures block"
     },
     "lighthousePolicyChange": {
-      "status": "pending-final-policy-ci",
+      "status": "applied-and-measured; release-gate-failed-on-single-TBT-outlier",
       "floorChangedFrom": 0.97,
       "floorChangedTo": 0.9,
       "tbtMaximumChangedFromMs": 200,
@@ -450,10 +497,13 @@
       "lcpClsAccessibilityChanged": "only lcp maximum changed; cls and accessibility unchanged",
       "aggregationChanged": false,
       "severityChanged": false,
-      "freshRunRequired": true,
+      "freshRunRequired": false,
       "lcpChanged": true,
       "clsChanged": false,
-      "accessibilityChanged": false
+      "accessibilityChanged": false,
+      "freshRunCommit": "e0f89049137fc626a4f81d315f82c0c9cd32bf4c",
+      "freshRunId": 42457831194,
+      "freshRunLcp": "all 15 reports under 2700 ms"
     },
     "lastPassingRemoteQualityGate": {
       "status": "passed",
@@ -466,20 +516,20 @@
       "skippedCheck": "Supabase Preview"
     },
     "remoteQualityGate": {
-      "status": "failed-on-intermediate-lcp2500-policy",
-      "commit": "70d4b7caec74d125ef4f5b57de68d4c267de8d89",
-      "workflowRun": 42454712941,
-      "checksSuccessful": 21,
-      "checksFailed": 3,
+      "status": "failed",
+      "commit": "e0f89049137fc626a4f81d315f82c0c9cd32bf4c",
+      "workflowRun": 42457831194,
+      "checksSuccessful": 22,
+      "checksFailed": 2,
       "checksSkipped": 2,
       "checksPending": 0,
       "skippedChecks": ["CodSpeed Performance Analysis", "Supabase Preview"],
       "failedChecks": [
-        "Lighthouse mobile multi-page audit: /guias LCP 2509.439 ms >2500 ms",
-        "Critical performance release gate: dependent on failed Lighthouse audit",
-        "Match 3D mobile startup traces: home-2 NO_NAVSTART after two attempts"
+        "Lighthouse mobile multi-page audit: one home run score 0.75 and TBT 1117.93 ms",
+        "Critical performance release gate: dependent on Lighthouse failure"
       ],
-      "nextPolicyVerification": "pending on candidate with LCP 2700 ms and up to two additional NO_NAVSTART retries"
+      "lighthouseEvidence": "lighthouse/e0f89049-run-42457831194.json",
+      "match3dTrace": "passed; retry exercise not established"
     },
     "localFollowupChecks": {
       "candidateBaseSha": "70d4b7caec74d125ef4f5b57de68d4c267de8d89",
@@ -502,7 +552,7 @@
       "prettier": "passed",
       "nodeSyntax": "passed",
       "evidenceLinksAndJson": "passed",
-      "remoteCiForFinalLcp2700AndRetry2": "pending"
+      "remoteCiForFinalLcp2700AndRetry2": "completed; LCP passed all routes and Match 3D trace passed, but Lighthouse and critical release gate failed on one home TBT/score outlier"
     }
   },
   "safety": {
