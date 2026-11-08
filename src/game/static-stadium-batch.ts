@@ -53,7 +53,7 @@ function textureKey(value: unknown): string {
   ].join(",");
 }
 
-function materialKey(material: THREE.Material): string {
+function materialKey(material: THREE.Material, includeVertexColors = true): string {
   return [
     material.type,
     material.version,
@@ -94,7 +94,7 @@ function materialKey(material: THREE.Material): string {
     material.depthTest,
     material.toneMapped,
     field(material, "fog"),
-    field(material, "vertexColors"),
+    ...(includeVertexColors ? [field(material, "vertexColors")] : []),
     field(material, "wireframe"),
     field(material, "wireframeLinewidth"),
     field(material, "dithering"),
@@ -182,7 +182,9 @@ export function batchStaticStadium(
       const material = mesh.material;
       const bucket = policy.bucket ?? bucketFor(mesh);
       const key = [
-        materialKey(material),
+        // The bake writes a canonical color attribute for every mesh, folding
+        // each source material's vertexColors flag into its vertex values.
+        materialKey(material, false),
         policy.shadows !== false && mesh.castShadow,
         policy.shadows !== false && mesh.receiveShadow,
         bucket,

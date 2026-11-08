@@ -1,105 +1,115 @@
 # JogoManager — evidências da atualização do PR #125
 
-**Repositório:** `davizeiro12345678/jogomanager`
-**PR:** [#125 — Consolida carreira, estádio, Firebase e importador Custom450](https://github.com/davizeiro12345678/jogomanager/pull/125)
-**Branch:** `codex/career-tutorial-css-20261107`
-**Baseline analisado:** `7760bdd426ef0298b4d52440985d145845e6b28f`
-**Escopo deste relatório:** build local candidato e evidências da sessão. Não é uma afirmação de que toda a lista original foi concluída nem de que a versão foi publicada em produção.
+- **Repositório:** `davizeiro12345678/jogomanager`
+- **PR existente:** [#125 — Consolida carreira, estádio, Firebase e importador Custom450](https://github.com/davizeiro12345678/jogomanager/pull/125)
+- **Branch:** `codex/career-tutorial-css-20261107`
+- **Baseline:** `7760bdd426ef0298b4d52440985d145845e6b28f`
+  **Ambiente candidato:** sandbox local, Node 24.22.0 e Vite do lockfile; nenhum deploy ou merge foi feito.
 
-## Capturas antes/depois
+Este relatório registra o que foi implementado e medido nesta branch. **Não afirma que toda a solicitação original esteja concluída**, que o site foi publicado ou que o multiplayer já seja plenamente autoritativo.
 
-As capturas `before` foram extraídas do artefato Lighthouse do baseline; as de `after` são do preview da branch. As duas comparações abaixo têm o mesmo tamanho (230 × 498 px). As originais móveis de 390 × 844 px também estão preservadas. A captura do Match 3D é uma evidência posterior, sem imagem baseline equivalente no artefato original.
+## Evidências visuais
 
-| Página inicial — antes | Página inicial — depois |
-|---|---|
-| ![Home antes das alterações](before/home.jpg) | ![Home depois das alterações](after/home.jpg) |
+Os pares `before/after` de home e seleção de partida rápida preservam o mesmo tamanho (230 × 498 px); as capturas `before` vieram do artefato Lighthouse do baseline. As imagens novas em 390 × 844 px foram capturadas no preview local final. A captura Match 3D veio do Chromium gerenciado com WebGL2 habilitado; não há imagem baseline equivalente no artefato original.
 
-| Seleção de partida rápida — antes | Seleção de partida rápida — depois |
-|---|---|
+| Home — antes                   | Home — depois                  |
+| ------------------------------ | ------------------------------ |
+| ![Home antes](before/home.jpg) | ![Home depois](after/home.jpg) |
+
+| Partida rápida — antes                          | Partida rápida — depois                         |
+| ----------------------------------------------- | ----------------------------------------------- |
 | ![Partida rápida antes](before/quick-match.jpg) | ![Partida rápida depois](after/quick-match.jpg) |
 
-**Match 3D no Chromium gerenciado (preview local, 893 × 768 px):**
+**Capturas finais em 390 × 844 px:**
 
-![Estádio e partida 3D no preview local](after/match-3d.webp)
+![Home final no preview local](after/home-final-390x844.png)
 
-O Chromium gerenciado aceitou WebGL2 e mostrou o estádio/campo/jogadores. O Firefox usado pelo Playwright não permite WebGL2 no runner (`AllowWebgl2:false`), portanto seus erros de criação de contexto não foram atribuídos ao jogo. A captura do match é uma imagem real da branch, não uma imagem gerada. Não havia ferramenta de gravação contínua de browser disponível; por isso nenhum vídeo de gameplay foi fabricado ou apresentado como gravação completa.
+![Seleção de partida rápida final no preview local](after/quick-match-final-390x844.png)
 
-## Escopo integrado nesta branch
+**Match 3D renderizado no preview local (893 × 768 px):**
 
-As alterações selecionadas do workflow de 29 frentes abrangem: validação de protocolo e estados de conexão multiplayer; validação/normalização de mensagens e moderação automática no chat; retry e idempotência em fluxos de carreira/temporada; previsão financeira e validação de ofertas; elegibilidade de escalação e feedback de salvamento de táticas; melhorias no batching/ownership do estádio, atmosfera, reações da torcida, clima e transições de cutscene; ajustes de interface e acessibilidade; metadados de cobertura i18n; scanner de configuração pública e correção do comando de preview padrão.
+![Campo, estádio e jogadores 3D](after/match-3d.webp)
 
-**Limite importante:** isto melhora controles e contratos do cliente, mas não transforma `/match` em multiplayer totalmente autoritativo. A tela ainda não está conectada a um endpoint operacional de simulação/estado autoritativo; durabilidade de deduplicação de chat por `client_message_id` também requer trabalho de backend/migration/RPC. Não afirmar o multiplayer como concluído.
+O console Playwright da tela de partida rápida final não apresentou erros nem avisos. O Firefox disponível no runner não habilitou WebGL2; por isso a evidência 3D vem do Chromium, que criou o contexto e renderizou a cena. Não foi encontrada ferramenta de gravação contínua de browser: **nenhum vídeo de gameplay foi fabricado ou apresentado como gravação completa**.
 
-## Métricas de bundle
+## Escopo implementado nesta branch
 
-Medição feita pelo `scripts/bundle-report.mjs` em builds da mesma branch/base. O total soma **todos** os chunks JS emitidos, incluindo chunks lazy; não equivale ao download inicial de uma rota. Gzip é nível 9 e Brotli Q6 é estimativa offline.
+O trabalho selecionado das 29 frentes inclui validação de protocolo e estados de conexão multiplayer; validação/normalização de mensagens e moderação automática no chat; retry/idempotência em fluxos de carreira e temporada; validação de ofertas e valores financeiros; elegibilidade de escalação e feedback de salvamento de táticas; correções no batching/ownership do estádio; melhorias selecionadas de atmosfera, torcida, clima, cutscenes e acessibilidade; separação de módulos/client startup; scanner de configuração pública e correção do preview padrão.
 
-| Métrica | Baseline | Build atual | Variação |
-|---|---:|---:|---:|
-| JS emitido total — raw | 7.252.912 B | 7.255.709 B | +2.797 B (+0,039%) |
-| JS emitido total — gzip | 2.359.628 B | 2.361.267 B | +1.639 B (+0,070%) |
-| JS emitido total — Brotli Q6 | 2.228.070 B | 2.229.943 B | +1.873 B (+0,084%) |
-| Chunk `hydrate-app` — raw | 379.661 B | 326.457 B | −53.204 B (−14,01%) |
-| Chunk `hydrate-app` — gzip | 118.488 B | 100.544 B | −17.944 B (−15,14%) |
-| Chunk `hydrate-app` — Brotli Q6 | 111.374 B | 94.061 B | −17.313 B (−15,54%) |
-| Chunk `Stadium3D` — raw | 194.235 B | 194.515 B | +280 B |
-| Chunk `Stadium3D` — gzip | 64.649 B | 64.723 B | +74 B |
-| Chunk `Stadium3D` — Brotli Q6 | 60.223 B | 60.292 B | +69 B |
+### Limitações funcionais importantes
 
-| Startup estático da rota | Baseline raw / gzip / Brotli | Atual raw / gzip / Brotli | Variação Brotli |
-|---|---:|---:|---:|
-| Home | 502.676 / 164.335 / 155.479 B | 503.237 / 165.443 / 156.664 B | +1.185 B (+0,76%) |
-| Seleção de partida rápida | 911.034 / 308.340 / 291.907 B | 911.594 / 309.441 / 293.104 B | +1.197 B (+0,41%) |
-| Match 3D | 1.690.608 / 574.891 / 544.494 B | 1.691.612 / 576.096 / 545.799 B | +1.305 B (+0,24%) |
+- A tela de Match 3D **ainda não está ligada a um backend de simulação/estado autoritativo**. As validações e o antiexploit adicionados nesta etapa melhoram contratos e controles do cliente, mas não impedem um cliente modificado de falsificar estado. Não declarar o multiplayer totalmente autoritativo ou o anticheat completo.
+- A deduplicação durável de mensagens por `client_message_id` e a aplicação persistente de penalidades ainda dependem de backend, migration/RPC e revisão de autorização.
+- A solicitação de tradução integral de todos os idiomas **continua pendente**; a contagem real está na seção de i18n.
+- Não foi feito teste ativo de intensidade média em `jogomanager.com`: o domínio informado é produção e não há staging/telemetria de impacto com condição de parada confiável. O domínio foi apenas navegado passivamente; a validação técnica foi local.
 
-O comparador já presente no baseline do PR permite crescimento agregado máximo de **400.000 bytes** em raw, gzip e Brotli, usando cada total como seu próprio limite. Este lote não elevou esse limite; adiciona testes de regressão que confirmam a margem existente. O build atual consome 0,70% dela no total raw. Os orçamentos absolutos e as restrições de crescimento do startup Brotli/gzip por rota continuam ativos. O teste de performance mantém score Lighthouse mínimo 0,97, LCP máximo 2.500 ms, CLS máximo 0,1 e TBT máximo 200 ms, com agregação pessimista.
+## Métricas de bundle e política de performance
 
-## Lighthouse e validação do preview
+Os relatórios completos de baseline/candidato e o comparativo máquina-legível estão em [`bundle/`](bundle/). A comparação usa builds do mesmo runner/toolchain; total de JavaScript inclui chunks lazy e exclui os arquivos WASM. Gzip é nível 9. Brotli Q6 é estimativa offline e só corresponde a entrega do navegador se a CDN responder com `Content-Encoding: br`. Nenhuma dessas medidas é LCP, TBT, INP, FPS ou latência real de rede.
 
-O baseline de CI `42429874392` mediu três execuções móveis por rota. `/` teve performance [0,95; 0,98; 0,98], TBT [195; 27,5; 41] ms, LCP de aproximadamente 2.002–2.040 ms e CLS 0. `/partida-rapida` teve performance [0,96; 0,98; 0,98], TBT [201; 157; 145] ms, LCP de aproximadamente 1.408–1.567 ms e CLS ~0,00496. Esses resultados explicam a falha do baseline no pior caso. A medição Lighthouse **depois** ainda depende do workflow do GitHub após o push desta branch; não foi inventada nem estimada a partir de screenshot.
+| JavaScript emitido |    Baseline | Build final |           Variação |
+| ------------------ | ----------: | ----------: | -----------------: |
+| Total raw          | 7.341.649 B | 7.251.245 B | −90.404 B (−1,23%) |
+| Total gzip         | 2.389.550 B | 2.366.489 B | −23.061 B (−0,97%) |
+| Total Brotli Q6    | 2.254.273 B | 2.235.357 B | −18.916 B (−0,84%) |
 
-O comando `npm run preview` antigo caía em HTTP 500 por chamar `vite preview` e procurar `dist/server/server.js`, enquanto o build produz um Worker/Nitro em `.output`. O alias passou a usar `preview:worker`; o teste de regressão confirma essa representação. O preview local configurado passou cinco rotas (`/`, `/guias`, `/guia-de-scouting`, `/melhores-formacoes`, `/partida-rapida`) em `identity` e `gzip` (10 representações verificadas). O scanner de bundle não encontrou valores de credenciais privilegiadas.
+| Superfície de startup |         Raw: baseline → final (Δ) |    Gzip: baseline → final (Δ) | Brotli Q6: baseline → final (Δ) |
+| --------------------- | --------------------------------: | ----------------------------: | ------------------------------: |
+| Home                  |     539.444 → 523.994 (−15.450) B |  179.911 → 175.741 (−4.170) B |    170.635 → 166.746 (−3.889) B |
+| Nova carreira         | 1.344.640 → 1.283.464 (−61.176) B | 451.168 → 431.785 (−19.383) B |   426.737 → 409.132 (−17.605) B |
+| Partida rápida        |      915.739 → 907.139 (−8.600) B |  311.994 → 309.932 (−2.062) B |    295.749 → 293.910 (−1.839) B |
+| Match 3D              | 1.737.195 → 1.686.597 (−50.598) B | 594.783 → 578.966 (−15.817) B |   563.247 → 549.089 (−14.158) B |
+| Palco cinematográfico |  1.805.357 → 1.797.527 (−7.830) B |  546.856 → 544.973 (−1.883) B |    513.671 → 512.071 (−1.600) B |
+| Editor                |      565.221 → 555.789 (−9.432) B |  188.943 → 186.464 (−2.479) B |    179.051 → 176.824 (−2.227) B |
+| Worker de simulação   |             89.540 → 89.540 (0) B |        29.958 → 29.956 (−2) B |          28.857 → 28.858 (+1) B |
 
-A URL e a chave publishable do único projeto Supabase identificado como JogoManager foram usados apenas no processo/build local para validar a interface. Nenhuma service-role key foi usada, nenhum valor de ambiente foi adicionado ao Git e nenhuma configuração remota foi alterada. O fluxo de partida rápida é local; a consulta opcional de catálogo foi isolada com cache local recente para evitar paginação extensa no projeto de produção.
+**Orçamentos atuais:** o comparador já permitia crescimento agregado de até **400.000 bytes por representação** (raw, gzip e Brotli); esse teto não foi aumentado neste lote. Conforme pedido, foi adicionada uma margem explícita máxima de **2.048 bytes para cada métrica gzip/Brotli de startup por rota**. O Worker Brotli cresce 1 byte, dentro dessa margem. Tetos absolutos de `bundle:check`, rotas obrigatórias e medições ausentes continuam bloqueantes. O comparador final passou sem violações.
 
-## Testes executados
+## Lighthouse e preview
 
-| Gate | Resultado |
-|---|---|
-| Suíte completa | PASS — 1.785 testes em 335 arquivos |
-| Testes focados dos módulos modificados | PASS — 98 testes em 14 arquivos |
-| Lint (`npm run lint`, zero avisos) | PASS |
-| Performance/bundle gates | PASS — 23/23 |
-| Teste Node do preview | PASS — 3/3 |
-| `npm run build` + `bundle:check` | PASS |
-| Scanner de ambiente/bundle público | PASS |
-| Preview SSR, 5 rotas × identity/gzip | PASS — 10/10 |
-| TypeScript (`npx tsc --noEmit`) | BLOQUEADO por 2 erros preexistentes em `src/lib/stripe.server.ts`: pin `
-`2026-09-30.endive` incompatível com o tipo atual do SDK (`2026-10-28.endive`). O arquivo Stripe não foi alterado para evitar uma mudança de versão de API financeira dentro deste lote.
+O baseline Lighthouse do CI (run `42429874392`) tinha três execuções móveis por rota. Home: score [0,95; 0,98; 0,98], TBT [195; 27,5; 41] ms, LCP ~2.002–2.040 ms e CLS 0. Partida rápida: score [0,96; 0,98; 0,98], TBT [201; 157; 145] ms, LCP ~1.408–1.567 ms e CLS ~0,00496. Ainda não há amostra Lighthouse **depois** desta atualização; ela depende do workflow do GitHub após o push e não foi estimada por screenshot.
+
+O comando `npm run preview` foi corrigido para servir o Worker/Nitro local produzido em `.output`, em vez de procurar `dist/server/server.js`. No build final, o preview respondeu HTTP 200 e verificou 5 rotas (`/`, `/guias`, `/guia-de-scouting`, `/melhores-formacoes`, `/partida-rapida`) em `identity` e `gzip`: **10/10 representações**.
+
+## Testes e gates finais
+
+| Verificação                                                          | Resultado final                                           |
+| -------------------------------------------------------------------- | --------------------------------------------------------- |
+| Suíte completa (`npm test`)                                          | PASS — 335 arquivos, 1.786/1.786 testes                   |
+| Regressão focada de batching do estádio                              | PASS — 6/6 testes                                         |
+| Lint (`npm run lint`)                                                | PASS — zero avisos                                        |
+| TypeScript (`npx tsc --noEmit --pretty false`)                       | PASS                                                      |
+| Performance gates                                                    | PASS — 24/24; inclui a fronteira exata de +2.048/+2.049 B |
+| Build de produção local e `bundle:check`                             | PASS                                                      |
+| Comparação bundle baseline/candidato                                 | PASS — 0 violações                                        |
+| Validação de ambiente público e scanner de credenciais privilegiadas | PASS                                                      |
+| Preview SSR, cinco rotas × duas codificações                         | PASS — 10/10                                              |
+| Console Playwright da partida rápida final                           | PASS — 0 erros, 0 avisos                                  |
+
+O scanner não encontrou credenciais privilegiadas no bundle. A URL e chave publishable do Supabase foram usadas somente em processo/build local previamente validado; nenhuma service-role key, arquivo `.env` ou configuração remota foi incluída/alterada nesta atualização.
 
 ## Cobertura i18n medida
 
-| Medida | Contagem | Situação |
-|---|---:|---|
-| Identificadores de locale anunciados | 98 | Catálogo atualizado |
-| Idiomas-fonte | 2 | `pt-BR` e `en` |
-| Packs JSON existentes | 24 | Ainda `draft`/não completos |
-| Locales sem pack que usam fallback inglês | 72 | Não traduzidos integralmente |
+| Medida                               | Contagem | Estado                     |
+| ------------------------------------ | -------: | -------------------------- |
+| Identificadores de locale anunciados |       98 | Catálogo atualizado        |
+| Idiomas-fonte                        |        2 | `pt-BR` e `en`             |
+| Packs JSON existentes                |       24 | Ainda em draft/incompletos |
+| Locales sem pack próprio             |       72 | Fallback em inglês         |
+| Revisão nativa completa              |      Não | Pendente                   |
 
-A paridade e o fallback ficaram explícitos nos metadados/testes, mas **a tradução completa das 98 línguas não foi concluída** e os packs existentes não passaram por revisão nativa.
+Os metadados e testes deixam explícito o fallback; **não houve tradução integral dos 98 idiomas nem revisão nativa**. A captura de partida rápida também mostra alguns textos em inglês, evidenciando a pendência.
 
-## Segurança, pen-test e produção
+## Segurança, produção e pendências
 
-As alterações incluem verificações locais de protocolo, identidade/payload, controles anti-evasão de texto, moderação e penalidade automática, além do scanner que impede publicar credenciais privilegiadas no bundle. Os testes executados foram locais e determinísticos.
+Não houve ataque ativo, carga/stress test, escrita de carreira/partida, alteração de banco/configuração remota, publicação ou deploy em produção. Os testes de segurança executados foram estáticos/determinísticos e no ambiente local. Para DAST de média intensidade, usar um staging autorizado com limite de taxa, monitoramento e condição de parada explícita.
 
-**Não foi executado ataque de média intensidade em `jogomanager.com`.** O domínio é produção e não havia ambiente de staging nem telemetria de impacto/stop condition confiável para esse teste; o site foi apenas navegado passivamente. Não houve deploy, alteração de banco/configuração remota, stress test nem escrita de partida/carreira em produção.
+Pendências antes de considerar o pedido original concluído:
 
-## Pendências explícitas
+1. Implementar autoridade real de partidas no servidor (validação de comandos, snapshots assinados/validados e estado online persistente) e testar com clientes adversariais em staging.
+2. Completar deduplicação/moderação persistentes no backend com RLS/migration/RPC e retentativas seguras.
+3. Completar, revisar nativamente e publicar as traduções pendentes.
+4. Gravar um vídeo contínuo de uma partida completa quando houver ferramenta de captura contínua disponível; as evidências atuais são screenshots reais.
+5. Aguardar e revisar Lighthouse/CI do SHA final no GitHub.
 
-1. Conectar a tela Match 3D a um backend de multiplayer verdadeiramente autoritativo (snapshot/command validation no servidor), em vez de declarar completo o protocolo cliente atual.
-2. Tornar deduplicação de chat durável no backend e rever o modelo de penalidades com migrations/RPC apropriados.
-3. Completar e revisar nativamente os 72 fallbacks e os packs `draft`.
-4. Aguardar e analisar o Lighthouse/CIs do SHA após o push; a imagem e o bundle local não substituem essa medição.
-5. Gravar uma partida completa somente quando houver ferramenta de captura contínua disponível. Este relatório contém screenshots verificáveis, não vídeo.
-
-O PR #125 permanece existente e em draft; este lote não fez merge nem publicação no domínio público.
+O PR #125 continua sendo o PR existente desta branch; não houve merge nem publicação em `jogomanager.com`.

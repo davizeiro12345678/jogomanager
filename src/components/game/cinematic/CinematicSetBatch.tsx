@@ -10,6 +10,7 @@ export interface CinematicBatchSnapshot {
   batches: number;
   visibleSources: number;
 }
+
 export function CinematicSetBatch({
   children,
   onReady,
@@ -21,6 +22,7 @@ export function CinematicSetBatch({
   const cleanup = useRef<StaticStadiumBatch | null>(null);
   const frames = useRef(0);
   const { invalidate } = useThree();
+
   useEffect(
     () => () => {
       cleanup.current?.();
@@ -28,6 +30,7 @@ export function CinematicSetBatch({
     },
     [],
   );
+
   useFrame(() => {
     if (!group.current) return;
     let prepared = false;
@@ -53,5 +56,6 @@ export function CinematicSetBatch({
       });
     }
   }, -90);
+
   return <group ref={group}>{children}</group>;
 }

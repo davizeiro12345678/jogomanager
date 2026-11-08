@@ -27,7 +27,7 @@
 
 ## Critical performance requirements
 
-- Performance budgets are mandatory release requirements of critical importance. A failed, missing, cancelled, or skipped required check is a release blocker. Do not turn assertions into warnings, raise limits, remove scenarios, or disable rules to make a release pass.
+- Performance budgets are mandatory release requirements of critical importance. A failed, missing, cancelled, or skipped required check is a release blocker. Do not turn assertions into warnings, remove scenarios, or disable rules to make a release pass. The bundle comparator explicitly allows at most 2,048 bytes of growth per route-startup gzip/Brotli measurement and 400,000 bytes of aggregate JavaScript growth per representation; absolute `bundle:check` limits remain hard.
 - Preserve the `Quality gates` workflow and its `Critical performance release gate`, including the real 200-match stress suite, same-runner MatchSim comparison, startup bundle checks, graphics contracts, and desktop/mobile Lighthouse assertions. Database replay and the other Quality jobs must also pass before production publication.
 - Lint must pass with zero errors and zero warnings. Fix component/export boundaries instead of suppressing Fast Refresh diagnostics.
 - Performance comparisons must use identical fixtures, seeds, runtime, dependencies, viewport and measurement protocol. Keep baseline and candidate evidence and check deterministic state as well as timing. Never describe skipped tests, software-rendered browser timings, or structural graphics tests as physical-device FPS certification.

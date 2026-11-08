@@ -62,6 +62,35 @@ describe("immutable stadium batching", () => {
     expect(censusScene(group).total).toEqual(original.total);
   });
 
+  it("batches vertex-color sources after baking their material colors into attributes", () => {
+    const group = new THREE.Group();
+    const plain = box("white", 0);
+    const vertexColored = box("white", 2);
+    const material = vertexColored.material as THREE.MeshStandardMaterial;
+    material.vertexColors = true;
+    const positions = vertexColored.geometry.getAttribute("position");
+    vertexColored.geometry.setAttribute(
+      "color",
+      new THREE.Float32BufferAttribute(new Float32Array(positions.count * 3).fill(0.5), 3),
+    );
+    group.add(plain, vertexColored);
+
+    const before = censusScene(group);
+    const cleanup = batchStaticStadium(group);
+    const after = censusScene(group);
+    expect(after.total.draws).toBe(1);
+    expect(after.total.triangles).toBe(before.total.triangles);
+
+    const merged = group.children.find(
+      (child) => child !== plain && child !== vertexColored,
+    ) as THREE.Mesh;
+    const colors = merged.geometry.getAttribute("color");
+    expect(colors.getX(0)).toBeCloseTo(1);
+    expect(colors.getX(36)).toBeCloseTo(0.5);
+    cleanup();
+    expect(censusScene(group).total).toEqual(before.total);
+  });
+
   it("preserves roughness and shadow differences instead of collapsing distinct surfaces", () => {
     const group = new THREE.Group();
     for (let i = 0; i < 6; i++) {

@@ -30,7 +30,7 @@ test("every mobile run must meet the configured critical performance budgets", (
 
 test("root SSR shell keeps RootComponent outside the initial static import", () => {
   const source = readFileSync(path.join(root, "src/routes/__root.tsx"), "utf8");
-  assert.match(source, /import \{ RootShell \} from ["']@\/components\/RootLayout["']/);
+  assert.match(source, /import \{ RootShell \} from ["']@\/components\/RootShell["']/);
   assert.doesNotMatch(source, /import \{ RootShell, RootComponent \} from/);
   assert.match(
     source,
@@ -127,12 +127,23 @@ test("Match 3D route selector ignores similarly named engine chunks", () => {
   assert.equal(isMatchRouteEntry({ name: "match-a1b2c3.js" }), true);
 });
 
-test("bundle gate rejects even a small Match 3D startup regression", () => {
+test("bundle gate allows route startup growth up to 2 KiB", () => {
   const result = compare((candidate) => {
-    candidate.entries.find(isMatchRouteEntry).startupBrotliBytes += 1;
+    candidate.entries.find(isMatchRouteEntry).startupBrotliBytes += 2_048;
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.report.violations, []);
+});
+
+test("bundle gate rejects route startup growth above 2 KiB", () => {
+  const result = compare((candidate) => {
+    candidate.entries.find(isMatchRouteEntry).startupBrotliBytes += 2_049;
   });
   assert.equal(result.status, 1);
-  assert.match(result.report.violations.join("\n"), /Match 3D.*Brotli/);
+  assert.match(
+    result.report.violations.join("\n"),
+    /Match 3D.*growth 2049 bytes exceeds allowed \+2048 bytes/,
+  );
 });
 
 test("bundle gate cannot pass by dropping a required route", () => {

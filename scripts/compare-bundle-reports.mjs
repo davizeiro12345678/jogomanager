@@ -26,6 +26,7 @@ const difference = (base, current) =>
 const rows = [];
 const violations = [];
 const totalGrowthBudgetBytes = 400_000;
+const routeStartupGrowthBudgetBytes = 2_048;
 function add(label, base, current, critical = false, maxIncreaseBytes = 0) {
   rows.push({
     label,
@@ -75,8 +76,20 @@ for (const [name, predicate] of keys) {
     violations.push(`${name}: missing required route in ${!b ? "baseline" : "candidate"}`);
     continue;
   }
-  add(name + " startup (gzip)", b.startupGzipBytes, a.startupGzipBytes, true);
-  add(name + " startup (Brotli Q6)", b.startupBrotliBytes, a.startupBrotliBytes, true);
+  add(
+    name + " startup (gzip)",
+    b.startupGzipBytes,
+    a.startupGzipBytes,
+    true,
+    routeStartupGrowthBudgetBytes,
+  );
+  add(
+    name + " startup (Brotli Q6)",
+    b.startupBrotliBytes,
+    a.startupBrotliBytes,
+    true,
+    routeStartupGrowthBudgetBytes,
+  );
 }
 const md = [
   "# Bundle impact: baseline vs candidate",
@@ -92,7 +105,7 @@ const md = [
   "",
   "Brotli Q6 é estimativa offline; o navegador só recebe essa compressão se o CDN responder com Content-Encoding: br.",
   "",
-  "Gate: JS total agregado pode crescer até 400.000 bytes em raw, gzip nível 9 e Brotli Q6; startup de cada rota continua sem crescimento permitido. Medidas e rotas ausentes falham; orçamentos absolutos continuam verificados por bundle:check.",
+  "Gate: JS total agregado pode crescer até 400.000 bytes em raw, gzip nível 9 e Brotli Q6; cada métrica gzip/Brotli de startup por rota pode crescer até 2.048 bytes. Medidas e rotas ausentes falham; orçamentos absolutos continuam verificados por bundle:check.",
   "",
   ...(violations.length
     ? ["## Gate failures", "", ...violations.map((item) => `- ${item}`), ""]

@@ -1,7 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ConsentBanner } from "@/components/privacy/ConsentBanner";
-import { Outlet, useRouteContext, useRouter, useLocation, Scripts } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Outlet, useRouteContext, useRouter, useLocation } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { I18nProvider, useT } from "../i18n/provider";
 import {
@@ -10,7 +10,6 @@ import {
   shouldInitializeWorldOnEntry,
 } from "@/lib/public-content-routes";
 import { AccessibilityProvider } from "@/components/accessibility/AccessibilityProvider";
-import { RouteHeadContent } from "@/components/RouteHeadContent";
 import { readConsent } from "@/lib/consent";
 
 let analyticsModule: Promise<typeof import("../lib/analytics")> | undefined;
@@ -19,25 +18,6 @@ let analyticsModule: Promise<typeof import("../lib/analytics")> | undefined;
 const AccessibilitySettings = lazy(
   () => import("@/components/accessibility/AccessibilitySettings"),
 );
-
-export function RootShell({ children }: { children: ReactNode }) {
-  const pathname = useLocation({ select: (location) => location.pathname });
-  return (
-    <html
-      lang="pt-BR"
-      className="dark"
-      data-public-shell={isLightweightCssPath(pathname) || undefined}
-    >
-      <head>
-        <RouteHeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 /** Lightweight pages do not call toast(); the store is the intentional exception. */
 function shouldMountDeferredToaster(pathname: string) {

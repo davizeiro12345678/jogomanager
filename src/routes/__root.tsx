@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, lazyRouteComponent } from "@tanstack/react-router";
-import { RootShell } from "@/components/RootLayout";
+import { RootShell } from "@/components/RootShell";
 import { GAME_STYLESHEET_URL as appCss } from "@/lib/game-stylesheet";
 import publicCss from "../public-styles.css?url";
 import quickCss from "../public-quick-styles.css?url";

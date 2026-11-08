@@ -1,128 +1,82 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-08T03:55:43.211Z",
   "source": {
     "repository": "davizeiro12345678/jogomanager",
     "pullRequest": 125,
     "branch": "codex/career-tutorial-css-20261107",
     "baselineCommit": "7760bdd426ef0298b4d52440985d145845e6b28f",
-    "baselineLighthouseRun": 42429874392,
-    "currentBundleReportGeneratedAt": "2026-11-08T02:06:20.228Z",
-    "candidateMeasurement": "local Nitro/Cloudflare Worker build; Supabase publishable configuration supplied only to the local process/build"
+    "candidateBuildGeneratedAt": "2026-11-08T03:53:11.645Z",
+    "measurement": "Local Nitro/Cloudflare Worker build using Node 24.22.0 and the lockfile toolchain; no production deployment."
   },
   "bundle": {
+    "limits": {
+      "aggregateJavaScriptGrowthBytesPerRepresentation": 400000,
+      "routeStartupGrowthBytesPerGzipOrBrotliMetric": 2048,
+      "absoluteBundleCheck": "unchanged and enforced",
+      "missingRoutesOrMeasurements": "fail"
+    },
     "totalEmittedJavaScriptBytes": {
-      "growthBudgetPerEncoding": 400000,
-      "budgetChange": "Unchanged from PR baseline; regression tests added to confirm the existing cap.",
       "baseline": {
-        "raw": 7252912,
-        "gzip": 2359628,
-        "brotliQ6": 2228070
+        "raw": 7341649,
+        "gzip": 2389550,
+        "brotliQ6": 2254273
       },
-      "current": {
-        "raw": 7255709,
-        "gzip": 2361267,
-        "brotliQ6": 2229943
+      "candidate": {
+        "raw": 7251245,
+        "gzip": 2366489,
+        "brotliQ6": 2235357
       },
       "delta": {
-        "raw": 2797,
-        "gzip": 1639,
-        "brotliQ6": 1873
+        "raw": -90404,
+        "gzip": -23061,
+        "brotliQ6": -18916
       },
-      "budgetUsedPercent": {
-        "raw": 0.6992,
-        "gzip": 0.4097,
-        "brotliQ6": 0.4682
-      }
-    },
-    "chunks": {
-      "hydrateApp": {
-        "baseline": {
-          "raw": 379661,
-          "gzip": 118488,
-          "brotliQ6": 111374
-        },
-        "current": {
-          "raw": 326457,
-          "gzip": 100544,
-          "brotliQ6": 94061
-        },
-        "delta": {
-          "raw": -53204,
-          "gzip": -17944,
-          "brotliQ6": -17313
-        }
+      "deltaPercent": {
+        "raw": -1.231,
+        "gzip": -0.965,
+        "brotliQ6": -0.839
       },
-      "stadium3D": {
-        "baseline": {
-          "raw": 194235,
-          "gzip": 64649,
-          "brotliQ6": 60223
-        },
-        "current": {
-          "raw": 194515,
-          "gzip": 64723,
-          "brotliQ6": 60292
-        },
-        "delta": {
-          "raw": 280,
-          "gzip": 74,
-          "brotliQ6": 69
-        }
-      }
+      "note": "Total includes emitted lazy JS chunks and excludes WASM assets; Brotli Q6 is an offline estimate."
     },
     "routeStartupBytes": {
       "home": {
-        "baseline": {
-          "raw": 502676,
-          "gzip": 164335,
-          "brotliQ6": 155479
-        },
-        "current": {
-          "raw": 503237,
-          "gzip": 165443,
-          "brotliQ6": 156664
-        },
-        "delta": {
-          "raw": 561,
-          "gzip": 1108,
-          "brotliQ6": 1185
-        }
+        "baseline": { "raw": 539444, "gzip": 179911, "brotliQ6": 170635 },
+        "candidate": { "raw": 523994, "gzip": 175741, "brotliQ6": 166746 },
+        "delta": { "raw": -15450, "gzip": -4170, "brotliQ6": -3889 }
+      },
+      "newCareer": {
+        "baseline": { "raw": 1344640, "gzip": 451168, "brotliQ6": 426737 },
+        "candidate": { "raw": 1283464, "gzip": 431785, "brotliQ6": 409132 },
+        "delta": { "raw": -61176, "gzip": -19383, "brotliQ6": -17605 }
       },
       "quickMatch": {
-        "baseline": {
-          "raw": 911034,
-          "gzip": 308340,
-          "brotliQ6": 291907
-        },
-        "current": {
-          "raw": 911594,
-          "gzip": 309441,
-          "brotliQ6": 293104
-        },
-        "delta": {
-          "raw": 560,
-          "gzip": 1101,
-          "brotliQ6": 1197
-        }
+        "baseline": { "raw": 915739, "gzip": 311994, "brotliQ6": 295749 },
+        "candidate": { "raw": 907139, "gzip": 309932, "brotliQ6": 293910 },
+        "delta": { "raw": -8600, "gzip": -2062, "brotliQ6": -1839 }
       },
       "match3D": {
-        "baseline": {
-          "raw": 1690608,
-          "gzip": 574891,
-          "brotliQ6": 544494
-        },
-        "current": {
-          "raw": 1691612,
-          "gzip": 576096,
-          "brotliQ6": 545799
-        },
-        "delta": {
-          "raw": 1004,
-          "gzip": 1205,
-          "brotliQ6": 1305
-        }
+        "baseline": { "raw": 1737195, "gzip": 594783, "brotliQ6": 563247 },
+        "candidate": { "raw": 1686597, "gzip": 578966, "brotliQ6": 549089 },
+        "delta": { "raw": -50598, "gzip": -15817, "brotliQ6": -14158 }
+      },
+      "cinematicStage": {
+        "baseline": { "raw": 1805357, "gzip": 546856, "brotliQ6": 513671 },
+        "candidate": { "raw": 1797527, "gzip": 544973, "brotliQ6": 512071 },
+        "delta": { "raw": -7830, "gzip": -1883, "brotliQ6": -1600 }
+      },
+      "editor": {
+        "baseline": { "raw": 565221, "gzip": 188943, "brotliQ6": 179051 },
+        "candidate": { "raw": 555789, "gzip": 186464, "brotliQ6": 176824 },
+        "delta": { "raw": -9432, "gzip": -2479, "brotliQ6": -2227 }
+      },
+      "matchWorker": {
+        "baseline": { "raw": 89540, "gzip": 29958, "brotliQ6": 28857 },
+        "candidate": { "raw": 89540, "gzip": 29956, "brotliQ6": 28858 },
+        "delta": { "raw": 0, "gzip": -2, "brotliQ6": 1 }
       }
-    }
+    },
+    "comparisonGate": { "status": "passed", "violations": 0, "evidence": "bundle/comparison.json" }
   },
   "lighthouse": {
     "budgets": {
@@ -133,73 +87,57 @@
       "aggregation": "pessimistic",
       "runsPerRoute": 3
     },
-    "baseline": {
-      "home": {
-        "performanceScores": [0.95, 0.98, 0.98],
-        "tbtMs": [195, 27.5, 41],
-        "lcpMsRange": [2002, 2040],
-        "cls": 0
-      },
-      "quickMatch": {
-        "performanceScores": [0.96, 0.98, 0.98],
-        "tbtMs": [201, 157, 145],
-        "lcpMsRange": [1408, 1567],
-        "cls": 0.00496
-      }
-    },
+    "baselineRun": 42429874392,
     "afterCandidate": null,
-    "afterCandidateNote": "Awaiting GitHub CI after push; no post-change Lighthouse score has been inferred."
+    "afterCandidateNote": "Awaiting GitHub CI for the final pushed SHA; no post-change Lighthouse score is inferred."
   },
   "i18n": {
     "supportedIdentifiers": 98,
     "sourceLocales": 2,
     "jsonPacks": 24,
     "fallbackLocales": 72,
-    "nativeReviewComplete": false
+    "nativeReviewComplete": false,
+    "completeTranslationRequested": true,
+    "completeTranslationDelivered": false
   },
   "validation": {
     "fullSuite": {
       "status": "passed",
       "testFiles": 335,
-      "tests": 1785
+      "tests": 1786,
+      "failed": 0,
+      "durationSeconds": 342.67
     },
-    "focusedSuite": {
-      "status": "passed",
-      "testFiles": 14,
-      "tests": 98
-    },
-    "lint": "passed, zero warnings",
-    "performanceGates": {
-      "status": "passed",
-      "passed": 23,
-      "failed": 0
-    },
-    "previewRegressionNodeTests": {
-      "status": "passed",
-      "passed": 3,
-      "failed": 0
-    },
-    "buildAndBundleCheck": "passed",
+    "stadiumBatchRegression": { "status": "passed", "tests": 6, "failed": 0 },
+    "lint": { "status": "passed", "warnings": 0 },
+    "typescript": { "status": "passed", "command": "npx tsc --noEmit --pretty false" },
+    "performanceGates": { "status": "passed", "passed": 24, "failed": 0 },
+    "build": "passed",
+    "absoluteBundleCheck": "passed",
     "publicEnvironmentSecretScan": "passed",
-    "previewRepresentations": {
-      "routes": 5,
-      "encodings": ["identity", "gzip"],
-      "passed": 10
-    },
-    "typescript": {
-      "status": "failed_on_preexisting_stripe_sdk_type_mismatch",
-      "errors": 2,
-      "file": "src/lib/stripe.server.ts",
-      "detail": "Pinned API version 2026-09-30.endive is not assignable to installed SDK type 2026-10-28.endive; runtime pin was not changed."
+    "bundleComparison": { "status": "passed", "violations": 0 },
+    "previewRepresentations": { "routes": 5, "encodings": ["identity", "gzip"], "passed": 10 },
+    "browser": {
+      "quickMatchConsoleErrors": 0,
+      "quickMatchConsoleWarnings": 0,
+      "homeScreenshot": "after/home-final-390x844.png",
+      "quickMatchScreenshot": "after/quick-match-final-390x844.png",
+      "match3DScreenshot": "after/match-3d.webp",
+      "webgl2RenderedInManagedChromium": true
     }
   },
   "safety": {
     "activeProductionPenTest": false,
     "productionWrites": false,
     "productionDeployment": false,
-    "match3DRenderedInManagedChromium": true,
-    "playwrightFirefoxWebGL2Available": false,
+    "supabaseServiceRoleKeyUsed": false,
     "fullGameplayVideoRecorded": false,
-    "fullGameplayVideoNote": "No continuous browser recording tool was available; only authentic screenshots are included."
+    "fullGameplayVideoNote": "No continuous browser recording tool was available; authentic screenshots are included instead."
+  },
+  "functionalStatus": {
+    "serverAuthoritativeMultiplayerComplete": false,
+    "persistentServerChatDeduplicationComplete": false,
+    "allLocalesTranslatedAndNativeReviewed": false,
+    "productionPublished": false
   }
 }
