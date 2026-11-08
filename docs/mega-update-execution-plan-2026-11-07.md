@@ -4,9 +4,9 @@
 |---|---|
 | Projeto | `davizeiro12345678/jogomanager` |
 | PR | [#125](https://github.com/davizeiro12345678/jogomanager/pull/125) |
-| Branch/SHA inspecionados | `codex/career-tutorial-css-20261107` / `8df72c00719a4d46851c3239c28ade6bbd184523` |
-| Situação atual | PR #125 segue aberto em draft. Run `42424654927`: Lighthouse mobile e gate crítico falharam; check `evidence` pendente na última leitura. Build/types/tests, stress de 200 partidas, startup bundle, Supabase replay, contratos 3D e shell Lighthouse passaram. |
-| Método | 14 auditorias independentes; sem alteração em banco/produção e sem teste ofensivo ativo. |
+| Branch/SHA de referência | `codex/career-tutorial-css-20261107`; baseline de código `8df72c0`; head documental observado antes desta atualização `b72a2fd423e9cc6f39185b6099543095f6f117d5` |
+| Situação atual | PR #125 aberto em draft. No run `42426452442` do SHA `b72a2fd`, build/types/tests, stress, bundle, Supabase replay, contratos 3D, auditoria de dependências e importer passaram; Lighthouse mobile e `Critical performance release gate` falharam; `evidence` estava pendente na última consulta. Novo commit documental requer CI próprio. |
+| Método | 15 auditorias estáticas anteriores (captura do usuário), 8 frentes de pesquisa oficial/75 referências e 25 aprofundamentos técnicos independentes + síntese; esta rodada não alterou código, banco ou produção e não executou ataque. |
 
 ## 1. Objetivo
 
@@ -39,7 +39,7 @@ Essa direção visual ainda precisa de confirmação do usuário antes de altera
 8. **Performance:** no SHA `8df72c0`, a auditoria móvel de 15 runs reprovou score e TBT. O pior run da home teve score 88 e TBT 427,8 ms; `/partida-rapida` teve score 79 e TBT 894,4 ms. LCP máximo medido (2.069,4 ms) e CLS máximo (0,005) ficaram dentro dos budgets. O piso agora é 97; o limite TBT 200 ms continua bloqueando corretamente. São medidas de laboratório simulado, não RUM nem performance física.
 9. **C#/.NET e Go:** manter TypeScript como fonte canônica de simulação e servidor; manter Rust/WASM restrito aos kernels isolados existentes. O piloto disponível de Go foi mais lento que TypeScript após a fronteira, e C#/.NET no browser aumenta startup/tamanho. Só reabrir a decisão com benchmark full-match e benefício operacional medido.
 10. **SEO:** o site tem canonical, sitemap/robots e allowlist pública, mas não tem hreflang nem páginas editoriais localizadas. Não há integração DataForSEO/Ubersuggest no repositório. DataForSEO pode ser adicionado server-side após conectar credenciais e aprovar orçamento; a documentação oficial consultada informa que Ubersuggest não oferece API/webhooks, somente uma opção de MCP/OAuth não configurada.
-11. **Risco operacional:** duas árvores de migração aparecem no repositório; a autoridade de qual delas é aplicada precisa ser unificada e verificada em replay descartável. Nenhuma migration será aplicada ao projeto hospedado durante esta fase.
+11. **Risco operacional:** `AGENTS.md:36` define `drizzle/migrations` como a trilha forward do backend conectado e identifica a árvore recuperada em `supabase/migrations` como pertencente a outro backend. Reconciliar CI/bootstrap/replay com essa instrução e validar em DB descartável; nenhuma migration será aplicada ao projeto hospedado nesta fase.
 
 ## 4. Fases e entregáveis
 
@@ -130,8 +130,9 @@ Não executar “ataque de média intensidade” contra `jogomanager.com` nem ba
 
 - CI do SHA `4fc0edc`: build/types/tests e bundle passaram; Lighthouse mobile falhou por score 0,97 em `/melhores-formacoes` com mínimo 0,98.
 - CI do SHA `8df72c0` (run `42424654927`): build/types/tests, stress de 200 partidas, startup bundle, benchmark/contratos 3D, auditoria de dependências, Supabase replay, shell Lighthouse e importer passaram. Lighthouse mobile falhou em score/TBT na home e em `/partida-rapida`; o gate crítico falhou. Check `evidence` ainda pendia na última leitura.
+- CI do head documental `b72a2fd` (run `42426452442`): build/types/tests, stress, bundle de startup, replay Supabase, contratos 3D, auditoria de dependências, importer e demais checks listados no PR passaram; Lighthouse mobile e `Critical performance release gate` falharam; `evidence` estava pendente na última consulta. A falha impede promoção; não é corrigida por documentação.
 - O relatório de bundle local disponível é anterior ao SHA e mede todos os chunks; serve como pista de diagnóstico, não como baseline aprovado.
-- Auditorias direcionadas já executadas por agentes encontraram testes específicos de multiplayer, carreira e i18n; a suíte completa e CI precisam ser repetidos no SHA final do Node/lockfile declarados pelo projeto.
+- Foram concluídas 15 auditorias estáticas por domínio e 25 revisões técnicas adicionais, sintetizadas no [plano de implementação ampliado](mega-update-implementation-plan-2026-11-07.md) e no [índice detalhado das 15 auditorias](prior-static-audits-summary-2026-11-07.md). Ambas as rodadas foram somente leitura/pesquisa; não equivalem a testes de aceitação. Reexecutar o CI no SHA documental seguinte.
 - Nenhuma migration, configuração Cloudflare, segredo, ferramenta paga ou endpoint de produção foi alterado nesta fase.
 
 
@@ -155,3 +156,11 @@ O [adendo de pesquisa oficial](research-plan-addendum-2026-11-07.md) reúne 8 fr
 - WCAG 2.2 AA é meta para fluxos completos; Core Web Vitals de campo devem ser avaliados no p75, sem confundir TBT de laboratório com INP de usuários reais.
 
 Esse material é pesquisa e plano, não implementação dessas frentes. Não houve teste ativo no site, alteração de produção ou consumo de créditos DataForSEO/Ubersuggest. A fonte, versão e afirmação de cada referência estão no adendo.
+
+## 10. Auditorias e aprofundamentos adicionados ao plano
+
+A captura enviada mostra 15 auditorias já concluídas: CSS da carreira; telas e experiência da carreira; Stadium3D; outros monólitos; importer e limites; Firebase; crescimento/performance Supabase; backend/RLS; dependências/lockfiles; CDN/Cloudflare/headers; SEO técnico; email/webhooks/dados; tutorial; testes/evidência/release gates; e backlinks/segurança de domínio. Os identificadores, achados originais, limites de leitura estática e status de cada uma estão no [índice das 15 auditorias](prior-static-audits-summary-2026-11-07.md).
+
+Para aprofundar esses achados, foram concluídas exatamente 25 revisões independentes e uma síntese, sem falhas de coleta. O [plano de implementação ampliado](mega-update-implementation-plan-2026-11-07.md) mapeia todas as 15 auditorias históricas e os 25 IDs novos, separa evidência atual/histórica/pendente, prioriza P0/P1/P2 e organiza dependências, lotes, critérios de aceitação, rollback, saves, acessibilidade e segurança. As revisões foram estáticas/documentais: não executaram testes, benchmarks, browser journeys, ataques ou chamadas pagas.
+
+O perfil de backlinks continua bloqueado por falta de uma fonte confirmada e de dataset: não há classificação de links tóxicos nem arquivo/upload de disavow. O PR permanece em draft até corrigir o gate Lighthouse/TBT e obter todos os checks/artefatos verdes no SHA candidato.
