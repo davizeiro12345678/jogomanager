@@ -9,6 +9,7 @@ vi.mock("react", async (original) => ({
     typeof initial === "function" ? (initial as () => T)() : initial,
     () => undefined,
   ],
+  useRef: <T>(initial: T) => ({ current: initial }),
 }));
 import { QuickMatchPage } from "../components/game/QuickMatchPage";
 function countries(node: unknown): string[] {

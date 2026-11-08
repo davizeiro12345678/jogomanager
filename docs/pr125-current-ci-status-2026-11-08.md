@@ -2,7 +2,35 @@
 
 ## Escopo
 
-Snapshot local antes do push, sem acesso a banco remoto. A candidata está baseada diretamente no head remoto `a173a98f349cc54df712e26b84b32aa27c437665` da branch `codex/career-tutorial-css-20261107`; os sete commits que faltavam à worktree anterior foram integrados em uma worktree separada por patch de três vias e os novos arquivos intencionais foram copiados. O PR continua aberto/draft; ainda não houve commit, push, merge ou deploy desta candidata. A branch-base do PR é `main`, SHA `786f35d8f088` no fetch de 2026-11-08.
+O conteúdo histórico abaixo registra o snapshot anterior ao primeiro push (`11211fea`) e o run `42507187636`; ele não representa o estado remoto atual. O status vigente e as evidências desta continuação estão na atualização corrente logo abaixo. Não houve acesso a banco remoto nem deploy nesta etapa.
+
+## Atualização corrente — 8 nov. 2026, 18:12 -03
+
+### Por que a tela ficou em “Trabalhando”
+
+O Quality gates do GitHub não está pendente: o run [`42520815449`](https://github.com/davizeiro12345678/jogomanager/actions/runs/42520815449), para o head `46a7c2ca3a4e9f3f5eea10b39d1a454c8b7fac07`, terminou com `conclusion=failure`. O `gh pr checks 125` confirma 22 checks aprovados, 2 falhos, 2 ignorados e zero pendentes. Os dois falhos são `Lighthouse mobile multi-page audit` e `Critical performance release gate`; o segundo falha porque exige aprovação de todos os jobs críticos.
+
+A tela de espera correspondia ao watcher local, não ao resultado do workflow. O comando mostrado aguardava o PID local de `gh run watch` com `kill -0` e, ao final, usava `wait ... || true` seguido de `exit 0`; portanto, podia continuar exibindo progresso e mascarar o código de saída. A verificação conclusiva passa a ser `gh run view <run-id> --json status,conclusion,headSha,jobs` junto de `gh pr checks 125`. Não é necessário afrouxar nem alterar o workflow para corrigir isso.
+
+### Lighthouse remoto e limites ativos
+
+O run `42520815449` usou os budgets estritos restaurados: score mínimo `0,97`, TBT máximo `200 ms`, LCP máximo `2.500 ms`, CLS máximo `0,1` e acessibilidade mínima `0,90`. O artifact contém outliers acima do TBT: `/` chegou a `317,965 ms`, e `/partida-rapida` chegou a `219,5 ms`; outras repetições foram bem menores (`11,5 ms` na Home e `154,5 ms` em partida rápida). Logo, o Quality gate está falhando por métricas reais do artifact em agregação pessimista, não por um check travado. O resultado ainda não certifica nem rejeita a candidata local não publicada descrita abaixo.
+
+### Otimização local da partida rápida
+
+O head local `46a7c2c` coincide com o head remoto do PR, mas a nova divisão do catálogo ainda está apenas na worktree local e não participou do run acima. A rota mantém o diretório e a liga padrão renderizados no SSR; o catálogo completo (`leagues.ts`) passa a ser carregado sob demanda quando há interação. A medição do build mostra para `/partida-rapida` `535.141 B` de startup (`176.905 B` gzip). O chunk `leagues-BR5n06uY.js` tem `372.852 B` (`129.991 B` gzip) e fica fora da carga inicial.
+
+O probe CDP mobile confirmou 300 opções SSR/hidratadas no seletor, nenhum chunk `leagues-*` antes de interação e a requisição desse chunk depois de foco/seleção (`39` scripts iniciais, `40` após a ação). Isso comprova a fronteira de carregamento, não uma redução de TBT. O novo `npm run generate:quick-match-catalog` foi idempotente; os três testes focados passaram (8/8). Testes locais: `npm test` passou com `2.007/2.007` testes em 353 arquivos; `npm run lint`, `npx tsc --noEmit`, `npm run test:performance-gates`, `npm run bundle:check` e `npm run build` passaram. Os budgets de rota não foram relaxados.
+
+### Investigação da Home
+
+Três perfis locais independentes em viewport mobile e CPU 4× não reproduziram uma função da aplicação com trabalho longo estável: em cada janela de 9 s, cerca de 8,3–8,4 s ficaram em idle e o maior frame JavaScript individual observado foi `19 ms`. Esses perfis CDP não são Lighthouse e não invalidam o outlier remoto; mostram apenas que a captura local não identificou um hotspot isolável. A tentativa anterior de adiar `HomeDetails` até viewport foi revertida porque o conteúdo SSR desaparecia após a hidratação. Não foi introduzida outra mudança especulativa na Home.
+
+### Próxima ação
+
+Publicar apenas as mudanças locais intencionais por push normal na branch já existente do PR #125, sem force-push nem merge, e aguardar um novo Quality gates. A aprovação Lighthouse do novo head ainda é obrigatória; se a Home continuar reprovando, seguir com traces comparáveis em vez de esconder conteúdo ou aumentar os limites.
+
+As seções seguintes preservam o diagnóstico e as validações do snapshot anterior, principalmente o run `42507187636`.
 
 ## Estado remoto
 
