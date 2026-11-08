@@ -58,6 +58,56 @@ it.each([true, false])(
   },
 );
 
+it("restores sources before rebuilding after an observable transform change", () => {
+  const root = new THREE.Group();
+  const first = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+  const fixed = [
+    new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+    new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()),
+  ];
+  root.add(first, ...fixed);
+  const spy = vi.spyOn(batching, "batchStaticStadium");
+  renderToStaticMarkup(createElement(StaticBatch, { children: createElement("group") }));
+  hooks.refs[0]!.current = root;
+
+  for (let frame = 0; frame < 3; frame++) for (const callback of hooks.frames) callback();
+  expect(root.children).toHaveLength(4);
+  expect(first.visible).toBe(false);
+
+  first.position.x += 1;
+  for (const callback of hooks.frames) callback();
+  expect(root.children).toEqual([first, ...fixed]);
+  expect(first.visible).toBe(true);
+
+  for (let frame = 0; frame < 3; frame++) for (const callback of hooks.frames) callback();
+  expect(root.children).toHaveLength(4);
+  expect(first.visible).toBe(true);
+  expect(fixed.every((mesh) => mesh.visible === false)).toBe(true);
+  expect(spy).toHaveBeenCalledTimes(2);
+});
+
+it("keeps a dynamic source visible when the replacement has fewer than two eligible meshes", () => {
+  const root = new THREE.Group();
+  const moving = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+  const fixed = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+  root.add(moving, fixed);
+  const spy = vi.spyOn(batching, "batchStaticStadium");
+
+  renderToStaticMarkup(createElement(StaticBatch, { children: createElement("group") }));
+  hooks.refs[0]!.current = root;
+  for (let frame = 0; frame < 3; frame++) for (const callback of hooks.frames) callback();
+  expect(moving.visible).toBe(false);
+
+  moving.position.x += 1;
+  for (const callback of hooks.frames) callback();
+  expect(moving.visible).toBe(true);
+  for (let frame = 0; frame < 3; frame++) for (const callback of hooks.frames) callback();
+
+  expect(spy).toHaveBeenCalledTimes(2);
+  expect(moving.visible).toBe(true);
+  expect(root.children).toEqual([moving, fixed]);
+});
+
 it("rebuilds without rebatching a source whose transform changes", () => {
   const root = new THREE.Group();
   const moving = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());

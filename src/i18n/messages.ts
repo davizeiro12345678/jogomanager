@@ -2,6 +2,7 @@ import { ptBR as ptBRBootstrap, en as enBootstrap } from "./bootstrap-messages";
 import type { Lang } from "./locale-catalog";
 import { EXPANDED_MESSAGES } from "./expanded-messages";
 import { INTERFACE_MESSAGES } from "./interface-messages";
+import { isRuntimeApprovedLocale } from "./locale-runtime-manifest";
 type Dict = Record<string, string>;
 
 const ptBR: Dict = ptBRBootstrap;
@@ -1104,10 +1105,17 @@ const DICTS: Record<Lang, Dict> = {
 /** Lazily loaded per-language packs that replace English fallbacks. */
 const PACKS: Partial<Record<Lang, Dict>> = {};
 export function registerLanguagePack(lang: Lang, dict: Dict) {
+  if (!isRuntimeApprovedLocale(lang)) return;
   PACKS[lang] = dict;
 }
 
-export function translate(lang: Lang, key: string): string {
+/** Returns only strings supplied by this locale, without English/Portuguese fallback. */
+export function getDirectLocaleMessages(lang: Lang): Dict {
+  if (!isRuntimeApprovedLocale(lang)) return {};
+  return { ...DICTS[lang], ...(INTERFACE_MESSAGES[lang] ?? {}), ...(PACKS[lang] ?? {}) };
+}
+
+function translateApprovedLocale(lang: Lang, key: string): string {
   return (
     PACKS[lang]?.[key] ??
     INTERFACE_MESSAGES[lang]?.[key] ??
@@ -1117,4 +1125,14 @@ export function translate(lang: Lang, key: string): string {
     ptBR[key] ??
     key
   );
+}
+
+/** Compatibility translator also fails closed for catalog locales still in draft. */
+export function translate(lang: Lang, key: string): string {
+  return translateApprovedLocale(isRuntimeApprovedLocale(lang) ? lang : "en", key);
+}
+
+/** Runtime-only translator: draft catalog locales fail closed to English. */
+export function translateRuntime(lang: Lang, key: string): string {
+  return isRuntimeApprovedLocale(lang) ? translate(lang, key) : translate("en", key);
 }

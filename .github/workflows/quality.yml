@@ -25,11 +25,16 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Verify i18n parity and hardcoded audit
+        run: |
+          node scripts/i18n-parity.mjs --check
+          node scripts/i18n-hardcoded.mjs --check
+          node --test scripts/i18n-parity.test.mjs scripts/i18n-hardcoded.test.mjs
       - run: npm run lint
       - run: npm exec -- tsc --noEmit --pretty false
       # The complete deterministic stress suite runs in the required job below.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
-      - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
+      - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
       - run: node --test scripts/database-growth-snapshot.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
@@ -150,8 +155,14 @@ jobs:
         run: supabase db reset --local --no-seed --yes
       - name: Apply the forward growth-observability migration to the disposable database
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
+      - name: Apply the forward career tombstone and generation migration to the disposable database
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0061_career_tombstone_generation.sql
+      - name: Verify career tombstone generation and server-only access
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/career-tombstone-generation-contract.sql
       - name: Verify application schema, ownership, and grants
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+      - name: Verify private room chat Realtime authorization
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realtime-room-chat-policy-contract.sql
       - name: Verify public catalog and bounded identity enrichment
         run: |
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql

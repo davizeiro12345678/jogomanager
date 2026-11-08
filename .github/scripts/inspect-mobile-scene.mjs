@@ -50,7 +50,7 @@ try {
   });
   for (const config of [
     { quality: "baixa", cores: 4, memory: 3, css: [960, 540], pixels: [864, 486], cap: 75 },
-    { quality: "media", cores: 6, memory: 6, css: [1280, 720], pixels: [1280, 720], cap: 120 },
+    { quality: "media", cores: 6, memory: 6, css: [1280, 720], pixels: [1280, 720], cap: 110 },
   ]) {
     const page = await browser.newPage({
       viewport: { width: 1440, height: 1000 },

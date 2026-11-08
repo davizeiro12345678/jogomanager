@@ -86,7 +86,7 @@ export function Scoreboard({
   });
   useEffect(() => () => board?.texture.dispose(), [board]);
   return (
-    <group position={[0, 22, -(FIELD_Z + 26)]}>
+    <group position={[0, 22, -(FIELD_Z + 26)]} userData={{ cinematicDynamic: true }}>
       <mesh>
         <boxGeometry args={[30, 11, 1]} />
         <meshStandardMaterial color="#0b0e12" roughness={0.55} metalness={0.25} />

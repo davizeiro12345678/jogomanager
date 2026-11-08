@@ -99,3 +99,9 @@ it("provides specific, private route metadata before hydration, with a clean can
     gamePageMetadata("/league", "pt-PT", (key) => translate("pt-PT", key))?.description,
   ).toContain("calendário");
 });
+
+it("uses the translated match route identity instead of exposing its message key", () => {
+  const page = gamePageMetadata("/match", "en", (key) => translate("en", key));
+  expect(page?.title).toContain(translate("en", "nav.play"));
+  expect(page?.title).not.toContain("nav.play");
+});

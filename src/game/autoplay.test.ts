@@ -56,4 +56,22 @@ describe("automação de temporadas com bye", () => {
     expect(weeks.map((week) => week.kind)).toEqual(["bye", "match"]);
     expect(state.round).toBe(weeks[1]!.round + 1);
   });
+
+  it("monta uma XI possível e registra as performances dos substitutos", () => {
+    const initial = initCareer("bra", "fla", "Desfalques");
+    const injuredId = initial.lineup.find((id) => initial.players[id]!.pos !== "GK")!;
+    const state = {
+      ...initial,
+      players: {
+        ...initial.players,
+        [injuredId]: { ...initial.players[injuredId]!, injuryWeeks: 2 },
+      },
+    };
+
+    const week = autoWeek(state);
+    expect(week?.kind).toBe("match");
+    expect(week?.state.lineup).toHaveLength(11);
+    expect(week?.state.lineup).not.toContain(injuredId);
+    expect(week?.state.matchLog?.[0]?.players.map((player) => player.pid)).not.toContain(injuredId);
+  });
 });

@@ -33,11 +33,11 @@ module.exports = {
       assertions: {
         // A laboratory release gate, not a real-user CWV or GPU certification.
         // LHCI defaults to optimistic aggregation, which can hide a failed run.
-        "categories:performance": ["error", { minScore: 0.9, aggregationMethod: "pessimistic" }],
+        "categories:performance": ["error", { minScore: 0.97, aggregationMethod: "pessimistic" }],
         "categories:accessibility": ["error", { minScore: 0.9, aggregationMethod: "pessimistic" }],
         "largest-contentful-paint": [
           "error",
-          { maxNumericValue: 2700, aggregationMethod: "pessimistic" },
+          { maxNumericValue: 2500, aggregationMethod: "pessimistic" },
         ],
         "cumulative-layout-shift": [
           "error",
@@ -45,7 +45,7 @@ module.exports = {
         ],
         "total-blocking-time": [
           "error",
-          { maxNumericValue: 400, aggregationMethod: "pessimistic" },
+          { maxNumericValue: 200, aggregationMethod: "pessimistic" },
         ],
       },
     },

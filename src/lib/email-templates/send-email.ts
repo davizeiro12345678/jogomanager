@@ -1,10 +1,11 @@
+import "@tanstack/react-start/server-only";
 import * as React from "react";
 import { render } from "@react-email/render";
 import { EmailAPIError, sendLovableEmail } from "@lovable.dev/email-js";
 import { TEMPLATES } from "./registry";
 import { deliverViaResend } from "./resend-transport";
-import { validateLovableSendUrl } from "./send-email-url";
-export { validateLovableSendUrl } from "./send-email-url";
+import { validateEmailAddress, validateLovableSendUrl } from "./send-email-url";
+export { validateEmailAddress, validateLovableSendUrl } from "./send-email-url";
 
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
@@ -54,10 +55,9 @@ export async function sendTemplateEmail(
 
   // Template-level `to` takes precedence — notification templates always
   // send to their fixed address.
-  const recipient = template.to || to;
-  if (!recipient) {
-    throw new Error("Recipient is required (the template defines no fixed recipient)");
-  }
+  const recipient = validateEmailAddress(template.to || to, "Recipient");
+  const replyTo =
+    options.replyTo === undefined ? undefined : validateEmailAddress(options.replyTo, "Reply-To");
 
   const templateData = options.templateData ?? {};
   const element = React.createElement(template.component, templateData as never);
@@ -79,7 +79,7 @@ export async function sendTemplateEmail(
       html,
       text,
       idempotencyKey: options.idempotencyKey || crypto.randomUUID(),
-      ...(options.replyTo ? { replyTo: options.replyTo } : {}),
+      ...(replyTo ? { replyTo } : {}),
     });
     return { sent: true };
   }
@@ -97,7 +97,7 @@ export async function sendTemplateEmail(
         purpose: "transactional",
         label: templateName,
         idempotency_key: options.idempotencyKey || crypto.randomUUID(),
-        ...(options.replyTo ? { reply_to: options.replyTo } : {}),
+        ...(replyTo ? { reply_to: replyTo } : {}),
       },
       { apiKey: apiKey!, sendUrl: lovableSendUrl },
     );

@@ -20,6 +20,10 @@ describe("portable Stripe transport", () => {
     await createStripeClient("sandbox").balance.retrieve();
     const [url, init] = fetcher.mock.calls[0]!;
     expect(String(url)).toContain("https://api.stripe.com/v1/balance");
+    const requestHeaders = new Headers(
+      init?.headers ?? (url instanceof Request ? url.headers : undefined),
+    );
+    expect(requestHeaders.get("stripe-version")).toBe("2026-10-28.endive");
     expect(JSON.stringify(init)).not.toContain("Lovable-API-Key");
   });
   it("fails closed when a live secret is configured as sandbox", () => {

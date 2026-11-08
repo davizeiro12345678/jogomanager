@@ -10,6 +10,7 @@ export {
 export { pickLineup } from "./career-lineup";
 export {
   careerMatchContext,
+  careerMatchSelection,
   quickSimulate,
   recentForm,
   squadFatigue,

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useT } from "@/i18n/provider";
 import { useSignedIn } from "@/hooks/useCareer";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { reportChatMessage as submitChatReport } from "@/lib/community.functions";
@@ -86,6 +87,7 @@ function relativeTime(iso: string): string {
  * partida, numa gaveta. `next` define para onde voltar após o login.
  */
 export function ChatPanel({ next = "/chat" }: { next?: string }) {
+  const { t } = useT();
   const signedIn = useSignedIn();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -299,7 +301,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
             onClick={() => setRefresh((value) => value + 1)}
             className="min-h-11 text-xs text-primary"
           >
-            Tentar reconectar
+            {t("common.retry")}
           </Button>
         </div>
       ) : (
@@ -310,7 +312,7 @@ export function ChatPanel({ next = "/chat" }: { next?: string }) {
 
       <div
         role="log"
-        aria-label="Mensagens do chat"
+        aria-label={t("nav.chat")}
         aria-live="polite"
         aria-busy={loading}
         className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-border/60 surface-card p-4"

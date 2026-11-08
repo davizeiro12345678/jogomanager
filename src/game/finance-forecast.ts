@@ -2,13 +2,13 @@ import { CLUBS } from "./data/leagues";
 import { weeklyIncome, wageBill } from "./economy";
 import { gateIncome, staffBill } from "./events";
 import { sponsorBaseFor, sponsorIncomeFor } from "./sponsorships";
+import { applyFinanceEvent } from "./career-finances";
 import type { CareerState, FinanceLedgerEntry, OperatingPlan } from "./types";
 import {
   addMoney,
   finiteAmount,
   financialChange,
   safeMoney,
-  financeLedgerFor,
   validFinancialState,
 } from "./financial-inputs";
 
@@ -271,10 +271,6 @@ export interface FinanceEventSettlement {
 /** Registra uma receita de fechamento sem duplicá-la ao reprocessar o save. */
 export function settleSeasonPrize(state: CareerState, prize: number): FinanceEventSettlement {
   const id = `season-prize-${state.clubId}-${state.season}`;
-  const finances = financialChange(state, prize, 0);
-  if (!finances || financeLedgerFor(state).some((entry) => entry.id === id))
-    return { state, settled: false };
-
   const entry: FinanceLedgerEntry = {
     id,
     season: state.season,
@@ -284,13 +280,11 @@ export function settleSeasonPrize(state: CareerState, prize: number): FinanceEve
     income: safeMoney(prize),
     expense: 0,
   };
+  const next = applyFinanceEvent(state, entry);
+  if (next === state || next.finances === state.finances) return { state: next, settled: false };
   return {
     settled: true,
-    state: {
-      ...state,
-      finances,
-      financeLedger: [entry, ...financeLedgerFor(state)].slice(0, 96),
-    },
+    state: next,
   };
 }
 
@@ -318,8 +312,7 @@ export function settleWeeklyFinance(state: CareerState, result: WeeklyResult): F
     alreadySettled ||
     !finiteAmount(state.finances.budget + projection.net, true) ||
     !finiteAmount(state.finances.spent + projection.expense) ||
-    !finiteAmount(state.finances.income + projection.income) ||
-    financeLedgerFor(state).some((entry) => entry.id === id)
+    !finiteAmount(state.finances.income + projection.income)
   ) {
     return { state, projection, settled: false };
   }
@@ -338,15 +331,16 @@ export function settleWeeklyFinance(state: CareerState, result: WeeklyResult): F
     income: projection.income,
     expense: projection.expense,
   };
+  const applied = applyFinanceEvent(state, entry);
+  if (applied === state || applied.finances === state.finances)
+    return { state: applied, projection, settled: false };
   return {
     projection,
     settled: true,
     state: {
-      ...state,
+      ...applied,
       operatingPlan: operatingPlanFor(state),
       financeSettledThrough: { clubId: state.clubId, season: state.season, round: state.round },
-      finances: finances!,
-      financeLedger: [entry, ...financeLedgerFor(state)].slice(0, 96),
     },
   };
 }

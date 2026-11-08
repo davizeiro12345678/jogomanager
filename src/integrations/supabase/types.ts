@@ -271,6 +271,8 @@ export type Database = {
           chain_hash: string | null
           chain_length: number
           created_at: string
+          deleted_at: string | null
+          generation: number
           id: string
           state: Json
           updated_at: string
@@ -281,6 +283,8 @@ export type Database = {
           chain_hash?: string | null
           chain_length?: number
           created_at?: string
+          deleted_at?: string | null
+          generation?: number
           id?: string
           state: Json
           updated_at?: string
@@ -291,12 +295,20 @@ export type Database = {
           chain_hash?: string | null
           chain_length?: number
           created_at?: string
+          deleted_at?: string | null
+          generation?: number
           id?: string
           state?: Json
           updated_at?: string
           user_id?: string
           verified_progress?: boolean
         }
+        Relationships: []
+      }
+      room_chat_rate_limits: {
+        Row: { user_id: string; second_bucket: number }
+        Insert: { user_id: string; second_bucket: number }
+        Update: { user_id?: string; second_bucket?: number }
         Relationships: []
       }
       chat_infractions: {
@@ -2482,6 +2494,27 @@ export type Database = {
           league_source_id: string
           local_club_id: string
           source_id: string
+        }[]
+      }
+      create_manager_career: {
+        Args: {
+          p_expected_generation?: number | null
+          p_state: Json
+          p_user_id: string
+          p_verified_progress?: boolean
+        }
+        Returns: {
+          deleted_at: string | null
+          generation: number
+          status: string
+        }[]
+      }
+      delete_manager_career: {
+        Args: { p_user_id: string }
+        Returns: {
+          deleted_at: string
+          generation: number
+          status: string
         }[]
       }
       mutate_player_career: {

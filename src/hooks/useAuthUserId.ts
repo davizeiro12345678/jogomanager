@@ -9,14 +9,36 @@ export function useAuthUserId() {
   useEffect(() => {
     let alive = true;
     let changed = false;
+    const observePushIdentity = (nextUserId: string | null) => {
+      if (!alive) return;
+      void import("@/lib/firebase-push")
+        .then((push) => {
+          if (!alive) return;
+          return push.observeFirebasePushIdentity(nextUserId);
+        })
+        .catch((error) => {
+          if (!alive) return;
+          reportSilent("auth.operation", error, {
+            classification: "degradation",
+            feature: "push-identity",
+            phase: "observe",
+            dedupeKey: "push-identity-observer",
+          });
+        });
+    };
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       changed = true;
-      if (alive) setUserId(session?.user.id ?? null);
+      const nextUserId = session?.user.id ?? null;
+      if (alive) setUserId(nextUserId);
+      observePushIdentity(nextUserId);
     });
     void supabase.auth
       .getSession()
       .then(({ data: session }) => {
-        if (alive && !changed) setUserId(session.session?.user.id ?? null);
+        if (!alive || changed) return;
+        const nextUserId = session.session?.user.id ?? null;
+        setUserId(nextUserId);
+        observePushIdentity(nextUserId);
       })
       .catch((error) => {
         if (alive && !changed) {

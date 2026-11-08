@@ -2,6 +2,7 @@
 import type { CareerState } from "./types";
 import { firstMatchPlayed } from "./onboarding";
 
+/** Derive verified lessons from durable career evidence; this never mutates or rewards a save. */
 export function verifiedCareerLessons(
   career: Pick<
     CareerState,
@@ -36,7 +37,7 @@ export function verifiedCareerLessons(
   return lessons;
 }
 
-/** @deprecated Use verifiedCareerLessons; kept for callers compiled against the legacy API. */
+/** @deprecated Use verifiedCareerLessons; kept for callers that used the old guidance name. */
 export const practicedCareerLessons = verifiedCareerLessons;
 
 export interface TutorialLesson {
@@ -45,16 +46,6 @@ export interface TutorialLesson {
   instruction: string;
   exercise?: string;
   to: string;
-}
-
-export interface TutorialProgress {
-  completed: number;
-  total: number;
-  next: TutorialLesson | null;
-  /** Local guidance marks; these are never evidence of a career action. */
-  reviewed: Set<string>;
-  /** Career records produced by persisted game actions. */
-  verified: Set<string>;
 }
 
 export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] = [
@@ -231,25 +222,37 @@ export const TUTORIAL_CHAPTERS: { title: string; lessons: TutorialLesson[] }[] =
   },
 ];
 
+export interface TutorialProgress {
+  completed: number;
+  total: number;
+  verified: number;
+  reviewed: number;
+  next: TutorialLesson | null;
+}
+
+/** Combine verified career evidence and manual review marks for presentation only. */
 export function tutorialProgress(
-  reviewed: ReadonlySet<string>,
-  verified: ReadonlySet<string> = new Set(),
+  verified: ReadonlySet<string>,
+  reviewed: ReadonlySet<string> = new Set(),
 ): TutorialProgress {
   const lessons = TUTORIAL_CHAPTERS.flatMap((chapter) => chapter.lessons);
-  const lessonIds = new Set(lessons.map((lesson) => lesson.id));
-  const reviewedIds = new Set([...reviewed].filter((id) => lessonIds.has(id)));
-  const verifiedIds = new Set([...verified].filter((id) => lessonIds.has(id)));
-  const completedIds = new Set([...reviewedIds, ...verifiedIds]);
+  const validIds = new Set(lessons.map((lesson) => lesson.id));
+  const verifiedIds = new Set([...verified].filter((id) => validIds.has(id)));
+  const reviewedIds = new Set(
+    [...reviewed].filter((id) => validIds.has(id) && !verifiedIds.has(id)),
+  );
+  const completed = new Set([...verifiedIds, ...reviewedIds]);
   return {
-    completed: completedIds.size,
+    completed: completed.size,
     total: lessons.length,
-    next: lessons.find((lesson) => !completedIds.has(lesson.id)) ?? null,
-    reviewed: reviewedIds,
-    verified: verifiedIds,
+    verified: verifiedIds.size,
+    reviewed: reviewedIds.size,
+    next: lessons.find((lesson) => !completed.has(lesson.id)) ?? null,
   };
 }
 
-export function parseTutorialLessons(value: unknown): Set<string> {
+/** Parse only manual review marks from the tutorial's local guidance storage. */
+export function parseReviewedTutorialLessons(value: unknown): Set<string> {
   const allowed = new Set(
     TUTORIAL_CHAPTERS.flatMap((chapter) => chapter.lessons.map((lesson) => lesson.id)),
   );
@@ -259,3 +262,6 @@ export function parseTutorialLessons(value: unknown): Set<string> {
       : [],
   );
 }
+
+/** @deprecated Use parseReviewedTutorialLessons; the stored values are review marks, not proof. */
+export const parseTutorialLessons = parseReviewedTutorialLessons;

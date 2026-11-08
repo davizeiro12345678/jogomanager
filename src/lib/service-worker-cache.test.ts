@@ -364,6 +364,25 @@ describe("offline service worker cache boundaries", () => {
     expect(await result.response?.text()).toBe("network asset");
   });
 
+  it("caches public locale JSON after first use and serves it offline", async () => {
+    let online = true;
+    let requests = 0;
+    const body = '{"nav.panel":"Panel"}';
+    const sw = worker(async () => {
+      requests++;
+      if (!online) throw new Error("offline");
+      return response(body, "application/json", { "cache-control": "public, max-age=60" });
+    });
+
+    const first = await sw.dispatch("/locale-packs/es.json");
+    expect(await first.response?.text()).toBe(body);
+    online = false;
+    const next = await sw.dispatch("/locale-packs/es.json");
+
+    expect(await next.response?.text()).toBe(body);
+    expect(requests).toBe(2);
+  });
+
   it("removes obsolete game caches while preserving unrelated Cache Storage", async () => {
     const sw = worker(async () => response("asset", "application/javascript"));
     await sw.storage.open("pfm3d-v9-assets");

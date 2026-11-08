@@ -91,6 +91,7 @@ import { safeClub } from "@/game/squad";
 import { matchdaySupporters, worldFor } from "@/game/career-world";
 
 import { buildTeamSetup } from "@/game/quickMatch";
+import { getMatchEligibilityFailure } from "@/game/match-eligibility";
 
 import { useCareer } from "@/hooks/useCareer";
 
@@ -231,8 +232,12 @@ function LiveMatch({
       away: isHome ? oppSetup : mySetup,
       seed: `${career.clubId}-${career.round}`,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [career.round]);
+  }, [career, isHome, myClub, oppId]);
+  const lineupError = useMemo(() => {
+    const failure =
+      getMatchEligibilityFailure(setups.home) ?? getMatchEligibilityFailure(setups.away);
+    return failure?.message ?? null;
+  }, [setups]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
 
   const mySide = isHome ? "home" : "away";
@@ -418,6 +423,7 @@ function LiveMatch({
   }, [sim]);
 
   useEffect(() => {
+    if (lineupError) return;
     recorderRef.current = new ReplayRecorder(sim);
     savedRef.current = false;
     const controller = createLiveMatchController({
@@ -441,7 +447,7 @@ function LiveMatch({
       controller.dispose();
       controllerRef.current = null;
     };
-  }, [setups, sim]);
+  }, [lineupError, setups, sim]);
 
   useEffect(
     () => controllerRef.current?.pause(paused || introActive || ceremonyActive || halfHeld),
@@ -564,6 +570,19 @@ function LiveMatch({
     if (accepted) setSnap(snapshot(sim));
     return accepted;
   }
+
+  if (lineupError)
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
+        <h1 className="font-display text-2xl">Partida bloqueada</h1>
+        <p role="alert" className="max-w-lg text-muted-foreground">
+          {lineupError}
+        </p>
+        <Link to="/squad" className="text-primary underline">
+          Corrigir escalação
+        </Link>
+      </div>
+    );
 
   return (
     <div className="match-interface relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">

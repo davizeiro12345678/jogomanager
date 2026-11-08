@@ -10,6 +10,43 @@ export type QuickSimContext = MatchConditions;
 
 export type QuickSimEvent = FixtureEvent;
 
+export interface CareerMatchSelection {
+  players: Player[];
+  lineup: string[];
+  bench: string[];
+}
+
+/** Seleciona uma XI possível sem alterar o save; autoSeason persiste a escolha. */
+export function careerMatchSelection(state: CareerState): CareerMatchSelection {
+  const squad = Object.values(state.players).filter((p) => p.clubId === state.clubId);
+  const formation = state.tactics?.formation ?? "4-3-3";
+  const current = state.lineup
+    .map((id) => state.players[id])
+    .filter(
+      (p): p is Player =>
+        p !== undefined && p.clubId === state.clubId && !p.suspended && p.injuryWeeks === 0,
+    );
+  if (
+    current.length === 11 &&
+    new Set(current.map((p) => p.id)).size === 11 &&
+    current.some((p) => p.pos === "GK")
+  )
+    return {
+      players: current,
+      lineup: current.map((p) => p.id),
+      bench: (state.bench ?? []).filter((id) => {
+        const p = state.players[id];
+        return p !== undefined && p.clubId === state.clubId && !p.suspended && p.injuryWeeks === 0;
+      }),
+    };
+
+  const picked = pickLineup(squad, formation);
+  const players = picked.lineup
+    .map((id) => state.players[id])
+    .filter((p): p is Player => p !== undefined && !p.suspended && p.injuryWeeks === 0);
+  return { players, lineup: picked.lineup, bench: picked.bench };
+}
+
 /**
  * Simulação rápida (sem 3D) para as outras partidas da rodada.
  * A diferença de força é comprimida (tanh) para evitar goleadas demais, e uma
@@ -41,17 +78,7 @@ export function careerMatchContext(
     awayFatigue: squadFatigue(state.fixtures, away, state.round),
   };
   if (home !== state.clubId && away !== state.clubId) return ctx;
-  const squad = Object.values(state.players).filter((p) => p.clubId === state.clubId);
-  let players = state.lineup
-    .map((id) => state.players[id])
-    .filter(
-      (p): p is Player =>
-        p !== undefined && p.clubId === state.clubId && !p.suspended && p.injuryWeeks === 0,
-    );
-  if (players.length < 11) {
-    const { lineup } = pickLineup(squad, state.tactics.formation);
-    players = lineup.map((id) => state.players[id]).filter((p): p is Player => p !== undefined);
-  }
+  const { players } = careerMatchSelection(state);
   const side = home === state.clubId ? "home" : "away";
   if (players.length) {
     const average = (read: (p: Player) => number) =>

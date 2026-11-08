@@ -101,7 +101,7 @@ export function compareMatch3dEvidence(before, after) {
           );
         const studio = key === "mobileDiagnostics",
           basic = candidate.label.includes("basic");
-        const draws = studio ? (basic ? 40 : 50) : basic ? 75 : 120;
+        const draws = studio ? (basic ? 40 : 50) : basic ? 75 : 110;
         const triangles = studio ? (basic ? 90000 : 140000) : basic ? 130000 : 260000;
         check(
           candidate.peakDraws <= draws,

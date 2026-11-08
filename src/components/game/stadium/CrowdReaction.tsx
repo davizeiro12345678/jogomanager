@@ -27,11 +27,14 @@ import * as THREE from "three";
 
 import { censusRef } from "@/game/scene-census";
 
-import { makeRng } from "@/game/rng";
-
 import { useRuntimeSceneBudget } from "@/components/game/runtime-budget-context";
 
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import {
+  createStadiumCosmeticRng,
+  DEFAULT_STADIUM_FIXTURE,
+  poolVisibleCount,
+} from "./stadium-cosmetics";
 
 import {
   CrowdMood,
@@ -42,22 +45,8 @@ import {
 import type { SupporterMatchday } from "@/game/career-world-types";
 
 const POINT_CAP = capPointSize(14);
-
-function createFlashCloudPositions(count: number, seed: number | string): Float32Array {
-  const safeCount = Math.max(0, Math.floor(count));
-  const random = makeRng(seed);
-  const positions = new Float32Array(safeCount * 3);
-  for (let i = 0; i < safeCount; i++) {
-    // anel da arquibancada: atrás dos gols e nas laterais
-    const along = random() * 2 - 1;
-    const side = random() < 0.5 ? -1 : 1;
-    const depth = 0.86 + random() * 0.22;
-    positions[i * 3] = along * FIELD_X * 0.96;
-    positions[i * 3 + 1] = 6 + random() * 12;
-    positions[i * 3 + 2] = side * FIELD_Z * depth;
-  }
-  return positions;
-}
+export const FLASH_POOL_CAPACITY = 240;
+const FLASH_PHASES = [0, 0.37, 0.71] as const;
 
 /** Decaimento por segundo de cada humor. */
 const DECAY: Record<CrowdMood, number> = {
@@ -293,24 +282,36 @@ function FlashBursts({
   count,
   seed,
   enabled,
+  fixtureKey,
 }: {
   reaction: React.MutableRefObject<CrowdReactionState>;
   count: number;
   seed: number | string;
   enabled: boolean;
+  fixtureKey: string;
 }) {
   const groups = useRef<(THREE.Object3D | null)[]>([]);
-  const phases = useMemo(() => [0, 0.37, 0.71], []);
+  const phases = FLASH_PHASES;
 
   const clouds = useMemo(() => {
-    const per = Math.max(12, Math.floor(count / phases.length));
+    const per = FLASH_POOL_CAPACITY / phases.length;
     return phases.map((_, index) => {
-      const positions = createFlashCloudPositions(per, `${seed}:${index}`);
+      const positions = new Float32Array(per * 3);
+      for (let i = 0; i < per; i++) {
+        // anel da arquibancada: atrás dos gols e nas laterais
+        const rand = createStadiumCosmeticRng(fixtureKey, "crowd-flash", seed, index, i);
+        const along = rand() * 2 - 1;
+        const side = rand() < 0.5 ? -1 : 1;
+        const depth = 0.86 + rand() * 0.22;
+        positions[i * 3] = along * FIELD_X * 0.96;
+        positions[i * 3 + 1] = 6 + rand() * 12;
+        positions[i * 3 + 2] = side * FIELD_Z * depth;
+      }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       return geometry;
     });
-  }, [count, phases, seed]);
+  }, [fixtureKey, phases, seed]);
 
   useFrame((state) => {
     if (!enabled) return;
@@ -319,7 +320,12 @@ function FlashBursts({
     for (let g = 0; g < groups.current.length; g++) {
       const points = groups.current[g];
       if (!points) continue;
-      const material = (points as THREE.Points).material as THREE.PointsMaterial;
+      const pointCloud = points as THREE.Points;
+      pointCloud.geometry.setDrawRange(
+        0,
+        poolVisibleCount(Math.floor(count / phases.length), FLASH_POOL_CAPACITY / phases.length),
+      );
+      const material = pointCloud.material as THREE.PointsMaterial;
       const phase = phases[g]!;
       // pisca rápido e irregular: três fases bastam para não parecer um só flash
       const flicker = 0.5 + 0.5 * Math.sin(t * 9 + phase * 12) * Math.sin(t * 3.7 + phase * 5);
@@ -378,12 +384,14 @@ export const CrowdReaction = memo(function CrowdReaction({
   night,
   color = "#ffb347",
   supporters,
+  fixtureKey = DEFAULT_STADIUM_FIXTURE,
 }: {
   sim: SimView;
   quality: "alta" | "media" | "baixa";
   night: boolean;
   color?: string;
   supporters?: SupporterMatchday | undefined;
+  fixtureKey?: string;
 }) {
   const budget = useRuntimeSceneBudget();
   const reaction = useReactionTracker(sim, supporters);
@@ -404,7 +412,10 @@ export const CrowdReaction = memo(function CrowdReaction({
   const flashes =
     quality === "baixa" || budget.stage >= 7
       ? 0
-      : Math.round((quality === "alta" ? 240 : 96) * budget.textureScale);
+      : poolVisibleCount(
+          Math.round((quality === "alta" ? 240 : 96) * budget.textureScale),
+          FLASH_POOL_CAPACITY,
+        );
   const smoke = quality !== "baixa" && budget.stage < 8;
 
   return (
@@ -416,6 +427,7 @@ export const CrowdReaction = memo(function CrowdReaction({
             count={flashes}
             seed={`stadium-crowd:${sim.home.clubId}:${sim.away.clubId}`}
             enabled
+            fixtureKey={fixtureKey}
           />
         ) : null}
         {smoke ? <SmokePlumes reaction={reaction} color={color} enabled /> : null}

@@ -428,6 +428,13 @@
       "when": 1794086489539,
       "tag": "0060_database_growth_observability",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1794148523000,
+      "tag": "0062_room_chat_rate_limits",
+      "breakpoints": true
     }
   ]
 }

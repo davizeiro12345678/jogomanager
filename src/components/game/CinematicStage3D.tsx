@@ -32,6 +32,7 @@ import type { Cast } from "@/game/cast";
 import type { ManagerLook } from "@/game/types";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import type { CinematicVoiceClockRef } from "@/game/cutscene-visemes";
+import { TransitionController } from "@/game/cinematic-camera-transition";
 import { supportsWebGL } from "@/game/webgl-support";
 import {
   cinematicSetFor,
@@ -120,6 +121,7 @@ function Stage({
   enhanced = true,
   onBatch,
   onUnavailable,
+  transitionController,
 }: {
   business?: Cutscene["business"];
   language?: string | undefined;
@@ -141,6 +143,7 @@ function Stage({
   enhanced?: boolean;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
   onUnavailable?: (() => void) | undefined;
+  transitionController: TransitionController;
 }) {
   const { t } = useT();
   const SelectedSet = useMemo(() => {
@@ -240,6 +243,7 @@ function Stage({
         climax={climax}
         speaker={speaker}
         festive={festive}
+        transitionController={transitionController}
       />
       <CinematicAtmosphere kind={kind} art={art} mood={mood} quality={quality} />
       <CinematicPortraitLight />
@@ -404,6 +408,10 @@ export const CinematicStage3D = memo(function CinematicStage3D({
   const [enhanced, setEnhanced] = useState(false);
   const [contextLost, setContextLost] = useState(false);
   const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const [transitionController] = useState(
+    () => new TransitionController({ reducedMotion: reduced }),
+  );
+  const transitionMatte = useRef<HTMLDivElement>(null);
   const stageReady = useCallback(() => {
     setReady(true);
     onReady?.();
@@ -443,6 +451,15 @@ export const CinematicStage3D = memo(function CinematicStage3D({
     },
     [],
   );
+  useEffect(() => {
+    transitionController.setReducedMotion(reduced);
+  }, [reduced, transitionController]);
+  useEffect(() => {
+    const matte = transitionMatte.current;
+    transitionController.attachMatte(matte);
+    return () => transitionController.detachMatte(matte);
+  }, [transitionController]);
+  useEffect(() => () => transitionController.dispose(), [transitionController]);
   const retryContext = useCallback(() => {
     pressure.current = new CinematicPressureController();
     setPressureStage(0);
@@ -566,6 +583,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 onBatch={onBatch}
                 enhanced={showEnhanced}
                 onUnavailable={onUnavailable}
+                transitionController={transitionController}
               />
               {showEnhanced ? (
                 <Suspense fallback={null}>
@@ -590,6 +608,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               : "O 3D está indisponível neste navegador. Abrir cena ilustrada."}
           </button>
         )}
+        <div ref={transitionMatte} className="cutscene-transition-matte" aria-hidden="true" />
       </GraphicsBoundary>
     </div>
   );

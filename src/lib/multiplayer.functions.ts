@@ -11,6 +11,11 @@ import {
   MATCH_SIMULATION_TICK_LIMIT,
   MatchSim,
 } from "@/game/sim";
+import {
+  createSettlementLeaseGuard,
+  isSettlementLeaseExpired,
+  settlementLeaseCutoff,
+} from "@/lib/multiplayer-settlement";
 
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -161,7 +166,7 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error: lookupError } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_id, status")
+      .select("id, host_id, guest_id, status, updated_at")
       .eq("id", data.roomId)
       .maybeSingle();
     if (lookupError || !room) return { ok: false, reason: "not_found" };
@@ -169,25 +174,28 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
       return { ok: false, reason: "not_participant" };
     }
     if (room.status === "done") return { ok: true };
-    // A deterministic replay is already running under the server-side finish
-    // claim. Ending the room here would race the result publication and could
-    // remove the private seed while it is in use.
-    if (room.status === "settling") return { ok: false, reason: "settling" };
-    const { data: updatedRoom, error } = await supabaseAdmin
+    // A deterministic replay is already running under a live server-side
+    // lease. An expired lease can be closed by a participant, but the CAS
+    // below must beat any concurrent reclaim before deleting the private seed.
+    let leaveQuery = supabaseAdmin
       .from("match_rooms")
       .update({ status: "done", state: {}, updated_at: new Date().toISOString() })
-      .eq("id", data.roomId)
-      .eq("status", room.status)
-      .select("id")
-      .maybeSingle();
+      .eq("id", data.roomId);
+    if (room.status === "settling") {
+      if (!isSettlementLeaseExpired(room.updated_at)) return { ok: false, reason: "settling" };
+      leaveQuery = leaveQuery.eq("status", "settling").lt("updated_at", settlementLeaseCutoff());
+    } else {
+      leaveQuery = leaveQuery.eq("status", room.status);
+    }
+    const { data: closedRoom, error } = await leaveQuery.select("id").maybeSingle();
     if (error) return { ok: false, reason: "leave_failed" };
-    if (!updatedRoom) {
+    if (!closedRoom) {
       const { data: latestRoom, error: latestError } = await supabaseAdmin
         .from("match_rooms")
         .select("status")
         .eq("id", data.roomId)
         .maybeSingle();
-      if (latestError || !latestRoom) return { ok: false, reason: "not_found" };
+      if (latestError || !latestRoom) return { ok: false, reason: "leave_failed" };
       if (latestRoom.status === "settling") return { ok: false, reason: "settling" };
       if (latestRoom.status === "done") return { ok: true };
       return { ok: false, reason: "leave_failed" };
@@ -208,7 +216,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_club, host_club, server_seeded, status, state")
+      .select("id, host_id, guest_club, host_club, server_seeded, status, state, updated_at")
       .eq("id", data.roomId)
       .maybeSingle();
     if (error || !room) return { ok: false, reason: "not_found" };
@@ -220,8 +228,14 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         ? { ok: true }
         : { ok: false, reason: "room_closed" };
     }
-    if (room.status === "settling") return { ok: false, reason: "settling" };
-    if (room.status !== "live") return { ok: false, reason: "not_live" };
+    if (
+      room.status !== "live" &&
+      !(room.status === "settling" && isSettlementLeaseExpired(room.updated_at))
+    ) {
+      return room.status === "settling"
+        ? { ok: false, reason: "settling" }
+        : { ok: false, reason: "not_live" };
+    }
     if (!room.server_seeded || !room.guest_club) {
       return { ok: false, reason: "invalid_room" };
     }
@@ -229,25 +243,26 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       return { ok: false, reason: "invalid_room" };
     }
 
-    // Claim publication before the expensive full replay. Repeated finish
-    // clicks therefore observe "settling" instead of independently replaying
-    // the same 90 minutes on the server.
+    // Claim publication before the expensive full replay. The same CAS also
+    // reclaims a stale settling lease. Repeated finish clicks therefore either
+    // observe the active lease or atomically replace an expired one.
+    const settlementLeaseCutoffAt = settlementLeaseCutoff();
     const { data: claim, error: claimError } = await supabaseAdmin
       .from("match_rooms")
       .update({ status: "settling", updated_at: new Date().toISOString() })
       .eq("id", room.id)
       .eq("host_id", context.userId)
-      .eq("status", "live")
       .eq("server_seeded", true)
       .not("guest_id", "is", null)
       .not("guest_club", "is", null)
-      .select("id")
+      .or(`status.eq.live,and(status.eq.settling,updated_at.lt.${settlementLeaseCutoffAt})`)
+      .select("id, updated_at")
       .maybeSingle();
     if (claimError) return { ok: false, reason: "update_failed" };
     if (!claim) {
       const { data: latest } = await supabaseAdmin
         .from("match_rooms")
-        .select("status, server_seeded, state")
+        .select("status, server_seeded, state, updated_at")
         .eq("id", room.id)
         .maybeSingle();
       if (latest?.status === "settling") return { ok: false, reason: "settling" };
@@ -262,6 +277,24 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       }
       return { ok: false, reason: "room_closed" };
     }
+    const claimLease = claim.updated_at;
+    if (!claimLease) return { ok: false, reason: "update_failed" };
+
+    const lease = createSettlementLeaseGuard(claimLease, async (expectedLease) => {
+      const { data: refreshed, error: refreshError } = await supabaseAdmin
+        .from("match_rooms")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", room.id)
+        .eq("host_id", context.userId)
+        .eq("status", "settling")
+        .eq("server_seeded", true)
+        .eq("updated_at", expectedLease)
+        .select("updated_at")
+        .maybeSingle();
+      if (refreshError || !refreshed?.updated_at) return null;
+      return refreshed.updated_at;
+    });
+    lease.start();
 
     let published = false;
     const releaseClaim = async () => {
@@ -271,7 +304,8 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         .eq("id", room.id)
         .eq("host_id", context.userId)
         .eq("status", "settling")
-        .eq("server_seeded", true);
+        .eq("server_seeded", true)
+        .eq("updated_at", lease.currentLease());
     };
 
     try {
@@ -304,6 +338,10 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         let steps = 0;
         while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {
           sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+          if (steps % 128 === 0) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 0));
+            if (lease.isLost()) return { ok: false, reason: "room_closed" };
+          }
         }
         if (!sim.finished) return { ok: false, reason: "simulation_failed" };
         result = {
@@ -313,6 +351,10 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         };
       }
 
+      await lease.stop();
+      if (!(await lease.refresh()) || lease.isLost()) {
+        return { ok: false, reason: "room_closed" };
+      }
       const { data: updatedRoom, error: updateError } = await supabaseAdmin
         .from("match_rooms")
         .update({
@@ -325,6 +367,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         .eq("host_id", context.userId)
         .eq("status", "settling")
         .eq("server_seeded", true)
+        .eq("updated_at", lease.currentLease())
         .select("id")
         .maybeSingle();
       if (updateError) return { ok: false, reason: "update_failed" };
@@ -341,6 +384,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     } catch {
       return { ok: false, reason: "simulation_failed" };
     } finally {
+      await lease.stop();
       if (!published) {
         try {
           await releaseClaim();

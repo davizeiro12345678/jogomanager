@@ -184,9 +184,6 @@
 .career-shell table tbody tr {
   transition: background 120ms ease;
 }
-.career-shell table tbody tr:hover {
-  background: var(--career-accent-soft);
-}
 .career-content .surface-card,
 .career-content .hud-card,
 .trainer-preparation,
@@ -229,6 +226,32 @@
     background: transparent;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .trainer-live-dot {
+    animation: none;
+  }
+  .career-primary-button:hover,
+  .trainer-task:hover {
+    transform: none;
+  }
+  .screen-tabs *,
+  .game-section,
+  .screen-empty,
+  .screen-table-wrap *,
+  .career-shell :is(button, a, input, select, textarea) {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .career-shell *,
+  .career-shell *::before,
+  .career-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 /* Programmatically focused headings (route change) should not show a ring box. */
 .career-shell :is(h1, h2)[tabindex="-1"]:focus:not(:focus-visible) {
   outline: none;
@@ -244,7 +267,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.career-content :is(h1, h2):focus:not(:focus-visible) {
+.career-content :is(h1, h2):focus:not(:focus-visible),
+.career-content h1:focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }
@@ -420,21 +444,6 @@
     border-radius: 14px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .career-shell *,
-  .career-shell *::before,
-  .career-shell *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .career-primary-button:hover,
-  .trainer-task:hover {
-    transform: none;
-  }
-}
-
 /* Career-specific readability overrides follow the interface rules, preserving
    their cascade without sending the career stylesheet to public entry pages. */
 .career-nav-item {
@@ -495,7 +504,6 @@ html[data-text-size="xlarge"] .career-content {
   border-inline-end: 1px solid var(--border);
   border-left: 0;
 }
-
 @media (forced-colors: active) {
   .career-shell :is(button, a, summary, input, select, textarea):focus-visible,
   .screen-table-wrap:focus-visible {

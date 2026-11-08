@@ -12,25 +12,72 @@ import {
 } from "./financial-inputs";
 import { generateFixtures } from "./season";
 import { buildSquad } from "./squad";
-import type { CareerState } from "./types";
+import type { CareerState, JobOffer, TransferOffer } from "./types";
 import { pickLineup, withCustomPlayers, withRealPlayers, defaultV3 } from "./career";
 
-type TimedOffer = { season: number; round: number; expiresRound: number };
+type OfferTiming = Pick<TransferOffer | JobOffer, "season" | "round" | "expiresRound">;
 
-function isOfferActive(state: CareerState, offer: TimedOffer): boolean {
+const validRound = (value: number) => Number.isSafeInteger(value) && value >= 1;
+
+/** A oferta vale somente na temporada e janela em que foi emitida; o fim é inclusivo. */
+export function isOfferInCurrentWindow(
+  state: Pick<CareerState, "season" | "round">,
+  offer: OfferTiming,
+): boolean {
   return (
+    validRound(state.season) &&
+    validRound(state.round) &&
+    validRound(offer.season) &&
+    validRound(offer.round) &&
+    validRound(offer.expiresRound) &&
     offer.season === state.season &&
-    Number.isFinite(offer.round) &&
-    Number.isFinite(offer.expiresRound) &&
     offer.round <= state.round &&
+    offer.round <= offer.expiresRound &&
     state.round <= offer.expiresRound
   );
 }
 
-function isOfferExpired(state: CareerState, offer: TimedOffer): boolean {
+function isOfferExpired(state: CareerState, offer: OfferTiming): boolean {
   return (
     offer.season < state.season ||
     (offer.season === state.season && offer.expiresRound < state.round)
+  );
+}
+
+export function isTransferOfferEligible(state: CareerState, offer: TransferOffer): boolean {
+  if (
+    !isOfferInCurrentWindow(state, offer) ||
+    !finiteAmount(offer.amount) ||
+    !CLUBS[offer.clubId] ||
+    offer.clubId === state.clubId
+  )
+    return false;
+
+  const player = state.players[offer.playerId];
+  return (
+    !!player &&
+    player.clubId === state.clubId &&
+    Object.values(state.players).filter((p) => p.clubId === state.clubId).length > 16
+  );
+}
+
+function jobLeagueId(state: CareerState, clubId: string): string | undefined {
+  const club = CLUBS[clubId];
+  if (!club) return undefined;
+  return (
+    Object.entries(state.leagueClubs ?? {}).find(
+      ([, ids]) => Array.isArray(ids) && ids.includes(clubId),
+    )?.[0] ?? club.league
+  );
+}
+
+export function isJobOfferEligible(state: CareerState, job: JobOffer): boolean {
+  return (
+    isOfferInCurrentWindow(state, job) &&
+    finiteAmount(job.budget) &&
+    !!CLUBS[job.clubId] &&
+    job.clubId !== state.clubId &&
+    !!jobLeagueId(state, job.clubId)
   );
 }
 
@@ -38,18 +85,8 @@ function isOfferExpired(state: CareerState, offer: TimedOffer): boolean {
 export function acceptOffer(state: CareerState, offerId: string): CareerState {
   if (state.sacked || !validFinancialState(state)) return state;
   const offer = (state.offers ?? []).find((o) => o.id === offerId);
-  if (
-    !offer ||
-    !isOfferActive(state, offer) ||
-    !finiteAmount(offer.amount) ||
-    !CLUBS[offer.clubId] ||
-    offer.clubId === state.clubId
-  )
-    return state;
-  const player = state.players[offer.playerId];
-  if (!player || player.clubId !== state.clubId) return state;
-  if (Object.values(state.players).filter((p) => p.clubId === state.clubId).length <= 16)
-    return state;
+  if (!offer || !isTransferOfferEligible(state, offer)) return state;
+  const player = state.players[offer.playerId]!;
   const finances = financialChange(state, offer.amount, 0);
   if (!finances) return state;
   const players = { ...state.players };
@@ -93,7 +130,7 @@ export function acceptOffer(state: CareerState, offerId: string): CareerState {
 export function rejectOffer(state: CareerState, offerId: string): CareerState {
   const offer = (state.offers ?? []).find((o) => o.id === offerId);
   if (state.sacked || !offer) return state;
-  if (!isOfferActive(state, offer)) {
+  if (!isOfferInCurrentWindow(state, offer)) {
     return isOfferExpired(state, offer)
       ? { ...state, offers: (state.offers ?? []).filter((o) => o.id !== offerId) }
       : state;
@@ -121,12 +158,9 @@ export function rejectOffer(state: CareerState, offerId: string): CareerState {
 /** Assume um novo clube (após demissão, pedido de demissão ou convite). */
 export function takeJob(state: CareerState, jobId: string): CareerState {
   const job = (state.jobOffers ?? []).find((j) => j.id === jobId);
-  if (!job || !isOfferActive(state, job) || !finiteAmount(job.budget)) return state;
-  const club = CLUBS[job.clubId];
-  const leagueId =
-    Object.entries(state.leagueClubs ?? {}).find(([, ids]) => ids.includes(job.clubId))?.[0] ??
-    club?.league;
-  if (!club || !leagueId || job.clubId === state.clubId) return state;
+  if (!job || !isJobOfferEligible(state, job)) return state;
+  const club = CLUBS[job.clubId]!;
+  const leagueId = jobLeagueId(state, job.clubId)!;
   const squad = withCustomPlayers(
     job.clubId,
     withRealPlayers(job.clubId, buildSquad(job.clubId)),
@@ -191,13 +225,7 @@ export function takeJob(state: CareerState, jobId: string): CareerState {
 export function resign(state: CareerState): CareerState {
   if (state.sacked) return state;
   const rnd = makeRng(`resign-${state.clubId}-${state.season}-${state.round}`);
-  const offers = (state.jobOffers ?? []).filter(
-    (job) =>
-      isOfferActive(state, job) &&
-      finiteAmount(job.budget) &&
-      Boolean(CLUBS[job.clubId]) &&
-      job.clubId !== state.clubId,
-  );
+  const offers = (state.jobOffers ?? []).filter((job) => isJobOfferEligible(state, job));
   const jobOffers = offers.length
     ? offers
     : (() => {

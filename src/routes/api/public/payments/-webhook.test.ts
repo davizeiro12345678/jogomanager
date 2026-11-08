@@ -171,20 +171,22 @@ describe("Stripe payment webhook lifecycle", () => {
     expect(deps.fulfill).not.toHaveBeenCalled();
   });
 
-  it("uses the same Stripe session reference when the successful webhook is delivered twice", async () => {
+  it("does not fulfill a webhook replay after the durable event receipt is completed", async () => {
     deps.event = sessionEvent("checkout.session.completed", {
       id: "cs_test_replayed",
       mode: "payment",
       payment_status: "paid",
       metadata: { userId: "user_1", productKey: "coins_small" },
     });
+    deps.beginEvent.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
-    await post({ request: request() });
-    await post({ request: request() });
+    expect((await post({ request: request() })).status).toBe(200);
+    expect((await post({ request: request() })).status).toBe(200);
 
-    expect(deps.fulfill).toHaveBeenCalledTimes(2);
-    expect(deps.fulfill).toHaveBeenNthCalledWith(
-      1,
+    expect(deps.beginEvent).toHaveBeenCalledTimes(2);
+    expect(deps.finishEvent).toHaveBeenCalledTimes(1);
+    expect(deps.fulfill).toHaveBeenCalledTimes(1);
+    expect(deps.fulfill).toHaveBeenCalledWith(
       "user_1",
       "coins_small",
       "cs_test_replayed",
@@ -192,15 +194,23 @@ describe("Stripe payment webhook lifecycle", () => {
       expect.objectContaining({ priceCents: 500 }),
       500,
     );
-    expect(deps.fulfill).toHaveBeenNthCalledWith(
-      2,
-      "user_1",
-      "coins_small",
-      "cs_test_replayed",
-      500,
-      expect.objectContaining({ priceCents: 500 }),
-      500,
-    );
+  });
+
+  it("retries an event left in processing after a transient fulfillment failure", async () => {
+    deps.recordPending.mockRejectedValueOnce(new Error("temporary database outage"));
+    deps.event = sessionEvent("checkout.session.completed", {
+      id: "cs_processing_retry",
+      mode: "payment",
+      payment_status: "paid",
+      metadata: { userId: "user_1", productKey: "coins_small" },
+    });
+
+    expect((await post({ request: request() })).status).toBe(503);
+    expect(deps.finishEvent).toHaveBeenNthCalledWith(1, "evt_fixture", false);
+
+    expect((await post({ request: request() })).status).toBe(200);
+    expect(deps.finishEvent).toHaveBeenNthCalledWith(2, "evt_fixture", true);
+    expect(deps.fulfill).toHaveBeenCalledTimes(1);
   });
 
   it("records a refund for review without revoking delivered benefits", async () => {

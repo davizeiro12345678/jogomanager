@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   TUTORIAL_CHAPTERS,
-  parseTutorialLessons,
-  tutorialProgress,
+  parseReviewedTutorialLessons,
   verifiedCareerLessons,
+  tutorialProgress,
 } from "@/game/career-tutorial";
 import type { CareerState } from "@/game/types";
 import "./career-tutorial.css";
@@ -31,7 +31,9 @@ export default function CareerTutorialDialog({
   useEffect(() => {
     try {
       // Legacy arrays contain local review marks, never verified career evidence.
-      setReviewed(parseTutorialLessons(JSON.parse(localStorage.getItem(storageKey) ?? "[]")));
+      setReviewed(
+        parseReviewedTutorialLessons(JSON.parse(localStorage.getItem(storageKey) ?? "[]")),
+      );
     } catch {
       setReviewed(new Set());
     }
@@ -45,13 +47,12 @@ export default function CareerTutorialDialog({
     }
   }
   const verified = verifiedCareerLessons(career);
-  const progress = tutorialProgress(reviewed, verified);
-  const completed = new Set([...progress.reviewed, ...progress.verified]);
-  const manuallyReviewed = [...progress.reviewed].filter((id) => !progress.verified.has(id)).length;
+  const progress = tutorialProgress(verified, reviewed);
+  const completed = new Set([...verified, ...reviewed]);
   const chapters = TUTORIAL_CHAPTERS.map((chapter, index) => ({
     ...chapter,
     index,
-    reviewed: chapter.lessons.filter(({ id }) => completed.has(id)).length,
+    completed: chapter.lessons.filter(({ id }) => completed.has(id)).length,
     total: chapter.lessons.length,
     lessons: onlyPending ? chapter.lessons.filter(({ id }) => !completed.has(id)) : chapter.lessons,
   })).filter(({ lessons }) => lessons.length > 0);
@@ -76,12 +77,12 @@ export default function CareerTutorialDialog({
             {progress.completed}/{progress.total} lições concluídas ou revisadas
           </strong>
           <span>
-            {progress.verified.size} comprovadas na carreira · {manuallyReviewed} marcadas por você
+            {progress.verified} comprovadas na carreira · {progress.reviewed} marcadas por você
           </span>
         </p>
         <progress
           aria-label="Progresso da tutorial, incluindo prática comprovada e revisão manual"
-          aria-valuetext={`${progress.completed} de ${progress.total}; ${progress.verified.size} comprovadas na carreira e ${manuallyReviewed} marcadas por você`}
+          aria-valuetext={`${progress.completed} de ${progress.total}; ${progress.verified} comprovadas na carreira e ${progress.reviewed} marcadas por você`}
           className="h-2 w-full accent-primary"
           max={progress.total}
           value={progress.completed}
@@ -129,7 +130,7 @@ export default function CareerTutorialDialog({
                 {chapter.index + 1}. {chapter.title}
               </span>
               <span className="career-guide-chapter-count">
-                {chapter.reviewed}/{chapter.total}
+                {chapter.completed}/{chapter.total}
               </span>
             </summary>
             <ul className="mt-2 space-y-4 pb-3">
@@ -143,9 +144,7 @@ export default function CareerTutorialDialog({
                   </h3>
                   {completed.has(lesson.id) && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {progress.verified.has(lesson.id)
-                        ? "Concluída na carreira"
-                        : "Marcada por você"}
+                      {verified.has(lesson.id) ? "Concluída na carreira" : "Marcada por você"}
                     </p>
                   )}
                   <p className="mt-1 text-sm text-muted-foreground">{lesson.instruction}</p>
@@ -170,8 +169,8 @@ export default function CareerTutorialDialog({
                       size="sm"
                       variant="ghost"
                       className="min-h-11"
-                      disabled={progress.verified.has(lesson.id)}
-                      aria-pressed={progress.reviewed.has(lesson.id)}
+                      disabled={verified.has(lesson.id)}
+                      aria-pressed={reviewed.has(lesson.id)}
                       onClick={() => {
                         const next = new Set(reviewed);
                         if (next.has(lesson.id)) next.delete(lesson.id);
@@ -179,9 +178,9 @@ export default function CareerTutorialDialog({
                         save(next);
                       }}
                     >
-                      {progress.verified.has(lesson.id)
+                      {verified.has(lesson.id)
                         ? "Concluída na carreira"
-                        : progress.reviewed.has(lesson.id)
+                        : reviewed.has(lesson.id)
                           ? "Desmarcar revisão"
                           : "Marcar como revisada"}
                     </Button>

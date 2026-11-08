@@ -21,7 +21,8 @@ import { initializeMatchExecution } from "./match-execution";
 import { LiveSnapshotEncoder } from "./live-transport";
 import { reportSilent } from "../lib/report-silent";
 import { SequentialWorkerQueue } from "./sequential-worker-queue";
-import { validMatchCommand } from "./match-command-validation";
+
+const { validMatchCommand } = await import("./match-command-validation");
 
 let live: MatchSim | null = null;
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -31,7 +32,7 @@ let sequence = 0;
 let lastTick = 0;
 let accumulator = 0;
 let commandId = 0;
-let skipToken = 0;
+let cancelSkip: (() => void) | null = null;
 let visualPhysics: RapierVisualPhysics | null = null;
 let visualPhysicsReady: Promise<RapierVisualPhysics | null> | null = null;
 let visualPhysicsGeneration = 0;
@@ -87,7 +88,6 @@ function stopTimer() {
   timer = null;
   lastTick = 0;
   accumulator = 0;
-  skipToken += 1;
 }
 
 function clearVisualPhysics() {
@@ -225,6 +225,7 @@ function ensureTimer() {
 }
 
 async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive" }>) {
+  // onmessage validates both teams before queueing; detailed setup feedback stays in the client.
   stopTimer();
   live?.dispose();
   live = null;
@@ -322,31 +323,44 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "skipLive" && live) {
+    const target = live;
+    if (cancelSkip) return;
     paused = true;
     stopTimer();
-    const token = skipToken;
     let guard = 0;
-    const finishInChunks = () => {
-      if (!live || token !== skipToken) return;
-      const end = Math.min(guard + 320, MATCH_SIMULATION_TICK_LIMIT);
-      // Keep live time/chance creation when skipping; large spatial steps
-      // previously changed duels and played six times as much physical action.
-      while (!live.finished && guard < end) {
-        advanceLive(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
-        guard++;
-      }
-      if (live.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
-        live.synchronizeBallPhysics();
-        resetVisualPhysicsToCanonical();
-        publishFinished();
-        return;
-      }
-      setTimeout(finishInChunks, 0);
-    };
-    finishInChunks();
-    return;
+    return new Promise<void>((resolve) => {
+      const cancel = () => {
+        stopTimer();
+        cancelSkip = null;
+        resolve();
+      };
+      cancelSkip = cancel;
+      const finishInChunks = () => {
+        if (live !== target) {
+          cancel();
+          return;
+        }
+        const end = Math.min(guard + 320, MATCH_SIMULATION_TICK_LIMIT);
+        // Keep live time/chance creation when skipping; large spatial steps
+        // previously changed duels and played six times as much physical action.
+        while (!target.finished && guard < end) {
+          advanceLive(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+          guard++;
+        }
+        if (target.finished || guard >= MATCH_SIMULATION_TICK_LIMIT) {
+          target.synchronizeBallPhysics();
+          resetVisualPhysicsToCanonical();
+          publishFinished();
+          cancel();
+          return;
+        }
+        timer = setTimeout(finishInChunks, 0);
+      };
+      finishInChunks();
+    });
   }
   if (message.type === "stopLive") {
+    cancelSkip = null;
     paused = true;
     liveEpoch += 1;
     live?.dispose();
@@ -399,15 +413,19 @@ async function handleMessage(message: LiveWorkerRequest) {
   throw new Error("Comando de simulação inválido");
 }
 
-self.onmessage = (event: MessageEvent<unknown>) => {
-  const message = event.data;
+function admitMessage(message: unknown) {
   if (!validMatchCommand(message)) {
     const candidateId = (message as { id?: unknown } | null)?.id;
     const id =
       typeof candidateId === "number" && Number.isSafeInteger(candidateId) && candidateId >= 0
         ? candidateId
         : 0;
-    post({ id, ok: false, code: "invalid-command", error: "Comando de simulação inválido" });
+    post({
+      id,
+      ok: false,
+      code: "invalid-command",
+      error: "Comando de simulação inválido",
+    });
     return;
   }
   // Recycling is session-checked and never advances state. It must not wait
@@ -420,6 +438,10 @@ self.onmessage = (event: MessageEvent<unknown>) => {
     )
       transport?.recycle(message.session, message.slot, message.buffer);
     return;
+  }
+  if (message.type === "stopLive") {
+    cancelSkip?.();
+    cancelSkip ??= () => undefined;
   }
   // `startLive` aguarda o WASM. A fila evita que pause, velocidade ou troca
   // de atleta ultrapassem essa inicialização e produzam snapshots fora de ordem.
@@ -446,4 +468,6 @@ self.onmessage = (event: MessageEvent<unknown>) => {
       code: "queue-full",
       error: "Fila de simulação cheia. Aguarde o comando atual.",
     });
-};
+}
+
+self.onmessage = (event: MessageEvent<unknown>) => admitMessage(event.data);

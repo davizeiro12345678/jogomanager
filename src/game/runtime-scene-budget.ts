@@ -134,7 +134,7 @@ export function resolveRuntimeSceneBudget(
 
   return {
     tier,
-    maxDrawCalls: mobile ? (basic ? 75 : 120) : GRAPHICS_PROFILES[tier].maxDrawCalls,
+    maxDrawCalls: mobile ? (basic ? 75 : 110) : GRAPHICS_PROFILES[tier].maxDrawCalls,
     stage,
     resolutionScale,
     textureScale,

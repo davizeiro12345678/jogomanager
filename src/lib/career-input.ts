@@ -39,6 +39,8 @@ function assertUntrustedJson(value: unknown): void {
   visit(value, 0);
 }
 
+const ExpectedGeneration = z.number().int().positive().nullable().optional();
+
 const CareerInput = z.object({
   state: z
     .object({
@@ -68,6 +70,14 @@ export function parseCareerOwner(input: unknown) {
   return CareerOwner.parse(input);
 }
 
+const CareerSave = CareerOwner.extend({ expectedGeneration: ExpectedGeneration });
+
 export function parseCareerSaveRequest(input: unknown) {
-  return { ...parseCareerInput(input), ...parseCareerOwner(input) };
+  return { ...parseCareerInput(input), ...CareerSave.parse(input) };
+}
+
+const CareerCreate = CareerOwner.extend({ expectedGeneration: ExpectedGeneration });
+
+export function parseCareerCreateRequest(input: unknown) {
+  return { ...parseCareerInput(input), ...CareerCreate.parse(input) };
 }

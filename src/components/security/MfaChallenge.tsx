@@ -161,7 +161,11 @@ export function MfaChallenge({ onVerified }: { onVerified: () => void | Promise<
         className="min-h-11 underline"
         onClick={() =>
           void import("@/lib/logout").then(async (m) => {
-            await m.signOutAndCleanDevice();
+            const result = await m.signOutAndCleanDevice();
+            if (result.error) {
+              setNotice(result.error.message);
+              return;
+            }
             window.location.assign("/auth");
           })
         }

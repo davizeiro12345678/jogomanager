@@ -426,7 +426,7 @@ Estas questões não devem ser “resolvidas” por inferência do código:
 
 ## 12. Limites e proibições desta entrega
 
-- Não foram chamados serviços pagos nem APIs de produto/produção (keywords, email, Stripe, Firebase, API-Football, Cloudflare, Supabase hospedado ou Search Console). Foi consultada somente a API do GitHub em leitura para status do PR/CI e usadas referências públicas oficiais já registradas na seção 13.
+- Durante as 25 revisões documentais não foram chamados serviços pagos nem APIs de produto/produção (keywords, email, Stripe, Firebase, API-Football, Cloudflare, Supabase hospedado ou Search Console). Depois dessa fase, em 2026-11-08, foram consultados metadados do projeto Supabase e executados oito `SELECT`s somente agregados/de catálogo para tamanho, tabelas, índices, colunas e disponibilidade de histórico; nenhum payload/linha de usuário foi lido e não houve DDL/DML, migration, `ANALYZE`, `VACUUM` ou deleção. Os valores exatos estão em artefato local fora do repositório e não são incluídos no PR por serem metadados operacionais.
 - Nenhum segredo, `.env`, token, service-role key, API key ou valor de configuração privado foi lido, impresso ou incluído.
 - Não foi feito teste ofensivo contra `jogomanager.com`, produção, banco hospedado, Worker ou provedor. DAST, fuzz e carga só podem ocorrer em staging/preview isolado com autorização explícita, dados sintéticos, egress allowlist e limites aprovados.
 - As 25 revisões foram estáticas/documentais: não executaram testes, ataques, benchmarks, browser journeys, captura visual, stress, replay de migrations, auditoria de dependências ou validação de produção. Separadamente, o CI automático do run `42428747855` no SHA documental `b8df3cb` executou os gates: build/types/tests, stress, bundle, replay e demais contratos críticos passaram; Lighthouse mobile e o agregador crítico falharam pelo outlier da home. O fluxo visual do run `42428747827` ainda estava em `in_progress` na etapa de captura do baseline; ver [diagnóstico](ci-diagnosis-b8df3cb-2026-11-07.md). Isso não certifica o SHA documental posterior nem uma execução dinâmica feita pelas 25 revisões.
@@ -453,3 +453,28 @@ Estas fontes são referências de desenho e aceitação; não substituem evidên
 O próximo trabalho deve começar com um trace da home, não com aumento de budget nem refatoração ampla: reproduzir o outlier score 87/TBT 459,1 ms sob as mesmas condições; comparar o run com `hydrate-app` 432 ms a uma das execuções de TBT 22,5 ms; identificar call stacks, tarefas sem atribuição e o trabalho real do primeiro paint; então testar uma única correção e repetir as três amostras móveis. O detalhamento está em [ci-diagnosis-b8df3cb](ci-diagnosis-b8df3cb-2026-11-07.md). Em paralelo, preparar Lote 0 com o baseline de código `b72a2fd` (head documental medido `b8df3cb`), a reconciliação Drizzle e os fixtures de authority/room/save. Não liberar nem enfraquecer agregação/budgets; consultar o check `evidence` à parte e manter o PR em draft até o SHA candidato ter todos os gates e artifacts exigidos concluídos e aprovados.
 
 **Conclusão:** os resultados sustentam uma implementação incremental, fail-closed para confiança e saves, com feature flags e rollback. Eles não sustentam declaração de release, produção segura, backlinks analisados, disavow, testes executados ou performance física certificada.
+
+
+## 15. Checkpoint pós-integração — 2026-11-08
+
+Este quadro atualiza o status das fases sem substituir critérios de aceitação ou autorização de produção. O plano mestre contém a sequência operacional e a [auditoria de cobertura i18n](i18n-coverage-and-hardcoded-audit-2026-11-08.md) contém o método e a lista de arquivos candidatos.
+
+| Frente | Verificado neste checkpoint | Ainda não concluído |
+|---|---|---|
+| Worker/bundle | Artifact real 89.997 B; teto crítico 90.000 B mantido e `bundle:check` passou. | Repetir no build integrado final; a margem atual é só 3 B. |
+| Elegibilidade de partida | Validação síncrona preservada antes da fila; regressões de titulares, goleiro, disponibilidade, IDs/clube e carreira. | Reexecutar a suíte integrada final após todas as mudanças. |
+| Stripe | SDK/locks alinhados a 23.1.0, header `2026-10-28.endive` mockado e tipagem limpa. | Sem chamada financeira nem rollout; preservar essa separação. |
+| Chat/RLS | Policies de broadcast privado, membership host/guest e vínculo do tópico; contrato passou em Postgres descartável local. | Replay canônico local/CI ainda é gate obrigatório; não aplicar ao projeto Supabase hospedado. |
+| Firebase/FCM | Token isolado por owner; troca/logout revoga com cleanup compartilhado; 10 testes recentes, lint e TypeScript passaram. | Sem ativação ou envio real; confirmar credenciais, consentimento e rollout separadamente. |
+| i18n | 98 packs × 238 keys, checker estrutural verde e JSON carregado/cacheado sob demanda. | 3.009 candidatos de texto literal em 184 TSX fora do catálogo; packs automáticos continuam em draft/reviewRequired e precisam revisão nativa/layout. |
+
+O gate integrado final e a revisão independente do diff estão/estavam em execução na data deste checkpoint; não usar essa execução iniciada antes do último patch de concorrência FCM como aprovação final. O multiplayer ainda não é totalmente server-authoritative, não houve teste ativo contra produção, e DataForSEO/Ubersuggest/backlinks permanecem sem fonte autorizada/dataset. Não criar outro PR, não fazer merge ou deploy enquanto os gates críticos e o status de draft não forem resolvidos explicitamente.
+
+
+## Checkpoint de integração — validação local pós-correção 3D (2026-11-08)
+
+O candidato de trabalho está baseado no SHA remoto `2312d6d`; os resultados abaixo são locais e não equivalem à aprovação do PR. O branch do Three.js que renderiza materiais transparentes `DoubleSide` em dois passes também define `needsUpdate`, invalidando a revisão do StaticBatch. A grade alpha-tested passou a usar `forceSinglePass: true`, mantendo `DoubleSide`; a malha instanciada de flashes permanece marcada como dinâmica. Nenhum limite de draws foi alterado.
+
+Com o inspetor oficial, após remoção da instrumentação temporária, o pico medido foi **74/75 draws em baixa** e **106/110 em média**. A comparação local pré-fix em média foi **183/110**, redução de **77 draws (42,08%)**. O lote principal final reportou 150 meshes elegíveis, 144 fontes e 19 grupos gerados. Chromium/SwiftShader é evidência sintética; não certifica GPU/FPS de aparelho. Ver o diagnóstico do CI para manter separado o histórico remoto de 112/114 draws e aguardar nova execução no SHA candidato.
+
+Também passou novamente o contrato de policies Realtime em PostgreSQL local descartável com fixtures sintéticas, sem conexão Supabase hospedada. Testes focados de batching (12), TypeScript, lint, build do harness e inspetor low/medium passaram. **Pendente:** suíte completa, performance/stress, build principal + bundle absoluto, demais contratos/replay CI, revisão independente final e CI remoto verde. Não houve commit/push/merge/deploy nesta continuidade.

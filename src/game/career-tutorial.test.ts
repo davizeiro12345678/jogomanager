@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseReviewedTutorialLessons,
   parseTutorialLessons,
   practicedCareerLessons,
   tutorialProgress,
@@ -22,42 +23,15 @@ describe("resumable career tutorial", () => {
   });
   it("recognizes the first completed match and its preparation from stored results", () => {
     expect([
-      ...practicedCareerLessons({
+      ...verifiedCareerLessons({
         ...unplayed,
         results: [{ round: 1, home: "club", away: "opponent", hg: 1, ag: 0 }],
       }),
     ]).toEqual(["prematch", "match"]);
   });
-  it("keeps local review marks distinct from verified career events", () => {
-    const reviewed = parseTutorialLessons(["training", "not-a-lesson"]);
-    const verified = verifiedCareerLessons({
-      ...unplayed,
-      trainingReports: [
-        {
-          id: "training-1",
-          season: 1,
-          round: 1,
-          drillId: "posse",
-          load: 2,
-          recovery: 80,
-          responders: [],
-        },
-      ],
-    });
-    const progress = tutorialProgress(reviewed, verified);
-
-    expect(progress.reviewed).toEqual(new Set(["training"]));
-    expect(progress.verified).toEqual(new Set(["training"]));
-    expect(progress.completed).toBe(1);
-  });
-  it("adapts legacy array marks as reviewed and not verified", () => {
-    const reviewed = parseTutorialLessons(["coach-decisions", "reward"]);
-    expect([...reviewed]).toEqual(["coach-decisions"]);
-    expect(tutorialProgress(reviewed).verified).toEqual(new Set());
-  });
   it("recognizes the weekly budget lesson only from a committed weekly operation", () => {
     expect(
-      practicedCareerLessons({
+      verifiedCareerLessons({
         ...unplayed,
         financeLedger: [
           {
@@ -73,7 +47,7 @@ describe("resumable career tutorial", () => {
       }),
     ).not.toContain("weekly-budget");
     expect(
-      practicedCareerLessons({
+      verifiedCareerLessons({
         ...unplayed,
         financeLedger: [
           {
@@ -89,14 +63,35 @@ describe("resumable career tutorial", () => {
       }),
     ).toContain("weekly-budget");
   });
-  it("resumes at the next unpracticed lesson across chapters", () => {
+  it("treats legacy array marks as review only, never as verified evidence", () => {
+    const reviewed = parseTutorialLessons(["coach-decisions", "reward"]);
+    expect([...reviewed]).toEqual(["coach-decisions"]);
+
+    const progress = tutorialProgress(new Set(), reviewed);
+    expect(progress.reviewed).toBe(1);
+    expect(progress.verified).toBe(0);
+  });
+  it("keeps verified evidence separate from manual review marks", () => {
+    const verified = verifiedCareerLessons({
+      ...unplayed,
+      results: [{ round: 1, home: "club", away: "opponent", hg: 1, ag: 0 }],
+    });
+    const progress = tutorialProgress(verified, new Set(["club", "prematch"]));
+    expect(progress.verified).toBe(2);
+    expect(progress.reviewed).toBe(1);
+    expect(progress.completed).toBe(3);
+    expect(progress.next?.id).toBe("objectives");
+  });
+  it("resumes at the next incomplete lesson across chapters", () => {
     const progress = tutorialProgress(new Set(["club", "objectives"]));
     expect(progress.completed).toBe(2);
     expect(progress.total).toBe(19);
     expect(progress.next?.id).toBe("squad");
   });
-  it("does not accept unknown or invalid stored lesson identifiers", () => {
-    expect([...parseTutorialLessons(["club", "reward", 5, null])]).toEqual(["club"]);
-    expect(parseTutorialLessons({ completed: true }).size).toBe(0);
+  it("does not accept unknown or invalid manual review identifiers", () => {
+    expect([...parseReviewedTutorialLessons(["club", "reward", 5, null])]).toEqual(["club"]);
+    expect(parseReviewedTutorialLessons({ completed: true }).size).toBe(0);
+    expect(parseTutorialLessons).toBe(parseReviewedTutorialLessons);
+    expect(practicedCareerLessons).toBe(verifiedCareerLessons);
   });
 });

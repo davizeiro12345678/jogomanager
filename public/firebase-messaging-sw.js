@@ -19,16 +19,36 @@ self.addEventListener("notificationclick", (event) => {
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
-firebase.initializeApp(Object.fromEntries(new URL(self.location).searchParams));
+const params = new URL(self.location.href).searchParams;
+const firebaseConfig = {
+  apiKey: params.get("apiKey") ?? "",
+  projectId: params.get("projectId") ?? "",
+  appId: params.get("appId") ?? "",
+  messagingSenderId: params.get("messagingSenderId") ?? "",
+};
+const appSenderId = /^1:(\d+):web:[a-z0-9]+$/i.exec(firebaseConfig.appId)?.[1] ?? "";
+const sameProjectIdentity =
+  firebaseConfig.apiKey !== "" &&
+  firebaseConfig.projectId !== "" &&
+  firebaseConfig.appId !== "" &&
+  firebaseConfig.messagingSenderId !== "" &&
+  appSenderId === firebaseConfig.messagingSenderId;
 
-firebase.messaging().onBackgroundMessage((payload) => {
-  // Firebase displays notification payloads itself. Only render data-only pushes here.
-  if (payload.notification) return;
-  const data = payload.data ?? {};
-  return self.registration.showNotification(String(data.title ?? "jogomanager").slice(0, 90), {
-    body: String(data.body ?? "Você tem uma atualização no jogo.").slice(0, 220),
-    icon: "/icon-192.png",
-    tag: String(data.eventId ?? "jogomanager").slice(0, 70),
-    data: { target: data.path ?? data.url ?? "/" },
-  });
-});
+if (sameProjectIdentity) {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    firebase.messaging().onBackgroundMessage((payload) => {
+      // Firebase displays notification payloads itself. Only render data-only pushes here.
+      if (payload.notification) return;
+      const data = payload.data ?? {};
+      return self.registration.showNotification(String(data.title ?? "jogomanager").slice(0, 90), {
+        body: String(data.body ?? "Você tem uma atualização no jogo.").slice(0, 220),
+        icon: "/icon-192.png",
+        tag: String(data.eventId ?? "jogomanager").slice(0, 70),
+        data: { target: data.path ?? data.url ?? "/" },
+      });
+    });
+  } catch {
+    // A malformed or incompatible registration must not claim a messaging scope.
+  }
+}

@@ -40,6 +40,7 @@ import {
   importFixtureRecords,
 } from "./apifootball-matches.server";
 export type { Phase } from "./apifootball-phases";
+export { parseRetryAfterMs } from "./football-api.server";
 
 export type AfImportResult = {
   ok: boolean;

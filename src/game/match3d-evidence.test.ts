@@ -43,18 +43,18 @@ it("keeps software samples uncertified even when measurements and fixtures pass"
     physicalDeviceCertification: false,
   });
 });
-it("applies the explicit 120-draw ceiling to mobile medium evidence", () => {
+it("applies the explicit 110-draw ceiling to mobile medium evidence", () => {
   const before = capture(),
     after = capture();
   before.matchScenes[0]!.label = "match-mobile-mid";
   after.matchScenes[0]!.label = "match-mobile-mid";
-  after.matchScenes[0]!.peakDraws = 120;
+  after.matchScenes[0]!.peakDraws = 110;
   expect(compareMatch3dEvidence(before, after).violations).not.toContain(
-    "match-mobile-mid: 120 draws exceed 120",
+    "match-mobile-mid: 110 draws exceed 110",
   );
-  after.matchScenes[0]!.peakDraws = 121;
+  after.matchScenes[0]!.peakDraws = 111;
   expect(compareMatch3dEvidence(before, after).violations).toContain(
-    "match-mobile-mid: 121 draws exceed 120",
+    "match-mobile-mid: 111 draws exceed 110",
   );
 });
 it("rejects missing captures, changed authority, unequal resolution and over-budget scenes", () => {

@@ -178,8 +178,9 @@ export function GameShell({
     if (bottomNav.current) observer.observe(bottomNav.current);
     measure();
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   useEffect(() => {
     try {
       if (localStorage.getItem("manager3d.career-density") === "compact") setDensity("compact");
@@ -351,7 +352,12 @@ export function GameShell({
                 {signedIn ? (
                   <DropdownMenuItem
                     onSelect={async () => {
-                      await (await import("@/lib/logout")).signOutAndCleanDevice();
+                      setSignOutError(null);
+                      const result = await (await import("@/lib/logout")).signOutAndCleanDevice();
+                      if (result.error) {
+                        setSignOutError(result.error.message);
+                        return;
+                      }
                       void navigate({ to: "/" });
                     }}
                   >
@@ -385,6 +391,11 @@ export function GameShell({
           </div>
         </div>
       </header>
+      {signOutError ? (
+        <p role="alert" className="mx-auto max-w-7xl px-4 pt-3 text-sm text-destructive">
+          {signOutError}
+        </p>
+      ) : null}
 
       <div className="career-workspace">
         <aside className="career-sidebar" aria-label={t("nav.menu")}>

@@ -137,6 +137,7 @@ function SectorGrilles({ rings }: { rings: number }) {
       transparent: true,
       alphaTest: 0.35,
       side: THREE.DoubleSide,
+      forceSinglePass: true,
     });
     if (tex) {
       const t = tex.clone();

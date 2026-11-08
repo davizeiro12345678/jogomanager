@@ -1,6 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import {
+  isSettlementLeaseExpired,
+  MATCH_SETTLEMENT_LEASE_MS,
+  settlementLeaseCutoff,
+} from "./multiplayer-settlement";
+
 const migration = await readFile(
   new URL(
     "../../supabase/migrations/20261004161718_multiplayer_server_authority.sql",
@@ -83,21 +89,75 @@ describe("server-managed multiplayer results", () => {
     expect(leave).toContain('room.status === "settling"');
   });
 
-  it("checks the leave CAS row before deleting the private seed", () => {
+  it("checks leave's CAS row before deleting the private seed", () => {
     const leave = functionsSource.slice(
       functionsSource.indexOf("export const leaveMatchRoom"),
       functionsSource.indexOf("export const finishMatchRoom"),
     );
-    const update = leave.indexOf('.update({ status: "done"');
-    const affectedRowRead = leave.indexOf('.select("id")', update);
-    const affectedRowGuard = leave.indexOf("if (!updatedRoom)");
-    const secretDelete = leave.indexOf('.from("match_room_secrets").delete');
+    const cas = leave.indexOf("const { data: closedRoom, error }");
+    const cleanup = leave.indexOf('.from("match_room_secrets")');
+    expect(cas).toBeGreaterThanOrEqual(0);
+    expect(leave.slice(cas, cleanup)).toContain('.select("id")');
+    expect(leave.slice(cas, cleanup)).toContain(".maybeSingle()");
+    expect(leave.slice(cas, cleanup)).toContain("if (!closedRoom)");
+    expect(leave.slice(cas, cleanup)).toContain('latestRoom.status === "settling"');
+    expect(cleanup).toBeGreaterThan(cas);
+  });
 
-    expect(update).toBeGreaterThanOrEqual(0);
-    expect(leave).toContain("const { data: updatedRoom, error }");
-    expect(affectedRowRead).toBeGreaterThan(update);
-    expect(leave.indexOf(".maybeSingle()", affectedRowRead)).toBeGreaterThan(affectedRowRead);
-    expect(affectedRowGuard).toBeGreaterThan(affectedRowRead);
-    expect(secretDelete).toBeGreaterThan(affectedRowGuard);
+  it("reclaims a stale settlement claim only after the lease expires", () => {
+    const finish = functionsSource.slice(functionsSource.indexOf("export const finishMatchRoom"));
+    const now = Date.parse("2026-11-08T03:00:00.000Z");
+    expect(
+      isSettlementLeaseExpired(new Date(now - MATCH_SETTLEMENT_LEASE_MS - 1).toISOString(), now),
+    ).toBe(true);
+    expect(
+      isSettlementLeaseExpired(new Date(now - MATCH_SETTLEMENT_LEASE_MS + 1).toISOString(), now),
+    ).toBe(false);
+    expect(finish).toContain("isSettlementLeaseExpired(room.updated_at)");
+    expect(finish).toContain(
+      ".or(`status.eq.live,and(status.eq.settling,updated_at.lt.${settlementLeaseCutoffAt})`)",
+    );
+    expect(finish).toContain('.select("id, updated_at")');
+  });
+
+  it("lets concurrent finish requests contend on one live-or-stale CAS", () => {
+    const finish = functionsSource.slice(functionsSource.indexOf("export const finishMatchRoom"));
+    expect(finish).toContain(
+      ".or(`status.eq.live,and(status.eq.settling,updated_at.lt.${settlementLeaseCutoffAt})`)",
+    );
+    expect(finish).toContain("if (!claim)");
+    expect(finish).toContain('latest?.status === "settling"');
+  });
+
+  it("fences a stale claimant from publishing or releasing after reclaim", () => {
+    const finish = functionsSource.slice(functionsSource.indexOf("export const finishMatchRoom"));
+    const release = finish.slice(finish.indexOf("const releaseClaim"));
+    const publication = finish.slice(finish.indexOf("const { data: updatedRoom"));
+    expect(release).toContain('.eq("updated_at", lease.currentLease())');
+    expect(publication).toContain('.eq("updated_at", lease.currentLease())');
+    expect(finish).toContain("const claimLease = claim.updated_at");
+    expect(finish).toContain("const lease = createSettlementLeaseGuard");
+    expect(finish).toContain('.eq("updated_at", expectedLease)');
+    expect(finish).toContain("lease.start()");
+    expect(finish).toContain("await lease.stop()");
+  });
+
+  it("renews a long local replay before its lease can be reclaimed", () => {
+    const finish = functionsSource.slice(functionsSource.indexOf("export const finishMatchRoom"));
+    expect(finish).toContain("if (steps % 128 === 0)");
+    expect(finish).toContain("lease.isLost()");
+  });
+
+  it("allows a participant to close only an expired settlement and waits for lease expiry in UI", () => {
+    const leave = functionsSource.slice(
+      functionsSource.indexOf("export const leaveMatchRoom"),
+      functionsSource.indexOf("export const finishMatchRoom"),
+    );
+    expect(leave).toContain("isSettlementLeaseExpired(room.updated_at)");
+    expect(leave).toContain('.eq("status", "settling")');
+    expect(leave).toContain('.lt("updated_at", settlementLeaseCutoff())');
+    expect(pageSource).toContain('retryReason === "settling"');
+    expect(pageSource).toContain("MATCH_SETTLEMENT_LEASE_MS + 1000");
+    expect(pageSource).toContain("isSettlementLeaseExpired(room.updated_at)");
   });
 });

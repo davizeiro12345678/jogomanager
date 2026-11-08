@@ -51,6 +51,37 @@ export interface RemotePlayer {
 
 const UA = { "User-Agent": "football-manager-app/1.0" };
 
+export const MAX_RETRY_AFTER_MS = 8_000;
+const HTTP_DATE =
+  /^(?:[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT|[A-Z][a-z]+, \d{2}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2} GMT|[A-Z][a-z]{2} [A-Z][a-z]{2} {1,2}\d{1,2} \d{2}:\d{2}:\d{2} \d{4})$/;
+
+/**
+ * Parse RFC 9110 Retry-After without allowing an upstream value to create an
+ * unbounded sleep. The current time is explicit so HTTP-date parsing remains
+ * deterministic in tests and callers can use the same clock as their budget.
+ */
+export function parseRetryAfterMs(
+  value: string | null | undefined,
+  nowMs: number,
+  maxMs = MAX_RETRY_AFTER_MS,
+): number | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+
+  const limit = Number.isFinite(maxMs) && maxMs >= 0 ? Math.floor(maxMs) : MAX_RETRY_AFTER_MS;
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    if (!Number.isFinite(seconds)) return limit;
+    return Math.min(seconds * 1000, limit);
+  }
+
+  if (!Number.isFinite(nowMs)) return null;
+  if (!HTTP_DATE.test(raw)) return null;
+  const timestamp = Date.parse(raw.includes(" GMT") ? raw : `${raw} GMT`);
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.min(Math.max(0, timestamp - nowMs), limit);
+}
+
 async function getJson<T>(
   url: string,
   headers: Record<string, string> = {},
@@ -63,7 +94,9 @@ async function getJson<T>(
       if (res.ok) return (await res.json()) as T;
       // Free tiers throttle aggressively; back off and try again.
       if (res.status === 429 || res.status >= 500) {
-        await new Promise((r) => setTimeout(r, 700 * (attempt + 1) + Math.random() * 400));
+        const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"), Date.now());
+        const delay = retryAfterMs ?? 700 * (attempt + 1) + Math.random() * 400;
+        await new Promise((r) => setTimeout(r, delay));
         continue;
       }
       return null;

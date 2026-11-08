@@ -168,10 +168,10 @@
   border: 1px solid #acc5a825;
   background: linear-gradient(180deg, #1a2e20 0%, #121f17 100%);
   border-radius: 12px;
-  overflow: hidden;
   box-shadow:
     0 24px 60px -30px #000000cc,
     inset 0 1px 0 #ffffff0d;
+  overflow: hidden;
 }
 .career-portrait {
   min-height: 240px;
@@ -263,6 +263,13 @@
   margin: 10px 0;
 }
 .career-step-heading h2:focus-visible {
+  width: fit-content;
+  max-width: 100%;
+  outline: 2px solid var(--career-accent);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.career-step-heading h2:focus:not(:focus-visible) {
   width: fit-content;
   max-width: 100%;
   outline: 2px solid var(--career-accent);
@@ -874,15 +881,37 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .career-create,
   .career-create *,
   .career-create *::before,
   .career-create *::after {
+    animation: none !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    transition: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 }
+@media (forced-colors: active) {
+  .career-create :is(button, a, input, select):focus-visible,
+  .career-search:focus-within {
+    outline-color: Highlight;
+  }
+  .career-create
+    :is(
+      .career-steps button[aria-current="step"],
+      .career-chip[aria-pressed="true"],
+      .career-color[aria-pressed="true"],
+      .career-personality-grid button[aria-pressed="true"],
+      .career-club[aria-pressed="true"]
+    ) {
+    border-color: Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
 @media (max-width: 640px) {
   .career-steps li {
     min-width: 0;
@@ -923,23 +952,5 @@
   }
   .career-identity h2 {
     font-size: 22px;
-  }
-}
-
-@media (forced-colors: active) {
-  .career-create :is(button, a, input, select):focus-visible,
-  .career-search:focus-within {
-    outline-color: Highlight;
-  }
-  .career-create
-    :is(
-      .career-steps button[aria-current="step"],
-      .career-chip[aria-pressed="true"],
-      .career-color[aria-pressed="true"],
-      .career-personality-grid button[aria-pressed="true"],
-      .career-club[aria-pressed="true"]
-    ) {
-    outline: 2px solid Highlight;
-    outline-offset: 2px;
   }
 }

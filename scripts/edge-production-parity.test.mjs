@@ -5,9 +5,11 @@ import { stripTypeScriptTypes } from "node:module";
 import { createHash, webcrypto } from "node:crypto";
 import vm from "node:vm";
 import {
+  footballProviderRetryAfterMs,
   footballProviderRateError,
   footballWindowBudget,
   loadFootballJobPage,
+  parseRetryAfterMs,
   validateFootballPage,
 } from "../supabase/functions/_shared/football-window.mjs";
 
@@ -332,6 +334,34 @@ test("API-Football distinguishes a depleted day from a transient 429", () => {
   assert.equal(footballProviderRateError(response(429, "100")), "provider_rate_wait");
   assert.equal(footballProviderRateError(response(429, "")), "provider_rate_wait");
   assert.equal(footballProviderRateError(response(200, "0")), null);
+});
+
+test("API-Football parses bounded Retry-After delta-seconds", () => {
+  assert.equal(parseRetryAfterMs(" 5 ", 0), 5_000);
+  assert.equal(parseRetryAfterMs("0", 0), 0);
+  assert.equal(parseRetryAfterMs("1.5", 0), null);
+  assert.equal(parseRetryAfterMs("-1", 0), null);
+  assert.equal(parseRetryAfterMs("999999999999999999999", 0), 8_000);
+});
+
+test("API-Football parses Retry-After HTTP-date using the supplied clock", () => {
+  const now = Date.parse("Wed, 21 Oct 2015 07:28:00 GMT");
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:05 GMT", now), 5_000);
+  assert.equal(parseRetryAfterMs("Wed Oct 21 07:28:05 2015", now), 5_000);
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:27:59 GMT", now), 0);
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:30 GMT", now), 8_000);
+  assert.equal(parseRetryAfterMs("not-a-date", now), null);
+  assert.equal(parseRetryAfterMs("Wed, 21 Oct 2015 07:28:05 GMT", Number.NaN), null);
+  assert.equal(
+    footballProviderRetryAfterMs(
+      new Response(null, {
+        status: 429,
+        headers: { "retry-after": "Wed, 21 Oct 2015 07:28:05 GMT" },
+      }),
+      now,
+    ),
+    5_000,
+  );
 });
 
 test("API-Football cached pages are validated and reused without reserving or requesting again", async () => {

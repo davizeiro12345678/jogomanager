@@ -45,6 +45,8 @@ import { Crest } from "@/components/game/Crest";
 
 import { useCareer } from "@/hooks/useCareer";
 
+import { canCreateCareer, canMutateCareer } from "@/lib/career-hydration";
+
 import { loadRealSquad } from "@/lib/realSquads";
 
 import { startWorldForNewCareer } from "@/lib/world";
@@ -61,6 +63,7 @@ import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/
 import "@/components/game/career-create.css";
 import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
 import { containsProfanity } from "@/lib/moderation";
+import { useT } from "@/i18n/context";
 
 const Cutscene = lazy(() =>
   import("@/components/game/Cutscene").then((m) => ({ default: m.Cutscene })),
@@ -110,7 +113,12 @@ const CHALLENGES: { id: CareerChallenge; label: string }[] = [
 
 export function NewCareer() {
   const navigate = useNavigate();
-  const { career, update, reset } = useCareer();
+  const { t } = useT();
+  const { career, retry: retryCareer, status: careerStatus, create, reset, sync } = useCareer();
+  const careerStatusRef = useRef(careerStatus);
+  careerStatusRef.current = careerStatus;
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
   const [step, setStep] = useState(0);
   const [furthest, setFurthest] = useState(0);
   const [name, setName] = useState("Técnico");
@@ -144,6 +152,7 @@ export function NewCareer() {
   const stepTitle = useRef<HTMLHeadingElement>(null);
   const reviewTitle = useRef<HTMLHeadingElement>(null);
   const lastStep = useRef(step);
+  const hydrating = careerStatus === "loading";
   useCinematicPreload(loading || scene);
   useEffect(() => {
     mounted.current = true;
@@ -224,7 +233,21 @@ export function NewCareer() {
     if (next - attrs[key] <= left) setAttrs({ ...attrs, [key]: next });
   }
   async function start() {
-    if (!selected || selectionLocked || choosing.current || (career && !replace)) return;
+    const canStartCurrent = () =>
+      syncRef.current !== "pending" &&
+      syncRef.current !== "syncing" &&
+      canCreateCareer({
+        status: careerStatusRef.current,
+        hasCareer: career !== null,
+        replace,
+      });
+    const canProceedAfterPreparation = () =>
+      careerStatusRef.current !== "loading" &&
+      careerStatusRef.current !== "offline" &&
+      careerStatusRef.current !== "error" &&
+      syncRef.current !== "pending" &&
+      syncRef.current !== "syncing";
+    if (!selected || selectionLocked || choosing.current || !canStartCurrent()) return;
     choosing.current = true;
     setLoading(true);
     setError("");
@@ -248,13 +271,31 @@ export function NewCareer() {
           timer = setTimeout(resolve, 8000);
         }),
       ]);
-      if (!mounted.current) return;
+      if (!mounted.current || !canProceedAfterPreparation()) return;
       // Replacing must delete the stored career first; otherwise the server
       // treats the fresh season-1 save as stale and restores the old one.
-      if (career && replace) await reset();
-      if (!mounted.current) return;
+      if (career && replace) {
+        const resetOutcome = await reset();
+        if (!resetOutcome.ok) {
+          if (mounted.current)
+            setError(
+              resetOutcome.reason === "preflight" || resetOutcome.reason === "lock_unavailable"
+                ? "Não foi possível confirmar a substituição. A carreira anterior foi preservada; verifique a conexão e a sincronização e tente novamente."
+                : `${t("screen.error")} ${t("common.retry")}`,
+            );
+          return;
+        }
+      }
+      if (!mounted.current || !canProceedAfterPreparation()) return;
       startWorldForNewCareer(club.id);
-      update(initCareer(selected.league.id, club.id, profile.name, profile));
+      const created = await create(initCareer(selected.league.id, club.id, profile.name, profile));
+      if (!created) {
+        if (mounted.current)
+          setError(
+            "Não foi possível confirmar a criação da carreira. Sua seleção foi mantida; tente novamente após verificar a conexão.",
+          );
+        return;
+      }
       startCareerAnalyticsId();
       setScene(true);
     } catch {
@@ -309,7 +350,7 @@ export function NewCareer() {
                 <button
                   type="button"
                   onClick={() => go(i)}
-                  disabled={i > furthest || loading}
+                  disabled={i > furthest || loading || hydrating}
                   aria-current={i === step ? "step" : undefined}
                 >
                   <span>{i < step ? <Check size={14} /> : i + 1}</span>
@@ -367,7 +408,7 @@ export function NewCareer() {
           <section
             className="career-editor"
             aria-labelledby="career-step-title"
-            aria-busy={loading}
+            aria-busy={loading || hydrating}
           >
             <div className="career-step-heading">
               <p className="career-kicker">
@@ -378,7 +419,36 @@ export function NewCareer() {
               </h2>
               <p>{stepCopy[1]}</p>
             </div>
-            <fieldset disabled={loading} className="career-fields">
+            {careerStatus === "loading" ? (
+              <p role="status" className="career-help">
+                Carregando sua carreira salva…
+              </p>
+            ) : null}
+            {careerStatus !== "loading" && (careerStatus === "offline" || sync === "offline") ? (
+              <p role="alert" className="career-error">
+                Sem conexão para confirmar sua carreira na nuvem. Nenhum save foi substituído.{" "}
+                <button
+                  type="button"
+                  className="career-text-button"
+                  onClick={() => void retryCareer()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            ) : null}
+            {careerStatus === "error" ? (
+              <p role="alert" className="career-error">
+                Não foi possível confirmar sua carreira na nuvem. Nenhum save foi substituído.{" "}
+                <button
+                  type="button"
+                  className="career-text-button"
+                  onClick={() => void retryCareer()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            ) : null}
+            <fieldset disabled={loading || hydrating} className="career-fields">
               {step === 0 && (
                 <div className="career-step-content">
                   <label className="career-label" htmlFor="manager-name">
@@ -754,7 +824,17 @@ export function NewCareer() {
                       <button
                         type="button"
                         className="career-primary"
-                        disabled={selectionLocked || !!(career && !replace)}
+                        disabled={
+                          !canCreateCareer({
+                            status: careerStatus,
+                            hasCareer: career !== null,
+                            replace,
+                          }) ||
+                          sync === "pending" ||
+                          sync === "syncing" ||
+                          selectionLocked ||
+                          loading
+                        }
                         onClick={() => void start()}
                       >
                         {loading ? (
@@ -788,7 +868,7 @@ export function NewCareer() {
               <button
                 type="button"
                 onClick={() => go(Math.max(0, step - 1))}
-                disabled={step === 0 || loading}
+                disabled={step === 0 || loading || hydrating}
               >
                 <ArrowLeft size={16} />
                 Voltar
@@ -800,7 +880,13 @@ export function NewCareer() {
                 <button
                   type="button"
                   className="career-primary"
-                  disabled={!name.trim() || nameBlocked || (step === 2 && left !== 0) || loading}
+                  disabled={
+                    !name.trim() ||
+                    nameBlocked ||
+                    (step === 2 && left !== 0) ||
+                    loading ||
+                    hydrating
+                  }
                   onClick={() => go(step + 1)}
                 >
                   {step === 2 && left !== 0

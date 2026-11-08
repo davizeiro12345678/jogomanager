@@ -9,6 +9,34 @@ export function footballWindowBudget(configuredLanes, pilot) {
   };
 }
 
+export const MAX_RETRY_AFTER_MS = 8_000;
+const HTTP_DATE =
+  /^(?:[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT|[A-Z][a-z]+, \d{2}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2} GMT|[A-Z][a-z]{2} [A-Z][a-z]{2} {1,2}\d{1,2} \d{2}:\d{2}:\d{2} \d{4})$/;
+
+// Keep Retry-After bounded: a provider must not be able to hold a worker
+// indefinitely, and an injected clock keeps HTTP-date cases deterministic.
+export function parseRetryAfterMs(value, nowMs, maxMs = MAX_RETRY_AFTER_MS) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return null;
+
+  const limit = Number.isFinite(maxMs) && maxMs >= 0 ? Math.floor(maxMs) : MAX_RETRY_AFTER_MS;
+  if (/^\d+$/.test(raw)) {
+    const seconds = Number(raw);
+    if (!Number.isFinite(seconds)) return limit;
+    return Math.min(seconds * 1_000, limit);
+  }
+
+  if (!Number.isFinite(nowMs)) return null;
+  if (!HTTP_DATE.test(raw)) return null;
+  const timestamp = Date.parse(raw.includes(" GMT") ? raw : `${raw} GMT`);
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.min(Math.max(0, timestamp - nowMs), limit);
+}
+
+export function footballProviderRetryAfterMs(response, nowMs) {
+  return parseRetryAfterMs(response.headers.get("retry-after"), nowMs);
+}
+
 export function footballProviderRateError(response) {
   if (response.status !== 429) return null;
   return response.headers.get("x-ratelimit-requests-remaining")?.trim() === "0"

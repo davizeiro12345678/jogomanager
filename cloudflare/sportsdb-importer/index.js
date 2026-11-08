@@ -6,9 +6,433 @@ import {
   reserveSportsDbApiRequest,
   retryAtFromResponse,
 } from "./api-quota.mjs";
+import {
+  ensurePublicRateSchema,
+  hashPublicClientKey,
+  PUBLIC_RATE_SCHEMA_SQL,
+  prunePublicRateRequests,
+  reservePublicRequest,
+} from "./public-rate-limit.mjs";
 import { isImporterAuthorized } from "./auth.mjs";
 import { jsonResponse, optionsResponse } from "./http.mjs";
 const API_BASE = "https://www.thesportsdb.com/api/v1/json";
+const PUBLIC_ROUTE_PATHS = new Set([
+  "/api/leagues",
+  "/api/teams",
+  "/api/players",
+  "/api/events/next",
+  "/api/events/past",
+  "/api/standings",
+  "/api/team",
+  "/api/player",
+  "/api/search/teams",
+  "/api/search/players",
+]);
+const PUBLIC_PAGE_DEFAULT = 50;
+const PUBLIC_PAGE_MAX = 100;
+const PUBLIC_COLUMNS = Object.freeze({
+  leagues: [
+    "idLeague",
+    "strLeague",
+    "strSport",
+    "strLeagueAlternate",
+    "strCountry",
+    "strLogo",
+    "strCurrentSeason",
+    "intFormedYear",
+    "strWebsite",
+    "strFacebook",
+    "strTwitter",
+    "strInstagram",
+    "strYoutube",
+    "strDescriptionEN",
+    "strBanner",
+    "strBadge",
+    "strPoster",
+    "strTrophy",
+    "strNamingS",
+    "strLocked",
+  ],
+  teams: [
+    "idTeam",
+    "strTeam",
+    "strTeamShort",
+    "strAlternate",
+    "intFormedYear",
+    "strSport",
+    "strLeague",
+    "idLeague",
+    "strStadium",
+    "strKeywords",
+    "strStadiumThumb",
+    "strStadiumLocation",
+    "intStadiumCapacity",
+    "strWebsite",
+    "strFacebook",
+    "strTwitter",
+    "strInstagram",
+    "strDescriptionEN",
+    "strCountry",
+    "strTeamBadge",
+    "strTeamJersey",
+    "strTeamLogo",
+    "strTeamBanner",
+    "strTeamPoster",
+    "strYoutube",
+    "strLocked",
+  ],
+  players: [
+    "idPlayer",
+    "strPlayer",
+    "strTeam",
+    "strSport",
+    "dateBorn",
+    "strNumber",
+    "dateSigned",
+    "strSigning",
+    "strWage",
+    "strPosition",
+    "strPositionNumber",
+    "strNationality",
+    "strHeight",
+    "strWeight",
+    "strThumb",
+    "strCutout",
+    "strBanner",
+    "strFanart1",
+    "strFanart2",
+    "strFanart3",
+    "strFanart4",
+    "strDescriptionEN",
+    "strDescriptionPT",
+    "strStatus",
+    "strGender",
+    "strSide",
+    "strKitColor1",
+    "strKitColor2",
+    "strKitColor3",
+    "strKitColor4",
+    "strFacebook",
+    "strTwitter",
+    "strInstagram",
+    "strYoutube",
+    "strLocked",
+    "idTeam",
+  ],
+  events: [
+    "idEvent",
+    "strEvent",
+    "strEventAlternate",
+    "strFilename",
+    "strSport",
+    "idLeague",
+    "strLeague",
+    "strSeason",
+    "strDescriptionEN",
+    "strHomeTeam",
+    "strAwayTeam",
+    "intHomeScore",
+    "intAwayScore",
+    "intRound",
+    "intSpectators",
+    "strOfficial",
+    "strTimestamp",
+    "dateEvent",
+    "dateEventLocal",
+    "strTime",
+    "strTimeLocal",
+    "strTVStation",
+    "idHomeTeam",
+    "idAwayTeam",
+    "strResult",
+    "strVenue",
+    "strCountry",
+    "strCity",
+    "strPoster",
+    "strThumb",
+    "strBanner",
+    "strMap",
+    "strTweet1",
+    "strTweet2",
+    "strTweet3",
+    "strVideo",
+    "strLock",
+    "strSection",
+    "strPostponed",
+    "strLocked",
+    "strStatus",
+  ],
+  standings: [
+    "idLeague",
+    "strLeague",
+    "strSeason",
+    "idTeam",
+    "strTeam",
+    "intRank",
+    "intPlayed",
+    "intWin",
+    "intLoss",
+    "intDraw",
+    "intGoalsFor",
+    "intGoalsAgainst",
+    "intGoalDifference",
+    "intPoints",
+    "strForm",
+    "strDescription",
+    "strBadge",
+  ],
+});
+const PUBLIC_TABLE_COLUMNS = Object.freeze(
+  Object.fromEntries(
+    Object.entries(PUBLIC_COLUMNS).map(([name, columns]) => [name, columns.join(",")]),
+  ),
+);
+const PUBLIC_LIST_QUERY = Object.freeze({
+  leagues: {
+    table: "sportsdb_leagues",
+    columns: PUBLIC_TABLE_COLUMNS.leagues,
+    orderBy: "COALESCE(strLeague, '') COLLATE NOCASE, idLeague",
+    cursorWhere:
+      "(COALESCE(strLeague, '') COLLATE NOCASE > ? OR (COALESCE(strLeague, '') COLLATE NOCASE = ? AND idLeague > ?))",
+    cursorParams: (cursor) => [cursor[0], cursor[0], cursor[1]],
+    cursorValues: (row) => [row.strLeague || "", row.idLeague],
+  },
+  teams: {
+    table: "sportsdb_teams",
+    columns: PUBLIC_TABLE_COLUMNS.teams,
+    orderBy: "COALESCE(strTeam, '') COLLATE NOCASE, idTeam",
+    cursorWhere:
+      "(COALESCE(strTeam, '') COLLATE NOCASE > ? OR (COALESCE(strTeam, '') COLLATE NOCASE = ? AND idTeam > ?))",
+    cursorParams: (cursor) => [cursor[0], cursor[0], cursor[1]],
+    cursorValues: (row) => [row.strTeam || "", row.idTeam],
+  },
+  players: {
+    table: "sportsdb_players",
+    columns: PUBLIC_TABLE_COLUMNS.players,
+    orderBy: "COALESCE(strPlayer, '') COLLATE NOCASE, idPlayer",
+    cursorWhere:
+      "(COALESCE(strPlayer, '') COLLATE NOCASE > ? OR (COALESCE(strPlayer, '') COLLATE NOCASE = ? AND idPlayer > ?))",
+    cursorParams: (cursor) => [cursor[0], cursor[0], cursor[1]],
+    cursorValues: (row) => [row.strPlayer || "", row.idPlayer],
+  },
+  standings: {
+    table: "sportsdb_standings",
+    columns: PUBLIC_TABLE_COLUMNS.standings,
+    orderBy: "intRank, idTeam",
+    cursorWhere: "(intRank > ? OR (intRank = ? AND idTeam > ?))",
+    cursorParams: (cursor) => [cursor[0], cursor[0], cursor[1]],
+    cursorValues: (row) => [row.intRank, row.idTeam],
+  },
+});
+function badRequest(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
+function parsePageLimit(params) {
+  const raw = params.get("limit");
+  if (raw === null || raw === "") return PUBLIC_PAGE_DEFAULT;
+  if (!/^\d+$/.test(raw)) throw badRequest("limit must be a positive integer");
+  const limit = Number(raw);
+  if (!Number.isSafeInteger(limit) || limit < 1)
+    throw badRequest("limit must be a positive integer");
+  return Math.min(limit, PUBLIC_PAGE_MAX);
+}
+
+function encodeCursor(values) {
+  const bytes = new TextEncoder().encode(JSON.stringify(values));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+}
+
+function decodeCursor(value, expectedLength) {
+  if (!value) return null;
+  if (value.length > 512) throw badRequest("cursor is too long");
+  try {
+    const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const parsed = JSON.parse(new TextDecoder().decode(bytes));
+    if (!Array.isArray(parsed) || parsed.length !== expectedLength) throw new Error("shape");
+    return parsed;
+  } catch {
+    throw badRequest("cursor is invalid");
+  }
+}
+
+function numericId(params, name) {
+  const raw = params.get(name);
+  if (!raw || !/^\d+$/.test(raw)) throw badRequest(`${name} must be a positive integer`);
+  const value = Number(raw);
+  if (!Number.isSafeInteger(value) || value < 1)
+    throw badRequest(`${name} must be a positive integer`);
+  return value;
+}
+
+function numericCursor(cursor, expectedLength) {
+  if (!cursor) return null;
+  if (cursor.length !== expectedLength) throw badRequest("cursor is invalid");
+  const values = cursor.map((value) => Number(value));
+  if (values.some((value) => !Number.isSafeInteger(value) || value < 0))
+    throw badRequest("cursor is invalid");
+  return values;
+}
+
+function textCursor(cursor, expectedLength) {
+  if (!cursor) return null;
+  if (cursor.length !== expectedLength) throw badRequest("cursor is invalid");
+  if (cursor.some((value) => typeof value !== "string" || value.length > 256))
+    throw badRequest("cursor is invalid");
+  return cursor;
+}
+
+function searchTerm(params, name) {
+  const value = params.get(name)?.trim() || "";
+  if (!value || value.length > 80) throw badRequest(`${name} must contain 1 to 80 characters`);
+  return `%${value}%`;
+}
+
+async function allowPublicRequest(request, env) {
+  const clientKey = await hashPublicClientKey(request, env.THESPORTSDB_IMPORT_SECRET);
+  return reservePublicRequest(env.SPORTS_DB, clientKey);
+}
+async function readPublicPage(db, spec, params, where = [], values = [], cursor = null) {
+  const limit = parsePageLimit(params);
+  const filters = [...where];
+  const cursorParams = cursor ? spec.cursorParams(cursor) : [];
+  if (cursor) filters.push(spec.cursorWhere);
+  const sql = `SELECT ${spec.columns} FROM ${spec.table}${
+    filters.length ? ` WHERE ${filters.join(" AND ")}` : ""
+  } ORDER BY ${spec.orderBy} LIMIT ?`;
+  const result = await db
+    .prepare(sql)
+    .bind(...values, ...cursorParams, limit + 1)
+    .all();
+  const rows = result?.results || [];
+  const results = rows.slice(0, limit);
+  return {
+    limit,
+    results,
+    nextCursor: rows.length > limit ? encodeCursor(spec.cursorValues(results.at(-1))) : null,
+  };
+}
+
+function publicPageResponse(request, page) {
+  const headers = {
+    "X-Page-Limit": page.limit,
+    "X-Page-Count": page.results.length,
+  };
+  if (page.nextCursor) {
+    const next = new URL(request.url);
+    next.searchParams.set("cursor", page.nextCursor);
+    next.searchParams.set("limit", String(page.limit));
+    headers["X-Next-Cursor"] = page.nextCursor;
+    headers.Link = `<${next.toString()}>; rel="next"`;
+  }
+  return j(page.results, 200, { publicResponse: true, headers });
+}
+
+async function publicList(db, name, params) {
+  const spec = PUBLIC_LIST_QUERY[name];
+  const decoded = decodeCursor(params.get("cursor"), 2);
+  const cursor = decoded
+    ? name === "standings"
+      ? numericCursor(decoded, 2)
+      : textCursor(decoded.slice(0, 1), 1).concat(numericCursor(decoded.slice(1), 1))
+    : null;
+  return readPublicPage(db, spec, params, [], [], cursor);
+}
+
+async function publicTeams(db, params) {
+  const leagueId = numericId(params, "leagueId");
+  const decoded = decodeCursor(params.get("cursor"), 2);
+  const cursor = decoded
+    ? textCursor(decoded.slice(0, 1), 1).concat(numericCursor(decoded.slice(1), 1))
+    : null;
+  return readPublicPage(db, PUBLIC_LIST_QUERY.teams, params, ["idLeague=?"], [leagueId], cursor);
+}
+
+async function publicPlayers(db, params) {
+  const teamId = numericId(params, "teamId");
+  const decoded = decodeCursor(params.get("cursor"), 2);
+  const cursor = decoded
+    ? textCursor(decoded.slice(0, 1), 1).concat(numericCursor(decoded.slice(1), 1))
+    : null;
+  return readPublicPage(db, PUBLIC_LIST_QUERY.players, params, ["idTeam=?"], [teamId], cursor);
+}
+
+async function publicEvents(db, params, descending) {
+  const leagueId = numericId(params, "leagueId");
+  const pageLimit = parsePageLimit(params);
+  const decoded = decodeCursor(params.get("cursor"), 2);
+  let cursorParams = [];
+  let cursorWhere = "";
+  if (decoded) {
+    const date = textCursor([decoded[0]], 1)[0];
+    const id = numericCursor([decoded[1]], 1)[0];
+    cursorWhere = descending
+      ? "(dateEvent < ? OR (dateEvent = ? AND idEvent < ?))"
+      : "(dateEvent > ? OR (dateEvent = ? AND idEvent > ?))";
+    cursorParams = [date, date, id];
+  }
+  const direction = descending ? "DESC" : "ASC";
+  const filters = ["idLeague=?", descending ? "dateEvent<date('now')" : "dateEvent>=date('now')"];
+  if (cursorWhere) filters.push(cursorWhere);
+  const sql = `SELECT ${PUBLIC_TABLE_COLUMNS.events} FROM sportsdb_events WHERE ${filters.join(
+    " AND ",
+  )} ORDER BY dateEvent ${direction}, idEvent ${direction} LIMIT ?`;
+  const result = await db
+    .prepare(sql)
+    .bind(leagueId, ...cursorParams, pageLimit + 1)
+    .all();
+  const rows = result?.results || [];
+  const results = rows.slice(0, pageLimit);
+  return {
+    limit: pageLimit,
+    results,
+    nextCursor:
+      rows.length > pageLimit
+        ? encodeCursor([results.at(-1).dateEvent, results.at(-1).idEvent])
+        : null,
+  };
+}
+
+async function publicStandings(db, params) {
+  const leagueId = numericId(params, "leagueId");
+  const season = params.get("season")?.trim() || "";
+  if (!/^\d{4}(?:-\d{4})?$/.test(season)) throw badRequest("season is invalid");
+  const cursor = numericCursor(decodeCursor(params.get("cursor"), 2), 2);
+  return readPublicPage(
+    db,
+    PUBLIC_LIST_QUERY.standings,
+    params,
+    ["idLeague=?", "strSeason=?"],
+    [leagueId, season],
+    cursor,
+  );
+}
+
+async function publicSearch(db, params, type) {
+  const term = searchTerm(params, "name");
+  const decoded = decodeCursor(params.get("cursor"), 2);
+  const cursor = decoded
+    ? textCursor(decoded.slice(0, 1), 1).concat(numericCursor(decoded.slice(1), 1))
+    : null;
+  const spec = type === "teams" ? PUBLIC_LIST_QUERY.teams : PUBLIC_LIST_QUERY.players;
+  const nameColumn = type === "teams" ? "strTeam" : "strPlayer";
+  const idColumn = type === "teams" ? "idTeam" : "idPlayer";
+  const searchSpec = {
+    ...spec,
+    orderBy: `COALESCE(${nameColumn}, '') COLLATE NOCASE, ${idColumn}`,
+    cursorWhere: `(COALESCE(${nameColumn}, '') COLLATE NOCASE > ? OR (COALESCE(${nameColumn}, '') COLLATE NOCASE = ? AND ${idColumn} > ?))`,
+    cursorParams: (value) => [value[0], value[0], value[1]],
+    cursorValues: (row) => [row[nameColumn] || "", row[idColumn]],
+  };
+  return readPublicPage(db, searchSpec, params, [`${nameColumn} LIKE ?`], [term], cursor);
+}
 const SCHEMA_SQL = `CREATE TABLE IF NOT EXISTS sportsdb_leagues(idLeague INTEGER PRIMARY KEY,strLeague TEXT,strSport TEXT,strLeagueAlternate TEXT,strCountry TEXT,strLogo TEXT,strCurrentSeason TEXT,intFormedYear INTEGER,strWebsite TEXT,strFacebook TEXT,strTwitter TEXT,strInstagram TEXT,strYoutube TEXT,strDescriptionEN TEXT,strBanner TEXT,strBadge TEXT,strPoster TEXT,strTrophy TEXT,strNamingS TEXT,strLocked TEXT,imported_at TEXT DEFAULT(datetime('now')));
 CREATE TABLE IF NOT EXISTS sportsdb_teams(idTeam INTEGER PRIMARY KEY,strTeam TEXT,strTeamShort TEXT,strAlternate TEXT,intFormedYear INTEGER,strSport TEXT,strLeague TEXT,idLeague INTEGER,strStadium TEXT,strKeywords TEXT,strStadiumThumb TEXT,strStadiumLocation TEXT,intStadiumCapacity INTEGER,strWebsite TEXT,strFacebook TEXT,strTwitter TEXT,strInstagram TEXT,strDescriptionEN TEXT,strCountry TEXT,strTeamBadge TEXT,strTeamJersey TEXT,strTeamLogo TEXT,strTeamBanner TEXT,strTeamPoster TEXT,strYoutube TEXT,strLocked TEXT,imported_at TEXT DEFAULT(datetime('now')));
 CREATE TABLE IF NOT EXISTS sportsdb_players(idPlayer INTEGER PRIMARY KEY,strPlayer TEXT,strTeam TEXT,strSport TEXT,dateBorn TEXT,strNumber TEXT,dateSigned TEXT,strSigning TEXT,strWage TEXT,strPosition TEXT,strPositionNumber TEXT,strNationality TEXT,strHeight TEXT,strWeight TEXT,strThumb TEXT,strCutout TEXT,strBanner TEXT,strFanart1 TEXT,strFanart2 TEXT,strFanart3 TEXT,strFanart4 TEXT,strDescriptionEN TEXT,strDescriptionPT TEXT,strStatus TEXT,strGender TEXT,strSide TEXT,strKitColor1 TEXT,strKitColor2 TEXT,strKitColor3 TEXT,strKitColor4 TEXT,strFacebook TEXT,strTwitter TEXT,strInstagram TEXT,strYoutube TEXT,strLocked TEXT,idTeam INTEGER,imported_at TEXT DEFAULT(datetime('now')));
@@ -593,11 +1017,23 @@ async function iCron(e) {
   R.push({ stage: "teams", batch: batch.length, offset: off, total: tc });
   return { status: "active", stages: R };
 }
-async function initSchema(e) {
-  const st = SCHEMA_SQL.trim()
+
+function providerSchemaStatements(db) {
+  return SCHEMA_SQL.trim()
     .split(";")
     .filter((s) => s.trim())
-    .map((s) => e.SPORTS_DB.prepare(s));
+    .map((s) => db.prepare(s));
+}
+
+async function ensureProviderSchema(e) {
+  await e.SPORTS_DB.batch(providerSchemaStatements(e.SPORTS_DB));
+}
+
+async function initSchema(e) {
+  const st = [
+    ...providerSchemaStatements(e.SPORTS_DB),
+    ...PUBLIC_RATE_SCHEMA_SQL.map((s) => e.SPORTS_DB.prepare(s)),
+  ];
   await e.SPORTS_DB.batch(st);
   return { schema: "ok" };
 }
@@ -606,13 +1042,40 @@ export default {
     const u = new URL(req.url),
       ph = u.pathname,
       p = u.searchParams;
-    if (req.method === "OPTIONS") return optionsResponse();
+    const publicRoute = PUBLIC_ROUTE_PATHS.has(ph);
+    if (req.method === "OPTIONS") return optionsResponse({ publicResponse: publicRoute });
     const privateRoute = ph.startsWith("/import") || ph === "/init";
     if (privateRoute && !isImporterAuthorized(req, e)) return j({ error: "Unauthorized" }, 401);
+    if (req.method !== "GET")
+      return j({ error: "Method not allowed" }, 405, {
+        publicResponse: publicRoute,
+        headers: { Allow: "GET, OPTIONS" },
+      });
+    if (publicRoute) {
+      let rate;
+      try {
+        rate = await allowPublicRequest(req, e);
+      } catch {
+        return j({ error: "Public rate limiter unavailable" }, 503, { publicResponse: true });
+      }
+      if (!rate.allowed)
+        return j({ error: "Rate limit exceeded" }, 429, {
+          publicResponse: true,
+          headers: {
+            "Retry-After": rate.retryAfter,
+            "X-RateLimit-Limit": rate.limit,
+            "X-RateLimit-Remaining": rate.remaining,
+          },
+        });
+    }
     try {
       if (ph === "/" || ph === "")
         return new Response("<h1>TheSportsDB Importer</h1>", {
-          headers: { "Content-Type": "text/html" },
+          headers: {
+            "Cache-Control": "no-store",
+            "Content-Type": "text/html",
+            "X-Content-Type-Options": "nosniff",
+          },
         });
       if (ph === "/init") return j(await initSchema(e), 200, { privateResponse: true });
       if (ph.startsWith("/import")) await initSchema(e);
@@ -677,99 +1140,47 @@ export default {
           },
         };
         const lg = await e.SPORTS_DB.prepare(
-          "SELECT * FROM sportsdb_import_log ORDER BY id DESC LIMIT 20",
+          "SELECT id,endpoint,status,records,message,imported_at FROM sportsdb_import_log ORDER BY id DESC LIMIT 20",
         ).all();
         return j({ counts: c, importer, recent_imports: lg.results }, 200, {
           privateResponse: true,
         });
       }
       if (ph === "/api/leagues")
-        return j(
-          (await e.SPORTS_DB.prepare("SELECT * FROM sportsdb_leagues ORDER BY strLeague").all())
-            .results,
-        );
-      if (ph === "/api/teams")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_teams WHERE idLeague=? ORDER BY strTeam",
-            )
-              .bind(p.get("leagueId"))
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicList(e.SPORTS_DB, "leagues", p));
+      if (ph === "/api/teams") return publicPageResponse(req, await publicTeams(e.SPORTS_DB, p));
       if (ph === "/api/players")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_players WHERE idTeam=? ORDER BY strPlayer",
-            )
-              .bind(p.get("teamId"))
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicPlayers(e.SPORTS_DB, p));
       if (ph === "/api/events/next")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_events WHERE idLeague=? AND dateEvent>=date('now') ORDER BY dateEvent",
-            )
-              .bind(p.get("leagueId"))
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicEvents(e.SPORTS_DB, p, false));
       if (ph === "/api/events/past")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_events WHERE idLeague=? AND dateEvent<date('now') ORDER BY dateEvent DESC",
-            )
-              .bind(p.get("leagueId"))
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicEvents(e.SPORTS_DB, p, true));
       if (ph === "/api/standings")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_standings WHERE idLeague=? AND strSeason=? ORDER BY intRank",
-            )
-              .bind(p.get("leagueId"), p.get("season"))
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicStandings(e.SPORTS_DB, p));
       if (ph === "/api/team")
         return j(
-          await e.SPORTS_DB.prepare("SELECT * FROM sportsdb_teams WHERE idTeam=?")
-            .bind(p.get("id"))
+          await e.SPORTS_DB.prepare(
+            `SELECT ${PUBLIC_TABLE_COLUMNS.teams} FROM sportsdb_teams WHERE idTeam=?`,
+          )
+            .bind(numericId(p, "id"))
             .first(),
+          200,
+          { publicResponse: true },
         );
       if (ph === "/api/player")
         return j(
-          await e.SPORTS_DB.prepare("SELECT * FROM sportsdb_players WHERE idPlayer=?")
-            .bind(p.get("id"))
+          await e.SPORTS_DB.prepare(
+            `SELECT ${PUBLIC_TABLE_COLUMNS.players} FROM sportsdb_players WHERE idPlayer=?`,
+          )
+            .bind(numericId(p, "id"))
             .first(),
+          200,
+          { publicResponse: true },
         );
       if (ph === "/api/search/teams")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_teams WHERE strTeam LIKE ? ORDER BY strTeam",
-            )
-              .bind("%" + p.get("name") + "%")
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicSearch(e.SPORTS_DB, p, "teams"));
       if (ph === "/api/search/players")
-        return j(
-          (
-            await e.SPORTS_DB.prepare(
-              "SELECT * FROM sportsdb_players WHERE strPlayer LIKE ? ORDER BY strPlayer",
-            )
-              .bind("%" + p.get("name") + "%")
-              .all()
-          ).results,
-        );
+        return publicPageResponse(req, await publicSearch(e.SPORTS_DB, p, "players"));
       return j({ error: "Not found", path: ph }, 404);
     } catch (err) {
       const status =
@@ -789,23 +1200,33 @@ export default {
           retry_at: err?.retryAt ? new Date(err.retryAt).toISOString() : undefined,
         },
         status,
+        { publicResponse: publicRoute },
       );
     }
   },
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(
-      (async () => {
+    const importPromise = (async () => {
+      try {
+        await ensureProviderSchema(env);
+        const r = await iCron(env);
+        console.log("Cron result:", JSON.stringify(r));
+      } catch (err) {
+        console.error("Scheduled import error:", err.message);
         try {
-          await initSchema(env);
-          const r = await iCron(env);
-          console.log("Cron result:", JSON.stringify(r));
-        } catch (err) {
-          console.error("Scheduled import error:", err.message);
-          try {
-            await logI(env.SPORTS_DB, "cron", "error", 0, err.message);
-          } catch (x) {}
-        }
-      })(),
-    );
+          await logI(env.SPORTS_DB, "cron", "error", 0, err.message);
+        } catch (x) {}
+      }
+    })();
+    const runPublicCleanup = async () => {
+      await ensurePublicRateSchema(env.SPORTS_DB);
+      await prunePublicRateRequests(env.SPORTS_DB, Date.now(), { force: true });
+    };
+    const cleanupPromise = importPromise
+      .then(runPublicCleanup, runPublicCleanup)
+      .catch((cleanupError) => {
+        console.error("Public rate-limit cleanup error:", cleanupError.message);
+      });
+    ctx.waitUntil(importPromise);
+    ctx.waitUntil(cleanupPromise);
   },
 };
