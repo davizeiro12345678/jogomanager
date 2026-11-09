@@ -114,6 +114,7 @@ Deno.serve(async (request: Request) => {
         providerRateHint: null as string | null,
         providerRateAtMs: null as number | null,
         maxFetchPerSecond: 0,
+        fetchRateDelayed: 0,
       };
     let stopped = false,
       nextRequest = Date.now(),
@@ -178,10 +179,25 @@ Deno.serve(async (request: Request) => {
               nextProviderRequest = providerSlot + spacingMs;
               await new Promise((r) => setTimeout(r, Math.max(0, providerSlot - Date.now())));
               if (stopped || Date.now() > deadline - 5000) throw new Error("window_budget");
-              const fetchSecond = Math.floor(Date.now() / 1000);
-              const fetchCount = (fetchSecondCounts.get(fetchSecond) ?? 0) + 1;
-              fetchSecondCounts.set(fetchSecond, fetchCount);
-              summary.maxFetchPerSecond = Math.max(summary.maxFetchPerSecond, fetchCount);
+              // Timers and database responses can coalesce; enforce an
+              // actual outgoing-fetch rate, not only scheduled timing.
+              // Nine starts/second leaves safety room beneath the observed
+              // upstream rateLimit threshold, regardless of timer jitter.
+              let fetchPermitted = false;
+              while (!stopped && Date.now() < deadline - 5000) {
+                const nowMs = Date.now();
+                const fetchSecond = Math.floor(nowMs / 1000);
+                const seen = fetchSecondCounts.get(fetchSecond) ?? 0;
+                if (seen < 9) {
+                  fetchSecondCounts.set(fetchSecond, seen + 1);
+                  summary.maxFetchPerSecond = Math.max(summary.maxFetchPerSecond, seen + 1);
+                  fetchPermitted = true;
+                  break;
+                }
+                summary.fetchRateDelayed++;
+                await new Promise((r) => setTimeout(r, 1001 - (nowMs % 1000)));
+              }
+              if (!fetchPermitted) throw new Error("window_budget");
               summary.requests++;
               jobRequests++;
               const response = await fetch("https://v3.football.api-sports.io" + job.path, {
