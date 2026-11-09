@@ -89,3 +89,19 @@ describe("career CSS keyboard focus", () => {
     );
   });
 });
+describe("mobile career paint and accessibility budgets", () => {
+  it("disables expensive header backdrop filtering on constrained viewports", () => {
+    expect(screensCss).toMatch(
+      /@media\s*\(max-width:\s*47\.99rem\),\s*\(prefers-reduced-transparency:\s*reduce\),\s*\(prefers-reduced-data:\s*reduce\)/,
+    );
+    expect(screensCss).toMatch(
+      /\.career-shell \.career-header\s*\{[^}]*background:\s*var\(--background\);[^}]*backdrop-filter:\s*none;/s,
+    );
+  });
+  it("preserves readable mobile buttons without hover-only motion", () => {
+    expect(screensCss).toMatch(/@media\s*\(hover:\s*none\) and \(pointer:\s*coarse\)/);
+    expect(screensCss).toMatch(
+      /\.career-shell \.career-primary-button:hover\s*\{[^}]*transform:\s*none;/s,
+    );
+  });
+});

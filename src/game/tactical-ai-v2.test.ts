@@ -3,6 +3,8 @@ import {
   coordinatedDefensiveCover,
   coordinatedHalfTimePlan,
   coordinatedOffsideTrap,
+  coordinatedPassingLaneCover,
+  coordinatedSupportRun,
 } from "./tactical-ai-v2";
 
 const trap = {
@@ -74,5 +76,85 @@ describe("Versioned coordinated football intelligence", () => {
     expect(plan.tactics.pressing).toBe(2);
     expect(plan.tactics.width).toBe(0);
     expect(plan.notes.some((note) => note.includes("segunda bola"))).toBe(true);
+  });
+});
+
+describe("Versioned spatial intelligence", () => {
+  const lane = {
+    ballX: 0,
+    ballZ: 0,
+    receiverX: 18,
+    receiverZ: 8,
+    defenderX: 10,
+    defenderZ: 6,
+    pressing: 2,
+    stamina: 80,
+  };
+  it("shadows reachable passing corridors without pulling distant defenders", () => {
+    const close = coordinatedPassingLaneCover(lane);
+    expect(close.forward).toBeLessThan(0);
+    expect(close.lateral).toBeLessThan(0);
+    expect(coordinatedPassingLaneCover({ ...lane, defenderX: -40, defenderZ: -20 })).toEqual({
+      forward: 0,
+      lateral: 0,
+      sprint: 1,
+    });
+  });
+  it("does not act on invalid input or exhausted stamina", () => {
+    expect(coordinatedPassingLaneCover({ ...lane, receiverX: NaN })).toEqual({
+      forward: 0,
+      lateral: 0,
+      sprint: 1,
+    });
+    expect(coordinatedPassingLaneCover({ ...lane, stamina: 0 })).toEqual({
+      forward: 0,
+      lateral: 0,
+      sprint: 1,
+    });
+  });
+  const support = {
+    holderX: 5,
+    holderZ: 0,
+    playerX: 15,
+    playerZ: 3,
+    opponentLineX: 14,
+    attackingDirection: 1 as const,
+    stamina: 75,
+    midfield: false,
+  };
+  it("withdraws a forward from offside risk to create a lateral outlet", () => {
+    const run = coordinatedSupportRun(support);
+    expect(run.forward).toBeLessThan(0);
+    expect(run.lateral).toBeGreaterThan(0);
+    expect(coordinatedSupportRun({ ...support, stamina: 5 })).toEqual({
+      forward: 0,
+      lateral: 0,
+      sprint: 1,
+    });
+  });
+  it("mirrors the same offside correction for the opposite attack direction", () => {
+    const mirrored = coordinatedSupportRun({
+      ...support,
+      holderX: -5,
+      playerX: -15,
+      opponentLineX: -14,
+      attackingDirection: -1,
+    });
+    expect(mirrored.forward).toBeCloseTo(-coordinatedSupportRun(support).forward);
+  });
+  it("remains bounded and deterministic across the pitch", () => {
+    for (let x = -50; x <= 50; x += 5) {
+      for (let z = -30; z <= 30; z += 5) {
+        const a = coordinatedPassingLaneCover({ ...lane, defenderX: x, defenderZ: z });
+        const b = coordinatedPassingLaneCover({ ...lane, defenderX: x, defenderZ: z });
+        expect(a).toEqual(b);
+        expect(Math.abs(a.forward)).toBeLessThanOrEqual(2.6);
+        expect(Math.abs(a.lateral)).toBeLessThanOrEqual(3);
+        const run = coordinatedSupportRun({ ...support, playerX: x, playerZ: z });
+        expect(Number.isFinite(run.forward) && Number.isFinite(run.lateral)).toBe(true);
+        expect(Math.abs(run.forward)).toBeLessThanOrEqual(5);
+        expect(Math.abs(run.lateral)).toBeLessThanOrEqual(2.7);
+      }
+    }
   });
 });

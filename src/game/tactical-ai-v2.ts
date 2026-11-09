@@ -63,6 +63,88 @@ export function coordinatedDefensiveCover(s: DefensiveCoverSituation) {
   return { lateral, forward, sprint };
 }
 
+export interface PassingLaneSituation {
+  ballX: number;
+  ballZ: number;
+  receiverX: number;
+  receiverZ: number;
+  defenderX: number;
+  defenderZ: number;
+  pressing: number;
+  stamina: number;
+}
+
+/**
+ * A midfielder shadows the corridor of a live opponent pass rather than
+ * running blindly at the ball. Only nearby athletes can contest the corridor.
+ * Outputs are bounded target offsets, never teleports or random samples.
+ */
+export function coordinatedPassingLaneCover(s: PassingLaneSituation) {
+  const neutral = { forward: 0, lateral: 0, sprint: 1 };
+  if (
+    ![
+      s.ballX,
+      s.ballZ,
+      s.receiverX,
+      s.receiverZ,
+      s.defenderX,
+      s.defenderZ,
+      s.pressing,
+      s.stamina,
+    ].every(Number.isFinite)
+  )
+    return neutral;
+  const laneX = (s.ballX + s.receiverX) * 0.5;
+  const laneZ = (s.ballZ + s.receiverZ) * 0.5;
+  const dist = Math.hypot(laneX - s.defenderX, laneZ - s.defenderZ);
+  if (dist > 18 || s.stamina < 15) return neutral;
+  const influence =
+    (0.11 + clamp(s.pressing, 0, 2) * 0.055) * (0.6 + clamp(s.stamina, 0, 100) * 0.004);
+  return {
+    forward: clamp((laneX - s.defenderX) * influence, -2.6, 2.6),
+    lateral: clamp((laneZ - s.defenderZ) * influence, -3, 3),
+    sprint: dist > 9 ? 1.1 : 1,
+  };
+}
+
+export interface SupportRunSituation {
+  holderX: number;
+  holderZ: number;
+  playerX: number;
+  playerZ: number;
+  opponentLineX: number;
+  attackingDirection: 1 | -1;
+  stamina: number;
+  midfield: boolean;
+}
+
+/**
+ * Versioned positional support: players form passing triangles, midfielders
+ * provide the backward outlet, and forward runs avoid the opponent's line.
+ * Existing V1 formation logic and RNG sequence stay completely untouched.
+ */
+export function coordinatedSupportRun(s: SupportRunSituation) {
+  const neutral = { forward: 0, lateral: 0, sprint: 1 };
+  if (
+    ![s.holderX, s.holderZ, s.playerX, s.playerZ, s.opponentLineX, s.stamina].every(Number.isFinite)
+  )
+    return neutral;
+  const distance = Math.hypot(s.playerX - s.holderX, s.playerZ - s.holderZ);
+  if (distance < 4 || distance > 42 || s.stamina < 10) return neutral;
+  const direction = s.attackingDirection;
+  const ahead = (s.playerX - s.holderX) * direction;
+  const pastLine = (s.playerX - s.opponentLineX) * direction;
+  const onsideCorrection = pastLine > -2 ? -clamp(pastLine + 2, 0, 5) : 0;
+  const desiredForward = s.midfield ? (ahead > 5 ? -2 : 1.4) : ahead < -8 ? 2 : 0.8;
+  const flank = s.playerZ >= s.holderZ ? 1 : -1;
+  const widthGap = Math.abs(s.playerZ - s.holderZ);
+  return {
+    forward: direction * clamp(desiredForward + onsideCorrection, -5, 3),
+    lateral: flank * clamp((9 - widthGap) * 0.3, -1.7, 2.7),
+    sprint: distance > 14 && s.stamina > 50 ? 1.1 : 1,
+  };
+}
+
 /** Adaptive coach with bounded, explainable reactions to opposing patterns. */
 export function coordinatedHalfTimePlan(
   own: HalfStats,
@@ -77,11 +159,12 @@ export function coordinatedHalfTimePlan(
   if (own.possession < 44 && shotGap >= 3) {
     const pressing = clamp(tactics.pressing + 1, 0, 2);
     const width = clamp(tactics.width - 1, 0, 2);
-    if (pressing !== tactics.pressing || width !== tactics.width) {
-      tactics.pressing = pressing;
-      tactics.width = width;
-      notes.push("aproxima as linhas e pressiona a segunda bola");
-    }
+    // The legacy plan can already saturate both ranges. Still report the v2
+    // reason when its trigger applies; otherwise an identical tactical state
+    // inexplicably loses its explanation and the regression contract fails.
+    tactics.pressing = pressing;
+    tactics.width = width;
+    notes.push("aproxima as linhas e pressiona a segunda bola");
   }
   if (own.goals < foe.goals && own.shots >= foe.shots + 3) {
     tactics.tempo = clamp(tactics.tempo + 1, 0, 2);

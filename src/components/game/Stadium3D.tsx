@@ -8,13 +8,13 @@ import { GRAPHICS_PROFILES } from "@/game/contracts/graphics-profile";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 
 import { Canvas } from "@react-three/fiber";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { FirstMatchFrame } from "./FirstMatchFrame";
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { CanvasLifecycle } from "./CanvasLifecycle";
 import { CompressedTextures, PausedCameraFrames } from "./stadium/StadiumDemandFrames";
-import { createWebGPURenderer, detectWebGPU, type GpuBackend } from "./renderer";
+import { createWebGPURenderer, detectWebGPU, webgpuEnabled, type GpuBackend } from "./renderer";
 import type { CameraMode } from "@/game/camera-modes";
 import { dprFor, isCoarsePointer } from "@/game/device";
 import type { SupporterMatchday } from "@/game/career-world-types";
@@ -117,8 +117,17 @@ function Stadium3DImpl({
   // o contexto (e perder todas as texturas) no meio da partida.
   const [backend, setBackend] = useState<GpuBackend | null>(null);
   const [rendererReady, setRendererReady] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     let alive = true;
+    // Fast path: WebGL2 is the stable default, so resolve it before paint.
+    // Waiting for a redundant capability promise delays the first Canvas
+    // mount. The initial SSR markup still matches the client placeholder.
+    if (!webgpuEnabled()) {
+      setBackend("webgl2");
+      return () => {
+        alive = false;
+      };
+    }
     void detectWebGPU().then((ok) => {
       if (alive) setBackend(ok ? "webgpu" : "webgl2");
     });
