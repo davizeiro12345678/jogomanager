@@ -321,7 +321,7 @@ test("API-Football bounds scheduled work and keeps the manual pilot single-lane"
   });
   const custom = footballWindowBudget("999", false);
   assert.equal(custom.lanes, 48);
-  assert.ok(custom.spacingMs >= 100);
+  assert.ok(custom.spacingMs >= 110);
   assert.equal(custom.maxRequests, 880);
   assert.ok(custom.maxRequests * 1440 >= 445000);
   assert.equal(footballWindowBudget("16", true).lanes, 1);
