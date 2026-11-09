@@ -23,9 +23,7 @@ export interface OffsideTrapSituation {
 export function coordinatedOffsideTrap(s: OffsideTrapSituation): number {
   if (
     s.pressing !== 2 ||
-    ![s.ballX, s.defenderLineX, s.minute, s.scoreDifference].every(
-      Number.isFinite,
-    ) ||
+    ![s.ballX, s.defenderLineX, s.minute, s.scoreDifference].every(Number.isFinite) ||
     s.minute < 5 ||
     s.minute > 85 ||
     s.scoreDifference >= 2
