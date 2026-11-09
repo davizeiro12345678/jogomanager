@@ -8,6 +8,7 @@ import {
   footballProviderRetryAfterMs,
   footballProviderRateError,
   footballWindowBudget,
+  footballErrorCode,
   loadFootballJobPage,
   parseRetryAfterMs,
   validateFootballPage,
@@ -57,7 +58,8 @@ async function loadHandler(relativePath, options = {}) {
       TextEncoder,
       AbortSignal,
       crypto: webcrypto,
-      setTimeout,
+      Date: options.Date ?? Date,
+      setTimeout: options.setTimeout ?? setTimeout,
       console: { error() {} },
     },
     { filename: url.pathname },
@@ -152,6 +154,110 @@ test("API-Football worker credentials do not authorize admin actions", async () 
   assert.deepEqual(calls, ["football_queue_settings"]);
 });
 
+test("API-Football distributes scheduled work across the requested bounded lanes", async () => {
+  let claims = 0;
+  let summary;
+  const handler = await loadHandler("api-football-import/index.ts", {
+    createClient: () => ({
+      rpc: async (name, args) => {
+        if (name === "football_queue_settings")
+          return {
+            data: { apiKey: "test-provider-key", enabled: true, nextRunAt: "2000-01-01T00:00:00Z" },
+            error: null,
+          };
+        if (name === "football_queue_claim") claims++;
+        if (name === "football_queue_window") summary = args.p_summary;
+        return { data: null, error: null };
+      },
+    }),
+  });
+  const response = await handler(
+    request(
+      "api-football-import",
+      { action: "run", workerLanes: 4 },
+      { "x-football-worker": workerToken },
+    ),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(claims, 4);
+  assert.equal(summary.completed, 0);
+});
+
+test("API-Football rejects invalid scheduled lane counts before claiming jobs", async () => {
+  let claims = 0;
+  const handler = await loadHandler("api-football-import/index.ts", {
+    createClient: () => ({
+      rpc: async (name) => {
+        if (name === "football_queue_claim") claims++;
+        return {
+          data: { apiKey: "test-provider-key", enabled: true, nextRunAt: "2000-01-01T00:00:00Z" },
+          error: null,
+        };
+      },
+    }),
+  });
+  for (const workerLanes of [0, 17, 1.5, "4", null]) {
+    const response = await handler(
+      request(
+        "api-football-import",
+        { action: "run", workerLanes },
+        { "x-football-worker": workerToken },
+      ),
+    );
+    assert.equal(response.status, 400);
+  }
+  assert.equal(claims, 0);
+});
+
+test("API-Football scheduled workers stop within their short processing window", async () => {
+  let now = 1_000_000;
+  let completed = 0;
+  class FakeDate extends Date {
+    static now() {
+      return now;
+    }
+  }
+  const handler = await loadHandler("api-football-import/index.ts", {
+    Date: FakeDate,
+    setTimeout: (callback, ms) => {
+      now += ms;
+      callback();
+    },
+    fetch: async () => Response.json(page),
+    createClient: () => ({
+      rpc: async (name) => {
+        if (name === "football_queue_settings")
+          return {
+            data: {
+              apiKey: "test-provider-key",
+              enabled: true,
+              nextRunAt: "1970-01-01T00:00:00Z",
+              cutoff: "1970-01-01T00:00:00Z",
+            },
+            error: null,
+          };
+        if (name === "football_queue_claim")
+          return {
+            data: { kind: "test", path: "/test?page=1", lease_token: "test-lease", meta: {} },
+            error: null,
+          };
+        if (name === "football_queue_finish") completed++;
+        return { data: null, error: null };
+      },
+    }),
+  });
+  const response = await handler(
+    request(
+      "api-football-import",
+      { action: "run", workerLanes: 1 },
+      { "x-football-worker": workerToken },
+    ),
+  );
+  assert.equal(response.status, 200);
+  assert.ok(completed > 0 && completed <= 16, `completed ${completed} jobs at ${now}`);
+  assert.ok(now <= 1_018_000);
+});
+
 test("API-Football validates admin credentials before returning queue status", async () => {
   const calls = [];
   const handler = await loadHandler("api-football-import/index.ts", {
@@ -177,6 +283,42 @@ test("API-Football validates admin credentials before returning queue status", a
     calls.map((call) => call.name),
     ["football_queue_settings", "football_queue_status"],
   );
+});
+
+test("API-Football configures the verified minute limit and rejects a missing limit", async () => {
+  for (const minuteHeader of [null, "1200"]) {
+    const calls = [];
+    const headers = minuteHeader ? { "x-ratelimit-limit": minuteHeader } : {};
+    const handler = await loadHandler("api-football-import/index.ts", {
+      fetch: async () =>
+        Response.json({ errors: [], response: { requests: { limit_day: 450000 } } }, { headers }),
+      createClient: () => ({
+        rpc: async (name, args) => {
+          calls.push({ name, args });
+          return { data: {}, error: null };
+        },
+      }),
+    });
+    const response = await handler(
+      request(
+        "api-football-import",
+        { action: "configure", key: "x".repeat(24) },
+        { "x-football-admin": workerToken },
+      ),
+    );
+    if (!minuteHeader) {
+      assert.equal(response.status, 409);
+      assert.deepEqual(
+        calls.map((call) => call.name),
+        ["football_queue_settings"],
+      );
+    } else {
+      assert.equal(response.status, 200);
+      assert.equal(calls[1].name, "football_queue_configure");
+      assert.equal(calls[1].args.p_daily, 450000);
+      assert.equal(calls[1].args.p_minute, 1200);
+    }
+  }
 });
 
 test("SportsDB rejects missing or invalid scheduler credentials before acquiring work", async () => {
@@ -316,13 +458,13 @@ test("SportsDB rejects a partial Cloudflare Access credential configuration befo
 test("API-Football bounds scheduled work and keeps the manual pilot single-lane", () => {
   assert.deepEqual(footballWindowBudget("3", false), {
     lanes: 3,
-    spacingMs: 350,
-    maxRequests: 120,
+    spacingMs: 294,
+    maxRequests: 165,
   });
   const custom = footballWindowBudget("999", false);
   assert.equal(custom.lanes, 16);
   assert.ok(custom.spacingMs >= 55);
-  assert.ok(custom.maxRequests * 1440 >= 445000);
+  assert.ok(custom.maxRequests * 1440 >= 450000);
   assert.equal(footballWindowBudget("16", true).lanes, 1);
   assert.equal(footballWindowBudget("invalid", false).lanes, 1);
 });
@@ -334,6 +476,33 @@ test("API-Football distinguishes a depleted day from a transient 429", () => {
   assert.equal(footballProviderRateError(response(429, "100")), "provider_rate_wait");
   assert.equal(footballProviderRateError(response(429, "")), "provider_rate_wait");
   assert.equal(footballProviderRateError(response(200, "0")), null);
+});
+
+test("API-Football recognizes a budget error from another JavaScript realm", () => {
+  const foreignError = vm.runInNewContext('new Error("window_budget")');
+  assert.equal(footballErrorCode(foreignError), "window_budget");
+});
+
+test("API-Football classifies provider body rate limits without recording error details", () => {
+  assert.throws(
+    () => validateFootballPage({ errors: { rateLimit: "Too many requests" }, response: [] }, job),
+    /provider_rate_wait/,
+  );
+  assert.throws(
+    () =>
+      validateFootballPage(
+        { errors: { requests: "You have reached your daily request limit" }, response: [] },
+        job,
+      ),
+    /provider_daily_quota/,
+  );
+  assert.throws(
+    () =>
+      validateFootballPage({ errors: { token: "private-provider-details" }, response: [] }, job),
+    (error) =>
+      footballErrorCode(error) === "provider_reported_error_token" &&
+      !error.message.includes("private-provider-details"),
+  );
 });
 
 test("API-Football parses bounded Retry-After delta-seconds", () => {
@@ -427,6 +596,55 @@ test("API-Football quota rejection prevents provider traffic", async () => {
         requestPage: () => assert.fail("Quota rejection must stop the provider request"),
       }),
     /daily_quota_wait/,
+  );
+});
+
+test("API-Football waits for a temporary quota slot before fetching and caching", async () => {
+  const events = [];
+  let reservations = 0;
+  const actual = await loadFootballJobPage(job, {
+    beforeRequest: async () => events.push("budget"),
+    wait: async (ms) => events.push(`wait:${ms}`),
+    requestPage: async () => {
+      events.push("provider");
+      return page;
+    },
+    rpc: async (name) => {
+      events.push(name);
+      if (name === "football_queue_reserve_job" && ++reservations <= 2)
+        throw new Error("football_minute_quota_wait");
+    },
+  });
+  assert.equal(actual, page);
+  assert.deepEqual(events, [
+    "budget",
+    "football_queue_reserve_job",
+    "wait:1000",
+    "budget",
+    "football_queue_reserve_job",
+    "wait:2000",
+    "budget",
+    "football_queue_reserve_job",
+    "provider",
+    "football_queue_cache_page",
+  ]);
+});
+
+test("API-Football stops waiting when its invocation budget expires", async () => {
+  let checks = 0;
+  await assert.rejects(
+    () =>
+      loadFootballJobPage(job, {
+        beforeRequest: async () => {
+          if (++checks > 1) throw new Error("window_budget");
+        },
+        wait: async () => {},
+        rpc: async () => {
+          throw new Error("football_minute_quota_wait");
+        },
+        requestPage: () => assert.fail("No provider call is allowed without a reservation"),
+      }),
+    /window_budget/,
   );
 });
 
