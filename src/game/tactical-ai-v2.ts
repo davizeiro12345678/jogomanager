@@ -23,11 +23,14 @@ export interface OffsideTrapSituation {
 export function coordinatedOffsideTrap(s: OffsideTrapSituation): number {
   if (
     s.pressing !== 2 ||
-    ![s.ballX, s.defenderLineX, s.minute, s.scoreDifference].every(Number.isFinite) ||
+    ![s.ballX, s.defenderLineX, s.minute, s.scoreDifference].every(
+      Number.isFinite,
+    ) ||
     s.minute < 5 ||
     s.minute > 85 ||
     s.scoreDifference >= 2
-  ) return 0;
+  )
+    return 0;
   const spaceAhead = (s.ballX - s.defenderLineX) * s.attackDirection;
   if (spaceAhead < 14 || spaceAhead > 39) return 0;
   return s.attackDirection * Math.min(3.5, 1.4 + (spaceAhead - 14) * 0.105);
@@ -46,15 +49,12 @@ export interface DefensiveCoverSituation {
 /** Bounded lateral compactness and coordinated late-match pressing. */
 export function coordinatedDefensiveCover(s: DefensiveCoverSituation) {
   if (
-    ![s.ballZ, s.targetZ, s.stamina, s.pressing, s.minute, s.scoreDifference].every(
-      Number.isFinite,
-    )
-  ) return { lateral: 0, forward: 0, sprint: 1 };
+    ![s.ballZ, s.targetZ, s.stamina, s.pressing, s.minute, s.scoreDifference].every(Number.isFinite)
+  )
+    return { lateral: 0, forward: 0, sprint: 1 };
   const stamina = clamp(s.stamina, 0, 100) / 100;
   const pressing = clamp(s.pressing, 0, 2);
-  const urgency = s.minute > 75 && s.scoreDifference < 0
-    ? clamp((s.minute - 75) / 15, 0, 1)
-    : 0;
+  const urgency = s.minute > 75 && s.scoreDifference < 0 ? clamp((s.minute - 75) / 15, 0, 1) : 0;
   const lateral = clamp(
     (s.ballZ - s.targetZ) * (0.04 + pressing * 0.035) * (0.65 + stamina * 0.35),
     -3.25,

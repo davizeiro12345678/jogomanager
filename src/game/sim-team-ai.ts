@@ -249,16 +249,21 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         const line = lineX[p.side];
         // Historical matches keep their exact legacy behavior (pressing is 0..2).
         // The v2 opponent opts into a deterministic, bounded coordinated trap.
-        const trap = setup.tacticalAiRevision === 2
-          ? coordinatedOffsideTrap({
-              pressing: setup.tactics.pressing,
-              ballX: bx,
-              defenderLineX: line,
-              attackDirection: dir,
-              minute: sim.minute(),
-              scoreDifference: sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
-            })
-          : setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+        const trap =
+          setup.tacticalAiRevision === 2
+            ? coordinatedOffsideTrap({
+                pressing: setup.tactics.pressing,
+                ballX: bx,
+                defenderLineX: line,
+                attackDirection: dir > 0 ? 1 : -1,
+                minute: sim.minute(),
+                scoreDifference:
+                  sim.stats[p.side].goals -
+                  sim.stats[p.side === "home" ? "away" : "home"].goals,
+              })
+            : setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14
+              ? dir * 3.5
+              : 0;
         tx = tx * 0.35 + (line + trap) * 0.65;
         // marcação por zona: cobre o adversário mais perigoso da sua faixa
         let markZ: number | null = null;
@@ -283,10 +288,15 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       tx += push * 7 * dir;
       if (setup.tacticalAiRevision === 2) {
         const cover = coordinatedDefensiveCover({
-          ballZ: bz, targetZ: tz, stamina: p.stamina, pressing: setup.tactics.pressing,
+          ballZ: bz,
+          targetZ: tz,
+          stamina: p.stamina,
+          pressing: setup.tactics.pressing,
           minute: sim.minute(),
-          scoreDifference: sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
-          attackDirection: dir,
+          scoreDifference:
+            sim.stats[p.side].goals -
+            sim.stats[p.side === "home" ? "away" : "home"].goals,
+          attackDirection: dir > 0 ? 1 : -1,
         });
         tx += cover.forward;
         tz += cover.lateral;
