@@ -38,7 +38,7 @@
 - [x] Verificar PR #125, origin/main, branch isolada e AGENTS; preservar outras alterações.
 - [x] Instalar a árvore travada e usar o Node fixado pelo projeto.
 - [x] Executar e salvar todos os casos CPU antes de editar as áreas medidas.
-- [ ] Compilar gráficos baseline e registrar cenas alta/seed/câmera/resolução/DPR; capturar imagens/vídeo. Build e fotos concluídos; gravações comparáveis ainda pendentes.
+- [x] Compilar gráficos baseline e registrar cenas alta/seed/câmera/resolução/DPR; capturar imagens/vídeo. Inclui dois vídeos completos de 6min04s, separados das aferições sem gravação.
 - [x] Classificar renderer e GPU para não tratar software rendering como certificação física.
 
 ### Task 2: CPU, geometria Rust/WASM e estabilidade 3D
@@ -107,12 +107,12 @@
 
 **Files:** Relatório final e artefatos em `verification/quality-update-20261108/`; documentação da atualização.
 
-- [ ] Lint zero warnings; TypeScript; testes relevantes, Rust/WASM e build.
-- [ ] Verificar budgets absolutos, contratos gráficos e testes de segurança/migrações.
-- [ ] Executar matriz comparável antes/intermediário/final; salvar dados brutos, tabelas de deltas e captures identificados.
-- [ ] Revisão independente da branch e correção dos achados confirmados.
-- [ ] Commit com escopo e evidência reais; publicar na branch/novo PR conforme destino estabelecido pelo usuário, sem alterar PR mesclado nem fazer merge.
-- [ ] Relatar metas alcançadas e lacunas com evidência exata; nenhuma lacuna de FPS/CI/cloud é tratada como aprovada.
+- [x] Lint zero warnings; TypeScript; testes relevantes, Rust/WASM e build.
+- [x] Verificar budgets absolutos, contratos gráficos e testes de segurança/migrações.
+- [x] Executar matriz comparável antes/intermediário/final; salvar dados brutos, tabelas de deltas e captures identificados.
+- [x] Revisão independente da branch e correção dos achados confirmados.
+- [x] Commit com escopo e evidência reais; publicar na branch/novo PR conforme destino estabelecido pelo usuário, sem alterar PR mesclado nem fazer merge.
+- [x] Relatar metas alcançadas e lacunas com evidência exata; nenhuma lacuna de FPS/CI/cloud é tratada como aprovada.
 
 ## Status e decisões
 
@@ -151,3 +151,5 @@ A implementação acima não concede aprovação às metas abaixo. Elas permanec
 - [ ] Confirmar gatilhos de negócio dos templates Resend que precisarem de novos eventos. A listagem atual tem 41 publicados e zero drafts; publicação não prova automação de todos os eventos.
 - [ ] Revisar configuração remota Cloudflare usando integração da zona efetivamente disponível; não atribuir mudanças de headers de aplicação a regras de CDN não publicadas.
 - [ ] Completar CI da revisão exata, Lighthouse móvel pessimista de cinco rotas/três execuções, release gates e verificação de SHA de produção antes de qualquer publicação.
+
+- Entrega de fonte: commit 0a6a04e581571a367cc1c742ead21f984abbbc1b no draft PR #128. Oito workflows aprovados nessa fonte, incluindo 2.203 testes e todos os 12 jobs de Quality gates. A medição física final na RTX 4060 registrou 82,263 FPS; o pior stall aumentou para 800,8 ms. A correção posterior do rótulo mobile e os helpers de captura serão incluídos com a evidência e terão CI no novo head. As tarefas 8–10 permanecem abertas; não há merge, publicação ou certificação de três repetições nas duas GPUs.

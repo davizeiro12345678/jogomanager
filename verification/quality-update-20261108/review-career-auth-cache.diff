@@ -1,0 +1,2087 @@
+diff --git a/src/hooks/useCareer.test.ts b/src/hooks/useCareer.test.ts
+index 599b28bc..36dd122e 100644
+--- a/src/hooks/useCareer.test.ts
++++ b/src/hooks/useCareer.test.ts
+@@ -68,21 +68,21 @@ describe("useCareer hydration contract", () => {
+         data: { ...data({ id: "local" }), hydration: "error" },
+       }),
+     ).toBe("error");
+   });
+ 
+   it.each<[CareerHydrationStatus, boolean]>([
+     ["loading", false],
+     ["error", false],
+     ["empty", true],
+     ["ready", true],
+-    ["offline", false],
++    ["offline", true],
+   ])("%s is %s for explicit career writes", (status, allowed) => {
+     expect(canMutateCareer(status)).toBe(allowed);
+   });
+ });
+ 
+ describe("career identity session barrier", () => {
+   it("invalidates an old save callback after A-B-A instead of contaminating hydration", () => {
+     const identity = createCareerIdentityTracker("account-a");
+     const oldSave = identity.capture();
+     let hydratedCareer = "account-a-new-session";
+diff --git a/src/hooks/useCareer.ts b/src/hooks/useCareer.ts
+index 342274fd..44400dfb 100644
+--- a/src/hooks/useCareer.ts
++++ b/src/hooks/useCareer.ts
+@@ -1,17 +1,24 @@
+ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+ import { useServerFn } from "@tanstack/react-start";
+-import { useCallback, useEffect, useRef, useState } from "react";
++import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+ 
+ import { migrateCareer } from "@/game/career-migration";
+ import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
+ import { useAuthUserId } from "@/hooks/useAuthUserId";
++import { supabase } from "@/integrations/supabase/client";
++import {
++  retainCareerSave,
++  waitForCareerLocalWrites,
++  type RetainedCareerSave,
++} from "@/lib/career-save-lifecycle";
++import { recoverPendingCareerWrite } from "@/lib/career-save-recovery";
+ import { createCareer, deleteCareer, loadCareer, saveCareer } from "@/lib/career.functions";
+ import { resetCareerSafely, type CareerResetOutcome } from "@/lib/career-reset";
+ import {
+   canMutateCareer,
+   canResetCareer,
+   resolveCareerHydrationBarrier,
+   resolveCareerHydrationStatus,
+   type CareerHydrationStatus,
+ } from "@/lib/career-hydration";
+ import {
+@@ -29,20 +36,21 @@ import {
+   queueSync,
+   readCareerEpoch,
+   readLocalCareerGeneration,
+   readLocalCareerSyncBlock,
+   readLocalCareerTombstone,
+   readOutbox,
+   saveLocalCareer,
+   setLocalCareerGeneration,
+   withCareerLock,
+   type LocalOwnerId,
++  type OutboxEntry,
+ } from "@/lib/offline/store";
+ import type { CareerState } from "@/game/types";
+ import type { CareerTombstone } from "@/lib/career-lifecycle.server";
+ 
+ export const CAREER_KEY = ["career"] as const;
+ 
+ export { canMutateCareer };
+ 
+ export type SyncState = "local" | "syncing" | "synced" | "pending" | "offline";
+ export type { CareerHydrationStatus };
+@@ -142,20 +150,21 @@ export async function publishCareerAfterPersistence(
+ }
+ 
+ type CareerMutationInput = {
+   state: CareerState;
+   previous: CareerQueryData | undefined;
+   owner: LocalOwnerId;
+   userId: string | null | undefined;
+   scope: string;
+   identityGeneration: number;
+   epoch: number | null;
++  retainedSave: RetainedCareerSave;
+ };
+ 
+ type CareerHydrationInput = {
+   userId: string | null | undefined;
+   isPending: boolean;
+   hasError: boolean;
+   data?:
+     | {
+         career: unknown;
+         sync: SyncState;
+@@ -261,21 +270,24 @@ export function useCareer() {
+     return () => {
+       mountedRef.current = false;
+       identityTracker.invalidate();
+       activeSaveCount.current = 0;
+       mutationGate.current = createCareerMutationGate();
+       flushingScope.current = null;
+       resetting.current = false;
+     };
+   }, [identityTracker]);
+ 
+-  const queryKey = careerQueryKey(scope, identityGeneration);
++  const queryKey = useMemo(
++    () => careerQueryKey(scope, identityGeneration),
++    [scope, identityGeneration],
++  );
+ 
+   const query = useQuery({
+     queryKey,
+     enabled: userId !== undefined,
+     queryFn: async ({ signal }): Promise<CareerQueryData> => {
+       const queryGeneration = identityGeneration;
+       const queryEpoch = readCareerEpoch(owner);
+       const isActive = () =>
+         !signal.aborted &&
+         queryEpoch !== null &&
+@@ -302,35 +314,77 @@ export function useCareer() {
+         status: resolveCareerHydrationStatus({
+           phase: "loaded",
+           hasCareer: career !== null,
+           signedIn: Boolean(userId),
+           online: options.online ?? isOnline(),
+           requestError: options.requestError ?? false,
+           tombstoned: !!options.tombstone,
+         }),
+       });
+       if (queryEpoch === null) return result(null, "pending", { requestError: true });
+-      const local = await loadLocalCareer(owner);
++      await waitForCareerLocalWrites(owner, queryEpoch);
++      ensureActive();
++      let local = await loadLocalCareer(owner);
+       ensureActive();
+-      const localGeneration = await readLocalCareerGeneration(owner);
++      let localGeneration = await readLocalCareerGeneration(owner);
+       ensureActive();
+       const localTombstone = await readLocalCareerTombstone(owner);
+       ensureActive();
+-      const localBlock = await readLocalCareerSyncBlock(owner);
++      let localBlock = await readLocalCareerSyncBlock(owner);
+       ensureActive();
++      if (userId && localBlock?.reason === "pending_save") {
++        if (await recoverPendingCareerWrite({ owner, epoch: queryEpoch, isCurrent: isActive })) {
++          ensureActive();
++          local = await loadLocalCareer(owner);
++          ensureActive();
++          localGeneration = await readLocalCareerGeneration(owner);
++          ensureActive();
++          localBlock = await readLocalCareerSyncBlock(owner);
++        }
++        ensureActive();
++      }
+       // Migration is in memory only: rewriting the save here would bump its
+       // timestamp and let a stale local copy beat newer cloud progress.
+       const repairLocal = (raw: CareerState) => migrateCareer(raw);
+       if (!userId)
+         return localTombstone
+           ? result(null, "local", { tombstone: localTombstone })
+           : result(local ? repairLocal(local) : null, "local");
++      let pending: OutboxEntry | null = null;
++      try {
++        // A deletion barrier outranks an older queued write; do not replace
++        // that barrier with a generation-conflict marker from the old queue.
++        if (!localTombstone && localBlock?.reason !== "deleted") pending = await readOutbox(owner);
++      } catch {
++        ensureActive();
++        return result(local ? repairLocal(local) : null, "pending", {
++          requestError: true,
++          generation: localGeneration,
++        });
++      }
++      ensureActive();
++      if (pending && (!isVersionedOutboxEntry(pending) || pending.generation !== localGeneration)) {
++        await markLocalCareerSyncBlock(
++          {
++            reason: isVersionedOutboxEntry(pending) ? "conflict" : "legacy_outbox",
++            generation: localGeneration,
++            blockedAt: new Date().toISOString(),
++          },
++          owner,
++          { expectedEpoch: queryEpoch },
++        );
++        ensureActive();
++        return result(local ? repairLocal(local) : null, "pending", {
++          requestError: true,
++          generation: localGeneration,
++        });
++      }
+       if (!isOnline()) {
+         if (localTombstone) {
+           ensureActive();
+           tombstoneRef.current = localTombstone;
+           return result(null, "offline", {
+             online: false,
+             tombstone: localTombstone,
+             generation: localTombstone.generation,
+           });
+         }
+@@ -345,43 +399,48 @@ export function useCareer() {
+             ensureActive();
+             tombstoneRef.current = blockedTombstone;
+           }
+           return result(null, "offline", {
+             online: false,
+             requestError: true,
+             generation: localBlock.generation,
+             tombstone: blockedTombstone,
+           });
+         }
+-        return result(local ? repairLocal(local) : null, "offline", {
+-          online: false,
+-          generation: localGeneration,
+-          requestError: localBlock !== null,
+-        });
++        return result(
++          pending ? repairLocal(pending.state) : local ? repairLocal(local) : null,
++          "offline",
++          {
++            online: false,
++            generation: localGeneration,
++            requestError: localBlock !== null,
++          },
++        );
+       }
+       ensureActive();
+       const knownTombstone = localTombstone ?? tombstoneRef.current;
+       if (knownTombstone) tombstoneRef.current = knownTombstone;
+ 
+       // Online does not prove a blocked local save reached the cloud. Until a
+       // dedicated reconciliation confirms it, retain the barrier and snapshot.
+       // Deleted barriers are handled by tombstone logic above/below, not erased
+       // merely because a remote career record exists.
+       const hydrationBarrier = resolveCareerHydrationBarrier({
+         localBlock,
+-        localCareer: local ? repairLocal(local) : null,
++        localCareer: knownTombstone ? null : local ? repairLocal(local) : null,
+       });
+       if (hydrationBarrier.blocked)
+         return result(hydrationBarrier.career, hydrationBarrier.sync, {
+           online: true,
+           requestError: true,
+           generation: localGeneration,
++          tombstone: knownTombstone,
+         });
+ 
+       let cloud: CareerState | null = null;
+       let cloudGeneration: number | null = null;
+       try {
+         const raw = await load();
+         ensureActive();
+         if (raw) {
+           if (raw.deletedAt) {
+             if (!Number.isSafeInteger(raw.generation) || raw.generation < 1)
+@@ -424,20 +483,36 @@ export function useCareer() {
+           }
+           if (!Number.isSafeInteger(raw.generation) || raw.generation < 1 || !raw.state)
+             throw new Error("A carreira remota não confirmou sua geração.");
+           if (knownTombstone && raw.generation <= knownTombstone.generation)
+             return result(null, "local", {
+               tombstone: knownTombstone,
+               generation: raw.generation,
+               online: true,
+               requestError: true,
+             });
++          if (pending && raw.generation !== pending.generation) {
++            await markLocalCareerSyncBlock(
++              {
++                reason: "conflict",
++                generation: localGeneration,
++                blockedAt: new Date().toISOString(),
++              },
++              owner,
++              { expectedEpoch: queryEpoch },
++            );
++            ensureActive();
++            return result(local ? repairLocal(local) : null, "pending", {
++              requestError: true,
++              generation: localGeneration,
++            });
++          }
+           if (localTombstone) {
+             ensureActive();
+             if (
+               !(await clearLocalCareerTombstone(owner, {
+                 expectedEpoch: queryEpoch,
+               }))
+             )
+               return result(null, "local", {
+                 tombstone: localTombstone,
+                 generation: raw.generation,
+@@ -471,60 +546,70 @@ export function useCareer() {
+         if (knownTombstone) {
+           ensureActive();
+           tombstoneRef.current = knownTombstone;
+           return result(null, offline ? "offline" : "local", {
+             online: !offline,
+             requestError: !offline,
+             generation: knownTombstone.generation,
+             tombstone: knownTombstone,
+           });
+         }
+-        return result(local ? repairLocal(local) : null, offline ? "offline" : "local", {
+-          online: !offline,
+-          requestError: !offline,
+-          generation: localGeneration,
+-        });
++        return result(
++          pending ? repairLocal(pending.state) : local ? repairLocal(local) : null,
++          offline ? "offline" : "local",
++          {
++            online: !offline,
++            requestError: !offline,
++            generation: localGeneration,
++          },
++        );
+       }
+ 
+       ensureActive();
+       if (!cloud && knownTombstone) {
+         tombstoneRef.current = knownTombstone;
+         return result(null, "local", {
+           online: true,
+           requestError: true,
+           generation: knownTombstone.generation,
+           tombstone: knownTombstone,
+         });
+       }
+       if (cloud) {
+-        const migrated = repairLocal(cloud);
++        // A queued same-generation save is the accepted local continuation,
++        // including same-round edits that a progress score cannot order.
++        const migrated = repairLocal(pending?.state ?? cloud);
+         if (isActive() && cloudGeneration !== null) {
+           const locallySaved =
+             queryEpoch !== null &&
+-            (await saveLocalCareer(migrated, "nuvem", owner, {
++            (await saveLocalCareer(migrated, pending ? "recuperação" : "nuvem", owner, {
+               generation: cloudGeneration,
+               expectedEpoch: queryEpoch,
+             }));
+           if (!locallySaved)
+             return result(migrated, "pending", {
+               requestError: true,
+               generation: cloudGeneration,
+             });
+           ensureActive();
+         }
+-        return result(migrated, "synced", { generation: cloudGeneration });
++        return result(migrated, pending ? "pending" : "synced", { generation: cloudGeneration });
+       }
+-      if (localBlock || local)
+-        return result(local ? repairLocal(local) : null, "local", {
+-          requestError: Boolean(local),
+-          generation: localGeneration,
+-        });
++      if (localBlock || local || pending)
++        return result(
++          pending ? repairLocal(pending.state) : local ? repairLocal(local) : null,
++          "local",
++          {
++            requestError: Boolean(local || pending),
++            generation: localGeneration,
++          },
++        );
+       return result(null, "local", { generation: localGeneration });
+     },
+     staleTime: 30_000,
+     retry: false,
+   });
+ 
+   const hydrationStatus = deriveCareerHydrationStatus({
+     userId,
+     isPending: query.isPending || query.isLoading,
+     hasError: !!query.error,
+@@ -570,49 +655,52 @@ export function useCareer() {
+     [isCurrentOperation, isCurrentOwner, setSync],
+   );
+ 
+   const handleSaveBarrier = useCallback(
+     async (
+       result: unknown,
+       barrierOwner: LocalOwnerId,
+       barrierGeneration: number,
+       barrierEpoch?: number,
+       lockHeld = false,
++      retainedIsCurrent?: () => boolean,
+     ) => {
+-      if (!isCurrentOperation(barrierOwner, barrierGeneration)) return;
++      const isActive =
++        retainedIsCurrent ?? (() => isCurrentOperation(barrierOwner, barrierGeneration));
++      if (!isActive()) return;
+       if (!result || typeof result !== "object") return;
+       const candidate = result as {
+         deleted?: boolean;
+         deletedAt?: string;
+         generation?: number | null;
+         conflict?: boolean;
+         reason?: string;
+       };
+       const generation = candidate.generation;
+       if (
+         candidate.deleted &&
+         candidate.deletedAt &&
+         typeof generation === "number" &&
+         Number.isSafeInteger(generation) &&
+         generation > 0
+       ) {
+         const tombstone = { generation, deletedAt: candidate.deletedAt };
+-        if (!isCurrentOperation(barrierOwner, barrierGeneration)) return;
++        if (!isActive()) return;
+         tombstoneRef.current = tombstone;
+         await markLocalCareerTombstone(tombstone, barrierOwner, {
+           ...(lockHeld ? { lockHeld: true } : {}),
+           ...(barrierEpoch !== undefined ? { expectedEpoch: barrierEpoch } : {}),
+         });
+         return;
+       }
+       if (candidate.conflict) {
+-        if (!isCurrentOperation(barrierOwner, barrierGeneration)) return;
++        if (!isActive()) return;
+         await markLocalCareerSyncBlock(
+           {
+             reason:
+               candidate.reason === "legacy_outbox"
+                 ? "legacy_outbox"
+                 : candidate.reason === "unknown_generation"
+                   ? "unknown_generation"
+                   : "conflict",
+             generation:
+               typeof generation === "number" && Number.isSafeInteger(generation)
+@@ -633,24 +721,25 @@ export function useCareer() {
+ 
+   const mutation = useMutation({
+     mutationFn: async ({
+       state,
+       previous,
+       owner: mutationOwner,
+       userId: mutationUser,
+       scope: mutationScope,
+       identityGeneration: mutationGeneration,
+       epoch: mutationEpoch,
++      retainedSave,
+     }: CareerMutationInput) => {
+       const mutationKey = careerQueryKey(mutationScope, mutationGeneration);
+       const isActive = () =>
+-        isCurrentOperation(mutationOwner, mutationGeneration) &&
++        retainedSave.isCurrent() &&
+         mutationEpoch !== null &&
+         readCareerEpoch(mutationOwner) === mutationEpoch;
+       const ensureActive = () => {
+         if (!isActive()) return false;
+         return true;
+       };
+       const current = previous ?? qc.getQueryData<CareerQueryData>(mutationKey);
+       const observedGeneration =
+         current?.generation ??
+         (mutationUser ? await readLocalCareerGeneration(mutationOwner) : null);
+@@ -722,20 +811,24 @@ export function useCareer() {
+           ...(mutationUser && observedGeneration !== null
+             ? { generation: observedGeneration }
+             : {}),
+           ...(lockHeld ? { lockHeld: true } : {}),
+           allowPendingBarrier: Boolean(mutationUser),
+           ...(mutationEpoch !== null ? { expectedEpoch: mutationEpoch } : {}),
+         };
+         const locallySaved = await saveLocalCareer(state, "auto", mutationOwner, localOptions);
+         if (!ensureActive()) return { ok: true, stale: true };
+         if (!mutationUser) {
++          if (!locallySaved) {
++            setPending();
++            return { ok: false, blocked: true };
++          }
+           setSyncForOwner(mutationOwner, "local", mutationGeneration);
+           return { ok: true };
+         }
+         if (observedGeneration === null) {
+           setPending();
+           return { ok: false, blocked: true };
+         }
+         if (!locallySaved) {
+           if (!ensureActive()) return { ok: true, stale: true };
+           const marked = await markLocalCareerSyncBlock(
+@@ -794,41 +887,42 @@ export function useCareer() {
+         if (!barrierCleared) {
+           setPending();
+           return { ok: false, blocked: true };
+         }
+         publishReady();
+         setPending();
+         return { ok: true, pending };
+       };
+ 
+       const upload = async (lockHeld: boolean) => {
+-        const local = await persistLocally(lockHeld);
++        const local = await persistLocally(lockHeld).finally(retainedSave.localSettled);
+         if (!ensureActive() || !local.ok || ("stale" in local && local.stale)) return local;
+         if (!("pending" in local) || !local.pending) return { ok: false, blocked: true };
+         const pending = local.pending;
+         if (!isOnline()) {
+           setSyncForOwner(mutationOwner, "pending", mutationGeneration);
+           return { ok: true };
+         }
+         setSyncForOwner(mutationOwner, "syncing", mutationGeneration);
+         try {
+           const res = await save({
+             data: { state, expectedOwnerId: mutationUser, expectedGeneration: observedGeneration },
+           });
+           if (!ensureActive()) return { ok: true, stale: true };
+           if (!res.ok && !res.stale) {
+             await handleSaveBarrier(
+               res,
+               mutationOwner,
+               mutationGeneration,
+               mutationEpoch ?? undefined,
+               lockHeld,
++              isActive,
+             );
+             if (!ensureActive()) return { ok: true, stale: true };
+             setPending();
+             void qc.invalidateQueries({ queryKey: mutationKey });
+             return { ok: false, blocked: true };
+           }
+           const acknowledged = await acknowledgeOutbox(pending, mutationOwner, {
+             lockHeld: true,
+           });
+           if (!ensureActive()) return { ok: true, stale: true };
+@@ -837,21 +931,21 @@ export function useCareer() {
+           if ("stale" in res && res.stale && ensureActive())
+             void qc.invalidateQueries({ queryKey: mutationKey });
+         } catch {
+           // The durable local snapshot/outbox remain the source of recovery
+           // after a remote network throw; only the sync label stays pending.
+           if (ensureActive()) setPending();
+         }
+         return { ok: true };
+       };
+ 
+-      if (!mutationUser) return persistLocally();
++      if (!mutationUser) return persistLocally().finally(retainedSave.localSettled);
+       const coordinated = await withCareerLock(
+         mutationOwner,
+         () => upload(true),
+         mutationEpoch ?? undefined,
+       );
+       if (!ensureActive()) return { ok: true, stale: true };
+       if (coordinated.acquired) return coordinated.value ?? { ok: true, stale: true };
+       return upload(false);
+     },
+   });
+@@ -1011,20 +1105,37 @@ export function useCareer() {
+         operationEpoch === null ||
+         operationEpoch !== currentEpoch ||
+         !canMutateCareer(careerStatus) ||
+         (careerStatus === "offline" && !hasCareerSnapshot) ||
+         (userId !== null && (old?.generation === null || old?.generation === undefined)) ||
+         tombstoneRef.current !== null ||
+         !isCurrentOwner(operationOwner, operationGeneration)
+       )
+         return;
+       if (!operationGate.tryAcquire(operationGeneration)) return;
++      let retainedSave: RetainedCareerSave;
++      try {
++        retainedSave = retainCareerSave({
++          owner: operationOwner,
++          epoch: operationEpoch,
++          readEpoch: () => readCareerEpoch(operationOwner),
++          observeOwner: (observe) => {
++            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
++              observe(session?.user.id ?? null);
++            });
++            return () => data.subscription.unsubscribe();
++          },
++        });
++      } catch {
++        operationGate.release(operationGeneration);
++        return;
++      }
+       // An older reconciliation must not replace this optimistic update or
+       // enqueue its stale local snapshot after a slow cloud read finishes.
+       void qc.cancelQueries({ queryKey, exact: true }, { revert: false });
+       const prepared = old?.career
+         ? recordWorldTransition(old.career, next)
+         : withCareerWorld(next);
+       if (userId === null)
+         qc.setQueryData(queryKey, {
+           career: prepared,
+           sync: old?.sync ?? "local",
+@@ -1055,35 +1166,37 @@ export function useCareer() {
+         setSyncForOwner(input.owner, "pending", input.identityGeneration);
+       };
+       const input: CareerMutationInput = {
+         state: prepared,
+         previous: old,
+         owner: operationOwner,
+         userId,
+         scope,
+         identityGeneration: operationGeneration,
+         epoch: operationEpoch,
++        retainedSave,
+       };
+       void mutateAsync(input)
+         .then((outcome) => {
+           if (!outcome) return;
+           if (outcome.ok) {
+             if (outcome.stale && isCurrentOperation(operationOwner, operationGeneration))
+               void qc.invalidateQueries({ queryKey, exact: true });
+             return;
+           }
+           rollback(input);
+         })
+         .catch(() => {
+           rollback(input);
+         })
+         .finally(() => {
++          retainedSave.release();
+           operationGate.release(operationGeneration);
+           if (isCurrentOperation(operationOwner, operationGeneration))
+             activeSaveCount.current = Math.max(0, activeSaveCount.current - 1);
+         });
+     },
+     [
+       careerStatus,
+       hasCareerSnapshot,
+       isCurrentOwner,
+       isCurrentOperation,
+diff --git a/src/lib/career-hydration.test.ts b/src/lib/career-hydration.test.ts
+index deca5a4f..29a1695a 100644
+--- a/src/lib/career-hydration.test.ts
++++ b/src/lib/career-hydration.test.ts
+@@ -85,20 +85,21 @@ describe("career hydration state", () => {
+     const status = resolveCareerHydrationStatus({
+       phase: "loaded",
+       hasCareer: true,
+       signedIn: true,
+       online: false,
+     });
+ 
+     expect(status).toBe("offline");
+     expect(canCreateCareer({ status, hasCareer: true, replace: true })).toBe(false);
+     expect(canResetCareer(status)).toBe(false);
++    expect(canMutateCareer(status)).toBe(true);
+   });
+ 
+   it("allows only explicit online recreation from a confirmed tombstone", () => {
+     const status = resolveCareerHydrationStatus({
+       phase: "loaded",
+       hasCareer: false,
+       signedIn: true,
+       online: true,
+       tombstoned: true,
+     });
+diff --git a/src/lib/career-hydration.ts b/src/lib/career-hydration.ts
+index 5e0c5ff9..a2475f70 100644
+--- a/src/lib/career-hydration.ts
++++ b/src/lib/career-hydration.ts
+@@ -73,16 +73,18 @@ export function canCreateCareer({
+   status: CareerHydrationStatus;
+   hasCareer: boolean;
+   replace: boolean;
+ }): boolean {
+   if (status === "loading" || status === "offline" || status === "error") return false;
+   if (hasCareer) return status === "ready" && replace;
+   return status === "empty" || status === "tombstoned";
+ }
+ 
+ export function canMutateCareer(status: CareerHydrationStatus): boolean {
+-  return status === "empty" || status === "ready";
++  // The hook additionally requires a local snapshot and known generation for
++  // an authenticated offline edit. Creation and reset use stricter gates.
++  return status === "empty" || status === "ready" || status === "offline";
+ }
+ 
+ export function canResetCareer(status: CareerHydrationStatus): boolean {
+-  return canMutateCareer(status);
++  return status === "empty" || status === "ready";
+ }
+diff --git a/src/lib/club-database.functions.test.ts b/src/lib/club-database.functions.test.ts
+index aac650be..1724b844 100644
+--- a/src/lib/club-database.functions.test.ts
++++ b/src/lib/club-database.functions.test.ts
+@@ -21,20 +21,51 @@ beforeEach(() => {
+   vi.stubGlobal("fetch", request);
+   vi.stubEnv("SUPABASE_URL", "https://fixture.supabase.co");
+   vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_fixture");
+ });
+ afterEach(() => {
+   vi.unstubAllGlobals();
+   vi.unstubAllEnvs();
+ });
+ 
+ describe("public club data integration", () => {
++  it("starts independent team and alias reads concurrently while coalescing identical profiles", async () => {
++    let releaseAliases!: (response: Response) => void;
++    const aliases = new Promise<Response>((resolve) => {
++      releaseAliases = resolve;
++    });
++    const reads: string[] = [];
++    request.mockImplementation(async (input) => {
++      const path = new URL(String(input)).pathname;
++      reads.push(path);
++      if (path.endsWith("/clubs"))
++        return Response.json({ id: "fixture", name: "Fixture", stadiums: null });
++      if (path.endsWith("/club_catalog_links")) return aliases;
++      if (path.endsWith("/official_teams") || path.endsWith("/players")) return Response.json([]);
++      throw new Error("Unexpected public projection");
++    });
++    const { getClubDatabaseProfile } = await import("./club-database.functions");
++    const first = getClubDatabaseProfile({ data: { clubId: "fixture" } });
++    const duplicate = getClubDatabaseProfile({ data: { clubId: "fixture" } });
++    try {
++      await vi.waitFor(
++        () => expect(reads.some((path) => path.endsWith("/official_teams"))).toBe(true),
++        { timeout: 1_000 },
++      );
++      expect(reads.some((path) => path.endsWith("/players"))).toBe(false);
++    } finally {
++      releaseAliases(Response.json([]));
++    }
++    expect(await first).toEqual(await duplicate);
++    expect(reads.filter((path) => path.endsWith("/clubs"))).toHaveLength(1);
++    expect(reads.filter((path) => path.endsWith("/official_teams"))).toHaveLength(1);
++  });
+   it("connects provider athletes and canonical results without leaking private provider payloads", async () => {
+     request.mockImplementation(async (input) => {
+       const url = new URL(String(input));
+       if (url.pathname.endsWith("/clubs"))
+         return Response.json({
+           id: "fla",
+           name: "Flamengo",
+           crest_url: "https://images.example/127.png",
+           city: "Rio",
+           country: "Brasil",
+diff --git a/src/lib/club-database.functions.ts b/src/lib/club-database.functions.ts
+index 22d32dce..03cfb061 100644
+--- a/src/lib/club-database.functions.ts
++++ b/src/lib/club-database.functions.ts
+@@ -15,44 +15,44 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
+       const clubResult = await db
+         .from("clubs")
+         .select(
+           "id,name,crest_url,city,country,founded,updated_at,stadiums(name,capacity,photo_url)",
+         )
+         .eq("id", data.clubId)
+         .maybeSingle();
+       if (clubResult.error) throw new Error("Não foi possível carregar a identidade do clube.");
+       const club = clubResult.data;
+       if (!club) return null;
+-      const links = await db
+-        .from("club_catalog_links")
+-        .select("source_club_id")
+-        .eq("club_id", club.id)
+-        .limit(4);
++      // Identity aliases and official-team identity depend only on the club.
++      // Start them together instead of adding a serial Data API round trip.
++      const [links, teamResult] = await Promise.all([
++        db.from("club_catalog_links").select("source_club_id").eq("club_id", club.id).limit(4),
++        db
++          .from("official_teams")
++          .select("source_id,venue_source_id")
++          .eq("local_club_id", club.id)
++          .order("source_id")
++          .limit(5),
++      ]);
+       if (links.error) throw new Error("Não foi possível resolver a identidade do elenco.");
++      if (teamResult.error) throw new Error("Não foi possível resolver o clube na base oficial.");
+       const clubIds = [club.id, ...(links.data ?? []).map((link) => link.source_club_id)];
+       const playersResult = await db
+         .from("players")
+         .select("id,name,position,photo_url,nationality")
+         .in("club_id", clubIds)
+         .eq("source_kind", "player")
+         .is("canonical_player_id", null)
+         .order("name")
+         .order("id")
+         .limit(8);
+       if (playersResult.error) throw new Error("Não foi possível carregar os atletas oficiais.");
+-      const teamResult = await db
+-        .from("official_teams")
+-        .select("source_id,venue_source_id")
+-        .eq("local_club_id", club.id)
+-        .order("source_id")
+-        .limit(5);
+-      if (teamResult.error) throw new Error("Não foi possível resolver o clube na base oficial.");
+       const ids = (teamResult.data ?? []).map((team) => team.source_id);
+       type Stadium = { name: string; capacity: number | null; photo_url: string | null } | null;
+       let stadium = (
+         Array.isArray(club.stadiums) ? (club.stadiums[0] ?? null) : club.stadiums
+       ) as Stadium;
+       if (!stadium) {
+         const venueIds = (teamResult.data ?? []).flatMap((team) =>
+           team.venue_source_id ? [team.venue_source_id] : [],
+         );
+         if (venueIds.length) {
+diff --git a/src/lib/public-read-cache.server.test.ts b/src/lib/public-read-cache.server.test.ts
+index 5df12c54..b212c302 100644
+--- a/src/lib/public-read-cache.server.test.ts
++++ b/src/lib/public-read-cache.server.test.ts
+@@ -120,11 +120,91 @@ describe("bounded public data cache", () => {
+     expect(await cache.get("league:71", async () => 3)).toBe(3);
+   });
+ 
+   it("caches a successful empty result without confusing it with a failure", async () => {
+     const cache = createPublicReadCache<null>({ ttlMs: 60_000, maxEntries: 2 });
+     const load = vi.fn(async () => null);
+     expect(await cache.get("missing:club", load)).toBeNull();
+     expect(await cache.get("missing:club", load)).toBeNull();
+     expect(load).toHaveBeenCalledTimes(1);
+   });
++
++  it("releases a hung request and shares its deadline with concurrent readers", async () => {
++    vi.useFakeTimers();
++    try {
++      const cache = createPublicReadCache<number>({
++        ttlMs: 1_000,
++        maxEntries: 2,
++        loadTimeoutMs: 50,
++      });
++      const upstream = deferred<number>();
++      const load = vi.fn(() => upstream.promise);
++      const first = cache.get("a", load);
++      const second = cache.get("a", load);
++      const failures = Promise.allSettled([first, second]);
++      await vi.advanceTimersByTimeAsync(50);
++      const results = await failures;
++      expect(results.every((result) => result.status === "rejected")).toBe(true);
++      expect(load).toHaveBeenCalledTimes(1);
++      expect(cache.size).toBe(0);
++      expect(await cache.get("a", async () => 3)).toBe(3);
++      upstream.resolve(1);
++      await Promise.resolve();
++      expect(await cache.get("a", async () => 4)).toBe(3);
++      expect(vi.getTimerCount()).toBe(0);
++    } finally {
++      vi.useRealTimers();
++    }
++  });
++
++  it.each([0, -1, NaN, Infinity, 2_147_483_648])(
++    "rejects an invalid load deadline %s",
++    (loadTimeoutMs) => {
++      expect(() => createPublicReadCache({ ttlMs: 100, maxEntries: 1, loadTimeoutMs })).toThrow();
++    },
++  );
++
++  it("bounds upstream concurrency even when pending keys are evicted", async () => {
++    const cache = createPublicReadCache<number>({
++      ttlMs: 1_000,
++      maxEntries: 1,
++      maxConcurrentLoads: 2,
++    });
++    const first = deferred<number>();
++    const second = deferred<number>();
++    const a = cache.get("a", () => first.promise);
++    const b = cache.get("b", () => second.promise);
++    const third = vi.fn(async () => 3);
++    await expect(cache.get("c", third)).rejects.toThrow(/capacity/);
++    expect(third).not.toHaveBeenCalled();
++    // Already in-flight same-key callers still share the existing request.
++    const shared = cache.get("b", third);
++    first.resolve(1);
++    await a;
++    expect(await cache.get("c", third)).toBe(3);
++    second.resolve(2);
++    expect(await b).toBe(2);
++    expect(await shared).toBe(2);
++  });
++
++  it("does not release physical capacity for a timed-out, uncancelled upstream", async () => {
++    vi.useFakeTimers();
++    try {
++      const cache = createPublicReadCache<number>({
++        ttlMs: 1_000,
++        maxEntries: 1,
++        maxConcurrentLoads: 1,
++        loadTimeoutMs: 5,
++      });
++      const upstream = deferred<number>();
++      const failures = Promise.allSettled([cache.get("a", () => upstream.promise)]);
++      await vi.advanceTimersByTimeAsync(5);
++      await failures;
++      await expect(cache.get("b", async () => 2)).rejects.toThrow(/capacity/);
++      upstream.resolve(1);
++      await vi.advanceTimersByTimeAsync(0);
++      expect(await cache.get("b", async () => 2)).toBe(2);
++    } finally {
++      vi.useRealTimers();
++    }
++  });
+ });
+diff --git a/src/lib/public-read-cache.server.ts b/src/lib/public-read-cache.server.ts
+index 671cbc80..bf649ec0 100644
+--- a/src/lib/public-read-cache.server.ts
++++ b/src/lib/public-read-cache.server.ts
+@@ -1,62 +1,107 @@
+ type CacheOptions = {
+   ttlMs: number;
+   maxEntries: number;
++  loadTimeoutMs?: number;
++  maxConcurrentLoads?: number;
+   now?: () => number;
+ };
+ 
+ type Entry<T> = {
+   promise: Promise<T>;
+   expiresAt: number;
+   pending: boolean;
+ };
+ 
+ /**
+  * Per-server-instance cache for public projections only. Authenticated saves,
+  * permissions, balances and provider credentials must never enter this cache.
+  * Both settled values and pending requests count towards its fixed capacity.
+  */
+-export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: CacheOptions) {
+-  if (!Number.isFinite(ttlMs) || ttlMs <= 0 || !Number.isInteger(maxEntries) || maxEntries < 1)
++export function createPublicReadCache<T>({
++  ttlMs,
++  maxEntries,
++  loadTimeoutMs = 15_000,
++  maxConcurrentLoads = 16,
++  now = Date.now,
++}: CacheOptions) {
++  if (
++    !Number.isFinite(ttlMs) ||
++    ttlMs <= 0 ||
++    !Number.isInteger(maxEntries) ||
++    maxEntries < 1 ||
++    !Number.isFinite(loadTimeoutMs) ||
++    loadTimeoutMs < 1 ||
++    loadTimeoutMs > 2_147_483_647 ||
++    !Number.isInteger(maxConcurrentLoads) ||
++    maxConcurrentLoads < 1
++  )
+     throw new Error("Invalid public cache capacity or freshness.");
+   const entries = new Map<string, Entry<T>>();
++  let pendingLoads = 0;
+ 
+   return {
+     get size() {
+       return entries.size;
+     },
+     get(key: string, load: () => Promise<T>): Promise<T> {
+       const previous = entries.get(key);
+       if (previous && (previous.pending || previous.expiresAt > now())) {
+         entries.delete(key);
+         entries.set(key, previous);
+         return previous.promise;
+       }
++      // Evicting an entry does not cancel its database request. Track physical
++      // loads separately so distinct-key bursts cannot bypass the capacity.
++      if (pendingLoads >= maxConcurrentLoads)
++        return Promise.reject(new Error("Public data capacity temporarily unavailable."));
+       entries.delete(key);
+       while (entries.size >= maxEntries) entries.delete(entries.keys().next().value!);
+ 
++      let timeout: ReturnType<typeof setTimeout>;
++      const deadline = new Promise<never>((_, reject) => {
++        timeout = setTimeout(
++          () => reject(new Error("Public data request timed out.")),
++          loadTimeoutMs,
++        );
++      });
++      pendingLoads++;
++      const upstream = Promise.resolve()
++        .then(load)
++        .then(
++          (value) => {
++            pendingLoads--;
++            return value;
++          },
++          (error: unknown) => {
++            pendingLoads--;
++            throw error;
++          },
++        );
+       const entry: Entry<T> = {
+         pending: true,
+         expiresAt: 0,
+-        promise: Promise.resolve().then(load),
++        promise: Promise.race([upstream, deadline]),
+       };
+       entry.promise = entry.promise.then(
+         (value) => {
++          clearTimeout(timeout);
+           // A late request must not resurrect an evicted key or replace a
+           // newer request for the same key after capacity eviction.
+           if (entries.get(key) === entry) {
+             entry.pending = false;
+             entry.expiresAt = now() + ttlMs;
+           }
+           return value;
+         },
+         (error: unknown) => {
++          clearTimeout(timeout);
+           if (entries.get(key) === entry) entries.delete(key);
+           throw error;
+         },
+       );
+       entries.set(key, entry);
+       return entry.promise;
+     },
+   };
+ }
+ 
+diff --git a/src/lib/push.server.ts b/src/lib/push.server.ts
+index 5d6d6ce1..3556ca76 100644
+--- a/src/lib/push.server.ts
++++ b/src/lib/push.server.ts
+@@ -1,19 +1,19 @@
+ /**
+  * Server-only Firebase Cloud Messaging sends through the Lovable connector
+  * gateway. Notifications are best-effort: an FCM outage must never block a
+  * chat message or a club service, so callers use the fire-and-forget wrapper
+  * and failures are logged, never thrown.
+  */
+ import type { SupabaseClient } from "@supabase/supabase-js";
+ 
+-import type { Database } from "@/integrations/supabase/types";
++import type { Database } from "@/integrations/supabase/database";
+ 
+ const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
+ /** Upper bound of device tokens contacted for a single event. */
+ export const MAX_TOKENS_PER_EVENT = 200;
+ 
+ export interface PushMessage {
+   title: string;
+   body: string;
+   /** In-app path opened when the notification is tapped. */
+   path?: string;
+diff --git a/src/lib/security-headers.test.ts b/src/lib/security-headers.test.ts
+index 6660d2c1..a86c12c4 100644
+--- a/src/lib/security-headers.test.ts
++++ b/src/lib/security-headers.test.ts
+@@ -1,20 +1,38 @@
+ import { afterEach, describe, expect, it, vi } from "vitest";
+ import { createCspNonce, secureResponse } from "./security-headers";
+ import { publicPageRedirect } from "./public-page-redirects";
+ import { renderErrorPage } from "./error-page";
+ const deps = vi.hoisted(() => ({ fetch: vi.fn() }));
+ vi.mock("@tanstack/react-start/server-entry", () => ({ default: { fetch: deps.fetch } }));
+ import server from "../server";
+ afterEach(() => vi.restoreAllMocks());
+ 
+ describe("outer response protection", () => {
++  it("overrides higher-priority CDN cache headers on private and authenticated responses", () => {
++    for (const path of ["/api/private/profile", "/auth", "/assets/public.js"]) {
++      const response = secureResponse(
++        new Response("private", {
++          headers: {
++            "cache-control": "public, max-age=3600",
++            "cdn-cache-control": "public, s-maxage=86400",
++            "cloudflare-cdn-cache-control": "public, max-age=86400",
++          },
++        }),
++        new Request(`https://jogomanager.com${path}`, {
++          headers: { authorization: "Bearer fixture" },
++        }),
++      );
++      for (const header of ["cache-control", "cdn-cache-control", "cloudflare-cdn-cache-control"])
++        expect(response.headers.get(header)).toBe("no-store");
++    }
++  });
+   it("adds protections to recovered h3 failures and thrown failures", async () => {
+     vi.spyOn(console, "error").mockImplementation(() => undefined);
+     for (const fail of [false, true]) {
+       deps.fetch.mockImplementation(async () => {
+         if (fail) throw new Error("private details");
+         return Response.json({ unhandled: true, message: "HTTPError" }, { status: 500 });
+       });
+       const response = await server.fetch(new Request("https://jogomanager.com/dashboard"), {}, {});
+       expect(response.status).toBe(500);
+       expect(response.headers.get("cache-control")).toBe("no-store");
+diff --git a/src/lib/security-headers.ts b/src/lib/security-headers.ts
+index 42714b4a..f596d998 100644
+--- a/src/lib/security-headers.ts
++++ b/src/lib/security-headers.ts
+@@ -73,20 +73,24 @@ export function secureResponse(response: Response, request: Request, nonce?: str
+   if (
+     response.status >= 400 ||
+     PRIVATE_PATH.test(url.pathname) ||
+     (indexing && contentType.includes("text/html")) ||
+     headers.has("set-cookie") ||
+     request.headers.has("authorization") ||
+     (contentType.includes("text/html") && request.headers.has("cookie")) ||
+     !["GET", "HEAD"].includes(request.method)
+   ) {
+     headers.set("cache-control", "no-store");
++    // CDN-specific directives take precedence over Cache-Control at the edge.
++    // Replace a conflicting upstream policy on every private/error response.
++    headers.set("cdn-cache-control", "no-store");
++    headers.set("cloudflare-cdn-cache-control", "no-store");
+   } else if (
+     response.status === 200 &&
+     contentType.includes("text/html") &&
+     isPublicContentPath(url.pathname) &&
+     !/\b(?:private|no-store)\b/i.test(headers.get("cache-control") ?? "")
+   ) {
+     // Override the framework's default no-cache, not an explicit private policy.
+     headers.set("cache-control", "public, max-age=0, s-maxage=300, stale-while-revalidate=86400");
+   } else if (!headers.has("cache-control")) {
+     const cache = HASHED_PATH.test(url.pathname)
+diff --git a/src/pages/auth.tsx b/src/pages/auth.tsx
+index 641b696e..ee376fa7 100644
+--- a/src/pages/auth.tsx
++++ b/src/pages/auth.tsx
+@@ -23,20 +23,24 @@ import { supabase } from "@/integrations/supabase/client";
+ import {
+   lovableOAuthProvider,
+   socialOAuthOptions,
+   socialProviderLabel,
+   type SocialProvider,
+ } from "@/integrations/supabase/social-auth";
+ 
+ import { authCallbackErrorMessage, authErrorMessage, type AuthMode } from "@/lib/auth-policy";
+ 
+ import { useAuthMethods } from "@/hooks/useAuthMethods";
++import {
++  directOAuthProviders,
++  signInWithOAuthRecovery,
++} from "@/integrations/supabase/oauth-recovery";
+ 
+ import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
+ 
+ import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as=url";
+ 
+ import "@/components/auth-store.css";
+ import "@lovable.dev/cloud-auth-js/styles.css";
+ import { getRouteApi } from "@tanstack/react-router";
+ const Route = getRouteApi("/auth");
+ 
+@@ -282,42 +286,48 @@ export function AuthPage() {
+     }
+   }
+ 
+   async function signInWith(provider: SocialProvider) {
+     if (busy || !methods?.socialProviders.includes(provider)) return;
+     setBusy(true);
+     setError(null);
+     setNotice(null);
+     try {
+       const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
+-      if (brokerProvider) {
+-        const { lovable } = await import("@/integrations/lovable/index");
+-        const result = await lovable.auth.signInWithOAuth(brokerProvider, {
+-          redirect_uri: callback(),
+-        });
+-        if (result.error) throw result.error;
+-        if (!result.redirected) {
+-          window.__lovableEvents?.track?.("project.account_signed_in", {
+-            method: provider,
+-            entry_route: entryRoute,
++      const result = await signInWithOAuthRecovery({
++        provider,
++        useBroker: Boolean(brokerProvider),
++        directProviders: directOAuthProviders(
++          import.meta.env["VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST"],
++        ),
++        broker: async () => {
++          const { lovable } = await import("@/integrations/lovable/index");
++          return lovable.auth.signInWithOAuth(brokerProvider!, { redirect_uri: callback() });
++        },
++        direct: async () => {
++          const directResult = await supabase.auth.signInWithOAuth({
++            provider,
++            options: socialOAuthOptions(provider, callback()),
+           });
+-          await continueSession();
+-        }
+-      } else {
+-        const result = await supabase.auth.signInWithOAuth({
+-          provider,
+-          options: socialOAuthOptions(provider, callback()),
++          return { error: directResult.error };
++        },
++      });
++      if (!result.redirected) {
++        window.__lovableEvents?.track?.("project.account_signed_in", {
++          method: provider,
++          entry_route: entryRoute,
+         });
+-        if (result.error) throw result.error;
++        await continueSession();
+       }
+     } catch (cause) {
+       setError(authErrorMessage(cause, mode));
++      setNotice("Você também pode entrar com o e-mail da mesma conta abaixo.");
+     } finally {
+       setBusy(false);
+     }
+   }
+ 
+   async function signInWithLovable() {
+     if (busy) return;
+     setBusy(true);
+     setError(null);
+     setNotice(null);
+@@ -515,20 +525,25 @@ export function AuthPage() {
+           {(mode === "in" || mode === "up") && (
+             <button
+               type="button"
+               disabled={busy}
+               className="lovable-auth-button mt-5 w-full"
+               onClick={signInWithLovable}
+             >
+               Continue with Lovable
+             </button>
+           )}
++          {(mode === "in" || mode === "up") && methods?.email && (
++            <p className="mt-3 text-xs text-muted-foreground">
++              Se o acesso com um provedor estiver indisponível, use o e-mail da mesma conta abaixo.
++            </p>
++          )}
+           {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
+             <div className="mt-5 space-y-2">
+               {methods?.socialProviders.includes("google") && (
+                 <Button
+                   type="button"
+                   disabled={busy}
+                   className="auth-social min-h-12 w-full font-semibold"
+                   onClick={() => signInWith("google")}
+                 >
+                   Continuar com Google
+
+NEW FILE: src/lib/career-save-lifecycle.ts
+export interface RetainedCareerSave {
+  isCurrent: () => boolean;
+  localSettled: () => void;
+  release: () => void;
+}
+
+const localWrites = new Map<string, Set<Promise<void>>>();
+const compartment = (owner: string | null, epoch: number) => JSON.stringify([owner, epoch]);
+
+/** A remounted page must not hydrate from the middle of an accepted local save. */
+export async function waitForCareerLocalWrites(owner: string | null, epoch: number): Promise<void> {
+  const key = compartment(owner, epoch);
+  while (localWrites.has(key)) await Promise.all([...localWrites.get(key)!]);
+}
+
+/**
+ * Persistence outlives route navigation. Auth changes and career resets still
+ * revoke it permanently; a return to the previous account cannot revive it.
+ */
+export function retainCareerSave({
+  owner,
+  epoch,
+  readEpoch,
+  observeOwner,
+}: {
+  owner: string | null;
+  epoch: number;
+  readEpoch: () => number | null;
+  observeOwner: (observe: (owner: string | null) => void) => () => void;
+}): RetainedCareerSave {
+  let active = true;
+  let released = false;
+  let settled = false;
+  let resolveLocal!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    resolveLocal = resolve;
+  });
+  const key = compartment(owner, epoch);
+  const writes = localWrites.get(key) ?? new Set<Promise<void>>();
+  writes.add(promise);
+  localWrites.set(key, writes);
+  const localSettled = () => {
+    if (settled) return;
+    settled = true;
+    writes.delete(promise);
+    if (writes.size === 0) localWrites.delete(key);
+    resolveLocal();
+  };
+  let unsubscribe: () => void;
+  try {
+    unsubscribe = observeOwner((currentOwner) => {
+      if (currentOwner !== owner) active = false;
+    });
+  } catch (error) {
+    localSettled();
+    throw error;
+  }
+  return {
+    isCurrent: () => {
+      if (readEpoch() !== epoch) active = false;
+      return active;
+    },
+    localSettled,
+    release: () => {
+      if (released) return;
+      released = true;
+      active = false;
+      localSettled();
+      unsubscribe();
+    },
+  };
+}
+
+NEW FILE: src/lib/career-save-lifecycle.test.ts
+import { describe, expect, it, vi } from "vitest";
+
+import { retainCareerSave, waitForCareerLocalWrites } from "./career-save-lifecycle";
+
+function acceptedSave(owner: string | null = "account-a") {
+  let epoch = 4;
+  let observe!: (owner: string | null) => void;
+  const unsubscribe = vi.fn();
+  const save = retainCareerSave({
+    owner,
+    epoch,
+    readEpoch: () => epoch,
+    observeOwner: (next) => {
+      observe = next;
+      return unsubscribe;
+    },
+  });
+  return {
+    save,
+    observe: (next: string | null) => observe(next),
+    reset: () => {
+      epoch += 1;
+    },
+    unsubscribe,
+  };
+}
+
+describe("accepted career saves across navigation", () => {
+  it("lets an accepted save finish and keeps the next route waiting only for local durability", async () => {
+    const { save, observe, unsubscribe } = acceptedSave();
+    let hydrated = false;
+    const nextRoute = waitForCareerLocalWrites("account-a", 4).then(() => {
+      hydrated = true;
+    });
+    await Promise.resolve();
+    expect(hydrated).toBe(false);
+    // No route-mounted state is part of this scope. A token refresh retains
+    // the same owner while the old page's UI subscription can be gone.
+    observe("account-a");
+    expect(save.isCurrent()).toBe(true);
+    save.localSettled();
+    await nextRoute;
+    expect(hydrated).toBe(true);
+    expect(save.isCurrent()).toBe(true);
+    save.release();
+    save.release();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(save.isCurrent()).toBe(false);
+  });
+
+  it("permanently revokes a save on A-B-A even when its page is already unmounted", () => {
+    const { save, observe } = acceptedSave();
+    observe("account-b");
+    observe("account-a");
+    expect(save.isCurrent()).toBe(false);
+    save.release();
+  });
+
+  it("revokes accepted guest work after sign-in and account work after sign-out", () => {
+    const guest = acceptedSave(null);
+    guest.observe("account-a");
+    expect(guest.save.isCurrent()).toBe(false);
+    guest.save.release();
+    const account = acceptedSave();
+    account.observe(null);
+    expect(account.save.isCurrent()).toBe(false);
+    account.save.release();
+  });
+
+  it("keeps career reset epochs and account compartments separate", async () => {
+    const { save, reset } = acceptedSave();
+    await expect(waitForCareerLocalWrites("account-b", 4)).resolves.toBeUndefined();
+    await expect(waitForCareerLocalWrites("account-a", 5)).resolves.toBeUndefined();
+    reset();
+    expect(save.isCurrent()).toBe(false);
+    save.release();
+    await expect(waitForCareerLocalWrites("account-a", 4)).resolves.toBeUndefined();
+  });
+
+  it("waits for every accepted local write and unblocks on failure/release", async () => {
+    const first = acceptedSave();
+    const second = acceptedSave();
+    let hydrated = false;
+    const nextRoute = waitForCareerLocalWrites("account-a", 4).then(() => {
+      hydrated = true;
+    });
+    first.save.localSettled();
+    await Promise.resolve();
+    expect(hydrated).toBe(false);
+    second.save.release();
+    await nextRoute;
+    expect(hydrated).toBe(true);
+    first.save.release();
+  });
+
+  it("does not leave a hydration wait behind if auth observation cannot be established", async () => {
+    expect(() =>
+      retainCareerSave({
+        owner: "account-a",
+        epoch: 4,
+        readEpoch: () => 4,
+        observeOwner: () => {
+          throw new Error("auth unavailable");
+        },
+      }),
+    ).toThrow("auth unavailable");
+    await expect(waitForCareerLocalWrites("account-a", 4)).resolves.toBeUndefined();
+  });
+});
+
+NEW FILE: src/lib/career-save-recovery.ts
+import {
+  clearLocalCareerSyncBlock,
+  isVersionedOutboxEntry,
+  loadLocalCareer,
+  queueSync,
+  readCareerEpoch,
+  readLocalCareerGeneration,
+  readLocalCareerSyncBlock,
+  readLocalCareerTombstone,
+  readOutbox,
+  saveLocalCareer,
+  withCareerLock,
+  type LocalOwnerId,
+} from "./offline/store";
+
+/**
+ * Retry only the interrupted local-write barrier. Deletion, legacy queues and
+ * generation conflicts require explicit reconciliation and never pass here.
+ */
+export async function recoverPendingCareerWrite({
+  owner,
+  epoch,
+  isCurrent,
+}: {
+  owner: LocalOwnerId;
+  epoch: number;
+  isCurrent: () => boolean;
+}): Promise<boolean> {
+  const active = () => isCurrent() && readCareerEpoch(owner) === epoch;
+  if (!active()) return false;
+  try {
+    const locked = await withCareerLock(
+      owner,
+      async () => {
+        if (!active()) return false;
+        const block = await readLocalCareerSyncBlock(owner);
+        if (!active() || block?.reason !== "pending_save") return false;
+        const generation = await readLocalCareerGeneration(owner);
+        if (!active() || generation === null || generation !== block.generation) return false;
+        const tombstone = await readLocalCareerTombstone(owner);
+        if (!active() || tombstone) return false;
+        const state = await loadLocalCareer(owner);
+        if (!active() || !state) return false;
+        const existing = await readOutbox(owner);
+        if (
+          !active() ||
+          (existing && (!isVersionedOutboxEntry(existing) || existing.generation !== generation))
+        )
+          return false;
+        const options = {
+          lockHeld: true,
+          expectedEpoch: epoch,
+          generation,
+          allowPendingBarrier: true,
+        };
+        if (!(await saveLocalCareer(state, "recuperação", owner, options)) || !active())
+          return false;
+        const queued = await queueSync(state, owner, options);
+        if (!active() || !queued || !isVersionedOutboxEntry(queued)) return false;
+        const confirmed = await readOutbox(owner);
+        if (
+          !active() ||
+          !isVersionedOutboxEntry(confirmed) ||
+          confirmed.revision !== queued.revision ||
+          confirmed.generation !== generation
+        )
+          return false;
+        return (
+          (await clearLocalCareerSyncBlock(owner, { lockHeld: true, expectedEpoch: epoch })) &&
+          active()
+        );
+      },
+      epoch,
+    );
+    return locked.acquired && locked.value === true && active();
+  } catch {
+    return false;
+  }
+}
+
+NEW FILE: src/lib/career-save-recovery.test.ts
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { CareerState } from "@/game/types";
+import * as store from "./offline/store";
+import { recoverPendingCareerWrite } from "./career-save-recovery";
+
+vi.mock("./offline/store", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./offline/store")>();
+  return {
+    ...actual,
+    readCareerEpoch: vi.fn(),
+    readLocalCareerSyncBlock: vi.fn(),
+    readLocalCareerGeneration: vi.fn(),
+    readLocalCareerTombstone: vi.fn(),
+    loadLocalCareer: vi.fn(),
+    readOutbox: vi.fn(),
+    saveLocalCareer: vi.fn(),
+    queueSync: vi.fn(),
+    clearLocalCareerSyncBlock: vi.fn(),
+    withCareerLock: vi.fn(),
+  };
+});
+
+const state = {
+  version: 3,
+  season: 1,
+  round: 7,
+  clubId: "fla",
+  players: {},
+  fixtures: [],
+} as unknown as CareerState;
+const entry = { state, generation: 3, revision: "recovered", at: 100 };
+const recover = () =>
+  recoverPendingCareerWrite({ owner: "account-a", epoch: 4, isCurrent: () => true });
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(store.readCareerEpoch).mockReturnValue(4);
+  vi.mocked(store.readLocalCareerSyncBlock).mockResolvedValue({
+    reason: "pending_save",
+    generation: 3,
+    blockedAt: "now",
+  });
+  vi.mocked(store.readLocalCareerGeneration).mockResolvedValue(3);
+  vi.mocked(store.readLocalCareerTombstone).mockResolvedValue(null);
+  vi.mocked(store.loadLocalCareer).mockResolvedValue(state);
+  vi.mocked(store.readOutbox).mockResolvedValueOnce(null).mockResolvedValue(entry);
+  vi.mocked(store.saveLocalCareer).mockResolvedValue(true);
+  vi.mocked(store.queueSync).mockResolvedValue(entry);
+  vi.mocked(store.clearLocalCareerSyncBlock).mockResolvedValue(true);
+  vi.mocked(store.withCareerLock).mockImplementation(
+    async <T>(
+      _owner: store.LocalOwnerId | undefined,
+      action: () => Promise<T> | T,
+    ): Promise<store.CareerLockResult<T>> => ({ acquired: true, value: await action() }),
+  );
+});
+
+describe("interrupted career local-save recovery", () => {
+  it("rebuilds and confirms the same-generation outbox before clearing the pending barrier", async () => {
+    await expect(recover()).resolves.toBe(true);
+    expect(store.saveLocalCareer).toHaveBeenCalledWith(state, "recuperação", "account-a", {
+      lockHeld: true,
+      expectedEpoch: 4,
+      generation: 3,
+      allowPendingBarrier: true,
+    });
+    expect(store.queueSync).toHaveBeenCalledWith(
+      state,
+      "account-a",
+      expect.objectContaining({ generation: 3, expectedEpoch: 4 }),
+    );
+    expect(store.readOutbox).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(store.clearLocalCareerSyncBlock).mock.invocationCallOrder[0]).toBeGreaterThan(
+      vi.mocked(store.readOutbox).mock.invocationCallOrder[1]!,
+    );
+  });
+
+  it.each(["conflict", "deleted", "legacy_outbox", "unknown_generation"] as const)(
+    "never clears a %s barrier as interrupted local persistence",
+    async (reason) => {
+      vi.mocked(store.readLocalCareerSyncBlock).mockResolvedValue({
+        reason,
+        generation: 3,
+        blockedAt: "now",
+      });
+      await expect(recover()).resolves.toBe(false);
+      expect(store.queueSync).not.toHaveBeenCalled();
+      expect(store.clearLocalCareerSyncBlock).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([null, 2, 4])(
+    "retains the barrier when generation %s does not match",
+    async (generation) => {
+      vi.mocked(store.readLocalCareerGeneration).mockResolvedValue(generation);
+      await expect(recover()).resolves.toBe(false);
+      expect(store.saveLocalCareer).not.toHaveBeenCalled();
+      expect(store.clearLocalCareerSyncBlock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not resurrect a tombstoned career", async () => {
+    vi.mocked(store.readLocalCareerTombstone).mockResolvedValue({
+      generation: 3,
+      deletedAt: "now",
+    });
+    await expect(recover()).resolves.toBe(false);
+    expect(store.queueSync).not.toHaveBeenCalled();
+  });
+
+  it.each(["snapshot", "queue", "confirmation", "clear"])(
+    "retains recovery state after %s failure",
+    async (phase) => {
+      if (phase === "snapshot") vi.mocked(store.saveLocalCareer).mockResolvedValue(false);
+      if (phase === "queue") vi.mocked(store.queueSync).mockResolvedValue(null);
+      if (phase === "confirmation")
+        vi.mocked(store.readOutbox)
+          .mockReset()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValue({ ...entry, revision: "another-save" });
+      if (phase === "clear") vi.mocked(store.clearLocalCareerSyncBlock).mockResolvedValue(false);
+      await expect(recover()).resolves.toBe(false);
+      if (phase !== "clear") expect(store.clearLocalCareerSyncBlock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not recover without a cross-tab lock, a snapshot, or a readable queue", async () => {
+    vi.mocked(store.withCareerLock).mockResolvedValue({ acquired: false });
+    await expect(recover()).resolves.toBe(false);
+    expect(store.clearLocalCareerSyncBlock).not.toHaveBeenCalled();
+  });
+
+  it("leaves a newer or legacy outbox untouched", async () => {
+    vi.mocked(store.readOutbox)
+      .mockReset()
+      .mockResolvedValue({ ...entry, generation: 4 });
+    await expect(recover()).resolves.toBe(false);
+    expect(store.queueSync).not.toHaveBeenCalled();
+    expect(store.clearLocalCareerSyncBlock).not.toHaveBeenCalled();
+  });
+
+  it("stops between asynchronous writes when reset changes the epoch", async () => {
+    vi.mocked(store.saveLocalCareer).mockImplementation(async () => {
+      vi.mocked(store.readCareerEpoch).mockReturnValue(5);
+      return true;
+    });
+    await expect(recover()).resolves.toBe(false);
+    expect(store.queueSync).not.toHaveBeenCalled();
+    expect(store.clearLocalCareerSyncBlock).not.toHaveBeenCalled();
+  });
+});
+
+NEW FILE: src/hooks/useCareer.lifecycle.test.ts
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
+
+import { initCareer } from "@/game/career";
+import type { CareerState } from "@/game/types";
+import type { OutboxEntry, LocalCareerSyncBlock } from "@/lib/offline/store";
+import { useCareer } from "./useCareer";
+
+const harness = vi.hoisted(() => ({
+  owner: "account-a" as string | null,
+  online: true,
+  epoch: 4,
+  generation: 3,
+  local: null as CareerState | null,
+  cloud: null as CareerState | null,
+  pending: null as OutboxEntry | null,
+  block: null as LocalCareerSyncBlock | null,
+  cache: new Map<string, unknown>(),
+  effects: [] as Array<() => void | (() => void)>,
+  observers: new Set<(event: string, session: { user: { id: string } } | null) => void>(),
+  query: null as null | ((input: { signal: AbortSignal }) => Promise<unknown>),
+  mutation: null as Promise<unknown> | null,
+  save: vi.fn(),
+  persisted: vi.fn(),
+  queue: vi.fn(),
+}));
+
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react")>()),
+  useEffect: (effect: () => void | (() => void)) => {
+    harness.effects.push(effect);
+  },
+}));
+vi.mock("@/hooks/useAuthUserId", () => ({ useAuthUserId: () => harness.owner }));
+vi.mock("@tanstack/react-start", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-start")>()),
+  useServerFn: (fn: unknown) => fn,
+}));
+vi.mock("@/lib/career.functions", () => ({
+  loadCareer: async () => ({
+    state: harness.cloud,
+    generation: harness.generation,
+    deletedAt: null,
+  }),
+  saveCareer: (...args: unknown[]) => harness.save(...args),
+  createCareer: vi.fn(),
+  deleteCareer: vi.fn(),
+}));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    auth: {
+      onAuthStateChange: (
+        observe: (event: string, session: { user: { id: string } } | null) => void,
+      ) => {
+        harness.observers.add(observe);
+        return {
+          data: {
+            subscription: {
+              unsubscribe: () => {
+                harness.observers.delete(observe);
+              },
+            },
+          },
+        };
+      },
+    },
+  },
+}));
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({
+    getQueryData: (key: unknown) => harness.cache.get(JSON.stringify(key)),
+    setQueryData: (key: unknown, value: unknown) => {
+      const cacheKey = JSON.stringify(key);
+      const next = typeof value === "function" ? value(harness.cache.get(cacheKey)) : value;
+      harness.cache.set(cacheKey, next);
+    },
+    cancelQueries: vi.fn().mockResolvedValue(undefined),
+    invalidateQueries: vi.fn().mockResolvedValue(undefined),
+  }),
+  useQuery: (options: { queryKey: unknown; queryFn: typeof harness.query }) => {
+    harness.query = options.queryFn;
+    return {
+      data: harness.cache.get(JSON.stringify(options.queryKey)),
+      isPending: false,
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+  },
+  useMutation: (options: { mutationFn: (input: unknown) => Promise<unknown> }) => ({
+    isPending: false,
+    mutateAsync: (input: unknown) => {
+      harness.mutation = options.mutationFn(input);
+      return harness.mutation;
+    },
+  }),
+}));
+vi.mock("@/lib/offline/store", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/offline/store")>();
+  return {
+    ...actual,
+    isOnline: () => harness.online,
+    readCareerEpoch: () => harness.epoch,
+    loadLocalCareer: async () => harness.local,
+    readLocalCareerGeneration: async () => harness.generation,
+    readLocalCareerTombstone: async () => null,
+    readLocalCareerSyncBlock: async () => harness.block,
+    readOutbox: async () => harness.pending,
+    localSavedAt: async () => 100,
+    markLocalCareerSyncBlock: async (block: LocalCareerSyncBlock) => {
+      harness.block = block;
+      return true;
+    },
+    clearLocalCareerSyncBlock: async () => {
+      harness.block = null;
+      return true;
+    },
+    setLocalCareerGeneration: async () => true,
+    saveLocalCareer: (...args: unknown[]) => harness.persisted(...args),
+    queueSync: (...args: unknown[]) => harness.queue(...args),
+    acknowledgeOutbox: async () => {
+      harness.pending = null;
+      return true;
+    },
+    withCareerLock: async (_owner: unknown, action: () => Promise<unknown>) => ({
+      acquired: true,
+      value: await action(),
+    }),
+  };
+});
+
+const cacheKey = JSON.stringify(["career", "account-a", 0]);
+
+function renderCareer() {
+  let result!: ReturnType<typeof useCareer>;
+  function CareerHarness() {
+    result = useCareer();
+    return null;
+  }
+  renderToString(createElement(CareerHarness));
+  const unmount = harness.effects[0]!();
+  return {
+    result,
+    unmount: () => {
+      if (typeof unmount === "function") unmount();
+    },
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  harness.owner = "account-a";
+  harness.online = true;
+  harness.epoch = 4;
+  harness.generation = 3;
+  harness.effects = [];
+  harness.observers.clear();
+  harness.cache.clear();
+  harness.local = initCareer("bra", "fla", "Lifecycle");
+  harness.cloud = structuredClone(harness.local);
+  harness.pending = null;
+  harness.block = null;
+  harness.mutation = null;
+  harness.cache.set(cacheKey, {
+    career: harness.local,
+    sync: "synced",
+    status: "ready",
+    generation: 3,
+    tombstone: null,
+    epoch: 4,
+  });
+  harness.persisted.mockImplementation(async (state: CareerState) => {
+    harness.local = state;
+    return true;
+  });
+  harness.queue.mockImplementation(async (state: CareerState) => {
+    harness.pending = { state, generation: 3, revision: "next-save", at: 101 };
+    return harness.pending;
+  });
+  harness.save.mockResolvedValue({ ok: true });
+});
+
+describe("useCareer persistence lifecycle", () => {
+  it("persists an accepted match result after the page unmounts and disposes the retained auth observer", async () => {
+    const { result, unmount } = renderCareer();
+    const next = { ...harness.local!, managerName: "Accepted result", round: 2 };
+    result.update(next);
+    unmount();
+    await harness.mutation;
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(harness.persisted).toHaveBeenCalled();
+    expect(harness.local?.managerName).toBe("Accepted result");
+    expect(harness.save).toHaveBeenCalledWith({
+      data: expect.objectContaining({ expectedOwnerId: "account-a", expectedGeneration: 3 }),
+    });
+    expect(harness.pending).toBeNull();
+    expect(harness.observers.size).toBe(0);
+  });
+
+  it("cancels an accepted save when auth switches A-B-A before its first local write", async () => {
+    const { result, unmount } = renderCareer();
+    result.update({ ...harness.local!, round: 2 });
+    unmount();
+    for (const observe of harness.observers) {
+      observe("SIGNED_IN", { user: { id: "account-b" } });
+      observe("SIGNED_IN", { user: { id: "account-a" } });
+    }
+    await harness.mutation;
+    expect(harness.persisted).not.toHaveBeenCalled();
+    expect(harness.save).not.toHaveBeenCalled();
+  });
+
+  it("saves an offline edit of a known local career and retains its upload queue", async () => {
+    harness.online = false;
+    harness.cache.set(cacheKey, {
+      career: harness.local,
+      sync: "offline",
+      status: "offline",
+      generation: 3,
+      tombstone: null,
+      epoch: 4,
+    });
+    const { result } = renderCareer();
+    result.update({ ...harness.local!, round: 2 });
+    await harness.mutation;
+    expect(harness.local?.round).toBe(2);
+    expect(harness.pending?.state.round).toBe(2);
+    expect(harness.save).not.toHaveBeenCalled();
+  });
+
+  it("keeps offline creation without a snapshot or known generation blocked", () => {
+    harness.online = false;
+    harness.cache.set(cacheKey, {
+      career: null,
+      sync: "offline",
+      status: "offline",
+      generation: null,
+      tombstone: null,
+      epoch: 4,
+    });
+    const { result } = renderCareer();
+    result.update(harness.local!);
+    expect(harness.mutation).toBeNull();
+    expect(harness.persisted).not.toHaveBeenCalled();
+  });
+
+  it("hydrates the newer same-generation outbox and local snapshot ahead of an older cloud copy", async () => {
+    const pendingState = { ...harness.local!, ticketPrice: 77 };
+    harness.pending = { state: pendingState, generation: 3, revision: "pending-price", at: 101 };
+    renderCareer();
+    const hydrated = (await harness.query!({ signal: new AbortController().signal })) as {
+      career: CareerState;
+      sync: string;
+    };
+    expect(hydrated.career.ticketPrice).toBe(77);
+    expect(hydrated.sync).toBe("pending");
+    expect(harness.local?.ticketPrice).toBe(77);
+    expect(harness.pending?.revision).toBe("pending-price");
+  });
+
+  it("does not stamp a conflicting outbox with the cloud's newer generation", async () => {
+    harness.pending = { state: harness.local!, generation: 2, revision: "old-generation", at: 101 };
+    renderCareer();
+    const hydrated = (await harness.query!({ signal: new AbortController().signal })) as {
+      status: string;
+    };
+    expect(hydrated.status).toBe("error");
+    expect(harness.block?.reason).toBe("conflict");
+    expect(harness.persisted).not.toHaveBeenCalled();
+  });
+});
+
+NEW FILE: src/integrations/supabase/oauth-recovery.ts
+import type { SocialProvider } from "./social-auth";
+
+type OAuthResult = { error?: unknown; redirected?: boolean };
+
+/** Public flags enable only providers whose own credentials were configured. */
+export function directOAuthProviders(value: unknown): string[] {
+  return typeof value === "string"
+    ? [
+        ...new Set(
+          value
+            .split(",")
+            .map((provider) => provider.trim())
+            .filter(Boolean),
+        ),
+      ]
+    : [];
+}
+
+export function isOAuthBrokerUnavailable(error: unknown): boolean {
+  if (error instanceof TypeError)
+    return /fetch|network|load failed|failed to load|importing a module/i.test(error.message);
+  if (!error || typeof error !== "object") return false;
+  const record = error as Record<string, unknown>;
+  const status = record["status"];
+  if (status === 402 || (typeof status === "number" && status >= 500 && status <= 599)) return true;
+  return [
+    "insufficient_credits",
+    "credits_exhausted",
+    "service_unavailable",
+    "network_error",
+  ].includes(typeof record["code"] === "string" ? record["code"] : "");
+}
+
+/**
+ * Recover only a broker outage. Both paths must use the application's existing
+ * Supabase project; cancellation, account errors and rate limits stay errors.
+ */
+export async function signInWithOAuthRecovery({
+  provider,
+  useBroker,
+  directProviders,
+  broker,
+  direct,
+}: {
+  provider: SocialProvider;
+  useBroker: boolean;
+  directProviders: readonly string[];
+  broker: () => Promise<OAuthResult>;
+  direct: () => Promise<OAuthResult>;
+}): Promise<{ path: "broker" | "direct"; redirected: boolean; recovered: boolean }> {
+  if (!useBroker) {
+    const result = await direct();
+    if (result.error) throw result.error;
+    return { path: "direct", redirected: true, recovered: false };
+  }
+  let result: OAuthResult;
+  try {
+    result = await broker();
+    // A redirect has already transferred control. Never start a competing flow.
+    if (result.redirected) return { path: "broker", redirected: true, recovered: false };
+    if (result.error) throw result.error;
+    return { path: "broker", redirected: false, recovered: false };
+  } catch (error) {
+    if (!directProviders.includes(provider) || !isOAuthBrokerUnavailable(error)) throw error;
+  }
+  result = await direct();
+  if (result.error) throw result.error;
+  return { path: "direct", redirected: true, recovered: true };
+}
+
+NEW FILE: src/integrations/supabase/oauth-recovery.test.ts
+import { describe, expect, it, vi } from "vitest";
+import {
+  directOAuthProviders,
+  isOAuthBrokerUnavailable,
+  signInWithOAuthRecovery,
+} from "./oauth-recovery";
+
+function options() {
+  return {
+    provider: "google" as const,
+    useBroker: true,
+    directProviders: ["google"],
+    broker: vi.fn(async (): Promise<{ error?: unknown; redirected?: boolean }> => ({
+      redirected: true,
+    })),
+    direct: vi.fn(async () => ({})),
+  };
+}
+
+describe("OAuth broker recovery in the same Supabase project", () => {
+  it("recovers exhausted broker credits only for an explicitly configured direct provider", async () => {
+    const input = options();
+    input.broker.mockResolvedValue({ error: { status: 402 } });
+    expect(await signInWithOAuthRecovery(input)).toEqual({
+      path: "direct",
+      redirected: true,
+      recovered: true,
+    });
+    expect(input.direct).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not infer direct credentials from broker-managed provider flags", async () => {
+    const input = { ...options(), directProviders: [] };
+    const error = { code: "insufficient_credits" };
+    input.broker.mockResolvedValue({ error });
+    await expect(signInWithOAuthRecovery(input)).rejects.toBe(error);
+    expect(input.direct).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { code: "access_denied", status: 403 },
+    { code: "invalid_credentials", status: 400 },
+    { code: "over_request_rate_limit", status: 429 },
+    { name: "AbortError" },
+    { code: "mfa_required" },
+    new TypeError("Cannot read properties of undefined"),
+  ])("preserves account, cancellation and abuse-control errors: %j", async (error) => {
+    const input = options();
+    input.broker.mockResolvedValue({ error });
+    await expect(signInWithOAuthRecovery(input)).rejects.toBe(error);
+    expect(input.direct).not.toHaveBeenCalled();
+  });
+
+  it("recovers a network failure, preserving a direct-provider error", async () => {
+    const input = options();
+    input.broker.mockRejectedValue(new TypeError("network unavailable"));
+    const error = { code: "provider_disabled" };
+    input.direct.mockResolvedValue({ error } as never);
+    await expect(signInWithOAuthRecovery(input)).rejects.toBe(error);
+    expect(input.direct).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not start a second OAuth flow after a broker redirect", async () => {
+    const input = options();
+    expect((await signInWithOAuthRecovery(input)).path).toBe("broker");
+    expect(input.direct).not.toHaveBeenCalled();
+  });
+
+  it("keeps a nonredirected broker session and skips the broker in direct mode", async () => {
+    const input = options();
+    input.broker.mockResolvedValue({});
+    expect((await signInWithOAuthRecovery(input)).redirected).toBe(false);
+    input.useBroker = false;
+    expect((await signInWithOAuthRecovery(input)).path).toBe("direct");
+    expect(input.broker).toHaveBeenCalledTimes(1);
+  });
+
+  it("parses only an explicit public provider allowlist", () => {
+    expect(directOAuthProviders(undefined)).toEqual([]);
+    expect(directOAuthProviders(" google, azure,google, ")).toEqual(["google", "azure"]);
+    expect(isOAuthBrokerUnavailable({ status: 500 })).toBe(true);
+    expect(isOAuthBrokerUnavailable("unknown")).toBe(false);
+  });
+});

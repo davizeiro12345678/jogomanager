@@ -41,6 +41,20 @@ const report = {
   errors,
   failedAssets: failures,
 };
+const wizardStepLayout = () => {
+  const label = document.querySelector('.career-steps [aria-current="step"] b');
+  if (!label) return null;
+  const range = document.createRange();
+  range.selectNodeContents(label);
+  return {
+    label: label.textContent,
+    textFragments: range.getClientRects().length,
+    hitTargets: [...document.querySelectorAll(".career-steps button")].map((button) => {
+      const rect = button.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }),
+  };
+};
 try {
   for (const route of ["/", "/contato", "/sobre", "/criador", "/auth", "/new"]) {
     const response = await page.goto(new URL(route, origin).href, {
@@ -94,6 +108,19 @@ try {
       report.routes.at(-1).mobileHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,
       );
+      if (route === "/new") {
+        report.routes.at(-1).mobileWizardStep = await page.evaluate(wizardStepLayout);
+        await page.setViewportSize({ width: 320, height: 844 });
+        await page.screenshot({
+          path: path.join(output, "new-320.png"),
+          fullPage: true,
+          animations: "disabled",
+        });
+        report.routes.at(-1).narrowWizardStep = await page.evaluate(wizardStepLayout);
+        report.routes.at(-1).narrowHorizontalOverflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > innerWidth,
+        );
+      }
       await page.setViewportSize({ width: 1365, height: 900 });
     }
     console.log(JSON.stringify({ tag, route, status: response?.status() }));
@@ -103,7 +130,17 @@ try {
     failures.length === 0 &&
     report.routes.every(
       (route) =>
-        route.status === 200 && !route.horizontalOverflow && !route.mobileHorizontalOverflow,
+        route.status === 200 &&
+        !route.horizontalOverflow &&
+        !route.mobileHorizontalOverflow &&
+        !route.narrowHorizontalOverflow &&
+        (route.route !== "/new" || (route.mobileWizardStep && route.narrowWizardStep)) &&
+        [route.mobileWizardStep, route.narrowWizardStep].every(
+          (step) =>
+            !step ||
+            (step.textFragments === 1 &&
+              step.hitTargets.every((target) => target.width >= 44 && target.height >= 44)),
+        ),
     );
 } catch (error) {
   report.success = false;

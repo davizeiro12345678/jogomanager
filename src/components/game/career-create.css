@@ -916,6 +916,9 @@
   .career-steps li {
     min-width: 0;
   }
+  .career-steps li:has(> button[aria-current="step"]) {
+    flex: 2;
+  }
   .career-steps button {
     justify-content: center;
     padding: 8px 6px;

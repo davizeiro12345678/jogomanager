@@ -1,0 +1,1145 @@
+{
+  "recordedAt": "2026-11-09 01:32:40 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "repository": "davizeiro12345678/jogomanager",
+  "workflowRuns": [
+    {
+      "id": 42543242371,
+      "name": "Public environment and MCP safety",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 101,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242371/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242371/logs",
+      "workflow_id": 392131112
+    },
+    {
+      "id": 42543242246,
+      "name": "Auxiliary match worker",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 227,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242246/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242246/logs",
+      "workflow_id": 395365701
+    },
+    {
+      "id": 42543242321,
+      "name": "Match 3D mobile draw inventory",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 312,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242321/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242321/logs",
+      "workflow_id": 396587026
+    },
+    {
+      "id": 42543242291,
+      "name": "Match 3D lifecycle and context recovery",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 312,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242291/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242291/logs",
+      "workflow_id": 396587027
+    },
+    {
+      "id": 42543242353,
+      "name": "CodSpeed",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 1081,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242353/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242353/logs",
+      "workflow_id": 377615822
+    },
+    {
+      "id": 42543242360,
+      "name": "Match 3D startup CPU diagnostic",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 427,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242360/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242360/logs",
+      "workflow_id": 396558805
+    },
+    {
+      "id": 42543242306,
+      "name": "Quality gates",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 1239,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242306/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242306/logs",
+      "workflow_id": 365551523
+    },
+    {
+      "id": 42543242369,
+      "name": "Match 3D visual evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 385,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242369/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242369/logs",
+      "workflow_id": 396443128
+    }
+  ],
+  "qualityJobs": [
+    {
+      "id": 128922613526,
+      "name": "Build, types and tests",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify i18n parity and hardcoded audit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm run lint",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run npm exec -- tsc --noEmit --pretty false",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run node --test scripts/database-growth-snapshot.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run node --test scripts/verify-public-deployment.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Run node --test scripts/font-loading.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify Edge Function authentication and import contracts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Run npm run test:performance-gates",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Run PFM_LOCAL_VERIFY=1 npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Run npm run bundle:check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        }
+      ]
+    },
+    {
+      "id": 128922613760,
+      "name": "Lighthouse shell audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run PFM_LOCAL_VERIFY=1 npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        }
+      ]
+    },
+    {
+      "id": 128922613807,
+      "name": "Supabase migration replay and access contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Verify recorded migration history and preserved legacy files",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify database startup failure handling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Start local Supabase Postgres",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Replay the complete canonical migration history",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Apply the forward growth-observability migration to the disposable database",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Apply the forward career tombstone and generation migration to the disposable database",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Apply forward room chat, career repair and support migrations to the disposable database",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Verify private support quota, idempotency, delivery leases and retry fencing",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Verify atomic private room creation, host quotas and bounded empty-lobby expiration",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify career tombstone generation and server-only access",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Verify application schema, ownership, and grants",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Verify private room chat Realtime authorization",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Verify public catalog and bounded identity enrichment",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Verify future tables require explicit API grants",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35
+        }
+      ]
+    },
+    {
+      "id": 128922613810,
+      "name": "Production dependency audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci --ignore-scripts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm audit --omit=dev --audit-level=high",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 128922613834,
+      "name": "Lighthouse mobile multi-page audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run PFM_LOCAL_VERIFY=1 npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        }
+      ]
+    },
+    {
+      "id": 128922613837,
+      "name": "Rust kernels and generated WASM parity",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run cargo fmt --manifest-path wasm/crowd-visibility/Cargo.toml -- --check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run npm run wasm:test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run cargo install wasm-pack --version 0.15.0 --locked",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Preserve shipped WASM for validation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Build WASM with an isolated tool cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Verify generated bindings",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify freshly generated WASM parity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Verify shipped WASM parity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        }
+      ]
+    },
+    {
+      "id": 128922613844,
+      "name": "Critical 200-match deterministic stress",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Execute all 200 seeds and their independent replays",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Require executed and passing stress assertions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 128922613895,
+      "name": "Critical same-runner MatchSim construction",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Checkout baseline in a separate directory",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Use identical installed dependencies for both revisions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Compare CPU in ABBA order and verify deterministic checkpoints",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Post Checkout candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        }
+      ]
+    },
+    {
+      "id": 128922613930,
+      "name": "Deterministic 3D benchmark contract",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm exec -- vitest run src/game/graphics-benchmark-contract.test.ts src/game/rapier-ball-authority.test.ts --pool=forks --maxWorkers=1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm exec -- vite build --config scripts/graphics-vite.config.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 128922613994,
+      "name": "Critical startup bundle comparison / bundle",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout candidate with complete base history",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Setup Node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Preserve analyzer and install one dependency graph for both revisions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Build baseline from PR base SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Build proposed commit on the same runner",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Upload reproducible comparison",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Setup Node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Checkout candidate with complete base history",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 128922613996,
+      "name": "3D asset compression contract",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run node scripts/verify-game-assets.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        }
+      ]
+    },
+    {
+      "id": 128924324222,
+      "name": "Critical performance release gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Require every critical job to have passed",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        }
+      ]
+    }
+  ],
+  "visualJobs": [
+    {
+      "id": 128922613683,
+      "name": "evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242369,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Install isolated browser test tooling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Prepare immutable baseline",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Build and capture baseline with the candidate evidence runner",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Build and capture candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Compare fixtures, authority and mobile scene ceilings",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Pair the six sampled-pose videos",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        }
+      ]
+    }
+  ],
+  "visualArtifacts": [
+    {
+      "id": 13643422255,
+      "name": "match3d-visual-evidence",
+      "size_in_bytes": 52770801,
+      "url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/artifacts/13643422255",
+      "archive_download_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/artifacts/13643422255/zip",
+      "expired": false,
+      "created_at": "2026-11-09T01:32:02Z",
+      "expires_at": "2026-11-23T01:31:59Z",
+      "updated_at": "2026-11-09T01:32:02Z",
+      "digest": "sha256:f489a55e79ff1306d6bcd7f286007164357b6d0a9e2c1d3df0b54ab62e1b0448",
+      "workflow_run": {
+        "id": 42543242369,
+        "repository_id": 1366601700,
+        "head_repository_id": 1366601700,
+        "head_branch": "codex/massive-quality-20261108",
+        "head_sha": "0a6a04e581571a367cc1c742ead21f984abbbc1b"
+      }
+    }
+  ],
+  "startupDiagnosticArtifacts": [
+    {
+      "id": 13641853592,
+      "name": "match3d-startup-cpu",
+      "size_in_bytes": 675150,
+      "url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/artifacts/13641853592",
+      "archive_download_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/artifacts/13641853592/zip",
+      "expired": false,
+      "created_at": "2026-11-09T01:05:14Z",
+      "expires_at": "2026-11-23T01:05:13Z",
+      "updated_at": "2026-11-09T01:05:14Z",
+      "digest": "sha256:fc36b94e87cf2bd16acaea8fc7577c919fee78dad130cc845bccd917cee08914",
+      "workflow_run": {
+        "id": 42543242360,
+        "repository_id": 1366601700,
+        "head_repository_id": 1366601700,
+        "head_branch": "codex/massive-quality-20261108",
+        "head_sha": "0a6a04e581571a367cc1c742ead21f984abbbc1b"
+      }
+    }
+  ]
+}

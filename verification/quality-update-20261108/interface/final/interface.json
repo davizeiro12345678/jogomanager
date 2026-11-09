@@ -1,0 +1,117 @@
+{
+  "tag": "final",
+  "startedAt": "2026-11-09T01:22:00.005Z",
+  "origin": "http://127.0.0.1:4283/",
+  "viewport": {
+    "width": 1365,
+    "height": 900,
+    "dpr": 1
+  },
+  "scope": "Local public UI captures; video overhead is present. No FPS certification, sign-in, account creation, ticket submission or production mutation.",
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "screenshot": "home.png",
+      "title": "Jogo de Técnico de Futebol Grátis em 3D | jogomanager",
+      "heading": "Pro Football Manager 3D: jogo de gestão de futebol. SEU CLUBE.SUA HISTÓRIA.",
+      "horizontalOverflow": false,
+      "headingFont": "88.725px",
+      "navigation": [
+        {
+          "responseStart": 998.6000000089407,
+          "domContentLoaded": 3590.7000000029802,
+          "duration": 3766.5
+        }
+      ]
+    },
+    {
+      "route": "/contato",
+      "status": 200,
+      "screenshot": "contato.png",
+      "title": "Suporte e Contato | Pro Football Manager 3D",
+      "heading": "Contato e suporte",
+      "horizontalOverflow": false,
+      "headingFont": "36px",
+      "navigation": [
+        {
+          "responseStart": 24.099999994039536,
+          "domContentLoaded": 160.5,
+          "duration": 172.20000000298023
+        }
+      ],
+      "mobileHorizontalOverflow": false
+    },
+    {
+      "route": "/sobre",
+      "status": 200,
+      "screenshot": "sobre.png",
+      "title": "Sobre o jogo | Pro Football Manager 3D",
+      "heading": "Sobre o Pro Football Manager 3D",
+      "horizontalOverflow": false,
+      "headingFont": "48px",
+      "navigation": [
+        {
+          "responseStart": 23.19999998807907,
+          "domContentLoaded": 137.5,
+          "duration": 193.5
+        }
+      ]
+    },
+    {
+      "route": "/criador",
+      "status": 200,
+      "screenshot": "criador.png",
+      "title": "Quem cria o jogomanager: história, tecnologia e atualizações",
+      "heading": "Sobre o criador",
+      "horizontalOverflow": false,
+      "headingFont": "36px",
+      "navigation": [
+        {
+          "responseStart": 32.6000000089407,
+          "domContentLoaded": 50.5,
+          "duration": 90.70000000298023
+        }
+      ]
+    },
+    {
+      "route": "/auth",
+      "status": 200,
+      "screenshot": "auth.png",
+      "title": "Entrar ou criar conta · Pro Football Manager 3D",
+      "heading": "Entrar e continuar",
+      "horizontalOverflow": false,
+      "headingFont": "30px",
+      "navigation": [
+        {
+          "responseStart": 47.29999999701977,
+          "domContentLoaded": 111.59999999403954,
+          "duration": 139.3999999910593
+        }
+      ],
+      "mobileHorizontalOverflow": false
+    },
+    {
+      "route": "/new",
+      "status": 200,
+      "screenshot": "new.png",
+      "title": "Crie seu treinador e escolha seu clube · Pro Football Manager 3D",
+      "heading": "Novo treinador",
+      "horizontalOverflow": false,
+      "headingFont": "38px",
+      "navigation": [
+        {
+          "responseStart": 75.69999998807907,
+          "domContentLoaded": 131,
+          "duration": 267.19999998807907
+        }
+      ],
+      "mobileHorizontalOverflow": false
+    }
+  ],
+  "errors": [],
+  "failedAssets": [],
+  "success": true,
+  "completedAt": "2026-11-09T01:22:21.537Z",
+  "video": "video\\page@3f1c7117b165fb9636dde11a0ffe8612.webm"
+}

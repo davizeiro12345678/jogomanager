@@ -1,7 +1,7 @@
 {
   "before": "quality-before-final",
-  "after": "quality-final",
-  "comparisonDate": "2026-11-09T00:58:45.645Z",
+  "after": "quality-final-mobile",
+  "comparisonDate": "2026-11-09T01:32:09.966Z",
   "rows": [
     {
       "label": "JS emitido total raw (inclui lazy)",
@@ -13,56 +13,56 @@
     {
       "label": "JS emitido total (gzip)",
       "before": 2393618,
-      "after": 2436039,
+      "after": 2436040,
       "reductionPercent": "-1.77%",
       "maxIncreaseBytes": 400000
     },
     {
       "label": "JS emitido total (Brotli Q6)",
       "before": 2261150,
-      "after": 2301345,
+      "after": 2301343,
       "reductionPercent": "-1.78%",
       "maxIncreaseBytes": 400000
     },
     {
       "label": "Página inicial startup (gzip)",
       "before": 167579,
-      "after": 168118,
+      "after": 168119,
       "reductionPercent": "-0.32%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Página inicial startup (Brotli Q6)",
       "before": 158761,
-      "after": 159229,
+      "after": 159227,
       "reductionPercent": "-0.29%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Nova carreira startup (gzip)",
       "before": 430340,
-      "after": 429886,
+      "after": 429887,
       "reductionPercent": "0.11%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Nova carreira startup (Brotli Q6)",
       "before": 407645,
-      "after": 406974,
-      "reductionPercent": "0.16%",
+      "after": 406972,
+      "reductionPercent": "0.17%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Partida rápida startup (gzip)",
       "before": 176921,
-      "after": 177475,
+      "after": 177476,
       "reductionPercent": "-0.31%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Partida rápida startup (Brotli Q6)",
       "before": 167712,
-      "after": 168173,
+      "after": 168171,
       "reductionPercent": "-0.27%",
       "maxIncreaseBytes": 2048
     },
@@ -76,56 +76,56 @@
     {
       "label": "Lobby multiplayer startup (gzip)",
       "before": 967014,
-      "after": 460933,
+      "after": 460934,
       "reductionPercent": "52.33%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Lobby multiplayer startup (Brotli Q6)",
       "before": 911003,
-      "after": 435792,
+      "after": 435790,
       "reductionPercent": "52.16%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Match 3D startup (gzip)",
       "before": 578285,
-      "after": 573183,
+      "after": 573184,
       "reductionPercent": "0.88%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Match 3D startup (Brotli Q6)",
       "before": 548367,
-      "after": 543233,
+      "after": 543231,
       "reductionPercent": "0.94%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Palco cinematográfico startup (gzip)",
       "before": 539676,
-      "after": 540361,
+      "after": 540362,
       "reductionPercent": "-0.13%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Palco cinematográfico startup (Brotli Q6)",
       "before": 506833,
-      "after": 507445,
+      "after": 507443,
       "reductionPercent": "-0.12%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Editor startup (gzip)",
       "before": 178293,
-      "after": 178790,
+      "after": 178791,
       "reductionPercent": "-0.28%",
       "maxIncreaseBytes": 2048
     },
     {
       "label": "Editor startup (Brotli Q6)",
       "before": 168833,
-      "after": 169258,
+      "after": 169256,
       "reductionPercent": "-0.25%",
       "maxIncreaseBytes": 2048
     },

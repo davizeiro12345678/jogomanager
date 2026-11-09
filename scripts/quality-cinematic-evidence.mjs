@@ -88,7 +88,16 @@ try {
       await host.first().waitFor({ state: "attached", timeout: 60_000 });
       cycles += 1;
     }
-    const state = await host.first().evaluate((element) => ({ ...element.dataset }));
+    // Autoplay can close the scene between the count and this read. Take an
+    // atomic snapshot instead of waiting for an element that just unmounted.
+    const state = await page.evaluate(() => {
+      const element = document.querySelector('[data-cinematic-ready="true"]');
+      return element ? { ...element.dataset } : null;
+    });
+    if (!state) {
+      await page.waitForTimeout(250);
+      continue;
+    }
     const key = `${cycles}:${state.cinematicSubject}:${state.cinematicShotType}:${state.cinematicGesture}`;
     if (key !== lastState) {
       transitions.push({ wallSeconds: (Date.now() - started) / 1000, cycle: cycles, ...state });
