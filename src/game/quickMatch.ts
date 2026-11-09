@@ -11,7 +11,7 @@ export function buildTeamSetup(
   formation: FormationKey = "4-3-3",
   mentality = 2,
   pressing = 1,
-  opts?: { cpu?: boolean; morale?: number },
+  opts?: { cpu?: boolean; morale?: number; tacticalAiRevision?: 2 },
 ): TeamSetup {
   const club = safeClub(clubId);
   const squad = buildReadySquad(clubId);
@@ -34,6 +34,7 @@ export function buildTeamSetup(
     bench,
     morale,
     cpu: opts?.cpu ?? true,
+    ...(opts?.tacticalAiRevision === 2 ? { tacticalAiRevision: 2 as const } : {}),
   };
 }
 

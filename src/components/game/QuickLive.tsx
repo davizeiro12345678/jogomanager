@@ -69,7 +69,9 @@ export default function QuickLive({
     const ai = aiTactics(difficulty);
     return {
       home: buildTeamSetup(myId),
-      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
       seed,
     };
   }, [myId, oppId, difficulty, seed]);

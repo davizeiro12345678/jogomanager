@@ -5,6 +5,11 @@
  */
 import type { MatchSim } from "./sim";
 import { halfTimePlan } from "./ai-halftime";
+import {
+  coordinatedDefensiveCover,
+  coordinatedHalfTimePlan,
+  coordinatedOffsideTrap,
+} from "./tactical-ai-v2";
 import { advanceAthlete } from "./athlete-dynamics";
 import { pitchTraction } from "./match-physics-extras";
 import { positionalOverall } from "./overall";
@@ -27,7 +32,7 @@ export function halfTimeRead(sim: MatchSim, side: Side) {
   const foe: Side = side === "home" ? "away" : "home";
   const [home, away] = sim.possessionPct();
   const own = side === "home" ? home : away;
-  const plan = halfTimePlan(
+  const plan = (setup.tacticalAiRevision === 2 ? coordinatedHalfTimePlan : halfTimePlan)(
     { goals: sim.stats[side].goals, shots: sim.stats[side].shots, possession: own },
     { goals: sim.stats[foe].goals, shots: sim.stats[foe].shots, possession: 100 - own },
     setup.tactics,
@@ -242,7 +247,18 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       // e permite a armadilha de impedimento.
       if (p.pos === "DF") {
         const line = lineX[p.side];
-        const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+        // Historical matches keep their exact legacy behavior (pressing is 0..2).
+        // The v2 opponent opts into a deterministic, bounded coordinated trap.
+        const trap = setup.tacticalAiRevision === 2
+          ? coordinatedOffsideTrap({
+              pressing: setup.tactics.pressing,
+              ballX: bx,
+              defenderLineX: line,
+              attackDirection: dir,
+              minute: sim.minute(),
+              scoreDifference: sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
+            })
+          : setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
         tx = tx * 0.35 + (line + trap) * 0.65;
         // marcação por zona: cobre o adversário mais perigoso da sua faixa
         let markZ: number | null = null;
@@ -265,6 +281,17 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
       // perdendo no fim: a equipe inteira sobe para pressionar
       tx += push * 7 * dir;
+      if (setup.tacticalAiRevision === 2) {
+        const cover = coordinatedDefensiveCover({
+          ballZ: bz, targetZ: tz, stamina: p.stamina, pressing: setup.tactics.pressing,
+          minute: sim.minute(),
+          scoreDifference: sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
+          attackDirection: dir,
+        });
+        tx += cover.forward;
+        tz += cover.lateral;
+        sprint = Math.max(sprint, cover.sprint);
+      }
     } else {
       // Movimento sem bola de verdade, em vez de balanço aleatório:
       // atacante ataca as costas da linha, ponta corta para dentro,
