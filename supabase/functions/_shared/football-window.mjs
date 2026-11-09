@@ -6,7 +6,7 @@ export function footballWindowBudget(configuredLanes, pilot) {
     lanes,
     // Twenty provider requests per second is the Custom450 burst ceiling.
     // The database remains the shared authority across overlapping workers.
-    spacingMs: Math.max(100, Math.ceil(800 / lanes)),
+    spacingMs: Math.max(110, Math.ceil(800 / lanes)),
     // One 40-second worker window, without raising provider/global quotas.
     maxRequests: Math.min(880, lanes * 50),
   };
