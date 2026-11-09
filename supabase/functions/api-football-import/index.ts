@@ -96,7 +96,7 @@ Deno.serve(async (request: Request) => {
     if (!settings.apiKey) return reply(409, { error: "queue_not_configured" });
     if (!adminToken && (!settings.enabled || Date.parse(settings.nextRunAt) > Date.now()))
       return reply(200, { paused: true });
-    const deadline = Date.now() + 45000,
+    const deadline = Date.now() + 53000,
       summary = {
         completed: 0,
         failed: 0,
