@@ -72,4 +72,5 @@ it("keeps the full catalog and named player rosters out of quick-match startup",
   expect(startupSources).not.toContain("src/game/data/leagues.ts");
   expect(startupSources).not.toContain("src/game/data/squads.ts");
   expect(startupSources).not.toContain("src/game/data/names.ts");
+  expect(startupSources).not.toContain("src/lib/official-assets-loader.ts");
 });

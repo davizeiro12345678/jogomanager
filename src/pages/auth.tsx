@@ -21,13 +21,13 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  lovableOAuthProvider,
   socialOAuthOptions,
   socialProviderLabel,
   type SocialProvider,
 } from "@/integrations/supabase/social-auth";
 
 import { authCallbackErrorMessage, authErrorMessage, type AuthMode } from "@/lib/auth-policy";
+import { oauthTransport, socialAuthErrorMessage, usesLovableOAuth } from "@/lib/auth-transport";
 
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 
@@ -78,9 +78,10 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
-  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
+  // The independent Supabase path is the default. Managed broker credentials
+  // remain opt-in; direct OAuth requires providers configured in this project.
+  const authTransportMode = import.meta.env["VITE_AUTH_MODE"];
+  const brokeredOAuth = usesLovableOAuth(authTransportMode);
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
@@ -288,10 +289,10 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
-      const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
-      if (brokerProvider) {
+      const transport = oauthTransport(authTransportMode, provider);
+      if (transport.kind === "lovable") {
         const { lovable } = await import("@/integrations/lovable/index");
-        const result = await lovable.auth.signInWithOAuth(brokerProvider, {
+        const result = await lovable.auth.signInWithOAuth(transport.provider, {
           redirect_uri: callback(),
         });
         if (result.error) throw result.error;
@@ -304,13 +305,13 @@ export function AuthPage() {
         }
       } else {
         const result = await supabase.auth.signInWithOAuth({
-          provider,
+          provider: transport.provider,
           options: socialOAuthOptions(provider, callback()),
         });
         if (result.error) throw result.error;
       }
     } catch (cause) {
-      setError(authErrorMessage(cause, mode));
+      setError(socialAuthErrorMessage(cause, mode));
     } finally {
       setBusy(false);
     }
@@ -512,7 +513,7 @@ export function AuthPage() {
               </Button>
             </div>
           )}
-          {(mode === "in" || mode === "up") && (
+          {brokeredOAuth && (mode === "in" || mode === "up") && (
             <button
               type="button"
               disabled={busy}

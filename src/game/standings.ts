@@ -9,14 +9,15 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     if (group.length < 2) return group;
     const criterion = remaining[0];
     if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
-    const ids = new Set(group.map((r) => r.clubId));
-    const head = new Map(group.map((r) => [r.clubId, 0]));
+    let head: Map<string, number> | undefined;
     if (criterion === "headToHead") {
       // A CBF só aplica confronto direto quando restam duas associações empatadas.
       if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const ids = new Set(group.map((r) => r.clubId));
       const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
       if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
         return split(group, remaining.slice(1));
+      head = new Map(group.map((r) => [r.clubId, 0]));
       for (const f of meetings) {
         head.set(
           f.home,
@@ -38,7 +39,7 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
           : criterion === "goalsFor"
             ? r.gf
             : criterion === "headToHead"
-              ? head.get(r.clubId)!
+              ? head!.get(r.clubId)!
               : -fixtures.reduce(
                   (cards, f) =>
                     cards +

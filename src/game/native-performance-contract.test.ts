@@ -32,19 +32,25 @@ describe("native fixed-quality acceptance", () => {
       { adaptive: true },
       { quality: "baixa" },
       { gpuRenderer: "SwiftShader" },
+      { gpuRenderer: "Disabled" },
+      { gpuRenderer: "Unknown renderer" },
       { gpuRenderer: null },
       { interruptions: 1 },
       { complete: false },
       { warmupMs: 0 },
       { fps: NaN },
       { fps: 44 },
+      { fps: 59.99 },
+      { onePercentLow: 49.99 },
+      { onePercentLow: NaN },
+      { p95: 20.01 },
       { p95: 29 },
     ]) {
       expect(assessNativePerformance({ ...valid, ...change }).passes).toBe(false);
     }
   });
-  it("separates the approved 45 FPS gate from the optional 69 FPS campaign", () => {
-    const normal = assessNativePerformance({ ...valid, fps: 45, p95: 28, onePercentLow: 32 });
+  it("requires 60 FPS and stable lows separately from the optional 69 FPS campaign", () => {
+    const normal = assessNativePerformance({ ...valid, fps: 60, p95: 20, onePercentLow: 50 });
     expect(normal.passes).toBe(true);
     expect(normal.stretch.passes).toBe(false);
     expect(assessNativePerformance(valid).stretch.passes).toBe(true);

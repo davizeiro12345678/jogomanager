@@ -18,27 +18,44 @@ function tone(v: number) {
 export function FpsPanel({
   quality,
   detail,
+  active = true,
+  source = "raf",
+  measurementKey = quality,
+  phase = "match",
 }: {
   quality: string;
   detail?: Record<string, string | number>;
+  active?: boolean;
+  source?: "raf" | "rendered";
+  measurementKey?: string;
+  phase?: string;
 }) {
-  const [sample, setSample] = useState<FpsSample>(EMPTY);
+  const epoch = `${source}:${measurementKey}:${active}`;
+  const [measured, setMeasured] = useState({ epoch: "", sample: EMPTY });
+  const sample = active && measured.epoch === epoch ? measured.sample : EMPTY;
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const detailRef = useRef(detail);
   detailRef.current = detail;
 
   useEffect(() => {
-    fpsMeter.start();
-    const off = fpsMeter.subscribe(setSample);
+    fpsMeter.stop();
+    fpsMeter.reset();
+    if (!active) return;
+    const off = fpsMeter.subscribe((next) => setMeasured({ epoch, sample: next }));
+    fpsMeter.start(source, { key: measurementKey, phase, quality });
     return () => {
       off();
       fpsMeter.stop();
     };
-  }, []);
+  }, [active, source, measurementKey, phase, quality, epoch]);
 
   async function copy() {
-    const text = fpsReport(sample, { "Nível gráfico": quality, ...(detailRef.current ?? {}) });
+    const text = fpsReport(sample, {
+      "Nível gráfico": sample.quality ?? quality,
+      Fase: sample.phase ?? phase,
+      ...(detailRef.current ?? {}),
+    });
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -70,10 +87,17 @@ export function FpsPanel({
             <strong className={tone(sample.worst)}>{sample.worst || "--"}</strong> · 1% piores{" "}
             <strong className={tone(sample.low1)}>{sample.low1 || "--"}</strong>
           </p>
-          <p className="text-white/50">Medindo há {sample.seconds}s no seu aparelho.</p>
+          <p className="text-white/50">
+            {active
+              ? source === "rendered"
+                ? `${sample.seconds}s de quadros do estádio · ${sample.quality ?? quality}`
+                : `${sample.seconds}s de ritmo do navegador (RAF)`
+              : "Medição suspensa fora da partida ativa."}
+          </p>
           <button
             type="button"
             onClick={() => void copy()}
+            disabled={!active || !sample.frames}
             className="mt-1 flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
           >
             {copied ? <Check size={12} aria-hidden /> : <Copy size={12} aria-hidden />}

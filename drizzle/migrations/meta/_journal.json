@@ -435,6 +435,20 @@
       "when": 1794148523000,
       "tag": "0062_room_chat_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1794178800000,
+      "tag": "0063_support_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1794178801000,
+      "tag": "0064_room_chat_admission",
+      "breakpoints": true
     }
   ]
 }

@@ -58,11 +58,16 @@ export class FrameMetrics {
     for (let index = count - slowCount; index < count && index >= 0; index += 1)
       slowTotal += sorted[index]!;
     const slowMean = count ? slowTotal / slowCount : 0;
+    const pointOneCount = Math.max(1, Math.ceil(count * 0.001));
+    let pointOneTotal = 0;
+    for (let index = count - pointOneCount; index < count && index >= 0; index += 1)
+      pointOneTotal += sorted[index]!;
     return {
       frames: count,
       meanMs,
       fps: meanMs ? 1000 / meanMs : 0,
       onePercentLow: slowMean ? 1000 / slowMean : 0,
+      pointOnePercentLow: pointOneTotal ? (1000 * pointOneCount) / pointOneTotal : 0,
       p50: percentile(0.5),
       p95: percentile(0.95),
       p99: percentile(0.99),

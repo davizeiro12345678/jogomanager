@@ -1,13 +1,14 @@
 type CacheOptions = {
   ttlMs: number;
   maxEntries: number;
+  /** Retry a stalled loader without caching its pending promise forever. */
+  maxPendingMs?: number;
   now?: () => number;
 };
 
 type Entry<T> = {
   promise: Promise<T>;
   expiresAt: number;
-  pending: boolean;
 };
 
 /**
@@ -15,8 +16,20 @@ type Entry<T> = {
  * permissions, balances and provider credentials must never enter this cache.
  * Both settled values and pending requests count towards its fixed capacity.
  */
-export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: CacheOptions) {
-  if (!Number.isFinite(ttlMs) || ttlMs <= 0 || !Number.isInteger(maxEntries) || maxEntries < 1)
+export function createPublicReadCache<T>({
+  ttlMs,
+  maxEntries,
+  maxPendingMs = 30_000,
+  now = Date.now,
+}: CacheOptions) {
+  if (
+    !Number.isFinite(ttlMs) ||
+    ttlMs <= 0 ||
+    !Number.isInteger(maxEntries) ||
+    maxEntries < 1 ||
+    !Number.isFinite(maxPendingMs) ||
+    maxPendingMs <= 0
+  )
     throw new Error("Invalid public cache capacity or freshness.");
   const entries = new Map<string, Entry<T>>();
 
@@ -26,7 +39,7 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
     },
     get(key: string, load: () => Promise<T>): Promise<T> {
       const previous = entries.get(key);
-      if (previous && (previous.pending || previous.expiresAt > now())) {
+      if (previous && previous.expiresAt > now()) {
         entries.delete(key);
         entries.set(key, previous);
         return previous.promise;
@@ -35,8 +48,9 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
       while (entries.size >= maxEntries) entries.delete(entries.keys().next().value!);
 
       const entry: Entry<T> = {
-        pending: true,
-        expiresAt: 0,
+        // A pending request has its own bounded lifetime. The value's TTL
+        // still starts on completion; expiration does not cancel old callers.
+        expiresAt: now() + maxPendingMs,
         promise: Promise.resolve().then(load),
       };
       entry.promise = entry.promise.then(
@@ -44,7 +58,6 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
           // A late request must not resurrect an evicted key or replace a
           // newer request for the same key after capacity eviction.
           if (entries.get(key) === entry) {
-            entry.pending = false;
             entry.expiresAt = now() + ttlMs;
           }
           return value;

@@ -42,6 +42,19 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   const output = new Float32Array(rigSectionVertexCount(input) * 5);
   const bottom = rings[0]!;
   const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
+  // All rings share the same angular profile. Keep it in Float64 until the
+  // final vertex write so the packed Float32 geometry stays byte-identical.
+  const angular = new Float64Array((radial + 1) * 3);
+  for (let side = 0; side <= radial; side++) {
+    const u = side / radial;
+    const angle = u * Math.PI * 2;
+    const sine = Math.sin(angle);
+    const cosine = Math.cos(angle);
+    const offset = side * 3;
+    angular[offset] = Math.sign(sine) * Math.abs(sine) ** roundness;
+    angular[offset + 1] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
+    angular[offset + 2] = u;
+  }
   let cursor = 0;
   // Write to the owned typed buffer directly. Allocating a temporary five-
   // element array for every 3D vertex creates unnecessary GC pressure.
@@ -54,17 +67,16 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   };
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;
+    const y = rings[offset]!;
+    const v = (y - bottom) / span;
     for (let side = 0; side <= radial; side++) {
-      const u = side / radial;
-      const angle = u * Math.PI * 2;
-      const sine = Math.sin(angle);
-      const cosine = Math.cos(angle);
+      const angularOffset = side * 3;
       write(
-        Math.sign(sine) * Math.abs(sine) ** roundness * rings[offset + 1]!,
-        rings[offset]!,
-        Math.sign(cosine) * Math.abs(cosine) ** roundness * rings[offset + 2]! + rings[offset + 3]!,
-        u,
-        (rings[offset]! - bottom) / span,
+        angular[angularOffset]! * rings[offset + 1]!,
+        y,
+        angular[angularOffset + 1]! * rings[offset + 2]! + rings[offset + 3]!,
+        angular[angularOffset + 2]!,
+        v,
       );
     }
   }
@@ -93,16 +105,21 @@ export function rigSectionIndices(input: RigSectionInput): Uint32Array {
     for (let side = 0; side < radial; side++) {
       const a = row * (radial + 1) + side;
       const b = a + radial + 1;
-      output.set([a, a + 1, b, a + 1, b + 1, b], cursor);
-      cursor += 6;
+      output[cursor++] = a;
+      output[cursor++] = a + 1;
+      output[cursor++] = b;
+      output[cursor++] = a + 1;
+      output[cursor++] = b + 1;
+      output[cursor++] = b;
     }
   let center = rows * (radial + 1);
   for (const mask of [1, 2])
     if (caps & mask) {
       for (let side = 0; side < radial; side++) {
         const a = center + 1 + side;
-        output.set([center, mask === 1 ? a + 1 : a, mask === 1 ? a : a + 1], cursor);
-        cursor += 3;
+        output[cursor++] = center;
+        output[cursor++] = mask === 1 ? a + 1 : a;
+        output[cursor++] = mask === 1 ? a : a + 1;
       }
       center += radial + 2;
     }

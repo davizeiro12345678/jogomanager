@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useId, useRef, useState } from "react";
+import { lazy, Suspense, useId, useMemo, useRef, useState } from "react";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Crest } from "@/components/game/Crest";
@@ -34,6 +34,21 @@ export function QuickMatchPage() {
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState(false);
   const catalogRequest = useRef(0);
+  // Directory identities are immutable. Difficulty/club selection must not
+  // rebuild and sort every league option or recreate ICU's collator.
+  const leagueGroups = useMemo(() => {
+    const countryCompare = new Intl.Collator(lang).compare;
+    const groups = QUICK_MATCH_LEAGUE_DIRECTORY.reduce<Record<string, QuickMatchLeagueSummary[]>>(
+      (grouped, entry) => {
+        (grouped[entry.country] ??= []).push(entry);
+        return grouped;
+      },
+      {},
+    );
+    return Object.entries(groups).sort(([a], [b]) =>
+      a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b),
+    );
+  }, [lang]);
 
   async function chooseLeague(id: string) {
     const request = ++catalogRequest.current;
@@ -116,14 +131,6 @@ export function QuickMatchPage() {
     );
   }
 
-  // One collator per render avoids ICU setup for every comparison.
-  const countryCompare = new Intl.Collator(lang).compare;
-  const leagueGroups = QUICK_MATCH_LEAGUE_DIRECTORY.reduce<
-    Record<string, QuickMatchLeagueSummary[]>
-  >((groups, entry) => {
-    (groups[entry.country] ??= []).push(entry);
-    return groups;
-  }, {});
   const selectedLeagueSummary =
     QUICK_MATCH_LEAGUE_DIRECTORY.find((entry) => entry.id === leagueId) ?? league;
 
@@ -159,17 +166,15 @@ export function QuickMatchPage() {
             disabled={catalogLoading}
             className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {Object.entries(leagueGroups)
-              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
-              .map(([country, leagues]) => (
-                <optgroup key={country} label={country}>
-                  {leagues.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+            {leagueGroups.map(([country, leagues]) => (
+              <optgroup key={country} label={country}>
+                {leagues.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </div>
 
@@ -289,7 +294,7 @@ function TeamPicker({
         <label htmlFor={pickerId}>{title}</label>
       </h2>
       <div className="mt-3 flex items-center gap-3">
-        <Crest club={selected} size={44} detail="full" />
+        <Crest club={selected} size={44} detail="full" loading="idle" />
         <span className="font-display text-lg">{selected.name}</span>
         <span
           className="ml-auto rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-xs tabular-nums text-primary"

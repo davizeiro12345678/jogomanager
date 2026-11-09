@@ -27,6 +27,7 @@ import {
 import { getLeague, LEAGUES } from "@/game/data/leagues";
 
 import { initCareer } from "@/game/career";
+import { careerCountryIdentity, careerCountryOptions } from "@/game/career-country-options";
 
 import {
   createManagerProfile,
@@ -34,12 +35,7 @@ import {
   DEFAULT_MANAGER_LOOK,
 } from "@/game/manager-profile";
 
-import {
-  discoverClubs,
-  searchKey,
-  type CareerChallenge,
-  type ClubDiscovery,
-} from "@/game/club-discovery";
+import { discoverClubs, type CareerChallenge, type ClubDiscovery } from "@/game/club-discovery";
 
 import { Crest } from "@/components/game/Crest";
 
@@ -197,18 +193,11 @@ export function NewCareer() {
   }, [step, selected]);
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
-  const countryOptions = useMemo(() => {
-    const unique = [...new Map(catalog.map((league) => [league.country, league])).values()];
-    return unique
-      .filter((league) => searchKey(league.country).includes(searchKey(countryQuery)))
-      .sort((a, b) =>
-        a.country === "Brasil"
-          ? -1
-          : b.country === "Brasil"
-            ? 1
-            : a.country.localeCompare(b.country, "pt-BR"),
-      );
-  }, [countryQuery, catalog]);
+  const countryOptions = useMemo(
+    () => careerCountryOptions(catalog, countryQuery),
+    [countryQuery, catalog],
+  );
+  const selectedCountryIdentity = careerCountryIdentity(getLeague(country), catalog);
   const clubs = useMemo(
     () =>
       step !== 3
@@ -498,7 +487,7 @@ export function NewCareer() {
                     {countryOptions.map((league) => (
                       <Chip
                         key={league.id}
-                        active={getLeague(country).country === league.country}
+                        active={selectedCountryIdentity === careerCountryIdentity(league, catalog)}
                         onClick={() => setCountry(league.id)}
                       >
                         <Flag league={league.id} country={league.country} size={14} />

@@ -32,6 +32,7 @@ describe("FrameMetrics", () => {
     metrics.add(100);
     metrics.add(300);
     expect(metrics.summary().onePercentLow).toBe(5);
+    expect(metrics.summary().pointOnePercentLow).toBeCloseTo(1000 / 300, 10);
     expect(metrics.summary().p99).toBe(10);
   });
   it("retains only the newest bounded samples without changing its summary", () => {
@@ -58,5 +59,6 @@ describe("FrameMetrics", () => {
     expect(metrics.summary().stalls).toBe(1);
     metrics.reset();
     expect(metrics.summary().frames).toBe(0);
+    expect(metrics.summary().pointOnePercentLow).toBe(0);
   });
 });

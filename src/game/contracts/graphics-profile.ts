@@ -46,8 +46,8 @@ export const GRAPHICS_PROFILES: Record<GraphicsTier, GraphicsProfileContract> = 
   alta: {
     version: 1,
     id: "alta",
-    targetFps: 45,
-    targetP95FrameMs: 28,
+    targetFps: 60,
+    targetP95FrameMs: 20,
     maxPixelRatio: 1.5,
     shadowMapSize: 2048,
     textureMaxSize: 2048,

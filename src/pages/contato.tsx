@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useState, type ComponentType } from "react";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
@@ -42,6 +43,21 @@ const CHANNELS = [
 ] as const;
 
 export function ContatoPage() {
+  const [SupportForm, setSupportForm] = useState<ComponentType | null>(null);
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportError, setSupportError] = useState(false);
+  async function openSupport() {
+    setSupportLoading(true);
+    setSupportError(false);
+    try {
+      const form = await import("@/lib/support-form");
+      setSupportForm(() => form.default);
+    } catch {
+      setSupportError(true);
+    } finally {
+      setSupportLoading(false);
+    }
+  }
   return (
     <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-3xl">
@@ -54,8 +70,38 @@ export function ContatoPage() {
         <p className="mt-3 text-muted-foreground">
           A equipe do Pro Football Manager 3D responde por estes canais. Escolha o assunto para
           chegar mais rápido a quem resolve. Página atualizada em{" "}
-          <time dateTime="2026-10-12">12 de outubro de 2026</time>.
+          <time dateTime="2026-11-08">8 de novembro de 2026</time>.
         </p>
+
+        <section
+          className="surface-card mt-6 rounded-xl border border-border/60 p-5"
+          aria-labelledby="support-title"
+        >
+          <h2 id="support-title" className="font-display text-xl uppercase">
+            Enviar solicitação ao suporte
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Descreva o problema para encaminhá-lo ao atendimento e receber um protocolo de entrega.
+            Os contatos por e-mail continuam disponíveis para quem não consegue entrar na conta.
+          </p>
+          {SupportForm ? (
+            <SupportForm />
+          ) : (
+            <button
+              type="button"
+              onClick={() => void openSupport()}
+              disabled={supportLoading}
+              className="mt-4 min-h-11 rounded-lg border border-primary/40 px-4 text-sm text-primary disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              {supportLoading ? "Abrindo formulário…" : "Abrir formulário de suporte"}
+            </button>
+          )}
+          {supportError && (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              Não foi possível abrir o formulário. Tente novamente ou utilize os contatos abaixo.
+            </p>
+          )}
+        </section>
 
         <section className="surface-card mt-6 rounded-xl border border-primary/30 p-5">
           <h2 className="font-display text-xl uppercase">Contatos oficiais e comunidade</h2>
@@ -136,6 +182,16 @@ export function ContatoPage() {
           verificação ou dados completos do cartão. Desconfie de qualquer solicitação desse tipo em
           nome do jogo.
         </p>
+
+        <address className="mt-6 text-sm not-italic text-muted-foreground">
+          <span className="font-medium text-foreground">
+            Criador e desenvolvedor: {CREATOR.name}
+          </span>
+          <br />
+          Av. Hugo Viola, 351 - Jardim da Penha, Vitória - ES, 29065-475
+          <br />
+          CPF: 170.312.897-42
+        </address>
 
         <PublicLinks exclude={PATH} />
         <SiteFooter path={PATH} />

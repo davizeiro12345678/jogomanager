@@ -85,6 +85,14 @@ export function SobrePage() {
             {CREATOR.role.toLowerCase()}. Bastidores, novidades e vídeos das partidas saem no canal
             do YouTube.
           </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            O projeto foi criado em Vitória, Espírito Santo, Brasil.
+          </p>
+          <address className="mt-3 text-sm not-italic leading-relaxed text-muted-foreground">
+            Av. Hugo Viola, 351 - Jardim da Penha, Vitória - ES, 29065-475
+            <br />
+            CPF do criador: 170.312.897-42
+          </address>
           <p className="mt-3 flex flex-wrap gap-3 text-sm">
             <a
               href={CREATOR.youtube}

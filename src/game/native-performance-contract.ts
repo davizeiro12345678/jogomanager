@@ -57,12 +57,16 @@ export function assessNativePerformance(sample: {
     reasons.push("quality-contract-mismatch");
   if (
     !sample.gpuRenderer ||
-    /swiftshader|llvmpipe|softpipe|lavapipe|software|basic render/i.test(sample.gpuRenderer)
+    /swiftshader|llvmpipe|softpipe|lavapipe|software|basic render|disabled|unavailable|unknown|microsoft warp/i.test(
+      sample.gpuRenderer,
+    )
   )
     reasons.push("native-gpu-unverified");
-  if (!Number.isFinite(sample.fps) || sample.fps < 45) reasons.push("mean-fps-below-45");
-  if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 28)
-    reasons.push("p95-above-28ms");
+  if (!Number.isFinite(sample.fps) || sample.fps < 60) reasons.push("mean-fps-below-60");
+  if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 20)
+    reasons.push("p95-above-20ms");
+  if (!Number.isFinite(sample.onePercentLow) || sample.onePercentLow < 50)
+    reasons.push("one-percent-low-below-50");
   const stretchReasons = [...reasons];
   if (sample.warmupMs < 60000 || sample.measurementMs < 300000)
     stretchReasons.push("extended-protocol-incomplete");
@@ -72,7 +76,15 @@ export function assessNativePerformance(sample: {
   if (!Number.isFinite(sample.onePercentLow) || sample.onePercentLow < 50)
     stretchReasons.push("one-percent-low-below-50");
   return {
-    target: { quality: "alta", width: 1280, height: 720, dpr: 1, fps: 45, p95Ms: 28 },
+    target: {
+      quality: "alta",
+      width: 1280,
+      height: 720,
+      dpr: 1,
+      fps: 60,
+      p95Ms: 20,
+      onePercentLow: 50,
+    },
     passes: reasons.length === 0,
     reasons,
     stretch: { targetFps: 69, passes: stretchReasons.length === 0, reasons: stretchReasons },

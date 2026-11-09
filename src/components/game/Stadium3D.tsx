@@ -23,6 +23,9 @@ import type { SimView } from "@/game/sim-contracts";
 import { FIELD_Z } from "@/game/sim-rules";
 import { useResolvedVisual } from "@/game/visual-settings";
 import { FpsMeter, type FpsSample } from "./stadium/StadiumFpsMeter";
+import { RenderedFrameBridge } from "./stadium/RenderedFrameBridge";
+import type { RenderedFrameSample } from "./graphics-probe";
+import type { FpsMeasurementContext } from "@/game/fps-meter";
 import { StadiumScene } from "./stadium/StadiumScene";
 
 export type { CameraMode } from "@/game/camera-modes";
@@ -38,6 +41,8 @@ function Stadium3DImpl({
   supporters,
   paused = false,
   onFirstFrame,
+  onRenderedFrame,
+  measurementKey,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -46,6 +51,9 @@ function Stadium3DImpl({
   paused?: boolean;
   supporters?: SupporterMatchday | undefined;
   onFirstFrame?: (() => void) | undefined;
+  onRenderedFrame?:
+    ((frame: RenderedFrameSample, context: FpsMeasurementContext) => void) | undefined;
+  measurementKey?: string;
 }) {
   const vis = useResolvedVisual(sim.home.clubId);
   const startedAt = useRef(performance.now());
@@ -111,6 +119,23 @@ function Stadium3DImpl({
     pixelRatio === undefined
       ? dpr
       : Math.min(GRAPHICS_PROFILES[quality].maxPixelRatio, Math.max(0.6, pixelRatio));
+  const renderMeasurementKey = JSON.stringify({
+    match: measurementKey ?? `${sim.home.clubId}:${sim.away.clubId}`,
+    quality: sceneTier,
+    camera: mode,
+    look,
+    adaptive: vis.adaptive,
+    pressure,
+    resolutionScale: vis.resolutionScale,
+    shadows: shadowsOn,
+    postFx: vis.postFx,
+    postIntensity: vis.postIntensity,
+    textureDetail: vis.textureDetail,
+    playerDetail: vis.playerDetail,
+    particles: vis.particles,
+    grassDensity: vis.grassDensity,
+    crowdDensity: vis.crowdDensity,
+  });
 
   // Backend gráfico: WebGPU quando o aparelho suporta, senão WebGL2.
   // A detecção acontece uma vez, antes de montar o palco, para não recriar
@@ -218,6 +243,17 @@ function Stadium3DImpl({
         >
           <CanvasLifecycle onStatus={(status) => setRendererReady(status === "ready")} />
           <MobileFramebufferBudget tier={sceneTier} requested={requestedDpr} />
+          {onRenderedFrame && !paused ? (
+            <RenderedFrameBridge
+              onFrame={onRenderedFrame}
+              context={{
+                key: renderMeasurementKey,
+                phase: "match",
+                quality: sceneTier,
+                camera: mode,
+              }}
+            />
+          ) : null}
           <FirstMatchFrame
             startedAt={startedAt.current}
             quality={quality}
@@ -248,11 +284,16 @@ function Stadium3DImpl({
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>
           {vis.showFps && !paused ? (
-            <FpsMeter onSample={setFps} backend={backend} quality={eff} />
+            <FpsMeter
+              key={renderMeasurementKey}
+              onSample={(sample) => setFps({ ...sample, measurementKey: renderMeasurementKey })}
+              backend={backend}
+              quality={eff}
+            />
           ) : null}
         </Canvas>
       </GraphicsBoundary>
-      {vis.showFps && fps ? (
+      {vis.showFps && !paused && fps?.measurementKey === renderMeasurementKey ? (
         <div className="pointer-events-none absolute left-2 top-2 rounded-lg bg-black/55 px-2 py-1 font-mono text-[10px] leading-tight text-white/85">
           <span className="text-white">{Math.round(fps.fps)} fps</span>
           <span className="ml-2 text-white/60">med {Math.round(fps.avg)}</span>

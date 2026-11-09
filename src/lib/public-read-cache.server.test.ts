@@ -93,6 +93,34 @@ describe("bounded public data cache", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
+  it("allows retry after a pending load stalls without letting its late result poison the cache", async () => {
+    let now = 0;
+    const cache = createPublicReadCache<number>({
+      ttlMs: 1_000,
+      maxEntries: 2,
+      maxPendingMs: 100,
+      now: () => now,
+    });
+    const stalled = deferred<number>();
+    const first = cache.get("league:71", () => stalled.promise);
+    now = 99;
+    expect(cache.get("league:71", async () => 2)).toBe(first);
+    now = 100;
+    const retry = cache.get("league:71", async () => 2);
+    expect(retry).not.toBe(first);
+    expect(await retry).toBe(2);
+    stalled.resolve(1);
+    expect(await first).toBe(1);
+    expect(await cache.get("league:71", async () => 3)).toBe(2);
+    expect(cache.size).toBe(1);
+  });
+
+  it.each([0, -1, NaN, Infinity])("rejects invalid pending load lifetime %s", (maxPendingMs) => {
+    expect(() => createPublicReadCache({ ttlMs: 1_000, maxEntries: 2, maxPendingMs })).toThrow(
+      /capacity or freshness/,
+    );
+  });
+
   it("shares the error from one failed concurrent load and then retries", async () => {
     const cache = createPublicReadCache<number>({ ttlMs: 60_000, maxEntries: 2 });
     const upstream = deferred<number>();
