@@ -316,13 +316,15 @@ test("SportsDB rejects a partial Cloudflare Access credential configuration befo
 test("API-Football bounds scheduled work and keeps the manual pilot single-lane", () => {
   assert.deepEqual(footballWindowBudget("3", false), {
     lanes: 3,
-    spacingMs: 350,
-    maxRequests: 120,
+    spacingMs: 267,
+    maxRequests: 150,
   });
   const custom = footballWindowBudget("999", false);
   assert.equal(custom.lanes, 16);
-  assert.ok(custom.spacingMs >= 55);
-  assert.ok(custom.maxRequests * 1440 >= 445000);
+  assert.equal(custom.spacingMs, 50);
+  assert.equal(custom.maxRequests, 800);
+  assert.ok(custom.maxRequests * 1440 >= 450000);
+  assert.equal(footballWindowBudget("1", false).spacingMs, 800);
   assert.equal(footballWindowBudget("16", true).lanes, 1);
   assert.equal(footballWindowBudget("invalid", false).lanes, 1);
 });

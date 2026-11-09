@@ -4,8 +4,11 @@ export function footballWindowBudget(configuredLanes, pilot) {
   const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(16, parsed);
   return {
     lanes,
-    spacingMs: Math.max(55, Math.ceil(1050 / lanes)),
-    maxRequests: lanes * 40,
+    // Twenty provider requests per second is the Custom450 burst ceiling.
+    // The database remains the shared authority across overlapping workers.
+    spacingMs: Math.max(50, Math.ceil(800 / lanes)),
+    // One 40-second worker window, without raising provider/global quotas.
+    maxRequests: lanes * 50,
   };
 }
 
