@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useId, useRef, useState } from "react";
+import { lazy, memo, Suspense, useId, useRef, useState } from "react";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Crest } from "@/components/game/Crest";
@@ -12,8 +12,9 @@ import { loadQuickLive } from "@/game/quick-match-entry";
 import {
   DEFAULT_QUICK_MATCH_LEAGUE,
   preloadQuickMatchCatalog,
+  quickMatchLeagueGroups,
   QUICK_MATCH_LEAGUE_DIRECTORY,
-  type QuickMatchLeagueSummary,
+  type QuickMatchLeagueGroup,
 } from "@/game/quick-match-catalog";
 import { useT } from "@/i18n/provider";
 import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
@@ -116,14 +117,7 @@ export function QuickMatchPage() {
     );
   }
 
-  // One collator per render avoids ICU setup for every comparison.
-  const countryCompare = new Intl.Collator(lang).compare;
-  const leagueGroups = QUICK_MATCH_LEAGUE_DIRECTORY.reduce<
-    Record<string, QuickMatchLeagueSummary[]>
-  >((groups, entry) => {
-    (groups[entry.country] ??= []).push(entry);
-    return groups;
-  }, {});
+  const leagueGroups = quickMatchLeagueGroups(lang);
   const selectedLeagueSummary =
     QUICK_MATCH_LEAGUE_DIRECTORY.find((entry) => entry.id === leagueId) ?? league;
 
@@ -159,17 +153,7 @@ export function QuickMatchPage() {
             disabled={catalogLoading}
             className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {Object.entries(leagueGroups)
-              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
-              .map(([country, leagues]) => (
-                <optgroup key={country} label={country}>
-                  {leagues.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+            <LeagueOptions groups={leagueGroups} />
           </select>
         </div>
 
@@ -304,12 +288,40 @@ function TeamPicker({
         onChange={(event) => onChange(event.currentTarget.value)}
         className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        {clubs.map((club) => (
-          <option key={club.id} value={club.id} disabled={club.id === disabled}>
-            {club.name}
-          </option>
-        ))}
+        <ClubOptions clubs={clubs} disabled={disabled} />
       </select>
     </section>
   );
 }
+
+// The labels do not change with interface language. Reuse the native option
+// subtree while language detection or unrelated selection controls rerender.
+const LeagueOptions = memo(function LeagueOptions({
+  groups,
+}: {
+  groups: readonly QuickMatchLeagueGroup[];
+}) {
+  return groups.map(({ country, leagues }) => (
+    <optgroup key={country} label={country}>
+      {leagues.map((entry) => (
+        <option key={entry.id} value={entry.id}>
+          {entry.name}
+        </option>
+      ))}
+    </optgroup>
+  ));
+});
+
+const ClubOptions = memo(function ClubOptions({
+  clubs,
+  disabled,
+}: {
+  clubs: readonly Club[];
+  disabled: string;
+}) {
+  return clubs.map((club) => (
+    <option key={club.id} value={club.id} disabled={club.id === disabled}>
+      {club.name}
+    </option>
+  ));
+});
