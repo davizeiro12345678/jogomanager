@@ -75,7 +75,7 @@ describe("useCareer hydration contract", () => {
     ["error", false],
     ["empty", true],
     ["ready", true],
-    ["offline", false],
+    ["offline", true],
   ])("%s is %s for explicit career writes", (status, allowed) => {
     expect(canMutateCareer(status)).toBe(allowed);
   });

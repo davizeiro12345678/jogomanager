@@ -1,0 +1,13 @@
+# Atomic multiplayer room creation
+
+`createMatchRoom` now rejects unknown authority fields and club IDs inherited from `Object.prototype`, such as `constructor`. Create, join, kickoff and final replay check own club catalog entries. The authenticated host identity comes from `requireSupabaseAuth`; the browser cannot submit a host ID, room code or simulation seed.
+
+The server generates the code and private seed and calls `create_match_room_for`. Its service-only, `SECURITY INVOKER` PostgreSQL transaction acquires a host advisory lock, checks the quotas, inserts the public room with an empty seed, and inserts the private seed. Failure rolls back both inserts. Code collisions retry at most three times with fresh cryptographic values; missing RPCs fail closed without reverting to separate writes.
+
+Each host can have three active rooms (`open`, `ready`, `live`, `settling`) and create twenty rooms per hour. Indexed predicates bound the normal quota queries. Before checking the quota, the transaction closes at most twenty of that host's empty `open` lobbies whose last update is over thirty minutes old. It locks them with `FOR UPDATE SKIP LOCKED` and deletes private seeds only for the same successfully closed IDs. Joined, ready, live and settling rooms are preserved. Quota outcomes are returned as status rows so cleanup can commit even when more old lobbies still exceed the active quota. The public `createMatchRoom` result shape remains unchanged, with `too_many_rooms` and `rate_limited` reasons for the UI.
+
+The final match score still comes from the existing deterministic server replay and settlement lease. This change hardens creation and input boundaries; it does not introduce a new live multiplayer transport or claim that the separately tested `AuthoritativeMatchSession` class is deployed in that route.
+
+Apply forward Drizzle migration `0065_atomic_match_room_creation.sql` with its preceding migrations before enabling this application revision. The required disposable database replay executes `tests/sql/atomic-match-room-contract.sql`, including active/hourly quotas, private seeds, collision rollback, preservation of old live/joined rooms and the twenty-row expiration limit. Source-level tests exercise the actual server function input boundary and room creator. No test submits a real match to production.
+
+The optional `scripts/verify-local-security.mjs` executes five hundred bounded loopback HTTP cases against the actual parsing, moderation and session modules. Its authentication gate is explicitly synthetic, and it performs no database, webhook or provider writes. It is useful source-contract evidence; it does not certify production authentication, RLS or availability under attack.

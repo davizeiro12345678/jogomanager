@@ -19,6 +19,10 @@ const functionsSource = await readFile(
   "utf8",
 );
 const pageSource = await readFile(new URL("../pages/multiplayer.tsx", import.meta.url), "utf8");
+const liveRoomSource = await readFile(
+  new URL("../features/multiplayer/LiveRoom.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("server-managed multiplayer results", () => {
   it("revokes direct room mutations and keeps the seed table server-only", () => {
@@ -56,10 +60,11 @@ describe("server-managed multiplayer results", () => {
   });
 
   it("uses a public presentation seed and replaces the displayed score with server replay", () => {
-    expect(pageSource).toContain('seed: ["multiplayer-view", room.id].join(":")');
+    expect(liveRoomSource).toContain('seed: ["multiplayer-view", room.id].join(":")');
     expect(pageSource).not.toContain("seed: room.seed");
-    expect(pageSource).toContain("authoritativeResult.current = true");
-    expect(pageSource).toContain(
+    expect(liveRoomSource).not.toContain("seed: room.seed");
+    expect(liveRoomSource).toContain("authoritativeResult.current = true");
+    expect(liveRoomSource).toContain(
       "setSnap({ minute: room.minute, hg: homeGoals, ag: awayGoals, finished: true })",
     );
   });
@@ -70,8 +75,8 @@ describe("server-managed multiplayer results", () => {
     expect(liveRoom).toBeGreaterThanOrEqual(0);
     expect(liveRoom).toBeLessThan(offlineFallback);
     expect(pageSource).toContain("online={online}");
-    expect(pageSource).toContain("controller.pause(document.hidden || !onlineRef.current)");
-    expect(pageSource).toContain("published.current = false;");
+    expect(liveRoomSource).toContain("controller.pause(document.hidden || !onlineRef.current)");
+    expect(liveRoomSource).toContain("published.current = false;");
   });
 
   it("claims a single settling state before replaying and protects that claim from leave", () => {
@@ -156,8 +161,8 @@ describe("server-managed multiplayer results", () => {
     expect(leave).toContain("isSettlementLeaseExpired(room.updated_at)");
     expect(leave).toContain('.eq("status", "settling")');
     expect(leave).toContain('.lt("updated_at", settlementLeaseCutoff())');
-    expect(pageSource).toContain('retryReason === "settling"');
-    expect(pageSource).toContain("MATCH_SETTLEMENT_LEASE_MS + 1000");
+    expect(liveRoomSource).toContain('retryReason === "settling"');
+    expect(liveRoomSource).toContain("MATCH_SETTLEMENT_LEASE_MS + 1000");
     expect(pageSource).toContain("isSettlementLeaseExpired(room.updated_at)");
   });
 });

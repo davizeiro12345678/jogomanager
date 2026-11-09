@@ -59,6 +59,14 @@ export interface AuthoritativeMatchSessionOptions {
 }
 
 const RECONNECT_WINDOW_MS = 60_000;
+const MAX_RECORDED_INVALID_COMMANDS = 128;
+const DEFAULT_COMMAND_LIMITS: Record<MatchCommandKind, CommandRateLimit> = {
+  ready: { limit: 6, windowMs: 10_000 },
+  set_tactics: { limit: 12, windowMs: 10_000 },
+  substitute: { limit: 12, windowMs: 10_000 },
+  forfeit: { limit: 2, windowMs: 10_000 },
+  ack_snapshot: { limit: 120, windowMs: 10_000 },
+};
 
 /**
  * Server-only match coordinator. It accepts narrow, signed commands and
@@ -75,11 +83,12 @@ export class AuthoritativeMatchSession {
   private readonly rateWindows = new Map<string, number[]>();
   private readonly reconnectDeadlines = new Map<MatchSeat, number>();
   private readonly tactics = new Map<MatchSeat, TacticalCommandPayloadV1>();
-  private commandHash = GENESIS_SESSION_HASH;
+  private commandHash: Promise<string> | null = null;
   private tick = 0;
   private revision = 0;
   private receipt: MatchReceiptV1 | null = null;
   private finalizationPromise: Promise<MatchReceiptV1> | null = null;
+  private closing = false;
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
@@ -92,7 +101,7 @@ export class AuthoritativeMatchSession {
     if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
       throw new Error("match tickets must be assigned to their matching seats");
     }
-    this.tickets = { home: options.homeTicket, away: options.awayTicket };
+    this.tickets = { home: { ...options.homeTicket }, away: { ...options.awayTicket } };
   }
 
   connect(ticket: MatchTicketV1, now: number): MatchSeat {
@@ -105,7 +114,7 @@ export class AuthoritativeMatchSession {
 
   disconnect(userId: string, now: number): void {
     const seat = this.seatForUser(userId);
-    if (!seat || this.phase === "finalized") return;
+    if (!seat || this.closing || this.phase === "finalized") return;
     this.connected.delete(userId);
     this.reconnectDeadlines.set(seat, now + RECONNECT_WINDOW_MS);
     this.phase = "reconnecting";
@@ -116,8 +125,10 @@ export class AuthoritativeMatchSession {
     command: MatchCommandV1,
     now: number,
   ): Promise<MatchCommandOutcome> {
+    this.assertBoundTicket(ticket, now);
+    if (this.closing || this.receipt)
+      return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     const seat = this.connect(ticket, now);
-    if (this.receipt) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     if (command.roomId !== this.options.roomId) {
       return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     }
@@ -157,12 +168,20 @@ export class AuthoritativeMatchSession {
 
     if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     this.lastSequence.set(ticket.userId, command.sequence);
-    this.commandHash = (await appendCommandHash(this.commandHash, command)).hash;
+    // Reserve the next hash link synchronously. Web Crypto yields, so two
+    // commands must never hash independently from the same previous digest.
+    const nextHash = (this.commandHash ?? Promise.resolve(GENESIS_SESSION_HASH)).then(
+      async (previousHash) => (await appendCommandHash(previousHash, command)).hash,
+    );
+    this.commandHash = nextHash;
+    // A forfeit closes input immediately, before its asynchronous hash/signature.
     if (closureReason) await this.finalize(closureReason, now, seat);
+    else await nextHash;
     return { accepted: true };
   }
 
   advanceFixedTick(): void {
+    if (this.closing) return;
     if (this.phase !== "live" && this.phase !== "reconnecting") return;
     this.options.engine.advanceFixedStep();
     this.tick += 1;
@@ -199,6 +218,7 @@ export class AuthoritativeMatchSession {
     loser?: MatchSeat,
   ): Promise<MatchReceiptV1> {
     if (this.receipt) return this.receipt;
+    this.closing = true;
     const finalizationPromise =
       this.finalizationPromise ??
       (this.finalizationPromise = (async () => {
@@ -206,7 +226,7 @@ export class AuthoritativeMatchSession {
           version: MATCH_PROTOCOL_VERSION,
           roomId: this.options.roomId,
           simulationVersion: this.options.simulationVersion,
-          commandHash: this.commandHash,
+          commandHash: this.commandHash ? await this.commandHash : GENESIS_SESSION_HASH,
           result: this.options.engine.finalResult(loser),
           closureReason,
           idempotencyKey: this.options.idempotencyKey,
@@ -235,6 +255,9 @@ export class AuthoritativeMatchSession {
     const expected = this.tickets[ticket.seat];
     if (
       ticket.userId !== expected.userId ||
+      ticket.version !== expected.version ||
+      ticket.issuedAt !== expected.issuedAt ||
+      ticket.expiresAt !== expected.expiresAt ||
       ticket.nonce !== expected.nonce ||
       ticket.signature !== expected.signature
     ) {
@@ -249,7 +272,7 @@ export class AuthoritativeMatchSession {
   }
 
   private refreshPhase(): void {
-    if (this.phase === "finalized") return;
+    if (this.closing || this.phase === "finalized") return;
     if (this.connected.size === 2 && this.readySeats.size === 2) {
       this.phase = "live";
       return;
@@ -263,13 +286,17 @@ export class AuthoritativeMatchSession {
     reason: InvalidMatchCommand["reason"],
     at: number,
   ): MatchCommandOutcome {
+    if (this.invalidAttempts.length >= MAX_RECORDED_INVALID_COMMANDS)
+      this.invalidAttempts.splice(
+        0,
+        this.invalidAttempts.length - MAX_RECORDED_INVALID_COMMANDS + 1,
+      );
     this.invalidAttempts.push({ userId, sequence, reason, at });
     return { accepted: false, reason };
   }
 
   private reserveRateWindow(userId: string, kind: MatchCommandKind, now: number): boolean {
-    const limit = this.options.commandLimits?.[kind];
-    if (!limit) return true;
+    const limit = this.options.commandLimits?.[kind] ?? DEFAULT_COMMAND_LIMITS[kind];
     if (limit.limit < 1 || limit.windowMs < 1) return false;
     const key = `${userId}:${kind}`;
     const liveEntries = (this.rateWindows.get(key) ?? []).filter((at) => now - at < limit.windowMs);

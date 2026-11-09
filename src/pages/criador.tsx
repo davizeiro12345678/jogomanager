@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 
 import { CreatorStory } from "@/components/creator/CreatorStory";
+import { CreatorDetails } from "@/components/creator/CreatorDetails";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 
@@ -33,6 +34,7 @@ export function Page() {
       </section>
 
       <CreatorStory />
+      <CreatorDetails />
 
       <section className="mt-10 rounded-2xl border border-border/60 surface-card p-5">
         <h2 className="font-display text-xl uppercase">Fale com o criador</h2>

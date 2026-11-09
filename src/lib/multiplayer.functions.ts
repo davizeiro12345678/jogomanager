@@ -17,8 +17,6 @@ import {
   settlementLeaseCutoff,
 } from "@/lib/multiplayer-settlement";
 
-const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
 export interface MultiplayerRoomRecord {
   id: string;
   code: string;
@@ -40,56 +38,32 @@ export type RoomActionResult =
 
 export type FinishRoomResult = { ok: true } | { ok: false; reason: string };
 
-function secureRoomCode(): string {
-  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
-  return Array.from(bytes, (value) => ROOM_CODE_ALPHABET[value & 31]).join("");
-}
-
 export const createMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => z.object({ hostClub: z.string().min(1).max(80) }).parse(input))
+  .validator((input: unknown) =>
+    z
+      .object({ hostClub: z.string().min(1).max(80) })
+      .strict()
+      .parse(input),
+  )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.hostClub]) return { ok: false, reason: "invalid_club" };
+    if (!Object.hasOwn(CLUBS, data.hostClub)) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const seed = globalThis.crypto.randomUUID();
-      const { data: room, error } = await supabaseAdmin
-        .from("match_rooms")
-        .insert({
-          code: secureRoomCode(),
-          host_id: context.userId,
-          host_club: data.hostClub,
-          seed: "",
-          server_seeded: true,
-          status: "open",
-          minute: 0,
-          state: {},
-        })
-        .select("*")
-        .single();
-      if (!error && room) {
-        const { error: secretError } = await supabaseAdmin
-          .from("match_room_secrets")
-          .insert({ room_id: room.id, seed });
-        if (secretError) {
-          await supabaseAdmin.from("match_rooms").delete().eq("id", room.id);
-          return { ok: false, reason: "create_failed" };
-        }
-        return { ok: true, room: room as unknown as MultiplayerRoomRecord };
-      }
-      if (error?.code !== "23505") return { ok: false, reason: "create_failed" };
-    }
-    return { ok: false, reason: "create_failed" };
+    const { createPrivateMatchRoom } = await import("./multiplayer-room-create.server");
+    return createPrivateMatchRoom(supabaseAdmin, context.userId, data.hostClub);
   });
 
 export const joinMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z.object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) }).parse(input),
+    z
+      .object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) })
+      .strict()
+      .parse(input),
   )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.guestClub]) return { ok: false, reason: "invalid_club" };
+    if (!Object.hasOwn(CLUBS, data.guestClub)) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
@@ -126,8 +100,8 @@ export const startMatchRoom = createServerFn({ method: "POST" })
       currentRoom.status !== "ready" ||
       !currentRoom.server_seeded ||
       !currentRoom.guest_club ||
-      !CLUBS[currentRoom.host_club] ||
-      !CLUBS[currentRoom.guest_club]
+      !Object.hasOwn(CLUBS, currentRoom.host_club) ||
+      !Object.hasOwn(CLUBS, currentRoom.guest_club)
     ) {
       return { ok: false, reason: "room_not_ready" };
     }
@@ -239,7 +213,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     if (!room.server_seeded || !room.guest_club) {
       return { ok: false, reason: "invalid_room" };
     }
-    if (!CLUBS[room.host_club] || !CLUBS[room.guest_club]) {
+    if (!Object.hasOwn(CLUBS, room.host_club) || !Object.hasOwn(CLUBS, room.guest_club)) {
       return { ok: false, reason: "invalid_room" };
     }
 

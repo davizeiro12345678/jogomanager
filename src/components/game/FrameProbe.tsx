@@ -196,7 +196,11 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
           bones: number;
           visibleSources: number;
         }[] = [];
+        const rigPools: Record<string, number>[] = [];
         scene.traverse((object) => {
+          const pool = object.userData["matchRigPool"] as
+            { stats: Record<string, number> } | undefined;
+          if (pool) rigPools.push({ ...pool.stats });
           const actors = object.userData["rigidActorBatch"] as
             { sources: { visible: boolean }[]; draws: number; bones: number } | undefined;
           if (actors)
@@ -272,6 +276,7 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
               materials: census.materials,
               staticBatches,
               actorBatches,
+              rigPools,
               census: {
                 buckets: census.buckets,
                 total: census.total,

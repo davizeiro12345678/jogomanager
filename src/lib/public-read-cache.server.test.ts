@@ -127,4 +127,84 @@ describe("bounded public data cache", () => {
     expect(await cache.get("missing:club", load)).toBeNull();
     expect(load).toHaveBeenCalledTimes(1);
   });
+
+  it("releases a hung request and shares its deadline with concurrent readers", async () => {
+    vi.useFakeTimers();
+    try {
+      const cache = createPublicReadCache<number>({
+        ttlMs: 1_000,
+        maxEntries: 2,
+        loadTimeoutMs: 50,
+      });
+      const upstream = deferred<number>();
+      const load = vi.fn(() => upstream.promise);
+      const first = cache.get("a", load);
+      const second = cache.get("a", load);
+      const failures = Promise.allSettled([first, second]);
+      await vi.advanceTimersByTimeAsync(50);
+      const results = await failures;
+      expect(results.every((result) => result.status === "rejected")).toBe(true);
+      expect(load).toHaveBeenCalledTimes(1);
+      expect(cache.size).toBe(0);
+      expect(await cache.get("a", async () => 3)).toBe(3);
+      upstream.resolve(1);
+      await Promise.resolve();
+      expect(await cache.get("a", async () => 4)).toBe(3);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([0, -1, NaN, Infinity, 2_147_483_648])(
+    "rejects an invalid load deadline %s",
+    (loadTimeoutMs) => {
+      expect(() => createPublicReadCache({ ttlMs: 100, maxEntries: 1, loadTimeoutMs })).toThrow();
+    },
+  );
+
+  it("bounds upstream concurrency even when pending keys are evicted", async () => {
+    const cache = createPublicReadCache<number>({
+      ttlMs: 1_000,
+      maxEntries: 1,
+      maxConcurrentLoads: 2,
+    });
+    const first = deferred<number>();
+    const second = deferred<number>();
+    const a = cache.get("a", () => first.promise);
+    const b = cache.get("b", () => second.promise);
+    const third = vi.fn(async () => 3);
+    await expect(cache.get("c", third)).rejects.toThrow(/capacity/);
+    expect(third).not.toHaveBeenCalled();
+    // Already in-flight same-key callers still share the existing request.
+    const shared = cache.get("b", third);
+    first.resolve(1);
+    await a;
+    expect(await cache.get("c", third)).toBe(3);
+    second.resolve(2);
+    expect(await b).toBe(2);
+    expect(await shared).toBe(2);
+  });
+
+  it("does not release physical capacity for a timed-out, uncancelled upstream", async () => {
+    vi.useFakeTimers();
+    try {
+      const cache = createPublicReadCache<number>({
+        ttlMs: 1_000,
+        maxEntries: 1,
+        maxConcurrentLoads: 1,
+        loadTimeoutMs: 5,
+      });
+      const upstream = deferred<number>();
+      const failures = Promise.allSettled([cache.get("a", () => upstream.promise)]);
+      await vi.advanceTimersByTimeAsync(5);
+      await failures;
+      await expect(cache.get("b", async () => 2)).rejects.toThrow(/capacity/);
+      upstream.resolve(1);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(await cache.get("b", async () => 2)).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

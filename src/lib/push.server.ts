@@ -6,7 +6,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/database";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
 /** Upper bound of device tokens contacted for a single event. */

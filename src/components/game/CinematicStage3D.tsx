@@ -8,7 +8,6 @@
 //  e faz um travelling contínuo dentro da fala.
 // ============================================================================
 
-import { Environment, Lightformer } from "@react-three/drei";
 import { CinematicDirector as Director } from "./CinematicDirector";
 import { Canvas } from "@react-three/fiber";
 import {
@@ -43,6 +42,7 @@ import { hashSeed } from "@/game/rng";
 
 import type { CinematicCue } from "@/game/cinematic-cue";
 import { CinematicAtmosphere } from "./cinematic/CinematicAtmosphere";
+import { CinematicEnvironment } from "./cinematic/CinematicEnvironment";
 
 import { CinematicSpecialSet } from "./cinematic/CinematicSpecialSet";
 import { CinematicPortraitLight } from "./cinematic/CinematicPortraitLight";
@@ -224,13 +224,7 @@ function Stage({
         color={light === "neutra" ? "#d4e6ff" : tint.rim}
       />
       <CinematicMotivatedLight kind={kind} art={art} mood={mood} light={light} quality={quality} />
-      {enhanced && quality !== "baixa" && (
-        <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
-          <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
-          <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color="#d6e5f4" />
-          <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={0.8} color="#e6dfd3" />
-        </Environment>
-      )}
+      {enhanced && quality !== "baixa" && <CinematicEnvironment quality={quality} warm={warm} />}
       <Director
         business={business}
         kind={kind}

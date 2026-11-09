@@ -13,6 +13,8 @@ import {
 
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { needsMfaChallenge } from "@/lib/mfa-session";
+import { useT } from "@/i18n/provider";
+import { authRecoveryMessages } from "@/i18n/auth-recovery-messages";
 
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +32,10 @@ import {
 import { authCallbackErrorMessage, authErrorMessage, type AuthMode } from "@/lib/auth-policy";
 
 import { useAuthMethods } from "@/hooks/useAuthMethods";
+import {
+  directOAuthProviders,
+  signInWithOAuthRecovery,
+} from "@/integrations/supabase/oauth-recovery";
 
 import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
 
@@ -51,6 +57,8 @@ const MfaChallenge = lazy(() =>
 );
 
 export function AuthPage() {
+  const { lang } = useT();
+  const recoveryCopy = authRecoveryMessages(lang);
   const navigate = useNavigate();
   const search = Route.useSearch();
   const destination = search.next ?? "/club";
@@ -78,9 +86,17 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
+  // Managed credentials use the broker. Direct alternatives require separately
+  // configured credentials in this same Supabase project.
   const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
+  const directProviders = directOAuthProviders(
+    import.meta.env["VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST"],
+  );
+  const alternativeProviders = brokeredOAuth
+    ? (methods?.socialProviders ?? []).filter(
+        (provider) => directProviders.includes(provider) && lovableOAuthProvider(provider),
+      )
+    : [];
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
@@ -282,35 +298,41 @@ export function AuthPage() {
     }
   }
 
-  async function signInWith(provider: SocialProvider) {
+  async function signInWith(provider: SocialProvider, preferDirect = false) {
     if (busy || !methods?.socialProviders.includes(provider)) return;
+    if (preferDirect && !directProviders.includes(provider)) return;
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
-      if (brokerProvider) {
-        const { lovable } = await import("@/integrations/lovable/index");
-        const result = await lovable.auth.signInWithOAuth(brokerProvider, {
-          redirect_uri: callback(),
-        });
-        if (result.error) throw result.error;
-        if (!result.redirected) {
-          window.__lovableEvents?.track?.("project.account_signed_in", {
-            method: provider,
-            entry_route: entryRoute,
+      const brokerProvider =
+        brokeredOAuth && !preferDirect ? lovableOAuthProvider(provider) : undefined;
+      const result = await signInWithOAuthRecovery({
+        provider,
+        useBroker: Boolean(brokerProvider),
+        directProviders,
+        broker: async () => {
+          const { lovable } = await import("@/integrations/lovable/index");
+          return lovable.auth.signInWithOAuth(brokerProvider!, { redirect_uri: callback() });
+        },
+        direct: async () => {
+          const directResult = await supabase.auth.signInWithOAuth({
+            provider,
+            options: socialOAuthOptions(provider, callback()),
           });
-          await continueSession();
-        }
-      } else {
-        const result = await supabase.auth.signInWithOAuth({
-          provider,
-          options: socialOAuthOptions(provider, callback()),
+          return { error: directResult.error };
+        },
+      });
+      if (!result.redirected) {
+        window.__lovableEvents?.track?.("project.account_signed_in", {
+          method: provider,
+          entry_route: entryRoute,
         });
-        if (result.error) throw result.error;
+        await continueSession();
       }
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
+      setNotice("Você também pode entrar com o e-mail da mesma conta abaixo.");
     } finally {
       setBusy(false);
     }
@@ -522,6 +544,9 @@ export function AuthPage() {
               Continue with Lovable
             </button>
           )}
+          {(mode === "in" || mode === "up") && methods?.email && (
+            <p className="mt-3 text-xs text-muted-foreground">{recoveryCopy.emailFallback}</p>
+          )}
           {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
             <div className="mt-5 space-y-2">
               {methods?.socialProviders.includes("google") && (
@@ -567,6 +592,28 @@ export function AuthPage() {
                 </p>
               )}
             </div>
+          )}
+          {(mode === "in" || mode === "up") && alternativeProviders.length > 0 && (
+            <section
+              className="mt-4 rounded-lg border border-border p-3"
+              aria-label={recoveryCopy.alternative}
+            >
+              <p className="text-sm text-muted-foreground">{recoveryCopy.hint}</p>
+              <div className="mt-2 grid gap-2">
+                {alternativeProviders.map((provider) => (
+                  <Button
+                    key={provider}
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => signInWith(provider, true)}
+                    className="min-h-11"
+                  >
+                    {recoveryCopy.withProvider} {socialProviderLabel(provider)}
+                  </Button>
+                ))}
+              </div>
+            </section>
           )}
           {(mode === "in" || mode === "up") && methods?.passkeys && (
             <div className="mt-4">

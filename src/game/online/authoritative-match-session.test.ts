@@ -170,6 +170,12 @@ describe("AuthoritativeMatchSession", () => {
     ).toThrow(/room/i);
   });
 
+  it("rejects an expired ticket whose signed expiration was extended by the caller", () => {
+    const { session } = createSession();
+    const extended = parseMatchTicketV1({ ...ticket("home"), expiresAt: issuedAt + 240_000 });
+    expect(() => session.connect(extended, issuedAt + 120_001)).toThrow(/ticket/i);
+  });
+
   it("rejects repeated or stale command sequence without mutating the engine", async () => {
     const { session, engine } = createSession();
     const home = ticket("home");
@@ -275,6 +281,90 @@ describe("AuthoritativeMatchSession", () => {
     expect(second).toEqual(first);
     expect(first).toMatchObject({ closureReason: "completed", issuedAt: issuedAt + 1 });
     expect(first.result).toEqual({ homeGoals: 1, awayGoals: 0, winner: "home" });
+  });
+
+  it("hash-links simultaneous commands in arrival order across both seats", async () => {
+    const { session } = createSession();
+    const first = command(1, "set_tactics");
+    const second = command(1, "ready");
+    const expectedFirst = await appendCommandHash(GENESIS_SESSION_HASH, first);
+    const expectedLast = await appendCommandHash(expectedFirst.hash, second);
+
+    const outcomes = await Promise.all([
+      session.receive(ticket("home"), first, issuedAt + 1),
+      session.receive(ticket("away"), second, issuedAt + 2),
+    ]);
+    const receipt = await session.finalize("completed", issuedAt + 3);
+
+    expect(outcomes).toEqual([{ accepted: true }, { accepted: true }]);
+    expect(receipt.commandHash).toBe(expectedLast.hash);
+  });
+
+  it("waits for an accepted command digest before signing a final receipt", async () => {
+    const { session } = createSession();
+    const tactics = command(1, "set_tactics");
+    const expected = await appendCommandHash(GENESIS_SESSION_HASH, tactics);
+
+    const accepted = session.receive(ticket("home"), tactics, issuedAt + 1);
+    const closing = session.finalize("completed", issuedAt + 2);
+    await accepted;
+
+    expect((await closing).commandHash).toBe(expected.hash);
+  });
+
+  it("freezes ticks and rejects mutations while the receipt signature is pending", async () => {
+    const signature = deferred<string>();
+    const { session, engine } = createSession({
+      signer: { sign: () => signature.promise },
+    });
+    await session.receive(ticket("home"), command(1), issuedAt + 1);
+    await session.receive(ticket("away"), command(1), issuedAt + 2);
+    session.advanceFixedTick();
+
+    const closing = session.finalize("completed", issuedAt + 3);
+    session.advanceFixedTick();
+    session.disconnect(homeUserId, issuedAt + 4);
+    const mutation = await session.receive(ticket("home"), command(2, "set_tactics"), issuedAt + 5);
+    signature.resolve("one-authoritative-signature");
+    await closing;
+
+    expect(session.snapshot().tick).toBe(1);
+    expect(mutation).toEqual({ accepted: false, reason: "command_rejected" });
+    expect(engine.tacticalChanges).toHaveLength(0);
+    expect(session.phase).toBe("finalized");
+  });
+
+  it("bounds rejected-command history during a replay flood", async () => {
+    const { session } = createSession();
+    await session.receive(ticket("home"), command(1), issuedAt);
+    for (let i = 0; i < 1_000; i += 1) {
+      await session.receive(ticket("home"), command(1), issuedAt + i);
+    }
+    expect(session.invalidAttempts.length).toBeLessThanOrEqual(128);
+    expect(session.invalidAttempts.at(-1)?.at).toBe(issuedAt + 999);
+  });
+
+  it("limits tactical-command bursts even without caller-supplied limits", async () => {
+    const { session, engine } = createSession();
+    const outcomes = [];
+    for (let sequence = 1; sequence <= 13; sequence += 1) {
+      outcomes.push(
+        await session.receive(ticket("home"), command(sequence, "set_tactics"), issuedAt),
+      );
+    }
+    expect(outcomes.filter((outcome) => outcome.accepted)).toHaveLength(12);
+    expect(outcomes.at(-1)).toEqual({ accepted: false, reason: "rate_limited" });
+    expect(engine.tacticalChanges).toHaveLength(12);
+  });
+
+  it("closes input synchronously when a forfeit is accepted", async () => {
+    const { session, engine } = createSession();
+    const forfeit = session.receive(ticket("home"), command(1, "forfeit"), issuedAt + 1);
+    const mutation = session.receive(ticket("away"), command(1, "set_tactics"), issuedAt + 2);
+    expect(await forfeit).toEqual({ accepted: true });
+    expect(await mutation).toEqual({ accepted: false, reason: "command_rejected" });
+    expect(engine.tacticalChanges).toHaveLength(0);
+    expect((await session.finalize("completed", issuedAt + 3)).closureReason).toBe("forfeit");
   });
 
   it("includes forfeit in the command hash and replays the same receipt", async () => {

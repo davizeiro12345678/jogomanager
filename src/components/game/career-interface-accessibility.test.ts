@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const screensCss = readFileSync(new URL("./career-screens.css", import.meta.url), "utf8");
-const createCss = readFileSync(new URL("./career-create.css", import.meta.url), "utf8");
+const createCss = readFileSync(new URL("./career-create.css", import.meta.url), "utf8").replace(
+  /\r\n/g,
+  "\n",
+);
 const shellCss = readFileSync(new URL("./career-shell.css", import.meta.url), "utf8");
 const contentCss = readFileSync(new URL("./career-content-shell.css", import.meta.url), "utf8");
 const interfaceCss = readFileSync(new URL("./career-interface.css", import.meta.url), "utf8");

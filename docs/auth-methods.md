@@ -22,4 +22,16 @@ Reference: [Supabase Google login setup](https://supabase.com/docs/guides/auth/s
 
 ## Validation boundaries
 
+### Recovery when the Lovable OAuth broker is unavailable
+
+Password, email link/code, recovery and passkey flows already use the configured Supabase project directly. They do not require a successful Lovable OAuth broker response. They still require that project's Auth service and configured delivery provider to be available.
+
+For Google, Apple or Microsoft broker outages, `VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST` can explicitly list providers with independently configured OAuth credentials in **the same Supabase project** (for example `google,azure`). Enabled providers in that list receive an explicit alternative sign-in button, which goes directly to Supabase without starting the Lovable broker. This manual path works independently of whether the broker returns a readable error. Keep this list empty until each direct callback has been validated. `VITE_AUTH_MODE=supabase-direct` remains the explicit deployment-wide direct mode.
+
+The installed Lovable SDK redirects top-level windows before an HTTP error can reach the caller and turns iframe errors into plain `Error` descriptions. Consequently, automatic recovery of a credit failure after an external redirect is **not verified or guaranteed**. The helper can recover recognized transport/adapter errors before a redirect; it never starts a competing flow after `redirected: true`, infers direct credentials from managed flags or retries cancellation, account denial, rate limits or MFA errors. Use the explicit alternative button or email if the broker's external page fails.
+
+This is broker recovery, not a second Auth deployment. A separate Supabase project has separate users, UUIDs, signing keys and token issuers. Real infrastructure failover requires a verified migration/replication procedure for identities and password hashes, a reviewed JWT trust configuration, RLS isolation by issuer and recovery drills. Reusing an email in a second project does not transfer a career, wallet or identity. Never switch the public URL/key automatically after a login error.
+
+References: [Supabase identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking), [JWT issuer restrictions](https://supabase.com/docs/guides/auth/third-party/custom-oidc).
+
 Tests cover provider discovery, disabled flags, Lovable compatibility, Microsoft scopes, safe callback destinations, passkey capability/error handling, and rendered login options. A live OAuth authorization redirect verifies provider launch, not account consent or the completed callback. Complete email delivery and biometric sign-in require an actual player account, server settings compatible with requests without CAPTCHA, and an allowed production origin.
