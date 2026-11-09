@@ -153,6 +153,11 @@ jobs:
         run: bash scripts/start-replay-db.sh
       - name: Replay the complete canonical migration history
         run: supabase db reset --local --no-seed --yes
+      - name: Verify Custom450 quota boundaries in the disposable database
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0057_api_football_custom450_quota.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0066_api_football_full_custom450_quota.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/api-football-custom450-contract.sql
       - name: Apply the forward growth-observability migration to the disposable database
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
       - name: Apply the forward career tombstone and generation migration to the disposable database
