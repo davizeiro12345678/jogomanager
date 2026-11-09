@@ -1,4 +1,5 @@
 import type { LiveWorkerRequest } from "./live-match";
+import { validMatchRulesRevision } from "./match-execution-contract";
 
 export const MAX_MATCH_BENCH_PLAYERS = 64;
 export const LIVE_CONTROL_RESPONSE_TIMEOUT_MS = 3_000;
@@ -106,6 +107,7 @@ function validCareerEnvelope(
   const finances = v["finances"];
   if (
     !id(clubId) ||
+    (v["matchRulesRevision"] !== undefined && !validMatchRulesRevision(v["matchRulesRevision"])) ||
     !integer(v["round"], 1, 1000) ||
     !integer(v["season"], 1, 10000) ||
     !object(players) ||
@@ -180,6 +182,7 @@ export function validMatchCommand(v: unknown): v is LiveWorkerRequest {
         validMatchTeam(v["home"]) &&
         validMatchTeam(v["away"]) &&
         text(v["seed"], 4096) &&
+        (v["rulesRevision"] === undefined || validMatchRulesRevision(v["rulesRevision"])) &&
         (v["knockout"] === undefined || typeof v["knockout"] === "boolean") &&
         (v["weather"] === undefined || WEATHER.includes(v["weather"] as string)) &&
         (v["compact"] === undefined || typeof v["compact"] === "boolean")

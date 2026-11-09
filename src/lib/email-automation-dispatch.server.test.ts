@@ -100,6 +100,22 @@ describe("durable email dispatch", () => {
     expect(dependencies.rpc).toHaveBeenCalledTimes(2);
   });
 
+  it("reports an exhausted sixth rate limit as terminal rather than retry queued", async () => {
+    dependencies.rpc
+      .mockResolvedValueOnce({ data: { ...lease, attempts: 6 }, error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    dependencies.deliver.mockResolvedValue({
+      outcome: "retry",
+      httpStatus: 429,
+      retryAfterSeconds: 60,
+    });
+    expect(await dispatchEmailAutomations()).toMatchObject({
+      attempted: 1,
+      retryQueued: 0,
+      rejected: 1,
+    });
+  });
+
   it("caps a large queue at ten sequential provider requests per invocation", async () => {
     vi.useFakeTimers();
     dependencies.rpc.mockImplementation(async (name) => ({

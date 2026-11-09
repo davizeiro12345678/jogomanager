@@ -61,4 +61,45 @@ describe("FrameMetrics", () => {
     expect(metrics.summary().frames).toBe(0);
     expect(metrics.summary().pointOnePercentLow).toBe(0);
   });
+
+  it("exports all requested stall thresholds with the legacy >50ms alias", () => {
+    const metrics = new FrameMetrics();
+    [10, 1000 / 30, 40, 50, 51, 100, 101, 250, 251, 500].forEach((ms) => metrics.add(ms));
+    expect(metrics.summary()).toMatchObject({
+      framesOver33Ms: 8,
+      framesOver50Ms: 6,
+      framesOver100Ms: 4,
+      framesOver250Ms: 2,
+      stalls: 6,
+    });
+  });
+
+  it("declares overwritten samples and exports chronological retained evidence", () => {
+    const metrics = new FrameMetrics(3);
+    [10, 20, 300, 400].forEach((ms) => metrics.add(ms));
+    metrics.add(Number.NaN);
+    expect(metrics.summary().coverage).toEqual({
+      capacity: 3,
+      observedFrames: 4,
+      retainedFrames: 3,
+      droppedFrames: 1,
+      invalidSamples: 1,
+      observedMs: 730,
+      retainedMs: 720,
+      completeDistribution: false,
+    });
+    const raw = metrics.rawFrameMs();
+    expect(raw).toEqual([20, 300, 400]);
+    raw[0] = 999;
+    expect(metrics.rawFrameMs()).toEqual([20, 300, 400]);
+    metrics.reset();
+    expect(metrics.rawFrameMs()).toEqual([]);
+    expect(metrics.summary().coverage).toMatchObject({
+      observedFrames: 0,
+      droppedFrames: 0,
+      invalidSamples: 0,
+      observedMs: 0,
+      retainedMs: 0,
+    });
+  });
 });

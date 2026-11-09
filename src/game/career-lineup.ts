@@ -18,11 +18,12 @@ export function pickLineup(players: Player[], formation: FormationKey, source?: 
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
   const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
-  const available = [...players]
-    .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort(
-      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
-    );
+  const available = players.filter((p) => !p.suspended && p.injuryWeeks === 0);
+  // Readiness includes normalization and role-dependent development weights.
+  // Resolve it once per player for this call, never across careers or updates.
+  const ratings = new Map<Player, number>();
+  for (const player of available) ratings.set(player, selectionRating(player, source));
+  available.sort((a, b) => ratings.get(b)! - ratings.get(a)! || a.id.localeCompare(b.id));
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 

@@ -238,6 +238,7 @@ function LiveMatch({
       home: isHome ? mySetup : oppSetup,
       away: isHome ? oppSetup : mySetup,
       seed: `${career.clubId}-${career.round}`,
+      rulesRevision: career.matchRulesRevision ?? 1,
     };
   }, [career, isHome, myClub, oppId]);
   const lineupError = useMemo(() => {
@@ -630,7 +631,7 @@ function LiveMatch({
           active={measurementActive}
           phase={measurementPhase}
           measurementKey={measurementContextKey}
-          detail={{ Câmera: camera, Velocidade: speed }}
+          detail={{ [t("match.camera")]: camera, [t("match.speed")]: speed }}
         />
       </div>
 

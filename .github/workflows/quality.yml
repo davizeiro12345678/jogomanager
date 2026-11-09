@@ -33,7 +33,7 @@ jobs:
       - run: npm run lint
       - run: npm exec -- tsc --noEmit --pretty false
       # The complete deterministic stress suite runs in the required job below.
-      - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
+      - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --exclude src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
       - run: node --test scripts/database-growth-snapshot.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
@@ -71,6 +71,28 @@ jobs:
         with:
           name: simulation-stress-results
           path: stress-results.json
+          if-no-files-found: error
+
+  simulation-stress-v2:
+    name: Critical 200-match revision-2 stress
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Execute all 200 revision-2 seeds and their independent replays
+        run: node node_modules/vitest/vitest.mjs run src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile=rules-stress-results.json
+      - name: Require every revision-2 seed to have executed and passed
+        run: node scripts/verify-rules-stress-report.mjs rules-stress-results.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: simulation-rules-v2-stress-results
+          path: rules-stress-results.json
           if-no-files-found: error
 
   match-setup-performance:
@@ -111,6 +133,7 @@ jobs:
         verify,
         bundle-impact,
         simulation-stress,
+        simulation-stress-v2,
         match-setup-performance,
         game-assets,
         graphics-contract,
@@ -157,6 +180,16 @@ jobs:
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
       - name: Apply the forward career tombstone and generation migration to the disposable database
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0061_career_tombstone_generation.sql
+      - name: Apply forward chat, support, and email admission migrations to the disposable database
+        run: |
+          for migration in 0062_room_chat_rate_limits 0063_support_requests 0064_room_chat_admission 0065_email_automation_outbox; do
+            psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f "drizzle/migrations/${migration}.sql"
+          done
+      - name: Verify support leases, room chat admission, and transactional email outbox
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/support-webhook-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/room-chat-admission-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/email-automation-outbox-contract.sql
       - name: Verify career tombstone generation and server-only access
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/career-tombstone-generation-contract.sql
       - name: Verify application schema, ownership, and grants

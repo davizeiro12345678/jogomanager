@@ -2,6 +2,12 @@
 
 O formulário de `/contato` carrega após a ação **Abrir formulário de suporte**. Ele exige sessão Supabase válida, MFA quando exigido pela conta e e-mail confirmado. Os canais públicos por e-mail, WhatsApp e Discord continuam disponíveis sem conta.
 
+## Idiomas
+
+Os textos novos do formulário, os estados de carregamento/erro/entrega, categorias, aviso de privacidade, controles de abertura e dados do criador usam o idioma de `useT().lang`. Português (`pt-BR`/`pt-PT`) e inglês têm dicionários tipados com as mesmas chaves; os demais idiomas usam **fallback inglês explícito** até receberem tradução revisada. Isso não afirma tradução integral das páginas públicas anteriores nem dos 98 packs existentes.
+
+As regiões novas marcam seu idioma com `lang`. O estado de feedback guarda a chave da mensagem, de modo que uma troca de idioma também atualiza um erro já visível. A data pública e a contagem de caracteres usam `Intl` no locale do texto apresentado; a data fixa é formatada em UTC para não retroceder um dia por fuso horário. O endereço e CPF permanecem dados únicos em `src/content/creator.ts`, sem tradução. O dicionário completo do formulário continua no chunk sob demanda; apenas o texto curto das páginas públicas carrega com Sobre/Contato.
+
 ## Ativação
 
 1. Aplicar a migração forward `drizzle/migrations/0063_support_requests.sql` pelo fluxo de release. Validar `tests/sql/support-webhook-contract.sql` somente em banco descartável.

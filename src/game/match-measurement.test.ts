@@ -63,9 +63,8 @@ describe("match measurement scope", () => {
     );
     expect(nextAutomaticMatchQuality({ ...healthy, windowMs: 5900 }, "media", true)).toBe("media");
     expect(nextAutomaticMatchQuality({ ...healthy, avg: Number.NaN }, "media", true)).toBe("media");
-    expect(nextAutomaticMatchQuality({ ...healthy, windowMs: undefined }, "media", true)).toBe(
-      "media",
-    );
+    const { windowMs: _windowMs, ...withoutWindow } = healthy;
+    expect(nextAutomaticMatchQuality(withoutWindow, "media", true)).toBe("media");
     expect(nextAutomaticMatchQuality({ ...healthy, avg: 0, low1: 0 }, "media", true)).toBe("media");
   });
 

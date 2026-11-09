@@ -6,7 +6,10 @@ import { PublicLinks } from "@/components/PublicLinks";
 import { SiteFooter } from "@/components/SiteFooter";
 
 import { DiscordLink } from "@/components/CommunityInvite";
-import { CREATOR } from "@/content/creator";
+import { CREATOR, SUPPORT_UPDATED_AT } from "@/content/creator";
+import { useT } from "@/i18n/context";
+import { formatSupportUpdatedDate, getSupportPageCopy } from "@/i18n/support-page-copy";
+import { supportContentLocale } from "@/i18n/support-locale";
 import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
 
 const CHANNELS = [
@@ -43,6 +46,9 @@ const CHANNELS = [
 ] as const;
 
 export function ContatoPage() {
+  const { lang } = useT();
+  const copy = getSupportPageCopy(lang);
+  const copyLocale = supportContentLocale(lang);
   const [SupportForm, setSupportForm] = useState<ComponentType | null>(null);
   const [supportLoading, setSupportLoading] = useState(false);
   const [supportError, setSupportError] = useState(false);
@@ -67,23 +73,20 @@ export function ContatoPage() {
         <h1 className="mt-3 font-display text-3xl uppercase tracking-wide sm:text-4xl">
           Contato e suporte
         </h1>
-        <p className="mt-3 text-muted-foreground">
-          A equipe do Pro Football Manager 3D responde por estes canais. Escolha o assunto para
-          chegar mais rápido a quem resolve. Página atualizada em{" "}
-          <time dateTime="2026-11-08">8 de novembro de 2026</time>.
+        <p className="mt-3 text-muted-foreground" lang={copyLocale}>
+          {copy.contactIntro}{" "}
+          <time dateTime={SUPPORT_UPDATED_AT}>{formatSupportUpdatedDate(lang)}</time>.
         </p>
 
         <section
           className="surface-card mt-6 rounded-xl border border-border/60 p-5"
           aria-labelledby="support-title"
+          lang={copyLocale}
         >
           <h2 id="support-title" className="font-display text-xl uppercase">
-            Enviar solicitação ao suporte
+            {copy.supportTitle}
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Descreva o problema para encaminhá-lo ao atendimento e receber um protocolo de entrega.
-            Os contatos por e-mail continuam disponíveis para quem não consegue entrar na conta.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{copy.supportDescription}</p>
           {SupportForm ? (
             <SupportForm />
           ) : (
@@ -93,12 +96,12 @@ export function ContatoPage() {
               disabled={supportLoading}
               className="mt-4 min-h-11 rounded-lg border border-primary/40 px-4 text-sm text-primary disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              {supportLoading ? "Abrindo formulário…" : "Abrir formulário de suporte"}
+              {supportLoading ? copy.opening : copy.open}
             </button>
           )}
           {supportError && (
             <p role="alert" className="mt-3 text-sm text-destructive">
-              Não foi possível abrir o formulário. Tente novamente ou utilize os contatos abaixo.
+              {copy.loadError}
             </p>
           )}
         </section>
@@ -183,14 +186,14 @@ export function ContatoPage() {
           nome do jogo.
         </p>
 
-        <address className="mt-6 text-sm not-italic text-muted-foreground">
+        <address className="mt-6 text-sm not-italic text-muted-foreground" lang={copyLocale}>
           <span className="font-medium text-foreground">
-            Criador e desenvolvedor: {CREATOR.name}
+            {copy.creatorLabel}: {CREATOR.name}
           </span>
           <br />
-          Av. Hugo Viola, 351 - Jardim da Penha, Vitória - ES, 29065-475
+          {CREATOR.address}
           <br />
-          CPF: 170.312.897-42
+          {copy.cpfLabel}: {CREATOR.cpf}
         </address>
 
         <PublicLinks exclude={PATH} />

@@ -1,7 +1,7 @@
 import { AdaptiveEvents, Environment, Lightformer } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
-import { FrameProbe } from "../FrameProbe";
+import { FrameProbe } from "../LazyFrameProbe";
 import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
 import { MatchPlayers } from "../players/MatchPlayers";
 import { PostFX } from "../post/LazyPostFX";
@@ -49,6 +49,8 @@ export function StadiumScene({
   postIntensity,
   supporters,
   adaptive,
+  measurementKey,
+  suspended,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -59,6 +61,8 @@ export function StadiumScene({
   postIntensity: number;
   supporters?: SupporterMatchday | undefined;
   adaptive: boolean;
+  measurementKey?: string;
+  suspended?: boolean;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -120,7 +124,12 @@ export function StadiumScene({
       {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
       <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
       <AdaptiveEvents />
-      <FrameProbe quality={quality} adaptive={adaptive} />
+      <FrameProbe
+        quality={quality}
+        adaptive={adaptive}
+        {...(measurementKey === undefined ? {} : { measurementKey })}
+        {...(suspended === undefined ? {} : { suspended })}
+      />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       {quality !== "baixa" ? (

@@ -48,6 +48,11 @@ INSERT INTO email_automation_private.dispatch_budget(singleton) VALUES (true);
 CREATE FUNCTION email_automation_private.enqueue_confirmed_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $function$
 BEGIN
+  -- Existing confirmed accounts have no historical outbox row. Updating their
+  -- already-confirmed timestamp must not create an accidental welcome backfill.
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.email_confirmed_at IS NOT NULL THEN RETURN NEW; END IF;
+  END IF;
   IF NEW.email_confirmed_at IS NOT NULL AND NEW.email IS NOT NULL
     AND NOT COALESCE(NEW.is_anonymous, false) AND NEW.deleted_at IS NULL THEN
     INSERT INTO email_automation_private.outbox(user_id, source_id, event_name, payload)
@@ -65,6 +70,9 @@ FOR EACH ROW EXECUTE FUNCTION email_automation_private.enqueue_confirmed_user();
 CREATE FUNCTION email_automation_private.enqueue_fulfilled_purchase()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $function$
 BEGIN
+  IF TG_OP = 'UPDATE' THEN
+    IF OLD.status IS NOT DISTINCT FROM 'completed' THEN RETURN NEW; END IF;
+  END IF;
   IF NEW.status = 'completed' THEN
     INSERT INTO email_automation_private.outbox(user_id, source_id, event_name, payload)
     VALUES (NEW.user_id, NEW.id, 'purchase.fulfilled',
@@ -156,6 +164,7 @@ CREATE FUNCTION public.complete_email_automation(
 DECLARE
   v_row email_automation_private.outbox%ROWTYPE;
   v_status text;
+  v_delay integer := 0;
   v_now timestamptz := clock_timestamp();
 BEGIN
   IF p_id IS NULL OR p_lease_token IS NULL OR p_outcome IS NULL
@@ -165,14 +174,27 @@ BEGIN
     OR (p_outcome = 'retry' AND p_http_status IS DISTINCT FROM 429)
     OR (p_outcome = 'sent' AND p_http_status IS DISTINCT FROM 202)
   THEN RAISE EXCEPTION 'email_automation_completion_invalid' USING ERRCODE = '22023'; END IF;
+  -- Same lock order as claim: global budget before an outbox row. Otherwise
+  -- applying a provider cooldown can deadlock with expired-lease maintenance.
+  IF p_outcome = 'retry' THEN
+    PERFORM 1 FROM email_automation_private.dispatch_budget WHERE singleton FOR UPDATE;
+  END IF;
   SELECT * INTO v_row FROM email_automation_private.outbox WHERE id = p_id FOR UPDATE;
   IF NOT FOUND OR v_row.lease_token IS DISTINCT FROM p_lease_token THEN RETURN false; END IF;
   v_status := CASE WHEN p_outcome = 'retry' THEN CASE WHEN v_row.attempts >= 6 THEN 'dead' ELSE 'queued' END ELSE p_outcome END;
   IF v_row.status NOT IN ('leased','uncertain') THEN RETURN v_row.status = v_status; END IF;
+  v_now := clock_timestamp();
+  IF p_outcome = 'retry' THEN
+    v_delay := greatest(60 * power(2, greatest(0, v_row.attempts - 1))::integer, p_retry_after_seconds);
+    -- A 429 limits this provider/key, not merely the current recipient. Keep
+    -- every other event behind the cooldown, including after retry exhaustion.
+    UPDATE email_automation_private.dispatch_budget
+      SET next_send_at = greatest(next_send_at, v_now + make_interval(secs => v_delay))
+      WHERE singleton;
+  END IF;
   UPDATE email_automation_private.outbox SET
     status = v_status, lease_until = NULL, last_http_status = p_http_status,
-    next_attempt_at = CASE WHEN v_status = 'queued' THEN v_now + make_interval(secs =>
-      greatest(60 * power(2, greatest(0, v_row.attempts - 1))::integer, p_retry_after_seconds)) ELSE next_attempt_at END,
+    next_attempt_at = CASE WHEN v_status = 'queued' THEN v_now + make_interval(secs => v_delay) ELSE next_attempt_at END,
     last_error = CASE p_outcome WHEN 'sent' THEN NULL WHEN 'retry' THEN 'rate_limited'
       WHEN 'dead' THEN 'rejected' ELSE 'uncertain' END,
     completed_at = CASE WHEN v_status IN ('sent','dead') THEN v_now ELSE NULL END,

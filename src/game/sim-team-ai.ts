@@ -242,7 +242,10 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       // e permite a armadilha de impedimento.
       if (p.pos === "DF") {
         const line = lineX[p.side];
-        const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+        const trap =
+          setup.tactics.pressing >= (sim.rulesRevision === 2 ? 2 : 3) && Math.abs(bx - line) > 14
+            ? dir * 3.5
+            : 0;
         tx = tx * 0.35 + (line + trap) * 0.65;
         // marcação por zona: cobre o adversário mais perigoso da sua faixa
         let markZ: number | null = null;

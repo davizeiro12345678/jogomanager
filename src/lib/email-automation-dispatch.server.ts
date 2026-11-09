@@ -69,7 +69,10 @@ export async function dispatchEmailAutomations(): Promise<EmailAutomationDispatc
       throw new Error("Email automation acknowledgement requires reconciliation.");
     }
     if (delivery.outcome === "sent") result.accepted++;
-    if (delivery.outcome === "retry") result.retryQueued++;
+    if (delivery.outcome === "retry") {
+      if (lease.attempt >= 6) result.rejected++;
+      else result.retryQueued++;
+    }
     if (delivery.outcome === "dead") result.rejected++;
     if (delivery.outcome === "uncertain") result.uncertain++;
     // Stop before making more provider calls on a rate limit or any failure.

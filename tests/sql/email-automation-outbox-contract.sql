@@ -16,6 +16,26 @@ BEGIN
 END;
 $permissions$;
 
+-- Emulate rows that existed before these two triggers were installed. Only
+-- this migration's triggers are paused; all other Auth/payment controls stay on.
+ALTER TABLE auth.users DISABLE TRIGGER enqueue_email_automation_confirmed_user;
+INSERT INTO auth.users(id,email,email_confirmed_at)
+VALUES ('65000000-0000-4000-8000-000000000008','historical@outbox.example.test',now() - interval '30 days');
+ALTER TABLE auth.users ENABLE TRIGGER enqueue_email_automation_confirmed_user;
+ALTER TABLE public.user_purchases DISABLE TRIGGER enqueue_email_automation_fulfilled_purchase;
+INSERT INTO public.user_purchases(id,user_id,product_key,amount_cents,status,reference)
+VALUES ('65000000-0000-4000-8000-000000000009','65000000-0000-4000-8000-000000000008','coins_500',500,'completed','historical-outbox-fixture');
+ALTER TABLE public.user_purchases ENABLE TRIGGER enqueue_email_automation_fulfilled_purchase;
+UPDATE auth.users SET email_confirmed_at = now() WHERE id = '65000000-0000-4000-8000-000000000008';
+UPDATE public.user_purchases SET status = 'completed' WHERE id = '65000000-0000-4000-8000-000000000009';
+DO $historical_no_backfill$
+BEGIN
+  ASSERT NOT EXISTS (SELECT 1 FROM email_automation_private.outbox
+    WHERE user_id = '65000000-0000-4000-8000-000000000008'),
+    'Updating already confirmed/completed historical rows must not enqueue old notifications';
+END;
+$historical_no_backfill$;
+
 INSERT INTO auth.users(id, email, email_confirmed_at) VALUES
   ('65000000-0000-4000-8000-000000000001','confirmed@outbox.example.test',now()),
   ('65000000-0000-4000-8000-000000000002','unconfirmed@outbox.example.test',NULL);
@@ -84,6 +104,18 @@ BEGIN
   ASSERT public.complete_email_automation(v_id,v_token,'retry',429,120);
   ASSERT (SELECT next_attempt_at >= clock_timestamp() + interval '119 seconds' FROM email_automation_private.outbox WHERE id = v_id),
     'Provider Retry-After must be honored';
+  -- A different recipient/event is ready. A new invocation must still obey the
+  -- same provider cooldown rather than immediately dispatching another email.
+  UPDATE auth.users SET email_confirmed_at = now() WHERE id = '65000000-0000-4000-8000-000000000002';
+  UPDATE email_automation_private.outbox SET next_attempt_at = now() - interval '1 second'
+    WHERE source_id = '65000000-0000-4000-8000-000000000002';
+  ASSERT (SELECT next_send_at >= clock_timestamp() + interval '119 seconds'
+    FROM email_automation_private.dispatch_budget), '429 cooldown must be stored globally';
+  ASSERT public.claim_email_automation() IS NULL, 'Provider cooldown must block another ready recipient/event';
+  ASSERT (SELECT status = 'queued' AND attempts = 0 FROM email_automation_private.outbox
+    WHERE source_id = '65000000-0000-4000-8000-000000000002'), 'Blocked event must remain untouched';
+  UPDATE email_automation_private.outbox SET next_attempt_at = now() + interval '1 day'
+    WHERE source_id = '65000000-0000-4000-8000-000000000002';
   UPDATE email_automation_private.outbox SET next_attempt_at = now() - interval '1 second' WHERE id = v_id;
   UPDATE email_automation_private.dispatch_budget SET next_send_at = now() - interval '1 second';
   v_retry := public.claim_email_automation(); v_second := (v_retry->>'lease_token')::uuid;
@@ -144,6 +176,8 @@ BEGIN
   ASSERT public.complete_email_automation(v_id,(v_lease->>'lease_token')::uuid,'retry',429,0);
   ASSERT (SELECT status = 'dead' AND attempts = 6 FROM email_automation_private.outbox WHERE id = v_id),
     'Sixth rate limit must exhaust automatic retries';
+  ASSERT (SELECT next_send_at >= clock_timestamp() + interval '1919 seconds'
+    FROM email_automation_private.dispatch_budget), 'Retry exhaustion must still cool down other events';
 END;
 $retry_cap$;
 

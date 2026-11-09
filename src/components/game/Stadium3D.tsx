@@ -280,6 +280,8 @@ function Stadium3DImpl({
                 postIntensity={vis.postIntensity * (vis.quality === "cinema" ? 1.12 : 1)}
                 supporters={supporters}
                 adaptive={vis.adaptive}
+                measurementKey={renderMeasurementKey}
+                suspended={paused}
               />
             </RuntimeSceneBudgetContext.Provider>
           </QualityPressure.Provider>

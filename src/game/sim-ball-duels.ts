@@ -40,28 +40,37 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
     p.interceptions++;
     sim.stats[p.side].interceptions++;
   }
-  // impedimento: recebe à frente da linha num passe para frente (sem isenção)
-  if (sim.pass && isReceiver && sim.time > sim.exemptUntil) {
-    const forward = (p.x - sim.pass.fromX) * sim.pass.dir > 1;
-    if (forward && isOffside(p.x, defensiveLineX(sim.players, p.side), sim.pass.dir)) {
-      p.offsides++;
-      sim.stats[p.side].offsides++;
-      sim.pass = null;
-      sim.ball.vx = 0;
-      sim.ball.vz = 0;
-      sim.ballVy = 0;
-      sim.ball.height = 0.12;
-      sim.trigger(p, "protest", 1.2);
-      sim.pushEvent({
-        minute: sim.minute(),
-        type: "offside",
-        side: p.side,
-        text: `Impedimento de ${p.name}.`,
-      });
-      // infração: a defesa fica com a bola no local
-      sim.restartFor(p.side === "home" ? "away" : "home", "throwIn");
-      return;
-    }
+  // Revision 2 uses the teammate's touch, including another receiver or rebound.
+  // Existing matches retain their exact reception-time rule and RNG order.
+  const offside =
+    sim.rulesRevision === 2
+      ? sim.offsideAtContact(p)
+      : !!sim.pass &&
+        isReceiver &&
+        sim.time > sim.exemptUntil &&
+        (p.x - sim.pass.fromX) * sim.pass.dir > 1 &&
+        isOffside(p.x, defensiveLineX(sim.players, p.side), sim.pass.dir);
+  if (offside) {
+    p.offsides++;
+    sim.stats[p.side].offsides++;
+    sim.pass = null;
+    sim.ball.vx = 0;
+    sim.ball.vz = 0;
+    sim.ballVy = 0;
+    sim.ball.height = 0.12;
+    sim.trigger(p, "protest", 1.2);
+    sim.pushEvent({
+      minute: sim.minute(),
+      type: "offside",
+      side: p.side,
+      text: `Impedimento de ${p.name}.`,
+    });
+    // infração: a defesa fica com a bola no local
+    sim.restartFor(
+      p.side === "home" ? "away" : "home",
+      sim.rulesRevision === 2 ? "indirectFK" : "throwIn",
+    );
+    return;
   }
   const skill = (p.passing * 0.5 + p.physical * 0.3 + p.defending * 0.2) / 100;
   const difficulty = ballSpeed / 34 + (h > 0.9 ? 0.28 : 0) + controlFailAdd(sim.weather);
@@ -76,6 +85,7 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
   sim.ballSpin = 0;
 
   if (ok) {
+    sim.noteOffsideControl(p);
     sim.ball.holder = p.id;
     sim.possession = p.side;
     sim.ball.vx = 0;
@@ -88,6 +98,7 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
   }
 
   // toque mal dado: a bola sobra à frente, ainda em disputa
+  sim.noteOffsideDeflection(p);
   const dirx = sim.attackDir(p.side);
   const spill = firstTouchSpill(2.6 + sim.rnd() * 3.4, ballSpeed, sim.weather);
   const ang = (sim.rnd() - 0.5) * 1.4;
@@ -122,6 +133,7 @@ export function tryBlock(sim: MatchSim, dt: number): boolean {
     const slide = sim.rnd() < 0.45;
     sim.trigger(p, slide ? "slide" : "block", 0.7);
     p.tackles++;
+    sim.noteOffsideDeflection(p);
     sim.lastTouch = p.side;
     const wasShot = !!sim.pendingShot;
     sim.pendingShot = null;
@@ -158,7 +170,7 @@ export function resolveShot(
   const s = sim.pendingShot!;
   const dir = sim.attackDir(s.side);
   const goalX = dir * FIELD_X;
-  const gk = sim.players.find((p) => p.side !== s.side && p.pos === "GK") ?? null;
+  const gk = sim.goalkeeper(s.side === "home" ? "away" : "home");
   const shooter = sim.players.find((p) => p.id === s.shooter) ?? null;
   const planeX = goalX - dir * 1.6;
   const crossed =
@@ -192,6 +204,7 @@ export function resolveShot(
       1.1,
     );
     gk.saves++;
+    sim.noteOffsideDeflection(gk);
     sim.stats[s.side].onTarget++;
     sim.recordShot({
       x: s.fromX,
@@ -228,7 +241,7 @@ export function resolveShot(
       sim.lastTouch = gk.side;
       sim.looseTime = 0;
     } else {
-      sim.scheduleRestart(gk.side);
+      sim.scheduleRestart(gk.side, "keeperControl");
     }
     return true;
   }
@@ -305,7 +318,7 @@ export function woodworkOrRelease(
 }
 
 export function dribble(sim: MatchSim, holder: SimPlayer, dt: number) {
-  if (sim.restartTimer > 0) {
+  if (sim.restartTimer > 0 || sim.holdsExemptRestart(holder)) {
     const k = Math.exp(-7 * dt);
     holder.vx *= k;
     holder.vz *= k;
@@ -401,6 +414,7 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
     sim.ball.holder = opp.id;
     sim.possession = opp.side;
     sim.lastTouch = opp.side;
+    sim.noteOffsideControl(opp);
     sim.decisionTimer = 0.4;
     sim.trigger(opp, "intercept", 0.5);
     if (sim.rnd() < 0.008) sim.injure(holder, "na dividida");
@@ -408,11 +422,12 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
 }
 
 export function shoot(sim: MatchSim, holder: SimPlayer, distGoal: number) {
+  sim.noteOffsideKick(holder, sim.ball.x);
   const side = holder.side;
   const dir = sim.attackDir(side);
   sim.stats[side].shots++;
   holder.shots++;
-  const gk = sim.players.find((p) => p.side !== side && p.pos === "GK");
+  const gk = sim.goalkeeper(side === "home" ? "away" : "home");
   const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
   const { dist: pressD } = sim.nearestOpponent(holder);
   const xg = xgForShot({

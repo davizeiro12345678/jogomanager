@@ -53,6 +53,7 @@ const CareerInput = z.object({
         .refine(hasVisibleText),
       season: z.number().int().min(1).max(100),
       round: z.number().int().min(1).max(1000),
+      matchRulesRevision: z.union([z.literal(1), z.literal(2)]).optional(),
       fixtures: z.array(z.unknown()).max(5000),
       results: z.array(z.unknown()).max(5000),
     })

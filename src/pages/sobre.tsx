@@ -7,6 +7,9 @@ import { CREATOR } from "@/content/creator";
 import { CommunityInvite } from "@/components/CommunityInvite";
 
 import { SOBRE_PATH as PATH } from "@/lib/public-route-paths";
+import { useT } from "@/i18n/context";
+import { getSupportPageCopy } from "@/i18n/support-page-copy";
+import { supportContentLocale } from "@/i18n/support-locale";
 
 const BLOCKS = [
   {
@@ -44,6 +47,9 @@ const FACTS = [
 ];
 
 export function SobrePage() {
+  const { lang } = useT();
+  const copy = getSupportPageCopy(lang);
+  const copyLocale = supportContentLocale(lang);
   return (
     <div className="pitch-bg min-h-dvh px-4 py-14">
       <div className="mx-auto max-w-3xl">
@@ -85,13 +91,16 @@ export function SobrePage() {
             {CREATOR.role.toLowerCase()}. Bastidores, novidades e vídeos das partidas saem no canal
             do YouTube.
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            O projeto foi criado em Vitória, Espírito Santo, Brasil.
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground" lang={copyLocale}>
+            {copy.origin}
           </p>
-          <address className="mt-3 text-sm not-italic leading-relaxed text-muted-foreground">
-            Av. Hugo Viola, 351 - Jardim da Penha, Vitória - ES, 29065-475
+          <address
+            className="mt-3 text-sm not-italic leading-relaxed text-muted-foreground"
+            lang={copyLocale}
+          >
+            {CREATOR.address}
             <br />
-            CPF do criador: 170.312.897-42
+            {copy.creatorCpfLabel}: {CREATOR.cpf}
           </address>
           <p className="mt-3 flex flex-wrap gap-3 text-sm">
             <a

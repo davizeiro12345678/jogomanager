@@ -71,6 +71,7 @@ export default function QuickLive({
       home: buildTeamSetup(myId),
       away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
       seed,
+      rulesRevision: 2 as const,
     };
   }, [myId, oppId, difficulty, seed]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);

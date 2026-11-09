@@ -236,6 +236,7 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   // Freeze the backend before the first step so loading timing cannot change
   // the seeded pass decisions halfway through a match.
   live = new MatchSim(message.home, message.away, message.seed, {
+    rulesRevision: message.rulesRevision,
     knockout: message.knockout,
     weather: message.weather,
   });
@@ -375,6 +376,7 @@ async function handleMessage(message: LiveWorkerRequest) {
   }
   if (message.type === "simulate") {
     const sim = new MatchSim(message.home, message.away, message.seed, {
+      rulesRevision: message.rulesRevision,
       knockout: message.knockout,
       weather: message.weather,
     });

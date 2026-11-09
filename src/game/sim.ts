@@ -8,10 +8,19 @@ import {
 } from "./wasm/match-perception";
 import {
   MATCH_EXECUTION_REVISION,
+  validMatchRulesRevision,
   validExecutionContract,
   type MatchExecutionContract,
+  type MatchRulesRevision,
 } from "./match-execution-contract";
 import { PassLaneBuffers } from "./wasm/pass-lane-buffers";
+import {
+  captureOffsidePhase,
+  emptyMatchRulesState,
+  restoreMatchRulesState,
+  type MatchRulesStateV2,
+  type OffsideRestart,
+} from "./offside-phase";
 import { MatchVisualContextComputer } from "./sim-visual-context";
 import type { PlayerAction } from "./animation";
 import { calculatePlayerRatings } from "./sim-ratings";
@@ -86,6 +95,8 @@ export class MatchSim {
   #passLaneIntoKernel: PassLaneIntoKernel | null = evaluatePassLanesIntoFallback;
   #perceptionBackend: "compat" | "wasm" = "compat";
   #execution: MatchExecutionContract | null = null;
+  #rulesRevision: MatchRulesRevision = 1;
+  #rulesState: MatchRulesStateV2 | null = null;
   #physicsFault = false;
   private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
 
@@ -108,7 +119,73 @@ export class MatchSim {
       revision: MATCH_EXECUTION_REVISION,
       physics: this.ballPhysics ? "rapier" : "compat",
       perception: this.#perceptionBackend,
+      ...(this.#rulesRevision === 2 ? { rulesRevision: 2 as const } : {}),
     };
+  }
+
+  /** Fixed before play; native private storage preserves legacy checkpoint keys. */
+  get rulesRevision(): MatchRulesRevision {
+    return this.#rulesRevision;
+  }
+
+  /** Record a real teammate touch; no renderer clock or additional RNG. */
+  noteOffsideKick(kicker: SimPlayer, ballX: number): void {
+    const state = this.#rulesState;
+    if (!state) return;
+    if (state.indirect) {
+      if (state.indirect.takerId !== kicker.id) state.indirect = null;
+      else state.indirect.kickedAt ??= this.time;
+    }
+    const exempt = state.restart?.side === kicker.side && state.restart.takerId === kicker.id;
+    state.phase = exempt ? null : captureOffsidePhase(this.players, kicker, this.time, ballX);
+    state.restart = null;
+  }
+
+  offsideAtContact(player: SimPlayer): boolean {
+    const phase = this.#rulesState?.phase;
+    return (
+      !!phase &&
+      !player.sentOff &&
+      phase.side === player.side &&
+      phase.offsideIds.includes(player.id)
+    );
+  }
+
+  /** A successful opponent control ends the prior phase. Blocks/save rebounds do not. */
+  noteOffsideControl(player: SimPlayer): void {
+    const state = this.#rulesState;
+    if (!state) return;
+    state.phase = null;
+    state.restart = null;
+    if (state.indirect?.takerId !== player.id) state.indirect = null;
+  }
+
+  noteOffsideDeflection(player: SimPlayer): void {
+    const state = this.#rulesState;
+    if (!state) return;
+    if (state.indirect?.takerId !== player.id) state.indirect = null;
+    if (!state.phase || state.phase.side === player.side)
+      state.phase = captureOffsidePhase(this.players, player, this.time, this.ball.x);
+    state.restart = null;
+  }
+
+  resetOffsidePhase(): void {
+    if (this.#rulesState) {
+      this.#rulesState.phase = null;
+      this.#rulesState.restart = null;
+      this.#rulesState.indirect = null;
+    }
+  }
+
+  beginOffsideRestart(taker: SimPlayer, kind: OffsideRestart["kind"]): void {
+    if (!this.#rulesState) return;
+    this.#rulesState.phase = null;
+    this.#rulesState.indirect = null;
+    this.#rulesState.restart = { side: taker.side, takerId: taker.id, kind };
+  }
+
+  holdsExemptRestart(player: SimPlayer): boolean {
+    return this.#rulesState?.restart?.takerId === player.id;
   }
 
   /** Internal recovery snapshot, never a career save or authority attestation. */
@@ -122,6 +199,7 @@ export class MatchSim {
     return {
       version: 2,
       execution: this.executionContract(),
+      ...(this.#rulesRevision === 2 ? { rulesState: structuredClone(this.#rulesState!) } : {}),
       seed: this.matchSeed,
       rng: this.rnd.state(),
       state: structuredClone(state),
@@ -180,6 +258,19 @@ export class MatchSim {
       )
     )
       throw new Error("Invalid player checkpoint");
+    const rulesRevision = checkpoint.version === 2 ? (checkpoint.execution!.rulesRevision ?? 1) : 1;
+    if (rulesRevision === 1 && checkpoint.rulesState !== undefined)
+      throw new Error("Invalid match rules state for legacy checkpoint");
+    const rulesState =
+      rulesRevision === 2
+        ? restoreMatchRulesState(
+            checkpoint.rulesState,
+            players,
+            checkpoint.state["subsOut"],
+            checkpoint.state["time"] as number,
+            (checkpoint.state["ball"] as { holder?: unknown } | null)?.holder,
+          )
+        : null;
     const state = structuredClone(checkpoint.state);
     // A fresh recovery backend must restore successfully before committing state.
     if (checkpoint.physics) authority!.restore!(checkpoint.physics);
@@ -198,6 +289,8 @@ export class MatchSim {
             physics: checkpoint.physics ? "rapier" : "compat",
             perception: checkpoint.perception,
           };
+    this.#rulesRevision = this.#execution.rulesRevision ?? 1;
+    this.#rulesState = rulesState;
     this.#physicsFault = false;
   }
   time = 0; // segundos de jogo
@@ -319,8 +412,16 @@ export class MatchSim {
     public home: TeamSetup,
     public away: TeamSetup,
     seed: string,
-    opts?: { knockout?: boolean | undefined; weather?: WeatherKind | undefined },
+    opts?: {
+      knockout?: boolean | undefined;
+      weather?: WeatherKind | undefined;
+      rulesRevision?: MatchRulesRevision | undefined;
+    },
   ) {
+    if (opts?.rulesRevision !== undefined && !validMatchRulesRevision(opts.rulesRevision))
+      throw new RangeError("Unknown match rules revision");
+    this.#rulesRevision = opts?.rulesRevision ?? 1;
+    this.#rulesState = this.#rulesRevision === 2 ? emptyMatchRulesState() : null;
     this.rnd = makeRng(seed);
     this.matchSeed = seed;
     this.knockout = opts?.knockout ?? false;
@@ -558,6 +659,12 @@ export class MatchSim {
     this.subsOut.push(out);
     setup.bench = setup.bench!.filter((player) => player.id !== incoming.id);
     if (this.ball.holder === out.id) this.ball.holder = fresh.id;
+    if (this.#rulesState?.restart?.takerId === out.id) this.#rulesState.restart.takerId = fresh.id;
+    if (
+      this.#rulesState?.indirect?.takerId === out.id &&
+      this.#rulesState.indirect.kickedAt === null
+    )
+      this.#rulesState.indirect.takerId = fresh.id;
     this.players[idx] = fresh;
     this.synchronizeBallPhysics();
     this.subsUsed[side]++;
@@ -590,6 +697,7 @@ export class MatchSim {
   }
 
   private kickoff(side: Side) {
+    this.resetOffsidePhase();
     this.ball.x = 0;
     this.ball.z = 0;
     this.ball.vx = 0;
@@ -601,8 +709,15 @@ export class MatchSim {
     this.ballSpin = 0;
     this.pendingShot = null;
     this.pass = null;
-    const team = this.players.filter((p) => p.side === side);
+    const team = this.players.filter(
+      (p) => p.side === side && (this.#rulesRevision === 1 || !p.sentOff),
+    );
     const starter = team.find((p) => p.pos === "FW") ?? team[team.length - 1]!;
+    if (!starter) {
+      this.ball.holder = null;
+      this.finishMatch();
+      return;
+    }
     starter.x = -0.6 * (side === "home" ? 1 : -1);
     starter.z = 0;
     this.ball.holder = starter.id;
@@ -614,6 +729,29 @@ export class MatchSim {
 
   /** @internal */ setup(side: Side) {
     return side === "home" ? this.home : this.away;
+  }
+
+  /** Legacy selection stays exact; revised matches never resurrect a dismissed keeper. */
+  goalkeeper(side: Side): SimPlayer | null {
+    const keeper = this.players.find(
+      (player) =>
+        player.side === side &&
+        player.pos === "GK" &&
+        (this.#rulesRevision === 1 || !player.sentOff),
+    );
+    if (keeper || this.#rulesRevision === 1) return keeper ?? null;
+    const goalX = -this.attackDir(side) * FIELD_X;
+    let best: SimPlayer | null = null;
+    let bestDistance = Infinity;
+    for (const player of this.players) {
+      if (player.side !== side || player.sentOff) continue;
+      const distance = (player.x - goalX) ** 2 + player.z ** 2;
+      if (distance < bestDistance) {
+        best = player;
+        bestDistance = distance;
+      }
+    }
+    return best;
   }
 
   /** @internal */ attackDir(side: Side) {
@@ -698,6 +836,7 @@ export class MatchSim {
 
   /** avança a máquina de fases; devolve true quando o jogo terminou */
   private advancePhase(): boolean {
+    this.resetOffsidePhase();
     if (this.phase === "first") {
       this.phase = "half";
       this.freezeT = 6;
@@ -868,7 +1007,7 @@ export class MatchSim {
   private setupShootoutKick() {
     const side = this.shootoutTurn;
     const taker = this.shootoutTaker(side);
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK") ?? null;
+    const gk = this.goalkeeper(side === "home" ? "away" : "home");
     if (taker) {
       taker.x = FIELD_X - PENALTY_DIST;
       taker.z = 0.6;
@@ -901,7 +1040,7 @@ export class MatchSim {
     if (this.shootoutTimer > 0) return;
     const side = this.shootoutTurn;
     const taker = this.shootoutTaker(side);
-    const gk = this.players.find((p) => p.side !== side && p.pos === "GK") ?? null;
+    const gk = this.goalkeeper(side === "home" ? "away" : "home");
     if (!taker) {
       this.finishMatch();
       return;
@@ -1361,6 +1500,11 @@ export class MatchSim {
     }
     // destravamento: bola parada sem dono por muito tempo
     if (this.looseTime > 3.5 && ballSpeed < 4 && closest) {
+      if (this.offsideAtContact(closest)) {
+        this.controlBall(closest, ballSpeed, h);
+        return;
+      }
+      this.noteOffsideControl(closest);
       closest.x = this.ball.x;
       closest.z = this.ball.z;
       this.ball.holder = closest.id;
@@ -1411,6 +1555,16 @@ export class MatchSim {
     bigChance = false,
     bodyPart: "foot" | "head" = "foot",
   ) {
+    const indirect = this.#rulesState?.indirect;
+    if (indirect) {
+      // The post is not another player. Only a different athlete's touch or
+      // a fresh restart ends this restriction; recovery keeps it intact.
+      this.ball.x = this.attackDir(side) * (FIELD_X - 0.6);
+      this.ball.z = 0;
+      if (side === indirect.side) this.scheduleRestart(side === "home" ? "away" : "home");
+      else this.restartFor(side, "corner");
+      return;
+    }
     this.stats[side].onTarget++;
     this.stats[side].goals++;
     this.stoppageDebt += 0.5;
@@ -1454,7 +1608,8 @@ export class MatchSim {
   }
 
   /** entrega a bola parada ao jogador mais próximo do lado indicado */
-  /** @internal */ restartFor(side: Side, kind: "throwIn" | "corner") {
+  /** @internal */ restartFor(side: Side, kind: "throwIn" | "corner" | "indirectFK") {
+    this.resetOffsidePhase();
     // escanteio é disputado na área, com goleiro, zaga e cabeçada
     if (kind === "corner") {
       this.setupCorner(side);
@@ -1463,14 +1618,18 @@ export class MatchSim {
     let best: SimPlayer | null = null;
     let bestD = Infinity;
     for (const p of this.players) {
-      if (p.side !== side || p.pos === "GK") continue;
+      if (p.side !== side || p.pos === "GK" || (this.#rulesRevision === 2 && p.sentOff)) continue;
       const d = Math.hypot(p.x - this.ball.x, p.z - this.ball.z);
       if (d < bestD) {
         bestD = d;
         best = p;
       }
     }
-    if (!best) return;
+    if (!best && this.#rulesRevision === 2) best = this.goalkeeper(side);
+    if (!best) {
+      if (this.#rulesRevision === 2) this.ball.holder = null;
+      return;
+    }
     best.x = this.ball.x;
     best.z = this.ball.z;
     best.vx = 0;
@@ -1486,9 +1645,12 @@ export class MatchSim {
     this.pass = null;
     this.looseTime = 0;
     this.restartTimer = 0.8;
-    this.trigger(best, kind, 0.9);
+    this.trigger(best, kind === "indirectFK" ? "freeKick" : kind, 0.9);
     // não existe impedimento recebendo direto do lateral
     this.exemptUntil = this.time + 1.5;
+    if (kind === "throwIn") this.beginOffsideRestart(best, kind);
+    else if (kind === "indirectFK" && this.#rulesState)
+      this.#rulesState.indirect = { side, takerId: best.id, awardedAt: this.time, kickedAt: null };
     this.synchronizeBallPhysics();
   }
 
@@ -1607,6 +1769,7 @@ export class MatchSim {
     holder.passes++;
     this.stats[holder.side].passes++;
     this.lastPass[holder.side] = { id: holder.id, time: this.time };
+    this.noteOffsideKick(holder, this.ball.x);
     this.ball.holder = null;
     this.lastTouch = holder.side;
     this.pass = {
@@ -1637,9 +1800,20 @@ export class MatchSim {
     ballDuels.shoot(this, holder, distGoal);
   }
 
-  /** @internal */ scheduleRestart(side: Side) {
-    const gk = this.players.find((p) => p.side === side && p.pos === "GK");
-    if (!gk) return;
+  /** @internal */ scheduleRestart(side: Side, kind: "goalKick" | "keeperControl" = "goalKick") {
+    this.resetOffsidePhase();
+    const gk = this.goalkeeper(side);
+    if (!gk) {
+      if (this.#rulesRevision === 2) this.ball.holder = null;
+      return;
+    }
+    if (this.#rulesRevision === 2 && kind === "goalKick") {
+      gk.x = -this.attackDir(side) * (FIELD_X - 5.5);
+      gk.z = 0;
+      gk.vx = gk.vz = 0;
+      this.ball.x = gk.x;
+      this.ball.z = 0;
+    }
     this.ball.holder = gk.id;
     this.possession = side;
     this.lastTouch = side;
@@ -1654,6 +1828,7 @@ export class MatchSim {
     this.restartTimer = 1.5;
     this.decisionTimer = 1.2;
     this.trigger(gk, this.rnd() < 0.5 ? "goalKick" : "distribute", 1.1);
+    if (kind === "goalKick") this.beginOffsideRestart(gk, kind);
     this.synchronizeBallPhysics();
   }
 

@@ -62,6 +62,7 @@ export function initCareer(
 
   return withCareerWorld({
     version: 3,
+    matchRulesRevision: 2,
     catalogRevision: 1,
     simulationRatingRevision: 1,
     economyRulesVersion: 2,

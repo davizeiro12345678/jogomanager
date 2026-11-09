@@ -1,3 +1,5 @@
+import { graphicsRendererClass } from "./graphics-renderer-metadata";
+
 /** Native GPU measurement protocol; CPU performance belongs to CodSpeed. */
 export function nativeMeasurementTiming(search: string) {
   const params = new URLSearchParams(search);
@@ -42,7 +44,18 @@ export function assessNativePerformance(sample: {
   adaptive: boolean | undefined;
 }) {
   const reasons: string[] = [];
-  if (!sample.complete) reasons.push("measurement-incomplete");
+  if (
+    !Number.isSafeInteger(sample.warmupMs) ||
+    !Number.isSafeInteger(sample.measurementMs) ||
+    sample.warmupMs < 0 ||
+    sample.measurementMs <= 0 ||
+    !Number.isFinite(sample.coveredMs) ||
+    sample.coveredMs < 0 ||
+    !Number.isSafeInteger(sample.interruptions) ||
+    sample.interruptions < 0
+  )
+    reasons.push("invalid-measurement-timing");
+  if (sample.complete !== true) reasons.push("measurement-incomplete");
   if (sample.interruptions) reasons.push("visibility-interrupted");
   if (!Number.isFinite(sample.coveredMs) || sample.coveredMs < sample.measurementMs - 1)
     reasons.push("measurement-coverage-incomplete");
@@ -55,12 +68,7 @@ export function assessNativePerformance(sample: {
     sample.quality !== "alta"
   )
     reasons.push("quality-contract-mismatch");
-  if (
-    !sample.gpuRenderer ||
-    /swiftshader|llvmpipe|softpipe|lavapipe|software|basic render|disabled|unavailable|unknown|microsoft warp/i.test(
-      sample.gpuRenderer,
-    )
-  )
+  if (graphicsRendererClass(sample.gpuRenderer) !== "hardware")
     reasons.push("native-gpu-unverified");
   if (!Number.isFinite(sample.fps) || sample.fps < 60) reasons.push("mean-fps-below-60");
   if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 20)

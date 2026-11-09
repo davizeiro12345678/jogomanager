@@ -15,7 +15,11 @@ export async function recoverMatch(
     state["home"] as MatchSim["home"],
     state["away"] as MatchSim["away"],
     checkpoint.seed,
-    { knockout: state["knockout"] as boolean, weather: state["weather"] as MatchSim["weather"] },
+    {
+      knockout: state["knockout"] as boolean,
+      weather: state["weather"] as MatchSim["weather"],
+      rulesRevision: checkpoint.version === 2 ? checkpoint.execution?.rulesRevision : undefined,
+    },
   );
   try {
     if (checkpoint.perception === "wasm") {

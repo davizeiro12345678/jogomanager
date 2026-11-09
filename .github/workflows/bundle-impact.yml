@@ -47,10 +47,12 @@ jobs:
       - name: Preserve analyzer and install one dependency graph for both revisions
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+          cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"
           cp package.json "$RUNNER_TEMP/bundle-package.json"
           cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
           sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
           npm ci
+          node --test scripts/normalize-baseline-entities-alias.test.mjs
       - name: Build baseline from PR base SHA
         env:
           BASE_SHA: ${{ inputs.baseline_ref }}
@@ -61,18 +63,10 @@ jobs:
           # keep their own source files and identical installed dependencies.
           cp "$RUNNER_TEMP/bundle-package.json" package.json
           cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
-          # The old global "entities" alias breaks nested entities/decode with the
-          # candidate lockfile. Normalize only that resolver compatibility line;
-          # no performance or application logic is changed in the baseline.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("vite.config.ts")
-          src = p.read_text()
-          line = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
-          if src.count(line) != 1:
-              raise SystemExit("Baseline entities alias contract changed")
-          p.write_text(src.replace(line, "", 1))
-          PY
+          # Validate the known subpath aliases. A compatible baseline is left
+          # byte-identical; only the exact legacy bare alias may be removed.
+          # Unexpected resolver semantics still fail the comparison.
+          node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs

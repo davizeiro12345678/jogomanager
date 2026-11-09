@@ -13,8 +13,8 @@ import {
   DEFAULT_QUICK_MATCH_LEAGUE,
   preloadQuickMatchCatalog,
   QUICK_MATCH_LEAGUE_DIRECTORY,
-  type QuickMatchLeagueSummary,
 } from "@/game/quick-match-catalog";
+import { groupQuickMatchLeagues } from "@/game/quick-country-groups";
 import { useT } from "@/i18n/provider";
 import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
 
@@ -36,19 +36,10 @@ export function QuickMatchPage() {
   const catalogRequest = useRef(0);
   // Directory identities are immutable. Difficulty/club selection must not
   // rebuild and sort every league option or recreate ICU's collator.
-  const leagueGroups = useMemo(() => {
-    const countryCompare = new Intl.Collator(lang).compare;
-    const groups = QUICK_MATCH_LEAGUE_DIRECTORY.reduce<Record<string, QuickMatchLeagueSummary[]>>(
-      (grouped, entry) => {
-        (grouped[entry.country] ??= []).push(entry);
-        return grouped;
-      },
-      {},
-    );
-    return Object.entries(groups).sort(([a], [b]) =>
-      a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b),
-    );
-  }, [lang]);
+  const leagueGroups = useMemo(
+    () => groupQuickMatchLeagues(QUICK_MATCH_LEAGUE_DIRECTORY, lang),
+    [lang],
+  );
 
   async function chooseLeague(id: string) {
     const request = ++catalogRequest.current;

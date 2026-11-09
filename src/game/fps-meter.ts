@@ -1,4 +1,6 @@
 import { FpsWindow } from "./fps-window";
+import { fpsCopy } from "@/i18n/fps-copy";
+import type { Lang } from "@/i18n/locale-catalog";
 
 /**
  * Medidor de quadros do aparelho real do jogador.
@@ -149,10 +151,14 @@ export class FpsMeter {
       low1: Math.round(metrics.low1),
       seconds: Math.round(metrics.windowMs / 1000),
       source: this.source,
-      measurementKey: this.context?.key,
-      phase: this.context?.phase,
-      quality: this.context?.quality,
-      camera: this.context?.camera,
+      ...(this.context
+        ? {
+            measurementKey: this.context.key,
+            phase: this.context.phase,
+            quality: this.context.quality,
+            ...(this.context.camera === undefined ? {} : { camera: this.context.camera }),
+          }
+        : {}),
     };
   }
 
@@ -172,51 +178,53 @@ export class FpsMeter {
 export const fpsMeter = new FpsMeter();
 
 /** Texto pronto para o jogador copiar e enviar. */
-export function fpsReport(s: FpsSample, extra: Record<string, string | number>): string {
+export function fpsReport(
+  s: FpsSample,
+  extra: Record<string, string | number>,
+  lang: Lang = "pt-BR",
+): string {
+  const copy = fpsCopy(lang);
   const lines = [
-    `FPS médio: ${s.avg}`,
-    `FPS agora: ${s.now}`,
-    `Pior segundo: ${s.worst}`,
-    `1% piores quadros: ${s.low1}`,
-    `Tempo medido: ${s.seconds}s`,
+    `${copy.average}: ${s.avg}`,
+    `${copy.current}: ${s.now}`,
+    `${copy.worstSecond}: ${s.worst}`,
+    `${copy.onePercentLow}: ${s.low1}`,
+    `${copy.measuredTime}: ${s.seconds}s`,
   ];
-  if (s.source)
-    lines.push(
-      s.source === "rendered"
-        ? "Origem: quadros do renderizador após render; sem certificação de GPU física"
-        : "Origem: requestAnimationFrame; ritmo do navegador, não frames do estádio",
-    );
-  if (s.phase) lines.push(`Fase medida: ${s.phase}`);
-  if (s.quality) lines.push(`Preset medido: ${s.quality}`);
-  if (s.camera) lines.push(`Câmera medida: ${s.camera}`);
-  if (s.measurementKey) lines.push(`Cenário medido: ${s.measurementKey}`);
+  if (s.source) lines.push(s.source === "rendered" ? copy.renderedSource : copy.rafSource);
+  if (s.phase) lines.push(`${copy.measuredPhase}: ${s.phase}`);
+  if (s.quality) lines.push(`${copy.measuredPreset}: ${s.quality}`);
+  if (s.camera) lines.push(`${copy.measuredCamera}: ${s.camera}`);
+  if (s.measurementKey) lines.push(`${copy.measuredScenario}: ${s.measurementKey}`);
   if (s.frames !== undefined && s.windowMs !== undefined) {
-    lines.push(`Quadros/tempo ativo: ${s.frames} / ${s.windowMs.toFixed(3)} ms`);
+    lines.push(`${copy.framesAndTime}: ${s.frames} / ${s.windowMs.toFixed(3)} ms`);
     lines.push(
-      `FPS médio preciso: ${s.windowMs > 0 ? ((s.frames * 1000) / s.windowMs).toFixed(3) : "0"}`,
+      `${copy.preciseAverage}: ${s.windowMs > 0 ? ((s.frames * 1000) / s.windowMs).toFixed(3) : "0"}`,
     );
   }
   const diagnosticLines: [string, number | undefined, string][] = [
-    ["0,1% piores quadros", s.low01, " FPS"],
-    ["Frame time p50", s.p50FrameMs, " ms"],
-    ["Frame time p95", s.p95FrameMs, " ms"],
-    ["Frame time p99", s.p99FrameMs, " ms"],
-    ["Pior quadro", s.maxFrameMs, " ms"],
-    ["Quadros >33,33 ms", s.framesOver33Ms, ""],
-    ["Quadros >50 ms", s.framesOver50Ms, ""],
-    ["Quadros >100 ms", s.framesOver100Ms, ""],
-    ["Quadros >250 ms", s.framesOver250Ms, ""],
+    [copy.pointOnePercentLow, s.low01, " FPS"],
+    [copy.p50, s.p50FrameMs, " ms"],
+    [copy.p95, s.p95FrameMs, " ms"],
+    [copy.p99, s.p99FrameMs, " ms"],
+    [copy.maxFrame, s.maxFrameMs, " ms"],
+    [copy.over33, s.framesOver33Ms, ""],
+    [copy.over50, s.framesOver50Ms, ""],
+    [copy.over100, s.framesOver100Ms, ""],
+    [copy.over250, s.framesOver250Ms, ""],
   ];
   for (const [label, value, unit] of diagnosticLines)
     if (value !== undefined) lines.push(`${label}: ${Number(value.toFixed(3))}${unit}`);
   for (const [k, v] of Object.entries(extra)) lines.push(`${k}: ${v}`);
   if (typeof navigator !== "undefined") {
-    lines.push(`Navegador: ${navigator.userAgent}`);
+    lines.push(`${copy.browser}: ${navigator.userAgent}`);
     const cores = navigator.hardwareConcurrency;
-    if (cores) lines.push(`Núcleos: ${cores}`);
+    if (cores) lines.push(`${copy.cores}: ${cores}`);
   }
   if (typeof window !== "undefined") {
-    lines.push(`Tela: ${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}`);
+    lines.push(
+      `${copy.screen}: ${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}`,
+    );
   }
   return lines.join("\n");
 }
