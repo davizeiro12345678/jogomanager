@@ -5,9 +5,21 @@
 Este commit continua **somente** o PR #128. O projeto Supabase
 `lguqnwvsfeefxamzeyos` já recebeu as migrações de aplicação 0063, 0064 e
 0065 via histórico gerenciado: **não executar de novo** nem criar uma segunda
-cópia Drizzle. A Edge Function `api-football-import` versão 14 está ativa com
+cópia Drizzle. A Edge Function `api-football-import` foi inicialmente confirmada na versão 14 com
 quota atômica de 450.000 requisições/dia UTC, 1.200/minuto e 20/segundo.
 Este passe não repete deploy do importador nem muda esses limites.
+
+**Revalidação somente de leitura em 09/11/2026 às 21:42 UTC:** a função
+`api-football-import` já está **ACTIVE na versão 25**, posterior à versão 14
+documentada anteriormente. A migração gerenciada
+`20261109201609_api_football_raise_claim_concurrency_48_20261109` também está
+aplicada. A configuração efetiva permanece habilitada com **450.000/dia** e
+**1.200/minuto**. No instante observado: 244.343 requisições contabilizadas
+em recibos do dia, 232.573 recibos concluídos, 2.380.556 jobs pendentes,
+47 em execução e 2 indisponíveis. A janela de dez minutos tinha 4.549
+requisições contabilizadas. Esses valores mudam em tempo real e não
+representam o teto máximo sustentado. **Não substituir a versão 25 com os
+arquivos antigos da versão 14 nem reaplicar migrações existentes.**
 
 ## Mudanças efetivas de código
 
@@ -46,6 +58,14 @@ Na cópia isolada `C:\ProgramData\SentinelX\workspace\jogomanager-pr128`:
 - 30/30 testes focados de CSS, renderer, IA e adaptador passaram.
 - TypeScript global e ESLint `--max-warnings=0` aprovados.
 - Teste de 200 partidas semeadas, com reprodução determinística, aprovado.
+- O CI do SHA `6810738` encontrou duas falhas no teste
+  `mobile-stadium-dpr.test.ts`: o mock de React invocava o componente sem
+  simular `useLayoutEffect`, após a otimização do primeiro frame.
+- O teste foi corrigido sem desativar verificações, na revisão `0c55395`.
+  Na verificação local dessa revisão passaram **374 arquivos / 2.250 testes**,
+  ESLint sem avisos e TypeScript sem erros.
+- O último CI completo da nova revisão ainda precisa rodar e aprovar seu SHA
+  exato; aprovação local não substitui os gates remotos.
 
 Ainda precisa do **CI do SHA exato**, do build final, das campanhas de GPU
 dedicada/integrada com os mesmos parâmetros e da ativação externa de
