@@ -1,0 +1,41 @@
+{
+  "collectedAt": "2026-11-09T02:31:38.568Z",
+  "sourceSHA": "2d567421031a56b6f67d5d8c88e2ef05a0b2a650",
+  "baseSHA": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "runId": 42550425638,
+  "jobId": 128944534211,
+  "statistic": "median of62 samples per revision;99%bootstrap ratio4096 resamples per pinned script (not arithmetic means)",
+  "report": {
+    "generatedAt": "2026-11-09T02:21:55.225Z",
+    "protocol": "same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass",
+    "baseline": "/home/runner/work/jogomanager/jogomanager/.benchmark-base",
+    "candidate": "/home/runner/work/jogomanager/jogomanager",
+    "environment": {
+      "node": "v24.22.0",
+      "platform": "linux",
+      "architecture": "x64",
+      "kernel": "7.0.0-1017-azure",
+      "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+    },
+    "dependencyLockSha256": "d2e77ddc354ce3334ff169b37054744cbb0c5e42be294387bdd25c0fed027a61",
+    "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+    "samplesPerRevision": 62,
+    "deterministicCheckpoints": 21,
+    "budget": {
+      "baselineCpuMs": 0.1882505,
+      "candidateCpuMs": 0.181155,
+      "durationChangePercent": -3.769179895936514,
+      "materialRegressionPercent": 10,
+      "confidence": 0.99,
+      "lowerRatio": 0.958527814316629,
+      "upperRatio": 0.9836639725026947,
+      "failed": false
+    },
+    "violations": []
+  },
+  "primaryJSONLog": "{\n  \"generatedAt\": \"2026-11-09T02:21:55.225Z\",\n  \"protocol\": \"same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass\",\n  \"baseline\": \"/home/runner/work/jogomanager/jogomanager/.benchmark-base\",\n  \"candidate\": \"/home/runner/work/jogomanager/jogomanager\",\n  \"environment\": {\n    \"node\": \"v24.22.0\",\n    \"platform\": \"linux\",\n    \"architecture\": \"x64\",\n    \"kernel\": \"7.0.0-1017-azure\",\n    \"cpu\": \"INTEL(R) XEON(R) PLATINUM 8573C\"\n  },\n  \"dependencyLockSha256\": \"d2e77ddc354ce3334ff169b37054744cbb0c5e42be294387bdd25c0fed027a61\",\n  \"fixtureSha256\": \"1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056\",\n  \"samplesPerRevision\": 62,\n  \"deterministicCheckpoints\": 21,\n  \"budget\": {\n    \"baselineCpuMs\": 0.1882505,\n    \"candidateCpuMs\": 0.181155,\n    \"durationChangePercent\": -3.769179895936514,\n    \"materialRegressionPercent\": 10,\n    \"confidence\": 0.99,\n    \"lowerRatio\": 0.958527814316629,\n    \"upperRatio\": 0.9836639725026947,\n    \"failed\": false\n  },\n  \"violations\": []\n}",
+  "artifact": {
+    "id": 13645078190,
+    "sha256": "1d17ec7d81cf73e4360398717de330682849ad772ff8431ccd04843e8fd39290"
+  }
+}

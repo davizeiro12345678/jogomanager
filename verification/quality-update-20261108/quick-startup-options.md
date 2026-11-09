@@ -13,6 +13,7 @@ A extração não acrescenta elementos de DOM e mantém os seletores nativos, os
 ## Evidência desta alteração
 
 - [quick-startup-options-tests.json](./quick-startup-options-tests.json): **43 testes aprovados**, zero falhas, em seis arquivos. Inclui paridade exata para todos os 26 idiomas, identidade de referências entre variantes iguais e ausência de collation em runtime.
+- [quick-startup-final-regression-tests.json](./quick-startup-final-regression-tests.json): **48 testes aprovados**, incluindo os cinco casos existentes de `quick-country-collation.test.ts`. Esse teste passou a renderizar a página com React SSR, alcançando também os novos componentes memoizados. Mantém os cinco idiomas e exige todos os 102 países na mesma ordem anterior, além de **zero** chamadas a `String.localeCompare` e `Intl.Collator` durante a renderização. O cálculo independente da ordem esperada ocorre antes dos spies.
 - A regressão SSR compara o HTML completo das opções com o algoritmo anterior: **300 opções de liga e duas listas de 20 clubes**, na mesma ordem, com os mesmos valores selecionados e adversários desabilitados. Os três seletores são preservados.
 - [quick-selection-browser-order.json](./quick-selection-browser-order.json): comparação pequena em navegador Chromium/Edge real, versão 157.0.4341.42. Os **26 idiomas** apresentam grupos, ligas e ordenação **idênticos** entre o gerador com Node 24.22.0 e `Intl.Collator` do navegador. Não houve necessidade de um fallback que alterasse a ordenação.
 - TypeScript global e ESLint global passaram com saída 0, sem diagnósticos.
