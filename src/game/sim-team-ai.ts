@@ -258,8 +258,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
                 attackDirection: dir > 0 ? 1 : -1,
                 minute: sim.minute(),
                 scoreDifference:
-                  sim.stats[p.side].goals -
-                  sim.stats[p.side === "home" ? "away" : "home"].goals,
+                  sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
               })
             : setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14
               ? dir * 3.5
@@ -294,8 +293,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
           pressing: setup.tactics.pressing,
           minute: sim.minute(),
           scoreDifference:
-            sim.stats[p.side].goals -
-            sim.stats[p.side === "home" ? "away" : "home"].goals,
+            sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
           attackDirection: dir > 0 ? 1 : -1,
         });
         tx += cover.forward;
