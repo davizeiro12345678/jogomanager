@@ -152,11 +152,16 @@ Deno.serve(async (request: Request) => {
             beforeRequest: async () => {
               if (!job.path.startsWith("/") || job.path.startsWith("//"))
                 throw new Error("invalid_provider_path");
-              // Bound reserved-but-not-yet-sent calls: quota is debited on
-              // reservation, so do not reserve a full 48-call tail at deadline.
-              while (!stopped && scheduledRequests - summary.requests >= 12 &&
-                     Date.now() < deadline - 5000)
+              // Keep the reservation pipeline full while capacity exists,
+              // then drain it as the fetch deadline approaches to avoid
+              // debiting quota for calls we cannot actually send.
+              while (!stopped && Date.now() < deadline - 5000) {
+                const slotsLeft = Math.floor((deadline - 5000 - Date.now()) / spacingMs);
+                if (slotsLeft <= 0) throw new Error("window_budget");
+                const safeInFlight = Math.max(1, Math.min(lanes, slotsLeft));
+                if (scheduledRequests - summary.requests < safeInFlight) break;
                 await new Promise((r) => setTimeout(r, 30));
+              }
               const slot = Math.max(Date.now(), nextRequest);
               if (stopped || scheduledRequests >= maxRequests || slot > deadline - 5000)
                 throw new Error("window_budget");
