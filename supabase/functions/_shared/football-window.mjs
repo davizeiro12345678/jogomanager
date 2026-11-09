@@ -1,11 +1,14 @@
 // The database enforces global quotas; these limits bound each invocation.
 export function footballWindowBudget(configuredLanes, pilot) {
   const parsed = Number(configuredLanes);
-  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(16, parsed);
+  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(48, parsed);
   return {
     lanes,
-    spacingMs: Math.max(55, Math.ceil(880 / lanes)),
-    maxRequests: lanes * 55,
+    // Twenty provider requests per second is the Custom450 burst ceiling.
+    // The database remains the shared authority across overlapping workers.
+    spacingMs: Math.max(100, Math.ceil(800 / lanes)),
+    // One 40-second worker window, without raising provider/global quotas.
+    maxRequests: Math.min(880, lanes * 50),
   };
 }
 
@@ -45,8 +48,13 @@ export function footballProviderRateError(response) {
 }
 
 export function validateFootballPage(body, job) {
-  if (!body || typeof body !== "object" || (body.errors && Object.keys(body.errors).length))
+  if (!body || typeof body !== "object") throw new Error("provider_reported_error");
+  if (body.errors && Object.keys(body.errors).length) {
+    // API-SPORTS can return rateLimit inside a successful HTTP response.
+    if (Object.keys(body.errors).some((key) => /rate.?limit|quota|requests/i.test(key)))
+      throw new Error("provider_rate_wait");
     throw new Error("provider_reported_error");
+  }
   if (
     !Array.isArray(body.response) &&
     !(job.kind === "team_stats" && body.response && typeof body.response === "object")
