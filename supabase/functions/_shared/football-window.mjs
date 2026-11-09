@@ -4,8 +4,8 @@ export function footballWindowBudget(configuredLanes, pilot) {
   const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(16, parsed);
   return {
     lanes,
-    spacingMs: Math.max(55, Math.ceil(1050 / lanes)),
-    maxRequests: lanes * 40,
+    spacingMs: Math.max(55, Math.ceil(880 / lanes)),
+    maxRequests: lanes * 55,
   };
 }
 
