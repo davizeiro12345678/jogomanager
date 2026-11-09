@@ -107,7 +107,7 @@ Deno.serve(async (request: Request) => {
     let stopped = false,
       nextRequest = Date.now();
     const { lanes, spacingMs, maxRequests } = footballWindowBudget(
-      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "3",
+      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "16",
       !!adminToken,
     );
     let scheduledRequests = 0;
