@@ -103,14 +103,29 @@ Deno.serve(async (request: Request) => {
         deferred: 0,
         requests: 0,
         remaining: null as number | null,
+        lanes: 0,
+        spacingMs: 0,
+        quotaWaits: 0,
+        stopReason: null as string | null,
+        providerMinuteLimit: null as number | null,
+        providerMinuteRemaining: null as number | null,
+        providerRateSource: null as string | null,
+        providerErrorKeys: null as string[] | null,
+        providerRateHint: null as string | null,
+        providerRateAtMs: null as number | null,
+        maxFetchPerSecond: 0,
       };
     let stopped = false,
-      nextRequest = Date.now();
+      nextRequest = Date.now(),
+      nextProviderRequest = Date.now();
     const { lanes, spacingMs, maxRequests } = footballWindowBudget(
-      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "16",
+      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "48",
       !!adminToken,
     );
+    summary.lanes = lanes;
+    summary.spacingMs = spacingMs;
     let scheduledRequests = 0;
+    const fetchSecondCounts = new Map<number, number>();
     const run = async () => {
       while (!stopped && Date.now() < deadline - 5000 && scheduledRequests < maxRequests) {
         const job = await rpc("football_queue_claim");
@@ -118,10 +133,30 @@ Deno.serve(async (request: Request) => {
         let jobRequests = 0;
         try {
           const page = await loadFootballJobPage(job, {
-            rpc,
+            // A full second can trigger transient database quota contention;
+            // retry that reservation without making or counting a provider call.
+            rpc: async (name: string, args: Record<string, unknown> = {}) => {
+              if (name !== "football_queue_reserve_job") return rpc(name, args);
+              for (let retry = 0;; retry++) {
+                try {
+                  return await rpc(name, args);
+                } catch (error) {
+                  const code = error instanceof Error ? error.message : "";
+                  if (!code.includes("football_minute_quota_wait") ||
+                      stopped || Date.now() >= deadline - 5000) throw error;
+                  summary.quotaWaits++;
+                  await new Promise((r) => setTimeout(r, Math.min(600, 180 + retry * 90)));
+                }
+              }
+            },
             beforeRequest: async () => {
               if (!job.path.startsWith("/") || job.path.startsWith("//"))
                 throw new Error("invalid_provider_path");
+              // Bound reserved-but-not-yet-sent calls: quota is debited on
+              // reservation, so do not reserve a full 48-call tail at deadline.
+              while (!stopped && scheduledRequests - summary.requests >= 12 &&
+                     Date.now() < deadline - 5000)
+                await new Promise((r) => setTimeout(r, 30));
               const slot = Math.max(Date.now(), nextRequest);
               if (stopped || scheduledRequests >= maxRequests || slot > deadline - 5000)
                 throw new Error("window_budget");
@@ -131,6 +166,17 @@ Deno.serve(async (request: Request) => {
               if (stopped || Date.now() > deadline - 5000) throw new Error("window_budget");
             },
             requestPage: async () => {
+              // Reservation RPC latency can bunch calls despite reservation pacing.
+              // Pace the actual provider fetch separately and in one shared lane clock.
+              const providerSlot = Math.max(Date.now(), nextProviderRequest);
+              if (stopped || providerSlot > deadline - 5000) throw new Error("window_budget");
+              nextProviderRequest = providerSlot + spacingMs;
+              await new Promise((r) => setTimeout(r, Math.max(0, providerSlot - Date.now())));
+              if (stopped || Date.now() > deadline - 5000) throw new Error("window_budget");
+              const fetchSecond = Math.floor(Date.now() / 1000);
+              const fetchCount = (fetchSecondCounts.get(fetchSecond) ?? 0) + 1;
+              fetchSecondCounts.set(fetchSecond, fetchCount);
+              summary.maxFetchPerSecond = Math.max(summary.maxFetchPerSecond, fetchCount);
               summary.requests++;
               jobRequests++;
               const response = await fetch("https://v3.football.api-sports.io" + job.path, {
@@ -139,11 +185,20 @@ Deno.serve(async (request: Request) => {
                   Math.max(1, Math.min(18000, deadline - Date.now() - 1500)),
                 ),
               });
+              const providerMinuteCap = response.headers.get("x-ratelimit-limit");
+              if (providerMinuteCap !== null && Number.isFinite(Number(providerMinuteCap)))
+                summary.providerMinuteLimit = Number(providerMinuteCap);
+              const providerMinuteLeft = response.headers.get("x-ratelimit-remaining");
+              if (providerMinuteLeft !== null && Number.isFinite(Number(providerMinuteLeft)))
+                summary.providerMinuteRemaining = Math.min(
+                  summary.providerMinuteRemaining ?? Infinity, Number(providerMinuteLeft),
+                );
               const remaining = response.headers.get("x-ratelimit-requests-remaining");
               if (remaining !== null && Number.isFinite(Number(remaining)))
                 summary.remaining = Math.min(summary.remaining ?? Infinity, Number(remaining));
               const rateError = footballProviderRateError(response);
               if (rateError) {
+                summary.providerRateSource ??= "http_429";
                 stopped = true;
                 await response.body?.cancel();
                 throw new Error(rateError);
@@ -152,7 +207,19 @@ Deno.serve(async (request: Request) => {
                 await response.body?.cancel();
                 throw new Error("provider_http_" + response.status);
               }
-              return response.json();
+              const body = await response.json();
+              if (body?.errors && Object.keys(body.errors).some(
+                (key: string) => /rate.?limit|quota|requests/i.test(key),
+              )) {
+                summary.providerRateSource ??= "body_errors";
+                summary.providerErrorKeys ??= Object.keys(body.errors)
+                  .filter((key: string) => /^[a-zA-Z]{1,30}$/.test(key)).slice(0, 4);
+                const rateMessage = String(body.errors.rateLimit ?? "").toLowerCase();
+                summary.providerRateHint ??= /minute/.test(rateMessage)
+                  ? "minute" : /second/.test(rateMessage) ? "second" : "unspecified";
+                summary.providerRateAtMs ??= Date.now() - (deadline - 49000);
+              }
+              return body;
             },
           });
           const ids =
@@ -216,7 +283,10 @@ Deno.serve(async (request: Request) => {
         } catch (error) {
           const code = footballErrorCode(error);
           const budget = /quota|rate_wait|window_budget/.test(code);
-          if (budget) stopped = true;
+          if (budget) {
+            stopped = true;
+            summary.stopReason ??= code;
+          }
           const wait = /daily/.test(code)
             ? 86400
             : budget
