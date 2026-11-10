@@ -2,10 +2,10 @@
 """Read-only, loopback-only public club catalog cache. No service_role/JWT forwarding."""
 import json
 import os
-import re
 import ssl
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -15,13 +15,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 SUPABASE_URL = "https://lguqnwvsfeefxamzeyos.supabase.co"
 PUBLISHABLE_KEY = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
 BIND_ADDR, BIND_PORT = "127.0.0.1", 3093
-MAX_LIMIT, MAX_PAGE = 1000, 63
-TTL_SECONDS, MAX_CACHE_BYTES = 300, 32 * 1024 * 1024
+MAX_LIMIT, MAX_PAGE = 1000, 127
+TTL_SECONDS, MAX_CACHE_BYTES = 900, 32 * 1024 * 1024
+MAX_STALE_SECONDS = 3600
 CACHE = OrderedDict()
 CACHE_LOCK = threading.Lock()
 FETCH_SEMAPHORE = threading.BoundedSemaphore(6)
 STATS = {"hit": 0, "miss": 0, "error": 0, "origin_requests": 0}
 CACHE_SIZE = 0
+REFRESHING = set()
+REFRESH_POOL = ThreadPoolExecutor(max_workers=6, thread_name_prefix="catalog-refresh")
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -75,23 +78,8 @@ def _fetch_page(limit: int, page: int) -> bytes:
         result.append({"id": rid, "crest_url": crest})
     return json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
-def cached_page(limit: int, page: int):
+def _store_page(key, payload):
     global CACHE_SIZE
-    key = (limit, page)
-    now = time.monotonic()
-    with CACHE_LOCK:
-        entry = CACHE.get(key)
-        if entry and entry[0] > now:
-            CACHE.move_to_end(key)
-            STATS["hit"] += 1
-            return entry[1], True
-        STATS["miss"] += 1
-    try:
-        payload = _fetch_page(limit, page)
-    except (ValueError, urllib.error.URLError, OSError, TimeoutError, RuntimeError):
-        with CACHE_LOCK:
-            STATS["error"] += 1
-        raise
     with CACHE_LOCK:
         STATS["origin_requests"] += 1
         old = CACHE.pop(key, None)
@@ -103,7 +91,54 @@ def cached_page(limit: int, page: int):
         if len(payload) <= MAX_CACHE_BYTES:
             CACHE[key] = (time.monotonic() + TTL_SECONDS, payload)
             CACHE_SIZE += len(payload)
+
+def _refresh_background(key):
+    try:
+        _store_page(key, _fetch_page(*key))
+    except Exception:
+        with CACHE_LOCK:
+            STATS["error"] += 1
+    finally:
+        with CACHE_LOCK:
+            REFRESHING.discard(key)
+
+def cached_page(limit: int, page: int):
+    global CACHE_SIZE
+    key = (limit, page)
+    now = time.monotonic()
+    with CACHE_LOCK:
+        entry = CACHE.get(key)
+        if entry and entry[0] + MAX_STALE_SECONDS > now:
+            CACHE.move_to_end(key)
+            STATS["hit"] += 1
+            if entry[0] <= now and key not in REFRESHING:
+                REFRESHING.add(key)
+                REFRESH_POOL.submit(_refresh_background, key)
+            return entry[1], True
+        if entry:
+            old = CACHE.pop(key)
+            CACHE_SIZE -= len(old[1])
+        STATS["miss"] += 1
+    try:
+        payload = _fetch_page(limit, page)
+    except Exception:
+        with CACHE_LOCK:
+            STATS["error"] += 1
+        raise
+    _store_page(key, payload)
     return payload, False
+
+def _prime_catalog():
+    try:
+        for start in range(0, MAX_PAGE + 1, 6):
+            tasks = [REFRESH_POOL.submit(cached_page, 1000, page)
+                     for page in range(start, min(start + 6, MAX_PAGE + 1))]
+            answers = [task.result(timeout=15) for task in tasks]
+            if any(len(json.loads(blob)) < 1000 for blob, _ in answers):
+                break
+    except Exception:
+        # Serving begins immediately; a later real request may recover.
+        return
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "JogoManagerCatalog/1.0"
@@ -153,4 +188,5 @@ if __name__ == "__main__":
         raise SystemExit("Refusing startup: require a modern publishable Supabase API key")
     server = ThreadingHTTPServer((BIND_ADDR, BIND_PORT), Handler)
     server.daemon_threads = True
+    threading.Thread(target=_prime_catalog, name="catalog-prewarm", daemon=True).start()
     server.serve_forever(poll_interval=0.5)
