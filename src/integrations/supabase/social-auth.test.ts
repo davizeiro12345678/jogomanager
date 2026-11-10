@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   availableAuthMethods,
-  lovableOAuthProvider,
   parseAuthMethods,
   socialOAuthOptions,
   socialProviderLabel,
@@ -93,17 +92,6 @@ describe("configured authentication methods", () => {
       expect(() => parseAuthMethods(settings)).toThrow(/settings/);
     },
   );
-
-  it("only brokers providers the Lovable SDK supports", () => {
-    expect(lovableOAuthProvider("google")).toBe("google");
-    expect(lovableOAuthProvider("azure")).toBe("microsoft");
-    expect(lovableOAuthProvider("apple")).toBe("apple");
-    for (const provider of parseAuthMethods(enabledSettings).socialProviders.filter(
-      (value) => value !== "google" && value !== "azure",
-    )) {
-      expect(lovableOAuthProvider(provider)).toBeUndefined();
-    }
-  });
 
   it("preserves the callback destination for every configured direct provider", () => {
     const redirectTo = "https://jogomanager.com/auth?next=%2Fperfil";

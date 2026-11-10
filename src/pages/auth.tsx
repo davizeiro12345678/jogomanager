@@ -21,7 +21,6 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  lovableOAuthProvider,
   socialOAuthOptions,
   socialProviderLabel,
   type SocialProvider,
@@ -36,7 +35,6 @@ import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/p
 import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as=url";
 
 import "@/components/auth-store.css";
-import "@lovable.dev/cloud-auth-js/styles.css";
 import { getRouteApi } from "@tanstack/react-router";
 const Route = getRouteApi("/auth");
 
@@ -78,9 +76,6 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
-  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
@@ -106,8 +101,10 @@ export function AuthPage() {
     const authErrorDescription =
       hashParams.get("error_description") || searchParams.get("error_description");
     const authError = hashParams.get("error") || searchParams.get("error");
-    if (authError || authErrorCode || authErrorDescription)
+    if (authError || authErrorCode || authErrorDescription) {
       setError(authCallbackErrorMessage(authErrorCode, authErrorDescription));
+      return;
+    }
     if (recovery) setMode("update");
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
@@ -126,9 +123,13 @@ export function AuthPage() {
           );
           return;
         }
-        if (data.session && (await checkMfa())) {
-          if (recovery) setRecoveryReady(true);
-          return;
+        if (data.session) {
+          const requiresMfa = await checkMfa();
+          if (!alive) return;
+          if (requiresMfa) {
+            if (recovery) setRecoveryReady(true);
+            return;
+          }
         }
         if (recovery) {
           setRecoveryReady(Boolean(data.session));
@@ -288,53 +289,13 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
-      const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
-      if (brokerProvider) {
-        const { lovable } = await import("@/integrations/lovable/index");
-        const result = await lovable.auth.signInWithOAuth(brokerProvider, {
-          redirect_uri: callback(),
-        });
-        if (result.error) throw result.error;
-        if (!result.redirected) {
-          window.__lovableEvents?.track?.("project.account_signed_in", {
-            method: provider,
-            entry_route: entryRoute,
-          });
-          await continueSession();
-        }
-      } else {
-        const result = await supabase.auth.signInWithOAuth({
-          provider,
-          options: socialOAuthOptions(provider, callback()),
-        });
-        if (result.error) throw result.error;
-      }
-    } catch (cause) {
-      setError(authErrorMessage(cause, mode));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signInWithLovable() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const { lovable } = await import("@/integrations/lovable/index");
-      const result = await lovable.auth.signInWithOAuth("lovable", { redirect_uri: callback() });
+      const result = await supabase.auth.signInWithOAuth({
+        provider,
+        options: socialOAuthOptions(provider, callback()),
+      });
       if (result.error) throw result.error;
-      if (!result.redirected) {
-        window.__lovableEvents?.track?.("project.account_signed_in", {
-          method: "lovable",
-          entry_route: entryRoute,
-        });
-        await continueSession();
-      }
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
-    } finally {
       setBusy(false);
     }
   }
@@ -512,16 +473,6 @@ export function AuthPage() {
               </Button>
             </div>
           )}
-          {(mode === "in" || mode === "up") && (
-            <button
-              type="button"
-              disabled={busy}
-              className="lovable-auth-button mt-5 w-full"
-              onClick={signInWithLovable}
-            >
-              Continue with Lovable
-            </button>
-          )}
           {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
             <div className="mt-5 space-y-2">
               {methods?.socialProviders.includes("google") && (
@@ -535,15 +486,7 @@ export function AuthPage() {
                 </Button>
               )}
               {methods && methods.socialProviders.some((p) => p !== "google") && (
-                <div
-                  className="grid gap-2"
-                  style={{
-                    gridTemplateColumns: `repeat(${Math.min(
-                      3,
-                      methods.socialProviders.filter((p) => p !== "google").length,
-                    )}, minmax(0, 1fr))`,
-                  }}
-                >
+                <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-3">
                   {methods.socialProviders
                     .filter((p) => p !== "google")
                     .map((provider) => (

@@ -71,16 +71,11 @@ describe("game login screen", () => {
     expect(markup).toContain("Entrar por link ou código de e-mail");
   });
 
-  it("keeps additional Supabase providers in Lovable mode and hides disabled Apple", () => {
-    vi.stubEnv("VITE_AUTH_MODE", "lovable");
-    try {
-      const markup = renderAuth();
-      expect(markup).toContain("Continuar com Discord");
-      expect(markup).toContain("Continuar com GitHub");
-      expect(markup).not.toContain("Continuar com Apple");
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("uses the game's Supabase login options without offering Lovable sign-in", () => {
+    const markup = renderAuth();
+    expect(markup).toContain("Continuar com Google");
+    expect(markup).toContain("Continuar com GitHub");
+    expect(markup).not.toContain("Continue with Lovable");
   });
 
   it("does not offer disabled email or passkey flows", () => {
