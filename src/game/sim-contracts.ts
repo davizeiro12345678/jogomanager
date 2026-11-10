@@ -127,6 +127,8 @@ export interface TeamSetup {
   morale?: number;
   /** lado controlado pela IA (substitui e ajusta a tática sozinha) */
   cpu?: boolean;
+  /** Opt-in v2 intelligence; omitted for legacy simulations and saved replays. */
+  tacticalAiRevision?: 2;
 }
 
 export interface MatchStats {

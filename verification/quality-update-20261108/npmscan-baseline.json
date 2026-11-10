@@ -1,0 +1,830 @@
+{
+  "summary": "PARTIAL AUDIT — 962 of 962 third-party dependencies checked for known vulnerabilities, 100 with full license/install-script detail. davizeiro12345678/jogomanager: 1 with known vulnerabilities, 0 license violation(s), 0 flagged install script(s), 0 of 2 checked ownership/provenance anomalies (see coverage and truncationNote).",
+  "owner": "davizeiro12345678",
+  "repoName": "jogomanager",
+  "ref": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "defaultBranchUsed": false,
+  "manifestPath": "package.json",
+  "lockfilePath": "package-lock.json",
+  "inputFormat": "npm-lock",
+  "isMonorepo": false,
+  "workspacePatterns": [],
+  "workspacePackageCount": 0,
+  "workspaceNote": null,
+  "policy": {
+    "mode": "default",
+    "allow": [],
+    "deny": []
+  },
+  "findings": [
+    {
+      "name": "deepmerge",
+      "requestedVersion": "4.3.1",
+      "npmscanUrl": "https://npmscan.com/package/deepmerge",
+      "resolvedVersion": "4.3.1",
+      "deprecated": null,
+      "possibleTyposquatOf": null,
+      "rawLicense": "MIT",
+      "licenseCategory": "permissive",
+      "isLicenseCompliant": true,
+      "licenseNeedsReview": false,
+      "licenseViolation": null,
+      "hasLifecycleScripts": false,
+      "installScriptRiskTier": "none",
+      "installScriptScore": 0,
+      "installScriptScanScope": "lifecycle-scripts-only",
+      "installScriptFindings": null,
+      "resolutionError": null,
+      "isVulnerable": true,
+      "highestSeverity": "LOW",
+      "vulnerabilities": [
+        {
+          "id": "GHSA-gcqx-w48m-w2h4",
+          "summary": "deepmerge mergeObject() allows prototype poisoning of returned objects",
+          "severity": "LOW",
+          "aliases": [
+            "CVE-2026-93753"
+          ],
+          "publishedAt": "2026-09-18T18:31:44Z",
+          "fixedVersion": null,
+          "isMalware": false,
+          "npmscanUrl": "https://npmscan.com/vulnerability/GHSA-gcqx-w48m-w2h4"
+        }
+      ],
+      "ownershipRiskEligible": false,
+      "ownershipRiskReason": null,
+      "ownershipRiskChecked": false,
+      "maintainerRiskTier": null,
+      "maintainerFindings": null,
+      "provenanceRiskTier": null,
+      "provenanceFindings": null
+    },
+    {
+      "name": "@esbuild-kit/core-utils",
+      "requestedVersion": "3.3.2",
+      "npmscanUrl": "https://npmscan.com/package/%40esbuild-kit%2Fcore-utils",
+      "resolvedVersion": "3.3.2",
+      "deprecated": "Merged into tsx: https://tsx.hirok.io",
+      "possibleTyposquatOf": null,
+      "rawLicense": "MIT",
+      "licenseCategory": "permissive",
+      "isLicenseCompliant": true,
+      "licenseNeedsReview": false,
+      "licenseViolation": null,
+      "hasLifecycleScripts": false,
+      "installScriptRiskTier": "none",
+      "installScriptScore": 0,
+      "installScriptScanScope": "lifecycle-scripts-only",
+      "installScriptFindings": null,
+      "resolutionError": null,
+      "isVulnerable": false,
+      "highestSeverity": null,
+      "vulnerabilities": [],
+      "ownershipRiskEligible": true,
+      "ownershipRiskReason": "deprecated",
+      "ownershipRiskChecked": true,
+      "maintainerRiskTier": "none",
+      "maintainerFindings": [],
+      "provenanceRiskTier": "none",
+      "provenanceFindings": []
+    },
+    {
+      "name": "@esbuild-kit/esm-loader",
+      "requestedVersion": "2.6.5",
+      "npmscanUrl": "https://npmscan.com/package/%40esbuild-kit%2Fesm-loader",
+      "resolvedVersion": "2.6.5",
+      "deprecated": "Merged into tsx: https://tsx.hirok.io",
+      "possibleTyposquatOf": null,
+      "rawLicense": "MIT",
+      "licenseCategory": "permissive",
+      "isLicenseCompliant": true,
+      "licenseNeedsReview": false,
+      "licenseViolation": null,
+      "hasLifecycleScripts": false,
+      "installScriptRiskTier": "none",
+      "installScriptScore": 0,
+      "installScriptScanScope": "lifecycle-scripts-only",
+      "installScriptFindings": null,
+      "resolutionError": null,
+      "isVulnerable": false,
+      "highestSeverity": null,
+      "vulnerabilities": [],
+      "ownershipRiskEligible": true,
+      "ownershipRiskReason": "deprecated",
+      "ownershipRiskChecked": true,
+      "maintainerRiskTier": "none",
+      "maintainerFindings": [],
+      "provenanceRiskTier": "none",
+      "provenanceFindings": []
+    }
+  ],
+  "coverage": {
+    "totalPackages": 962,
+    "detailedCount": 100,
+    "vulnerabilityCheckedCount": 962,
+    "localPackagesSkipped": 0,
+    "complete": false
+  },
+  "overflowPackages": [
+    {
+      "name": "@esbuild/sunos-x64",
+      "requestedVersion": "0.28.2"
+    },
+    {
+      "name": "@esbuild/win32-arm64",
+      "requestedVersion": "0.28.1"
+    },
+    {
+      "name": "@esbuild/win32-arm64",
+      "requestedVersion": "0.28.2"
+    },
+    {
+      "name": "@esbuild/win32-ia32",
+      "requestedVersion": "0.28.1"
+    },
+    {
+      "name": "@esbuild/win32-ia32",
+      "requestedVersion": "0.28.2"
+    },
+    {
+      "name": "@esbuild/win32-x64",
+      "requestedVersion": "0.28.1"
+    },
+    {
+      "name": "@esbuild/win32-x64",
+      "requestedVersion": "0.28.2"
+    },
+    {
+      "name": "@eslint-community/eslint-utils",
+      "requestedVersion": "4.10.1"
+    },
+    {
+      "name": "eslint-visitor-keys",
+      "requestedVersion": "3.4.3"
+    },
+    {
+      "name": "eslint-visitor-keys",
+      "requestedVersion": "5.0.1"
+    },
+    {
+      "name": "@eslint-community/regexpp",
+      "requestedVersion": "4.12.2"
+    },
+    {
+      "name": "@eslint/config-array",
+      "requestedVersion": "0.23.5"
+    },
+    {
+      "name": "@eslint/config-helpers",
+      "requestedVersion": "0.7.0"
+    },
+    {
+      "name": "@eslint/core",
+      "requestedVersion": "1.2.1"
+    },
+    {
+      "name": "@eslint/js",
+      "requestedVersion": "10.0.1"
+    },
+    {
+      "name": "@eslint/object-schema",
+      "requestedVersion": "3.0.5"
+    },
+    {
+      "name": "@eslint/plugin-kit",
+      "requestedVersion": "0.7.3"
+    },
+    {
+      "name": "@firebase/ai",
+      "requestedVersion": "3.0.0"
+    },
+    {
+      "name": "@firebase/analytics",
+      "requestedVersion": "0.10.25"
+    },
+    {
+      "name": "@firebase/analytics-compat",
+      "requestedVersion": "0.2.31"
+    },
+    {
+      "name": "@firebase/analytics-types",
+      "requestedVersion": "0.8.5"
+    },
+    {
+      "name": "@firebase/app",
+      "requestedVersion": "0.16.3"
+    },
+    {
+      "name": "@firebase/app-check",
+      "requestedVersion": "0.13.1"
+    },
+    {
+      "name": "@firebase/app-check-compat",
+      "requestedVersion": "0.4.7"
+    },
+    {
+      "name": "@firebase/app-check-interop-types",
+      "requestedVersion": "0.3.5"
+    },
+    {
+      "name": "@firebase/app-check-types",
+      "requestedVersion": "0.5.5"
+    },
+    {
+      "name": "@firebase/app-compat",
+      "requestedVersion": "0.5.19"
+    },
+    {
+      "name": "@firebase/app-types",
+      "requestedVersion": "0.9.6"
+    },
+    {
+      "name": "@firebase/auth",
+      "requestedVersion": "1.13.7"
+    },
+    {
+      "name": "@firebase/auth-compat",
+      "requestedVersion": "0.6.12"
+    },
+    {
+      "name": "@firebase/auth-interop-types",
+      "requestedVersion": "0.2.6"
+    },
+    {
+      "name": "@firebase/auth-types",
+      "requestedVersion": "0.13.2"
+    },
+    {
+      "name": "@firebase/component",
+      "requestedVersion": "0.7.5"
+    },
+    {
+      "name": "@firebase/data-connect",
+      "requestedVersion": "0.7.4"
+    },
+    {
+      "name": "@firebase/database",
+      "requestedVersion": "1.1.5"
+    },
+    {
+      "name": "@firebase/database-compat",
+      "requestedVersion": "2.1.7"
+    },
+    {
+      "name": "@firebase/database-types",
+      "requestedVersion": "1.0.22"
+    },
+    {
+      "name": "@firebase/firestore",
+      "requestedVersion": "4.18.0"
+    },
+    {
+      "name": "@firebase/firestore-compat",
+      "requestedVersion": "0.4.15"
+    },
+    {
+      "name": "@firebase/firestore-types",
+      "requestedVersion": "3.0.5"
+    },
+    {
+      "name": "@firebase/functions",
+      "requestedVersion": "0.14.0"
+    },
+    {
+      "name": "@firebase/functions-compat",
+      "requestedVersion": "0.5.0"
+    },
+    {
+      "name": "@firebase/functions-types",
+      "requestedVersion": "0.6.5"
+    },
+    {
+      "name": "@firebase/installations",
+      "requestedVersion": "0.6.24"
+    },
+    {
+      "name": "@firebase/installations-compat",
+      "requestedVersion": "0.2.24"
+    },
+    {
+      "name": "@firebase/installations-types",
+      "requestedVersion": "0.5.5"
+    },
+    {
+      "name": "@firebase/logger",
+      "requestedVersion": "0.5.2"
+    },
+    {
+      "name": "@firebase/messaging",
+      "requestedVersion": "0.13.3"
+    },
+    {
+      "name": "@firebase/messaging-compat",
+      "requestedVersion": "0.2.30"
+    },
+    {
+      "name": "@firebase/messaging-interop-types",
+      "requestedVersion": "0.2.6"
+    }
+  ],
+  "overflowPackageCount": 862,
+  "overflowVulnerablePackages": [],
+  "totalPackages": 100,
+  "vulnerablePackageCount": 1,
+  "licenseViolationCount": 0,
+  "installScriptFlaggedCount": 0,
+  "deepScannedCount": 0,
+  "ownershipCheckedCount": 2,
+  "ownershipRiskFlaggedCount": 0,
+  "warnings": [],
+  "truncationNote": "862 dependencies past the 100-package detail cap did not get the license/install-script/ownership checks (vulnerable packages are detailed first). 962 of 962 were checked for known vulnerabilities. overflowPackages lists the first 50 names.",
+  "deepScanNote": null,
+  "ownershipCheckNote": null,
+  "cleanFindings": [
+    {
+      "name": "@babel/code-frame",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/compat-data",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/core",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/generator",
+      "version": "7.29.8",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-compilation-targets",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-globals",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-module-imports",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-module-transforms",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-string-parser",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-validator-identifier",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helper-validator-option",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/helpers",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/parser",
+      "version": "7.29.9",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/runtime",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/template",
+      "version": "7.29.7",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/traverse",
+      "version": "7.29.8",
+      "license": "MIT"
+    },
+    {
+      "name": "@babel/types",
+      "version": "7.29.8",
+      "license": "MIT"
+    },
+    {
+      "name": "@cacheable/memory",
+      "version": "2.2.0",
+      "license": "MIT"
+    },
+    {
+      "name": "@cacheable/utils",
+      "version": "2.5.0",
+      "license": "MIT"
+    },
+    {
+      "name": "@cloudflare/kv-asset-handler",
+      "version": "0.5.0",
+      "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "@cloudflare/unenv-preset",
+      "version": "2.16.2",
+      "license": "MIT OR Apache-2.0"
+    },
+    {
+      "name": "@cloudflare/workerd-darwin-64",
+      "version": "1.20261019.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@cloudflare/workerd-darwin-arm64",
+      "version": "1.20261019.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@cloudflare/workerd-linux-64",
+      "version": "1.20261019.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@cloudflare/workerd-linux-arm64",
+      "version": "1.20261019.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@cloudflare/workerd-windows-64",
+      "version": "1.20261019.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@codspeed/core",
+      "version": "5.7.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "find-up",
+      "version": "6.3.0",
+      "license": "MIT"
+    },
+    {
+      "name": "find-up",
+      "version": "5.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "locate-path",
+      "version": "7.2.0",
+      "license": "MIT"
+    },
+    {
+      "name": "locate-path",
+      "version": "6.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "p-limit",
+      "version": "4.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "p-limit",
+      "version": "3.1.0",
+      "license": "MIT"
+    },
+    {
+      "name": "p-locate",
+      "version": "6.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "p-locate",
+      "version": "5.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "path-exists",
+      "version": "5.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "path-exists",
+      "version": "4.0.0",
+      "license": "MIT"
+    },
+    {
+      "name": "yocto-queue",
+      "version": "1.2.2",
+      "license": "MIT"
+    },
+    {
+      "name": "yocto-queue",
+      "version": "0.1.0",
+      "license": "MIT"
+    },
+    {
+      "name": "@codspeed/tinybench-plugin",
+      "version": "5.7.1",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@cspotcode/source-map-support",
+      "version": "0.8.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@jridgewell/trace-mapping",
+      "version": "0.3.9",
+      "license": "MIT"
+    },
+    {
+      "name": "@jridgewell/trace-mapping",
+      "version": "0.3.31",
+      "license": "MIT"
+    },
+    {
+      "name": "@date-fns/tz",
+      "version": "1.5.0",
+      "license": "MIT"
+    },
+    {
+      "name": "@dimforge/rapier3d-compat",
+      "version": "0.21.0",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@drizzle-team/brocli",
+      "version": "0.10.2",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "@emnapi/core",
+      "version": "1.11.3",
+      "license": "MIT"
+    },
+    {
+      "name": "@emnapi/core",
+      "version": "2.0.0-alpha.3",
+      "license": "MIT"
+    },
+    {
+      "name": "@emnapi/runtime",
+      "version": "1.11.3",
+      "license": "MIT"
+    },
+    {
+      "name": "@emnapi/runtime",
+      "version": "2.0.0-alpha.3",
+      "license": "MIT"
+    },
+    {
+      "name": "@emnapi/wasi-threads",
+      "version": "1.2.3",
+      "license": "MIT"
+    },
+    {
+      "name": "@emnapi/wasi-threads",
+      "version": "2.0.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/aix-ppc64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/aix-ppc64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/android-arm",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/android-arm",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/android-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/android-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/android-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/android-x64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/darwin-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/darwin-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/darwin-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/darwin-x64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/freebsd-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/freebsd-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/freebsd-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/freebsd-x64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-arm",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-arm",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-ia32",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-ia32",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-loong64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-loong64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-mips64el",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-mips64el",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-ppc64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-ppc64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-riscv64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-riscv64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-s390x",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-s390x",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/linux-x64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/netbsd-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/netbsd-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/netbsd-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/netbsd-x64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/openbsd-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/openbsd-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/openbsd-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/openbsd-x64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/openharmony-arm64",
+      "version": "0.28.1",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/openharmony-arm64",
+      "version": "0.28.2",
+      "license": "MIT"
+    },
+    {
+      "name": "@esbuild/sunos-x64",
+      "version": "0.28.1",
+      "license": "MIT"
+    }
+  ]
+}

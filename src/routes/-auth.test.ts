@@ -52,6 +52,38 @@ beforeEach(() => {
 });
 
 describe("game login screen", () => {
+  it("offers an explicit alternative only for enabled providers with direct credentials configured", () => {
+    vi.stubEnv("VITE_AUTH_MODE", "lovable");
+    vi.stubEnv("VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST", "google,azure,apple,unknown");
+    try {
+      const markup = renderAuth();
+      expect(markup).toContain("Acesso alternativo com Google");
+      expect(markup).toContain("Acesso alternativo com Microsoft");
+      expect(markup).not.toContain("Acesso alternativo com Apple");
+      expect(markup).not.toContain("Acesso alternativo com unknown");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not infer an alternative from broker-managed settings", () => {
+    vi.stubEnv("VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST", "");
+    try {
+      expect(renderAuth()).not.toContain("Acesso alternativo com");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("does not duplicate alternative buttons when the deployment already uses direct OAuth", () => {
+    vi.stubEnv("VITE_AUTH_MODE", "supabase-direct");
+    vi.stubEnv("VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST", "google");
+    try {
+      expect(renderAuth()).not.toContain("Acesso alternativo com");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
   it("renders all eight enabled providers together with email and passkeys", () => {
     const markup = renderAuth();
     for (const label of [

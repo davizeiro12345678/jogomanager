@@ -1,0 +1,193 @@
+{
+  "passed": true,
+  "recordedAt": "2026-11-09T02:14:42.449Z",
+  "browser": "157.0.4341.42",
+  "node": "v24.22.0",
+  "sourceSha256": "6de8ac24584ac7323d6b439a615b46eeae79a0415717958ad4f3f8fbe4390c03",
+  "distinctGeneratedOrderVariants": 1,
+  "scope": "Exact native-option grouping and ordering parity; not a Lighthouse or FPS measurement.",
+  "locales": [
+    {
+      "lang": "pt-BR",
+      "browserResolvedLocale": "pt",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "en",
+      "browserResolvedLocale": "en",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "ar",
+      "browserResolvedLocale": "ar",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "bn",
+      "browserResolvedLocale": "bn",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "de",
+      "browserResolvedLocale": "de",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "es",
+      "browserResolvedLocale": "es",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "fa",
+      "browserResolvedLocale": "fa",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "fr",
+      "browserResolvedLocale": "fr",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "hi",
+      "browserResolvedLocale": "hi",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "id",
+      "browserResolvedLocale": "id",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "it",
+      "browserResolvedLocale": "it",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "ja",
+      "browserResolvedLocale": "ja",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "ko",
+      "browserResolvedLocale": "ko",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "mr",
+      "browserResolvedLocale": "mr",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "pa",
+      "browserResolvedLocale": "pa",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "pl",
+      "browserResolvedLocale": "pl",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "pt-PT",
+      "browserResolvedLocale": "pt",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "ru",
+      "browserResolvedLocale": "ru",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "sw",
+      "browserResolvedLocale": "sw",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "ta",
+      "browserResolvedLocale": "ta",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "te",
+      "browserResolvedLocale": "te",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "th",
+      "browserResolvedLocale": "th",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "tr",
+      "browserResolvedLocale": "tr",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "ur",
+      "browserResolvedLocale": "ur",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "vi",
+      "browserResolvedLocale": "vi",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    },
+    {
+      "lang": "zh-CN",
+      "browserResolvedLocale": "zh-CN",
+      "identical": true,
+      "countryCount": 102,
+      "optionCount": 300
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "before": "quality-before-final",
+  "after": "quality-final",
+  "comparisonDate": "2026-11-09T00:49:51.810Z",
+  "rows": [
+    {
+      "label": "JS emitido total raw (inclui lazy)",
+      "before": 7341997,
+      "after": 7458585,
+      "reductionPercent": "-1.59%",
+      "maxIncreaseBytes": 400000
+    },
+    {
+      "label": "JS emitido total (gzip)",
+      "before": 2393618,
+      "after": 2432950,
+      "reductionPercent": "-1.64%",
+      "maxIncreaseBytes": 400000
+    },
+    {
+      "label": "JS emitido total (Brotli Q6)",
+      "before": 2261150,
+      "after": 2298526,
+      "reductionPercent": "-1.65%",
+      "maxIncreaseBytes": 400000
+    },
+    {
+      "label": "Página inicial startup (gzip)",
+      "before": 167579,
+      "after": 167829,
+      "reductionPercent": "-0.15%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Página inicial startup (Brotli Q6)",
+      "before": 158761,
+      "after": 158940,
+      "reductionPercent": "-0.11%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Nova carreira startup (gzip)",
+      "before": 430340,
+      "after": 433084,
+      "reductionPercent": "-0.64%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Nova carreira startup (Brotli Q6)",
+      "before": 407645,
+      "after": 410164,
+      "reductionPercent": "-0.62%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Partida rápida startup (gzip)",
+      "before": 176921,
+      "after": 177112,
+      "reductionPercent": "-0.11%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Partida rápida startup (Brotli Q6)",
+      "before": 167712,
+      "after": 167829,
+      "reductionPercent": "-0.07%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Lobby multiplayer startup raw",
+      "before": 3054254,
+      "after": 1464181,
+      "reductionPercent": "52.06%",
+      "maxIncreaseBytes": 0
+    },
+    {
+      "label": "Lobby multiplayer startup (gzip)",
+      "before": 967014,
+      "after": 492173,
+      "reductionPercent": "49.10%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Lobby multiplayer startup (Brotli Q6)",
+      "before": 911003,
+      "after": 466173,
+      "reductionPercent": "48.83%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Match 3D startup (gzip)",
+      "before": 578285,
+      "after": 580831,
+      "reductionPercent": "-0.44%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Match 3D startup (Brotli Q6)",
+      "before": 548367,
+      "after": 550715,
+      "reductionPercent": "-0.43%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Palco cinematográfico startup (gzip)",
+      "before": 539676,
+      "after": 540072,
+      "reductionPercent": "-0.07%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Palco cinematográfico startup (Brotli Q6)",
+      "before": 506833,
+      "after": 507156,
+      "reductionPercent": "-0.06%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Editor startup (gzip)",
+      "before": 178293,
+      "after": 178464,
+      "reductionPercent": "-0.10%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Editor startup (Brotli Q6)",
+      "before": 168833,
+      "after": 168938,
+      "reductionPercent": "-0.06%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Simulação Worker startup (gzip)",
+      "before": 30365,
+      "after": 30364,
+      "reductionPercent": "0.00%",
+      "maxIncreaseBytes": 2048
+    },
+    {
+      "label": "Simulação Worker startup (Brotli Q6)",
+      "before": 29201,
+      "after": 29202,
+      "reductionPercent": "-0.00%",
+      "maxIncreaseBytes": 2048
+    }
+  ],
+  "violations": [
+    "Nova carreira startup (gzip): growth 2744 bytes exceeds allowed +2048 bytes (baseline 430340, candidate 433084)",
+    "Nova carreira startup (Brotli Q6): growth 2519 bytes exceeds allowed +2048 bytes (baseline 407645, candidate 410164)",
+    "Match 3D startup (gzip): growth 2546 bytes exceeds allowed +2048 bytes (baseline 578285, candidate 580831)",
+    "Match 3D startup (Brotli Q6): growth 2348 bytes exceeds allowed +2048 bytes (baseline 548367, candidate 550715)"
+  ]
+}

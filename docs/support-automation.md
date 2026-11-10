@@ -1,0 +1,23 @@
+# Private support tickets and automatic delivery
+
+The contact form submits an authenticated request to `submitSupportTicket`. The server revalidates the account using Supabase Auth and uses its confirmed email address. Caller-supplied identity, addresses, webhook URLs, delivery status and lease tokens are rejected. Guests and accounts that cannot verify a mailbox retain the contact channels shown on the page.
+
+The ticket and delivery outbox are inserted together in PostgreSQL. An account can create three tickets per hour. An advisory transaction lock serializes the quota and idempotency check across server instances. Retrying the same request ID and exact payload reuses the ticket; changing its payload is rejected. Neither `anon` nor `authenticated` can read or mutate the tables or execute their service-only RPCs.
+
+Delivery uses a 30-second database lease, `FOR UPDATE SKIP LOCKED`, and a fresh token for each claim. A stale worker cannot acknowledge a newer lease. Each HTTP request has a five-second timeout and rejects redirects. Only a 2xx response followed by a successful lease acknowledgement produces `delivered`. Transient network/408/425/429/5xx failures back off for 30, 60, 120 and 240 seconds, up to five total attempts. Permanent failures and exhausted attempts remain in the private outbox as `failed` for operator review and return `delivery_failed` with the same ticket ID. They are not silently recreated or requeued. The user-facing `queued` status means the ticket was stored, not that the receiving service has accepted it.
+
+## Deployment requirements
+
+1. Pass the required quality gates and replay the forward Drizzle migrations, including `0063_repair_career_and_push_access.sql` and `0064_support_ticket_outbox.sql`, in the intended deployment. The migration manifest is tested for missing SQL entries. `0063` deliberately replays the idempotent career tombstone statements: adding the missing older `0061` journal entry alone would be skipped by a database that already advanced to `0062`.
+2. Configure server-only `SUPPORT_WEBHOOK_URL` with the trusted receiver's public HTTPS URL and `SUPPORT_WEBHOOK_SECRET` with a random secret of at least 32 characters. Do not use a `VITE_` variable. Direct IP addresses, credentials, local DNS suffixes, non-HTTPS URLs, fragments and ports other than 443 are rejected. The URL is operator-controlled; tickets cannot redirect requests or choose a destination. Operators must configure a trusted public receiver, not a DNS alias resolving into a private network.
+3. Implement receiver verification of `X-Support-Signature`, computed as HMAC-SHA256 over the exact UTF-8 bytes of `<X-Support-Timestamp>.<body>`. Compare signatures in constant time, reject timestamps outside a short window, and deduplicate `Idempotency-Key: support-<ticket UUID>` before performing any side effect. Delivery is at least once: the receiver can accept a request whose acknowledgement is lost.
+4. Schedule an authenticated `POST /api/internal/support-dispatch` using the existing `LOVABLE_CRON_SECRET`. The previous secret is supported by the existing cron verifier during rotation. Each invocation claims at most three jobs. The route returns aggregate counts and `Cache-Control: no-store`.
+5. Validate a synthetic ticket and an intentional receiver outage in staging, confirm retry/fencing and recovery, then enable the production form. No real tickets, messages or webhook calls are sent by the unit tests or SQL replay fixture.
+
+Ticket contents and reply addresses are private data. Do not log the webhook body, account email, destination URL or secret. The queue records only bounded error codes such as `http_503`. Deleting an account cascades its tickets and delivery records; operational retention and manual handling of failed jobs must match the site's support/privacy policy.
+
+The retained Drizzle files `0018_server_managed_multiplayer_rooms.sql` and `0019_private_multiplayer_seeds.sql` are superseded drafts. Their room and private-seed controls are consolidated in journaled `0023_multiplayer_server_authority.sql`, which removes client mutations and seed access. They are explicitly excluded from the manifest coverage test rather than newly replayed.
+
+## Verification
+
+Run the focused support tests with the repository's pinned Node version. The required database replay job applies the forward migrations and runs `tests/sql/support-outbox-contract.sql` against its disposable local PostgreSQL instance. That fixture checks role grants, idempotency mismatch, quota, claims, retry backoff, stale tokens, delivered retries and the five-attempt cap, then rolls back all rows. A source-only test pass does not certify a deployed database, configured receiver or running scheduler.

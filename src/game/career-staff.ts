@@ -41,6 +41,7 @@ export function upgradeStaff(
 /** Gera relatórios de olheiros conforme o nível do departamento. */
 export function runScouting(state: CareerState): CareerState {
   const level = (state.staff ?? defaultStaff()).olheiro;
+  if (!Number.isSafeInteger(level) || level < 0 || level > 5) return state;
   const investment = operatingPlanFor(state).scouting;
   const rnd = makeRng(`scout-${state.clubId}-${state.season}-${state.round}`);
   const ids = Object.keys(CLUBS).filter((id) => id !== state.clubId);

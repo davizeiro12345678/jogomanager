@@ -8,6 +8,24 @@ import server from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
+  it("overrides higher-priority CDN cache headers on private and authenticated responses", () => {
+    for (const path of ["/api/private/profile", "/auth", "/assets/public.js"]) {
+      const response = secureResponse(
+        new Response("private", {
+          headers: {
+            "cache-control": "public, max-age=3600",
+            "cdn-cache-control": "public, s-maxage=86400",
+            "cloudflare-cdn-cache-control": "public, max-age=86400",
+          },
+        }),
+        new Request(`https://jogomanager.com${path}`, {
+          headers: { authorization: "Bearer fixture" },
+        }),
+      );
+      for (const header of ["cache-control", "cdn-cache-control", "cloudflare-cdn-cache-control"])
+        expect(response.headers.get(header)).toBe("no-store");
+    }
+  });
   it("adds protections to recovered h3 failures and thrown failures", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const fail of [false, true]) {

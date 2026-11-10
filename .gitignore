@@ -45,3 +45,7 @@ tsconfig.tsbuildinfo
 
 # Local Rust compiler output; the reviewed WASM package is tracked separately.
 /wasm/crowd-visibility/target/
+
+# Generated caches for local evidence/report scripts.
+__pycache__/
+*.pyc

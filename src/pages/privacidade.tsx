@@ -4,8 +4,10 @@ import { ConsentCenter, TrustBadges } from "@/components/privacy/ConsentCenter";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
-import { CONTENT_UPDATED, SiteFooter } from "@/components/SiteFooter";
+import { SiteFooter } from "@/components/SiteFooter";
 import { PRIVACIDADE_PATH as PATH } from "@/lib/public-route-paths";
+import { useT } from "@/i18n/provider";
+import { creatorMessages } from "@/i18n/creator-messages";
 
 const BLOCKS: { title: string; body: string }[] = [
   {
@@ -23,6 +25,10 @@ const BLOCKS: { title: string; body: string }[] = [
   {
     title: "Chat e moderação",
     body: "As mensagens do chat global ficam visíveis para quem está logado e guardam o apelido e o horário de envio. Você pode bloquear outro técnico, denunciar uma mensagem e apagar as suas próprias mensagens a qualquer momento. Denúncias são guardadas para análise e para impedir reincidência.",
+  },
+  {
+    title: "Pedidos de suporte",
+    body: "Ao abrir um pedido, registramos a categoria, o título, o relato, o protocolo e o identificador da sua conta. O e-mail confirmado e o conteúdo do pedido são encaminhados ao serviço de atendimento configurado pelo responsável, com assinatura para validar a origem. O protocolo e o estado da entrega ficam no banco privado para evitar duplicidade e permitir novas tentativas. Não inclua senhas, códigos de acesso, documentos ou dados de cartão no relato. A exclusão da conta também exclui os pedidos armazenados no banco do jogo; mensagens já encaminhadas precisam ser tratadas pelo suporte.",
   },
   {
     title: "Contas de menores",
@@ -43,6 +49,8 @@ const BLOCKS: { title: string; body: string }[] = [
 ];
 
 export function PrivacidadePage() {
+  const { lang } = useT();
+  const copy = creatorMessages(lang);
   return (
     <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-3xl">
@@ -54,7 +62,7 @@ export function PrivacidadePage() {
         </h1>
         <p className="mt-3 text-muted-foreground">
           Esta página explica, em linguagem simples, o que o Pro Football Manager 3D faz com os seus
-          dados. Atualizada em <time dateTime={CONTENT_UPDATED}>14 de setembro de 2026</time>.
+          dados. Atualizada em <time dateTime="2026-11-08">{copy.updatedDate}</time>.
         </p>
 
         <div className="mt-6">

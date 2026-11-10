@@ -430,10 +430,45 @@
       "breakpoints": true
     },
     {
+      "idx": 61,
+      "version": "7",
+      "when": 1794148522000,
+      "tag": "0061_career_tombstone_generation",
+      "breakpoints": true
+    },
+    {
       "idx": 62,
       "version": "7",
       "when": 1794148523000,
       "tag": "0062_room_chat_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1794179700000,
+      "tag": "0063_repair_career_and_push_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1794180000000,
+      "tag": "0064_support_ticket_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1794180300000,
+      "tag": "0065_atomic_match_room_creation",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1794255369000,
+      "tag": "0066_api_football_claim_concurrency_48",
       "breakpoints": true
     }
   ]

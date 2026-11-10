@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { lazy, Suspense, useState } from "react";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
@@ -6,7 +7,10 @@ import { SiteFooter } from "@/components/SiteFooter";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 import { CREATOR } from "@/content/creator";
+import { CreatorDetails } from "@/components/creator/CreatorDetails";
 import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
+import { useT } from "@/i18n/provider";
+import { creatorMessages } from "@/i18n/creator-messages";
 
 const CHANNELS = [
   {
@@ -41,7 +45,16 @@ const CHANNELS = [
   },
 ] as const;
 
+const SupportTicketForm = lazy(() =>
+  import("@/components/support/SupportTicketForm").then((module) => ({
+    default: module.SupportTicketForm,
+  })),
+);
+
 export function ContatoPage() {
+  const { lang } = useT();
+  const copy = creatorMessages(lang);
+  const [supportOpen, setSupportOpen] = useState(false);
   return (
     <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-3xl">
@@ -54,8 +67,40 @@ export function ContatoPage() {
         <p className="mt-3 text-muted-foreground">
           A equipe do Pro Football Manager 3D responde por estes canais. Escolha o assunto para
           chegar mais rápido a quem resolve. Página atualizada em{" "}
-          <time dateTime="2026-10-12">12 de outubro de 2026</time>.
+          <time dateTime="2026-11-08">{copy.updatedDate}</time>.
         </p>
+
+        <section
+          className="surface-card mt-6 rounded-2xl border border-primary/40 p-5 sm:p-6"
+          aria-labelledby="support-ticket-title"
+        >
+          <p className="text-xs uppercase tracking-widest text-primary">{copy.supportEyebrow}</p>
+          <h2 id="support-ticket-title" className="mt-2 font-display text-2xl">
+            {copy.supportTitle}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {copy.supportDescription}
+          </p>
+          {supportOpen ? (
+            <Suspense
+              fallback={
+                <p role="status" className="mt-4 text-sm">
+                  {copy.supportLoading}
+                </p>
+              }
+            >
+              <SupportTicketForm />
+            </Suspense>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSupportOpen(true)}
+              className="mt-4 min-h-11 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
+            >
+              {copy.supportStart}
+            </button>
+          )}
+        </section>
 
         <section className="surface-card mt-6 rounded-xl border border-primary/30 p-5">
           <h2 className="font-display text-xl uppercase">Contatos oficiais e comunidade</h2>
@@ -137,6 +182,7 @@ export function ContatoPage() {
           nome do jogo.
         </p>
 
+        <CreatorDetails />
         <PublicLinks exclude={PATH} />
         <SiteFooter path={PATH} />
       </div>

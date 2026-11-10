@@ -170,10 +170,10 @@ function repeatKey(text: string): string {
 export type ModerationReason = "profanity" | "link" | "contact" | "shouting" | "repeated";
 
 const LINK =
-  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app)\b|discord\.gg)/i;
+  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app|dev|site|live|online|club|info|biz|co|ai|top|click|store|shop|fun)\b|discord\.gg)/i;
 const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 /** Eight or more digits, allowing spaces, dots, dashes and parentheses between them. */
-const PHONE = /(?:\d[\s().-]?){8,}/;
+const PHONE = /(?:\d[\s().-]{0,4}){8,}/;
 
 /** Minimum letters before the all-caps rule applies, so "GOL!" is allowed. */
 const SHOUTING_MIN_LETTERS = 12;
@@ -187,8 +187,11 @@ export function moderateMessage(
   previous: readonly string[] = [],
 ): ModerationReason | null {
   if (containsProfanity(text)) return "profanity";
-  if (EMAIL.test(text) || PHONE.test(text)) return "contact";
-  if (LINK.test(text)) return "link";
+  // Normalize contacts separately from profanity: leetspeak substitutions would
+  // destroy digits and @, while compatibility forms and invisibles hide both.
+  const visible = text.normalize("NFKC").replace(INVISIBLE_FORMAT_CHARACTERS, "");
+  if (EMAIL.test(visible) || PHONE.test(visible)) return "contact";
+  if (LINK.test(visible)) return "link";
   const letters = text.replace(/[^\p{L}]/gu, "");
   if (
     letters.length >= SHOUTING_MIN_LETTERS &&

@@ -2,6 +2,7 @@ import {
   MATCH_PROTOCOL_VERSION,
   assertCurrentTicket,
   parseMatchReceiptV1,
+  parseMatchTicketV1,
   type MatchCommandKind,
   type MatchCommandV1,
   type MatchPublicStateV1,
@@ -18,7 +19,7 @@ export type MatchSessionPhase = "waiting" | "live" | "reconnecting" | "finalized
 export type MatchClosureReason = MatchReceiptV1["closureReason"];
 
 export interface AuthoritativeMatchEngine {
-  advanceFixedStep(): void;
+  advanceFixedStep(): boolean;
   publicState(): MatchPublicStateV1;
   presentationEvents(): PresentationEventV1[];
   applyTactics(seat: MatchSeat, payload: TacticalCommandPayloadV1): boolean;
@@ -56,9 +57,21 @@ export interface AuthoritativeMatchSessionOptions {
   simulationVersion: string;
   idempotencyKey: string;
   commandLimits?: Partial<Record<MatchCommandKind, CommandRateLimit>> | undefined;
+  /** Installed by the trusted server owner, never supplied by a client. */
+  verifyTicket?: ((ticket: MatchTicketV1) => Promise<boolean>) | undefined;
+  /** Wall clock used to recheck expiry after asynchronous signature verification. */
+  now?: (() => number) | undefined;
 }
 
 const RECONNECT_WINDOW_MS = 60_000;
+const MAX_RECORDED_INVALID_COMMANDS = 128;
+const DEFAULT_COMMAND_LIMITS: Record<MatchCommandKind, CommandRateLimit> = {
+  ready: { limit: 6, windowMs: 10_000 },
+  set_tactics: { limit: 12, windowMs: 10_000 },
+  substitute: { limit: 12, windowMs: 10_000 },
+  forfeit: { limit: 2, windowMs: 10_000 },
+  ack_snapshot: { limit: 120, windowMs: 10_000 },
+};
 
 /**
  * Server-only match coordinator. It accepts narrow, signed commands and
@@ -75,11 +88,14 @@ export class AuthoritativeMatchSession {
   private readonly rateWindows = new Map<string, number[]>();
   private readonly reconnectDeadlines = new Map<MatchSeat, number>();
   private readonly tactics = new Map<MatchSeat, TacticalCommandPayloadV1>();
-  private commandHash = GENESIS_SESSION_HASH;
+  private commandHash: Promise<string> | null = null;
   private tick = 0;
   private revision = 0;
   private receipt: MatchReceiptV1 | null = null;
   private finalizationPromise: Promise<MatchReceiptV1> | null = null;
+  private closing = false;
+  private started = false;
+  private closure: Pick<MatchReceiptV1, "closureReason" | "issuedAt" | "result"> | undefined;
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
@@ -92,23 +108,50 @@ export class AuthoritativeMatchSession {
     if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
       throw new Error("match tickets must be assigned to their matching seats");
     }
-    this.tickets = { home: options.homeTicket, away: options.awayTicket };
+    if (options.homeTicket.userId === options.awayTicket.userId) {
+      throw new Error("match seats must belong to different users");
+    }
+    this.tickets = { home: { ...options.homeTicket }, away: { ...options.awayTicket } };
   }
 
   connect(ticket: MatchTicketV1, now: number): MatchSeat {
     this.assertBoundTicket(ticket, now);
+    const deadline = this.reconnectDeadlines.get(ticket.seat);
+    if (deadline !== undefined && now >= deadline) throw new Error("reconnection window expired");
     this.connected.add(ticket.userId);
     this.reconnectDeadlines.delete(ticket.seat);
     this.refreshPhase();
     return ticket.seat;
   }
 
+  /** Replace an expired or expiring seat ticket without resetting match state.
+   * Issuance and user reauthentication belong to the transport owner. */
+  async renewTicket(input: unknown): Promise<void> {
+    const verify = this.options.verifyTicket;
+    if (!verify) throw new Error("match ticket renewal verifier is not configured");
+    // Parsing creates a private copy so a caller cannot change the claims
+    // while the asynchronous signature check is in flight.
+    const candidate = Object.freeze(parseMatchTicketV1(input));
+    this.assertEligibleRenewal(candidate, (this.options.now ?? Date.now)());
+    let valid = false;
+    try {
+      valid = await verify(candidate);
+    } catch {
+      // Fail closed without exposing signer or key configuration details.
+    }
+    if (!valid) throw new Error("invalid match ticket signature");
+    // A newer ticket, finalization, expiry, or a reconnect timeout may have
+    // won the race while the verifier was waiting for Web Crypto.
+    this.assertEligibleRenewal(candidate, (this.options.now ?? Date.now)());
+    this.tickets[candidate.seat] = { ...candidate };
+  }
+
   disconnect(userId: string, now: number): void {
     const seat = this.seatForUser(userId);
-    if (!seat || this.phase === "finalized") return;
+    if (!seat || !this.connected.has(userId) || this.closing || this.phase === "finalized") return;
     this.connected.delete(userId);
     this.reconnectDeadlines.set(seat, now + RECONNECT_WINDOW_MS);
-    this.phase = "reconnecting";
+    this.setPhase("reconnecting");
   }
 
   async receive(
@@ -116,8 +159,10 @@ export class AuthoritativeMatchSession {
     command: MatchCommandV1,
     now: number,
   ): Promise<MatchCommandOutcome> {
+    this.assertBoundTicket(ticket, now);
+    if (this.closing || this.receipt)
+      return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     const seat = this.connect(ticket, now);
-    if (this.receipt) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     if (command.roomId !== this.options.roomId) {
       return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     }
@@ -157,14 +202,22 @@ export class AuthoritativeMatchSession {
 
     if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
     this.lastSequence.set(ticket.userId, command.sequence);
-    this.commandHash = (await appendCommandHash(this.commandHash, command)).hash;
+    // Reserve the next hash link synchronously. Web Crypto yields, so two
+    // commands must never hash independently from the same previous digest.
+    const nextHash = (this.commandHash ?? Promise.resolve(GENESIS_SESSION_HASH)).then(
+      async (previousHash) => (await appendCommandHash(previousHash, command)).hash,
+    );
+    this.commandHash = nextHash;
+    // A forfeit closes input immediately, before its asynchronous hash/signature.
     if (closureReason) await this.finalize(closureReason, now, seat);
+    else await nextHash;
     return { accepted: true };
   }
 
   advanceFixedTick(): void {
-    if (this.phase !== "live" && this.phase !== "reconnecting") return;
-    this.options.engine.advanceFixedStep();
+    if (this.closing) return;
+    if (!this.started || (this.phase !== "live" && this.phase !== "reconnecting")) return;
+    if (!this.options.engine.advanceFixedStep()) return;
     this.tick += 1;
     this.revision += 1;
   }
@@ -199,6 +252,13 @@ export class AuthoritativeMatchSession {
     loser?: MatchSeat,
   ): Promise<MatchReceiptV1> {
     if (this.receipt) return this.receipt;
+    this.closing = true;
+    // A failed signature can be retried, but the original decision stays sealed.
+    const closure = (this.closure ??= {
+      closureReason,
+      issuedAt: now,
+      result: this.options.engine.finalResult(loser),
+    });
     const finalizationPromise =
       this.finalizationPromise ??
       (this.finalizationPromise = (async () => {
@@ -206,16 +266,14 @@ export class AuthoritativeMatchSession {
           version: MATCH_PROTOCOL_VERSION,
           roomId: this.options.roomId,
           simulationVersion: this.options.simulationVersion,
-          commandHash: this.commandHash,
-          result: this.options.engine.finalResult(loser),
-          closureReason,
+          commandHash: this.commandHash ? await this.commandHash : GENESIS_SESSION_HASH,
+          ...closure,
           idempotencyKey: this.options.idempotencyKey,
-          issuedAt: now,
         } as const;
         const signature = await this.options.signer.sign(unsigned);
         const receipt = parseMatchReceiptV1({ ...unsigned, signature });
         this.receipt = receipt;
-        this.phase = "finalized";
+        this.setPhase("finalized");
         return receipt;
       })());
 
@@ -235,11 +293,32 @@ export class AuthoritativeMatchSession {
     const expected = this.tickets[ticket.seat];
     if (
       ticket.userId !== expected.userId ||
+      ticket.version !== expected.version ||
+      ticket.issuedAt !== expected.issuedAt ||
+      ticket.expiresAt !== expected.expiresAt ||
       ticket.nonce !== expected.nonce ||
       ticket.signature !== expected.signature
     ) {
       throw new Error("ticket does not belong to this authoritative match session");
     }
+  }
+
+  private assertEligibleRenewal(ticket: MatchTicketV1, now: number): void {
+    if (this.closing || this.receipt) throw new Error("match ticket renewal is closed");
+    assertCurrentTicket(ticket, now);
+    const expected = this.tickets[ticket.seat];
+    if (
+      ticket.roomId !== this.options.roomId ||
+      ticket.userId !== expected.userId ||
+      ticket.version !== expected.version ||
+      ticket.issuedAt <= expected.issuedAt ||
+      ticket.expiresAt <= expected.expiresAt ||
+      ticket.nonce === expected.nonce
+    ) {
+      throw new Error("match ticket renewal does not match the current seat");
+    }
+    const deadline = this.reconnectDeadlines.get(ticket.seat);
+    if (deadline !== undefined && now >= deadline) throw new Error("reconnection window expired");
   }
 
   private seatForUser(userId: string): MatchSeat | null {
@@ -249,12 +328,19 @@ export class AuthoritativeMatchSession {
   }
 
   private refreshPhase(): void {
-    if (this.phase === "finalized") return;
+    if (this.closing || this.phase === "finalized") return;
     if (this.connected.size === 2 && this.readySeats.size === 2) {
-      this.phase = "live";
+      this.started = true;
+      this.setPhase("live");
       return;
     }
-    this.phase = this.reconnectDeadlines.size > 0 ? "reconnecting" : "waiting";
+    this.setPhase(this.reconnectDeadlines.size > 0 ? "reconnecting" : "waiting");
+  }
+
+  private setPhase(phase: MatchSessionPhase): void {
+    if (this.phase === phase) return;
+    this.phase = phase;
+    this.revision += 1;
   }
 
   private reject(
@@ -263,13 +349,17 @@ export class AuthoritativeMatchSession {
     reason: InvalidMatchCommand["reason"],
     at: number,
   ): MatchCommandOutcome {
+    if (this.invalidAttempts.length >= MAX_RECORDED_INVALID_COMMANDS)
+      this.invalidAttempts.splice(
+        0,
+        this.invalidAttempts.length - MAX_RECORDED_INVALID_COMMANDS + 1,
+      );
     this.invalidAttempts.push({ userId, sequence, reason, at });
     return { accepted: false, reason };
   }
 
   private reserveRateWindow(userId: string, kind: MatchCommandKind, now: number): boolean {
-    const limit = this.options.commandLimits?.[kind];
-    if (!limit) return true;
+    const limit = this.options.commandLimits?.[kind] ?? DEFAULT_COMMAND_LIMITS[kind];
     if (limit.limit < 1 || limit.windowMs < 1) return false;
     const key = `${userId}:${kind}`;
     const liveEntries = (this.rateWindows.get(key) ?? []).filter((at) => now - at < limit.windowMs);

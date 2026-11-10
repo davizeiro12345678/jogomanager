@@ -1,0 +1,56 @@
+{
+  "recordedAt": "2026-11-09 01:34:57 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "baseCommit": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "workflowRun": 42543242306,
+  "jobId": 128922613895,
+  "jobConclusion": "success",
+  "identity": [
+    "  ref: 0a6a04e581571a367cc1c742ead21f984abbbc1b",
+    "HEAD is now at 0a6a04e5 Improve match pacing, career durability, and online boundaries",
+    "HEAD is now at c20036f3 Merge pull request #125 from davizeiro12345678/codex/career-tutorial-css-20261107"
+  ],
+  "officialReport": {
+    "generatedAt": "2026-11-09T01:01:51.805Z",
+    "protocol": "same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass",
+    "baseline": "/home/runner/work/jogomanager/jogomanager/.benchmark-base",
+    "candidate": "/home/runner/work/jogomanager/jogomanager",
+    "environment": {
+      "node": "v24.22.0",
+      "platform": "linux",
+      "architecture": "x64",
+      "kernel": "7.0.0-1017-azure",
+      "cpu": "AMD EPYC 7763 64-Core Processor"
+    },
+    "dependencyLockSha256": "d2e77ddc354ce3334ff169b37054744cbb0c5e42be294387bdd25c0fed027a61",
+    "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+    "samplesPerRevision": 62,
+    "deterministicCheckpoints": 21,
+    "budget": {
+      "baselineCpuMs": 0.20107400000000003,
+      "candidateCpuMs": 0.19933450000000003,
+      "durationChangePercent": -0.8651043894287724,
+      "materialRegressionPercent": 10,
+      "confidence": 0.99,
+      "lowerRatio": 0.9741041508695547,
+      "upperRatio": 0.9967446876497842,
+      "failed": false
+    },
+    "violations": []
+  },
+  "notes": [
+    "These are same-runner CPU batch measurements with a shared team fixture, separate from the CodSpeed simulation results.",
+    "Numeric fields are retained under their original names; no unsupported aggregation label has been assigned."
+  ],
+  "aggregationMethod": "Median CPU time per construction across62 batch samples per revision",
+  "methodSource": "https://raw.githubusercontent.com/davizeiro12345678/jogomanager/0a6a04e581571a367cc1c742ead21f984abbbc1b/scripts/match-setup-budget.mjs",
+  "meanCpuMs": {
+    "baseline": null,
+    "candidate": null
+  },
+  "methodNotes": [
+    "The pinned source computes baselineCpuMs/candidateCpuMs using median(), not arithmetic mean.",
+    "The99percent interval is the0.5th/99.5th percentile of4096 bootstrap ratios of candidate median to baseline median.",
+    "Mean values are not printed in the inspected job report and remain unknown."
+  ]
+}

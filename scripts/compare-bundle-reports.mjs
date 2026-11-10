@@ -13,6 +13,7 @@ const keys = [
   ["Página inicial", (entry) => entry.surface === "home"],
   ["Nova carreira", (entry) => entry.surface === "new"],
   ["Partida rápida", (entry) => entry.name.startsWith("partida-rapida-")],
+  ["Lobby multiplayer", (entry) => entry.name.startsWith("multiplayer-"), true],
   ["Match 3D", isMatchRouteEntry],
   ["Palco cinematográfico", (entry) => entry.name.startsWith("CinematicStage3D-")],
   ["Editor", (entry) => entry.name.startsWith("editor-")],
@@ -69,13 +70,15 @@ add(
   true,
   totalGrowthBudgetBytes,
 );
-for (const [name, predicate] of keys) {
+for (const [name, predicate, includeRaw] of keys) {
   const b = before.entries?.find(predicate);
   const a = after.entries?.find(predicate);
   if (!b || !a) {
     violations.push(`${name}: missing required route in ${!b ? "baseline" : "candidate"}`);
     continue;
   }
+  // Raw is diagnostic; the existing per-route gate applies to gzip/Brotli.
+  if (includeRaw) add(name + " startup raw", b.startupBytes, a.startupBytes);
   add(
     name + " startup (gzip)",
     b.startupGzipBytes,

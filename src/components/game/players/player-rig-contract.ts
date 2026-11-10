@@ -6,6 +6,7 @@ import type { GoalFocusRef } from "@/game/goal-choreography";
 import type { PlayerLook } from "@/game/player-model";
 import type { ClipName } from "@/game/animation";
 import type { RigSkin } from "@/game/rig-skin";
+import type { MatchRigPool } from "@/game/match-rig-pool";
 
 /**
  * Velocidade (m/s) para a qual cada ciclo de passada foi desenhado. A cadência
@@ -58,6 +59,8 @@ export interface RigProps {
   /** Stable match topology avoids rebuilding meshes on a broadcast camera cut. */
   matchTopology?: boolean;
   clothPhysics?: boolean;
+  /** Match-scoped exclusive reuse after a previously selected hero leaves. */
+  rigPool?: MatchRigPool | undefined;
   /** Inspection cameras follow actual posed bones, never simulation positions. */
   onPoseReady?: ((skin: RigSkin) => void) | undefined;
 }

@@ -1,4 +1,4 @@
-import { AdaptiveEvents, Environment, Lightformer } from "@react-three/drei";
+import { AdaptiveEvents } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 import { FrameProbe } from "../FrameProbe";
@@ -8,6 +8,7 @@ import { PostFX } from "../post/LazyPostFX";
 import type { GpuBackend } from "../renderer";
 import { StadiumProps } from "./Props";
 import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
 import { Ball } from "./StadiumBall";
 import { Stands } from "./StadiumStructure";
 import { Pitch } from "./StadiumTurf";
@@ -123,51 +124,12 @@ export function StadiumScene({
       <FrameProbe quality={quality} adaptive={adaptive} />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? (
-        <Environment
-          resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)}
-          frames={1}
-        >
-          <color attach="background" args={[lighting.sky]} />
-          <Lightformer
-            intensity={
-              quality === "media" &&
-              time === "dia" &&
-              (look.weather === "seco" || look.weather === "molhado")
-                ? 1.75
-                : lighting.environmentKey
-            }
-            color={sunColor}
-            position={[0, 24, 0]}
-            rotation={[Math.PI / 2, 0, 0]}
-            scale={[60, 60, 1]}
-          />
-          <Lightformer
-            intensity={time === "noite" ? 2.4 : 1.2}
-            color="#dceaff"
-            position={[-30, 14, 0]}
-            rotation-y={Math.PI / 2}
-            scale={[60, 8, 1]}
-          />
-          <Lightformer
-            intensity={time === "noite" ? 2.4 : 1.2}
-            color="#dceaff"
-            position={[30, 14, 0]}
-            rotation-y={-Math.PI / 2}
-            scale={[60, 8, 1]}
-          />
-          <Lightformer
-            intensity={0.8}
-            color={
-              time === "entardecer" && look.weather !== "chuva" && look.weather !== "neve"
-                ? "#ff9b5c"
-                : "#d5e3ef"
-            }
-            position={[0, 6, -40]}
-            scale={[60, 8, 1]}
-          />
-        </Environment>
-      ) : null}
+      <StadiumEnvironment
+        time={time}
+        weather={look.weather}
+        quality={quality}
+        textureScale={budget.textureScale}
+      />
 
       {/* The low profile has no IBL cube. Compensate with existing lights,
           keeping kit/grass readable without allocating environment targets. */}

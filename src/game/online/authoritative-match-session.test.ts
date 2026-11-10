@@ -7,6 +7,7 @@ import {
   type MatchPublicStateV1,
   type MatchReceiptV1,
   type MatchSeat,
+  type MatchTicketV1,
   type PresentationEventV1,
 } from "./match-protocol";
 import { GENESIS_SESSION_HASH, appendCommandHash } from "./session-hash";
@@ -15,6 +16,7 @@ import {
   type AuthoritativeMatchEngine,
   type MatchReceiptSigner,
 } from "./authoritative-match-session";
+import { signMatchTicketV1, verifyMatchTicketV1 } from "./ticket-signing";
 
 const roomId = "45fd1d08-4f81-44bc-9072-1e35ce9d1d94";
 const homeUserId = "7b40bcbe-a4ca-430c-9b49-61aa9c5118e9";
@@ -38,9 +40,12 @@ class FakeEngine implements AuthoritativeMatchEngine {
   readonly tacticalChanges: Array<{ seat: MatchSeat; formation: string }> = [];
   readonly substitutions: Array<{ seat: MatchSeat; playerOut: string; playerIn: string }> = [];
   private stepCount = 0;
+  finished = false;
 
   advanceFixedStep() {
+    if (this.finished) return false;
     this.stepCount += 1;
+    return true;
   }
 
   publicState(): MatchPublicStateV1 {
@@ -105,6 +110,8 @@ function createSession(
   options: {
     limits?: Partial<Record<"set_tactics", { limit: number; windowMs: number }>>;
     signer?: MatchReceiptSigner;
+    verifyTicket?: (ticket: MatchTicketV1) => Promise<boolean>;
+    now?: () => number;
   } = {},
 ) {
   const engine = new FakeEngine();
@@ -124,6 +131,8 @@ function createSession(
     simulationVersion: "match-sim/1",
     idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
     commandLimits: options.limits,
+    verifyTicket: options.verifyTicket,
+    now: options.now,
   });
   return { session, engine, signatureCount: () => signatures };
 }
@@ -168,6 +177,12 @@ describe("AuthoritativeMatchSession", () => {
         issuedAt,
       ),
     ).toThrow(/room/i);
+  });
+
+  it("rejects an expired ticket whose signed expiration was extended by the caller", () => {
+    const { session } = createSession();
+    const extended = parseMatchTicketV1({ ...ticket("home"), expiresAt: issuedAt + 240_000 });
+    expect(() => session.connect(extended, issuedAt + 120_001)).toThrow(/ticket/i);
   });
 
   it("rejects repeated or stale command sequence without mutating the engine", async () => {
@@ -277,6 +292,90 @@ describe("AuthoritativeMatchSession", () => {
     expect(first.result).toEqual({ homeGoals: 1, awayGoals: 0, winner: "home" });
   });
 
+  it("hash-links simultaneous commands in arrival order across both seats", async () => {
+    const { session } = createSession();
+    const first = command(1, "set_tactics");
+    const second = command(1, "ready");
+    const expectedFirst = await appendCommandHash(GENESIS_SESSION_HASH, first);
+    const expectedLast = await appendCommandHash(expectedFirst.hash, second);
+
+    const outcomes = await Promise.all([
+      session.receive(ticket("home"), first, issuedAt + 1),
+      session.receive(ticket("away"), second, issuedAt + 2),
+    ]);
+    const receipt = await session.finalize("completed", issuedAt + 3);
+
+    expect(outcomes).toEqual([{ accepted: true }, { accepted: true }]);
+    expect(receipt.commandHash).toBe(expectedLast.hash);
+  });
+
+  it("waits for an accepted command digest before signing a final receipt", async () => {
+    const { session } = createSession();
+    const tactics = command(1, "set_tactics");
+    const expected = await appendCommandHash(GENESIS_SESSION_HASH, tactics);
+
+    const accepted = session.receive(ticket("home"), tactics, issuedAt + 1);
+    const closing = session.finalize("completed", issuedAt + 2);
+    await accepted;
+
+    expect((await closing).commandHash).toBe(expected.hash);
+  });
+
+  it("freezes ticks and rejects mutations while the receipt signature is pending", async () => {
+    const signature = deferred<string>();
+    const { session, engine } = createSession({
+      signer: { sign: () => signature.promise },
+    });
+    await session.receive(ticket("home"), command(1), issuedAt + 1);
+    await session.receive(ticket("away"), command(1), issuedAt + 2);
+    session.advanceFixedTick();
+
+    const closing = session.finalize("completed", issuedAt + 3);
+    session.advanceFixedTick();
+    session.disconnect(homeUserId, issuedAt + 4);
+    const mutation = await session.receive(ticket("home"), command(2, "set_tactics"), issuedAt + 5);
+    signature.resolve("one-authoritative-signature");
+    await closing;
+
+    expect(session.snapshot().tick).toBe(1);
+    expect(mutation).toEqual({ accepted: false, reason: "command_rejected" });
+    expect(engine.tacticalChanges).toHaveLength(0);
+    expect(session.phase).toBe("finalized");
+  });
+
+  it("bounds rejected-command history during a replay flood", async () => {
+    const { session } = createSession();
+    await session.receive(ticket("home"), command(1), issuedAt);
+    for (let i = 0; i < 1_000; i += 1) {
+      await session.receive(ticket("home"), command(1), issuedAt + i);
+    }
+    expect(session.invalidAttempts.length).toBeLessThanOrEqual(128);
+    expect(session.invalidAttempts.at(-1)?.at).toBe(issuedAt + 999);
+  });
+
+  it("limits tactical-command bursts even without caller-supplied limits", async () => {
+    const { session, engine } = createSession();
+    const outcomes = [];
+    for (let sequence = 1; sequence <= 13; sequence += 1) {
+      outcomes.push(
+        await session.receive(ticket("home"), command(sequence, "set_tactics"), issuedAt),
+      );
+    }
+    expect(outcomes.filter((outcome) => outcome.accepted)).toHaveLength(12);
+    expect(outcomes.at(-1)).toEqual({ accepted: false, reason: "rate_limited" });
+    expect(engine.tacticalChanges).toHaveLength(12);
+  });
+
+  it("closes input synchronously when a forfeit is accepted", async () => {
+    const { session, engine } = createSession();
+    const forfeit = session.receive(ticket("home"), command(1, "forfeit"), issuedAt + 1);
+    const mutation = session.receive(ticket("away"), command(1, "set_tactics"), issuedAt + 2);
+    expect(await forfeit).toEqual({ accepted: true });
+    expect(await mutation).toEqual({ accepted: false, reason: "command_rejected" });
+    expect(engine.tacticalChanges).toHaveLength(0);
+    expect((await session.finalize("completed", issuedAt + 3)).closureReason).toBe("forfeit");
+  });
+
   it("includes forfeit in the command hash and replays the same receipt", async () => {
     const { session, signatureCount } = createSession();
     const home = ticket("home");
@@ -305,8 +404,164 @@ describe("AuthoritativeMatchSession", () => {
 
     const snapshot = session.snapshot();
 
-    expect(snapshot).toMatchObject({ tick: 1, revision: 1, phase: "live" });
+    expect(snapshot).toMatchObject({ tick: 1, revision: 2, phase: "live" });
     expect(JSON.stringify(snapshot)).not.toMatch(/seed|internal|reward/i);
     expect(snapshot.publicState.score).toEqual({ home: 1, away: 0 });
+  });
+});
+
+describe("authoritative ticket renewal", () => {
+  const secret = "test-only-match-ticket-signing-secret-at-least-32-bytes";
+  let clock = issuedAt;
+
+  async function renewed(seat: MatchSeat, at: number, overrides: Partial<MatchTicketV1> = {}) {
+    const { signature: _signature, ...claims } = ticket(seat);
+    return signMatchTicketV1(
+      {
+        ...claims,
+        issuedAt: at,
+        expiresAt: at + 120_000,
+        nonce: `renewed-ticket-${seat}-${at}`,
+        ...overrides,
+      },
+      secret,
+    );
+  }
+
+  function createRenewableSession(
+    verifyTicket = (value: MatchTicketV1) => verifyMatchTicketV1(value, secret),
+  ) {
+    clock = issuedAt + 1;
+    return createSession({ verifyTicket, now: () => clock });
+  }
+
+  it("renews an authenticated seat without resetting command sequence or the reconnect deadline", async () => {
+    const { session } = createRenewableSession();
+    const old = ticket("home");
+    await session.receive(old, command(1, "ready"), issuedAt);
+    session.disconnect(old.userId, issuedAt + 1);
+    const fresh = await renewed("home", issuedAt + 1);
+
+    await session.renewTicket(fresh);
+    expect(() => session.connect(old, clock)).toThrow(/ticket/i);
+    expect(session.phase).toBe("reconnecting");
+    expect(session.connect(fresh, clock)).toBe("home");
+    expect(await session.receive(fresh, command(1), clock)).toMatchObject({
+      accepted: false,
+      reason: "sequence_not_monotonic",
+    });
+    expect(await session.receive(fresh, command(2), clock)).toEqual({ accepted: true });
+  });
+
+  it("fails closed without a verifier and rejects forged or mismatched claims", async () => {
+    clock = issuedAt + 1;
+    const fresh = await renewed("home", clock);
+    await expect(createSession({ now: () => clock }).session.renewTicket(fresh)).rejects.toThrow();
+    const { session } = createRenewableSession();
+    await expect(
+      session.renewTicket({ ...fresh, nonce: "forged-renewal-nonce" }),
+    ).rejects.toThrow();
+    const wrongUser = await renewed("home", clock, { userId: awayUserId });
+    await expect(session.renewTicket(wrongUser)).rejects.toThrow();
+    const wrongRoom = await renewed("home", clock, {
+      roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5",
+    });
+    await expect(session.renewTicket(wrongRoom)).rejects.toThrow();
+    expect(session.connect(ticket("home"), clock)).toBe("home");
+  });
+
+  it("does not let a slower older renewal replace a newer one", async () => {
+    const wait = deferred<boolean>();
+    const older = await renewed("home", issuedAt + 1);
+    const newer = await renewed("home", issuedAt + 2);
+    const { session } = createRenewableSession((value) =>
+      value.issuedAt === older.issuedAt ? wait.promise : Promise.resolve(true),
+    );
+    clock = issuedAt + 2;
+    const pending = session.renewTicket(older);
+    await session.renewTicket(newer);
+    wait.resolve(true);
+    await expect(pending).rejects.toThrow(/ticket/i);
+    expect(session.connect(newer, clock)).toBe("home");
+    expect(() => session.connect(older, clock)).toThrow(/ticket/i);
+  });
+
+  it("rechecks the clock after verification and cannot renew past the reconnection deadline", async () => {
+    const wait = deferred<boolean>();
+    const { session } = createRenewableSession(() => wait.promise);
+    const old = ticket("home");
+    session.connect(old, issuedAt);
+    session.disconnect(old.userId, issuedAt + 1);
+    const fresh = await renewed("home", issuedAt + 1);
+    const pending = session.renewTicket(fresh);
+    clock = issuedAt + 60_001;
+    wait.resolve(true);
+    await expect(pending).rejects.toThrow(/reconnection window expired/i);
+    expect((await session.expireReconnects(clock))?.closureReason).toBe("abandoned");
+  });
+
+  it("cannot install a ticket after finalization starts", async () => {
+    const wait = deferred<boolean>();
+    const { session } = createRenewableSession(() => wait.promise);
+    const fresh = await renewed("home", clock);
+    const pending = session.renewTicket(fresh);
+    await session.finalize("completed", clock);
+    wait.resolve(true);
+    await expect(pending).rejects.toThrow(/ticket/i);
+  });
+
+  it("does not retain caller-owned ticket objects across asynchronous verification", async () => {
+    const wait = deferred<boolean>();
+    const { session } = createRenewableSession(() => wait.promise);
+    const fresh = await renewed("home", clock);
+    const original = { ...fresh };
+    const pending = session.renewTicket(fresh);
+    fresh.expiresAt += 999_999;
+    wait.resolve(true);
+    await pending;
+    expect(session.connect(original, clock)).toBe("home");
+    expect(() => session.connect(fresh, clock)).toThrow(/ticket/i);
+  });
+});
+
+describe("match session lifecycle regressions", () => {
+  it("keeps a pre-start reconnect at tick zero and rejects reconnection after the first deadline", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    await session.receive(home, command(1), issuedAt);
+    session.disconnect(home.userId, issuedAt + 1);
+    await session.receive(ticket("away"), command(1), issuedAt + 2);
+    session.advanceFixedTick();
+    expect(session.snapshot()).toMatchObject({ phase: "reconnecting", tick: 0 });
+    session.disconnect(home.userId, issuedAt + 30_000);
+    expect(() => session.connect(home, issuedAt + 60_001)).toThrow(/reconnection window expired/);
+  });
+
+  it("does not advance the published clock when the engine has already finished", async () => {
+    const { session, engine } = createSession();
+    await session.receive(ticket("home"), command(1), issuedAt);
+    await session.receive(ticket("away"), command(1), issuedAt);
+    engine.finished = true;
+    const before = session.snapshot();
+    session.advanceFixedTick();
+    expect(session.snapshot()).toEqual(before);
+  });
+
+  it("retains the first closure decision after a signing failure", async () => {
+    let attempts = 0;
+    const { session } = createSession({
+      signer: {
+        sign: async () => {
+          if (++attempts === 1) throw new Error("temporary signer failure");
+          return "one-authoritative-signature";
+        },
+      },
+    });
+    await expect(session.finalize("forfeit", issuedAt + 1, "home")).rejects.toThrow();
+    expect(await session.finalize("completed", issuedAt + 2)).toMatchObject({
+      closureReason: "forfeit",
+      issuedAt: issuedAt + 1,
+      result: { homeGoals: 0, awayGoals: 3, winner: "away" },
+    });
   });
 });

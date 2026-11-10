@@ -80,6 +80,10 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     !["GET", "HEAD"].includes(request.method)
   ) {
     headers.set("cache-control", "no-store");
+    // CDN-specific directives take precedence over Cache-Control at the edge.
+    // Replace a conflicting upstream policy on every private/error response.
+    headers.set("cdn-cache-control", "no-store");
+    headers.set("cloudflare-cdn-cache-control", "no-store");
   } else if (
     response.status === 200 &&
     contentType.includes("text/html") &&

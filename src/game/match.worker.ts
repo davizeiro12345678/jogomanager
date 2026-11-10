@@ -9,13 +9,7 @@ import {
 } from "./sim";
 
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
-import {
-  LIVE_MATCH_WORKER_TELEMETRY_MARK,
-  createSnapshotTelemetryTracker,
-  isLiveSnapshotResponse,
-  isLiveTelemetryWorker,
-  markLiveWorkerSnapshot,
-} from "./snapshot-telemetry";
+import { isLiveTelemetryWorker } from "./snapshot-telemetry-flag";
 import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
 import { initializeMatchExecution } from "./match-execution";
 import { LiveSnapshotEncoder } from "./live-transport";
@@ -62,22 +56,23 @@ function recoveryState() {
   }
   return { checkpointSeq, ticks: recoveryTicks.map((tick) => [...tick] as [number, number]) };
 }
-const snapshotTelemetry = isLiveTelemetryWorker((self as unknown as { name?: unknown }).name)
-  ? createSnapshotTelemetryTracker()
+const telemetryModule = isLiveTelemetryWorker((self as unknown as { name?: unknown }).name)
+  ? await import("./snapshot-telemetry")
   : null;
+const snapshotTelemetry = telemetryModule?.createSnapshotTelemetryTracker();
 let telemetryMarkCount = 0;
 
 function post(message: unknown) {
-  if (snapshotTelemetry && isLiveSnapshotResponse(message)) {
+  if (telemetryModule && snapshotTelemetry && telemetryModule.isLiveSnapshotResponse(message)) {
     const measurement = snapshotTelemetry.sample(message.snapshot, performance.now());
     // Mantém uma janela curta no User Timing do Worker para não acumular uma
     // entrada por snapshot durante partidas longas. Não altera a mensagem nem
     // toca no estado determinístico da simulação.
     if (telemetryMarkCount >= 120 && typeof performance.clearMarks === "function") {
-      performance.clearMarks(LIVE_MATCH_WORKER_TELEMETRY_MARK);
+      performance.clearMarks(telemetryModule.LIVE_MATCH_WORKER_TELEMETRY_MARK);
       telemetryMarkCount = 0;
     }
-    markLiveWorkerSnapshot(measurement);
+    telemetryModule.markLiveWorkerSnapshot(measurement);
     telemetryMarkCount += 1;
   }
   self.postMessage(message);

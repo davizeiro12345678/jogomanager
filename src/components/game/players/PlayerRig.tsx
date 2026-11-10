@@ -47,6 +47,7 @@ export const PlayerRig = memo(function PlayerRig({
   denseGeometry = true,
   matchTopology = false,
   clothPhysics = true,
+  rigPool,
   previewClip,
   quality: baseQuality,
   paused = false,
@@ -180,6 +181,7 @@ export const PlayerRig = memo(function PlayerRig({
     player,
     shadows,
     clothPhysics,
+    rigPool,
     painted,
     lodState,
     castState,
@@ -229,6 +231,7 @@ export const PlayerRig = memo(function PlayerRig({
     elemento; os refs da animação são ligados aqui.
   */
   useLayoutEffect(() => {
+    if (!skin) return undefined;
     const entries = Object.entries(boneRefs) as [RigJoint, React.RefObject<THREE.Bone | null>][];
     for (const [joint, ref] of entries) ref.current = skin.boneOf[joint] ?? null;
     return () => {
@@ -267,11 +270,12 @@ export const PlayerRig = memo(function PlayerRig({
       cloth,
     },
   });
-  const renderBones = () => [createElement("primitive", { key: "skeleton", object: skin.root })];
+  const renderBones = () =>
+    skin ? [createElement("primitive", { key: "skeleton", object: skin.root })] : [];
 
   /* ------------------------------------------------------------- render */
 
-  return (
+  return skin ? (
     <group
       ref={(el) => {
         root.current = el;
@@ -306,7 +310,7 @@ export const PlayerRig = memo(function PlayerRig({
       {/* malhas: um desenho por grupo de material, todas skinned */}
       {drawMeshes}
     </group>
-  );
+  ) : null;
 });
 
 export default PlayerRig;

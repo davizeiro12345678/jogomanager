@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-11-09T01:47:03.788Z",
+  "scope": "Complete before/after visual recordings. Capture and encoding overhead excludes these runs from game FPS comparisons. Encoded25FPS is video cadence, not measured game FPS.",
+  "nativePerformanceComparison": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\comparison-final-ownership.json",
+  "videos": [
+    {
+      "tag": "baseline",
+      "path": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\video\\page@e574c5358b02cc5c15ae4d04fde8b8f7.webm",
+      "bytes": 58919009,
+      "sha256": "29a06c1fd02234a8a33107f6e2b8b3a1e16b2b8b61315fcba8a13eba383d9371",
+      "durationSeconds": 364.52,
+      "codec": "VP8",
+      "width": 1440,
+      "height": 1000,
+      "encodedFramesPerSecond": 25,
+      "complete": true,
+      "quality": "alta",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "warmupSeconds": 60,
+      "measuredSeconds": 300,
+      "protocol": {
+        "warmupMs": 60000,
+        "measurementMs": 300000,
+        "interruptions": 0,
+        "coveredMs": 300000,
+        "contractChanged": false,
+        "adaptive": false,
+        "longTasksScope": "whole run including warmup"
+      },
+      "scope": "visual recording with capture overhead; excluded from FPS comparisons",
+      "errors": [],
+      "failedRequests": [],
+      "validation": {
+        "headerRecognized": true,
+        "firstFrameDecoded": true,
+        "lastSecondFrameDecoded": true,
+        "fullStreamDecodePerformed": false,
+        "firstFrameLog": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\video\\validation\\baseline-first-frame.log",
+        "lastFrameLog": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\video\\validation\\baseline-last-frame.log"
+      }
+    },
+    {
+      "tag": "final",
+      "path": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\video\\page@57507cd63a8e9bfc6ab136f9d9b010bc.webm",
+      "bytes": 57773125,
+      "sha256": "5ec4848eaa763104529c18e5669ae3706bf3f108c259cb9bc2fbcf456fc95edb",
+      "durationSeconds": 364.24,
+      "codec": "VP8",
+      "width": 1440,
+      "height": 1000,
+      "encodedFramesPerSecond": 25,
+      "complete": true,
+      "quality": "alta",
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "warmupSeconds": 60,
+      "measuredSeconds": 300,
+      "protocol": {
+        "warmupMs": 60000,
+        "measurementMs": 300000,
+        "interruptions": 0,
+        "coveredMs": 300000,
+        "contractChanged": false,
+        "adaptive": false,
+        "longTasksScope": "whole run including warmup"
+      },
+      "scope": "visual recording with capture overhead; excluded from FPS comparisons",
+      "errors": [],
+      "failedRequests": [],
+      "validation": {
+        "headerRecognized": true,
+        "firstFrameDecoded": true,
+        "lastSecondFrameDecoded": true,
+        "fullStreamDecodePerformed": false,
+        "firstFrameLog": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\video\\validation\\final-first-frame.log",
+        "lastFrameLog": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\video\\validation\\final-last-frame.log"
+      }
+    }
+  ]
+}

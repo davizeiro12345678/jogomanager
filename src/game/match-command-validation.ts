@@ -67,7 +67,8 @@ export function validMatchTeam(v: unknown): boolean {
     (v["bench"] !== undefined &&
       (!Array.isArray(v["bench"]) || v["bench"].length > MAX_MATCH_BENCH_PLAYERS)) ||
     (v["morale"] !== undefined && !finite(v["morale"], 0, 100)) ||
-    (v["cpu"] !== undefined && typeof v["cpu"] !== "boolean")
+    (v["cpu"] !== undefined && typeof v["cpu"] !== "boolean") ||
+    (v["tacticalAiRevision"] !== undefined && v["tacticalAiRevision"] !== 2)
   )
     return false;
   const roster = [...v["players"], ...((v["bench"] ?? []) as unknown[])];
