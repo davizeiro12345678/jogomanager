@@ -103,9 +103,8 @@ export async function sendPushToTokens(
   };
 
   await Promise.all(
-    Array.from(
-      { length: Math.min(MAX_PARALLEL_PUSH_REQUESTS, selectedTokens.length) },
-      () => worker(),
+    Array.from({ length: Math.min(MAX_PARALLEL_PUSH_REQUESTS, selectedTokens.length) }, () =>
+      worker(),
     ),
   );
   if (failed) console.error(`FCM indisponível para ${failed} dispositivo(s)`);
@@ -121,7 +120,7 @@ export async function sendPushToUsers(
   if (userIds.length === 0) return;
   const { data, error } = await admin
     .from("push_subscriptions")
-    .select("token")
+    .select("id, token, user_id, updated_at")
     .in("user_id", [...userIds])
     .limit(MAX_TOKENS_PER_EVENT);
   if (error) {
@@ -131,11 +130,19 @@ export async function sendPushToUsers(
   const tokens = (data ?? []).map((row) => row.token);
   const { deadTokens } = await sendPushToTokens(tokens, message);
   if (deadTokens.length === 0) return;
-  const { error: cleanup } = await admin
-    .from("push_subscriptions")
-    .delete()
-    .in("token", deadTokens);
-  if (cleanup) console.error("push token cleanup failed", cleanup.message);
+  const dead = new Set(deadTokens);
+  for (const row of data ?? []) {
+    if (!dead.has(row.token)) continue;
+    // Only remove the registration observed before sending.
+    const { error: cleanup } = await admin
+      .from("push_subscriptions")
+      .delete()
+      .eq("id", row.id)
+      .eq("token", row.token)
+      .eq("user_id", row.user_id)
+      .eq("updated_at", row.updated_at);
+    if (cleanup) console.error("push token cleanup failed", cleanup.message);
+  }
 }
 
 /** Fire-and-forget wrapper so callers never await or fail on push delivery. */

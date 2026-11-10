@@ -103,8 +103,12 @@ describe("VPS catalog canary", () => {
       const url = new URL(String(input));
       expect(url.hostname).toBe("catalog-vps.jogomanager.com");
       expect(new Headers(init?.headers).has("authorization")).toBe(false);
-      return new Response(JSON.stringify(url.searchParams.get("page") === "0"
-        ? [{ id: "club-canary", crest_url: null }] : []), { status: 200 });
+      return new Response(
+        JSON.stringify(
+          url.searchParams.get("page") === "0" ? [{ id: "club-canary", crest_url: null }] : [],
+        ),
+        { status: 200 },
+      );
     });
     const result = await fetchVpsPublicCrests({
       enabled: true,
@@ -136,5 +140,4 @@ describe("VPS catalog canary", () => {
     expect(result?.[total - 1]?.id).toBe("club-038853");
     expect(mock).toHaveBeenCalledTimes(40);
   });
-
 });

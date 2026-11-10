@@ -320,13 +320,26 @@ test("API-Football bounds scheduled work and keeps the manual pilot single-lane"
     maxRequests: 150,
   });
   const custom = footballWindowBudget("999", false);
-  assert.equal(custom.lanes, 16);
-  assert.equal(custom.spacingMs, 50);
-  assert.equal(custom.maxRequests, 800);
-  assert.ok(custom.maxRequests * 1440 >= 450000);
-  assert.equal(footballWindowBudget("1", false).spacingMs, 800);
+  assert.equal(custom.lanes, 48);
+  assert.ok(custom.spacingMs >= 110);
+  assert.equal(custom.maxRequests, 880);
+  assert.ok(custom.maxRequests * 1440 >= 445000);
   assert.equal(footballWindowBudget("16", true).lanes, 1);
   assert.equal(footballWindowBudget("invalid", false).lanes, 1);
+});
+
+test("API-Football treats HTTP 200 rateLimit payloads as backpressure, not data", () => {
+  assert.throws(
+    () =>
+      validateFootballPage(
+        {
+          errors: { rateLimit: "You have reached your per-minute request limit." },
+          response: [],
+        },
+        { kind: "player_team", path: "/players/teams?player=7" },
+      ),
+    /provider_rate_wait/,
+  );
 });
 
 test("API-Football distinguishes a depleted day from a transient 429", () => {

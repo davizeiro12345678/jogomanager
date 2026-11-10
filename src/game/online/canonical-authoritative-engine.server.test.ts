@@ -119,3 +119,27 @@ describe("Canonical server-only authoritative engine", () => {
     }
   });
 });
+
+it("keeps the original tick for presentation events between simulation steps", () => {
+  const engine = createEngine();
+  try {
+    engine.advanceFixedStep();
+    engine.sim.pushEvent({ minute: 1, type: "goal", side: "home", text: "Goal" });
+    engine.advanceFixedStep();
+    expect(engine.presentationEvents()).toContainEqual({
+      id: "event-1",
+      type: "goal",
+      tick: 1,
+      team: "home",
+    });
+    engine.advanceFixedStep();
+    expect(engine.presentationEvents()).toContainEqual({
+      id: "event-1",
+      type: "goal",
+      tick: 1,
+      team: "home",
+    });
+  } finally {
+    engine.dispose();
+  }
+});

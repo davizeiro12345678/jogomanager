@@ -463,6 +463,13 @@
       "when": 1794180300000,
       "tag": "0065_atomic_match_room_creation",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1794255369000,
+      "tag": "0066_api_football_claim_concurrency_48",
+      "breakpoints": true
     }
   ]
 }

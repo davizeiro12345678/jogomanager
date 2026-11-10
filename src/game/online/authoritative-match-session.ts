@@ -18,7 +18,7 @@ export type MatchSessionPhase = "waiting" | "live" | "reconnecting" | "finalized
 export type MatchClosureReason = MatchReceiptV1["closureReason"];
 
 export interface AuthoritativeMatchEngine {
-  advanceFixedStep(): void;
+  advanceFixedStep(): boolean;
   publicState(): MatchPublicStateV1;
   presentationEvents(): PresentationEventV1[];
   applyTactics(seat: MatchSeat, payload: TacticalCommandPayloadV1): boolean;
@@ -89,6 +89,8 @@ export class AuthoritativeMatchSession {
   private receipt: MatchReceiptV1 | null = null;
   private finalizationPromise: Promise<MatchReceiptV1> | null = null;
   private closing = false;
+  private started = false;
+  private closure: Pick<MatchReceiptV1, "closureReason" | "issuedAt" | "result"> | undefined;
   phase: MatchSessionPhase = "waiting";
 
   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
@@ -101,11 +103,16 @@ export class AuthoritativeMatchSession {
     if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
       throw new Error("match tickets must be assigned to their matching seats");
     }
+    if (options.homeTicket.userId === options.awayTicket.userId) {
+      throw new Error("match seats must belong to different users");
+    }
     this.tickets = { home: { ...options.homeTicket }, away: { ...options.awayTicket } };
   }
 
   connect(ticket: MatchTicketV1, now: number): MatchSeat {
     this.assertBoundTicket(ticket, now);
+    const deadline = this.reconnectDeadlines.get(ticket.seat);
+    if (deadline !== undefined && now >= deadline) throw new Error("reconnection window expired");
     this.connected.add(ticket.userId);
     this.reconnectDeadlines.delete(ticket.seat);
     this.refreshPhase();
@@ -114,10 +121,10 @@ export class AuthoritativeMatchSession {
 
   disconnect(userId: string, now: number): void {
     const seat = this.seatForUser(userId);
-    if (!seat || this.closing || this.phase === "finalized") return;
+    if (!seat || !this.connected.has(userId) || this.closing || this.phase === "finalized") return;
     this.connected.delete(userId);
     this.reconnectDeadlines.set(seat, now + RECONNECT_WINDOW_MS);
-    this.phase = "reconnecting";
+    this.setPhase("reconnecting");
   }
 
   async receive(
@@ -182,8 +189,8 @@ export class AuthoritativeMatchSession {
 
   advanceFixedTick(): void {
     if (this.closing) return;
-    if (this.phase !== "live" && this.phase !== "reconnecting") return;
-    this.options.engine.advanceFixedStep();
+    if (!this.started || (this.phase !== "live" && this.phase !== "reconnecting")) return;
+    if (!this.options.engine.advanceFixedStep()) return;
     this.tick += 1;
     this.revision += 1;
   }
@@ -219,6 +226,12 @@ export class AuthoritativeMatchSession {
   ): Promise<MatchReceiptV1> {
     if (this.receipt) return this.receipt;
     this.closing = true;
+    // A failed signature can be retried, but the original decision stays sealed.
+    const closure = (this.closure ??= {
+      closureReason,
+      issuedAt: now,
+      result: this.options.engine.finalResult(loser),
+    });
     const finalizationPromise =
       this.finalizationPromise ??
       (this.finalizationPromise = (async () => {
@@ -227,15 +240,13 @@ export class AuthoritativeMatchSession {
           roomId: this.options.roomId,
           simulationVersion: this.options.simulationVersion,
           commandHash: this.commandHash ? await this.commandHash : GENESIS_SESSION_HASH,
-          result: this.options.engine.finalResult(loser),
-          closureReason,
+          ...closure,
           idempotencyKey: this.options.idempotencyKey,
-          issuedAt: now,
         } as const;
         const signature = await this.options.signer.sign(unsigned);
         const receipt = parseMatchReceiptV1({ ...unsigned, signature });
         this.receipt = receipt;
-        this.phase = "finalized";
+        this.setPhase("finalized");
         return receipt;
       })());
 
@@ -274,10 +285,17 @@ export class AuthoritativeMatchSession {
   private refreshPhase(): void {
     if (this.closing || this.phase === "finalized") return;
     if (this.connected.size === 2 && this.readySeats.size === 2) {
-      this.phase = "live";
+      this.started = true;
+      this.setPhase("live");
       return;
     }
-    this.phase = this.reconnectDeadlines.size > 0 ? "reconnecting" : "waiting";
+    this.setPhase(this.reconnectDeadlines.size > 0 ? "reconnecting" : "waiting");
+  }
+
+  private setPhase(phase: MatchSessionPhase): void {
+    if (this.phase === phase) return;
+    this.phase = phase;
+    this.revision += 1;
   }
 
   private reject(

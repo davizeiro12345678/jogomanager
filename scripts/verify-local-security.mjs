@@ -38,7 +38,9 @@ const session = new AuthoritativeMatchSession({
   idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
   signer: { sign: async () => "synthetic-test-receipt-signature" },
   engine: {
-    advanceFixedStep() {},
+    advanceFixedStep() {
+      return true;
+    },
     publicState: () => ({
       minute: 0,
       score: { home: 0, away: 0 },

@@ -153,3 +153,16 @@ A implementação acima não concede aprovação às metas abaixo. Elas permanec
 - [ ] Completar CI da revisão exata, Lighthouse móvel pessimista de cinco rotas/três execuções, release gates e verificação de SHA de produção antes de qualquer publicação.
 
 - Entrega de fonte: commit 0a6a04e581571a367cc1c742ead21f984abbbc1b no draft PR #128. Oito workflows aprovados nessa fonte, incluindo 2.203 testes e todos os 12 jobs de Quality gates. A medição física final na RTX 4060 registrou 82,263 FPS; o pior stall aumentou para 800,8 ms. A correção posterior do rótulo mobile e os helpers de captura serão incluídos com a evidência e terão CI no novo head. As tarefas 8–10 permanecem abertas; não há merge, publicação ou certificação de três repetições nas duas GPUs.
+
+## Verificação de continuidade em 10/11/2026
+
+| Frente | Evidência atual | O que falta |
+| --- | --- | --- |
+| IA e regras | A revisão tática 2 já está presente nas partidas rápidas opt-in e no adaptador canônico, com correção de impedimento. | Levar a versão pelo ticket e pelo replay persistido. Medir os cenários de decisão e compatibilidade do Task 8. |
+| Sessão autoritativa | O relógio espera o início efetivo, os eventos preservam o tick de criação e a reconexão respeita o prazo inicial. O retry de assinatura preserva a primeira decisão de encerramento. | Transporte autenticado com proprietário único por sala, renovação de tickets, checkpoints duráveis e recuperação após reinício. |
+| Carreira e interface | O PR já inclui durabilidade de saves, finanças, acessibilidade e ajustes de CSS para celular. | Validar jornadas integradas e a interface na revisão combinada, incluindo a relação com o PR #130. |
+| Gráficos e desempenho | WebGL2 padrão inicializado sem aguardar a detecção WebGPU. O worker padrão carrega 89.686 bytes após separar a sonda de telemetria, dentro do limite de 90.000. Último benchmark físico documentado: 82,263 FPS médios e 190 frames acima de 50 ms. | Medir primeiro frame e stalls na revisão atual. Completar a campanha nas duas GPUs, o inventário de novos assets e os 16 casos CPU. |
+| Firebase | O gateway já tinha concorrência e timeout limitados. A remoção de tokens inválidos agora exige a mesma inscrição e versão observadas no envio. | Homologar inscrição, logout e entrega com um dispositivo de teste no projeto Firebase correto. |
+| API-Football | A função de produção está na versão 25. A revisão incorpora o limitador de saída da main, com a migração 0066 no journal e no replay de CI. | Medir throughput sustentado e deferrals antes de alterar a cadência. A migração equivalente de 48 concessões já consta no histórico gerenciado. |
+| Supabase e serviços externos | PostgreSQL 17.11.0.018 saudável. Migrações 0063–0065 registradas em produção. | Validar receiver HTTPS, segredo HMAC, agendamento, callbacks OAuth com conta de teste e gatilhos Resend. |
+| Publicação | O PR permanece em rascunho. A consulta de produção a `/api/health` retornou 503, sem SHA e com auth, credenciais de servidor e banco indisponíveis para o Worker. | Investigar a configuração do Worker de produção. Executar Quality gates e Lighthouse no commit publicado. Confirmar o SHA em `/api/health` quando houver uma release aprovada. |

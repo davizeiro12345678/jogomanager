@@ -42,6 +42,8 @@ const EVENT_TYPES: Record<string, PresentationEventV1["type"] | undefined> = {
 export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngine {
   readonly sim: MatchSim;
   private tick = 0;
+  private lastPresentationEventId = -1;
+  private readonly publicEvents: PresentationEventV1[] = [];
 
   constructor(homeClub: string, awayClub: string, privateSeed: string) {
     if (!Object.hasOwn(CLUBS, homeClub) || !Object.hasOwn(CLUBS, awayClub)) {
@@ -58,13 +60,16 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
     );
   }
 
-  advanceFixedStep(): void {
-    if (this.sim.finished) return;
+  advanceFixedStep(): boolean {
+    if (this.sim.finished) return false;
     if (this.tick >= MATCH_SIMULATION_TICK_LIMIT) {
       throw new Error("authoritative match tick budget exhausted");
     }
+    this.capturePresentationEvents();
     this.sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
     this.tick += 1;
+    this.capturePresentationEvents();
+    return true;
   }
 
   publicState(): MatchPublicStateV1 {
@@ -77,22 +82,30 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
   }
 
   presentationEvents(): PresentationEventV1[] {
-    // The simulation itself bounds its event log to 80. Use its monotonically
-    // growing counter, not the sliding array index, for stable event identities.
+    this.capturePresentationEvents();
+    return this.publicEvents.map((event) => ({ ...event }));
+  }
+
+  private capturePresentationEvents(): void {
+    if (this.sim.lastEventId <= this.lastPresentationEventId) return;
     const firstEventId = this.sim.lastEventId - this.sim.events.length + 1;
-    const events: PresentationEventV1[] = [];
-    for (let index = 0; index < this.sim.events.length; index += 1) {
+    for (
+      let index = Math.max(0, this.lastPresentationEventId + 1 - firstEventId);
+      index < this.sim.events.length;
+      index += 1
+    ) {
       const event = this.sim.events[index]!;
       const type = EVENT_TYPES[event.type];
       if (!type) continue;
-      events.push({
+      this.publicEvents.push({
         id: `event-${firstEventId + index}`,
         type,
         tick: this.tick,
         ...(event.side !== "neutral" ? { team: event.side } : {}),
       });
     }
-    return events.slice(-64);
+    this.lastPresentationEventId = this.sim.lastEventId;
+    if (this.publicEvents.length > 64) this.publicEvents.splice(0, this.publicEvents.length - 64);
   }
 
   applyTactics(seat: MatchSeat, payload: TacticalCommandPayloadV1): boolean {
@@ -126,7 +139,9 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
       .setup(seat)
       .bench?.find((player) => player.id === playerIn || `${seat}-${player.id}` === playerIn);
     if (!active || !incoming) return false;
-    return this.sim.substitute(seat, active.pid, incoming);
+    const substituted = this.sim.substitute(seat, active.pid, incoming);
+    this.capturePresentationEvents();
+    return substituted;
   }
 
   finalResult(loser?: MatchSeat) {

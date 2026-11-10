@@ -38,9 +38,12 @@ class FakeEngine implements AuthoritativeMatchEngine {
   readonly tacticalChanges: Array<{ seat: MatchSeat; formation: string }> = [];
   readonly substitutions: Array<{ seat: MatchSeat; playerOut: string; playerIn: string }> = [];
   private stepCount = 0;
+  finished = false;
 
   advanceFixedStep() {
+    if (this.finished) return false;
     this.stepCount += 1;
+    return true;
   }
 
   publicState(): MatchPublicStateV1 {
@@ -395,8 +398,50 @@ describe("AuthoritativeMatchSession", () => {
 
     const snapshot = session.snapshot();
 
-    expect(snapshot).toMatchObject({ tick: 1, revision: 1, phase: "live" });
+    expect(snapshot).toMatchObject({ tick: 1, revision: 2, phase: "live" });
     expect(JSON.stringify(snapshot)).not.toMatch(/seed|internal|reward/i);
     expect(snapshot.publicState.score).toEqual({ home: 1, away: 0 });
+  });
+});
+
+describe("match session lifecycle regressions", () => {
+  it("keeps a pre-start reconnect at tick zero and rejects reconnection after the first deadline", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    await session.receive(home, command(1), issuedAt);
+    session.disconnect(home.userId, issuedAt + 1);
+    await session.receive(ticket("away"), command(1), issuedAt + 2);
+    session.advanceFixedTick();
+    expect(session.snapshot()).toMatchObject({ phase: "reconnecting", tick: 0 });
+    session.disconnect(home.userId, issuedAt + 30_000);
+    expect(() => session.connect(home, issuedAt + 60_001)).toThrow(/reconnection window expired/);
+  });
+
+  it("does not advance the published clock when the engine has already finished", async () => {
+    const { session, engine } = createSession();
+    await session.receive(ticket("home"), command(1), issuedAt);
+    await session.receive(ticket("away"), command(1), issuedAt);
+    engine.finished = true;
+    const before = session.snapshot();
+    session.advanceFixedTick();
+    expect(session.snapshot()).toEqual(before);
+  });
+
+  it("retains the first closure decision after a signing failure", async () => {
+    let attempts = 0;
+    const { session } = createSession({
+      signer: {
+        sign: async () => {
+          if (++attempts === 1) throw new Error("temporary signer failure");
+          return "one-authoritative-signature";
+        },
+      },
+    });
+    await expect(session.finalize("forfeit", issuedAt + 1, "home")).rejects.toThrow();
+    expect(await session.finalize("completed", issuedAt + 2)).toMatchObject({
+      closureReason: "forfeit",
+      issuedAt: issuedAt + 1,
+      result: { homeGoals: 0, awayGoals: 3, winner: "away" },
+    });
   });
 });

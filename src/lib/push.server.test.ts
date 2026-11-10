@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isDeadToken, MAX_PARALLEL_PUSH_REQUESTS, MAX_TOKENS_PER_EVENT, sendPushToTokens } from "./push.server";
+import {
+  isDeadToken,
+  MAX_PARALLEL_PUSH_REQUESTS,
+  MAX_TOKENS_PER_EVENT,
+  sendPushToTokens,
+  sendPushToUsers,
+} from "./push.server";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -113,8 +119,10 @@ describe("sendPushToTokens", () => {
       .mockResolvedValueOnce(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchSpy);
 
-    expect(await sendPushToTokens(["device-a", "device-b"], { title: "a", body: "b" }))
-      .toEqual({ sent: 1, deadTokens: [] });
+    expect(await sendPushToTokens(["device-a", "device-b"], { title: "a", body: "b" })).toEqual({
+      sent: 1,
+      deadTokens: [],
+    });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(logger).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(logger.mock.calls)).not.toContain("device-a");
@@ -129,4 +137,26 @@ describe("sendPushToTokens", () => {
     await sendPushToTokens(tokens, { title: "a", body: "b" });
     expect(fetchSpy).toHaveBeenCalledTimes(MAX_TOKENS_PER_EVENT);
   });
+});
+
+it("limits dead-token cleanup to the original subscription version", async () => {
+  process.env["LOVABLE_API_KEY"] = "k1";
+  process.env["FIREBASE_MESSAGING_API_KEY"] = "k2";
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("UNREGISTERED", { status: 404 })));
+  const row = { id: "old-id", token: "t1", user_id: "owner", updated_at: "2026-11-10T00:00:00Z" };
+  const filters: Record<string, string> = {};
+  const deletion = {
+    eq(field: string, value: string) {
+      filters[field] = value;
+      return this;
+    },
+  };
+  const admin = {
+    from: () => ({
+      select: () => ({ in: () => ({ limit: async () => ({ data: [row], error: null }) }) }),
+      delete: () => deletion,
+    }),
+  } as unknown as Parameters<typeof sendPushToUsers>[0];
+  await sendPushToUsers(admin, ["owner"], { title: "a", body: "b" });
+  expect(filters).toEqual(row);
 });
