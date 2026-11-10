@@ -60,7 +60,7 @@ describe("VPS catalog canary", () => {
       fetchImpl: mock as typeof fetch,
     });
     expect(result).toEqual([{ id: "club-1", crest_url: "https://example.com/crest.png" }]);
-    expect(mock).toHaveBeenCalledTimes(6);
+    expect(mock).toHaveBeenCalledTimes(8);
   });
 
   it("falls back on empty, failed, or invalid responses", async () => {
@@ -84,7 +84,7 @@ describe("VPS catalog canary", () => {
     const mock = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       const page = Number(url.searchParams.get("page"));
-      const rows = Array.from({ length: 100 }, (_, index) => ({
+      const rows = Array.from({ length: 1000 }, (_, index) => ({
         id: `club-${page}-${index}`,
         crest_url: null,
       }));
@@ -96,6 +96,45 @@ describe("VPS catalog canary", () => {
       fetchImpl: mock as typeof fetch,
     });
     expect(result).toBeNull();
-    expect(mock).toHaveBeenCalledTimes(72);
+    expect(mock).toHaveBeenCalledTimes(80);
   });
+  it("supports the dedicated HTTPS canary hostname without forwarding credentials", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input));
+      expect(url.hostname).toBe("catalog-vps.jogomanager.com");
+      expect(new Headers(init?.headers).has("authorization")).toBe(false);
+      return new Response(JSON.stringify(url.searchParams.get("page") === "0"
+        ? [{ id: "club-canary", crest_url: null }] : []), { status: 200 });
+    });
+    const result = await fetchVpsPublicCrests({
+      enabled: true,
+      origin: "https://catalog-vps.jogomanager.com",
+      fetchImpl: fetchMock as typeof fetch,
+    });
+    expect(result).toEqual([{ id: "club-canary", crest_url: null }]);
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+  });
+
+  it("returns all 38,854 club crest projections instead of truncating at 7,200", async () => {
+    const total = 38_854;
+    const mock = vi.fn(async (input: RequestInfo | URL) => {
+      const page = Number(new URL(String(input)).searchParams.get("page"));
+      const start = page * 1000;
+      const length = Math.max(0, Math.min(1000, total - start));
+      const rows = Array.from({ length }, (_, index) => ({
+        id: `club-${String(start + index).padStart(6, "0")}`,
+        crest_url: null,
+      }));
+      return new Response(JSON.stringify(rows), { status: 200 });
+    });
+    const result = await fetchVpsPublicCrests({
+      enabled: true,
+      origin,
+      fetchImpl: mock as typeof fetch,
+    });
+    expect(result).toHaveLength(total);
+    expect(result?.[total - 1]?.id).toBe("club-038853");
+    expect(mock).toHaveBeenCalledTimes(40);
+  });
+
 });
