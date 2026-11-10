@@ -20,20 +20,10 @@ export function CreatorDetails() {
           <dd className="mt-1 font-medium">{CREATOR.name}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-widest text-muted-foreground">{copy.origin}</dt>
-          <dd className="mt-1">{CREATOR.projectOrigin}</dd>
-        </div>
-        <div className="sm:col-span-2">
-          <dt className="text-xs uppercase tracking-widest text-muted-foreground">
-            {copy.address}
-          </dt>
-          <dd className="mt-1">
-            <address className="not-italic leading-relaxed">{CREATOR.address}</address>
-          </dd>
-        </div>
-        <div>
           <dt className="text-xs uppercase tracking-widest text-muted-foreground">{copy.cpf}</dt>
-          <dd className="mt-1 tabular-nums">{CREATOR.cpf}</dd>
+          <dd className="mt-1 tabular-nums" aria-label={copy.cpf}>
+            ***.***.***-**
+          </dd>
         </div>
       </dl>
       <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{copy.onlineSupport}</p>

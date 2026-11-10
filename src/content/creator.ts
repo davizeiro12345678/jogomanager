@@ -9,7 +9,4 @@ export const CREATOR = {
   secondaryEmail: "davithomazini779@gmail.com",
   discordUsername: "davizeiro10",
   discordDisplayName: "Davi",
-  projectOrigin: "Vitória, Espírito Santo, Brasil",
-  address: "Av. Hugo Viola, 351 - Jardim da Penha, Vitória - ES, 29065-475",
-  cpf: "170.312.897-42",
 };
