@@ -34,12 +34,8 @@ import {
   DEFAULT_MANAGER_LOOK,
 } from "@/game/manager-profile";
 
-import {
-  discoverClubs,
-  searchKey,
-  type CareerChallenge,
-  type ClubDiscovery,
-} from "@/game/club-discovery";
+import { discoverClubs, type CareerChallenge, type ClubDiscovery } from "@/game/club-discovery";
+import { countryIdentity, countryOptions } from "@/game/country-options";
 
 import { Crest } from "@/components/game/Crest";
 
@@ -197,18 +193,11 @@ export function NewCareer() {
   }, [step, selected]);
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
-  const countryOptions = useMemo(() => {
-    const unique = [...new Map(catalog.map((league) => [league.country, league])).values()];
-    return unique
-      .filter((league) => searchKey(league.country).includes(searchKey(countryQuery)))
-      .sort((a, b) =>
-        a.country === "Brasil"
-          ? -1
-          : b.country === "Brasil"
-            ? 1
-            : a.country.localeCompare(b.country, "pt-BR"),
-      );
-  }, [countryQuery, catalog]);
+  const countryChoices = useMemo(
+    () => countryOptions(catalog, countryQuery),
+    [countryQuery, catalog],
+  );
+  const selectedCountry = countryIdentity(getLeague(country).country);
   const clubs = useMemo(
     () =>
       step !== 3
@@ -495,17 +484,17 @@ export function NewCareer() {
                     />
                   </div>
                   <div className="career-country-list">
-                    {countryOptions.map((league) => (
+                    {countryChoices.map(({ key, league }) => (
                       <Chip
-                        key={league.id}
-                        active={getLeague(country).country === league.country}
+                        key={key}
+                        active={selectedCountry === key}
                         onClick={() => setCountry(league.id)}
                       >
                         <Flag league={league.id} country={league.country} size={14} />
                         {league.country}
                       </Chip>
                     ))}
-                    {!countryOptions.length ? (
+                    {!countryChoices.length ? (
                       <p className="career-empty">Nenhum país encontrado. Tente outro nome.</p>
                     ) : null}
                   </div>

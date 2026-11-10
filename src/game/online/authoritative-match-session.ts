@@ -2,6 +2,7 @@ import {
   MATCH_PROTOCOL_VERSION,
   assertCurrentTicket,
   parseMatchReceiptV1,
+  parseMatchTicketV1,
   type MatchCommandKind,
   type MatchCommandV1,
   type MatchPublicStateV1,
@@ -56,6 +57,10 @@ export interface AuthoritativeMatchSessionOptions {
   simulationVersion: string;
   idempotencyKey: string;
   commandLimits?: Partial<Record<MatchCommandKind, CommandRateLimit>> | undefined;
+  /** Installed by the trusted server owner, never supplied by a client. */
+  verifyTicket?: ((ticket: MatchTicketV1) => Promise<boolean>) | undefined;
+  /** Wall clock used to recheck expiry after asynchronous signature verification. */
+  now?: (() => number) | undefined;
 }
 
 const RECONNECT_WINDOW_MS = 60_000;
@@ -117,6 +122,28 @@ export class AuthoritativeMatchSession {
     this.reconnectDeadlines.delete(ticket.seat);
     this.refreshPhase();
     return ticket.seat;
+  }
+
+  /** Replace an expired or expiring seat ticket without resetting match state.
+   * Issuance and user reauthentication belong to the transport owner. */
+  async renewTicket(input: unknown): Promise<void> {
+    const verify = this.options.verifyTicket;
+    if (!verify) throw new Error("match ticket renewal verifier is not configured");
+    // Parsing creates a private copy so a caller cannot change the claims
+    // while the asynchronous signature check is in flight.
+    const candidate = Object.freeze(parseMatchTicketV1(input));
+    this.assertEligibleRenewal(candidate, (this.options.now ?? Date.now)());
+    let valid = false;
+    try {
+      valid = await verify(candidate);
+    } catch {
+      // Fail closed without exposing signer or key configuration details.
+    }
+    if (!valid) throw new Error("invalid match ticket signature");
+    // A newer ticket, finalization, expiry, or a reconnect timeout may have
+    // won the race while the verifier was waiting for Web Crypto.
+    this.assertEligibleRenewal(candidate, (this.options.now ?? Date.now)());
+    this.tickets[candidate.seat] = { ...candidate };
   }
 
   disconnect(userId: string, now: number): void {
@@ -274,6 +301,24 @@ export class AuthoritativeMatchSession {
     ) {
       throw new Error("ticket does not belong to this authoritative match session");
     }
+  }
+
+  private assertEligibleRenewal(ticket: MatchTicketV1, now: number): void {
+    if (this.closing || this.receipt) throw new Error("match ticket renewal is closed");
+    assertCurrentTicket(ticket, now);
+    const expected = this.tickets[ticket.seat];
+    if (
+      ticket.roomId !== this.options.roomId ||
+      ticket.userId !== expected.userId ||
+      ticket.version !== expected.version ||
+      ticket.issuedAt <= expected.issuedAt ||
+      ticket.expiresAt <= expected.expiresAt ||
+      ticket.nonce === expected.nonce
+    ) {
+      throw new Error("match ticket renewal does not match the current seat");
+    }
+    const deadline = this.reconnectDeadlines.get(ticket.seat);
+    if (deadline !== undefined && now >= deadline) throw new Error("reconnection window expired");
   }
 
   private seatForUser(userId: string): MatchSeat | null {

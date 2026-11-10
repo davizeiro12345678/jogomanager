@@ -7,6 +7,7 @@ import {
   type MatchPublicStateV1,
   type MatchReceiptV1,
   type MatchSeat,
+  type MatchTicketV1,
   type PresentationEventV1,
 } from "./match-protocol";
 import { GENESIS_SESSION_HASH, appendCommandHash } from "./session-hash";
@@ -15,6 +16,7 @@ import {
   type AuthoritativeMatchEngine,
   type MatchReceiptSigner,
 } from "./authoritative-match-session";
+import { signMatchTicketV1, verifyMatchTicketV1 } from "./ticket-signing";
 
 const roomId = "45fd1d08-4f81-44bc-9072-1e35ce9d1d94";
 const homeUserId = "7b40bcbe-a4ca-430c-9b49-61aa9c5118e9";
@@ -108,6 +110,8 @@ function createSession(
   options: {
     limits?: Partial<Record<"set_tactics", { limit: number; windowMs: number }>>;
     signer?: MatchReceiptSigner;
+    verifyTicket?: (ticket: MatchTicketV1) => Promise<boolean>;
+    now?: () => number;
   } = {},
 ) {
   const engine = new FakeEngine();
@@ -127,6 +131,8 @@ function createSession(
     simulationVersion: "match-sim/1",
     idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
     commandLimits: options.limits,
+    verifyTicket: options.verifyTicket,
+    now: options.now,
   });
   return { session, engine, signatureCount: () => signatures };
 }
@@ -401,6 +407,120 @@ describe("AuthoritativeMatchSession", () => {
     expect(snapshot).toMatchObject({ tick: 1, revision: 2, phase: "live" });
     expect(JSON.stringify(snapshot)).not.toMatch(/seed|internal|reward/i);
     expect(snapshot.publicState.score).toEqual({ home: 1, away: 0 });
+  });
+});
+
+describe("authoritative ticket renewal", () => {
+  const secret = "test-only-match-ticket-signing-secret-at-least-32-bytes";
+  let clock = issuedAt;
+
+  async function renewed(seat: MatchSeat, at: number, overrides: Partial<MatchTicketV1> = {}) {
+    const { signature: _signature, ...claims } = ticket(seat);
+    return signMatchTicketV1(
+      {
+        ...claims,
+        issuedAt: at,
+        expiresAt: at + 120_000,
+        nonce: `renewed-ticket-${seat}-${at}`,
+        ...overrides,
+      },
+      secret,
+    );
+  }
+
+  function createRenewableSession(
+    verifyTicket = (value: MatchTicketV1) => verifyMatchTicketV1(value, secret),
+  ) {
+    clock = issuedAt + 1;
+    return createSession({ verifyTicket, now: () => clock });
+  }
+
+  it("renews an authenticated seat without resetting command sequence or the reconnect deadline", async () => {
+    const { session } = createRenewableSession();
+    const old = ticket("home");
+    await session.receive(old, command(1, "ready"), issuedAt);
+    session.disconnect(old.userId, issuedAt + 1);
+    const fresh = await renewed("home", issuedAt + 1);
+
+    await session.renewTicket(fresh);
+    expect(() => session.connect(old, clock)).toThrow(/ticket/i);
+    expect(session.phase).toBe("reconnecting");
+    expect(session.connect(fresh, clock)).toBe("home");
+    expect(await session.receive(fresh, command(1), clock)).toMatchObject({
+      accepted: false,
+      reason: "sequence_not_monotonic",
+    });
+    expect(await session.receive(fresh, command(2), clock)).toEqual({ accepted: true });
+  });
+
+  it("fails closed without a verifier and rejects forged or mismatched claims", async () => {
+    clock = issuedAt + 1;
+    const fresh = await renewed("home", clock);
+    await expect(createSession({ now: () => clock }).session.renewTicket(fresh)).rejects.toThrow();
+    const { session } = createRenewableSession();
+    await expect(
+      session.renewTicket({ ...fresh, nonce: "forged-renewal-nonce" }),
+    ).rejects.toThrow();
+    const wrongUser = await renewed("home", clock, { userId: awayUserId });
+    await expect(session.renewTicket(wrongUser)).rejects.toThrow();
+    const wrongRoom = await renewed("home", clock, {
+      roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5",
+    });
+    await expect(session.renewTicket(wrongRoom)).rejects.toThrow();
+    expect(session.connect(ticket("home"), clock)).toBe("home");
+  });
+
+  it("does not let a slower older renewal replace a newer one", async () => {
+    const wait = deferred<boolean>();
+    const older = await renewed("home", issuedAt + 1);
+    const newer = await renewed("home", issuedAt + 2);
+    const { session } = createRenewableSession((value) =>
+      value.issuedAt === older.issuedAt ? wait.promise : Promise.resolve(true),
+    );
+    clock = issuedAt + 2;
+    const pending = session.renewTicket(older);
+    await session.renewTicket(newer);
+    wait.resolve(true);
+    await expect(pending).rejects.toThrow(/ticket/i);
+    expect(session.connect(newer, clock)).toBe("home");
+    expect(() => session.connect(older, clock)).toThrow(/ticket/i);
+  });
+
+  it("rechecks the clock after verification and cannot renew past the reconnection deadline", async () => {
+    const wait = deferred<boolean>();
+    const { session } = createRenewableSession(() => wait.promise);
+    const old = ticket("home");
+    session.connect(old, issuedAt);
+    session.disconnect(old.userId, issuedAt + 1);
+    const fresh = await renewed("home", issuedAt + 1);
+    const pending = session.renewTicket(fresh);
+    clock = issuedAt + 60_001;
+    wait.resolve(true);
+    await expect(pending).rejects.toThrow(/reconnection window expired/i);
+    expect((await session.expireReconnects(clock))?.closureReason).toBe("abandoned");
+  });
+
+  it("cannot install a ticket after finalization starts", async () => {
+    const wait = deferred<boolean>();
+    const { session } = createRenewableSession(() => wait.promise);
+    const fresh = await renewed("home", clock);
+    const pending = session.renewTicket(fresh);
+    await session.finalize("completed", clock);
+    wait.resolve(true);
+    await expect(pending).rejects.toThrow(/ticket/i);
+  });
+
+  it("does not retain caller-owned ticket objects across asynchronous verification", async () => {
+    const wait = deferred<boolean>();
+    const { session } = createRenewableSession(() => wait.promise);
+    const fresh = await renewed("home", clock);
+    const original = { ...fresh };
+    const pending = session.renewTicket(fresh);
+    fresh.expiresAt += 999_999;
+    wait.resolve(true);
+    await pending;
+    expect(session.connect(original, clock)).toBe("home");
+    expect(() => session.connect(fresh, clock)).toThrow(/ticket/i);
   });
 });
 
