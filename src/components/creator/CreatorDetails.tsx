@@ -20,6 +20,10 @@ export function CreatorDetails() {
           <dd className="mt-1 font-medium">{CREATOR.name}</dd>
         </div>
         <div>
+          <dt className="text-xs uppercase tracking-widest text-muted-foreground">{copy.origin}</dt>
+          <dd className="mt-1">{CREATOR.publicRegion}</dd>
+        </div>
+        <div>
           <dt className="text-xs uppercase tracking-widest text-muted-foreground">{copy.cpf}</dt>
           <dd className="mt-1 tabular-nums" aria-label={copy.cpf}>
             ***.***.***-**

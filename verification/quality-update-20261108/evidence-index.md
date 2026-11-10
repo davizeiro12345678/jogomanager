@@ -17,7 +17,7 @@ A fonte medida é `0a6a04e581571a367cc1c742ead21f984abbbc1b`, base `c20036f33a8f
 | Gate do construtor | [Medianas oficiais da CI](ci-source-0a6-constructor-abba.json), [controle local](constructor-affinity/match-setup.json) |
 | CI geral | [371 arquivos e 2.203 testes](ci-source-0a6-full-vitest-summary.json), [oito workflows concluídos](ci-source-0a6-final.json) |
 | Lighthouse mobile | [15 medições e agregados pessimistas](ci-source-0a6-mobile-lighthouse-metrics.json) |
-| UI corrigida | [Captura final mobile](interface/final-mobile/interface.json), [oito testes de layout](mobile-layout-regression-tests.json) |
+| UI corrigida | [Metadados da captura final mobile](interface/final-mobile/interface.json), [oito testes de layout](mobile-layout-regression-tests.json); PNGs das rotas de contato/criador removidos do branch por privacidade |
 | Worker real local | [200 rejeições antes da autenticação](worker-boundaries-final.json) |
 | Vídeos completos | [Metadata, hashes e validação](graphics/video/video-manifest.json) |
 
