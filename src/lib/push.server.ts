@@ -46,6 +46,14 @@ function gatewayKeys(): { lovableKey: string; fcmKey: string } | null {
   return lovableKey && fcmKey ? { lovableKey, fcmKey } : null;
 }
 
+/**
+ * Keep the external gateway bounded: sequential delivery can otherwise block
+ * one chat event for 200 network round-trips. Parallelism is intentionally
+ * conservative to avoid overwhelming the Firebase connector.
+ */
+export const MAX_PARALLEL_PUSH_REQUESTS = 4;
+export const PUSH_REQUEST_TIMEOUT_MS = 5_000;
+
 export async function sendPushToTokens(
   tokens: readonly string[],
   message: PushMessage,
@@ -53,34 +61,54 @@ export async function sendPushToTokens(
   const keys = gatewayKeys();
   const deadTokens: string[] = [];
   if (!keys) return { sent: 0, deadTokens };
+
+  const selectedTokens = tokens.slice(0, MAX_TOKENS_PER_EVENT);
+  let nextIndex = 0;
   let sent = 0;
-  for (const token of tokens.slice(0, MAX_TOKENS_PER_EVENT)) {
-    const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keys.lovableKey}`,
-        "X-Connection-Api-Key": keys.fcmKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title: message.title, body: message.body.slice(0, 300) },
-          data: message.path ? { path: message.path } : undefined,
-        },
-      }),
-    });
-    if (res.ok) {
-      sent += 1;
-      continue;
+  let failed = 0;
+
+  const worker = async (): Promise<void> => {
+    while (nextIndex < selectedTokens.length) {
+      const token = selectedTokens[nextIndex++]!;
+      try {
+        const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${keys.lovableKey}`,
+            "X-Connection-Api-Key": keys.fcmKey,
+            "Content-Type": "application/json",
+          },
+          signal: AbortSignal.timeout(PUSH_REQUEST_TIMEOUT_MS),
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title: message.title, body: message.body.slice(0, 300) },
+              data: message.path ? { path: message.path } : undefined,
+            },
+          }),
+        });
+        if (res.ok) {
+          sent += 1;
+          continue;
+        }
+        // Only inspect the error to identify tokens that Firebase confirms are
+        // invalid. No token, provider response body or credential is logged.
+        if (isDeadToken(res.status, await res.text())) deadTokens.push(token);
+        else failed += 1;
+      } catch {
+        // A stalled or rejected request must not suppress all other devices.
+        failed += 1;
+      }
     }
-    const body = await res.text();
-    if (isDeadToken(res.status, body)) {
-      deadTokens.push(token);
-      continue;
-    }
-    console.error(`FCM falhou [${res.status}]`);
-  }
+  };
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(MAX_PARALLEL_PUSH_REQUESTS, selectedTokens.length) },
+      () => worker(),
+    ),
+  );
+  if (failed) console.error(`FCM indisponível para ${failed} dispositivo(s)`);
   return { sent, deadTokens };
 }
 

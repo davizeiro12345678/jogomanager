@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isDeadToken, MAX_TOKENS_PER_EVENT, sendPushToTokens } from "./push.server";
+import { isDeadToken, MAX_PARALLEL_PUSH_REQUESTS, MAX_TOKENS_PER_EVENT, sendPushToTokens } from "./push.server";
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   delete process.env["LOVABLE_API_KEY"];
   delete process.env["FIREBASE_MESSAGING_API_KEY"];
@@ -64,6 +65,59 @@ describe("sendPushToTokens", () => {
     });
     expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(result).toEqual({ sent: 1, deadTokens: ["t2"] });
+  });
+
+  it("bounds concurrent gateway requests while sending to every selected device", async () => {
+    process.env["LOVABLE_API_KEY"] = "k1";
+    process.env["FIREBASE_MESSAGING_API_KEY"] = "k2";
+    let active = 0;
+    let maxActive = 0;
+    const pending: Array<() => void> = [];
+    const fetchSpy = vi.fn().mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+          pending.push(() => {
+            active -= 1;
+            resolve(new Response("{}", { status: 200 }));
+          });
+        }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const sending = sendPushToTokens(
+      Array.from({ length: 12 }, (_, i) => `device-${i}`),
+      { title: "Partida", body: "Começou" },
+    );
+    await vi.waitFor(() => expect(pending.length).toBe(MAX_PARALLEL_PUSH_REQUESTS));
+    expect(maxActive).toBe(MAX_PARALLEL_PUSH_REQUESTS);
+
+    for (let i = 0; i < 12; i += 1) {
+      await vi.waitFor(() => expect(pending.length).toBeGreaterThan(0));
+      pending.shift()!();
+    }
+    expect(await sending).toEqual({ sent: 12, deadTokens: [] });
+    expect(fetchSpy).toHaveBeenCalledTimes(12);
+    expect(maxActive).toBeLessThanOrEqual(MAX_PARALLEL_PUSH_REQUESTS);
+    expect(active).toBe(0);
+  });
+
+  it("isolates an offline gateway request without losing later notifications", async () => {
+    process.env["LOVABLE_API_KEY"] = "k1";
+    process.env["FIREBASE_MESSAGING_API_KEY"] = "k2";
+    const logger = vi.spyOn(console, "error").mockImplementation(() => {});
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("network unavailable"))
+      .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    expect(await sendPushToTokens(["device-a", "device-b"], { title: "a", body: "b" }))
+      .toEqual({ sent: 1, deadTokens: [] });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(logger).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(logger.mock.calls)).not.toContain("device-a");
   });
 
   it("never contacts more tokens than the per-event cap", async () => {
