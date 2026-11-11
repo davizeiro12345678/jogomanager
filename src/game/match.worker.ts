@@ -5,8 +5,8 @@ import {
   MATCH_SIMULATION_STEP,
   MATCH_SIMULATION_TICK_LIMIT,
   MAX_LIVE_MOTION_SCALE,
-  MatchSim,
-} from "./sim";
+} from "./sim-contracts";
+import type { MatchSim } from "./sim";
 
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
 import { isLiveTelemetryWorker } from "./snapshot-telemetry-flag";
@@ -230,6 +230,10 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   clearVisualPhysics();
   // Freeze the backend before the first step so loading timing cannot change
   // the seeded pass decisions halfway through a match.
+  // Load the full deterministic simulator only when the worker receives a
+  // start command. Lobby/worker bootstrap no longer pays for all football AI,
+  // physics and rule modules before it actually needs them.
+  const { MatchSim } = await import("./sim");
   live = new MatchSim(message.home, message.away, message.seed, {
     rulesRevision: message.rulesRevision,
     contactPhysicsRevision: message.contactPhysicsRevision,
@@ -371,6 +375,7 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "simulate") {
+    const { MatchSim } = await import("./sim");
     const sim = new MatchSim(message.home, message.away, message.seed, {
       rulesRevision: message.rulesRevision,
       contactPhysicsRevision: message.contactPhysicsRevision,
