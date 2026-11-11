@@ -1,6 +1,7 @@
 import {
   MATCH_PROTOCOL_VERSION,
   assertCurrentTicket,
+  parseMatchCommandV1,
   parseMatchReceiptV1,
   parseMatchTicketV1,
   type MatchCommandKind,
@@ -64,6 +65,7 @@ export interface AuthoritativeMatchSessionOptions {
 }
 
 const RECONNECT_WINDOW_MS = 60_000;
+const MAX_PENDING_COMMANDS = 64;
 const MAX_RECORDED_INVALID_COMMANDS = 128;
 const DEFAULT_COMMAND_LIMITS: Record<MatchCommandKind, CommandRateLimit> = {
   ready: { limit: 6, windowMs: 10_000 },
@@ -89,6 +91,8 @@ export class AuthoritativeMatchSession {
   private readonly reconnectDeadlines = new Map<MatchSeat, number>();
   private readonly tactics = new Map<MatchSeat, TacticalCommandPayloadV1>();
   private commandHash: Promise<string> | null = null;
+  private commandQueue: Promise<void> = Promise.resolve();
+  private pendingCommands = 0;
   private tick = 0;
   private revision = 0;
   private receipt: MatchReceiptV1 | null = null;
@@ -116,6 +120,7 @@ export class AuthoritativeMatchSession {
 
   connect(ticket: MatchTicketV1, now: number): MatchSeat {
     this.assertBoundTicket(ticket, now);
+    if (this.closing || this.phase === "finalized") return ticket.seat;
     const deadline = this.reconnectDeadlines.get(ticket.seat);
     if (deadline !== undefined && now >= deadline) throw new Error("reconnection window expired");
     this.connected.add(ticket.userId);
@@ -160,20 +165,52 @@ export class AuthoritativeMatchSession {
     now: number,
   ): Promise<MatchCommandOutcome> {
     this.assertBoundTicket(ticket, now);
-    if (this.closing || this.receipt)
-      return this.reject(ticket.userId, command.sequence, "command_rejected", now);
-    const seat = this.connect(ticket, now);
-    if (command.roomId !== this.options.roomId) {
-      return this.reject(ticket.userId, command.sequence, "command_rejected", now);
-    }
+    const input = parseMatchCommandV1(command);
+    if (this.closing || this.receipt || this.phase === "finalized")
+      return this.reject(ticket.userId, input.sequence, "command_rejected", now);
+    if (this.pendingCommands >= MAX_PENDING_COMMANDS)
+      return this.reject(ticket.userId, input.sequence, "rate_limited", now);
 
-    const priorSequence = this.lastSequence.get(ticket.userId) ?? 0;
-    if (command.sequence <= priorSequence) {
-      return this.reject(ticket.userId, command.sequence, "sequence_not_monotonic", now);
+    // Admit the connection at receive time. A disconnect while this command
+    // waits in the bounded queue must retain its original reconnect deadline.
+    const seat = this.connect(ticket, now);
+    const userId = ticket.userId;
+    this.pendingCommands += 1;
+    const outcome = this.commandQueue.then(() => this.applyCommand(seat, userId, input, now));
+    this.commandQueue = outcome.then(
+      () => undefined,
+      () => undefined,
+    );
+    try {
+      return await outcome;
+    } finally {
+      this.pendingCommands -= 1;
     }
-    if (!this.reserveRateWindow(ticket.userId, command.kind, now)) {
-      return this.reject(ticket.userId, command.sequence, "rate_limited", now);
-    }
+  }
+
+  private async applyCommand(
+    seat: MatchSeat,
+    userId: string,
+    command: MatchCommandV1,
+    now: number,
+  ): Promise<MatchCommandOutcome> {
+    if (this.closing || this.receipt || this.phase === "finalized")
+      return this.reject(userId, command.sequence, "command_rejected", now);
+    if (command.roomId !== this.options.roomId)
+      return this.reject(userId, command.sequence, "command_rejected", now);
+
+    const priorSequence = this.lastSequence.get(userId) ?? 0;
+    if (command.sequence <= priorSequence)
+      return this.reject(userId, command.sequence, "sequence_not_monotonic", now);
+    if (!this.reserveRateWindow(userId, command.kind, now))
+      return this.reject(userId, command.sequence, "rate_limited", now);
+
+    // Hash before mutating the engine. If hashing fails, no command is applied;
+    // if finalization wins during the digest, the frozen receipt remains valid.
+    const previousHash = this.commandHash ?? Promise.resolve(GENESIS_SESSION_HASH);
+    const { hash } = await appendCommandHash(await previousHash, command);
+    if (this.closing || this.closure || this.receipt || this.phase === "finalized")
+      return this.reject(userId, command.sequence, "command_rejected", now);
 
     let applied = true;
     let closureReason: MatchClosureReason | undefined;
@@ -200,17 +237,10 @@ export class AuthoritativeMatchSession {
         break;
     }
 
-    if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
-    this.lastSequence.set(ticket.userId, command.sequence);
-    // Reserve the next hash link synchronously. Web Crypto yields, so two
-    // commands must never hash independently from the same previous digest.
-    const nextHash = (this.commandHash ?? Promise.resolve(GENESIS_SESSION_HASH)).then(
-      async (previousHash) => (await appendCommandHash(previousHash, command)).hash,
-    );
-    this.commandHash = nextHash;
-    // A forfeit closes input immediately, before its asynchronous hash/signature.
+    if (!applied) return this.reject(userId, command.sequence, "command_rejected", now);
+    this.lastSequence.set(userId, command.sequence);
+    this.commandHash = Promise.resolve(hash);
     if (closureReason) await this.finalize(closureReason, now, seat);
-    else await nextHash;
     return { accepted: true };
   }
 
@@ -239,7 +269,7 @@ export class AuthoritativeMatchSession {
   }
 
   async expireReconnects(now: number): Promise<MatchReceiptV1 | null> {
-    if (this.phase === "finalized") return this.receipt;
+    if (this.phase === "finalized") return this.receipt ?? this.finalize("completed", now);
     for (const [seat, deadline] of this.reconnectDeadlines) {
       if (now >= deadline) return this.finalize("abandoned", now, seat);
     }
@@ -253,12 +283,14 @@ export class AuthoritativeMatchSession {
   ): Promise<MatchReceiptV1> {
     if (this.receipt) return this.receipt;
     this.closing = true;
-    // A failed signature can be retried, but the original decision stays sealed.
+    // Freeze the result and phase synchronously. Signing is delivery only and
+    // cannot allow a queued command or simulation tick to change this outcome.
     const closure = (this.closure ??= {
       closureReason,
       issuedAt: now,
-      result: this.options.engine.finalResult(loser),
+      result: { ...this.options.engine.finalResult(loser) },
     });
+    this.setPhase("finalized");
     const finalizationPromise =
       this.finalizationPromise ??
       (this.finalizationPromise = (async () => {
