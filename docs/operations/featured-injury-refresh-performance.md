@@ -44,6 +44,8 @@ A direct read-only catalog inspection on 11 November 2026 confirmed:
 - PostgreSQL therefore cannot use it. The observed refresh falls back to `api_football_injury_league_time_idx`, an ordinary index scan that fetched 3,176,979 heap tuples cumulatively in the sampled statistics.
 - The existing `api_football_injury_league_time_idx` is valid (about 1.9 MiB), and the materialized view's unique index is valid. The failed covering index is the concrete index-level defect.
 
+A controlled attempt to build a replacement index named `api_football_injury_league_cover_v2_idx` with `CREATE INDEX CONCURRENTLY` exceeded the production session's 120-second statement timeout. The incomplete replacement was removed with `DROP INDEX CONCURRENTLY`; the original invalid index remains untouched. No valid replacement has been created yet. This confirms the repair needs an operator-controlled session with a longer statement timeout and monitoring; do not retry through the short-timeout SQL API.
+
 ### Controlled repair (non-transactional; run one statement at a time)
 
 The following operations must be run by an operator during a monitored maintenance window, after confirming backup/PITR. `CONCURRENTLY` cannot run inside a transaction; do not place these statements in a transactional migration.
