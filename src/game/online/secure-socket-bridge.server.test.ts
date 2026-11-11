@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { AuthoritativeSocketAdmission } from "./authoritative-socket-admission.server";
 import { AuthoritativeMatchSession } from "./authoritative-match-session";
 import { createSecureMatchSocketBridge } from "./secure-socket-bridge.server";
 import { signMatchTicketV1 } from "./ticket-signing";
@@ -149,6 +150,74 @@ describe("signed WebSocket bridge composition", () => {
     expect(await bridge.attach(socket, homeTicket)).toBeNull();
     expect(socket.code).toBe(1008);
     expect(session.phase).toBe("waiting");
+  });
+
+  it("admits a WebSocket only after a signed first-frame authentication", async () => {
+    const { homeTicket, session } = await setup();
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => now,
+    });
+    const socket = new TestSocket();
+    const admission = new AuthoritativeSocketAdmission(bridge, socket);
+    expect(socket.sent).toHaveLength(0);
+    await admission.onMessage(
+      JSON.stringify({ type: "authenticate", version: 1, ticket: homeTicket }),
+    );
+    expect(socket.sent).toHaveLength(1);
+    expect(JSON.parse(socket.sent[0]!).type).toBe("ready");
+    await admission.onMessage(JSON.stringify({ type: "ping" }));
+    expect(JSON.parse(socket.sent[1]!).type).toBe("pong");
+    admission.detach();
+    bridge.close();
+  });
+
+  it("rejects first-frame commands and tampered tickets before connecting a seat", async () => {
+    const { homeTicket, session } = await setup();
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => now,
+    });
+    const commandSocket = new TestSocket();
+    const commandAdmission = new AuthoritativeSocketAdmission(bridge, commandSocket);
+    await commandAdmission.onMessage(JSON.stringify({ type: "ping" }));
+    expect(commandSocket.code).toBe(1008);
+
+    const forgery = new TestSocket();
+    const forgedAdmission = new AuthoritativeSocketAdmission(bridge, forgery);
+    await forgedAdmission.onMessage(
+      JSON.stringify({
+        type: "authenticate",
+        version: 1,
+        ticket: { ...homeTicket, userId: identities.away },
+      }),
+    );
+    expect(forgery.code).toBe(1008);
+    expect(session.phase).toBe("waiting");
+    bridge.close();
+  });
+
+  it("closes sockets that never authenticate without advancing match time", async () => {
+    vi.useFakeTimers();
+    try {
+      const { session } = await setup();
+      const bridge = createSecureMatchSocketBridge({
+        session,
+        signingSecret: secret,
+        now: () => now,
+      });
+      const socket = new TestSocket();
+      const admission = new AuthoritativeSocketAdmission(bridge, socket);
+      await vi.advanceTimersByTimeAsync(5_001);
+      expect(socket.code).toBe(1008);
+      expect(session.snapshot().tick).toBe(0);
+      admission.detach();
+      bridge.close();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("fails fast when the signing secret is unsafe", async () => {
