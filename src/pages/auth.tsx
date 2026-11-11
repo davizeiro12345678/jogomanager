@@ -23,7 +23,6 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  lovableOAuthProvider,
   socialOAuthOptions,
   socialProviderLabel,
   type SocialProvider,
@@ -32,17 +31,12 @@ import {
 import { authCallbackErrorMessage, authErrorMessage, type AuthMode } from "@/lib/auth-policy";
 
 import { useAuthMethods } from "@/hooks/useAuthMethods";
-import {
-  directOAuthProviders,
-  signInWithOAuthRecovery,
-} from "@/integrations/supabase/oauth-recovery";
 
 import { passkeyErrorMessage, supportsPasskeys } from "@/integrations/supabase/passkey-auth";
 
 import authHero from "@/assets/hero-stadium.jpg?format=webp&w=1024&quality=60&as=url";
 
 import "@/components/auth-store.css";
-import "@lovable.dev/cloud-auth-js/styles.css";
 import { getRouteApi } from "@tanstack/react-router";
 const Route = getRouteApi("/auth");
 
@@ -86,17 +80,6 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed credentials use the broker. Direct alternatives require separately
-  // configured credentials in this same Supabase project.
-  const brokeredOAuth = import.meta.env["VITE_AUTH_MODE"] !== "supabase-direct";
-  const directProviders = directOAuthProviders(
-    import.meta.env["VITE_AUTH_DIRECT_PROVIDER_ALLOWLIST"],
-  );
-  const alternativeProviders = brokeredOAuth
-    ? (methods?.socialProviders ?? []).filter(
-        (provider) => directProviders.includes(provider) && lovableOAuthProvider(provider),
-      )
-    : [];
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
@@ -122,8 +105,12 @@ export function AuthPage() {
     const authErrorDescription =
       hashParams.get("error_description") || searchParams.get("error_description");
     const authError = hashParams.get("error") || searchParams.get("error");
-    if (authError || authErrorCode || authErrorDescription)
+    if (authError || authErrorCode || authErrorDescription) {
       setError(authCallbackErrorMessage(authErrorCode, authErrorDescription));
+      return () => {
+        alive = false;
+      };
+    }
     if (recovery) setMode("update");
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
@@ -142,9 +129,13 @@ export function AuthPage() {
           );
           return;
         }
-        if (data.session && (await checkMfa())) {
-          if (recovery) setRecoveryReady(true);
-          return;
+        if (data.session) {
+          const requiresMfa = await checkMfa();
+          if (!alive) return;
+          if (requiresMfa) {
+            if (recovery) setRecoveryReady(true);
+            return;
+          }
         }
         if (recovery) {
           setRecoveryReady(Boolean(data.session));
@@ -298,64 +289,20 @@ export function AuthPage() {
     }
   }
 
-  async function signInWith(provider: SocialProvider, preferDirect = false) {
+  async function signInWith(provider: SocialProvider) {
     if (busy || !methods?.socialProviders.includes(provider)) return;
-    if (preferDirect && !directProviders.includes(provider)) return;
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const brokerProvider =
-        brokeredOAuth && !preferDirect ? lovableOAuthProvider(provider) : undefined;
-      const result = await signInWithOAuthRecovery({
+      const result = await supabase.auth.signInWithOAuth({
         provider,
-        useBroker: Boolean(brokerProvider),
-        directProviders,
-        broker: async () => {
-          const { lovable } = await import("@/integrations/lovable/index");
-          return lovable.auth.signInWithOAuth(brokerProvider!, { redirect_uri: callback() });
-        },
-        direct: async () => {
-          const directResult = await supabase.auth.signInWithOAuth({
-            provider,
-            options: socialOAuthOptions(provider, callback()),
-          });
-          return { error: directResult.error };
-        },
+        options: socialOAuthOptions(provider, callback()),
       });
-      if (!result.redirected) {
-        window.__lovableEvents?.track?.("project.account_signed_in", {
-          method: provider,
-          entry_route: entryRoute,
-        });
-        await continueSession();
-      }
+      if (result.error) throw result.error;
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
       setNotice("Você também pode entrar com o e-mail da mesma conta abaixo.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signInWithLovable() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const { lovable } = await import("@/integrations/lovable/index");
-      const result = await lovable.auth.signInWithOAuth("lovable", { redirect_uri: callback() });
-      if (result.error) throw result.error;
-      if (!result.redirected) {
-        window.__lovableEvents?.track?.("project.account_signed_in", {
-          method: "lovable",
-          entry_route: entryRoute,
-        });
-        await continueSession();
-      }
-    } catch (cause) {
-      setError(authErrorMessage(cause, mode));
     } finally {
       setBusy(false);
     }
@@ -534,16 +481,6 @@ export function AuthPage() {
               </Button>
             </div>
           )}
-          {(mode === "in" || mode === "up") && (
-            <button
-              type="button"
-              disabled={busy}
-              className="lovable-auth-button mt-5 w-full"
-              onClick={signInWithLovable}
-            >
-              Continue with Lovable
-            </button>
-          )}
           {(mode === "in" || mode === "up") && methods?.email && (
             <p className="mt-3 text-xs text-muted-foreground">{recoveryCopy.emailFallback}</p>
           )}
@@ -592,28 +529,6 @@ export function AuthPage() {
                 </p>
               )}
             </div>
-          )}
-          {(mode === "in" || mode === "up") && alternativeProviders.length > 0 && (
-            <section
-              className="mt-4 rounded-lg border border-border p-3"
-              aria-label={recoveryCopy.alternative}
-            >
-              <p className="text-sm text-muted-foreground">{recoveryCopy.hint}</p>
-              <div className="mt-2 grid gap-2">
-                {alternativeProviders.map((provider) => (
-                  <Button
-                    key={provider}
-                    type="button"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => signInWith(provider, true)}
-                    className="min-h-11"
-                  >
-                    {recoveryCopy.withProvider} {socialProviderLabel(provider)}
-                  </Button>
-                ))}
-              </div>
-            </section>
           )}
           {(mode === "in" || mode === "up") && methods?.passkeys && (
             <div className="mt-4">
