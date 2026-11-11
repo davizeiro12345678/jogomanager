@@ -35,63 +35,18 @@ The per-table thresholds were applied and read back successfully. PostgreSQL the
 
 This confirms the maintenance threshold change took effect and the 122,197 estimated dead tuples were cleared. The remaining acceptance test is the next scheduled `featured_injury_counts` refresh: record its duration and plan after the visibility map has been refreshed. Do not claim the 30-second refresh is fixed until that measurement is captured.
 
-## Confirmed production root cause: invalid covering index
+## Current index state and safe next optimization
 
-A direct read-only catalog inspection on 11 November 2026 confirmed:
+A fresh read-only catalog inspection on 11 November 2026 confirmed:
 
-- `api_football_injury_league_cover_idx` exists but `indisvalid = false` while `indisready = true` and `indislive = true`; its physical size is 1,304 kB. It is present and maintained for writes, but PostgreSQL excludes it from query plans because it is not valid.
-- Its intended key expressions exactly cover the injury view's league filter and grouping.
-- PostgreSQL therefore cannot use it. The observed refresh falls back to `api_football_injury_league_time_idx`, an ordinary index scan that fetched 3,176,979 heap tuples cumulatively in the sampled statistics.
-- The existing `api_football_injury_league_time_idx` is valid (about 1.9 MiB), and the materialized view's unique index is valid. The failed covering index is the concrete index-level defect.
+- `api_football_injury_league_time_idx` is valid, ready and live (about 1.9 MiB).
+- `api_football_data_pkey`, `api_football_public_team_time_idx` and `api_football_team_profile_lookup_idx` are also valid.
+- `private_performance.featured_injury_counts_pk` is a valid unique index.
+- No `api_football_injury_league_cover_idx` or `api_football_injury_league_cover_v2_idx` exists in the production catalog. No invalid index remains on `public.api_football_data`.
 
-A controlled attempt to build a replacement index named `api_football_injury_league_cover_v2_idx` with `CREATE INDEX CONCURRENTLY` exceeded the production session's 120-second statement timeout. The incomplete replacement was removed with `DROP INDEX CONCURRENTLY`; the original invalid index remains untouched. No valid replacement has been created yet. This confirms the repair needs an operator-controlled session with a longer statement timeout and monitoring; do not retry through the short-timeout SQL API.
+A candidate covering expression index named `api_football_injury_league_cover_idx` was attempted with `CREATE INDEX CONCURRENTLY`, but the 120-second statement timeout cancelled the build. The incomplete index was removed with `DROP INDEX CONCURRENTLY` and the catalog was checked to confirm it no longer exists. The original source index was not changed.
 
-### Controlled repair (non-transactional; run one statement at a time)
-
-The following operations must be run by an operator during a monitored maintenance window, after confirming backup/PITR. `CONCURRENTLY` cannot run inside a transaction; do not place these statements in a transactional migration.
-
-```sql
-DROP INDEX CONCURRENTLY IF EXISTS public.api_football_injury_league_cover_idx;
-```
-
-Then create the intended covering partial index:
-
-```sql
-CREATE INDEX CONCURRENTLY api_football_injury_league_cover_idx
-ON public.api_football_data
-USING btree (
-  ((payload -> 'league' ->> 'id')),
-  (((payload -> 'league' ->> 'id')::integer))
-)
-WHERE kind = 'injury';
-```
-
-After creation, refresh planner statistics and visibility information in the approved window:
-
-```sql
-ANALYZE public.api_football_data;
-VACUUM (ANALYZE) public.api_football_data;
-```
-
-Do not run `VACUUM FULL`; it rewrites the 14 GB table and requires a much more disruptive lock.
-
-### Verify the repair
-
-```sql
-SELECT
-  idx.relname,
-  i.indisvalid,
-  i.indisready,
-  pg_size_pretty(pg_relation_size(idx.oid)) AS index_size,
-  pg_get_indexdef(i.indexrelid) AS definition
-FROM pg_index AS i
-JOIN pg_class AS idx ON idx.oid = i.indexrelid
-WHERE idx.relname = 'api_football_injury_league_cover_idx';
-```
-
-Expected: `indisvalid = true`, `indisready = true`, and non-zero index size.
-
-Then run `EXPLAIN (ANALYZE, BUFFERS)` against the view's defining SELECT in a controlled window (or a production clone). The expected plan is an index-only scan using the covering index where the visibility map permits, with substantially fewer heap fetches. Keep the existing concurrent materialized-view refresh and compare at least 10 subsequent runs.
+The actual bottleneck is evidenced by the post-autovacuum plan below: the planner underestimates the matching rows by about 9.8× and the query performs an ordinary heap-fetching index scan. The next safe optimization is to compare, in staging, a covering index on both the text league ID and its integer cast against an incremental league-count summary. Do not create that index in production through the short-timeout SQL API; a reviewed operator session and a representative plan comparison are required.
 
 ## Capture the exact production plan and blockers
 
