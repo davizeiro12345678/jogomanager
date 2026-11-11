@@ -5,6 +5,7 @@
  */
 import type { MatchSim } from "./sim";
 import { halfTimePlan } from "./ai-halftime";
+import { predictLooseBallInterception } from "./ai-ball-interception";
 import {
   coordinatedDefensiveCover,
   coordinatedHalfTimePlan,
@@ -117,7 +118,21 @@ export function chasers(sim: MatchSim): Set<string> {
       if (player.side !== side || player.pos === "GK" || player.sentOff) continue;
       const dx = player.x - sim.ball.x;
       const dz = player.z - sim.ball.z;
-      const distance = dx * dx + dz * dz;
+      const distance =
+        sim.contactPhysicsRevision === 2
+          ? predictLooseBallInterception({
+              playerX: player.x,
+              playerZ: player.z,
+              playerVx: player.vx,
+              playerVz: player.vz,
+              pace: player.pace,
+              stamina: player.stamina,
+              ballX: sim.ball.x,
+              ballZ: sim.ball.z,
+              ballVx: sim.ball.vx,
+              ballVz: sim.ball.vz,
+            }).score
+          : dx * dx + dz * dz;
       if (distance < firstDistance) {
         second = first;
         secondDistance = firstDistance;
@@ -241,8 +256,25 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
     } else if (chase.has(p.id)) {
       // interceptação: mira num ponto à frente da bola
-      tx = bx + sim.ball.vx * 0.22;
-      tz = bz + sim.ball.vz * 0.22;
+      if (sim.contactPhysicsRevision === 2) {
+        const intercept = predictLooseBallInterception({
+          playerX: p.x,
+          playerZ: p.z,
+          playerVx: p.vx,
+          playerVz: p.vz,
+          pace: p.pace,
+          stamina: p.stamina,
+          ballX: bx,
+          ballZ: bz,
+          ballVx: sim.ball.vx,
+          ballVz: sim.ball.vz,
+        });
+        tx = intercept.x;
+        tz = intercept.z;
+      } else {
+        tx = bx + sim.ball.vx * 0.22;
+        tz = bz + sim.ball.vz * 0.22;
+      }
       sprint = 1.35;
     } else if (!attacking) {
       // Linha defensiva conjunta: os defensores sobem/descem juntos em vez de
