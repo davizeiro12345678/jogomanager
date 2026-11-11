@@ -43,7 +43,7 @@ export function SupportTicketForm() {
     setBusy(false);
     setNotice("");
     setFormOwner(userId);
-  }, [userId]);
+  }, [userId, report?.category, report?.message, report?.subject]);
 
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
