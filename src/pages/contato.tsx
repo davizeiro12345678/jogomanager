@@ -9,6 +9,7 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { CREATOR } from "@/content/creator";
 import { CreatorDetails } from "@/components/creator/CreatorDetails";
 import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
+import { reportRoomFromSearch } from "@/lib/support-report-context";
 import { useT } from "@/i18n/provider";
 import { creatorMessages } from "@/i18n/creator-messages";
 
@@ -54,7 +55,10 @@ const SupportTicketForm = lazy(() =>
 export function ContatoPage() {
   const { lang } = useT();
   const copy = creatorMessages(lang);
-  const [supportOpen, setSupportOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(
+    () =>
+      typeof window !== "undefined" && reportRoomFromSearch(window.location.search) !== null,
+  );
   return (
     <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-3xl">
