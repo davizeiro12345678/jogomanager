@@ -253,6 +253,7 @@ function MultiplayerAccount({ userId }: { userId: string }) {
       >
         <LiveRoom
           room={room}
+          userId={userId}
           isHost={room.host_id === userId}
           online={online}
           onExit={() => {
