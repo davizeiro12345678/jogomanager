@@ -140,11 +140,379 @@ export default function QuickLive({
     const ai = aiTactics(difficulty);
     return {
       home: buildTeamSetup(myId),
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
+      seed,
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
       // Activate v2 only for newly started CPU quick-match opponents.
       // Old replay/career simulations remain on the historical ruleset.
       away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
       seed,
       seed,
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
+      seed,
+      rulesRevision: 2 as const,
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
+      seed,
       rulesRevision: 2 as const,
 import {
   ArrowLeft,
@@ -366,6 +734,82 @@ export default function QuickLive({
       home: buildTeamSetup(myId),
       away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
       seed,
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
+      seed,
+      rulesRevision: 2 as const,
     };
   }, [myId, oppId, difficulty, seed]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
@@ -517,7 +961,240 @@ export default function QuickLive({
 
   return (
     <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} paused={paused || done} />
+import {
+  ArrowLeft,
+  List,
+  Pause,
+  Play,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  MoreHorizontal,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Crest } from "@/components/game/Crest";
+import { MatchReport } from "@/components/game/MatchReport";
+import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
+import { detectQuality } from "@/game/device";
+import type { NarrationEvent } from "@/game/narrator";
+import { useMatchNarration } from "@/hooks/useMatchNarration";
+import { NarrationSettings } from "@/components/accessibility/NarrationSettings";
+import { ShortcutsDialog } from "./ShortcutsDialog";
+import { aiTactics, buildTeamSetup, type Difficulty } from "@/game/quickMatch";
+import { WorkerMatchView, type MatchRuntime } from "@/game/live-match";
+import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
+import { safeClub } from "@/game/squad";
+import { CAMERA_OPTIONS } from "@/game/camera-modes";
+import { useT } from "@/i18n/provider";
+import "./career-interface.css";
+
+interface Snap {
+  minute: number;
+  hg: number;
+  ag: number;
+  hShots: number;
+  aShots: number;
+  poss: [number, number];
+  events: { type: string; text: string; minute: number }[];
+  finished: boolean;
+}
+
+function snapshot(sim: MatchRuntime): Snap {
+  const started = sim.stats.home.possessionTicks + sim.stats.away.possessionTicks > 30;
+  const [ph, pa] = started ? sim.possessionPct() : ([50, 50] as [number, number]);
+  return {
+    minute: sim.minute(),
+    hg: sim.stats.home.goals,
+    ag: sim.stats.away.goals,
+    hShots: sim.stats.home.shots,
+    aShots: sim.stats.away.shots,
+    poss: [ph, pa],
+    events: sim.events.slice(-12).map((e) => ({ type: e.type, text: e.text, minute: e.minute })),
+    finished: sim.finished,
+  };
+}
+
+export default function QuickLive({
+  myId,
+  oppId,
+  difficulty,
+  seed,
+  onExit,
+}: {
+  myId: string;
+  oppId: string;
+  difficulty: Difficulty;
+  seed: string;
+  onExit: () => void;
+}) {
+  const setups = useMemo(() => {
+    const ai = aiTactics(difficulty);
+    return {
+      home: buildTeamSetup(myId),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
+      seed,
+      rulesRevision: 2 as const,
+    };
+  }, [myId, oppId, difficulty, seed]);
+  const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
+
+  const { t } = useT();
+  const [quality] = useState<Quality>(() => {
+    // `?q=baixa|media|alta` força o nível gráfico (testes, suporte e aparelhos fracos)
+    if (typeof window !== "undefined") {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q === "baixa" || q === "media" || q === "alta") return q;
+    }
+    return detectQuality() as Quality;
+  });
+  const [camera, setCamera] = useState<CameraMode>("broadcast");
+  const [speed, setSpeed] = useState(1);
+  const [paused, setPaused] = useState(false);
+  const [done, setDone] = useState(false);
+  const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(sim, paused);
+  const [showEvents, setShowEvents] = useState(false);
+  const [showTools, setShowTools] = useState(false);
+  const toolsTrigger = useRef<HTMLButtonElement>(null);
+  const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
+  const controllerRef = useRef<LiveMatchController | null>(null);
+
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const cursorRef = useRef(0);
+
+  useEffect(() => {
+    cursorRef.current = sim.events.length;
+  }, [sim]);
+
+  useEffect(() => {
+    const n = narratorRef.current;
+    if (!n) return;
+    const fresh = sim.events.slice(cursorRef.current);
+    cursorRef.current = sim.events.length;
+    for (const e of fresh) {
+      const ev: NarrationEvent | null =
+        e.type === "red"
+          ? "redCard"
+          : e.type === "yellow"
+            ? "card"
+            : (
+                  [
+                    "goal",
+                    "save",
+                    "shot",
+                    "post",
+                    "chance",
+                    "foul",
+                    "corner",
+                    "sub",
+                    "kickoff",
+                    "halftime",
+                    "fulltime",
+                  ] as const
+                ).includes(e.type as never)
+              ? (e.type as NarrationEvent)
+              : null;
+      if (!ev) continue;
+      const neutral = ev === "kickoff" || ev === "halftime" || ev === "fulltime";
+      if (e.side === "neutral" && !neutral) continue;
+      const goalDifference = Math.abs(snap.hg - snap.ag);
+      const importance =
+        snap.minute >= 80 && goalDifference <= 1
+          ? "decisive"
+          : snap.minute >= 65
+            ? "pressure"
+            : "routine";
+      n.speak(ev, e.side === "away" ? sim.away.short : sim.home.short, {
+        minute: e.minute,
+        homeGoals: snap.hg,
+        awayGoals: snap.ag,
+        importance,
+      });
+    }
+  }, [snap, sim, narratorRef]);
+
+  useEffect(() => {
+    const controller = createLiveMatchController({
+      ...setups,
+      view: sim,
+      onSnapshot: (view) => setSnap(snapshot(view)),
+      onFinished: (view) => {
+        setSnap(snapshot(view));
+        setDone(true);
+      },
+    });
+    controllerRef.current = controller;
+    const onVisibility = () => controller.pause(document.hidden || pausedRef.current);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      controller.dispose();
+      controllerRef.current = null;
+    };
+  }, [setups, sim]);
+
+  useEffect(() => controllerRef.current?.pause(paused), [paused]);
+  useEffect(() => controllerRef.current?.setSpeed(speed), [speed]);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (event.key === "Escape" && !target?.closest('[role="dialog"]')) {
+        setShowEvents(false);
+        setShowTools(false);
+        setPaused(true);
+        toolsTrigger.current?.focus();
+        return;
+      }
+      if (
+        target?.closest("input,select,textarea,button,[contenteditable=true]") ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      )
+        return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        setPaused((p) => !p);
+      }
+      if (event.key.toLowerCase() === "c")
+        setCamera(
+          (mode) =>
+            CAMERA_OPTIONS[
+              (CAMERA_OPTIONS.findIndex((option) => option.id === mode) + 1) % CAMERA_OPTIONS.length
+            ]!.id,
+        );
+      if (event.key.toLowerCase() === "n") setNarrating((v) => !v);
+      if (["1", "2", "3", "4"].includes(event.key)) setSpeed([1, 2, 4, 8][Number(event.key) - 1]!);
+      if (event.key === "Escape") {
+        setShowEvents(false);
+        setPaused(true);
+      }
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [setNarrating]);
+
+  const skip = useCallback(() => {
+    controllerRef.current?.skip();
+  }, []);
+
+  const home = safeClub(myId);
+  const away = safeClub(oppId);
+
+  return (
+    <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
+      <Stadium3D
+        sim={sim}
+        mode={camera}
+        quality={quality}
+        paused={paused || done}
+        measurementKey={`quick:r${setups.rulesRevision ?? 1}:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
+      />
       <button
         type="button"
         onClick={() => {

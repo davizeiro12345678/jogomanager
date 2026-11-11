@@ -1,6 +1,9 @@
 import { AdaptiveEvents } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 import { FrameProbe } from "../LazyFrameProbe";
@@ -10,6 +13,33 @@ import { PostFX } from "../post/LazyPostFX";
 import type { GpuBackend } from "../renderer";
 import { StadiumProps } from "./Props";
 import { StaticBatch } from "./StaticBatch";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
 import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
 import { MatchPlayers } from "../players/MatchPlayers";
 import { PostFX } from "../post/LazyPostFX";
@@ -27,6 +57,69 @@ import { PostFX } from "../post/LazyPostFX";
 import type { GpuBackend } from "../renderer";
 import { StadiumProps } from "./Props";
 import { StaticBatch } from "./StaticBatch";
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
 import { Ball } from "./StadiumBall";
 import { Stands } from "./StadiumStructure";
 import { Pitch } from "./StadiumTurf";
@@ -276,6 +369,226 @@ export function StadiumScene({
   postIntensity,
   supporters,
   adaptive,
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+  measurementKey,
+  suspended,
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -483,6 +796,317 @@ import { PostFX } from "../post/LazyPostFX";
 import type { GpuBackend } from "../renderer";
 import { StadiumProps } from "./Props";
 import { StaticBatch } from "./StaticBatch";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+  measurementKey?: string;
+  suspended?: boolean;
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+}) {
+  useFrame(() => {
+    const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
+    interpolated.renderTick?.();
+  });
+  const time = look.time;
+  const fixtureKey = stadiumFixtureKey(sim.home.clubId, sim.away.clubId);
+  const pressure = useQualityPressure();
+  const budget = useRuntimeSceneBudget();
+  // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
+  // direto do renderizador (tone mapping e exposição continuam ativos).
+  const postOn = useVisual().postFx && backend === "webgl2";
+
+  const goalPulse = useRef(0);
+  const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
+  const goalFocus = useRef<GoalFocus | null>(null);
+  const [replay, setReplay] = useState(false);
+  const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
+  const momentRef = useRef<"match" | "replay" | "drama">("match");
+
+  useFrame((_, dt) => {
+    const total = sim.stats.home.goals + sim.stats.away.goals;
+    if (total !== lastGoals.current) {
+      lastGoals.current = total;
+      goalPulse.current = 1;
+      goalFocus.current = captureGoalFocus(sim, total);
+    }
+    if (goalPulse.current > 0) {
+      goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+      if (goalPulse.current <= 0.01) goalFocus.current = null;
+    }
+    const r = goalPulse.current > 0.55;
+
+    const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
+    if (momentRef.current !== m) {
+      momentRef.current = m;
+      setMoment(m);
+      setReplay(r);
+    }
+  });
+
+  const awayClash = colorClash(sim.home.primary, sim.away.primary);
+  const homeKit = useMemo(
+    () => kitFor(sim.home.clubId, sim.home.primary, sim.home.secondary),
+    [sim.home.clubId, sim.home.primary, sim.home.secondary],
+  );
+  const awayKit = useMemo(
+    () => kitFor(sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash),
+    [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
+  );
+
+  const lighting = matchLighting(time, look.weather, quality === "baixa");
+  const sunColor = lighting.keyColor;
+  const visualBall = presentationBall(sim);
+
+  return (
+    <>
+      <color attach="background" args={[lighting.sky]} />
+      {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
+      <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
+      <AdaptiveEvents />
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
 import { Ball } from "./StadiumBall";
 import { Stands } from "./StadiumStructure";
 import { Pitch } from "./StadiumTurf";
@@ -635,6 +1259,7 @@ import { matchLighting } from "@/game/match-lighting";
 import { matchLook, type Weather } from "@/game/matchday";
 import type { SimView } from "@/game/sim-contracts";
 import { useVisual } from "@/game/visual-settings";
+
 
 export function StadiumScene({
   sim,
@@ -724,7 +1349,384 @@ export function StadiumScene({
         {...(suspended === undefined ? {} : { suspended })}
       />
 
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+}) {
+  useFrame(() => {
+    const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
+    interpolated.renderTick?.();
+  });
+  const time = look.time;
+  const fixtureKey = stadiumFixtureKey(sim.home.clubId, sim.away.clubId);
+  const pressure = useQualityPressure();
+  const budget = useRuntimeSceneBudget();
+  // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
+  // direto do renderizador (tone mapping e exposição continuam ativos).
+  const postOn = useVisual().postFx && backend === "webgl2";
+
+  const goalPulse = useRef(0);
+  const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
+  const goalFocus = useRef<GoalFocus | null>(null);
+  const [replay, setReplay] = useState(false);
+  const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
+  const momentRef = useRef<"match" | "replay" | "drama">("match");
+
+  useFrame((_, dt) => {
+    const total = sim.stats.home.goals + sim.stats.away.goals;
+    if (total !== lastGoals.current) {
+      lastGoals.current = total;
+      goalPulse.current = 1;
+      goalFocus.current = captureGoalFocus(sim, total);
+    }
+    if (goalPulse.current > 0) {
+      goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+      if (goalPulse.current <= 0.01) goalFocus.current = null;
+    }
+    const r = goalPulse.current > 0.55;
+
+    const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
+    if (momentRef.current !== m) {
+      momentRef.current = m;
+      setMoment(m);
+      setReplay(r);
+    }
+  });
+
+  const awayClash = colorClash(sim.home.primary, sim.away.primary);
+  const homeKit = useMemo(
+    () => kitFor(sim.home.clubId, sim.home.primary, sim.home.secondary),
+    [sim.home.clubId, sim.home.primary, sim.home.secondary],
+  );
+  const awayKit = useMemo(
+    () => kitFor(sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash),
+    [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
+  );
+
+  const lighting = matchLighting(time, look.weather, quality === "baixa");
+  const sunColor = lighting.keyColor;
+  const visualBall = presentationBall(sim);
+
+  return (
+    <>
+      <color attach="background" args={[lighting.sky]} />
+      {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
+      <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
+      <AdaptiveEvents />
+      <FrameProbe quality={quality} adaptive={adaptive} />
+
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+}) {
+  useFrame(() => {
+    const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
+    interpolated.renderTick?.();
+  });
+  const time = look.time;
+  const fixtureKey = stadiumFixtureKey(sim.home.clubId, sim.away.clubId);
+  const pressure = useQualityPressure();
+  const budget = useRuntimeSceneBudget();
+  // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
+  // direto do renderizador (tone mapping e exposição continuam ativos).
+  const postOn = useVisual().postFx && backend === "webgl2";
+
+  const goalPulse = useRef(0);
+  const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
+  const goalFocus = useRef<GoalFocus | null>(null);
+  const [replay, setReplay] = useState(false);
+  const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
+  const momentRef = useRef<"match" | "replay" | "drama">("match");
+
+  useFrame((_, dt) => {
+    const total = sim.stats.home.goals + sim.stats.away.goals;
+    if (total !== lastGoals.current) {
+      lastGoals.current = total;
+      goalPulse.current = 1;
+      goalFocus.current = captureGoalFocus(sim, total);
+    }
+    if (goalPulse.current > 0) {
+      goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+      if (goalPulse.current <= 0.01) goalFocus.current = null;
+    }
+    const r = goalPulse.current > 0.55;
+
+    const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
+    if (momentRef.current !== m) {
+      momentRef.current = m;
+      setMoment(m);
+      setReplay(r);
+    }
+  });
+
+  const awayClash = colorClash(sim.home.primary, sim.away.primary);
+  const homeKit = useMemo(
+    () => kitFor(sim.home.clubId, sim.home.primary, sim.home.secondary),
+    [sim.home.clubId, sim.home.primary, sim.home.secondary],
+  );
+  const awayKit = useMemo(
+    () => kitFor(sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash),
+    [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
+  );
+
+  const lighting = matchLighting(time, look.weather, quality === "baixa");
+  const sunColor = lighting.keyColor;
+  const visualBall = presentationBall(sim);
+
+  return (
+    <>
+      <color attach="background" args={[lighting.sky]} />
+      {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
+      <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
+      <AdaptiveEvents />
+      <FrameProbe quality={quality} adaptive={adaptive} />
+
+      {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
+
+      {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
+import { AdaptiveEvents } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import { FrameProbe } from "../FrameProbe";
+import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
+import { MatchPlayers } from "../players/MatchPlayers";
+import { PostFX } from "../post/LazyPostFX";
+import type { GpuBackend } from "../renderer";
+import { StadiumProps } from "./Props";
+import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
+import { Ball } from "./StadiumBall";
+import { Stands } from "./StadiumStructure";
+import { Pitch } from "./StadiumTurf";
+import { Weather as WeatherParticles } from "./StadiumWeather";
+import { presentationBall } from "./stadium-ball";
+import { AdBoards } from "./StadiumAds";
+import { Floodlights } from "./StadiumFloodlights";
+import { Scoreboard } from "./StadiumScoreboard";
+import { AmbientLife } from "./AmbientLife";
+import { Atmosphere } from "./Atmosphere";
+import { BenchLife } from "./BenchLife";
+import { CrowdReaction } from "./CrowdReaction";
+import { PitchResponse } from "./PitchResponse";
+import { SidelineLife } from "./SidelineLife";
+import { Rig } from "./StadiumCameraRig";
+import { SkyDome } from "./StadiumSky";
+import { GoalFx } from "./StadiumGoalFx";
+import { Officials } from "./StadiumOfficials";
+import type { Quality } from "./quality";
+import { stadiumFixtureKey } from "./stadium-cosmetics";
+import { cameraOption, type CameraMode } from "@/game/camera-modes";
+import type { SupporterMatchday } from "@/game/career-world-types";
+import { MatchSurfaceProvider } from "@/game/graphics/surface-context";
+import { colorClash, kitFor } from "@/game/kits";
+import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
+import type { GradeWeather } from "@/game/graphics/grade";
+import { matchLighting } from "@/game/match-lighting";
+import { matchLook, type Weather } from "@/game/matchday";
+import type { SimView } from "@/game/sim-contracts";
+import { useVisual } from "@/game/visual-settings";
+
+export function StadiumScene({
+  sim,
+  mode,
+  quality,
+  look,
+  shadows,
+  backend,
+  postIntensity,
+  supporters,
+  adaptive,
+}: {
+  sim: SimView;
+  mode: CameraMode;
+  quality: Quality;
+  look: ReturnType<typeof matchLook>;
+  shadows: boolean;
+  backend: GpuBackend;
+  postIntensity: number;
+  supporters?: SupporterMatchday | undefined;
+  adaptive: boolean;
+}) {
+  useFrame(() => {
+    const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
+    interpolated.renderTick?.();
+  });
+  const time = look.time;
+  const fixtureKey = stadiumFixtureKey(sim.home.clubId, sim.away.clubId);
+  const pressure = useQualityPressure();
+  const budget = useRuntimeSceneBudget();
+  // O pós-processamento atual roda em WebGL2; no caminho WebGPU a imagem sai
+  // direto do renderizador (tone mapping e exposição continuam ativos).
+  const postOn = useVisual().postFx && backend === "webgl2";
+
+  const goalPulse = useRef(0);
+  const lastGoals = useRef(sim.stats.home.goals + sim.stats.away.goals);
+  const goalFocus = useRef<GoalFocus | null>(null);
+  const [replay, setReplay] = useState(false);
+  const [moment, setMoment] = useState<"match" | "replay" | "drama">("match");
+  const momentRef = useRef<"match" | "replay" | "drama">("match");
+
+  useFrame((_, dt) => {
+    const total = sim.stats.home.goals + sim.stats.away.goals;
+    if (total !== lastGoals.current) {
+      lastGoals.current = total;
+      goalPulse.current = 1;
+      goalFocus.current = captureGoalFocus(sim, total);
+    }
+    if (goalPulse.current > 0) {
+      goalPulse.current = Math.max(0, goalPulse.current - dt * 0.22);
+      if (goalPulse.current <= 0.01) goalFocus.current = null;
+    }
+    const r = goalPulse.current > 0.55;
+
+    const m = goalPulse.current > 0.82 ? "drama" : r ? "replay" : "match";
+    if (momentRef.current !== m) {
+      momentRef.current = m;
+      setMoment(m);
+      setReplay(r);
+    }
+  });
+
+  const awayClash = colorClash(sim.home.primary, sim.away.primary);
+  const homeKit = useMemo(
+    () => kitFor(sim.home.clubId, sim.home.primary, sim.home.secondary),
+    [sim.home.clubId, sim.home.primary, sim.home.secondary],
+  );
+  const awayKit = useMemo(
+    () => kitFor(sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash),
+    [sim.away.clubId, sim.away.primary, sim.away.secondary, awayClash],
+  );
+
+  const lighting = matchLighting(time, look.weather, quality === "baixa");
+  const sunColor = lighting.keyColor;
+  const visualBall = presentationBall(sim);
+
+  return (
+    <>
+      <color attach="background" args={[lighting.sky]} />
+      {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
+      <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
+      <AdaptiveEvents />
+      <FrameProbe quality={quality} adaptive={adaptive} />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
       <StadiumEnvironment

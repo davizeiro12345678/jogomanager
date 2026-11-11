@@ -56,7 +56,127 @@ import {
 import { getLeague, LEAGUES } from "@/game/data/leagues";
 
 import { initCareer } from "@/game/career";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
 import { careerCountryIdentity, careerCountryOptions } from "@/game/career-country-options";
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import {
@@ -93,6 +213,115 @@ import {
   DEFAULT_MANAGER_LOOK,
 } from "@/game/manager-profile";
 
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
+  createManagerProfile,
+  DEFAULT_MANAGER_ATTRIBUTES,
+  DEFAULT_MANAGER_LOOK,
+} from "@/game/manager-profile";
+
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
+  createManagerProfile,
+  DEFAULT_MANAGER_ATTRIBUTES,
+  DEFAULT_MANAGER_LOOK,
+} from "@/game/manager-profile";
+
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
+  createManagerProfile,
+  DEFAULT_MANAGER_ATTRIBUTES,
+  DEFAULT_MANAGER_LOOK,
+} from "@/game/manager-profile";
+
+import { discoverClubs, type CareerChallenge, type ClubDiscovery } from "@/game/club-discovery";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import {
@@ -445,13 +674,342 @@ export function NewCareer() {
   }, [step, selected]);
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
+
+import { Crest } from "@/components/game/Crest";
+
+import { useCareer } from "@/hooks/useCareer";
+
+import { canCreateCareer, canMutateCareer } from "@/lib/career-hydration";
+
+import { loadRealSquad } from "@/lib/realSquads";
+
+import { startWorldForNewCareer } from "@/lib/world";
+
+import { Flag } from "@/components/game/Flag";
+
+import { ManagerPortrait } from "@/components/game/ManagerPortrait";
+import { HAIR_COLORS } from "@/game/manager-look-options";
+
+import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
+
+import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/types";
+
+import "@/components/game/career-create.css";
+import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
+import { containsProfanity } from "@/lib/moderation";
+import { useT } from "@/i18n/context";
+
+const Cutscene = lazy(() =>
+  import("@/components/game/Cutscene").then((m) => ({ default: m.Cutscene })),
+);
+
+const STEPS = ["Identidade", "Aparência", "Perfil", "Clube"] as const;
+
+const STEP_COPY = [
+  ["Sua história começa com você.", "Como a torcida vai chamar o novo treinador?"],
+  ["Um rosto para a sua história.", "Personalize o treinador que vai representar você no clube."],
+  [
+    "Qual é o seu estilo de comando?",
+    "Personalidade e habilidades definem o início da sua carreira.",
+  ],
+  ["Encontre o seu próximo clube.", "Escolha o desafio e confira sua decisão antes de assumir."],
+];
+
+const PERSONALITIES: { id: ManagerPersonality; label: string; desc: string }[] = [
+  { id: "calmo", label: "Calmo", desc: "Diretoria mais paciente, elenco estável." },
+  { id: "motivador", label: "Motivador", desc: "Moral do elenco sobe mais rápido." },
+  { id: "durao", label: "Durão", desc: "Disciplina alta, mas desgasta estrelas." },
+  { id: "tatico", label: "Tático", desc: "Time rende mais com a tática certa." },
+  { id: "jovem", label: "Jovem promessa", desc: "Jovens crescem mais no treino." },
+];
+
+const ATTRS: { key: keyof ManagerAttributes; label: string }[] = [
+  { key: "attack", label: "Ataque" },
+  { key: "defense", label: "Defesa" },
+  { key: "market", label: "Mercado" },
+  { key: "squad", label: "Gestão de elenco" },
+  { key: "media", label: "Imprensa" },
+];
+
+const PRESETS = [
+  { label: "Treinador de campo", attrs: { attack: 8, defense: 8, market: 4, squad: 6, media: 4 } },
+  { label: "Negociador", attrs: { attack: 5, defense: 5, market: 9, squad: 6, media: 5 } },
+  { label: "Líder de vestiário", attrs: { attack: 5, defense: 6, market: 4, squad: 9, media: 6 } },
+  { label: "Equilibrado", attrs: { attack: 6, defense: 6, market: 6, squad: 6, media: 6 } },
+];
+
+const CHALLENGES: { id: CareerChallenge; label: string }[] = [
+  { id: "all", label: "Todos" },
+  { id: "contender", label: "Disputar títulos" },
+  { id: "build", label: "Construir um projeto" },
+  { id: "underdog", label: "Superar expectativas" },
+];
+
+export function NewCareer() {
+  const navigate = useNavigate();
+  const { t } = useT();
+  const { career, retry: retryCareer, status: careerStatus, create, reset, sync } = useCareer();
+  const careerStatusRef = useRef(careerStatus);
+  careerStatusRef.current = careerStatus;
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
+  const [step, setStep] = useState(0);
+  const [furthest, setFurthest] = useState(0);
+  const [name, setName] = useState("Técnico");
+  const nameBlocked = containsProfanity(name);
+  const [age, setAge] = useState(38);
+  const [country, setCountry] = useState(LEAGUES[0]!.id);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [look, setLook] = useState<ManagerLook>({
+    ...DEFAULT_MANAGER_LOOK,
+    hairColor: HAIR_COLORS[0]!,
+  });
+  const [personality, setPersonality] = useState<ManagerPersonality>("motivador");
+  const [reputation, setReputation] = useState(3);
+  const [attrs, setAttrs] = useState<ManagerAttributes>({
+    ...DEFAULT_MANAGER_ATTRIBUTES,
+  });
+  const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
+  const [clubQuery, setClubQuery] = useState("");
+  const query = useDeferredValue(clubQuery);
+  const [challenge, setChallenge] = useState<CareerChallenge>("all");
+  const [available, setAvailable] = useState(false);
+  const [scopeSearch, setScopeSearch] = useState(false);
+  const [limit, setLimit] = useState(24);
+  const [selected, setSelected] = useState<ClubDiscovery | null>(null);
+  const [replace, setReplace] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [scene, setScene] = useState(false);
+  const choosing = useRef(false);
+  const mounted = useRef(true);
+  const stepTitle = useRef<HTMLHeadingElement>(null);
+  const reviewTitle = useRef<HTMLHeadingElement>(null);
+  const lastStep = useRef(step);
+  const hydrating = careerStatus === "loading";
+  useCinematicPreload(loading || scene);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (lastStep.current !== step) {
+      lastStep.current = step;
+      stepTitle.current?.focus();
+    }
+  }, [step]);
+  const [catalog, setCatalog] = useState(() => [...LEAGUES]);
+  useEffect(() => {
+    if (step !== 3) return;
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    // The catalog hydrates the shared league list in place. Give React a new
+    // snapshot so memoized discovery depends on the data it actually reads.
+    const bump = () => {
+      if (active) setCatalog([...LEAGUES]);
+    };
+    void import("@/lib/db-catalog")
+      .then(({ CATALOG_EVENT, loadDbCatalog }) => {
+        if (!active) return;
+        window.addEventListener(CATALOG_EVENT, bump);
+        unsubscribe = () => window.removeEventListener(CATALOG_EVENT, bump);
+        void loadDbCatalog().then(bump);
+      })
+      .catch(() => undefined); // Bundled clubs remain available offline.
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [step]);
+  useEffect(() => {
+    setLimit(24);
+  }, [query, leagueId, challenge, available, scopeSearch]);
+  useEffect(() => {
+    if (step === 3 && selected) reviewTitle.current?.focus();
+  }, [step, selected]);
+  const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
+  const left = 30 - spent;
   const countries = useMemo(() => careerCountries(catalog), [catalog]);
   const countryFilter = countrySearchKey(countryQuery);
   const countryChoices = countries.filter((option) =>
     option.search.some((name) => name.includes(countryFilter)),
   );
+  );
   const selectedCountry =
     countries.find((option) => option.id === country)?.country ?? getLeague(country).country;
+  const clubs = useMemo(
+    () =>
+      step !== 3
+        ? []
+        : discoverClubs(catalog, {
+            query,
+            leagueId,
+            reputation,
+            challenge,
+            availableOnly: available,
+            scopeSearch,
+          }),
+    [step, query, leagueId, reputation, challenge, available, scopeSearch, catalog],
+  );
+  const selectionLocked = !!selected && selected.reputation > reputation;
+  function go(next: number) {
+    setFurthest((prev) => Math.max(prev, next));
+    setStep(next);
+  }
+  function setAttr(key: keyof ManagerAttributes, value: number) {
+    const next = Math.max(1, Math.min(10, value));
+    if (next - attrs[key] <= left) setAttrs({ ...attrs, [key]: next });
+  }
+  async function start() {
+    const canStartCurrent = () =>
+      syncRef.current !== "pending" &&
+      syncRef.current !== "syncing" &&
+      canCreateCareer({
+        status: careerStatusRef.current,
+        hasCareer: career !== null,
+        replace,
+      });
+    const canProceedAfterPreparation = () =>
+      careerStatusRef.current !== "loading" &&
+      careerStatusRef.current !== "offline" &&
+      careerStatusRef.current !== "error" &&
+      syncRef.current !== "pending" &&
+      syncRef.current !== "syncing";
+    if (!selected || selectionLocked || choosing.current || !canStartCurrent()) return;
+    choosing.current = true;
+    setLoading(true);
+    setError("");
+    const club = selected.club;
+    const profile = createManagerProfile({
+      name,
+      country,
+      age,
+      favClub: club.id,
+      look,
+      personality,
+      reputation,
+      attrs,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // A slow optional sports endpoint cannot trap a guest in the wizard.
+      await Promise.race([
+        loadRealSquad(club.id),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, 8000);
+        }),
+      ]);
+      if (!mounted.current || !canProceedAfterPreparation()) return;
+      // Replacing must delete the stored career first; otherwise the server
+      // treats the fresh season-1 save as stale and restores the old one.
+      if (career && replace) {
+        const resetOutcome = await reset();
+        if (!resetOutcome.ok) {
+          if (mounted.current)
+            setError(
+              resetOutcome.reason === "preflight" || resetOutcome.reason === "lock_unavailable"
+                ? "Não foi possível confirmar a substituição. A carreira anterior foi preservada; verifique a conexão e a sincronização e tente novamente."
+                : `${t("screen.error")} ${t("common.retry")}`,
+            );
+          return;
+        }
+      }
+      if (!mounted.current || !canProceedAfterPreparation()) return;
+      startWorldForNewCareer(club.id);
+      const created = await create(initCareer(selected.league.id, club.id, profile.name, profile));
+      if (!created) {
+        if (mounted.current)
+          setError(
+            "Não foi possível confirmar a criação da carreira. Sua seleção foi mantida; tente novamente após verificar a conexão.",
+          );
+        return;
+      }
+      startCareerAnalyticsId();
+      setScene(true);
+    } catch {
+      if (mounted.current)
+        setError("Não foi possível preparar a carreira. Sua escolha está aqui; tente novamente.");
+    } finally {
+      if (timer) clearTimeout(timer);
+      choosing.current = false;
+      if (mounted.current) setLoading(false);
+    }
+  }
+  const stepCopy = STEP_COPY[step]!;
+  return (
+    <main className="career-create">
+      <header className="career-top">
+        <Link to="/" className="career-back">
+          <ArrowLeft size={16} />
+          Início
+        </Link>
+        <span>
+          PRO FOOTBALL MANAGER <b>3D</b>
+        </span>
+        <Link to="/auth" className="career-login">
+          Entrar na conta
+        </Link>
+      </header>
+      <div className="career-container">
+        <div className="career-intro">
+          <div>
+            <p className="career-kicker">UM NOVO CAPÍTULO</p>
+            <h1>Novo treinador</h1>
+            <p>O próximo clube vai conhecer o seu nome.</p>
+            <p className="mt-3 text-sm">
+              Quer viver a carreira dentro de campo?{" "}
+              <Link to="/jogador" className="underline underline-offset-4">
+                Criar carreira de jogador
+              </Link>
+              .
+            </p>
+          </div>
+          <span className="career-save-note">
+            <Shield size={16} />
+            Comece como convidado
+            <br />
+            <small>Sua carreira fica neste aparelho</small>
+          </span>
+        </div>
+        <nav aria-label="Etapas da criação" className="career-steps">
+          <ol>
+            {STEPS.map((label, i) => (
+              <li key={label}>
+                <button
+                  type="button"
+                  onClick={() => go(i)}
+                  disabled={i > furthest || loading || hydrating}
+                  aria-current={i === step ? "step" : undefined}
+                >
+                  <span>{i < step ? <Check size={14} /> : i + 1}</span>
+                  <b>{label}</b>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div
+            role="progressbar"
+            aria-label="Progresso da criação"
+            aria-valuemin={0}
+            aria-valuemax={4}
+            aria-valuenow={step + 1}
+            className="career-progress"
+          >
+            <span style={{ width: `${(step + 1) * 25}%` }} />
+          </div>
+        </nav>
+        <div className="career-layout">
+          <aside className="career-identity" aria-label="Seu treinador">
+            <div className="career-portrait">
+              <ManagerPortrait look={look} size={154} />
+              <span>MANAGER</span>
+            </div>
+            <div className="career-identity-copy">
+              <p className="career-kicker">SEU TREINADOR</p>
+              <h2>{name.trim() || "Técnico"}</h2>
+              <p>
   const clubs = useMemo(
     () =>
       step !== 3
@@ -1022,7 +1580,121 @@ export function NewCareer() {
                     />
                   </div>
                   <div className="career-country-list">
+              </p>
+              <span className="career-personality">
+                {PERSONALITIES.find((p) => p.id === personality)?.label}
+              </span>
+              <div className="career-stars" aria-label={`Reputação ${reputation} de 5`}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={16}
+                    fill={n <= reputation ? "currentColor" : "none"}
+                    style={{ opacity: n <= reputation ? 1 : 0.25 }}
+                  />
+                ))}
+              </div>
+              <p className="career-reputation-note">
+                {reputation <= 2
+                  ? "Uma carreira para conquistar espaço."
+                  : reputation <= 3
+                    ? "Pronto para um novo projeto."
+                    : "Experiência para assumir grandes desafios."}
+              </p>
+            </div>
+          </aside>
+          <section
+            className="career-editor"
+            aria-labelledby="career-step-title"
+            aria-busy={loading || hydrating}
+          >
+            <div className="career-step-heading">
+              <p className="career-kicker">
+                PASSO {step + 1} DE 4 · {STEPS[step]}
+              </p>
+              <h2 id="career-step-title" ref={stepTitle} tabIndex={-1}>
+                {stepCopy[0]}
+              </h2>
+              <p>{stepCopy[1]}</p>
+            </div>
+            {careerStatus === "loading" ? (
+              <p role="status" className="career-help">
+                Carregando sua carreira salva…
+              </p>
+            ) : null}
+            {careerStatus !== "loading" && (careerStatus === "offline" || sync === "offline") ? (
+              <p role="alert" className="career-error">
+                Sem conexão para confirmar sua carreira na nuvem. Nenhum save foi substituído.{" "}
+                <button
+                  type="button"
+                  className="career-text-button"
+                  onClick={() => void retryCareer()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            ) : null}
+            {careerStatus === "error" ? (
+              <p role="alert" className="career-error">
+                Não foi possível confirmar sua carreira na nuvem. Nenhum save foi substituído.{" "}
+                <button
+                  type="button"
+                  className="career-text-button"
+                  onClick={() => void retryCareer()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            ) : null}
+            <fieldset disabled={loading || hydrating} className="career-fields">
+              {step === 0 && (
+                <div className="career-step-content">
+                  <label className="career-label" htmlFor="manager-name">
+                    Nome do treinador
+                  </label>
+                  <input
+                    id="manager-name"
+                    value={name}
+                    maxLength={48}
+                    autoComplete="nickname"
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Como você quer ser chamado?"
+                    className="career-input"
+                    aria-invalid={nameBlocked}
+                    aria-describedby={nameBlocked ? "manager-name-error" : undefined}
+                  />
+                  {nameBlocked ? (
+                    <p id="manager-name-error" role="alert" className="text-sm text-destructive">
+                      Escolha outro nome: este não é permitido no jogo.
+                    </p>
+                  ) : null}
+                  <div className="career-range-label">
+                    <label htmlFor="manager-age">Idade</label>
+                    <output htmlFor="manager-age">{age} anos</output>
+                  </div>
+                  <input
+                    id="manager-age"
+                    type="range"
+                    min={20}
+                    max={75}
+                    value={age}
+                    onChange={(e) => setAge(Number(e.target.value))}
+                  />
+                  <label htmlFor="country-search" className="career-label">
+                    País de origem
+                  </label>
+                  <div className="career-search">
+                    <Search size={17} />
+                    <input
+                      id="country-search"
+                      value={countryQuery}
+                      onChange={(e) => setCountryQuery(e.target.value)}
+                      placeholder="Buscar país"
+                    />
+                  </div>
+                  <div className="career-country-list">
                     {countryChoices.map((option) => (
+                      <Chip
                       <Chip
                       <Chip
                         key={option.id}
@@ -1030,10 +1702,509 @@ export function NewCareer() {
                         onClick={() => setCountry(option.id)}
                       >
                       >
+                      >
                         <Flag league={option.id} country={option.country} size={14} />
                         {option.country}
                       </Chip>
                     ))}
+                      </Chip>
+                    ))}
+                      </Chip>
+                    ))}
+import { Link, useNavigate } from "@tanstack/react-router";
+
+import {
+  lazy,
+  Suspense,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ChevronRight,
+  LoaderCircle,
+  Lock,
+  Search,
+  Shield,
+  Star,
+  Trophy,
+} from "lucide-react";
+
+import { getLeague, LEAGUES } from "@/game/data/leagues";
+
+import { initCareer } from "@/game/career";
+
+import {
+  createManagerProfile,
+  DEFAULT_MANAGER_ATTRIBUTES,
+  DEFAULT_MANAGER_LOOK,
+} from "@/game/manager-profile";
+
+import { discoverClubs, type CareerChallenge, type ClubDiscovery } from "@/game/club-discovery";
+import { countryIdentity, countryOptions } from "@/game/country-options";
+
+import { Crest } from "@/components/game/Crest";
+
+import { useCareer } from "@/hooks/useCareer";
+
+import { canCreateCareer, canMutateCareer } from "@/lib/career-hydration";
+
+import { loadRealSquad } from "@/lib/realSquads";
+
+import { startWorldForNewCareer } from "@/lib/world";
+
+import { Flag } from "@/components/game/Flag";
+
+import { ManagerPortrait } from "@/components/game/ManagerPortrait";
+import { HAIR_COLORS } from "@/game/manager-look-options";
+
+import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
+
+import type { ManagerAttributes, ManagerLook, ManagerPersonality } from "@/game/types";
+
+import "@/components/game/career-create.css";
+import { startCareerAnalyticsId } from "@/lib/career-analytics-id";
+import { containsProfanity } from "@/lib/moderation";
+import { useT } from "@/i18n/context";
+
+const Cutscene = lazy(() =>
+  import("@/components/game/Cutscene").then((m) => ({ default: m.Cutscene })),
+);
+
+const STEPS = ["Identidade", "Aparência", "Perfil", "Clube"] as const;
+
+const STEP_COPY = [
+  ["Sua história começa com você.", "Como a torcida vai chamar o novo treinador?"],
+  ["Um rosto para a sua história.", "Personalize o treinador que vai representar você no clube."],
+  [
+    "Qual é o seu estilo de comando?",
+    "Personalidade e habilidades definem o início da sua carreira.",
+  ],
+  ["Encontre o seu próximo clube.", "Escolha o desafio e confira sua decisão antes de assumir."],
+];
+
+const PERSONALITIES: { id: ManagerPersonality; label: string; desc: string }[] = [
+  { id: "calmo", label: "Calmo", desc: "Diretoria mais paciente, elenco estável." },
+  { id: "motivador", label: "Motivador", desc: "Moral do elenco sobe mais rápido." },
+  { id: "durao", label: "Durão", desc: "Disciplina alta, mas desgasta estrelas." },
+  { id: "tatico", label: "Tático", desc: "Time rende mais com a tática certa." },
+  { id: "jovem", label: "Jovem promessa", desc: "Jovens crescem mais no treino." },
+];
+
+const ATTRS: { key: keyof ManagerAttributes; label: string }[] = [
+  { key: "attack", label: "Ataque" },
+  { key: "defense", label: "Defesa" },
+  { key: "market", label: "Mercado" },
+  { key: "squad", label: "Gestão de elenco" },
+  { key: "media", label: "Imprensa" },
+];
+
+const PRESETS = [
+  { label: "Treinador de campo", attrs: { attack: 8, defense: 8, market: 4, squad: 6, media: 4 } },
+  { label: "Negociador", attrs: { attack: 5, defense: 5, market: 9, squad: 6, media: 5 } },
+  { label: "Líder de vestiário", attrs: { attack: 5, defense: 6, market: 4, squad: 9, media: 6 } },
+  { label: "Equilibrado", attrs: { attack: 6, defense: 6, market: 6, squad: 6, media: 6 } },
+];
+
+const CHALLENGES: { id: CareerChallenge; label: string }[] = [
+  { id: "all", label: "Todos" },
+  { id: "contender", label: "Disputar títulos" },
+  { id: "build", label: "Construir um projeto" },
+  { id: "underdog", label: "Superar expectativas" },
+];
+
+export function NewCareer() {
+  const navigate = useNavigate();
+  const { t } = useT();
+  const { career, retry: retryCareer, status: careerStatus, create, reset, sync } = useCareer();
+  const careerStatusRef = useRef(careerStatus);
+  careerStatusRef.current = careerStatus;
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
+  const [step, setStep] = useState(0);
+  const [furthest, setFurthest] = useState(0);
+  const [name, setName] = useState("Técnico");
+  const nameBlocked = containsProfanity(name);
+  const [age, setAge] = useState(38);
+  const [country, setCountry] = useState(LEAGUES[0]!.id);
+  const [countryQuery, setCountryQuery] = useState("");
+  const [look, setLook] = useState<ManagerLook>({
+    ...DEFAULT_MANAGER_LOOK,
+    hairColor: HAIR_COLORS[0]!,
+  });
+  const [personality, setPersonality] = useState<ManagerPersonality>("motivador");
+  const [reputation, setReputation] = useState(3);
+  const [attrs, setAttrs] = useState<ManagerAttributes>({
+    ...DEFAULT_MANAGER_ATTRIBUTES,
+  });
+  const [leagueId, setLeagueId] = useState(LEAGUES[0]!.id);
+  const [clubQuery, setClubQuery] = useState("");
+  const query = useDeferredValue(clubQuery);
+  const [challenge, setChallenge] = useState<CareerChallenge>("all");
+  const [available, setAvailable] = useState(false);
+  const [scopeSearch, setScopeSearch] = useState(false);
+  const [limit, setLimit] = useState(24);
+  const [selected, setSelected] = useState<ClubDiscovery | null>(null);
+  const [replace, setReplace] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [scene, setScene] = useState(false);
+  const choosing = useRef(false);
+  const mounted = useRef(true);
+  const stepTitle = useRef<HTMLHeadingElement>(null);
+  const reviewTitle = useRef<HTMLHeadingElement>(null);
+  const lastStep = useRef(step);
+  const hydrating = careerStatus === "loading";
+  useCinematicPreload(loading || scene);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (lastStep.current !== step) {
+      lastStep.current = step;
+      stepTitle.current?.focus();
+    }
+  }, [step]);
+  const [catalog, setCatalog] = useState(() => [...LEAGUES]);
+  useEffect(() => {
+    if (step !== 3) return;
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    // The catalog hydrates the shared league list in place. Give React a new
+    // snapshot so memoized discovery depends on the data it actually reads.
+    const bump = () => {
+      if (active) setCatalog([...LEAGUES]);
+    };
+    void import("@/lib/db-catalog")
+      .then(({ CATALOG_EVENT, loadDbCatalog }) => {
+        if (!active) return;
+        window.addEventListener(CATALOG_EVENT, bump);
+        unsubscribe = () => window.removeEventListener(CATALOG_EVENT, bump);
+        void loadDbCatalog().then(bump);
+      })
+      .catch(() => undefined); // Bundled clubs remain available offline.
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [step]);
+  useEffect(() => {
+    setLimit(24);
+  }, [query, leagueId, challenge, available, scopeSearch]);
+  useEffect(() => {
+    if (step === 3 && selected) reviewTitle.current?.focus();
+  }, [step, selected]);
+  const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
+  const left = 30 - spent;
+  const countryChoices = useMemo(
+    () => countryOptions(catalog, countryQuery),
+    [countryQuery, catalog],
+  );
+  const selectedCountry = countryIdentity(getLeague(country).country);
+  const clubs = useMemo(
+    () =>
+      step !== 3
+        ? []
+        : discoverClubs(catalog, {
+            query,
+            leagueId,
+            reputation,
+            challenge,
+            availableOnly: available,
+            scopeSearch,
+          }),
+    [step, query, leagueId, reputation, challenge, available, scopeSearch, catalog],
+  );
+  const selectionLocked = !!selected && selected.reputation > reputation;
+  function go(next: number) {
+    setFurthest((prev) => Math.max(prev, next));
+    setStep(next);
+  }
+  function setAttr(key: keyof ManagerAttributes, value: number) {
+    const next = Math.max(1, Math.min(10, value));
+    if (next - attrs[key] <= left) setAttrs({ ...attrs, [key]: next });
+  }
+  async function start() {
+    const canStartCurrent = () =>
+      syncRef.current !== "pending" &&
+      syncRef.current !== "syncing" &&
+      canCreateCareer({
+        status: careerStatusRef.current,
+        hasCareer: career !== null,
+        replace,
+      });
+    const canProceedAfterPreparation = () =>
+      careerStatusRef.current !== "loading" &&
+      careerStatusRef.current !== "offline" &&
+      careerStatusRef.current !== "error" &&
+      syncRef.current !== "pending" &&
+      syncRef.current !== "syncing";
+    if (!selected || selectionLocked || choosing.current || !canStartCurrent()) return;
+    choosing.current = true;
+    setLoading(true);
+    setError("");
+    const club = selected.club;
+    const profile = createManagerProfile({
+      name,
+      country,
+      age,
+      favClub: club.id,
+      look,
+      personality,
+      reputation,
+      attrs,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // A slow optional sports endpoint cannot trap a guest in the wizard.
+      await Promise.race([
+        loadRealSquad(club.id),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, 8000);
+        }),
+      ]);
+      if (!mounted.current || !canProceedAfterPreparation()) return;
+      // Replacing must delete the stored career first; otherwise the server
+      // treats the fresh season-1 save as stale and restores the old one.
+      if (career && replace) {
+        const resetOutcome = await reset();
+        if (!resetOutcome.ok) {
+          if (mounted.current)
+            setError(
+              resetOutcome.reason === "preflight" || resetOutcome.reason === "lock_unavailable"
+                ? "Não foi possível confirmar a substituição. A carreira anterior foi preservada; verifique a conexão e a sincronização e tente novamente."
+                : `${t("screen.error")} ${t("common.retry")}`,
+            );
+          return;
+        }
+      }
+      if (!mounted.current || !canProceedAfterPreparation()) return;
+      startWorldForNewCareer(club.id);
+      const created = await create(initCareer(selected.league.id, club.id, profile.name, profile));
+      if (!created) {
+        if (mounted.current)
+          setError(
+            "Não foi possível confirmar a criação da carreira. Sua seleção foi mantida; tente novamente após verificar a conexão.",
+          );
+        return;
+      }
+      startCareerAnalyticsId();
+      setScene(true);
+    } catch {
+      if (mounted.current)
+        setError("Não foi possível preparar a carreira. Sua escolha está aqui; tente novamente.");
+    } finally {
+      if (timer) clearTimeout(timer);
+      choosing.current = false;
+      if (mounted.current) setLoading(false);
+    }
+  }
+  const stepCopy = STEP_COPY[step]!;
+  return (
+    <main className="career-create">
+      <header className="career-top">
+        <Link to="/" className="career-back">
+          <ArrowLeft size={16} />
+          Início
+        </Link>
+        <span>
+          PRO FOOTBALL MANAGER <b>3D</b>
+        </span>
+        <Link to="/auth" className="career-login">
+          Entrar na conta
+        </Link>
+      </header>
+      <div className="career-container">
+        <div className="career-intro">
+          <div>
+            <p className="career-kicker">UM NOVO CAPÍTULO</p>
+            <h1>Novo treinador</h1>
+            <p>O próximo clube vai conhecer o seu nome.</p>
+            <p className="mt-3 text-sm">
+              Quer viver a carreira dentro de campo?{" "}
+              <Link to="/jogador" className="underline underline-offset-4">
+                Criar carreira de jogador
+              </Link>
+              .
+            </p>
+          </div>
+          <span className="career-save-note">
+            <Shield size={16} />
+            Comece como convidado
+            <br />
+            <small>Sua carreira fica neste aparelho</small>
+          </span>
+        </div>
+        <nav aria-label="Etapas da criação" className="career-steps">
+          <ol>
+            {STEPS.map((label, i) => (
+              <li key={label}>
+                <button
+                  type="button"
+                  onClick={() => go(i)}
+                  disabled={i > furthest || loading || hydrating}
+                  aria-current={i === step ? "step" : undefined}
+                >
+                  <span>{i < step ? <Check size={14} /> : i + 1}</span>
+                  <b>{label}</b>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div
+            role="progressbar"
+            aria-label="Progresso da criação"
+            aria-valuemin={0}
+            aria-valuemax={4}
+            aria-valuenow={step + 1}
+            className="career-progress"
+          >
+            <span style={{ width: `${(step + 1) * 25}%` }} />
+          </div>
+        </nav>
+        <div className="career-layout">
+          <aside className="career-identity" aria-label="Seu treinador">
+            <div className="career-portrait">
+              <ManagerPortrait look={look} size={154} />
+              <span>MANAGER</span>
+            </div>
+            <div className="career-identity-copy">
+              <p className="career-kicker">SEU TREINADOR</p>
+              <h2>{name.trim() || "Técnico"}</h2>
+              <p>
+                <Flag league={country} country={getLeague(country).country} size={14} />
+                {getLeague(country).country} · {age} anos
+              </p>
+              <span className="career-personality">
+                {PERSONALITIES.find((p) => p.id === personality)?.label}
+              </span>
+              <div className="career-stars" aria-label={`Reputação ${reputation} de 5`}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={16}
+                    fill={n <= reputation ? "currentColor" : "none"}
+                    style={{ opacity: n <= reputation ? 1 : 0.25 }}
+                  />
+                ))}
+              </div>
+              <p className="career-reputation-note">
+                {reputation <= 2
+                  ? "Uma carreira para conquistar espaço."
+                  : reputation <= 3
+                    ? "Pronto para um novo projeto."
+                    : "Experiência para assumir grandes desafios."}
+              </p>
+            </div>
+          </aside>
+          <section
+            className="career-editor"
+            aria-labelledby="career-step-title"
+            aria-busy={loading || hydrating}
+          >
+            <div className="career-step-heading">
+              <p className="career-kicker">
+                PASSO {step + 1} DE 4 · {STEPS[step]}
+              </p>
+              <h2 id="career-step-title" ref={stepTitle} tabIndex={-1}>
+                {stepCopy[0]}
+              </h2>
+              <p>{stepCopy[1]}</p>
+            </div>
+            {careerStatus === "loading" ? (
+              <p role="status" className="career-help">
+                Carregando sua carreira salva…
+              </p>
+            ) : null}
+            {careerStatus !== "loading" && (careerStatus === "offline" || sync === "offline") ? (
+              <p role="alert" className="career-error">
+                Sem conexão para confirmar sua carreira na nuvem. Nenhum save foi substituído.{" "}
+                <button
+                  type="button"
+                  className="career-text-button"
+                  onClick={() => void retryCareer()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            ) : null}
+            {careerStatus === "error" ? (
+              <p role="alert" className="career-error">
+                Não foi possível confirmar sua carreira na nuvem. Nenhum save foi substituído.{" "}
+                <button
+                  type="button"
+                  className="career-text-button"
+                  onClick={() => void retryCareer()}
+                >
+                  Tentar novamente
+                </button>
+              </p>
+            ) : null}
+            <fieldset disabled={loading || hydrating} className="career-fields">
+              {step === 0 && (
+                <div className="career-step-content">
+                  <label className="career-label" htmlFor="manager-name">
+                    Nome do treinador
+                  </label>
+                  <input
+                    id="manager-name"
+                    value={name}
+                    maxLength={48}
+                    autoComplete="nickname"
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Como você quer ser chamado?"
+                    className="career-input"
+                    aria-invalid={nameBlocked}
+                    aria-describedby={nameBlocked ? "manager-name-error" : undefined}
+                  />
+                  {nameBlocked ? (
+                    <p id="manager-name-error" role="alert" className="text-sm text-destructive">
+                      Escolha outro nome: este não é permitido no jogo.
+                    </p>
+                  ) : null}
+                  <div className="career-range-label">
+                    <label htmlFor="manager-age">Idade</label>
+                    <output htmlFor="manager-age">{age} anos</output>
+                  </div>
+                  <input
+                    id="manager-age"
+                    type="range"
+                    min={20}
+                    max={75}
+                    value={age}
+                    onChange={(e) => setAge(Number(e.target.value))}
+                  />
+                  <label htmlFor="country-search" className="career-label">
+                    País de origem
+                  </label>
+                  <div className="career-search">
+                    <Search size={17} />
+                    <input
+                      id="country-search"
+                      value={countryQuery}
+                      onChange={(e) => setCountryQuery(e.target.value)}
+                      placeholder="Buscar país"
+                    />
+                  </div>
+                  <div className="career-country-list">
+                    {countryChoices.map(({ key, league }) => (
+                      <Chip
+                        key={key}
+                        active={selectedCountry === key}
+                        onClick={() => setCountry(league.id)}
+                      >
+                        <Flag league={league.id} country={league.country} size={14} />
+                        {league.country}
                       </Chip>
                     ))}
                     {!countryChoices.length ? (
