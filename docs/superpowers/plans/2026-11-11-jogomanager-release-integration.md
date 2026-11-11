@@ -10,6 +10,15 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-11-jogomanager-release-integration-design.md`
 
+**Expansão solicitada em 2026-11-11 (parte do mesmo PR #132):**
+`docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expansion.md`.
+Esse documento contém o diagnóstico específico de teleporte na recuperação da bola,
+divididas e defesas, prioridades de anticheat, moderação/chat/suporte, novos modos,
+IA futebolística e renderização. **Não** confundir objetivos de expansão com entregas
+concluídas. As alterações de física têm contrato opt-in para não invalidar replays.
+Progresso inicial: patch da física opt-in e caso anti-exploit cross-room adicionados;
+testes CI e provas físicas/online ainda pendentes.
+
 ## Global Constraints
 
 - Work only in `davizeiro12345678/jogomanager`; never access another client/project.
