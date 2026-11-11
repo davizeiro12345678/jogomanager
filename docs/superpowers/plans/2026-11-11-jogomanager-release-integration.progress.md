@@ -155,3 +155,15 @@ This section supersedes older SHA/run-ID snapshots above. Resume from this check
 - Current position: Phase 1 integration/CI stabilization. The next task is to inspect exact-head CI and fix the first genuine failure; then resume Task 1 (full PR #129 diff reconciliation), followed by Task 2 (#130 same-user/same-career OAuth verification).
 - No main merge, Cloudflare deploy, VPS/Tunnel/DNS activation, production index maintenance or collation rebuild has occurred.
 
+
+
+## Continuação: expansão multiplayer/IA/física 2026-11-11
+
+Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expansion.md` (parte da PR #132).
+
+- **Implementado parcialmente no branch:** novo `contactPhysicsRevision: 2` opt-in no contrato/snapshot/checkpoint e na ponte do Worker; limites de contato em domínios e divididas; remoção do teleport de recuperação e salto de goleiro na nova revisão; de-penetração gradativa; seleção de nova revisão na apresentação multiplayer e no motor online. Contratos legados continuam sem flag. A revisão de regras de futebol existente 1/2 é preservada.
+- **Implementado parcialmente:** recepção de comandos de sala errada rejeitada antes de admitir a conexão ou alterar liveness; teste de regressão adicionado.
+- **Adicionado, não executado localmente:** `src/game/contact-physics-revision.test.ts` (distância de recuperação, dividida, contrato e checkpoint), e cobertura de sala errada em `authoritative-match-session.test.ts`.
+- **NÃO concluído:** servidor WebSocket/DO em produção, anti-cheat completo, moderação IA + recursos, novos modos, IA futebolística avançada, revisão gráfica, métricas e CI exato. A PR segue Draft; não mesclar.
+- **Observação de compatibilidade:** a nova revisão foi optada pelo construtor canônico de novas sessões online; antes do deploy, verificar persistência da revisão por sala para sessões que atravessam versões do servidor, paridade com replay e rollback seguro.
+- **Próximos gates:** Quality Gates de SHA mais recente, Prettier/TS/Vitest focado e integração, replay determinístico 1.000 seeds, métricas de deslocamento e homologação em hardware.
