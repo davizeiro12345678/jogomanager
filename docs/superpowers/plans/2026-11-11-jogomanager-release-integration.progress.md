@@ -3,7 +3,7 @@
 ## Checkpoint 2026-11-11
 
 - Integration branch: `integration/release-2026-11-11`
-- Exact branch SHA when this ledger was written: `0d1e1567fafadbab8d862a5d7e4e08f0f3ba3cfb`
+- Exact branch SHA when this ledger was written: `ec499d621de33ee148184b7411a7197054eedbef`
 - Main SHA: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
 - Design: `docs/superpowers/specs/2026-11-11-jogomanager-release-integration-design.md`
 - Plan: `docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md`
@@ -34,19 +34,30 @@
 - [ ] Rebuild collation-dependent indexes in an approved maintenance window, then refresh the database collation version.
 - [ ] Configure main branch protection and required checks through a repository admin; current GitHub integration receives HTTP 403 for branch-protection administration.
 - [ ] Implement/verify persistent competitions, rankings, DAU/retention instrumentation, beta cohort and public changelog.
-- [ ] Complete independent review and create the final PR to main.
+- [~] Draft PR #132 exists against main; complete independent review, exact-head CI and evidence before marking ready.
 - [ ] No main merge or production deploy has occurred in this workflow.
+
+## Draft PR checkpoint
+
+- PR #132: https://github.com/davizeiro12345678/jogomanager/pull/132
+- State: open, draft, base `main`, head `integration/release-2026-11-11`.
+- Head SHA: `ec499d621de33ee148184b7411a7197054eedbef`.
+- PR #132 is a staging/review container only; not approved for merge or deployment.
 
 ## Latest CI checkpoint
 
-Latest run set observed on branch SHA `0d1e1567fafadbab8d862a5d7e4e08f0f3ba3cfb`:
+Latest PR #132 run set observed on SHA `ec499d621de33ee148184b7411a7197054eedbef`:
 
 | Workflow | Run ID | State |
 |---|---:|---|
-| Match 3D lifecycle and context recovery | 43088663747 | queued |
-| CodSpeed | 43088663877 | queued |
-| Public environment and MCP safety | 43088663537 | in progress |
-| Match 3D startup CPU diagnostic | 43088663674 | queued |
+| Match 3D lifecycle and context recovery | 43088763738 | in progress |
+| CodSpeed | 43088763694 | in progress |
+| Public environment and MCP safety | 43088763902 | success |
+| Match 3D startup CPU diagnostic | 43088763706 | in progress |
+| Auxiliary match worker | 43088763652 | in progress |
+| Match 3D mobile draw inventory | 43088763656 | in progress |
+| Quality gates | 43088763599 | pending |
+| Match 3D visual evidence | 43088763788 | in progress |
 
 A prior run set on parent SHA `1496e779fdf4d3deb2b462eba54429a68722f5a1` was canceled after the branch advanced; its successful safety job is not a substitute for current Quality Gates. Inspect the newest runs for the latest branch head. Do not claim tests pass until the exact-head runs finish successfully.
 
@@ -72,3 +83,10 @@ A prior run set on parent SHA `1496e779fdf4d3deb2b462eba54429a68722f5a1` was can
 - Ruling: keep VPS gateway disabled — the previous host has an unresolved root-compromise history and no current proof of clean rebuild, backup restore and credential rotation; cost if wrong is exposing the production catalog host.
 - Ruling: do not automatically repair collation or the injury index — the operations affect a multi-GB index footprint and need backup, storage/WAL/replica capacity and maintenance monitoring; cost if wrong is production query degradation or index inconsistency.
 - Ruling: do not declare 60 FPS from CI/headless evidence — GPU/browser emulation does not represent physical devices; cost if wrong is a false performance claim and regressions on actual player hardware.
+
+## Handoff update — PR #132
+
+- Draft PR #132 was created/confirmed at `https://github.com/davizeiro12345678/jogomanager/pull/132`.
+- It targets `main`, remains Draft, and has no merge or deploy authorization.
+- The PR description records the Custom450 worker budget (8 default lanes, max 12, 120 requests/window and 9 fetches/s) and documents the remaining PostgreSQL repair constraints. Verify those values against the exact importer code and tests before release.
+- The exact-head PR checks are still running; the only completed latest job observed was Public environment and MCP safety (success). No full Quality Gates result yet.
