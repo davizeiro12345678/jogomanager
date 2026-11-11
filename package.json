@@ -52,7 +52,6 @@
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.21.0",
     "@hookform/resolvers": "^5.9.2",
-    "@lovable.dev/cloud-auth-js": "^1.2.1",
     "@lovable.dev/email-js": "^0.3.1",
     "@lovable.dev/mcp-js": "3.0.5",
     "@lovable.dev/webhooks-js": "^0.0.3",
