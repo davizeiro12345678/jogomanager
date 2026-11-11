@@ -94,6 +94,12 @@ describe("configured authentication methods", () => {
     },
   );
 
+  it("does not invent a social provider when discovery fails without an allowlist", () => {
+    vi.stubEnv("VITE_AUTH_PROVIDER_ALLOWLIST", "");
+    expect(fallbackAuthMethods().socialProviders).toEqual([]);
+    vi.unstubAllEnvs();
+  });
+
   it("uses only the explicit provider allowlist in degraded discovery mode", () => {
     vi.stubEnv("VITE_AUTH_PROVIDER_ALLOWLIST", "google,github,google,not-a-provider");
     expect(fallbackAuthMethods()).toEqual({
