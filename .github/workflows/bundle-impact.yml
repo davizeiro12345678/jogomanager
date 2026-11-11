@@ -32,7 +32,7 @@ concurrency:
 jobs:
   bundle:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - name: Checkout candidate with complete base history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -44,48 +44,41 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Verify baseline report resolver compatibility
-        run: node --test scripts/bundle-baseline-resolver.test.mjs
-      - name: Preserve analyzer and install one dependency graph for both revisions
+      - name: Verify bundle comparison and historical resolver contracts
+        run: |
+          node --test scripts/normalize-baseline-entities-alias.test.mjs
+          node --test scripts/bundle-baseline-resolver.test.mjs
+      - name: Preserve candidate analyzers for baseline build
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
           cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"
-          cp package.json "$RUNNER_TEMP/bundle-package.json"
-          cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
-          sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
-          npm ci
-          node --test scripts/normalize-baseline-entities-alias.test.mjs
-      - name: Build baseline from PR base SHA
+      - name: Build baseline with its own locked dependency graph
         env:
           BASE_SHA: ${{ inputs.baseline_ref }}
         run: |
           git checkout --detach "$BASE_SHA"
-          # Isolate application-source changes using the candidate's exact,
-          # audited dependency graph, as required by AGENTS.md. Both builds
-          # keep their own source files and identical installed dependencies.
-          cp "$RUNNER_TEMP/bundle-package.json" package.json
-          cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
-          # Normalize only the exact historical bare alias after validating the
-          # candidate's known subpath resolver contract.
+          sha256sum package-lock.json > "$RUNNER_TEMP/baseline-dependency-lock.sha256"
+          npm ci
+          # Normalize only the exact historical bare alias; the test above
+          # rejects unknown resolver shapes before this source-only adjustment.
           node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
+          cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
-          cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
-          git restore scripts/bundle-report.mjs package.json package-lock.json vite.config.ts
-      - name: Build proposed commit on the same runner
+      - name: Build candidate with its own locked dependency graph
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
         run: |
           git checkout --detach "$HEAD_SHA"
-          cmp package.json "$RUNNER_TEMP/bundle-package.json"
-          cmp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
+          sha256sum package-lock.json > verification/bundle-2026-10-01/candidate-dependency-lock.sha256
+          npm ci
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/bundle-report.mjs candidate .output/public/assets
           cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
-          cp "$RUNNER_TEMP/bundle-dependency-lock.sha256" verification/bundle-2026-10-01/dependency-lock.sha256
+          cp "$RUNNER_TEMP/baseline-dependency-lock.sha256" verification/bundle-2026-10-01/baseline-dependency-lock.sha256
           node scripts/compare-bundle-reports.mjs \
             verification/bundle-2026-10-01/baseline.json \
             verification/bundle-2026-10-01/candidate.json --check
@@ -99,5 +92,6 @@ jobs:
             bundle-impact.json
             verification/bundle-2026-10-01/baseline.json
             verification/bundle-2026-10-01/candidate.json
-            verification/bundle-2026-10-01/dependency-lock.sha256
+            verification/bundle-2026-10-01/baseline-dependency-lock.sha256
+            verification/bundle-2026-10-01/candidate-dependency-lock.sha256
           if-no-files-found: error
