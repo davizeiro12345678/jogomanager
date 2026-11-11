@@ -1,16 +1,9 @@
-import { lovableOAuthProvider, type SocialProvider } from "@/integrations/supabase/social-auth";
+import type { SocialProvider } from "@/integrations/supabase/social-auth";
 import { authErrorMessage, type AuthMode } from "./auth-policy";
 
-/** The Supabase project remains the identity authority in either transport. */
-export function usesLovableOAuth(mode: unknown): boolean {
-  return typeof mode === "string" && mode.trim().toLowerCase() === "lovable";
-}
-
-export function oauthTransport(mode: unknown, provider: SocialProvider) {
-  const brokerProvider = usesLovableOAuth(mode) ? lovableOAuthProvider(provider) : undefined;
-  return brokerProvider
-    ? ({ kind: "lovable", provider: brokerProvider } as const)
-    : ({ kind: "supabase", provider } as const);
+/** OAuth identity is always owned by the configured Supabase project. */
+export function oauthTransport(_mode: unknown, provider: SocialProvider) {
+  return { kind: "supabase", provider } as const;
 }
 
 /** Explain unavailable direct providers without disclosing raw upstream errors. */
