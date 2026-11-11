@@ -129,3 +129,29 @@ A prior run set on parent SHA `1496e779fdf4d3deb2b462eba54429a68722f5a1` was can
 - It targets `main`, remains Draft, and has no merge or deploy authorization.
 - The PR description records the Custom450 worker budget (8 default lanes, max 12, 120 requests/window and 9 fetches/s) and documents the remaining PostgreSQL repair constraints. Verify those values against the exact importer code and tests before release.
 - The exact-head PR checks are still running; the only completed latest job observed was Public environment and MCP safety (success). No full Quality Gates result yet.
+
+
+## Exact continuation checkpoint — 2026-11-11, branch SHA 88bc31045b92d0a25822e8dfbec9067e805fec85
+
+This section supersedes older SHA/run-ID snapshots above. Resume from this checkpoint after refreshing the branch and workflows again.
+
+- Current branch: `integration/release-2026-11-11`.
+- Current branch SHA: `88bc31045b92d0a25822e8dfbec9067e805fec85`.
+- Main SHA: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`.
+- PR #132: open Draft to main; one consolidated review container; no merge/deploy authorization.
+- PR #127 merged; #128 head is already in branch ancestry; #129–#131 remain open/draft and are superseded by #132 once full diff review and CI complete.
+- Repository ruleset `wadweew` is active but has no `required_status_checks`; `main.protected=false`. The connected GitHub integration cannot perform ruleset/branch-protection administration (HTTP 403). Repository administrator action is required.
+- Exact-head runs:
+  - Quality gates — `43089675217` — queued.
+  - Match 3D startup CPU diagnostic — `43089675003` — pending.
+  - Match 3D visual evidence — `43089674894` — in progress.
+  - Public environment and MCP safety — `43089674888` — success.
+  - Match 3D mobile draw inventory — `43089674777` — in progress.
+  - Match 3D lifecycle and context recovery — `43089674727` — in progress.
+  - Auxiliary match worker — `43089674724` — in progress.
+  - CodSpeed — `43089674703` — pending.
+- PostgreSQL read-only state: `api_football_data` has 10,303,707 estimated live tuples, 0 dead, 0 modified since analyze; autovacuum thresholds are 0.5% + 20,000 and last autovacuum/autoanalyze completed at 19:26 UTC. Injury covering index is absent; time index is valid/ready at ~1,976 kB. Injury refresh: 28 calls, mean 30,666.29 ms, max 36,022.63 ms. Collation remains 153.120 recorded vs 153.121 actual; inventory 251 ordinary indexes (~2,172.20 MiB) plus a partitioned Realtime parent and six children.
+- API-Football code defaults to 8 lanes, max 12 scheduled lanes, 120 requests/window and 9 fetches/second; staged 546/503 acceptance is outstanding.
+- Current position: Phase 1 integration/CI stabilization. The next task is to inspect exact-head CI and fix the first genuine failure; then resume Task 1 (full PR #129 diff reconciliation), followed by Task 2 (#130 same-user/same-career OAuth verification).
+- No main merge, Cloudflare deploy, VPS/Tunnel/DNS activation, production index maintenance or collation rebuild has occurred.
+
