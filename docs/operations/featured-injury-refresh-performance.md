@@ -39,7 +39,7 @@ This confirms the maintenance threshold change took effect and the 122,197 estim
 
 A direct read-only catalog inspection on 11 November 2026 confirmed:
 
-- `api_football_injury_league_cover_idx` exists but `indisvalid = false`, `indisready = false`, and its physical size is 0 bytes.
+- `api_football_injury_league_cover_idx` exists but `indisvalid = false` while `indisready = true` and `indislive = true`; its physical size is 1,304 kB. It is present and maintained for writes, but PostgreSQL excludes it from query plans because it is not valid.
 - Its intended key expressions exactly cover the injury view's league filter and grouping.
 - PostgreSQL therefore cannot use it. The observed refresh falls back to `api_football_injury_league_time_idx`, an ordinary index scan that fetched 3,176,979 heap tuples cumulatively in the sampled statistics.
 - The existing `api_football_injury_league_time_idx` is valid (about 1.9 MiB), and the materialized view's unique index is valid. The failed covering index is the concrete index-level defect.
