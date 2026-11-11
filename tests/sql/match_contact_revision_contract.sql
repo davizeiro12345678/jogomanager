@@ -44,3 +44,36 @@ BEGIN
   END IF;
 END;
 $contract$;
+
+-- Privilege and trigger regression in an automatically rolled back fixture.
+-- This deliberately widens permissions only *inside the transaction* so the
+-- server-only trigger itself is exercised, not merely the surrounding RLS.
+BEGIN;
+  ALTER TABLE public.match_rooms DISABLE ROW LEVEL SECURITY;
+  GRANT SELECT, UPDATE ON public.match_rooms TO authenticated;
+  INSERT INTO public.match_rooms(id, code, host_id, host_club, seed, server_seeded, status)
+    VALUES (
+      'ec3c829e-81d4-4edc-a3dd-7a1baf4a5685',
+      'QWERTY78',
+      'dc690d8c-7726-4d45-b193-9bf10a23f4a1',
+      'fla',
+      '',
+      true,
+      'open'
+    );
+  SET LOCAL ROLE authenticated;
+  DO $tamper$
+  DECLARE denied boolean := false;
+  BEGIN
+    BEGIN
+      UPDATE public.match_rooms SET contact_physics_revision = 1
+        WHERE id = 'ec3c829e-81d4-4edc-a3dd-7a1baf4a5685';
+    EXCEPTION WHEN insufficient_privilege THEN
+      denied := true;
+    END;
+    IF NOT denied THEN
+      RAISE EXCEPTION 'authenticated user modified server-owned match revision';
+    END IF;
+  END;
+  $tamper$;
+ROLLBACK;
