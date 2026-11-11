@@ -36,6 +36,7 @@ jobs:
       - name: Verify production credentials are connected
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VITE_AUTH_PROVIDER_ALLOWLIST: ${{ vars.VITE_AUTH_PROVIDER_ALLOWLIST }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
@@ -57,9 +58,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
           CLOUDFLARE_SITE_ZONE: jogomanager.com
           SITE_URL: https://jogomanager.com
-          VITE_AUTH_MODE: supabase
           PAYMENTS_ENVIRONMENT: live
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_AUTH_PROVIDER_ALLOWLIST: ${{ vars.VITE_AUTH_PROVIDER_ALLOWLIST }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
