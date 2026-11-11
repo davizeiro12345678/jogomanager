@@ -225,7 +225,13 @@ export default function QuickLive({
 
   return (
     <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} paused={paused || done} />
+      <Stadium3D
+        sim={sim}
+        mode={camera}
+        quality={quality}
+        paused={paused || done}
+        measurementKey={`quick:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
+      />
       <button
         type="button"
         onClick={() => {
