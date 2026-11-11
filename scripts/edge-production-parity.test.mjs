@@ -128,6 +128,62 @@ test("API-Football hashes a valid-shaped token and rejects unknown credentials b
   assert.equal(calls[0].args.p_admin, false);
 });
 
+test("API-Football distributes scheduled work across the requested bounded lanes", async () => {
+  let claims = 0;
+  let summary;
+  const handler = await loadHandler("api-football-import/index.ts", {
+    createClient: () => ({
+      rpc: async (name, args) => {
+        if (name === "football_queue_settings")
+          return {
+            data: { apiKey: "test-provider-key", enabled: true, nextRunAt: "2000-01-01T00:00:00Z" },
+            error: null,
+          };
+        if (name === "football_queue_claim") claims++;
+        if (name === "football_queue_window") summary = args.p_summary;
+        return { data: null, error: null };
+      },
+    }),
+  });
+  const response = await handler(
+    request(
+      "api-football-import",
+      { action: "run", workerLanes: 4 },
+      { "x-football-worker": workerToken },
+    ),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(claims, 4);
+  assert.equal(summary.lanes, 4);
+  assert.equal(summary.completed, 0);
+});
+
+test("API-Football rejects invalid scheduled lane counts before claiming jobs", async () => {
+  let claims = 0;
+  const handler = await loadHandler("api-football-import/index.ts", {
+    createClient: () => ({
+      rpc: async (name) => {
+        if (name === "football_queue_claim") claims++;
+        return {
+          data: { apiKey: "test-provider-key", enabled: true, nextRunAt: "2000-01-01T00:00:00Z" },
+          error: null,
+        };
+      },
+    }),
+  });
+  for (const workerLanes of [0, 17, 1.5, "4", null]) {
+    const response = await handler(
+      request(
+        "api-football-import",
+        { action: "run", workerLanes },
+        { "x-football-worker": workerToken },
+      ),
+    );
+    assert.equal(response.status, 400);
+  }
+  assert.equal(claims, 0);
+});
+
 test("API-Football worker credentials do not authorize admin actions", async () => {
   const calls = [];
   const handler = await loadHandler("api-football-import/index.ts", {
