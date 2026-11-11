@@ -69,7 +69,10 @@ jobs:
           node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
-          node "$RUNNER_TEMP/bundle-report.mjs" baseline .output/public/assets
+          # Run the candidate analyzer from inside the baseline checkout so ESM
+          # resolves dependencies from the baseline's own node_modules.
+          cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
+          node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
           # Restore the checked-out tree before switching revisions; the baseline
           # analyzer and historical Vite alias normalization are temporary only.
