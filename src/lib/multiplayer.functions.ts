@@ -20,6 +20,7 @@ import {
 export interface MultiplayerRoomRecord {
   id: string;
   code: string;
+  contact_physics_revision?: 1 | 2;
   host_id: string;
   guest_id: string | null;
   host_club: string;
@@ -190,7 +191,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_club, host_club, server_seeded, status, state, updated_at")
+      .select("id, host_id, guest_club, host_club, contact_physics_revision, server_seeded, status, state, updated_at")
       .eq("id", data.roomId)
       .maybeSingle();
     if (error || !room) return { ok: false, reason: "not_found" };
@@ -295,7 +296,9 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       // egress, secrets, and Atlas connectivity pass an end-to-end test.
       const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
       let result: { hg: number; ag: number; minute: number };
-      if (matchAuxEnabled()) {
+      // Legacy auxiliary workers do not attest contact-physics revision 2.
+      // Preserve a deterministic pinned authority for newly created rooms.
+      if (matchAuxEnabled() && room.contact_physics_revision !== 2) {
         const verified = await simulateOnMatchAux({
           roomId: room.id,
           homeClub: room.host_club,
@@ -308,6 +311,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
           buildTeamSetup(room.host_club),
           buildTeamSetup(room.guest_club),
           secret.seed,
+          room.contact_physics_revision === 2 ? { contactPhysicsRevision: 2 } : undefined,
         );
         let steps = 0;
         while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {
