@@ -51,7 +51,7 @@ export function StaticBatch({
     if (!active) return;
 
     const currentBatch = cleanup.current;
-    const state = captureStaticStadiumState(currentRoot, {
+    let state = captureStaticStadiumState(currentRoot, {
       exclude: dynamicSources.current,
     });
     if (currentBatch && !currentBatch.isCurrent(state.revision)) {
@@ -62,16 +62,16 @@ export function StaticBatch({
       cleanup.current = null;
       pending.current = true;
       settled.current = { revision: "", frames: 0 };
+      // Cleanup restored source visibility and changed the exclusion set.
+      // Only this transition needs a fresh capture in the same frame.
+      state = captureStaticStadiumState(currentRoot, { exclude: dynamicSources.current });
     }
 
     if (pending.current) {
-      const nextState = captureStaticStadiumState(currentRoot, {
-        exclude: dynamicSources.current,
-      });
-      if (!nextState.sourceCount) return;
+      if (!state.sourceCount) return;
       const stable = settled.current;
-      stable.frames = nextState.revision === stable.revision ? stable.frames + 1 : 0;
-      stable.revision = nextState.revision;
+      stable.frames = state.revision === stable.revision ? stable.frames + 1 : 0;
+      stable.revision = state.revision;
       if (stable.frames >= 2) {
         const next = batchStaticStadium(currentRoot, {
           ...(bucket ? { bucket } : {}),

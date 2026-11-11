@@ -16,7 +16,7 @@ import {
 import type { WindVector } from "./ball-climate";
 import type { VisualBallState } from "./visual-ball";
 import type { MatchPhase, ShootoutKick, WeatherKind } from "./sim-rules";
-import type { MatchExecutionContract } from "./match-execution-contract";
+import type { MatchExecutionContract, MatchRulesRevision } from "./match-execution-contract";
 import type { PackedLiveSnapshot } from "./live-transport";
 import {
   applyLivePlayerBuffer,
@@ -75,6 +75,7 @@ export type LiveWorkerRequest =
       home: TeamSetup;
       away: TeamSetup;
       seed: string;
+      rulesRevision?: MatchRulesRevision | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
       compact?: boolean;
@@ -101,6 +102,7 @@ export type LiveWorkerRequest =
       home: TeamSetup;
       away: TeamSetup;
       seed: string;
+      rulesRevision?: MatchRulesRevision | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
     }

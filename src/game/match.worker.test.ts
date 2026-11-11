@@ -48,6 +48,26 @@ describe("match worker skip ordering", () => {
     vi.useRealTimers();
   });
 
+  it("preserves explicitly selected rules in the actual live worker snapshot", async () => {
+    send({
+      id: 20,
+      type: "startLive",
+      home: buildTeamSetup("fla"),
+      away: buildTeamSetup("pal"),
+      seed: "worker-rules-v2",
+      rulesRevision: 2,
+    });
+    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(150);
+    const snapshots = responseMessages(worker).filter(
+      (message) => message.ok && "snapshot" in message,
+    );
+    expect(snapshots.length).toBeGreaterThan(0);
+    for (const message of snapshots)
+      if (message.ok && "snapshot" in message)
+        expect(message.snapshot.execution?.rulesRevision).toBe(2);
+  });
+
   it("keeps pause, tactics and substitute behind the complete skip", async () => {
     const home = buildTeamSetup("fla");
     const away = buildTeamSetup("pal");

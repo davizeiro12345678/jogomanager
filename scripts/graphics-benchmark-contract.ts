@@ -2,6 +2,7 @@ import { isCameraMode, type CameraMode } from "../src/game/camera-modes";
 import type { TimeOfDay, Weather } from "../src/game/matchday";
 import { MOW_PATTERNS, type MowPattern } from "../src/components/game/stadium/textures/grass";
 import type { QualityPref } from "../src/game/visual-settings";
+import type { MatchRulesRevision } from "../src/game/match-execution-contract";
 
 /** The benchmark always compares scene profiles at this physical render size. */
 export const GRAPHICS_BENCHMARK_VIEWPORT = {
@@ -13,6 +14,7 @@ export const GRAPHICS_BENCHMARK_VIEWPORT = {
 export type BenchmarkQuality = Exclude<QualityPref, "auto">;
 
 export interface GraphicsBenchmarkScenario {
+  rulesRevision?: MatchRulesRevision;
   label: string;
   seed: string;
   quality: BenchmarkQuality;
@@ -64,11 +66,22 @@ export const GRAPHICS_BENCHMARK_SCENARIOS = {
     weather: "molhado",
     mow: "stripes",
   },
+  rules2: {
+    label: "Alto · transmissão · regras 2",
+    seed: "graphics-broadcast-v1",
+    quality: "alta",
+    camera: "broadcast",
+    time: "dia",
+    weather: "seco",
+    mow: "stripes",
+    rulesRevision: 2,
+  },
 } as const satisfies Record<string, GraphicsBenchmarkScenario>;
 
 export type GraphicsBenchmarkScenarioId = keyof typeof GRAPHICS_BENCHMARK_SCENARIOS;
 
 export interface GraphicsBenchmarkMetadata {
+  rulesRevision: MatchRulesRevision;
   id: GraphicsBenchmarkScenarioId;
   label: string;
   seed: string;
@@ -91,7 +104,20 @@ export interface GraphicsBenchmarkMetadata {
     seed: string | null;
     quality: string | null;
     camera: string | null;
+    rulesRevision: string | null;
   };
+}
+
+/** Keep the established legacy scene JSON byte-for-byte shaped like the old
+ * harness. Full global/probe metadata still declares revision 1 explicitly. */
+export function graphicsBenchmarkSceneMetadata(
+  benchmark: GraphicsBenchmarkMetadata,
+  camera: CameraMode,
+) {
+  if (benchmark.rulesRevision === 2) return { ...benchmark, camera };
+  const { rulesRevision: _rules, requested: fullRequested, ...legacy } = benchmark;
+  const { rulesRevision: _requestedRules, ...requested } = fullRequested;
+  return { ...legacy, requested, camera };
 }
 
 function scenarioIdFor(value: string | null): GraphicsBenchmarkScenarioId {
@@ -130,11 +156,25 @@ function seedFor(value: string | null, fallback: string): string {
 export function resolveGraphicsBenchmark(search: string): GraphicsBenchmarkMetadata {
   const params = new URLSearchParams(search);
   const id = scenarioIdFor(params.get("scenario"));
-  const preset = GRAPHICS_BENCHMARK_SCENARIOS[id];
+  const preset: GraphicsBenchmarkScenario = GRAPHICS_BENCHMARK_SCENARIOS[id];
+  const requestedRules = params.getAll("rulesRevision");
+  if (
+    requestedRules.length > 1 ||
+    (requestedRules.length === 1 && requestedRules[0] !== "1" && requestedRules[0] !== "2")
+  )
+    throw new RangeError("Unknown or ambiguous graphics rules revision");
+  const rulesRevision = requestedRules.length
+    ? requestedRules[0] === "2"
+      ? 2
+      : 1
+    : (preset.rulesRevision ?? 1);
+  if (id === "rules2" && rulesRevision !== 2)
+    throw new RangeError("The rules2 scenario requires graphics rules revision 2");
   const requestedCamera = params.get("camera");
   const camera = isCameraMode(requestedCamera) ? requestedCamera : preset.camera;
 
   return {
+    rulesRevision,
     id,
     label: preset.label,
     seed: seedFor(params.get("seed"), preset.seed),
@@ -155,6 +195,7 @@ export function resolveGraphicsBenchmark(search: string): GraphicsBenchmarkMetad
       seed: params.get("seed"),
       quality: params.get("quality"),
       camera: requestedCamera,
+      rulesRevision: params.get("rulesRevision"),
     },
   };
 }

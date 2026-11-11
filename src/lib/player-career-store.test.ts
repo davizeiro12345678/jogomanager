@@ -138,6 +138,26 @@ describe("athlete local owner boundary", () => {
     expect(index).toMatchObject({ version: 1, slots: { 2: { kind: "saved", revision: 1 } } });
   });
 
+  it("never reuses a sync revision when a previous envelope survived an index write failure", () => {
+    const setItem = storage.setItem.bind(storage);
+    let indexUnavailable = true;
+    vi.spyOn(storage, "setItem").mockImplementation((key, value) => {
+      if (indexUnavailable && key === athleteIndexStorageKey("alice-id")) {
+        throw new DOMException("Storage temporarily unavailable", "QuotaExceededError");
+      }
+      setItem(key, value);
+    });
+    const first = writeAthlete(athlete(1, "Alice"), "alice-id");
+    expect(first).toMatchObject({ revision: 1 });
+    indexUnavailable = false;
+    const second = writeAthlete(athlete(1, "Alice next save"), "alice-id");
+    expect(second).toMatchObject({ revision: 2 });
+    expect(athleteSyncOperationId("save", 1, second!.revision)).not.toBe(
+      athleteSyncOperationId("save", 1, first!.revision),
+    );
+    expect(readAthlete(1, "alice-id")).toMatchObject({ name: "Alice next save" });
+  });
+
   it("hydrates the additive appearance contract from a guest legacy save", () => {
     const legacy = athlete(1, "Alice");
     window.localStorage.setItem("manager3d.athlete.v1.1", JSON.stringify(legacy));
@@ -184,6 +204,63 @@ describe("athlete cloud revisions and recoverable deletion", () => {
       name: original.name,
     });
     expect(readAthleteBackup(2, "bruno")).toBeNull();
+  });
+
+  it("recovers a newly occupied slot after only its index write fails over an older tombstone", () => {
+    writeAthlete(athlete(1, "Original"), "alice");
+    expect(deleteAthlete(1, "alice")).toMatchObject({ kind: "deleted", revision: 2 });
+    const setItem = storage.setItem.bind(storage);
+    let failIndex = true;
+    vi.spyOn(storage, "setItem").mockImplementation((key, value) => {
+      if (failIndex && key === athleteIndexStorageKey("alice")) {
+        throw new DOMException("Storage temporarily unavailable", "QuotaExceededError");
+      }
+      setItem(key, value);
+    });
+    expect(writeAthlete(athlete(1, "New career"), "alice")).toMatchObject({ revision: 3 });
+    expect(JSON.parse(storage.getItem(athleteIndexStorageKey("alice"))!)).toMatchObject({
+      slots: { 1: { kind: "deleted", revision: 2 } },
+    });
+
+    // Fresh page context, same durable storage; there is no in-memory repair state.
+    vi.stubGlobal("window", { localStorage: storage });
+    failIndex = false;
+    expect(readAthlete(1, "alice")).toMatchObject({ name: "New career" });
+    expect(JSON.parse(storage.getItem(athleteIndexStorageKey("alice"))!)).toMatchObject({
+      slots: { 1: { kind: "saved", revision: 3 } },
+    });
+    expect(readAthleteBackup(1, "alice")).toMatchObject({ name: "Original" });
+  });
+
+  it.each([1, 2])("keeps a revision-2 tombstone ahead of a revision-%s envelope", (revision) => {
+    const original = athlete(1, "Original");
+    writeAthlete(original, "alice");
+    expect(deleteAthlete(1, "alice")).toMatchObject({ revision: 2 });
+    storage.setItem(
+      athleteEnvelopeStorageKey(1, "alice"),
+      JSON.stringify(createAthleteSaveEnvelope(original, revision, 2_000)),
+    );
+    storage.setItem(athleteStorageKey(1, "alice"), JSON.stringify(original));
+
+    expect(readAthlete(1, "alice")).toBeNull();
+    expect(JSON.parse(storage.getItem(athleteIndexStorageKey("alice"))!)).toMatchObject({
+      slots: { 1: { kind: "deleted", revision: 2 } },
+    });
+  });
+
+  it("does not recover a newer envelope whose state belongs to another slot", () => {
+    const original = athlete(1, "Original");
+    writeAthlete(original, "alice");
+    deleteAthlete(1, "alice");
+    storage.setItem(
+      athleteEnvelopeStorageKey(1, "alice"),
+      JSON.stringify({
+        ...createAthleteSaveEnvelope(original, 3, 2_000),
+        state: athlete(2, "Wrong slot"),
+      }),
+    );
+    storage.setItem(athleteStorageKey(1, "alice"), JSON.stringify(original));
+    expect(readAthlete(1, "alice")).toBeNull();
   });
 });
 

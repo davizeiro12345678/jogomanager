@@ -46,7 +46,13 @@ import { nextCameraMode } from "@/game/camera-modes";
 
 import { FpsPanel } from "@/components/game/FpsPanel";
 
-import { fpsMeter } from "@/game/fps-meter";
+import { fpsMeter, type FpsMeasurementContext } from "@/game/fps-meter";
+import type { RenderedFrameSample } from "@/components/game/graphics-probe";
+import {
+  matchMeasurementKey,
+  matchMeasurementPhase,
+  nextAutomaticMatchQuality,
+} from "@/game/match-measurement";
 
 import { Cutscene } from "@/components/game/Cutscene";
 
@@ -81,6 +87,7 @@ import { detectQuality, detectQualityByGpu } from "@/game/device";
 import {
   getBroadcastPreferences,
   setBroadcastPreferences,
+  useResolvedVisual,
   type QualityPref,
 } from "@/game/visual-settings";
 
@@ -231,6 +238,7 @@ function LiveMatch({
       home: isHome ? mySetup : oppSetup,
       away: isHome ? oppSetup : mySetup,
       seed: `${career.clubId}-${career.round}`,
+      rulesRevision: career.matchRulesRevision ?? 1,
     };
   }, [career, isHome, myClub, oppId]);
   const lineupError = useMemo(() => {
@@ -310,42 +318,59 @@ function LiveMatch({
     };
   }, []);
 
-  /**
-   * Equilíbrio automático: mede os quadros reais do aparelho e desce (ou sobe)
-   * um degrau de qualidade. Só age enquanto o jogador não escolher manualmente,
-   * e espera alguns segundos entre trocas para não ficar oscilando.
-   */
-  useEffect(() => {
-    let lastChange = 0;
-    const off = fpsMeter.subscribe((s) => {
-      if (qualityTouched.current) return;
-      if (s.seconds < 6) return;
-      const now = Date.now();
-      if (now - lastChange < 12_000) return;
-      setQuality((q) => {
-        if ((s.avg < 34 || s.low1 < 22) && q !== "baixa") {
-          lastChange = now;
-          const next = q === "alta" ? "media" : "baixa";
-          toast.info(`Gráficos em "${next}" para manter a partida fluida.`);
-          return next;
-        }
-        if (s.avg > 58 && s.worst > 48 && q !== "alta") {
-          lastChange = now;
-          const next = q === "baixa" ? "media" : "alta";
-          toast.info(`Sobra desempenho: gráficos em "${next}".`);
-          return next;
-        }
-        return q;
-      });
-    });
-    return off;
-  }, []);
-
   const speedRef = useRef(speed);
   speedRef.current = speed;
   const pausedRef = useRef(paused);
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
+  const measurementPhase = matchMeasurementPhase({
+    introActive,
+    ceremonyActive,
+    paused,
+    halfHeld,
+    done,
+    postMatchStep,
+    matchPhase: snap.phase,
+  });
+  const measurementActive = !lineupError && measurementPhase === "match";
+  const measurementContextKey = matchMeasurementKey({
+    seed: setups.seed,
+    home: setups.home.clubId,
+    away: setups.away.clubId,
+    quality,
+    camera,
+    speed,
+    phase: measurementPhase,
+  });
+  const measurementActiveRef = useRef(measurementActive);
+  measurementActiveRef.current = measurementActive;
+  const onRenderedMatchFrame = useCallback(
+    (frame: RenderedFrameSample, context: FpsMeasurementContext) => {
+      if (measurementActiveRef.current) fpsMeter.recordRenderedFrame(frame.now, context);
+    },
+    [],
+  );
+  const visual = useResolvedVisual(setups.home.clubId);
+  const qualityChangedAt = useRef(0);
+  /** Only this active stadium's completed-render probe can adjust its preset.
+   * Dialogue, an unloaded renderer, pauses and interval screens supply none. */
+  useEffect(() => {
+    if (!measurementActive || !visual.adaptive || visual.quality !== "auto") return;
+    return fpsMeter.subscribe((sample) => {
+      if (!measurementActiveRef.current || qualityTouched.current) return;
+      const now = Date.now();
+      if (now - qualityChangedAt.current < 12_000) return;
+      const next = nextAutomaticMatchQuality(sample, quality, measurementActiveRef.current);
+      if (next === quality) return;
+      qualityChangedAt.current = now;
+      setQuality(next);
+      toast.info(
+        next === "baixa" || (quality === "alta" && next === "media")
+          ? `Gráficos em "${next}" para manter a partida fluida.`
+          : `Sobra desempenho: gráficos em "${next}".`,
+      );
+    });
+  }, [measurementActive, quality, visual.adaptive, visual.quality]);
   pausedRef.current = paused || introActive || ceremonyActive || halfHeld;
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
     sim,
@@ -594,11 +619,20 @@ function LiveMatch({
           mode={camera}
           quality={quality}
           supporters={supporters}
-          paused={paused || halfHeld || done}
+          paused={!measurementActive}
+          measurementKey={measurementContextKey}
+          onRenderedFrame={measurementActive ? onRenderedMatchFrame : undefined}
         />
       )}
       <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
-        <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
+        <FpsPanel
+          quality={quality}
+          source="rendered"
+          active={measurementActive}
+          phase={measurementPhase}
+          measurementKey={measurementContextKey}
+          detail={{ [t("match.camera")]: camera, [t("match.speed")]: speed }}
+        />
       </div>
 
       {narrating && caption ? (

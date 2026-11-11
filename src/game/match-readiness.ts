@@ -4,7 +4,7 @@ import type { Player } from "./types";
 import { matchProfileAttributes } from "./player-match-attributes";
 import type { AttributeSource } from "./player-development";
 import { effectivePlayer } from "./player-effective";
-import { normalizedPlayerRatings } from "./player-rating-inputs";
+import { normalizedPlayerRatings, ratingValue } from "./player-rating-inputs";
 
 /**
  * Admission gate for a starting XI. This deliberately does no repair or
@@ -35,11 +35,15 @@ export function isMatchEligible(players: readonly Player[], expectedClubId?: str
 
 /** Select fit starters without turning recent results into permanent overall changes. */
 export function selectionRating(p: Player, source?: AttributeSource): number {
-  p = normalizedPlayerRatings(effectivePlayer(p, source));
+  p = effectivePlayer(p, source);
+  // Selection consumes only these ratings; retain the canonical clamps without
+  // cloning/normalizing an entire Player and its unrelated skill fields.
+  const ovr = ratingValue(p.ovr);
+  const condition = ratingValue(p.condition, 100, 0, 100);
   return (
-    p.ovr +
+    ovr +
     (bounded(p.form, 60, 0, 100) - 60) * 0.035 -
-    Math.max(0, 85 - bounded(p.condition, 100, 0, 100)) * 0.18
+    Math.max(0, 85 - bounded(condition, 100, 0, 100)) * 0.18
   );
 }
 

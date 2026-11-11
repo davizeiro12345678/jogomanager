@@ -23,16 +23,18 @@ describe("authoritative room chat", () => {
     expect(page).toContain("<RoomChat key={`${userId}:${room.id}`}");
     expect(page).toContain("removeChannel(ch)");
   });
-  it("submits only roomId/text; server verifies token identity, membership and active state", () => {
-    expect(page).toContain("sendRoomChatMessage({ data: { roomId, text: value } })");
+  it("submits roomId/text and an idempotent client id; server delegates admission to the atomic RPC", () => {
+    expect(page).toContain(
+      "sendRoomChatMessage({ data: { roomId, text: value, clientMessageId } })",
+    );
     expect(server).toContain(".middleware([requireSupabaseAuth])");
-    expect(server).toContain("room.host_id !== context.userId && room.guest_id !== context.userId");
-    expect(server).toContain('["open", "ready", "live", "settling"]');
-    expect(server).toMatch(/moderateMessage\([\s\S]*?data\.text/);
+    expect(server).toContain('rpc("admit_room_chat_message"');
+    expect(server).toContain("p_user_id: context.userId");
+    expect(server).toContain("moderateMessage(data.text)");
     expect(server).toContain("chat_infractions");
     expect(server).toContain("muteUntil(");
-    expect(server).toContain("room_chat_rate_limits");
-    expect(server).toContain("second_bucket: bucket");
+    expect(server).toContain("p_message_id: id");
+    expect(server).toContain("p_repeat_fingerprint: hashes.repeatFingerprint");
     expect(server).toContain("/realtime/v1/api/broadcast");
     expect(server).toContain("senderId: context.userId");
     expect(server).not.toContain("data.senderId");

@@ -411,19 +411,46 @@ export function staticStadiumMeshSignature(mesh: THREE.Mesh): string {
   ].join("|");
 }
 
+type StaticCaptureCache = {
+  materials: Map<THREE.Material, string>;
+  geometries: Map<THREE.BufferGeometry, string>;
+};
+
+// A capture is synchronous: serialize a shared resource once within this
+// pass. Never retain these maps across frames; direct color/UV/buffer changes
+// must invalidate the batch on the very next observation.
+function materialStateFor(value: THREE.Material, capture: StaticCaptureCache): string {
+  let revision = capture.materials.get(value);
+  if (revision === undefined) {
+    revision = materialRevision(value);
+    capture.materials.set(value, revision);
+  }
+  return revision;
+}
+
+function geometryStateFor(value: THREE.BufferGeometry, capture: StaticCaptureCache): string {
+  let revision = capture.geometries.get(value);
+  if (revision === undefined) {
+    revision = geometryRevision(value);
+    capture.geometries.set(value, revision);
+  }
+  return revision;
+}
+
 function objectRevision(
   object: THREE.Object3D,
   hiddenSources: Set<THREE.Object3D>,
   includeTransform: boolean,
+  capture: StaticCaptureCache,
 ): string {
   const mesh = object as THREE.Mesh;
   const material = mesh.material;
   const materialState =
     mesh.isMesh && includeTransform
       ? Array.isArray(material)
-        ? material.map(materialRevision).join(",")
+        ? material.map((value) => materialStateFor(value, capture)).join(",")
         : material
-          ? materialRevision(material)
+          ? materialStateFor(material, capture)
           : "-"
       : "-";
   return [
@@ -439,7 +466,9 @@ function objectRevision(
     mesh.isMesh ? mesh.castShadow : "-",
     mesh.isMesh ? mesh.receiveShadow : "-",
     mesh.isMesh ? mesh.frustumCulled : "-",
-    mesh.isMesh && includeTransform ? mesh.geometry && geometryRevision(mesh.geometry) : "-",
+    mesh.isMesh && includeTransform
+      ? mesh.geometry && geometryStateFor(mesh.geometry, capture)
+      : "-",
     materialState,
     mesh.isMesh ? Boolean((mesh as THREE.InstancedMesh).isInstancedMesh) : "-",
     mesh.isMesh ? Boolean((mesh as THREE.SkinnedMesh).isSkinnedMesh) : "-",
@@ -457,6 +486,10 @@ export function captureStaticStadiumState(
 ): StaticStadiumState {
   group.updateWorldMatrix(true, true);
   const hiddenSources = sourceSet(group);
+  const capture = {
+    materials: new Map<THREE.Material, string>(),
+    geometries: new Map<THREE.BufferGeometry, string>(),
+  };
   const parts: string[] = [];
   let sourceCount = 0;
   let eligibleCount = 0;
@@ -469,7 +502,7 @@ export function captureStaticStadiumState(
     }
     const includeTransform =
       !hasDynamicAncestor(object) && (!mesh.isMesh || eligibleMesh(mesh, policy.exclude));
-    parts.push(objectRevision(object, hiddenSources, includeTransform));
+    parts.push(objectRevision(object, hiddenSources, includeTransform, capture));
     if (mesh.isMesh && mesh.geometry?.getAttribute("position")) {
       sourceCount += 1;
       if (eligibleMesh(mesh, policy.exclude)) eligibleCount += 1;

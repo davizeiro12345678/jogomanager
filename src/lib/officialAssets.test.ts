@@ -100,7 +100,8 @@ describe("official asset browser cache", () => {
     const first = assets.loadOfficialAssets();
     const second = assets.loadOfficialAssets();
     expect(first).toBe(second);
-    expect(get).toHaveBeenCalledTimes(1);
+    // Catalogue I/O now lives behind a real asynchronous module boundary.
+    await vi.waitFor(() => expect(get).toHaveBeenCalledTimes(1));
     finishRead({ at: Date.now(), data });
     await first;
     expect(assets.officialCrest("club")).toBe(data.crests.club);
@@ -129,6 +130,7 @@ describe("official asset browser cache", () => {
 
   it.each([
     { at: Date.now() - 8 * 86_400_000, data },
+    { at: Date.now() + 8 * 86_400_000, data },
     { at: Date.now(), data: { crests: { club: 12 }, kits: {} } },
   ])("refreshes expired or malformed asynchronous catalogue data (%j)", async (cached) => {
     get.mockResolvedValue(cached);
@@ -139,5 +141,48 @@ describe("official asset browser cache", () => {
       at: expect.any(Number),
       data,
     });
+  });
+
+  it("does not open storage or request the catalogue merely by importing crest readers", () => {
+    expect(assets.officialCrest("club")).toBeUndefined();
+    expect(assets.officialKit("club")).toBeUndefined();
+    expect(get).not.toHaveBeenCalled();
+    expect(fetchAssets).not.toHaveBeenCalled();
+  });
+
+  it("keeps optional catalogue I/O idle and shares it with an eager load", async () => {
+    let idle!: () => void;
+    const requestIdleCallback = vi.fn((callback: () => void) => {
+      idle = callback;
+      return 7;
+    });
+    const cancelIdleCallback = vi.fn();
+    vi.stubGlobal("window", { requestIdleCallback, cancelIdleCallback });
+    const changed = vi.fn();
+    assets.subscribeOfficial(changed);
+    const cancel = assets.deferOfficialAssets();
+    expect(requestIdleCallback).toHaveBeenCalledWith(expect.any(Function), { timeout: 2500 });
+    expect(get).not.toHaveBeenCalled();
+    expect(fetchAssets).not.toHaveBeenCalled();
+    idle();
+    await assets.loadOfficialAssets();
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(fetchAssets).toHaveBeenCalledTimes(1);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(assets.officialCrest("club")).toBe(data.crests.club);
+    cancel();
+    expect(cancelIdleCallback).toHaveBeenCalledWith(7);
+  });
+
+  it("cancels a pending picker load and uses a bounded timer on browsers without idle callbacks", () => {
+    const clearTimeout = vi.fn();
+    const setTimeout = vi.fn(() => 12);
+    vi.stubGlobal("window", { setTimeout, clearTimeout });
+    const cancel = assets.deferOfficialAssets();
+    expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 1500);
+    cancel();
+    expect(clearTimeout).toHaveBeenCalledWith(12);
+    expect(get).not.toHaveBeenCalled();
+    expect(fetchAssets).not.toHaveBeenCalled();
   });
 });

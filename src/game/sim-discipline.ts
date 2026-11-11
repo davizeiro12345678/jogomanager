@@ -47,6 +47,7 @@ export function sendOff(sim: MatchSim, p: SimPlayer, why: string) {
   p.vx = 0;
   p.vz = 0;
   if (sim.ball.holder === p.id) {
+    sim.resetOffsidePhase();
     sim.ball.holder = null;
     sim.looseTime = 0.3;
   }
