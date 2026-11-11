@@ -18,6 +18,7 @@ import { useT } from "@/i18n/provider";
 import { supabase } from "@/integrations/supabase/client";
 
 import { canJoinRoomChat } from "@/lib/room-chat-access";
+import { appendRoomChatMessage } from "@/lib/room-chat-messages";
 import { isSettlementLeaseExpired } from "@/lib/multiplayer-settlement";
 
 import type { MultiplayerRoomRecord as Room } from "@/lib/multiplayer.functions";
@@ -594,6 +595,9 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [status, setStatus] = useState<RoomChatStatus>("checking");
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pendingSend = useRef<{ text: string; id: string } | null>(null);
+  const sendingRef = useRef(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -640,10 +644,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
       ch.on("broadcast", { event: "msg" }, ({ payload }) => {
         const message = parseRoomChatMessage(payload);
         if (!message) return;
-        setMsgs((current) => {
-          if (current.some((existing) => existing.id === message.id)) return current;
-          return [...current.slice(-40), message];
-        });
+        setMsgs((current) => appendRoomChatMessage(current, message));
       }).subscribe((channelStatus) => {
         if (disposed) return;
         if (channelStatus === "SUBSCRIBED") {
@@ -684,8 +685,8 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
         ) : msgs.length === 0 ? (
           <p className="text-xs text-muted-foreground">Converse com seu adversário aqui.</p>
         ) : (
-          msgs.map((m, i) => (
-            <p key={`${m.id}-${i}`} className="mb-1">
+          msgs.map((m) => (
+            <p key={`${m.senderId}:${m.id}`} className="mb-1">
               <span className="text-muted-foreground">
                 {m.senderId === userId ? "Você" : "Adversário"}:{" "}
               </span>
@@ -703,17 +704,26 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
             !value ||
             value.length > ROOM_CHAT_MAX_TEXT_LENGTH ||
             status !== "ready" ||
-            !channel
+            !channel ||
+            sendingRef.current
           ) {
             return;
           }
           setFeedback(null);
+          sendingRef.current = true;
+          setSending(true);
+          // Keep the same id after timeout/rejection; a fresh id would defeat
+          // the durable receipt if the first broadcast was already accepted.
+          if (!pendingSend.current || pendingSend.current.text !== value)
+            pendingSend.current = { text: value, id: crypto.randomUUID() };
+          const clientMessageId = pendingSend.current.id;
           void import("@/lib/chat.functions")
             .then(({ sendRoomChatMessage }) =>
-              sendRoomChatMessage({ data: { roomId, text: value } }),
+              sendRoomChatMessage({ data: { roomId, text: value, clientMessageId } }),
             )
             .then((result) => {
               if (result.ok) {
+                if (pendingSend.current?.id === clientMessageId) pendingSend.current = null;
                 setText((current) => (current === value ? "" : current));
                 return;
               }
@@ -724,6 +734,10 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
             })
             .catch(() => {
               setFeedback(t("screen.error"));
+            })
+            .finally(() => {
+              sendingRef.current = false;
+              setSending(false);
             });
         }}
         className="mt-2 flex gap-2"
@@ -737,7 +751,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
           onChange={(e) => setText(e.target.value)}
           placeholder={messageInputLabel}
           maxLength={ROOM_CHAT_MAX_TEXT_LENGTH}
-          disabled={status !== "ready"}
+          disabled={status !== "ready" || sending}
           className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
         />
         <button
