@@ -13,13 +13,15 @@ A read-only production inventory on 11 November 2026 found **251 ordinary indexe
 
 ## Production inventory observed on 11 November 2026
 
-The production database still reports recorded collation `153.120` versus actual `153.121`. A read-only catalog inventory found:
+The production database still reports recorded collation `153.120` versus actual `153.121`. The exact read-only inventory is:
 
-- 197 ordinary indexes (`pg_class.relkind = 'i'`) using the database-default collation, totaling approximately 2,173 MB.
-- One partitioned index (`relkind = 'I'`); its parent has no physical size, and its child indexes must be inventoried and rebuilt as required.
+- **251 ordinary indexes** (`pg_class.relkind = 'i'`) using the database-default collation, totaling **2,172.20 MiB**.
+- **One partitioned parent index** using the database-default collation: `realtime.messages_replay_index`.
+- Six physical child indexes for that parent in the current partition set; all six were valid at inspection.
+- The other partitioned parent, `realtime.messages_pkey`, does not use the database-default collation and is outside this rebuild set.
 - The ordinary-index inventory spans application and extension-managed schemas, not just `public`.
 
-This is a database-wide maintenance task, not a single-index patch. Rebuilding all affected indexes concurrently can temporarily require substantial additional disk space and I/O. Before proceeding, calculate the exact child-index inventory, identify extension-owned objects, verify provider permissions and available storage, and agree on a monitored maintenance window. Do not execute a blanket reindex from an application migration or during normal release deployment.
+This is a database-wide maintenance task, not a single-index patch. Rebuilding all affected indexes concurrently can temporarily require substantial additional disk space and I/O. Preserve a fresh inventory, identify extension-owned objects, verify provider permissions and available storage, and agree on a monitored maintenance window. Do not execute a blanket reindex from an application migration or during normal release deployment.
 
 ## Safety requirements
 
