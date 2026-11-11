@@ -111,9 +111,16 @@ export class AuthoritativePresentationFeed {
         )
           return { kind: "ignored", reason: "stale" };
         if (snapshot.revision === this.current.revision) {
-          return JSON.stringify(snapshot) === JSON.stringify(this.current)
-            ? { kind: "ignored", reason: "stale" }
-            : { kind: "ignored", reason: "conflict" };
+          if (JSON.stringify(snapshot) !== JSON.stringify(this.current))
+            return { kind: "ignored", reason: "conflict" };
+          // A renewed WebSocket can legitimately repeat the same official
+          // snapshot in its ready handshake. Reaffirm the seat without
+          // rewinding the state or treating a retry as a fresh match tick.
+          if (ready) {
+            this.seat = seat;
+            return { kind: "ready", seat: seat!, snapshot: structuredClone(snapshot) };
+          }
+          return { kind: "ignored", reason: "stale" };
         }
       }
       this.current = structuredClone(snapshot);
