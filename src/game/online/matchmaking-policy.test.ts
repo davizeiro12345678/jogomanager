@@ -37,10 +37,9 @@ describe("fair matchmaking", () => {
   });
 
   it("prevents blocked players from being paired", () => {
-    expect(selectQueuePair([
-      make(1, { blockedUsers: [user(2)] }),
-      make(2),
-    ], now)).toBeNull();
+    expect(
+      selectQueuePair([make(1, { blockedUsers: [user(2)] }), make(2)], now),
+    ).toBeNull();
   });
 
   it("requires a long wait for cross-region or immediate rematches", () => {
