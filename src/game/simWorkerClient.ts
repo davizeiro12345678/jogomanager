@@ -194,6 +194,7 @@ interface LiveMatchOptions {
   away: TeamSetup;
   seed: string;
   rulesRevision?: MatchRulesRevision | undefined;
+  contactPhysicsRevision?: 2 | undefined;
   knockout?: boolean;
   weather?: WeatherKind;
   view?: WorkerMatchView;
@@ -219,6 +220,7 @@ function createLiveMatchWorker(telemetry: boolean) {
 function bootstrapView(view: WorkerMatchView, options: LiveMatchOptions): void {
   const sim = new MatchSim(options.home, options.away, options.seed, {
     rulesRevision: options.rulesRevision,
+    contactPhysicsRevision: options.contactPhysicsRevision,
     knockout: options.knockout,
     weather: options.weather,
   });
@@ -474,6 +476,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       }
       const initial = new MatchSim(options.home, options.away, options.seed, {
         rulesRevision: options.rulesRevision,
+        contactPhysicsRevision: options.contactPhysicsRevision,
         knockout: options.knockout,
         weather: options.weather,
       });
@@ -570,6 +573,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         away: options.away,
         seed: options.seed,
         rulesRevision: options.rulesRevision,
+        contactPhysicsRevision: options.contactPhysicsRevision,
         knockout: options.knockout,
         weather: options.weather,
       });
