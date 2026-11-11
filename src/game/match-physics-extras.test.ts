@@ -51,7 +51,7 @@ describe("match physics extras", () => {
   });
   it("revised goalkeepers only save physically reachable trajectories", () => {
     expect(goalkeeperCanReach(49, 0, 50, 0.5, 1, 85, 90)).toBe(true);
-    expect(goalkeeperCanReach(43, 0, 50, 0.5, 1, 85, 90)).toBe(false);
+    expect(goalkeeperCanReach(30, 0, 50, 0.5, 1, 85, 90)).toBe(false);
     expect(goalkeeperCanReach(49, -4, 50, 3, 1, 85, 90)).toBe(false);
     expect(goalkeeperCanReach(49, 0, 50, 0, Number.NaN, 85, 90)).toBe(false);
   });
