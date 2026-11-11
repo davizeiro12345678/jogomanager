@@ -162,11 +162,7 @@ function MultiplayerAccount({ userId }: { userId: string }) {
         .eq("server_seeded", true)
         .eq("status", "live")
         .maybeSingle();
-      if (
-        lookupError ||
-        !data ||
-        (data.host_id !== userId && data.guest_id !== userId)
-      )
+      if (lookupError || !data || (data.host_id !== userId && data.guest_id !== userId))
         return false;
       setRoom(data as unknown as Room);
       return true;
