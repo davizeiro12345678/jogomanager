@@ -44,11 +44,11 @@ BEGIN
   END IF;
 
   IF v_league_id = ANY (ARRAY[71,72,39,140,135,78,61,94,88,128,253,262]::integer[]) THEN
-    INSERT INTO private_performance.featured_injury_rows(ref, league_id)
+    INSERT INTO private_performance.featured_injury_rows AS current_row(ref, league_id)
     VALUES (NEW.ref, v_league_id)
     ON CONFLICT (ref) DO UPDATE
       SET league_id = EXCLUDED.league_id
-      WHERE private_performance.featured_injury_rows.league_id IS DISTINCT FROM EXCLUDED.league_id;
+      WHERE current_row.league_id IS DISTINCT FROM EXCLUDED.league_id;
   ELSE
     DELETE FROM private_performance.featured_injury_rows WHERE ref = NEW.ref;
   END IF;
