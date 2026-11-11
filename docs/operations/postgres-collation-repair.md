@@ -98,6 +98,36 @@ There is also a partitioned index `realtime.messages_replay_index`. It must be h
 
 This inventory changes the operational decision: the rebuild is not a one-index operation. Before starting, confirm at least 2.5–3 GB of free storage headroom (more if index growth is expected), WAL/replication capacity, and the Supabase maintenance policy. The provider-managed schemas (`auth`, `storage`, `realtime`, `stripe`, and others) should be coordinated with Supabase if the project role cannot safely rebuild them. Do not refresh the database collation version until the complete affected-index inventory is reconciled and rebuilt.
 
+## Inventory affected children of the partitioned index
+
+A partitioned parent has no physical index storage and must not be passed to `REINDEX INDEX CONCURRENTLY`. Generate one command for each child index of a parent whose key collations use the database default:
+
+```sql
+SELECT
+  child_ns.nspname AS child_schema,
+  child.relname AS child_index,
+  child_idx.indisvalid AS is_valid,
+  pg_size_pretty(pg_relation_size(child.oid)) AS index_size,
+  format(
+    'REINDEX INDEX CONCURRENTLY %I.%I;',
+    child_ns.nspname,
+    child.relname
+  ) AS repair_command
+FROM pg_index AS parent_idx
+JOIN pg_class AS parent ON parent.oid = parent_idx.indexrelid AND parent.relkind = 'I'
+JOIN pg_inherits AS inh ON inh.inhparent = parent.oid
+JOIN pg_class AS child ON child.oid = inh.inhrelid
+JOIN pg_namespace AS child_ns ON child_ns.oid = child.relnamespace
+JOIN pg_index AS child_idx ON child_idx.indexrelid = child.oid
+WHERE EXISTS (
+  SELECT 1
+  FROM unnest(parent_idx.indcollation) AS key_collation(oid)
+  JOIN pg_collation AS coll ON coll.oid = key_collation.oid
+  WHERE coll.collname = 'default'
+)
+ORDER BY child_ns.nspname, child.relname;
+```
+
 ## Rebuild
 
 Run the generated `REINDEX INDEX CONCURRENTLY schema.index;` commands one at a time, outside a transaction. Keep application traffic monitored. Stop if lock waits, replication lag, CPU, I/O or error rates breach the maintenance limits agreed for the window.
