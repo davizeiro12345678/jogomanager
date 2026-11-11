@@ -42,7 +42,8 @@ class TestSocket {
   }
 }
 
-async function setup() {
+async function setup(finishAfterSteps = Number.MAX_SAFE_INTEGER) {
+  let steps = 0;
   const homeTicket = await ticket("home");
   const awayTicket = await ticket("away");
   const session = new AuthoritativeMatchSession({
@@ -53,7 +54,11 @@ async function setup() {
     idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
     signer: { sign: async () => "test-only-server-receipt-signature" },
     engine: {
-      advanceFixedStep: () => true,
+      advanceFixedStep: () => {
+        steps += 1;
+        return true;
+      },
+      isFinished: () => steps >= finishAfterSteps,
       publicState: () => ({
         minute: 0,
         score: { home: 0, away: 0 },
@@ -218,6 +223,35 @@ describe("signed WebSocket bridge composition", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("signs and announces exactly one final result after a server-owned full time", async () => {
+    const { homeTicket, awayTicket, session } = await setup(2);
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => now,
+    });
+    const homeSocket = new TestSocket();
+    const awaySocket = new TestSocket();
+    expect(await bridge.attach(homeSocket, homeTicket)).toBe("home");
+    expect(await bridge.attach(awaySocket, awayTicket)).toBe("away");
+    const ready = JSON.stringify({
+      type: "command",
+      command: { version: 1, roomId, sequence: 1, kind: "ready", payload: { ready: true } },
+    });
+    await bridge.onMessage(homeSocket, ready);
+    await bridge.onMessage(awaySocket, ready);
+    expect(session.phase).toBe("live");
+    await bridge.pulse();
+    await bridge.pulse();
+    await bridge.pulse();
+    expect(session.phase).toBe("finalized");
+    expect(session.snapshot().tick).toBe(2);
+    const sent = homeSocket.sent.map((raw) => JSON.parse(raw) as { type: string });
+    expect(sent.filter((event) => event.type === "final")).toHaveLength(1);
+    expect(sent.filter((event) => event.type === "snapshot").at(-1)).toHaveProperty("snapshot.phase", "finalized");
+    bridge.close();
   });
 
   it("fails fast when the signing secret is unsafe", async () => {
