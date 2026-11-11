@@ -35,10 +35,10 @@ BEGIN
     AND host_id='50000000-0000-4000-8000-000000000001'
     AND guest_id='50000000-0000-4000-8000-000000000002'
     AND host_club='ARS' AND guest_club='CHE'
-    AND status='ready' AND server_seeded=true;
+    AND status='live' AND server_seeded=true;
   IF v_code IS NULL OR length(v_code)<>8 OR v_public_seed<>'' OR
     v_seed IS NULL OR length(v_seed)<16 OR v_seed=v_code
-  THEN RAISE EXCEPTION 'private room seed leaked or ready room invalid'; END IF;
+  THEN RAISE EXCEPTION 'private room seed leaked or live room invalid'; END IF;
   IF (SELECT count(*) FROM matchmaking_private.queue
       WHERE user_id IN (
         '50000000-0000-4000-8000-000000000001',
