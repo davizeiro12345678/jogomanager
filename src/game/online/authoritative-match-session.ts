@@ -66,6 +66,27 @@ export interface AuthoritativeMatchSessionOptions {
   now?: (() => number) | undefined;
 }
 
+/** Private Durable Object data. Never return a seat ticket or this journal to clients. */
+export interface AuthoritativeSessionCheckpointV1 {
+  version: 1;
+  roomId: string;
+  tickets: Record<MatchSeat, MatchTicketV1>;
+  connected: string[];
+  readySeats: MatchSeat[];
+  sequences: [string, number][];
+  rateWindows: [string, number[]][];
+  reconnectDeadlines: [MatchSeat, number][];
+  tactics: [MatchSeat, TacticalCommandPayloadV1][];
+  commandHash: string;
+  tick: number;
+  revision: number;
+  phase: MatchSessionPhase;
+  started: boolean;
+  closing: boolean;
+  unsignedReceipt: Omit<MatchReceiptV1, "signature"> | null;
+  receipt: MatchReceiptV1 | null;
+}
+
 const RECONNECT_WINDOW_MS = 60_000;
 const MAX_PENDING_COMMANDS = 64;
 const MAX_RECORDED_INVALID_COMMANDS = 128;
@@ -312,6 +333,113 @@ export class AuthoritativeMatchSession {
       publicState: this.options.engine.publicState(),
       presentationEvents: this.options.engine.presentationEvents().slice(0, 64),
     };
+  }
+
+  /**
+   * Capture only between serialized server commands and clock ticks. The
+   * caller must atomically persist this alongside the engine checkpoint
+   * before confirming either a command or a newer visible snapshot.
+   */
+  checkpoint(): AuthoritativeSessionCheckpointV1 {
+    if (this.pendingCommands !== 0)
+      throw new Error("cannot checkpoint while authoritative command hashing is pending");
+    return structuredClone({
+      version: 1,
+      roomId: this.options.roomId,
+      tickets: this.tickets,
+      connected: [...this.connected],
+      readySeats: [...this.readySeats],
+      sequences: [...this.lastSequence],
+      rateWindows: [...this.rateWindows],
+      reconnectDeadlines: [...this.reconnectDeadlines],
+      tactics: [...this.tactics],
+      commandHash: this.commandHash,
+      tick: this.tick,
+      revision: this.revision,
+      phase: this.phase,
+      started: this.started,
+      closing: this.closing,
+      unsignedReceipt: this.unsignedReceipt,
+      receipt: this.receipt,
+    } as AuthoritativeSessionCheckpointV1);
+  }
+
+  /** Reattach sockets only through fresh HMAC tickets after eviction. */
+  restoreCheckpoint(checkpoint: AuthoritativeSessionCheckpointV1, now: number): void {
+    if (
+      !checkpoint ||
+      checkpoint.version !== 1 ||
+      checkpoint.roomId !== this.options.roomId ||
+      !Number.isSafeInteger(now) ||
+      !Number.isSafeInteger(checkpoint.tick) ||
+      checkpoint.tick < 0 ||
+      checkpoint.tick > 60_000 ||
+      !Number.isSafeInteger(checkpoint.revision) ||
+      checkpoint.revision < 0 ||
+      !/^[a-f0-9]{64}$/.test(checkpoint.commandHash) ||
+      !Array.isArray(checkpoint.connected) ||
+      !Array.isArray(checkpoint.readySeats) ||
+      !Array.isArray(checkpoint.sequences) ||
+      !Array.isArray(checkpoint.rateWindows) ||
+      !Array.isArray(checkpoint.reconnectDeadlines) ||
+      !Array.isArray(checkpoint.tactics) ||
+      !["waiting", "live", "reconnecting", "finalized"].includes(checkpoint.phase) ||
+      checkpoint.tickets.home.userId !== this.tickets.home.userId ||
+      checkpoint.tickets.away.userId !== this.tickets.away.userId ||
+      checkpoint.tickets.home.roomId !== this.options.roomId ||
+      checkpoint.tickets.away.roomId !== this.options.roomId ||
+      checkpoint.sequences.some(
+        ([user, sequence]) =>
+          ![checkpoint.tickets.home.userId, checkpoint.tickets.away.userId].includes(user) ||
+          !Number.isSafeInteger(sequence) ||
+          sequence < 0,
+      ) ||
+      checkpoint.readySeats.some((seat) => seat !== "home" && seat !== "away") ||
+      checkpoint.receipt && checkpoint.receipt.roomId !== this.options.roomId
+    )
+      throw new Error("invalid authoritative session checkpoint");
+
+    // Detached WebSockets cannot survive an object replacement, even if their
+    // logical seat was marked online when this checkpoint was persisted.
+    const offline = new Set(checkpoint.connected);
+    this.tickets.home = { ...checkpoint.tickets.home };
+    this.tickets.away = { ...checkpoint.tickets.away };
+    this.connected.clear();
+    this.readySeats.clear();
+    for (const seat of checkpoint.readySeats) this.readySeats.add(seat);
+    this.lastSequence.clear();
+    for (const [user, sequence] of checkpoint.sequences) this.lastSequence.set(user, sequence);
+    this.rateWindows.clear();
+    for (const [key, values] of checkpoint.rateWindows)
+      this.rateWindows.set(key, [...values]);
+    this.reconnectDeadlines.clear();
+    for (const [seat, deadline] of checkpoint.reconnectDeadlines)
+      this.reconnectDeadlines.set(seat, deadline);
+    this.tactics.clear();
+    for (const [seat, plan] of checkpoint.tactics)
+      this.tactics.set(seat, structuredClone(plan));
+    this.commandHash = checkpoint.commandHash;
+    this.tick = checkpoint.tick;
+    this.revision = checkpoint.revision;
+    this.phase = checkpoint.phase;
+    this.started = checkpoint.started;
+    this.closing = checkpoint.closing;
+    this.closingRequested = false;
+    this.unsignedReceipt = checkpoint.unsignedReceipt;
+    this.receipt = checkpoint.receipt;
+    this.finalizationPromise = null;
+    this.pendingCommands = 0;
+    this.commandQueue = Promise.resolve();
+    if (!this.closing && !this.receipt) {
+      for (const seat of ["home", "away"] as const) {
+        if (offline.has(this.tickets[seat].userId) && !this.reconnectDeadlines.has(seat))
+          this.reconnectDeadlines.set(seat, now + RECONNECT_WINDOW_MS);
+      }
+      if (this.started && this.reconnectDeadlines.size) {
+        this.phase = "reconnecting";
+        this.revision += 1;
+      }
+    }
   }
 
   lastTacticsFor(seat: MatchSeat): TacticalCommandPayloadV1 | undefined {
