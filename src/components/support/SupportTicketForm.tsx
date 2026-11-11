@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { submitSupportTicket } from "@/lib/support.functions";
 import { SupportTicketInput } from "@/lib/support-input";
+import { reportPrefill, reportRoomFromSearch } from "@/lib/support-report-context";
 import { useT } from "@/i18n/provider";
 import { supportMessages } from "@/i18n/support-messages";
 
@@ -16,10 +17,13 @@ export function SupportTicketForm() {
   const copy = supportMessages(lang);
   const userId = useAuthUserId();
   const submit = useServerFn(submitSupportTicket);
+  const report = reportPrefill(
+    typeof window !== "undefined" ? reportRoomFromSearch(window.location.search) : null,
+  );
   const [formOwner, setFormOwner] = useState(userId);
-  const [category, setCategory] = useState<Category>("gameplay");
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [category, setCategory] = useState<Category>(report?.category ?? "gameplay");
+  const [subject, setSubject] = useState(report?.subject ?? "");
+  const [message, setMessage] = useState(report?.message ?? "");
   const [attempt, setAttempt] = useState<Submission | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -31,10 +35,10 @@ export function SupportTicketForm() {
   if (identity.current.owner !== userId)
     identity.current = { owner: userId, generation: identity.current.generation + 1 };
   useEffect(() => {
-    setCategory("gameplay");
+    setCategory(report?.category ?? "gameplay");
     setAttempt(null);
-    setSubject("");
-    setMessage("");
+    setSubject(report?.subject ?? "");
+    setMessage(report?.message ?? "");
     setTicket(null);
     setBusy(false);
     setNotice("");
