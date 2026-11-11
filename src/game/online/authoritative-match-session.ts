@@ -169,8 +169,7 @@ export class AuthoritativeMatchSession {
     if (ticket.userId !== expected.userId || ticket.version !== expected.version)
       throw new Error("ticket user or seat mismatch");
     const deadline = this.reconnectDeadlines.get(ticket.seat);
-    if (deadline !== undefined && now >= deadline)
-      throw new Error("reconnection window expired");
+    if (deadline !== undefined && now >= deadline) throw new Error("reconnection window expired");
     // The same signed ticket is valid across a network retry until expiry.
     if (
       ticket.signature === expected.signature &&
