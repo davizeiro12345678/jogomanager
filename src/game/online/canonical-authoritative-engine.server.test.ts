@@ -71,6 +71,34 @@ describe("Canonical server-only authoritative engine", () => {
     }
   });
 
+  it("recovers a canonical server checkpoint without advancing or changing its next 120 ticks", () => {
+    const source = new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, seed, {
+      contactPhysicsRevision: 2,
+    });
+    const resumed = new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, seed, {
+      contactPhysicsRevision: 2,
+    });
+    const legacy = createEngine();
+    try {
+      for (let step = 0; step < 60; step += 1) source.advanceFixedStep();
+      const state = source.checkpoint();
+      expect(JSON.stringify(state)).toContain(seed);
+      expect(() => legacy.restoreCheckpoint(state)).toThrow(/execution mismatch/i);
+      resumed.restoreCheckpoint(state);
+      expect(resumed.checkpoint()).toEqual(state);
+      for (let step = 0; step < 120; step += 1) {
+        source.advanceFixedStep();
+        resumed.advanceFixedStep();
+        expect(resumed.publicState()).toEqual(source.publicState());
+      }
+      expect(resumed.checkpoint()).toEqual(source.checkpoint());
+    } finally {
+      source.dispose();
+      resumed.dispose();
+      legacy.dispose();
+    }
+  });
+
   it("maps only supported tactical instructions and rejects silent feature downgrades", () => {
     const engine = createEngine();
     try {
