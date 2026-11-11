@@ -43,6 +43,8 @@ BEGIN
 
   -- Follow existing match-room host quotas and lock order. Do not bypass
   -- one-hour creation limits by running automatic queue allocation.
+  -- A live database room is not an actively ticking match: the match session
+  -- still requires both signed seats to send READY before its first step.
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('match-room:' || v_home::text, 0)
   );
@@ -79,7 +81,7 @@ BEGIN
         server_seeded,status,minute,state
       ) VALUES (
         v_code,v_home,v_away,v_home_club,v_away_club,'',
-        true,'ready',0,'{}'::jsonb
+        true,'live',0,'{}'::jsonb
       ) RETURNING id INTO v_room;
       EXIT;
     EXCEPTION WHEN unique_violation THEN
@@ -145,5 +147,5 @@ REVOKE ALL ON FUNCTION public.match_queue_status(uuid) FROM PUBLIC,anon,authenti
 GRANT EXECUTE ON FUNCTION public.match_queue_allocate() TO service_role;
 GRANT EXECUTE ON FUNCTION public.match_queue_status(uuid) TO service_role;
 COMMENT ON FUNCTION public.match_queue_allocate() IS
- 'Atomic queue claim, host quota, private seed, ready room and pair commit. Run only from a bounded service worker.';
+ 'Atomic queue claim, host quota, private seed, live room and pair commit. Run only from a bounded service worker.';
 COMMIT;
