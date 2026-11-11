@@ -505,6 +505,13 @@
       "when": 1794257300000,
       "tag": "0071_incremental_featured_injury_counts",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1794428400000,
+      "tag": "0072_match_contact_physics_revision",
+      "breakpoints": true
     }
   ]
 }
