@@ -1,5 +1,14 @@
 -- Keep the account's day and rolling-minute limits shared by every
 -- API-Football caller. These are reservation ceilings, not a request target.
+-- A fresh canonical Supabase DB may not contain the historical 0057 ring
+-- table, even though the production importer already does. Bootstrap only
+-- the missing relation; never erase the ring or reset quotas in production.
+CREATE TABLE IF NOT EXISTS football_import_private.quota_seconds (
+  slot integer PRIMARY KEY CHECK (slot BETWEEN 0 AND 60),
+  epoch_second bigint NOT NULL,
+  request_count integer NOT NULL CHECK (request_count BETWEEN 1 AND 20)
+);
+REVOKE ALL ON football_import_private.quota_seconds FROM PUBLIC, anon, authenticated;
 ALTER TABLE football_import_private.quota_seconds
   DROP CONSTRAINT IF EXISTS quota_seconds_request_count_check,
   ADD CONSTRAINT quota_seconds_request_count_check CHECK (request_count BETWEEN 1 AND 20);
