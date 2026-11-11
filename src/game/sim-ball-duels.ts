@@ -226,8 +226,12 @@ export function resolveShot(
     sim.pendingShot = null;
     // metade das defesas dá rebote; a outra o goleiro segura
     if (sim.rnd() < 0.45) {
-      gk.x = sim.ball.x - dir * 0.4;
-      gk.z = sim.ball.z * 0.6;
+      // Historical replays preserve the old keeper positioning. The revised
+      // model keeps the actual dive location: a save cannot teleport a keeper.
+      if (sim.contactPhysicsRevision !== 2) {
+        gk.x = sim.ball.x - dir * 0.4;
+        gk.z = sim.ball.z * 0.6;
+      }
       const ang = Math.atan2(sim.ball.z, -dir) + (sim.rnd() - 0.5) * 1.2;
       const back = parryReboundSpeed(
         6 + sim.rnd() * 7,
@@ -343,7 +347,10 @@ export function dribble(sim: MatchSim, holder: SimPlayer, dt: number) {
 
 export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
   const { opp, dist } = sim.nearestOpponent(holder);
-  if (!opp || dist > 2.2 || sim.restartTimer > 0) return;
+  // v2 requires body/foot reach before stealing possession; a successful
+  // random tackle must not transfer the ball across two metres of open field.
+  const contactReach = sim.contactPhysicsRevision === 2 ? 1.08 : 2.2;
+  if (!opp || dist > contactReach || sim.restartTimer > 0) return;
   const press = 0.55 + sim.setup(opp.side).tactics.pressing * 0.22;
   let support = 0;
   for (const defender of sim.players) {
@@ -417,6 +424,7 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
     sim.noteOffsideControl(opp);
     sim.decisionTimer = 0.4;
     sim.trigger(opp, "intercept", 0.5);
+    if (sim.contactPhysicsRevision === 2) sim.synchronizeBallPhysics();
     if (sim.rnd() < 0.008) sim.injure(holder, "na dividida");
   }
 }
