@@ -250,7 +250,10 @@ describe("signed WebSocket bridge composition", () => {
     expect(session.snapshot().tick).toBe(2);
     const sent = homeSocket.sent.map((raw) => JSON.parse(raw) as { type: string });
     expect(sent.filter((event) => event.type === "final")).toHaveLength(1);
-    expect(sent.filter((event) => event.type === "snapshot").at(-1)).toHaveProperty("snapshot.phase", "finalized");
+    expect(sent.filter((event) => event.type === "snapshot").at(-1)).toHaveProperty(
+      "snapshot.phase",
+      "finalized",
+    );
     bridge.close();
   });
 
