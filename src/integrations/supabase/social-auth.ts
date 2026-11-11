@@ -41,29 +41,6 @@ export function socialProviderLabel(provider: SocialProvider): string {
     : SOCIAL_LABELS[provider as keyof typeof SOCIAL_LABELS];
 }
 
-/**
- * Safe degraded-mode capabilities when /auth/v1/settings is temporarily
- * unavailable. Only an explicit public allowlist is honored; Google remains
- * the minimal direct OAuth option verified for this Supabase project.
- */
-export function fallbackAuthMethods(): AuthMethods {
-  const raw = import.meta.env["VITE_AUTH_PROVIDER_ALLOWLIST"];
-  const configured = typeof raw === "string"
-    ? [...new Set(raw.split(",").map((value) => value.trim()).filter(Boolean))]
-    : [];
-  const providers = configured.filter(
-    (provider): provider is SocialProvider =>
-      provider in SOCIAL_LABELS || provider.startsWith("custom:"),
-  );
-  return {
-    socialProviders: providers,
-    email: true,
-    phone: false,
-    passkeys: false,
-    signup: true,
-  };
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
