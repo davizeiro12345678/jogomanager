@@ -136,6 +136,22 @@ WHERE schemaname = 'private_performance'
 
 In staging, run `EXPLAIN (ANALYZE, BUFFERS, WAL, SETTINGS)` on the view's defining SELECT. Do not run an expensive `EXPLAIN ANALYZE` against production during peak traffic.
 
+## Post-autovacuum query measurement — 11 November 2026
+
+After the successful autovacuum/autoanalyze, a read-only `EXPLAIN (ANALYZE, BUFFERS, TIMING OFF)` of the materialized-view source query returned:
+
+- Estimated rows: 11,128
+- Actual rows from the partial index scan: 109,551 (about 9.8× under-estimated)
+- Shared blocks: 1,126 hits and 67,727 reads (approximately 529 MiB read)
+- Execution time: 28,115 ms
+- Plan: `Index Scan using api_football_injury_league_time_idx`, followed by `HashAggregate`; it was not an index-only scan.
+
+A manual concurrent refresh after the vacuum also remained around 36 seconds. Therefore the autovacuum change succeeded, but it did **not** resolve the materialized-view refresh latency.
+
+A candidate covering expression index on both the text league ID and its integer cast was attempted with `CREATE INDEX CONCURRENTLY`, but the database's two-minute statement timeout cancelled the build. The resulting invalid index was immediately dropped concurrently and verified absent. No invalid index remains. Do not retry this build with a longer timeout in production without a reviewed maintenance window and storage/I/O budget.
+
+The next optimization must be validated in staging: compare a covering expression index and/or an incremental league-count summary against the current query, verify an index-only plan, and prove equivalent counts before deployment. The current source index remains unchanged.
+
 ## Remediation decision
 
 - If blocked: fix the blocker/transaction lifetime first.
