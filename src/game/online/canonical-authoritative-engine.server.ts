@@ -57,6 +57,7 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
       buildTeamSetup(homeClub, "4-3-3", 2, 1, human),
       buildTeamSetup(awayClub, "4-3-3", 2, 1, human),
       privateSeed,
+      { contactPhysicsRevision: 2 },
     );
   }
 
