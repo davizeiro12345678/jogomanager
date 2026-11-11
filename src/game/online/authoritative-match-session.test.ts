@@ -17,6 +17,7 @@ import {
   type MatchReceiptSigner,
 } from "./authoritative-match-session";
 import { signMatchTicketV1, verifyMatchTicketV1 } from "./ticket-signing";
+import { AuthoritativeSocketBridge, type MatchSocket } from "./authoritative-socket-bridge.server";
 
 const roomId = "45fd1d08-4f81-44bc-9072-1e35ce9d1d94";
 const homeUserId = "7b40bcbe-a4ca-430c-9b49-61aa9c5118e9";
@@ -741,5 +742,122 @@ describe("authoritative match serialization regressions", () => {
       await session.receive(ticket("home"), command(100 + index), issuedAt + 2);
     expect(session.invalidAttempts).toHaveLength(128);
     expect(session.invalidAttempts[127]?.sequence).toBe(239);
+  });
+});
+
+
+class TestMatchSocket implements MatchSocket {
+  readyState = 1;
+  bufferedAmount = 0;
+  sent: unknown[] = [];
+  closes: Array<{ code: number; reason: string }> = [];
+
+  send(payload: string): void {
+    this.sent.push(JSON.parse(payload) as unknown);
+  }
+
+  close(code: number, reason: string): void {
+    this.closes.push({ code, reason });
+    this.readyState = 3;
+  }
+
+  events(type: string): Array<Record<string, unknown>> {
+    return this.sent.filter(
+      (entry): entry is Record<string, unknown> =>
+        !!entry && typeof entry === "object" && (entry as Record<string, unknown>)["type"] === type,
+    );
+  }
+}
+
+describe("AuthoritativeSocketBridge network boundary", () => {
+  it("verifies the signature before altering room liveness", async () => {
+    const { session } = createSession();
+    const socket = new TestMatchSocket();
+    const verifyTicket = vi.fn(async () => false);
+    const bridge = new AuthoritativeSocketBridge({
+      session,
+      verifyTicket,
+      now: () => issuedAt + 100,
+    });
+
+    expect(await bridge.attach(socket, ticket("home"))).toBeNull();
+    expect(verifyTicket).toHaveBeenCalledOnce();
+    expect(socket.closes).toEqual([{ code: 1008, reason: "ticket_rejected" }]);
+    expect(session.phase).toBe("waiting");
+    expect(session.snapshot().tick).toBe(0);
+  });
+
+  it("acknowledges validated commands and publishes only server snapshots", async () => {
+    const { session } = createSession();
+    const bridge = new AuthoritativeSocketBridge({
+      session,
+      verifyTicket: async () => true,
+      now: () => issuedAt + 100,
+    });
+    const home = new TestMatchSocket();
+    const away = new TestMatchSocket();
+    expect(await bridge.attach(home, ticket("home"))).toBe("home");
+    expect(await bridge.attach(away, ticket("away"))).toBe("away");
+
+    await bridge.onMessage(home, JSON.stringify({ type: "command", command: command(1) }));
+    await bridge.onMessage(away, JSON.stringify({ type: "command", command: command(1) }));
+    expect(home.events("ack")).toHaveLength(1);
+    expect(away.events("ack")).toHaveLength(1);
+
+    await bridge.pulse();
+    expect(session.snapshot().tick).toBe(1);
+    const snapshots = home.events("snapshot");
+    expect(snapshots).toHaveLength(1);
+    expect((snapshots[0]?.["snapshot"] as { publicState: { score: { home: number } } })
+      .publicState.score.home).toBe(1);
+
+    await bridge.onMessage(home, JSON.stringify({ type: "command", command: command(1) }));
+    expect(home.events("nack")).toEqual(
+      expect.arrayContaining([expect.objectContaining({ reason: "sequence_not_monotonic" })]),
+    );
+    bridge.close();
+  });
+
+  it("rejects oversized and malformed frames without deserializing unbounded content", async () => {
+    const { session } = createSession();
+    const bridge = new AuthoritativeSocketBridge({
+      session,
+      verifyTicket: async () => true,
+      now: () => issuedAt + 100,
+    });
+    const socket = new TestMatchSocket();
+    await bridge.attach(socket, ticket("home"));
+
+    await bridge.onMessage(socket, "x".repeat(10_000));
+    await bridge.onMessage(socket, "{broken");
+    await bridge.onMessage(socket, JSON.stringify({ type: "result", score: 99 }));
+    expect(socket.events("error")).toHaveLength(3);
+    expect(socket.closes.at(-1)).toEqual({
+      code: 1008,
+      reason: "too_many_invalid_messages",
+    });
+    expect(session.snapshot().tick).toBe(0);
+  });
+
+  it("disconnects slow consumers and never emits the final receipt twice", async () => {
+    const { session } = createSession();
+    const bridge = new AuthoritativeSocketBridge({
+      session,
+      verifyTicket: async () => true,
+      now: () => issuedAt + 100,
+    });
+    const home = new TestMatchSocket();
+    await bridge.attach(home, ticket("home"));
+    await bridge.onMessage(
+      home,
+      JSON.stringify({ type: "command", command: command(1, "forfeit") }),
+    );
+    await bridge.pulse();
+    await bridge.pulse();
+    expect(home.events("final")).toHaveLength(1);
+
+    home.bufferedAmount = 200_000;
+    bridge.broadcastSnapshot();
+    expect(home.closes.at(-1)).toEqual({ code: 1013, reason: "slow_consumer" });
   });
 });
