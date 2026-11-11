@@ -1,8 +1,5 @@
 import { MATCH_PROTOCOL_VERSION, parseMatchTicketV1 } from "./match-protocol";
-import {
-  AuthoritativeSocketBridge,
-  type MatchSocket,
-} from "./authoritative-socket-bridge.server";
+import { AuthoritativeSocketBridge, type MatchSocket } from "./authoritative-socket-bridge.server";
 
 const MAX_AUTH_BYTES = 4096;
 const AUTH_DEADLINE_MS = 5_000;
