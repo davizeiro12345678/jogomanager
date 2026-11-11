@@ -9,6 +9,8 @@ The production database reported:
 
 This is a database-wide metadata mismatch. It is not safe to silence the warning by refreshing the recorded version before rebuilding affected indexes: text ordering and equality semantics may have changed, leaving indexes inconsistent with the active collation.
 
+A read-only production inventory on 11 November 2026 found **251 ordinary indexes** that depend on the database-default collation. All 251 reported `indisvalid = true`, and the database had zero invalid indexes at the time of inspection. That validity flag does not prove collation-version consistency: these indexes still require rebuild before the recorded version is refreshed.
+
 ## Safety requirements
 
 1. Schedule a maintenance window and confirm a recent recoverable backup/PITR window.
