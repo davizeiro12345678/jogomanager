@@ -684,7 +684,11 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
           <button
             type="button"
             aria-pressed={hideOpponent}
-            aria-label={hideOpponent ? "Voltar a mostrar mensagens do adversário" : "Ocultar mensagens do adversário"}
+            aria-label={
+              hideOpponent
+                ? "Voltar a mostrar mensagens do adversário"
+                : "Ocultar mensagens do adversário"
+            }
             onClick={() => setHideOpponent((previous) => !previous)}
             className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
           >
@@ -714,18 +718,19 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
           msgs
             .filter((m) => !hideOpponent || m.senderId === userId)
             .map((m) => (
-            <p key={`${m.senderId}:${m.id}`} className="mb-1">
-              <span className="text-muted-foreground">
-                {m.senderId === userId ? "Você" : "Adversário"}:{" "}
-              </span>
-              {m.text}
-            </p>
-          ))
+              <p key={`${m.senderId}:${m.id}`} className="mb-1">
+                <span className="text-muted-foreground">
+                  {m.senderId === userId ? "Você" : "Adversário"}:{" "}
+                </span>
+                {m.text}
+              </p>
+            ))
         )}
       </div>
       {hideOpponent ? (
         <p role="status" className="mt-2 text-xs text-muted-foreground">
-          As mensagens do adversário estão ocultas neste aparelho. A moderação do servidor continua ativa.
+          As mensagens do adversário estão ocultas neste aparelho. A moderação do servidor continua
+          ativa.
         </p>
       ) : null}
       <form
