@@ -4,6 +4,8 @@ SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '30s';
 
 -- Disposable local database only. Every fixture and receipt rolls back.
+-- Real joined rooms are created by the trusted server, not a browser insert.
+SET LOCAL ROLE service_role;
 INSERT INTO public.match_rooms(id,code,host_id,guest_id,host_club,guest_club,seed,status,server_seeded) VALUES
  ('10000000-0000-4000-8000-000000000091','CHATADMIT1','00000000-0000-4000-8000-000000000091','00000000-0000-4000-8000-000000000092','ARS','CHE','','ready',true),
  ('10000000-0000-4000-8000-000000000092','CHATADMIT2','00000000-0000-4000-8000-000000000091',NULL,'ARS',NULL,'','done',true);
