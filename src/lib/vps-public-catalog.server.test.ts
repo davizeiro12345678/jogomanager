@@ -60,7 +60,7 @@ describe("VPS catalog canary", () => {
       fetchImpl: mock as typeof fetch,
     });
     expect(result).toEqual([{ id: "club-1", crest_url: "https://example.com/crest.png" }]);
-    expect(mock).toHaveBeenCalledTimes(6);
+    expect(mock).toHaveBeenCalledTimes(8);
   });
 
   it("falls back on empty, failed, or invalid responses", async () => {
