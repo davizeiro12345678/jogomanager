@@ -5,6 +5,7 @@ import {
   LIVE_MATCH_CLOCK_SCALE,
   MATCH_SIMULATION_STEP,
   MATCH_SIMULATION_TICK_LIMIT,
+  type MatchCheckpoint,
 } from "../sim-contracts";
 import type {
   MatchPublicStateV1,
@@ -12,6 +13,7 @@ import type {
   PresentationEventV1,
   TacticalCommandPayloadV1,
 } from "./match-protocol";
+import { PresentationEventV1Schema } from "./match-protocol";
 import type { AuthoritativeMatchEngine } from "./authoritative-match-session";
 
 const TACTICAL_LEVELS = {
@@ -33,6 +35,15 @@ const EVENT_TYPES: Record<string, PresentationEventV1["type"] | undefined> = {
   halftime: "half_time",
   fulltime: "full_time",
 };
+
+/** Durable private recovery for the canonical engine. Never serialize this to clients. */
+export interface CanonicalMatchEngineCheckpointV1 {
+  version: 1;
+  tick: number;
+  lastPresentationEventId: number;
+  events: PresentationEventV1[];
+  simulation: MatchCheckpoint;
+}
 
 /**
  * The canonical fixed-step simulation, running in a server-only execution
@@ -68,6 +79,46 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
 
   isFinished(): boolean {
     return this.sim.finished;
+  }
+
+  checkpoint(): CanonicalMatchEngineCheckpointV1 {
+    return {
+      version: 1,
+      tick: this.tick,
+      lastPresentationEventId: this.lastPresentationEventId,
+      events: structuredClone(this.publicEvents),
+      simulation: this.sim.checkpoint(),
+    };
+  }
+
+  restoreCheckpoint(snapshot: CanonicalMatchEngineCheckpointV1): void {
+    if (
+      !snapshot ||
+      snapshot.version !== 1 ||
+      !Number.isSafeInteger(snapshot.tick) ||
+      snapshot.tick < 0 ||
+      snapshot.tick > MATCH_SIMULATION_TICK_LIMIT ||
+      !Number.isSafeInteger(snapshot.lastPresentationEventId) ||
+      snapshot.lastPresentationEventId < -1 ||
+      !Array.isArray(snapshot.events) ||
+      snapshot.events.length > 64 ||
+      snapshot.events.some((event) => !PresentationEventV1Schema.safeParse(event).success)
+    )
+      throw new Error("Invalid canonical engine checkpoint");
+    // MatchSim validates the private seed and execution contract before any
+    // state assignment. Do not recover into a different physics revision.
+    const expectedExecution = this.sim.executionContract();
+    if (
+      snapshot.simulation.version !== 2 ||
+      JSON.stringify(snapshot.simulation.execution) !== JSON.stringify(expectedExecution)
+    )
+      throw new Error("Canonical checkpoint execution mismatch");
+    this.sim.restoreCheckpoint(snapshot.simulation);
+    if (snapshot.lastPresentationEventId > this.sim.lastEventId)
+      throw new Error("Canonical checkpoint event cursor mismatch");
+    this.tick = snapshot.tick;
+    this.lastPresentationEventId = snapshot.lastPresentationEventId;
+    this.publicEvents.splice(0, this.publicEvents.length, ...structuredClone(snapshot.events));
   }
 
   advanceFixedStep(): boolean {
