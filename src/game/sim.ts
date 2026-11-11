@@ -96,6 +96,7 @@ export class MatchSim {
   #perceptionBackend: "compat" | "wasm" = "compat";
   #execution: MatchExecutionContract | null = null;
   #rulesRevision: MatchRulesRevision = 1;
+  #contactPhysicsRevision: 2 | null = null;
   #rulesState: MatchRulesStateV2 | null = null;
   #physicsFault = false;
   private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
@@ -120,12 +121,18 @@ export class MatchSim {
       physics: this.ballPhysics ? "rapier" : "compat",
       perception: this.#perceptionBackend,
       ...(this.#rulesRevision === 2 ? { rulesRevision: 2 as const } : {}),
+      ...(this.#contactPhysicsRevision === 2 ? { contactPhysicsRevision: 2 as const } : {}),
     };
   }
 
   /** Fixed before play; native private storage preserves legacy checkpoint keys. */
   get rulesRevision(): MatchRulesRevision {
     return this.#rulesRevision;
+  }
+
+  /** Movement/possession contact model pinned before kick-off. */
+  get contactPhysicsRevision(): 2 | null {
+    return this.#contactPhysicsRevision;
   }
 
   /** Record a real teammate touch; no renderer clock or additional RNG. */
@@ -290,6 +297,7 @@ export class MatchSim {
             perception: checkpoint.perception,
           };
     this.#rulesRevision = this.#execution.rulesRevision ?? 1;
+    this.#contactPhysicsRevision = this.#execution.contactPhysicsRevision ?? null;
     this.#rulesState = rulesState;
     this.#physicsFault = false;
   }
@@ -416,11 +424,13 @@ export class MatchSim {
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
       rulesRevision?: MatchRulesRevision | undefined;
+      contactPhysicsRevision?: 2 | undefined;
     },
   ) {
     if (opts?.rulesRevision !== undefined && !validMatchRulesRevision(opts.rulesRevision))
       throw new RangeError("Unknown match rules revision");
     this.#rulesRevision = opts?.rulesRevision ?? 1;
+    this.#contactPhysicsRevision = opts?.contactPhysicsRevision ?? null;
     this.#rulesState = this.#rulesRevision === 2 ? emptyMatchRulesState() : null;
     this.rnd = makeRng(seed);
     this.matchSeed = seed;
@@ -1301,7 +1311,11 @@ export class MatchSim {
           dz = (this.rnd() - 0.5) * 0.02;
           d = Math.hypot(dx, dz) || 1e-4;
         }
-        const overlap = R * 2 - d;
+        // New matches can opt into bounded depenetration instead of a
+        // full-body position jump on one tick; legacy replay geometry is untouched.
+        const penetration = R * 2 - d;
+        const overlap =
+          this.#contactPhysicsRevision === 2 ? Math.min(penetration, 0.14) : penetration;
         // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
         // resolve toda a sobreposição para não deixar atletas grudados.
         const share = bodyContactShare(a.physical, a.weightKg, b.physical, b.weightKg);
@@ -1494,12 +1508,18 @@ export class MatchSim {
     const h = this.ball.height;
     // bola muito alta não pode ser dominada; entre 0.9 e 2.4 é cabeceio
     const reachable = h <= 2.4;
-    if (closest && bestD < 1.9 && ballSpeed < 30 && reachable) {
+    const contactRadius =
+      this.#contactPhysicsRevision === 2 ? (h > 0.9 ? 1.3 : 1.05) : 1.9;
+    if (closest && bestD < contactRadius && ballSpeed < 30 && reachable) {
       this.controlBall(closest, ballSpeed, h);
       return;
     }
     // destravamento: bola parada sem dono por muito tempo
     if (this.looseTime > 3.5 && ballSpeed < 4 && closest) {
+      // Old replays used a rescue teleport here. New contact physics lets the
+      // existing chasers reach the stationary ball under normal acceleration.
+      // No player may jump to the ball merely because the timer expired.
+      if (this.#contactPhysicsRevision === 2) return;
       if (this.offsideAtContact(closest)) {
         this.controlBall(closest, ballSpeed, h);
         return;
