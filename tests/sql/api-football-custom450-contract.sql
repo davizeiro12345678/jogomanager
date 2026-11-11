@@ -8,7 +8,7 @@ UPDATE football_import_private.settings
 SET daily_limit = 450000, minute_limit = 1200
 WHERE singleton;
 
-DO $
+DO $$
 DECLARE
   day_start timestamptz := date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
   epoch_now bigint;
