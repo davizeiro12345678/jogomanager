@@ -14,8 +14,7 @@ export interface TicketRoom {
 }
 
 export type TicketIssueResult =
-  | { ok: true; ticket: MatchTicketV1 }
-  | { ok: false; reason: "unauthorized" | "unavailable" };
+  { ok: true; ticket: MatchTicketV1 } | { ok: false; reason: "unauthorized" | "unavailable" };
 
 /** The lookup is injected by the authenticated server and never by the browser. */
 export interface TicketIssuerDependencies {
