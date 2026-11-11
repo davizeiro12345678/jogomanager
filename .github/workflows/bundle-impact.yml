@@ -67,10 +67,9 @@ jobs:
           node --test "$RUNNER_TEMP/baseline-contract/scripts/normalize-baseline-entities-alias.test.mjs"
           # Normalize only the exact historical bare alias after the contract passes.
           node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
-          cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
-          node scripts/bundle-report.mjs baseline .output/public/assets
+          node "$RUNNER_TEMP/bundle-report.mjs" baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
       - name: Build candidate with its own locked dependency graph
         env:
