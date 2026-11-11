@@ -35,7 +35,7 @@ import {
 } from "@/game/manager-profile";
 
 import { discoverClubs, type CareerChallenge, type ClubDiscovery } from "@/game/club-discovery";
-import { countryIdentity, countryOptions } from "@/game/country-options";
+import { careerCountries, countrySearchKey } from "@/game/career-countries";
 
 import { Crest } from "@/components/game/Crest";
 
@@ -193,11 +193,13 @@ export function NewCareer() {
   }, [step, selected]);
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
-  const countryChoices = useMemo(
-    () => countryOptions(catalog, countryQuery),
-    [countryQuery, catalog],
+  const countries = useMemo(() => careerCountries(catalog), [catalog]);
+  const countryFilter = countrySearchKey(countryQuery);
+  const countryChoices = countries.filter((option) =>
+    option.search.some((name) => name.includes(countryFilter)),
   );
-  const selectedCountry = countryIdentity(getLeague(country).country);
+  const selectedCountry =
+    countries.find((option) => option.id === country)?.country ?? getLeague(country).country;
   const clubs = useMemo(
     () =>
       step !== 3
@@ -369,8 +371,8 @@ export function NewCareer() {
               <p className="career-kicker">SEU TREINADOR</p>
               <h2>{name.trim() || "Técnico"}</h2>
               <p>
-                <Flag league={country} country={getLeague(country).country} size={14} />
-                {getLeague(country).country} · {age} anos
+                <Flag league={country} country={selectedCountry} size={14} />
+                {selectedCountry} · {age} anos
               </p>
               <span className="career-personality">
                 {PERSONALITIES.find((p) => p.id === personality)?.label}
@@ -484,14 +486,14 @@ export function NewCareer() {
                     />
                   </div>
                   <div className="career-country-list">
-                    {countryChoices.map(({ key, league }) => (
+                    {countryChoices.map((option) => (
                       <Chip
-                        key={key}
-                        active={selectedCountry === key}
-                        onClick={() => setCountry(league.id)}
+                        key={option.id}
+                        active={country === option.id}
+                        onClick={() => setCountry(option.id)}
                       >
-                        <Flag league={league.id} country={league.country} size={14} />
-                        {league.country}
+                        <Flag league={option.id} country={option.country} size={14} />
+                        {option.country}
                       </Chip>
                     ))}
                     {!countryChoices.length ? (
