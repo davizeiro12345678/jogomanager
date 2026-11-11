@@ -58,6 +58,10 @@ export class AuthoritativeSocketBridge {
       // input must never change room liveness, ready state or simulation.
       if (!(await this.options.verifyTicket(ticket))) throw new Error("invalid ticket signature");
       if (socket.readyState !== WS_OPEN) return null;
+      // Tickets are issued independently by the authenticated server. Bind
+      // the newly verified signed claims before session.connect checks the
+      // exact nonce; never permit an old ticket to replace a newer seat.
+      this.options.session.bindVerifiedTransportTicket(ticket, this.now());
       const seat = this.options.session.connect(ticket, this.now());
       const previous = this.peers.get(seat);
       const peer: Connection = {
