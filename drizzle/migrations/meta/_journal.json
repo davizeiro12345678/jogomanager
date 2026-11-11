@@ -498,6 +498,13 @@
       "when": 1794257200000,
       "tag": "0070_api_football_data_autovacuum_tuning",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1794257300000,
+      "tag": "0071_incremental_featured_injury_counts",
+      "breakpoints": true
     }
   ]
 }
