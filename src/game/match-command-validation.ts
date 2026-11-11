@@ -181,6 +181,9 @@ export function validMatchCommand(v: unknown): v is LiveWorkerRequest {
         validMatchTeam(v["home"]) &&
         validMatchTeam(v["away"]) &&
         text(v["seed"], 4096) &&
+        (v["rulesRevision"] === undefined ||
+          v["rulesRevision"] === 1 ||
+          v["rulesRevision"] === 2) &&
         (v["contactPhysicsRevision"] === undefined || v["contactPhysicsRevision"] === 2) &&
         (v["knockout"] === undefined || typeof v["knockout"] === "boolean") &&
         (v["weather"] === undefined || WEATHER.includes(v["weather"] as string)) &&
