@@ -13,8 +13,6 @@ import {
 
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { needsMfaChallenge } from "@/lib/mfa-session";
-import { useT } from "@/i18n/provider";
-import { authRecoveryMessages } from "@/i18n/auth-recovery-messages";
 
 import { Button } from "@/components/ui/button";
 
@@ -51,8 +49,6 @@ const MfaChallenge = lazy(() =>
 );
 
 export function AuthPage() {
-  const { lang } = useT();
-  const recoveryCopy = authRecoveryMessages(lang);
   const navigate = useNavigate();
   const search = Route.useSearch();
   const destination = search.next ?? "/club";
@@ -107,9 +103,7 @@ export function AuthPage() {
     const authError = hashParams.get("error") || searchParams.get("error");
     if (authError || authErrorCode || authErrorDescription) {
       setError(authCallbackErrorMessage(authErrorCode, authErrorDescription));
-      return () => {
-        alive = false;
-      };
+      return;
     }
     if (recovery) setMode("update");
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -302,8 +296,6 @@ export function AuthPage() {
       if (result.error) throw result.error;
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
-      setNotice("Você também pode entrar com o e-mail da mesma conta abaixo.");
-    } finally {
       setBusy(false);
     }
   }
@@ -480,9 +472,6 @@ export function AuthPage() {
                 Tentar novamente
               </Button>
             </div>
-          )}
-          {(mode === "in" || mode === "up") && methods?.email && (
-            <p className="mt-3 text-xs text-muted-foreground">{recoveryCopy.emailFallback}</p>
           )}
           {(mode === "in" || mode === "up") && Boolean(methods?.socialProviders.length) && (
             <div className="mt-5 space-y-2">
