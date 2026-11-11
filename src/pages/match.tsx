@@ -340,6 +340,7 @@ function LiveMatch({
     quality,
     camera,
     speed,
+    rulesRevision: setups.rulesRevision,
     phase: measurementPhase,
   });
   const measurementActiveRef = useRef(measurementActive);
