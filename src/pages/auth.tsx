@@ -296,6 +296,7 @@ export function AuthPage() {
       if (result.error) throw result.error;
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
+    } finally {
       setBusy(false);
     }
   }
