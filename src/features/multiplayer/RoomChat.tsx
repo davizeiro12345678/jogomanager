@@ -1,6 +1,7 @@
 import { Flag, Send, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/provider";
+import { roomChatMessages } from "@/i18n/room-chat-messages";
 import { supabase } from "@/integrations/supabase/client";
 import { canJoinRoomChat } from "@/lib/room-chat-access";
 import { appendRoomChatMessage } from "@/lib/room-chat-messages";
@@ -52,8 +53,9 @@ function parseRoomChatMessage(payload: unknown): RoomChatMessage | null {
 
 /** Chat da sala por canal privado em tempo real (não fica salvo). */
 export function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
-  const { t } = useT();
-  const messageInputLabel = "Mensagem…";
+  const { t, lang } = useT();
+  const copy = roomChatMessages(lang);
+  const messageInputLabel = copy.message;
   const [msgs, setMsgs] = useState<RoomChatMessage[]>([]);
   const [text, setText] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -142,7 +144,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
     <div className="mt-5 rounded-xl border border-border/50 bg-background/40 p-3">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-xs font-semibold uppercase tracking-[0.16em]">
-          Chat privado da sala
+          {copy.heading}
         </h3>
         <div className="flex items-center gap-2">
           <button
@@ -150,41 +152,41 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
             aria-pressed={hideOpponent}
             aria-label={
               hideOpponent
-                ? "Voltar a mostrar mensagens do adversário"
-                : "Ocultar mensagens do adversário"
+                ? copy.showOpponent
+                : copy.hideOpponent
             }
             onClick={() => setHideOpponent((previous) => !previous)}
             className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             {hideOpponent ? <VolumeX size={14} aria-hidden /> : <Volume2 size={14} aria-hidden />}
-            {hideOpponent ? "Mostrar" : "Silenciar"}
+            {hideOpponent ? copy.show : copy.mute}
           </button>
           <a
             href={`/contato?reportRoom=${encodeURIComponent(roomId)}`}
-            aria-label="Denunciar abuso ou comportamento suspeito no multiplayer"
+            aria-label={copy.reportLabel}
             className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Flag size={14} aria-hidden />
-            Denunciar
+            {copy.report}
           </a>
         </div>
       </div>
       <div className="max-h-40 overflow-y-auto text-sm" aria-live="polite">
         {status === "checking" ? (
-          <p className="text-xs text-muted-foreground">Verificando acesso à sala…</p>
+          <p className="text-xs text-muted-foreground">{copy.checking}</p>
         ) : status === "unavailable" ? (
           <p className="text-xs text-muted-foreground">
-            O chat desta sala não está disponível para este participante.
+            {copy.unavailable}
           </p>
         ) : msgs.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Converse com seu adversário aqui.</p>
+          <p className="text-xs text-muted-foreground">{copy.empty}</p>
         ) : (
           msgs
             .filter((m) => !hideOpponent || m.senderId === userId)
             .map((m) => (
               <p key={`${m.senderId}:${m.id}`} className="mb-1">
                 <span className="text-muted-foreground">
-                  {m.senderId === userId ? "Você" : "Adversário"}:{" "}
+                  {m.senderId === userId ? copy.you : copy.opponent}:{" "}
                 </span>
                 {m.text}
               </p>
@@ -193,8 +195,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
       </div>
       {hideOpponent ? (
         <p role="status" className="mt-2 text-xs text-muted-foreground">
-          As mensagens do adversário estão ocultas neste aparelho. A moderação do servidor continua
-          ativa.
+          {copy.hidden}
         </p>
       ) : null}
       <form
@@ -257,7 +258,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
         />
         <button
           type="submit"
-          aria-label="Enviar mensagem"
+          aria-label={copy.send}
           disabled={status !== "ready"}
           className="min-h-11 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground"
         >
