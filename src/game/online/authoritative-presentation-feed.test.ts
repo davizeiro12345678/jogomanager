@@ -56,7 +56,9 @@ describe("browser-side authoritative presentation reducer", () => {
   it("rejects room-hopping frames, browser seeds and unknown presentation fields", () => {
     const feed = new AuthoritativePresentationFeed(room);
     expect(
-      feed.accept(frame({ type: "snapshot", snapshot: { ...snapshot(1, 1), roomId: strangerRoom } })),
+      feed.accept(
+        frame({ type: "snapshot", snapshot: { ...snapshot(1, 1), roomId: strangerRoom } }),
+      ),
     ).toEqual({ kind: "ignored", reason: "foreign_room" });
     expect(
       feed.accept(
@@ -78,9 +80,7 @@ describe("browser-side authoritative presentation reducer", () => {
       reason: "stale",
     });
     expect(
-      feed.accept(
-        frame({ type: "snapshot", snapshot: snapshot(2, 10, { home: 7, away: 0 }) }),
-      ),
+      feed.accept(frame({ type: "snapshot", snapshot: snapshot(2, 10, { home: 7, away: 0 }) })),
     ).toEqual({ kind: "ignored", reason: "conflict" });
     expect(feed.accept(frame({ type: "snapshot", snapshot: snapshot(1, 9) }))).toEqual({
       kind: "ignored",
@@ -101,8 +101,9 @@ describe("browser-side authoritative presentation reducer", () => {
     };
     expect(feed.accept(frame({ type: "snapshot", snapshot: bad })).kind).toBe("ignored");
     expect(
-      feed.accept(frame({ type: "snapshot", snapshot: snapshot(4, 120, { home: 1, away: 0 }, "finalized") }))
-        .kind,
+      feed.accept(
+        frame({ type: "snapshot", snapshot: snapshot(4, 120, { home: 1, away: 0 }, "finalized") }),
+      ).kind,
     ).toBe("snapshot");
     expect(feed.accept(frame({ type: "snapshot", snapshot: snapshot(5, 121) }))).toEqual({
       kind: "ignored",
@@ -112,7 +113,9 @@ describe("browser-side authoritative presentation reducer", () => {
 
   it("accepts a bounded forward progression and does not expose mutable state", () => {
     const feed = new AuthoritativePresentationFeed(room);
-    expect(feed.accept(frame({ type: "snapshot", snapshot: snapshot(1, 10) })).kind).toBe("snapshot");
+    expect(feed.accept(frame({ type: "snapshot", snapshot: snapshot(1, 10) })).kind).toBe(
+      "snapshot",
+    );
     expect(
       feed.accept(frame({ type: "snapshot", snapshot: snapshot(2, 40, { home: 2, away: 1 }) }))
         .kind,
@@ -138,15 +141,18 @@ describe("browser-side authoritative presentation reducer", () => {
         }),
       ),
     ).toEqual({ kind: "ignored", reason: "conflict" });
-    expect(
-      feed.accept(frame({ type: "snapshot", snapshot: snapshot(5, 100) })),
-    ).toEqual({ kind: "ignored", reason: "stale" });
+    expect(feed.accept(frame({ type: "snapshot", snapshot: snapshot(5, 100) }))).toEqual({
+      kind: "ignored",
+      reason: "stale",
+    });
     expect(feed.receipt()?.result.homeGoals).toBe(2);
   });
 
   it("rejects a foreign or malformed final receipt before it becomes official", () => {
     const feed = new AuthoritativePresentationFeed(room);
-    expect(feed.accept(frame({ type: "final", receipt: { ...receipt, roomId: strangerRoom } }))).toEqual({
+    expect(
+      feed.accept(frame({ type: "final", receipt: { ...receipt, roomId: strangerRoom } })),
+    ).toEqual({
       kind: "ignored",
       reason: "foreign_room",
     });
@@ -190,7 +196,9 @@ describe("browser-side authoritative presentation reducer", () => {
       reason: "malformed",
     });
     expect(feed.accept("{")).toEqual({ kind: "ignored", reason: "malformed" });
-    expect(feed.accept(frame({ type: "snapshot", snapshot: snapshot(1, 1), score: "forged" }))).toEqual({
+    expect(
+      feed.accept(frame({ type: "snapshot", snapshot: snapshot(1, 1), score: "forged" })),
+    ).toEqual({
       kind: "ignored",
       reason: "malformed",
     });
