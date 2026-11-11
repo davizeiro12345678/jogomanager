@@ -108,6 +108,17 @@ export class MatchRoomDO extends DurableObject<Env> {
     if (this.session) {
       if (roomId && this.room?.roomId !== roomId)
         throw new Error("match object identity mismatch");
+      if (roomId) {
+        const live = await loadPrivateLiveRoom(this.env, roomId);
+        if (
+          !live ||
+          live.homeId !== this.room.homeId ||
+          live.awayId !== this.room.awayId ||
+          live.seed !== this.room.seed ||
+          live.revision !== this.room.revision
+        )
+          throw new Error("match room is no longer live");
+      }
       return;
     }
     if (!this.loading) this.loading = this.load(roomId);
@@ -225,7 +236,7 @@ export class MatchRoomDO extends DurableObject<Env> {
   }
 
   private async scheduleNext(): Promise<void> {
-    if (this.failed || this.session?.phase === "finalized") return;
+    if (this.failed) return;
     await this.ctx.storage.setAlarm(Date.now() + FRAME_INTERVAL_MS);
   }
 
