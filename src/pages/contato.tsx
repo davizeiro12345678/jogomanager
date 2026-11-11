@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { PublicLinks } from "@/components/PublicLinks";
 
@@ -55,10 +55,11 @@ const SupportTicketForm = lazy(() =>
 export function ContatoPage() {
   const { lang } = useT();
   const copy = creatorMessages(lang);
-  const [supportOpen, setSupportOpen] = useState(
-    () =>
-      typeof window !== "undefined" && reportRoomFromSearch(window.location.search) !== null,
-  );
+  // Render the same initial HTML on server and browser, then open contextually.
+  const [supportOpen, setSupportOpen] = useState(false);
+  useEffect(() => {
+    if (reportRoomFromSearch(window.location.search) !== null) setSupportOpen(true);
+  }, []);
   return (
     <div className="pitch-bg min-h-dvh px-4 py-10">
       <div className="mx-auto max-w-3xl">
