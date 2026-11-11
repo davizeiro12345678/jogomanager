@@ -1,5 +1,5 @@
 -- Replace the 30-second hourly refresh of a 14 GB provider cache with an
--- incrementally maintained, small projection of the 11 featured injury leagues.
+-- incrementally maintained, small projection of the 12 featured injury leagues.
 -- The legacy materialized view is retained temporarily for rollback, but its
 -- cron refresh is unscheduled after the live projection is backfilled.
 
@@ -80,8 +80,14 @@ FOR EACH ROW
 WHEN (OLD.kind = 'injury')
 EXECUTE FUNCTION private_performance.sync_featured_injury_row();
 
--- ON CONFLICT DO NOTHING is intentional: if a concurrent importer already
--- inserted/updated a ref after the trigger became active, its newer value wins.
+-- Apply this file as one transactional migration. CREATE TRIGGER obtains a
+-- SHARE ROW EXCLUSIVE lock on the source table and retains it until commit, so
+-- concurrent importer writes wait until the projection backfill is complete
+-- and the triggers become visible atomically. Do not execute statements from
+-- this file separately in autocommit mode.
+--
+-- ON CONFLICT DO NOTHING also makes the backfill safe if a projection row was
+-- populated by a prior controlled retry; trigger updates remain authoritative.
 INSERT INTO private_performance.featured_injury_rows(ref, league_id)
 SELECT
   ref,
