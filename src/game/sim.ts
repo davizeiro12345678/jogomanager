@@ -1508,8 +1508,7 @@ export class MatchSim {
     const h = this.ball.height;
     // bola muito alta não pode ser dominada; entre 0.9 e 2.4 é cabeceio
     const reachable = h <= 2.4;
-    const contactRadius =
-      this.#contactPhysicsRevision === 2 ? (h > 0.9 ? 1.3 : 1.05) : 1.9;
+    const contactRadius = this.#contactPhysicsRevision === 2 ? (h > 0.9 ? 1.3 : 1.05) : 1.9;
     if (closest && bestD < contactRadius && ballSpeed < 30 && reachable) {
       this.controlBall(closest, ballSpeed, h);
       return;
