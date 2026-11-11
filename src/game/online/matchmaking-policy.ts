@@ -35,24 +35,16 @@ function waitingMs(p: QueuePlayer, now: number): number {
 }
 
 function blocked(a: QueuePlayer, b: QueuePlayer): boolean {
-  return (
-    a.blockedUsers?.includes(b.userId) === true ||
-    b.blockedUsers?.includes(a.userId) === true
-  );
+  return a.blockedUsers?.includes(b.userId) === true || b.blockedUsers?.includes(a.userId) === true;
 }
 
 function rematch(a: QueuePlayer, b: QueuePlayer): boolean {
-  return (
-    a.recentOpponents?.includes(b.userId) === true ||
-    b.recentOpponents?.includes(a.userId) === true
-  );
+  return a.recentOpponents?.includes(b.userId) === true || b.recentOpponents?.includes(a.userId) === true;
 }
 
 function valid(p: QueuePlayer, now: number): boolean {
   return (
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      p.userId,
-    ) &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(p.userId) &&
     ["casual", "ranked", "friendly", "tournament"].includes(p.mode) &&
     ["sa", "na", "eu", "apac"].includes(p.region) &&
     Number.isSafeInteger(p.rating) &&
