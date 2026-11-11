@@ -477,6 +477,20 @@
       "when": 1794256000000,
       "tag": "0067_api_football_full_custom450_quota",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1794257000000,
+      "tag": "0068_room_chat_admission",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1794257100000,
+      "tag": "0069_email_automation_outbox",
+      "breakpoints": true
     }
   ]
 }
