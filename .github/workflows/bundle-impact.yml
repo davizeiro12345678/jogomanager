@@ -49,10 +49,12 @@ jobs:
       - name: Preserve analyzer and install one dependency graph for both revisions
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+          cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"
           cp package.json "$RUNNER_TEMP/bundle-package.json"
           cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
           sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
           npm ci
+          node --test scripts/normalize-baseline-entities-alias.test.mjs
       - name: Build baseline from PR base SHA
         env:
           BASE_SHA: ${{ inputs.baseline_ref }}
@@ -63,21 +65,9 @@ jobs:
           # keep their own source files and identical installed dependencies.
           cp "$RUNNER_TEMP/bundle-package.json" package.json
           cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
-          # The old global "entities" alias breaks nested entities/decode with the
-          # candidate lockfile. Newer baselines already lack the alias. Normalize
-          # only the known historical line; reject other resolver aliases.
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-          p = Path("vite.config.ts")
-          src = p.read_text()
-          line = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
-          aliases = re.findall(r'''(?m)^\\s*["']?entities["']?\\s*:''', src)
-          if len(aliases) > 1 or len(aliases) != src.count(line):
-              raise SystemExit("Baseline entities alias contract changed")
-          if aliases:
-              p.write_text(src.replace(line, "", 1))
-          PY
+          # Normalize only the exact historical bare alias after validating the
+          # candidate's known subpath resolver contract.
+          node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs

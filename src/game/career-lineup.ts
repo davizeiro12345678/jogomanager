@@ -1,5 +1,26 @@
 import { FORMATIONS } from "./formations";
+import { FORMATIONS } from "./formations";
 import { isCareerFormation } from "./career-tactics";
+import { FORMATIONS } from "./formations";
+import { selectionRating } from "./match-readiness";
+import type { AttributeSource } from "./player-development";
+import type { Player, Position, FormationKey } from "./types";
+
+/**
+ * Ordem de improvisação por posição: um volante rende mais na zaga do que um
+ * centroavante, e um ponta rende mais no meio do que um zagueiro no ataque.
+ */
+const COVER_ORDER: Record<Position, Position[]> = {
+  GK: ["GK"],
+  DF: ["DF", "MF", "FW"],
+  MF: ["MF", "DF", "FW"],
+  FW: ["FW", "MF", "DF"],
+};
+
+export function pickLineup(players: Player[], formation: FormationKey, source?: AttributeSource) {
+  // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
+  // de estourar e derrubar a tela inteira.
+import { FORMATIONS } from "./formations";
 import { selectionRating } from "./match-readiness";
 import type { AttributeSource } from "./player-development";
 import type { Player, Position, FormationKey } from "./types";
@@ -19,11 +40,12 @@ export function pickLineup(players: Player[], formation: FormationKey, source?: 
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
   const slots = FORMATIONS[isCareerFormation(formation) ? formation : "4-3-3"];
-  const available = [...players]
-    .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort(
-      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
-    );
+  const available = players.filter((p) => !p.suspended && p.injuryWeeks === 0);
+  // Readiness includes normalization and role-dependent development weights.
+  // Resolve it once per player for this call, never across careers or updates.
+  const ratings = new Map<Player, number>();
+  for (const player of available) ratings.set(player, selectionRating(player, source));
+  available.sort((a, b) => ratings.get(b)! - ratings.get(a)! || a.id.localeCompare(b.id));
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 

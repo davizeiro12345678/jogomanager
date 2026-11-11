@@ -19,13 +19,150 @@ export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry)
     !validFinancialState(state) ||
     typeof event.id !== "string" ||
     event.id.trim().length === 0 ||
+import {
+  financeLedgerFor,
+  financialChange,
+  finiteAmount,
+  validFinancialState,
+} from "./financial-inputs";
+import type { CareerState, FinanceLedgerEntry } from "./types";
+
+export const MAX_TRACKED_FINANCE_EVENT_IDS = 4096;
+
+/**
+ * Aplica uma receita/despesa de carreira uma única vez.
+ *
+ * O saldo continua sendo calculado por financialChange; este módulo apenas
+ * liga o evento idempotente ao ledger já persistido no save.
+ */
+export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry): CareerState {
+  if (
+    !validFinancialState(state) ||
+    typeof event.id !== "string" ||
+    event.id.trim().length === 0 ||
     event.id.length > 180 ||
+import {
+  financeLedgerFor,
+  financialChange,
+  finiteAmount,
+  validFinancialState,
+} from "./financial-inputs";
+import type { CareerState, FinanceLedgerEntry } from "./types";
+
+export const MAX_TRACKED_FINANCE_EVENT_IDS = 4096;
+
+/**
+ * Aplica uma receita/despesa de carreira uma única vez.
+ *
+ * O saldo continua sendo calculado por financialChange; este módulo apenas
+ * liga o evento idempotente ao ledger já persistido no save.
+ */
+export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry): CareerState {
+  if (
+    !validFinancialState(state) ||
+    typeof event.id !== "string" ||
+    event.id.trim().length === 0 ||
+import {
+  financeLedgerFor,
+  financialChange,
+  finiteAmount,
+  validFinancialState,
+} from "./financial-inputs";
+import type { CareerState, FinanceLedgerEntry } from "./types";
+
+export const MAX_TRACKED_FINANCE_EVENT_IDS = 4096;
+
+/**
+ * Aplica uma receita/despesa de carreira uma única vez.
+ *
+ * O saldo continua sendo calculado por financialChange; este módulo apenas
+ * liga o evento idempotente ao ledger já persistido no save.
+ */
+export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry): CareerState {
+  if (
+    !validFinancialState(state) ||
+    typeof event.id !== "string" ||
+    event.id.trim().length === 0 ||
+    event.id.length > 180 ||
+import {
+  financeLedgerFor,
+  financialChange,
+  finiteAmount,
+  validFinancialState,
+} from "./financial-inputs";
+import type { CareerState, FinanceLedgerEntry } from "./types";
+
+export const MAX_TRACKED_FINANCE_EVENT_IDS = 4096;
+
+/**
+ * Aplica uma receita/despesa de carreira uma única vez.
+ *
+ * O saldo continua sendo calculado por financialChange; este módulo apenas
+ * liga o evento idempotente ao ledger já persistido no save.
+ */
+export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry): CareerState {
+  if (
+    !validFinancialState(state) ||
+    typeof event.id !== "string" ||
+    event.id.trim().length === 0 ||
+    !Number.isSafeInteger(event.season) ||
+    event.season < 1 ||
+    !Number.isSafeInteger(event.round) ||
+    event.round < 1 ||
+    typeof event.label !== "string" ||
+import {
+  financeLedgerFor,
+  financialChange,
+  finiteAmount,
+  validFinancialState,
+} from "./financial-inputs";
+import type { CareerState, FinanceLedgerEntry } from "./types";
+
+export const MAX_TRACKED_FINANCE_EVENT_IDS = 4096;
+
+/**
+ * Aplica uma receita/despesa de carreira uma única vez.
+ *
+ * O saldo continua sendo calculado por financialChange; este módulo apenas
+ * liga o evento idempotente ao ledger já persistido no save.
+ */
+export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry): CareerState {
+  if (
+    !validFinancialState(state) ||
+    typeof event.id !== "string" ||
+    event.id.trim().length === 0 ||
     !Number.isSafeInteger(event.season) ||
     event.season < 1 ||
     !Number.isSafeInteger(event.round) ||
     event.round < 1 ||
     typeof event.label !== "string" ||
     !["operacao", "mercado", "infraestrutura", "premio"].includes(event.kind) ||
+import {
+  financeLedgerFor,
+  financialChange,
+  finiteAmount,
+  validFinancialState,
+} from "./financial-inputs";
+import type { CareerState, FinanceLedgerEntry } from "./types";
+
+export const MAX_TRACKED_FINANCE_EVENT_IDS = 4096;
+
+/**
+ * Aplica uma receita/despesa de carreira uma única vez.
+ *
+ * O saldo continua sendo calculado por financialChange; este módulo apenas
+ * liga o evento idempotente ao ledger já persistido no save.
+ */
+export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry): CareerState {
+  if (
+    !validFinancialState(state) ||
+    typeof event.id !== "string" ||
+    event.id.trim().length === 0 ||
+    !Number.isSafeInteger(event.season) ||
+    event.season < 1 ||
+    !Number.isSafeInteger(event.round) ||
+    event.round < 1 ||
+    typeof event.label !== "string" ||
     !finiteAmount(event.income) ||
     !finiteAmount(event.expense)
   )

@@ -9,12 +9,154 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     if (group.length < 2) return group;
     const criterion = remaining[0];
     if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
     let head: Map<string, number> | undefined;
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
     if (criterion === "headToHead") {
       // A CBF só aplica confronto direto quando restam duas associações empatadas.
       if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
       const ids = new Set(group.map((r) => r.clubId));
       head = new Map(group.map((r) => [r.clubId, 0]));
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+    const ids = new Set(group.map((r) => r.clubId));
+    const head = new Map(group.map((r) => [r.clubId, 0]));
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+    const ids = new Set(group.map((r) => r.clubId));
+    const head = new Map(group.map((r) => [r.clubId, 0]));
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const ids = new Set(group.map((r) => r.clubId));
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+    const ids = new Set(group.map((r) => r.clubId));
+    const head = new Map(group.map((r) => [r.clubId, 0]));
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
+      if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
+        return split(group, remaining.slice(1));
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+    const ids = new Set(group.map((r) => r.clubId));
+    const head = new Map(group.map((r) => [r.clubId, 0]));
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
+      if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
+        return split(group, remaining.slice(1));
+      head = new Map(group.map((r) => [r.clubId, 0]));
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+    const ids = new Set(group.map((r) => r.clubId));
+    const head = new Map(group.map((r) => [r.clubId, 0]));
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
+      const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
+      if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
+        return split(group, remaining.slice(1));
+      for (const f of meetings) {
+        head.set(
+          f.home,
+          head.get(f.home)! +
+            (f.homeGoals! > f.awayGoals! ? 3 : f.homeGoals === f.awayGoals ? 1 : 0),
+        );
+        head.set(
+          f.away,
+          head.get(f.away)! +
+            (f.awayGoals! > f.homeGoals! ? 3 : f.homeGoals === f.awayGoals ? 1 : 0),
+        );
+      }
+    }
+    const value = (r: TableRow): number =>
+      criterion === "wins"
+        ? r.w
+        : criterion === "goalDifference"
+          ? r.gf - r.ga
+          : criterion === "goalsFor"
+            ? r.gf
+            : criterion === "headToHead"
+import { countryRegulation, type TieCriterion } from "./competition-regulations";
+import type { Fixture, TableRow } from "./types";
+import { competitionScore } from "./competition-match";
+
+/** Desempata grupos empatados; confronto direto usa uma minitabela, nunca comparações cíclicas. */
+export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string): TableRow[] {
+  const criteria = countryRegulation(country).tieBreakers;
+  const split = (group: TableRow[], remaining: TieCriterion[]): TableRow[] => {
+    if (group.length < 2) return group;
+    const criterion = remaining[0];
+    if (!criterion) return [...group].sort((a, b) => a.clubId.localeCompare(b.clubId));
+    const ids = new Set(group.map((r) => r.clubId));
+    const head = new Map(group.map((r) => [r.clubId, 0]));
+    if (criterion === "headToHead") {
+      // A CBF só aplica confronto direto quando restam duas associações empatadas.
+      if (country === "Brasil" && group.length !== 2) return split(group, remaining.slice(1));
       const meetings = fixtures.filter((f) => ids.has(f.home) && ids.has(f.away));
       if (!meetings.length || meetings.some((f) => f.homeGoals === null || f.awayGoals === null))
         return split(group, remaining.slice(1));
@@ -50,9 +192,25 @@ export function rankTable(rows: TableRow[], fixtures: Fixture[], country: string
     const buckets = new Map<number, TableRow[]>();
     for (const row of group) {
       const key = value(row);
+              : -fixtures.reduce(
+                  (cards, f) =>
+                    cards +
+                    (f.events?.filter((e) => e.kind === "vermelho" && f[e.side] === r.clubId)
+                      .length ?? 0),
+                  0,
+                );
+    const buckets = new Map<number, TableRow[]>();
+    for (const row of group) {
+      const key = value(row);
       const bucket = buckets.get(key);
       if (bucket) bucket.push(row);
       else buckets.set(key, [row]);
+    }
+    return [...buckets]
+      .sort(([a], [b]) => b - a)
+      .flatMap(([, bucket]) => split(bucket, remaining.slice(1)));
+  };
+  const points = new Map<number, TableRow[]>();
     }
     return [...buckets]
       .sort(([a], [b]) => b - a)
