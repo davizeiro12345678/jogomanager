@@ -22,12 +22,7 @@ export interface AuthorityClientSocket {
 }
 
 export type AuthorityConnectionStatus =
-  | "disconnected"
-  | "connecting"
-  | "authenticating"
-  | "connected"
-  | "retrying"
-  | "unavailable";
+  "disconnected" | "connecting" | "authenticating" | "connected" | "retrying" | "unavailable";
 
 export interface AuthoritySocketClientOptions {
   /** Absolute WSS URL for the server-owned match gateway, never a user input. */
@@ -152,8 +147,7 @@ export class AuthoritativeMatchSocketClient {
       if (!this.started || generation !== this.generation) return;
       const now = (this.options.now ?? Date.now)();
       assertCurrentTicket(candidate, now);
-      if (candidate.roomId !== this.options.roomId)
-        throw new Error("match ticket room mismatch");
+      if (candidate.roomId !== this.options.roomId) throw new Error("match ticket room mismatch");
 
       const socket = this.options.socketFactory
         ? this.options.socketFactory(this.url)
