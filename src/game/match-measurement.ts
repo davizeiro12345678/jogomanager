@@ -30,6 +30,7 @@ export function matchMeasurementKey(context: {
   quality: string;
   camera: string;
   speed: number;
+  rulesRevision?: number;
   phase: MatchMeasurementPhase;
 }): string {
   return JSON.stringify(context);
