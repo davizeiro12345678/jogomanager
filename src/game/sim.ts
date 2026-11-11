@@ -429,6 +429,8 @@ export class MatchSim {
   ) {
     if (opts?.rulesRevision !== undefined && !validMatchRulesRevision(opts.rulesRevision))
       throw new RangeError("Unknown match rules revision");
+    if (opts?.contactPhysicsRevision !== undefined && opts.contactPhysicsRevision !== 2)
+      throw new RangeError("Unknown contact physics revision");
     this.#rulesRevision = opts?.rulesRevision ?? 1;
     this.#contactPhysicsRevision = opts?.contactPhysicsRevision ?? null;
     this.#rulesState = this.#rulesRevision === 2 ? emptyMatchRulesState() : null;
