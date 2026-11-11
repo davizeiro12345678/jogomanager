@@ -5,7 +5,11 @@ import {
   QUICK_MATCH_LEAGUE_DIRECTORY,
 } from "./data/quick-match-catalog";
 import { LEAGUES } from "./data/leagues";
-import { DEFAULT_QUICK_MATCH_LEAGUE, preloadQuickMatchCatalog, quickMatchLeagueGroups } from "./quick-match-catalog";
+import {
+  DEFAULT_QUICK_MATCH_LEAGUE,
+  preloadQuickMatchCatalog,
+  quickMatchLeagueGroups,
+} from "./quick-match-catalog";
 import { RUNTIME_APPROVED_LOCALES } from "@/i18n/locale-runtime-manifest";
 import type { QuickMatchLeagueSummary } from "./data/quick-match-catalog";
 import { randomQuickMatchPair, selectableQuickMatchClubs } from "./quick-match-selection";
@@ -76,7 +80,6 @@ it("shares the lazy full-catalog import and resolves the same league data", asyn
   expect(catalog.getLeague("bra")).toEqual(DEFAULT_QUICK_MATCH_LEAGUE);
 });
 
-
 const club = (id: string, name: string): import("./types").Club => ({
   id,
   name,
@@ -105,10 +108,12 @@ it("excludes unresolved and generic club fallbacks from quick-match selection", 
 
 it("rejects generic fallback labels independent of accents and case", () => {
   const labels = ["CLUBE", "Clube convidado", "Unknown Club", "Sem nome"];
-  const canonical = Object.fromEntries(labels.map((name, index) => {
-    const item = club(`generic-${index}`, name);
-    return [item.id, item];
-  }));
+  const canonical = Object.fromEntries(
+    labels.map((name, index) => {
+      const item = club(`generic-${index}`, name);
+      return [item.id, item];
+    }),
+  );
   expect(selectableQuickMatchClubs(Object.values(canonical), canonical)).toEqual([]);
 });
 
@@ -120,10 +125,13 @@ it("always returns two distinct canonical clubs for a random matchup", () => {
   expect(randomQuickMatchPair([clubs[0]!], () => 0)).toBeNull();
 });
 
-
 it("keeps the default quick-match league backed by two identified canonical clubs", async () => {
   const { CLUBS } = await preloadQuickMatchCatalog();
   const selected = selectableQuickMatchClubs(DEFAULT_QUICK_MATCH_LEAGUE.clubs, CLUBS);
   expect(selected.length).toBeGreaterThanOrEqual(2);
-  expect(selected.every((item) => item.name.trim() && item.name.trim().toLocaleLowerCase() !== "clube")).toBe(true);
+  expect(
+    selected.every(
+      (item) => item.name.trim() && item.name.trim().toLocaleLowerCase() !== "clube",
+    ),
+  ).toBe(true);
 });
