@@ -1,4 +1,5 @@
-import { WifiOff } from "lucide-react";
+import { MessageSquare, WifiOff } from "lucide-react";
+import { RoomChat } from "./RoomChat";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Crest } from "@/components/game/Crest";
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
@@ -20,11 +21,13 @@ import { multiplayerLiveMessages } from "@/i18n/multiplayer-live-messages";
  */
 export function LiveRoom({
   room,
+  userId,
   isHost,
   online,
   onExit,
 }: {
   room: Room;
+  userId: string;
   isHost: boolean;
   online: boolean;
   onExit: () => void;
@@ -40,7 +43,8 @@ export function LiveRoom({
     [room.id, room.host_club, room.guest_club],
   );
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
-  const [quality] = useState<Quality>(() => detectQuality() as Quality);
+  const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
+  const [showChat, setShowChat] = useState(false);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
@@ -195,6 +199,17 @@ export function LiveRoom({
           </div>
         </div>
       ) : null}
+      {showChat ? (
+        <aside
+          aria-label="Conversa privada durante a partida"
+          className="absolute bottom-20 right-3 z-30 w-[min(24rem,calc(100vw-1.5rem))] max-h-[50dvh] overflow-y-auto rounded-xl border border-white/20 bg-black/85 p-2 text-white backdrop-blur-xl"
+        >
+          <RoomChat roomId={room.id} userId={userId} />
+        </aside>
+      ) : null}
+      <p className="pointer-events-none absolute inset-x-3 bottom-20 z-10 max-w-xs rounded-md bg-black/65 px-2 py-1 text-xs text-white/70">
+        Prévia visual local. O placar oficial é confirmado pelo servidor.
+      </p>
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
         <button
           onClick={() =>
@@ -205,6 +220,27 @@ export function LiveRoom({
           className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
         >
           {copy.camera}
+        </button>
+        <button
+          type="button"
+          aria-pressed={showChat}
+          onClick={() => setShowChat((current) => !current)}
+          className="flex items-center gap-1 rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
+        >
+          <MessageSquare size={13} aria-hidden="true" />
+          Chat
+        </button>
+        <button
+          type="button"
+          aria-label={`Alterar qualidade gráfica, atual: ${quality}`}
+          onClick={() =>
+            setQuality((current) =>
+              current === "alta" ? "media" : current === "media" ? "baixa" : "alta",
+            )
+          }
+          className="rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
+        >
+          {quality}
         </button>
         <button
           onClick={onExit}
