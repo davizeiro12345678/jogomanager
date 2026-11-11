@@ -689,7 +689,9 @@ describe("authoritative match serialization regressions", () => {
     await expect(input).resolves.toEqual({ accepted: true });
     expect(engine.tacticalChanges).toHaveLength(1);
     expect((await receipt).commandHash).toBe(expectedHash);
-    await expect(session.receive(ticket("home"), command(2, "set_tactics"), issuedAt + 2)).resolves.toEqual({
+    await expect(
+      session.receive(ticket("home"), command(2, "set_tactics"), issuedAt + 2),
+    ).resolves.toEqual({
       accepted: false,
       reason: "command_rejected",
     });
