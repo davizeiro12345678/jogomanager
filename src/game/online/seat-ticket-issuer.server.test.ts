@@ -13,6 +13,7 @@ const room: TicketRoom = {
   host_id: homeId,
   guest_id: awayId,
   status: "live",
+  settlement_authority: "websocket",
   server_seeded: true,
 };
 function issuer(userId: string, roomOverride: TicketRoom | null = room, signingSecret = secret) {
@@ -57,6 +58,10 @@ describe("server-only multiplayer seat tickets", () => {
       reason: "unavailable",
     });
     expect(await issuer(homeId, { ...room, server_seeded: false })).toEqual({
+      ok: false,
+      reason: "unavailable",
+    });
+    expect(await issuer(homeId, { ...room, settlement_authority: "legacy" })).toEqual({
       ok: false,
       reason: "unavailable",
     });
