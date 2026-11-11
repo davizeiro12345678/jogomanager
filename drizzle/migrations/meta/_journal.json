@@ -526,6 +526,13 @@
       "when": 1794428500000,
       "tag": "0074_private_matchmaking_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1794430000000,
+      "tag": "0075_atomic_ranked_match_allocation",
+      "breakpoints": true
     }
   ]
 }
