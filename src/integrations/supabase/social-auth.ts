@@ -56,7 +56,7 @@ export function fallbackAuthMethods(): AuthMethods {
       provider in SOCIAL_LABELS || provider.startsWith("custom:"),
   );
   return {
-    socialProviders: providers.length > 0 ? providers : ["google"],
+    socialProviders: providers,
     email: true,
     phone: false,
     passkeys: false,
