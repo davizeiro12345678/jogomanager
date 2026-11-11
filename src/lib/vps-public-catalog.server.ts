@@ -15,7 +15,7 @@ export interface VpsCatalogOptions {
 
 const PAGE_SIZE = 1000;
 const PAGE_BATCH = 8;
-const MAX_PAGES = 80;
+const MAX_PAGES = 128;
 const REQUEST_BUDGET_MS = 10_000;
 const CATALOG_HOSTS = new Set(["catalog.jogomanager.com", "catalog-vps.jogomanager.com"]);
 
