@@ -351,6 +351,13 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
   // random tackle must not transfer the ball across two metres of open field.
   const contactReach = sim.contactPhysicsRevision === 2 ? 1.08 : 2.2;
   if (!opp || dist > contactReach || sim.restartTimer > 0) return;
+  // Body proximity alone is not enough: the defender must reach the actual
+  // ball, otherwise a tackle on the carrier's back teleports possession.
+  if (
+    sim.contactPhysicsRevision === 2 &&
+    Math.hypot(opp.x - sim.ball.x, opp.z - sim.ball.z) > contactReach
+  )
+    return;
   const press = 0.55 + sim.setup(opp.side).tactics.pressing * 0.22;
   let support = 0;
   for (const defender of sim.players) {
