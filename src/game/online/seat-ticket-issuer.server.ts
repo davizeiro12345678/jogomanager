@@ -10,6 +10,7 @@ export interface TicketRoom {
   host_id: string;
   guest_id: string | null;
   status: string;
+  settlement_authority: "legacy" | "websocket";
   server_seeded: boolean;
 }
 
@@ -45,6 +46,7 @@ export async function issueMatchSeatTicket(
     !room ||
     room.id !== roomId ||
     room.status !== "live" ||
+    room.settlement_authority !== "websocket" ||
     !room.server_seeded ||
     !room.guest_id ||
     !UuidSchema.safeParse(room.host_id).success ||
