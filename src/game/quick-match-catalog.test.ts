@@ -6,7 +6,7 @@ import {
   QUICK_MATCH_LEAGUE_DIRECTORY,
 } from "./data/quick-match-catalog";
 import { LEAGUES } from "./data/leagues";
-import { preloadQuickMatchCatalog, quickMatchLeagueGroups } from "./quick-match-catalog";
+import { DEFAULT_QUICK_MATCH_LEAGUE, preloadQuickMatchCatalog, quickMatchLeagueGroups } from "./quick-match-catalog";
 import { RUNTIME_APPROVED_LOCALES } from "@/i18n/locale-runtime-manifest";
 import type { QuickMatchLeagueSummary } from "./data/quick-match-catalog";
 import { randomQuickMatchPair, selectableQuickMatchClubs } from "./quick-match-selection";
