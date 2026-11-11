@@ -286,8 +286,12 @@ test("API-Football validates admin credentials before returning queue status", a
   );
 });
 
-test("API-Football configures the verified minute limit and rejects a missing limit", async () => {
-  for (const minuteHeader of [null, "1200"]) {
+test("API-Football enforces the contracted Custom450 minute ceiling", async () => {
+  for (const [minuteHeader, expectedMinute] of [
+    [null, 450],
+    ["1200", 450],
+    ["200", 200],
+  ]) {
     const calls = [];
     const headers = minuteHeader ? { "x-ratelimit-limit": minuteHeader } : {};
     const handler = await loadHandler("api-football-import/index.ts", {
@@ -307,18 +311,10 @@ test("API-Football configures the verified minute limit and rejects a missing li
         { "x-football-admin": workerToken },
       ),
     );
-    if (!minuteHeader) {
-      assert.equal(response.status, 409);
-      assert.deepEqual(
-        calls.map((call) => call.name),
-        ["football_queue_settings"],
-      );
-    } else {
-      assert.equal(response.status, 200);
-      assert.equal(calls[1].name, "football_queue_configure");
-      assert.equal(calls[1].args.p_daily, 450000);
-      assert.equal(calls[1].args.p_minute, 1200);
-    }
+    assert.equal(response.status, 200);
+    assert.equal(calls[1].name, "football_queue_configure");
+    assert.equal(calls[1].args.p_daily, 450000);
+    assert.equal(calls[1].args.p_minute, expectedMinute);
   }
 });
 
