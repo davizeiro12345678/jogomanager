@@ -512,6 +512,20 @@
       "when": 1794428400000,
       "tag": "0072_match_contact_physics_revision",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1794428450000,
+      "tag": "0073_chat_infractions_dependency",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1794428500000,
+      "tag": "0074_private_matchmaking_queue",
+      "breakpoints": true
     }
   ]
 }
