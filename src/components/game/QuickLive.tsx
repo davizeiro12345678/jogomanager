@@ -73,6 +73,7 @@ export default function QuickLive({
       // Old replay/career simulations remain on the historical ruleset.
       away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
       seed,
+      rulesRevision: 2 as const,
     };
   }, [myId, oppId, difficulty, seed]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
