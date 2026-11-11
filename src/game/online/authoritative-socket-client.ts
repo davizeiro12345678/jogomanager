@@ -108,8 +108,13 @@ export class AuthoritativeMatchSocketClient {
     return this.currentStatus;
   }
 
-  officialFeed(): AuthoritativePresentationFeed {
-    return this.feed;
+  /** Return copies, never a mutable reducer that could ingest browser frames. */
+  officialSnapshot(): ReturnType<AuthoritativePresentationFeed["snapshot"]> {
+    return this.feed.snapshot();
+  }
+
+  officialReceipt(): ReturnType<AuthoritativePresentationFeed["receipt"]> {
+    return this.feed.receipt();
   }
 
   /**
