@@ -84,6 +84,60 @@ describe("signed WebSocket bridge composition", () => {
     bridge.close();
   });
 
+  it("accepts an independently issued new ticket without resetting the live seat", async () => {
+    const { homeTicket, session } = await setup();
+    const nextTime = now + 1_000;
+    const renewed = await signMatchTicketV1(
+      {
+        version: 1,
+        roomId,
+        userId: identities.home,
+        seat: "home",
+        issuedAt: nextTime,
+        expiresAt: nextTime + 60_000,
+        nonce: "rotated-secure-bridge-nonce-2026",
+      },
+      secret,
+    );
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => nextTime,
+    });
+    const previousSocket = new TestSocket();
+    expect(await bridge.attach(previousSocket, homeTicket)).toBe("home");
+    const freshSocket = new TestSocket();
+    expect(await bridge.attach(freshSocket, renewed)).toBe("home");
+    expect(previousSocket.code).toBe(4001);
+    const stale = new TestSocket();
+    expect(await bridge.attach(stale, homeTicket)).toBeNull();
+    expect(stale.code).toBe(1008);
+    expect(freshSocket.readyState).toBe(1);
+    bridge.close();
+  });
+
+  it("does not mutate an existing seat when an attacker changes a signed claim", async () => {
+    const { homeTicket, session } = await setup();
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => now + 1_000,
+    });
+    const forged = new TestSocket();
+    expect(
+      await bridge.attach(forged, {
+        ...homeTicket,
+        issuedAt: now + 1_000,
+        expiresAt: now + 61_000,
+        nonce: "forged-bridge-claim-nonce-2026",
+      }),
+    ).toBeNull();
+    expect(forged.code).toBe(1008);
+    const valid = new TestSocket();
+    expect(await bridge.attach(valid, homeTicket)).toBe("home");
+    bridge.close();
+  });
+
   it("rejects expired tickets before connection admission", async () => {
     const { homeTicket, session } = await setup();
     const bridge = createSecureMatchSocketBridge({
