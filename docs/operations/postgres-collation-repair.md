@@ -9,7 +9,7 @@ The production database reported:
 
 This is a database-wide metadata mismatch. It is not safe to silence the warning by refreshing the recorded version before rebuilding affected indexes: text ordering and equality semantics may have changed, leaving indexes inconsistent with the active collation.
 
-A read-only production inventory on 11 November 2026 found **251 ordinary indexes** that depend on the database-default collation. All 251 reported `indisvalid = true`, and the database had zero invalid indexes at the time of inspection. That validity flag does not prove collation-version consistency: these indexes still require rebuild before the recorded version is refreshed.
+A read-only production inventory on 11 November 2026 found **251 ordinary indexes** whose key collations resolve to the database-default collation, totaling **2,172.20 MiB (about 2.12 GiB)**. All 251 reported `indisvalid = true` and `indisready = true` at inspection. The separate invalid API-Football injury covering index is not part of this collation-dependent set. Index validity does not prove collation-version consistency: these 251 indexes still require rebuild before the recorded version is refreshed.
 
 ## Production inventory observed on 11 November 2026
 
@@ -34,9 +34,11 @@ This is a database-wide maintenance task, not a single-index patch. Rebuilding a
 
 ## Production scope observed
 
-A read-only production inventory on 11 November 2026 found **253 indexes** whose key collations resolve to the database default collation, representing approximately **2,173 MB** of index storage. Four indexes exceed 100 MB; the largest is approximately 645 MB. This is not a one-index metadata fix.
+The exact inventory is **251 ordinary indexes plus one partitioned parent index** (`realtime.messages_replay_index`). That parent has six physical child indexes in the current partition set; all six were valid at inspection. The other partitioned parent index, `realtime.messages_pkey`, does not use the database-default collation and is not included in this repair set.
 
-The maintenance window must therefore be sized from the generated inventory, actual I/O headroom and replica lag. Preserve the inventory output, process indexes one at a time, and pause if query latency, lock waits, storage latency or replication lag exceed the agreed limits. Do not blindly run a database-wide reindex during peak traffic.
+The 251 ordinary indexes span `auth`, `auth_safety`, `backup_restore`, `cron`, `data_quality`, `extensions`, `football_import_private`, `oracle_bridge_private`, `pgmq`, `public`, `realtime`, `storage`, `stripe`, `supabase_functions`, `supabase_migrations`, and `vault`. Four ordinary indexes exceed 100 MB; the largest is approximately 645 MB. The inventory query below is the source of truth; rerun it immediately before maintenance because partition membership and index sizes can change.
+
+The maintenance window must therefore be sized from the generated inventory, actual I/O headroom and replica lag. Preserve the inventory output, process ordinary indexes one at a time, rebuild each affected child of `messages_replay_index` as required, and pause if query latency, lock waits, storage latency or replication lag exceed the agreed limits. Do not blindly run a database-wide reindex during peak traffic.
 
 ## Preflight: confirm the mismatch
 
