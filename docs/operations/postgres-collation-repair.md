@@ -62,6 +62,24 @@ ORDER BY ns.nspname, tbl.relname, idx.relname;
 
 Partitioned indexes (`pg_class.relkind = 'I'`) must be reviewed separately with their child indexes. Do not assume the ordinary-index command list covers them.
 
+## Production inventory captured on 11 November 2026
+
+The production catalog query identified **244 collation-dependent ordinary indexes** across the database (the exact count is the sum of the schema rows below), representing approximately **2.17 GB** of index storage. The largest individual indexes were approximately 645 MB in `public` and 387 MB in `football_import_private`.
+
+| Schema | Indexes | Approximate total |
+|---|---:|---:|
+| `public` | 111 | 1,222 MB |
+| `football_import_private` | 3 | 947 MB |
+| `stripe` | 60 | 1.3 MB |
+| `backup_restore` | 1 | 1.1 MB |
+| `auth` | 34 | 440 kB |
+| `storage` | 21 | 176 kB |
+| Remaining schemas | 14 | under 200 kB combined |
+
+There is also a partitioned index `realtime.messages_replay_index`. It must be handled through its child indexes/provider-supported procedure; do not run a concurrent reindex against the partitioned parent.
+
+This inventory changes the operational decision: the rebuild is not a one-index operation. Before starting, confirm at least 2.5–3 GB of free storage headroom (more if index growth is expected), WAL/replication capacity, and the Supabase maintenance policy. The provider-managed schemas (`auth`, `storage`, `realtime`, `stripe`, and others) should be coordinated with Supabase if the project role cannot safely rebuild them. Do not refresh the database collation version until the complete affected-index inventory is reconciled and rebuilt.
+
 ## Rebuild
 
 Run the generated `REINDEX INDEX CONCURRENTLY schema.index;` commands one at a time, outside a transaction. Keep application traffic monitored. Stop if lock waits, replication lag, CPU, I/O or error rates breach the maintenance limits agreed for the window.
