@@ -92,19 +92,23 @@ const UNICODE_LOOKALIKES: Record<string, string> = {
   "\u03bd": "v",
 };
 
-/** Canonicalize compatibility forms, accents, invisibles and look-alikes. */
-export function normalizeForModeration(text: string): string {
+/** Normalization shared by profanity and anti-phishing detectors. */
+const UNICODE_CONFUSABLES =
+  /[\u0430\u0435\u043a\u043c\u043e\u0440\u0441\u0442\u0445\u0443\u0456\u0458\u0455\u04bb\u03b1\u03b5\u03bf\u03c1\u03c4\u03c7\u03bd]/gu;
+
+function visibleSafetyText(text: string): string {
   return text
     .normalize("NFKC")
     .replace(INVISIBLE_FORMAT_CHARACTERS, "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
-    .replace(
-      /[\u0430\u0435\u043a\u043c\u043e\u0440\u0441\u0442\u0445\u0443\u0456\u0458\u0455\u04bb\u03b1\u03b5\u03bf\u03c1\u03c4\u03c7\u03bd]/gu,
-      (c) => UNICODE_LOOKALIKES[c] ?? c,
-    )
-    .replace(/[0-9@$]/g, (c) => LOOKALIKES[c] ?? c);
+    .replace(UNICODE_CONFUSABLES, (c) => UNICODE_LOOKALIKES[c] ?? c);
+}
+
+/** Canonicalize compatibility forms, accents, invisibles and look-alikes. */
+export function normalizeForModeration(text: string): string {
+  return visibleSafetyText(text).replace(/[0-9@$]/g, (c) => LOOKALIKES[c] ?? c);
 }
 
 /** Letters only, with runs of the same letter collapsed ("poorrraaa" -> "pora"). */
@@ -189,7 +193,9 @@ export function moderateMessage(
   if (containsProfanity(text)) return "profanity";
   // Normalize contacts separately from profanity: leetspeak substitutions would
   // destroy digits and @, while compatibility forms and invisibles hide both.
-  const visible = text.normalize("NFKC").replace(INVISIBLE_FORMAT_CHARACTERS, "");
+  // Confusable letters can disguise phishing links and contacts as well as
+  // offensive words; keep digits and @ unchanged for the contact detectors.
+  const visible = visibleSafetyText(text);
   if (EMAIL.test(visible) || PHONE.test(visible)) return "contact";
   if (LINK.test(visible)) return "link";
   const letters = text.replace(/[^\p{L}]/gu, "");
