@@ -1,7 +1,14 @@
 -- Run only in a disposable database after applying the quota migrations.
 BEGIN;
 
-DO $$
+-- Isolated fixture: exercise Custom450 at its full authorized limits
+-- without assuming an existing installation has upgraded its lower plan.
+-- ROLLBACK below preserves all real settings and imported counters.
+UPDATE football_import_private.settings
+SET daily_limit = 450000, minute_limit = 1200
+WHERE singleton;
+
+DO $
 DECLARE
   day_start timestamptz := date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC';
   epoch_now bigint;
