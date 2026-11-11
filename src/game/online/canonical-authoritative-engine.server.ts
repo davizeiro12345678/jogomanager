@@ -45,7 +45,12 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
   private lastPresentationEventId = -1;
   private readonly publicEvents: PresentationEventV1[] = [];
 
-  constructor(homeClub: string, awayClub: string, privateSeed: string) {
+  constructor(
+    homeClub: string,
+    awayClub: string,
+    privateSeed: string,
+    options: { contactPhysicsRevision?: 1 | 2 } = {},
+  ) {
     if (!Object.hasOwn(CLUBS, homeClub) || !Object.hasOwn(CLUBS, awayClub)) {
       throw new Error("unrecognized authoritative match club");
     }
@@ -57,7 +62,7 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
       buildTeamSetup(homeClub, "4-3-3", 2, 1, human),
       buildTeamSetup(awayClub, "4-3-3", 2, 1, human),
       privateSeed,
-      { contactPhysicsRevision: 2 },
+      options.contactPhysicsRevision === 1 ? undefined : { contactPhysicsRevision: 2 },
     );
   }
 
