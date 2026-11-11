@@ -68,8 +68,7 @@ export class AuthoritativeSocketBridge {
         strikes: 0,
       };
       this.peers.set(seat, peer);
-      if (previous && previous.socket !== socket)
-        previous.socket.close(4001, "session_replaced");
+      if (previous && previous.socket !== socket) previous.socket.close(4001, "session_replaced");
       this.send(peer, {
         type: "ready",
         version: MATCH_PROTOCOL_VERSION,
