@@ -24,6 +24,17 @@ The integration adds migration `0070_api_football_data_autovacuum_tuning.sql`, l
 
 Acceptance: confirm a successful autovacuum/analyze in `pg_stat_user_tables`, then compare at least 10 refresh durations and confirm the plan improves to an index-only scan where visibility permits. Keep the unique `featured_injury_counts_pk` index and concurrent refresh.
 
+## Verification after the 11 November 2026 production change
+
+The per-table thresholds were applied and read back successfully. PostgreSQL then completed an autovacuum at `2026-11-11 19:26:01 UTC` and an autoanalyze at `19:25:51 UTC`. The subsequent `pg_stat_user_tables` sample reported:
+
+- `n_dead_tup = 0`
+- `n_mod_since_analyze = 0`
+- `last_autovacuum = 2026-11-11 19:26:01 UTC`
+- `last_autoanalyze = 2026-11-11 19:25:51 UTC`
+
+This confirms the maintenance threshold change took effect and the 122,197 estimated dead tuples were cleared. The remaining acceptance test is the next scheduled `featured_injury_counts` refresh: record its duration and plan after the visibility map has been refreshed. Do not claim the 30-second refresh is fixed until that measurement is captured.
+
 ## Capture the exact production plan and blockers
 
 ```sql
