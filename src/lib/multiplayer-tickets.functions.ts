@@ -13,7 +13,8 @@ export const getMatchSeatTicket = createServerFn({ method: "POST" })
     // This server function is NOT a public WebSocket route. It issues a
     // credential only for a verified room participant with a live match.
     const secret = process.env["MATCH_TICKET_SIGNING_SECRET"];
-    if (!secret) return { ok: false, reason: "unavailable" };
+    if (!secret || process.env["MATCH_AUTHORITY_ENABLED"] !== "true")
+      return { ok: false, reason: "unavailable" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { issueMatchSeatTicket } = await import("@/game/online/seat-ticket-issuer.server");
     return issueMatchSeatTicket(
@@ -22,7 +23,7 @@ export const getMatchSeatTicket = createServerFn({ method: "POST" })
         loadRoom: async (roomId) => {
           const { data: room, error } = await supabaseAdmin
             .from("match_rooms")
-            .select("id, host_id, guest_id, status, server_seeded")
+            .select("id, host_id, guest_id, status, settlement_authority, server_seeded")
             .eq("id", roomId)
             .maybeSingle();
           if (error) throw error;
