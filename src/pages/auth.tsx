@@ -497,15 +497,7 @@ export function AuthPage() {
                 </Button>
               )}
               {methods && methods.socialProviders.some((p) => p !== "google") && (
-                <div
-                  className="grid gap-2"
-                  style={{
-                    gridTemplateColumns: `repeat(${Math.min(
-                      3,
-                      methods.socialProviders.filter((p) => p !== "google").length,
-                    )}, minmax(0, 1fr))`,
-                  }}
-                >
+                <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-3">
                   {methods.socialProviders
                     .filter((p) => p !== "google")
                     .map((provider) => (
