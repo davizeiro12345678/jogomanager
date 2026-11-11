@@ -1172,6 +1172,7 @@ export type Database = {
       match_rooms: {
         Row: {
           code: string
+          contact_physics_revision: 1 | 2
           created_at: string
           guest_club: string | null
           guest_id: string | null
@@ -1187,6 +1188,7 @@ export type Database = {
         }
         Insert: {
           code: string
+          contact_physics_revision?: 1 | 2
           created_at?: string
           guest_club?: string | null
           guest_id?: string | null
@@ -1202,6 +1204,7 @@ export type Database = {
         }
         Update: {
           code?: string
+          contact_physics_revision?: 1 | 2
           created_at?: string
           guest_club?: string | null
           guest_id?: string | null
