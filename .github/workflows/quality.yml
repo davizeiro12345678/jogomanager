@@ -164,6 +164,8 @@ jobs:
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0064_support_ticket_outbox.sql
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0065_atomic_match_room_creation.sql
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0066_api_football_claim_concurrency_48.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0067_api_football_full_custom450_quota.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/api-football-custom450-contract.sql
       - name: Verify private support quota, idempotency, delivery leases and retry fencing
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/support-outbox-contract.sql
       - name: Verify atomic private room creation, host quotas and bounded empty-lobby expiration
