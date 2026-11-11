@@ -566,13 +566,16 @@ describe("match session lifecycle regressions", () => {
   });
 });
 
-
 describe("authoritative match serialization regressions", () => {
   it("rejects modified ticket timestamps even when the original nonce and signature are reused", () => {
     const { session } = createSession();
     const home = ticket("home");
-    expect(() => session.connect({ ...home, expiresAt: home.expiresAt + 120_000 }, home.expiresAt + 1)).toThrow(/ticket/i);
-    expect(() => session.connect({ ...home, issuedAt: home.issuedAt - 1 }, issuedAt)).toThrow(/ticket/i);
+    expect(() =>
+      session.connect({ ...home, expiresAt: home.expiresAt + 120_000 }, home.expiresAt + 1),
+    ).toThrow(/ticket/i);
+    expect(() => session.connect({ ...home, issuedAt: home.issuedAt - 1 }, issuedAt)).toThrow(
+      /ticket/i,
+    );
     expect(() => session.connect(home, home.issuedAt - 1)).toThrow(/ticket/i);
   });
 
@@ -598,7 +601,8 @@ describe("authoritative match serialization regressions", () => {
     const { session } = createSession();
     const commands = Array.from({ length: 12 }, (_, index) => command(index + 1, "ack_snapshot"));
     let expectedHash = GENESIS_SESSION_HASH;
-    for (const input of commands) expectedHash = (await appendCommandHash(expectedHash, input)).hash;
+    for (const input of commands)
+      expectedHash = (await appendCommandHash(expectedHash, input)).hash;
     const outcomes = await Promise.all(
       commands.map((input, index) =>
         session.receive(ticket(index % 2 ? "away" : "home"), input, issuedAt + index),
@@ -674,10 +678,7 @@ describe("authoritative match serialization regressions", () => {
       session.receive(ticket("home"), forfeit, issuedAt),
       session.receive(ticket("away"), command(1, "set_tactics"), issuedAt + 1),
     ]);
-    expect(outcomes).toEqual([
-      { accepted: true },
-      { accepted: false, reason: "command_rejected" },
-    ]);
+    expect(outcomes).toEqual([{ accepted: true }, { accepted: false, reason: "command_rejected" }]);
     expect(engine.tacticalChanges).toHaveLength(0);
     expect((await session.finalize("completed", issuedAt + 2)).commandHash).toBe(expectedHash);
   });
@@ -687,11 +688,13 @@ describe("authoritative match serialization regressions", () => {
     const digest = vi.spyOn(globalThis.crypto.subtle, "digest");
     digest.mockRejectedValueOnce(new Error("digest unavailable"));
     try {
-      await expect(session.receive(ticket("home"), command(1, "set_tactics"), issuedAt))
-        .rejects.toThrow("digest unavailable");
+      await expect(
+        session.receive(ticket("home"), command(1, "set_tactics"), issuedAt),
+      ).rejects.toThrow("digest unavailable");
       expect(engine.tacticalChanges).toHaveLength(0);
-      await expect(session.receive(ticket("home"), command(1, "set_tactics"), issuedAt + 1))
-        .resolves.toEqual({ accepted: true });
+      await expect(
+        session.receive(ticket("home"), command(1, "set_tactics"), issuedAt + 1),
+      ).resolves.toEqual({ accepted: true });
       expect(engine.tacticalChanges).toHaveLength(1);
     } finally {
       digest.mockRestore();
