@@ -99,6 +99,19 @@ WHERE kind = 'injury'
   )
 ON CONFLICT (ref) DO NOTHING;
 
+-- Reconcile rows that were deleted or moved out of the featured set while the
+-- snapshot backfill was scanning. The source triggers cover changes committed
+-- after this cleanup statement's snapshot; this pass removes any stale row
+-- inserted by the earlier backfill after a concurrent delete trigger ran.
+DELETE FROM private_performance.featured_injury_rows AS summary
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.api_football_data AS source
+  WHERE source.kind = 'injury'
+    AND source.ref = summary.ref
+    AND source.payload -> 'league' ->> 'id' = summary.league_id::text
+);
+
 ANALYZE private_performance.featured_injury_rows;
 
 CREATE OR REPLACE VIEW private_performance.featured_injury_counts_live AS
