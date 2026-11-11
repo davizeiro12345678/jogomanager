@@ -232,6 +232,7 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   // the seeded pass decisions halfway through a match.
   live = new MatchSim(message.home, message.away, message.seed, {
     rulesRevision: message.rulesRevision,
+    contactPhysicsRevision: message.contactPhysicsRevision,
     knockout: message.knockout,
     weather: message.weather,
   });
@@ -372,6 +373,7 @@ async function handleMessage(message: LiveWorkerRequest) {
   if (message.type === "simulate") {
     const sim = new MatchSim(message.home, message.away, message.seed, {
       rulesRevision: message.rulesRevision,
+      contactPhysicsRevision: message.contactPhysicsRevision,
       knockout: message.knockout,
       weather: message.weather,
     });
