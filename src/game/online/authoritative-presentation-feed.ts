@@ -96,7 +96,7 @@ export class AuthoritativePresentationFeed {
         return { kind: "ignored", reason: "conflict" };
       let snapshot: MatchSnapshotV1;
       try {
-        snapshot = parseMatchSnapshotV1(input["snapshot"], this.current ?? undefined);
+        snapshot = parseMatchSnapshotV1(input["snapshot"]);
       } catch {
         return { kind: "ignored", reason: "malformed" };
       }
@@ -106,7 +106,8 @@ export class AuthoritativePresentationFeed {
       if (this.current) {
         if (
           snapshot.revision < this.current.revision ||
-          snapshot.tick < this.current.tick
+          snapshot.tick < this.current.tick ||
+          (this.current.phase === "finalized" && snapshot.phase !== "finalized")
         )
           return { kind: "ignored", reason: "stale" };
         if (snapshot.revision === this.current.revision) {
@@ -147,7 +148,7 @@ export class AuthoritativePresentationFeed {
       if (!exactKeys(input, ["type", "version", "sequence", "reason"]))
         return { kind: "ignored", reason: "malformed" };
       const sequence = parseSequence(input["sequence"]);
-      if (sequence === null || sequence < this.lastSequence)
+      if (sequence === null || sequence <= this.lastSequence)
         return { kind: "ignored", reason: "stale" };
       if (input["reason"] !== undefined &&
           (typeof input["reason"] !== "string" || input["reason"].length > 80))
