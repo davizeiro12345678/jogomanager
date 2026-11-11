@@ -25,6 +25,24 @@ describe("Canonical server-only authoritative engine", () => {
     expect(() => new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, "bad")).toThrow();
   });
 
+  it("keeps historical rooms on their original contact model", () => {
+    const legacy = new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, seed, {
+      contactPhysicsRevision: 1,
+    });
+    const modern = new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, seed, {
+      contactPhysicsRevision: 2,
+    });
+    try {
+      expect(legacy.sim.contactPhysicsRevision).toBeNull();
+      expect(legacy.sim.executionContract()).not.toHaveProperty("contactPhysicsRevision");
+      expect(modern.sim.contactPhysicsRevision).toBe(2);
+      expect(modern.sim.executionContract().contactPhysicsRevision).toBe(2);
+    } finally {
+      legacy.dispose();
+      modern.dispose();
+    }
+  });
+
   it("repeats the same fixed-step simulation and publishes no private seed", () => {
     const left = createEngine();
     const right = createEngine();
