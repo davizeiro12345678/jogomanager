@@ -540,6 +540,13 @@
       "when": 1794431000000,
       "tag": "0076_authoritative_match_settlement",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1794432000000,
+      "tag": "0077_room_authority_fencing",
+      "breakpoints": true
     }
   ]
 }
