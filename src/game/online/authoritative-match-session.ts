@@ -154,6 +154,40 @@ export class AuthoritativeMatchSession {
     this.tickets[candidate.seat] = { ...candidate };
   }
 
+  /**
+   * Called ONLY after the trusted WebSocket bridge verifies the HMAC and the
+   * signed ticket's expiry. The session still checks user, seat, room,
+   * monotonic issuance and reconnection deadlines before rebinding it.
+   * Earlier tickets cannot resume a session after a newer ticket is installed.
+   */
+  bindVerifiedTransportTicket(ticket: MatchTicketV1, now: number): void {
+    assertCurrentTicket(ticket, now);
+    if (this.closing || this.closingRequested || this.receipt || this.phase === "finalized")
+      throw new Error("match session is already closing");
+    if (ticket.roomId !== this.options.roomId) throw new Error("ticket room mismatch");
+    const expected = this.tickets[ticket.seat];
+    if (ticket.userId !== expected.userId || ticket.version !== expected.version)
+      throw new Error("ticket user or seat mismatch");
+    const deadline = this.reconnectDeadlines.get(ticket.seat);
+    if (deadline !== undefined && now >= deadline)
+      throw new Error("reconnection window expired");
+    // The same signed ticket is valid across a network retry until expiry.
+    if (
+      ticket.signature === expected.signature &&
+      ticket.nonce === expected.nonce &&
+      ticket.issuedAt === expected.issuedAt &&
+      ticket.expiresAt === expected.expiresAt
+    )
+      return;
+    if (
+      ticket.issuedAt <= expected.issuedAt ||
+      ticket.expiresAt <= expected.expiresAt ||
+      ticket.nonce === expected.nonce
+    )
+      throw new Error("stale or replayed match ticket");
+    this.tickets[ticket.seat] = { ...ticket };
+  }
+
   disconnect(userId: string, now: number): void {
     const seat = this.seatForUser(userId);
     if (!seat || !this.connected.has(userId) || this.closing || this.phase === "finalized") return;
