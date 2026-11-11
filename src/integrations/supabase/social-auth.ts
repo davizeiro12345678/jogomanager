@@ -124,12 +124,6 @@ export async function availableAuthMethods(signal?: AbortSignal): Promise<AuthMe
   return parseAuthMethods(await response.json(), allowlist);
 }
 
-export function lovableOAuthProvider(provider: SocialProvider) {
-  if (provider === "google" || provider === "apple") return provider;
-  if (provider === "azure") return "microsoft";
-  return undefined;
-}
-
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {
   return { redirectTo, ...(provider === "azure" ? { scopes: "email" } : {}) };
 }
