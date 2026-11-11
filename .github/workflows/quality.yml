@@ -36,6 +36,8 @@ jobs:
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --exclude src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
       - run: node --test scripts/database-growth-snapshot.test.mjs
+      - name: Compile read-only VPS catalog gateway
+        run: python3 -m py_compile infra/vps/catalog/gateway.py infra/vps/catalog/smoke_test.py
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
       - name: Verify Edge Function authentication and import contracts
