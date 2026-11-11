@@ -26,9 +26,9 @@ describe("opt-in contact physics / historical replay boundaries", () => {
     try {
       expect(sim.executionContract().contactPhysicsRevision).toBe(2);
       expect(validExecutionContract(sim.executionContract())).toBe(true);
-      expect(validExecutionContract({ ...sim.executionContract(), contactPhysicsRevision: 5 })).toBe(
-        false,
-      );
+      expect(
+        validExecutionContract({ ...sim.executionContract(), contactPhysicsRevision: 5 }),
+      ).toBe(false);
     } finally {
       sim.dispose();
     }
@@ -54,7 +54,9 @@ describe("opt-in contact physics / historical replay boundaries", () => {
         player.vx = 0;
         player.vz = 0;
       });
-      const before = new Map(sim.players.map((player) => [player.id, { x: player.x, z: player.z }]));
+      const before = new Map(
+        sim.players.map((player) => [player.id, { x: player.x, z: player.z }]),
+      );
       sim.step(MATCH_SIMULATION_STEP, 6);
       expect(sim.ball.holder).toBeNull();
       for (const player of sim.players) {
@@ -70,7 +72,9 @@ describe("opt-in contact physics / historical replay boundaries", () => {
     const sim = create("contact-reach", 2);
     try {
       const holder = sim.players.find((player) => player.side === "home" && player.pos !== "GK")!;
-      const challenger = sim.players.find((player) => player.side === "away" && player.pos !== "GK")!;
+      const challenger = sim.players.find(
+        (player) => player.side === "away" && player.pos !== "GK",
+      )!;
       sim.players.forEach((player) => {
         player.x = 28;
         player.z = player.side === "home" ? -12 : 12;
@@ -93,7 +97,9 @@ describe("opt-in contact physics / historical replay boundaries", () => {
     const sim = create("contact-missed-ball", 2);
     try {
       const holder = sim.players.find((player) => player.side === "home" && player.pos !== "GK")!;
-      const challenger = sim.players.find((player) => player.side === "away" && player.pos !== "GK")!;
+      const challenger = sim.players.find(
+        (player) => player.side === "away" && player.pos !== "GK",
+      )!;
       sim.players.forEach((player) => {
         player.x = 25;
         player.z = player.side === "home" ? -12 : 12;
