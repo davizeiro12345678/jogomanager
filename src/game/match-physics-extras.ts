@@ -97,7 +97,6 @@ export function firstTouchSpill(base: number, incomingSpeed: number, weather: We
   return base * pace * (weather === "rain" ? 1.18 : 1);
 }
 
-
 /**
  * Revision-2-only goalkeeper reach at the moment the ball crosses the save
  * plane. The athlete has already advanced continuously during the flight.
@@ -121,5 +120,7 @@ export function goalkeeperCanReach(
   const fatigue = 0.75 + (clamp(stamina, 0, 100) / 100) * 0.25;
   const reach = (0.95 + reaction) * fatigue;
   const highBallPenalty = height > 1.8 ? (height - 1.8) * 0.22 : 0;
-  return Math.hypot(lateral, forward * 0.75) + highBallPenalty <= reach;
+  // A catch may happen before the goal-line plane: forward separation has
+  // weaker influence than lateral mismatch, but remains bounded.
+  return Math.hypot(lateral, forward * 0.2) + highBallPenalty <= reach;
 }
