@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { availableAuthMethods, type AuthMethods } from "@/integrations/supabase/social-auth";
+import { availableAuthMethods, fallbackAuthMethods } from "@/integrations/supabase/social-auth";
 import { reportSilent } from "@/lib/silent-errors";
 
 export function useAuthMethods() {
@@ -25,9 +25,11 @@ export function useAuthMethods() {
             phase: "load",
             dedupeKey: "auth-methods-load",
           });
-          setError(
-            "Não foi possível carregar as formas de entrada. Confira a conexão e tente novamente.",
-          );
+          // The settings endpoint is advisory. Keep the existing Supabase
+          // project usable through its explicitly configured provider allowlist
+          // and email/password while reporting the degraded discovery request.
+          setMethods(fallbackAuthMethods());
+          setError(null);
         }
       })
       .finally(() => {
