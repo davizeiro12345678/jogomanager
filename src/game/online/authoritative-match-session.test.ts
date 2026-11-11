@@ -232,6 +232,46 @@ describe("AuthoritativeMatchSession", () => {
     expect(engine.tacticalChanges).toHaveLength(1);
   });
 
+  it("recovers signed command sequences and forces socket reauthentication after a durable restart", async () => {
+    const original = createSession();
+    const home = ticket("home");
+    const away = ticket("away");
+    await original.session.receive(home, command(1, "ready"), issuedAt);
+    await original.session.receive(away, command(1, "ready"), issuedAt);
+    await original.session.receive(home, command(2, "set_tactics"), issuedAt);
+    for (let tick = 0; tick < 10; tick += 1) original.session.advanceFixedTick();
+    const privateState = original.session.checkpoint();
+    const recovered = createSession();
+    for (let tick = 0; tick < 10; tick += 1) recovered.engine.advanceFixedStep();
+    recovered.session.restoreCheckpoint(privateState, issuedAt + 1_000);
+    expect(recovered.session.snapshot().phase).toBe("reconnecting");
+    expect(recovered.session.snapshot().tick).toBe(10);
+    expect(recovered.session.snapshot().revision).toBeGreaterThan(privateState.revision);
+    expect(
+      await recovered.session.receive(home, command(2, "set_tactics"), issuedAt + 1_000),
+    ).toEqual({ accepted: false, reason: "sequence_not_monotonic" });
+    recovered.session.connect(away, issuedAt + 1_000);
+    expect(recovered.session.phase).toBe("live");
+    const accepted = await recovered.session.receive(home, command(3, "ack_snapshot"), issuedAt + 1_001);
+    expect(accepted.accepted).toBe(true);
+    expect(recovered.session.lastTacticsFor("home")?.formation).toBe("4-3-3");
+    const receipt = await recovered.session.finalize("completed", issuedAt + 1_002);
+    expect(receipt.commandHash).not.toBe(GENESIS_SESSION_HASH);
+  });
+
+  it("restores the same signed terminal receipt idempotently after eviction", async () => {
+    const original = createSession();
+    await original.session.receive(ticket("home"), command(1), issuedAt);
+    const signed = await original.session.finalize("completed", issuedAt + 1);
+    const state = original.session.checkpoint();
+    const restarted = createSession();
+    restarted.session.restoreCheckpoint(state, issuedAt + 2);
+    expect(await restarted.session.expireReconnects(issuedAt + 3)).toEqual(signed);
+    expect(await restarted.session.completeIfFinished(issuedAt + 3)).toEqual(signed);
+    expect(restarted.signatureCount()).toBe(0);
+    expect(restarted.session.phase).toBe("finalized");
+  });
+
   it("keeps the last tactical plan during the 60-second reconnection window", async () => {
     const { session } = createSession();
     const home = ticket("home");
