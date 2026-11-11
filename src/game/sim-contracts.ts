@@ -8,6 +8,7 @@ import type { WindVector } from "./ball-climate";
 import type { WeatherKind } from "./sim-rules";
 import type { MatchExecutionContract } from "./match-execution-contract";
 import type { BallPhysicsCheckpoint } from "./rapier-ball-authority";
+import type { MatchRulesStateV2 } from "./offside-phase";
 
 export const LIVE_MATCH_CLOCK_SCALE = 6;
 /** Batch completion shares the live spatial step and match clock. */
@@ -212,6 +213,8 @@ export interface SimView {
 export interface MatchCheckpoint {
   version: 1 | 2;
   execution?: MatchExecutionContract;
+  /** Present only for the explicitly selected second rules revision. */
+  rulesState?: MatchRulesStateV2 | undefined;
   seed: string;
   rng: number;
   state: Record<string, unknown>;
