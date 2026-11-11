@@ -230,7 +230,7 @@ export default function QuickLive({
         mode={camera}
         quality={quality}
         paused={paused || done}
-        measurementKey={`quick:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
+        measurementKey={`quick:r${setups.rulesRevision ?? 1}:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
       />
       <button
         type="button"
