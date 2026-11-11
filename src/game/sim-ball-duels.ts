@@ -9,6 +9,7 @@ import {
   blockRestitution,
   fatigueStrikeFactor,
   firstTouchSpill,
+  goalkeeperCanReach,
   parryReboundSpeed,
   shotProfile,
 } from "./match-physics-extras";
@@ -188,6 +189,31 @@ export function resolveShot(
       : 1;
   const crossingZ = previous.z + (sim.ball.z - previous.z) * ratio;
   const crossingHeight = previous.height + (sim.ball.height - previous.height) * ratio;
+
+  // The legacy saved-outcome rule remains frozen for historical replays.
+  // Revised physics checks whether the keeper really arrived at the contact
+  // point; a distant dive cannot magically prevent an on-target goal.
+  if (
+    sim.contactPhysicsRevision === 2 &&
+    s.outcome === "saved" &&
+    gk &&
+    !goalkeeperCanReach(
+      gk.x,
+      gk.z,
+      planeX,
+      crossingZ,
+      crossingHeight,
+      gk.defending,
+      gk.stamina,
+    )
+  ) {
+    if (Math.abs(crossingZ) < GOAL_Z && crossingHeight < 2.44) {
+      sim.pendingShot = null;
+      sim.scoreGoal(s.side, shooter, s.fromX, s.fromZ, s.xg, s.bigChance, s.bodyPart);
+      return true;
+    }
+    return sim.woodworkOrRelease(s, shooter, crossingZ, crossingHeight, dir);
+  }
 
   // defesa do goleiro
   if (s.outcome === "saved" && gk) {
