@@ -295,9 +295,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
                 scoreDifference:
                   sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
               })
-            : sim.rulesRevision === 2 &&
-                setup.tactics.pressing === 2 &&
-                Math.abs(bx - line) > 14
+            : sim.rulesRevision === 2 && setup.tactics.pressing === 2 && Math.abs(bx - line) > 14
               ? dir * 3.5
               : 0;
         tx = tx * 0.35 + (line + trap) * 0.65;
