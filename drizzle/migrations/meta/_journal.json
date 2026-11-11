@@ -491,6 +491,13 @@
       "when": 1794257100000,
       "tag": "0069_email_automation_outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1794257200000,
+      "tag": "0070_api_football_data_autovacuum_tuning",
+      "breakpoints": true
     }
   ]
 }
