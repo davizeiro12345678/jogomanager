@@ -8,10 +8,10 @@ DECLARE
   v_after_71 bigint;
   v_after_72 bigint;
 BEGIN
-  SELECT coalesce(injury_count, 0) INTO v_before_71
-  FROM private_performance.featured_injury_counts_live WHERE league_id = 71;
-  SELECT coalesce(injury_count, 0) INTO v_before_72
-  FROM private_performance.featured_injury_counts_live WHERE league_id = 72;
+  SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 71), 0)
+  INTO v_before_71;
+  SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 72), 0)
+  INTO v_before_72;
 
   INSERT INTO public.api_football_data(kind, ref, payload, updated_at)
   VALUES ('injury', v_ref, jsonb_build_object('league', jsonb_build_object('id', '71')), now());
@@ -21,8 +21,8 @@ BEGIN
     WHERE ref = v_ref AND league_id = 71
   ), 'insert trigger must index a featured injury row';
 
-  SELECT injury_count INTO v_after_71
-  FROM private_performance.featured_injury_counts_live WHERE league_id = 71;
+  SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 71), 0)
+  INTO v_after_71;
   ASSERT v_after_71 = v_before_71 + 1, 'insert must increment the live count';
 
   UPDATE public.api_football_data
@@ -37,8 +37,8 @@ BEGIN
 
   SELECT injury_count INTO v_after_71
   FROM private_performance.featured_injury_counts_live WHERE league_id = 71;
-  SELECT injury_count INTO v_after_72
-  FROM private_performance.featured_injury_counts_live WHERE league_id = 72;
+  SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 72), 0)
+  INTO v_after_72;
   ASSERT v_after_71 = v_before_71, 'league 71 count must be decremented after a move';
   ASSERT v_after_72 = v_before_72 + 1, 'league 72 count must be incremented after a move';
 
@@ -47,8 +47,8 @@ BEGIN
     SELECT 1 FROM private_performance.featured_injury_rows WHERE ref = v_ref
   ), 'delete trigger must remove the indexed injury row';
 
-  SELECT coalesce(injury_count, 0) INTO v_after_72
-  FROM private_performance.featured_injury_counts_live WHERE league_id = 72;
+  SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 72), 0)
+  INTO v_after_72;
   ASSERT v_after_72 = v_before_72, 'delete must restore the original live count';
 END;
 $$;
