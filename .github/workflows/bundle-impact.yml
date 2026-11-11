@@ -44,6 +44,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Verify baseline resolver compatibility
+        run: node --test scripts/bundle-baseline-resolver.test.mjs
       - name: Preserve analyzer and install one dependency graph for both revisions
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
@@ -62,18 +64,18 @@ jobs:
           cp "$RUNNER_TEMP/bundle-package.json" package.json
           cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
           # The old global "entities" alias breaks nested entities/decode with the
-          # candidate lockfile. Normalize only that resolver compatibility line;
-          # no performance or application logic is changed in the baseline.
+          # candidate lockfile. Newer baselines already lack the alias. Normalize
+          # only the known historical line; reject other resolver aliases.
           python3 - <<'PY'
+          import re
           from pathlib import Path
           p = Path("vite.config.ts")
           src = p.read_text()
           line = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
-          # Newer bases already removed the obsolete alias. Accept that exact
-          # state too; an unexpected resolver shape must still stop the job.
-          if src.count(line) > 1 or ("entities:" in src and src.count(line) != 1):
+          aliases = re.findall(r'''(?m)^\\s*["']?entities["']?\\s*:''', src)
+          if len(aliases) > 1 or len(aliases) != src.count(line):
               raise SystemExit("Baseline entities alias contract changed")
-          if src.count(line) == 1:
+          if aliases:
               p.write_text(src.replace(line, "", 1))
           PY
           rm -rf .output
