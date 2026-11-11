@@ -10,6 +10,20 @@ with approximately 30.6 seconds mean execution time and 32.3 seconds maximum. Th
 
 Do not change the schedule or replace the concurrent refresh with a blocking refresh until the cause is established. The view may be waiting on locks or I/O rather than spending 30 seconds aggregating rows.
 
+## Additional production evidence and corrective action
+
+A read-only production sample on 11 November 2026 found:
+
+- `api_football_data`: approximately 10.23 million live tuples, 14 GB total relation size and 122,197 estimated dead tuples.
+- `last_autovacuum` and `last_vacuum`: both NULL in the sampled statistics.
+- Table reloptions: vacuum scale factor 5% / threshold 500; analyze scale factor 2% / threshold 500.
+- Those settings defer vacuum until roughly 512,000 dead tuples and analyze until roughly 205,000 modified tuples. The sample had only 122,197 dead tuples and 83,833 modifications since analyze, so routine maintenance had not been triggered.
+- The injury digest consistently completed in about 30.2–31.9 seconds. Its plan used `api_football_injury_league_time_idx`, so the issue is not a missing index or a missing unique index on the materialized view.
+
+The integration adds migration `0070_api_football_data_autovacuum_tuning.sql`, lowering the per-table vacuum/analyze thresholds to 0.5% plus 20,000 rows. This is metadata-only; it does not rewrite the 14 GB table. Once deployed, autovacuum should become eligible at the current dead-tuple/modification counts. Do not run a manual `VACUUM FULL` (it rewrites and locks the table). If immediate visibility-map maintenance is required, schedule ordinary `VACUUM (ANALYZE) public.api_football_data;` in a controlled window.
+
+Acceptance: confirm a successful autovacuum/analyze in `pg_stat_user_tables`, then compare at least 10 refresh durations and confirm the plan improves to an index-only scan where visibility permits. Keep the unique `featured_injury_counts_pk` index and concurrent refresh.
+
 ## Capture the exact production plan and blockers
 
 ```sql
