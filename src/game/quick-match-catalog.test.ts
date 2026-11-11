@@ -9,6 +9,7 @@ import { LEAGUES } from "./data/leagues";
 import { preloadQuickMatchCatalog, quickMatchLeagueGroups } from "./quick-match-catalog";
 import { RUNTIME_APPROVED_LOCALES } from "@/i18n/locale-runtime-manifest";
 import type { QuickMatchLeagueSummary } from "./data/quick-match-catalog";
+import { randomQuickMatchPair, selectableQuickMatchClubs } from "./quick-match-selection";
 
 it("keeps the lightweight league directory and default roster aligned with the full catalog", () => {
   expect(QUICK_MATCH_LEAGUE_DIRECTORY).toEqual(
@@ -74,4 +75,48 @@ it("shares the lazy full-catalog import and resolves the same league data", asyn
   const catalog = await first;
   expect(catalog.LEAGUES).toBe(LEAGUES);
   expect(catalog.getLeague("bra")).toEqual(DEFAULT_QUICK_MATCH_LEAGUE);
+});
+
+
+const club = (id: string, name: string): import("./types").Club => ({
+  id,
+  name,
+  short: name.slice(0, 3).toUpperCase(),
+  league: "bra",
+  primary: "#123456",
+  secondary: "#ffffff",
+  strength: 70,
+});
+
+it("excludes unresolved and generic club fallbacks from quick-match selection", () => {
+  const flamengo = club("fla", "Flamengo");
+  const palmeiras = club("pal", "Palmeiras");
+  const generic = club("generic", "Clube");
+  const canonical = {
+    fla: flamengo,
+    pal: palmeiras,
+    generic,
+  };
+  const selected = selectableQuickMatchClubs(
+    [flamengo, generic, club("missing", "Clube Atlético"), palmeiras, flamengo],
+    canonical,
+  );
+  expect(selected).toEqual([flamengo, palmeiras]);
+});
+
+it("rejects generic fallback labels independent of accents and case", () => {
+  const labels = ["CLUBE", "Clube convidado", "Unknown Club", "Sem nome"];
+  const canonical = Object.fromEntries(labels.map((name, index) => {
+    const item = club(`generic-${index}`, name);
+    return [item.id, item];
+  }));
+  expect(selectableQuickMatchClubs(Object.values(canonical), canonical)).toEqual([]);
+});
+
+it("always returns two distinct canonical clubs for a random matchup", () => {
+  const clubs = [club("fla", "Flamengo"), club("pal", "Palmeiras"), club("bot", "Botafogo")];
+  const pair = randomQuickMatchPair(clubs, () => 0);
+  expect(pair).toEqual({ home: clubs[0], away: clubs[1] });
+  expect(pair?.home.id).not.toBe(pair?.away.id);
+  expect(randomQuickMatchPair([clubs[0]!], () => 0)).toBeNull();
 });
