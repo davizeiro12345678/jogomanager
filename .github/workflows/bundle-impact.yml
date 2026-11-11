@@ -74,6 +74,7 @@ jobs:
           # Restore the checked-out tree before switching revisions; the baseline
           # analyzer and historical Vite alias normalization are temporary only.
           git checkout -- .
+          git clean -fd
       - name: Build candidate with its own locked dependency graph
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
