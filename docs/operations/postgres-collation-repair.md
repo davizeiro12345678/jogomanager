@@ -11,6 +11,16 @@ This is a database-wide metadata mismatch. It is not safe to silence the warning
 
 A read-only production inventory on 11 November 2026 found **251 ordinary indexes** that depend on the database-default collation. All 251 reported `indisvalid = true`, and the database had zero invalid indexes at the time of inspection. That validity flag does not prove collation-version consistency: these indexes still require rebuild before the recorded version is refreshed.
 
+## Production inventory observed on 11 November 2026
+
+The production database still reports recorded collation `153.120` versus actual `153.121`. A read-only catalog inventory found:
+
+- 197 ordinary indexes (`pg_class.relkind = 'i'`) using the database-default collation, totaling approximately 2,173 MB.
+- One partitioned index (`relkind = 'I'`); its parent has no physical size, and its child indexes must be inventoried and rebuilt as required.
+- The ordinary-index inventory spans application and extension-managed schemas, not just `public`.
+
+This is a database-wide maintenance task, not a single-index patch. Rebuilding all affected indexes concurrently can temporarily require substantial additional disk space and I/O. Before proceeding, calculate the exact child-index inventory, identify extension-owned objects, verify provider permissions and available storage, and agree on a monitored maintenance window. Do not execute a blanket reindex from an application migration or during normal release deployment.
+
 ## Safety requirements
 
 1. Schedule a maintenance window and confirm a recent recoverable backup/PITR window.
