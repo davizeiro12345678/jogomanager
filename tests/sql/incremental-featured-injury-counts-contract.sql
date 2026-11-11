@@ -73,8 +73,8 @@ BEGIN
     WHERE ref = v_ref AND league_id = 72
   ), 'update trigger must move an injury between featured leagues';
 
-  SELECT injury_count INTO v_after_71
-  FROM private_performance.featured_injury_counts_live WHERE league_id = 71;
+  SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 71), 0)
+  INTO v_after_71;
   SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 72), 0)
   INTO v_after_72;
   ASSERT v_after_71 = v_before_71, 'league 71 count must be decremented after a move';
