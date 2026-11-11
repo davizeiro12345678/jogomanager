@@ -171,7 +171,7 @@ test("API-Football rejects invalid scheduled lane counts before claiming jobs", 
       },
     }),
   });
-  for (const workerLanes of [0, 17, 1.5, "4", null]) {
+  for (const workerLanes of [0, 13, 17, 1.5, "4", null]) {
     const response = await handler(
       request(
         "api-football-import",
@@ -373,13 +373,13 @@ test("API-Football bounds scheduled work and keeps the manual pilot single-lane"
   assert.deepEqual(footballWindowBudget("3", false), {
     lanes: 3,
     spacingMs: 267,
-    maxRequests: 150,
+    maxRequests: 45,
   });
   const custom = footballWindowBudget("999", false);
-  assert.equal(custom.lanes, 48);
+  assert.equal(custom.lanes, 12);
   assert.ok(custom.spacingMs >= 110);
-  assert.equal(custom.maxRequests, 880);
-  assert.ok(custom.maxRequests * 1440 >= 445000);
+  assert.equal(custom.maxRequests, 120);
+  assert.ok(custom.maxRequests <= 120);
   assert.equal(footballWindowBudget("16", true).lanes, 1);
   assert.equal(footballWindowBudget("invalid", false).lanes, 1);
 });
