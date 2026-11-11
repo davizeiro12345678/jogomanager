@@ -80,3 +80,43 @@ export const leaveMatchmakingQueue = createServerFn({ method: "POST" })
     if (data !== true) return { ok: false, reason: "rate_limited" };
     return { ok: true, status: "waiting" };
   });
+
+export type MatchmakingQueueStatus =
+  | { status: "disabled" | "unavailable" | "not_joined" }
+  | { status: "waiting" | "reserved"; mode: "casual" | "ranked"; region: string }
+  | { status: "matched"; mode: "casual" | "ranked"; roomId: string };
+
+export const getMatchmakingQueueStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({}).strict().parse(input))
+  .handler(async ({ context }): Promise<MatchmakingQueueStatus> => {
+    if (
+      process.env["MATCHMAKING_QUEUE_ENABLED"] !== "true" ||
+      !configuredMatchmakingRegion()
+    )
+      return { status: "disabled" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const rpc = supabaseAdmin.rpc.bind(supabaseAdmin) as unknown as (
+      name: string,
+      args: Record<string, string>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data, error } = await rpc("match_queue_status", { p_user: context.userId });
+    if (error || !data || typeof data !== "object" || Array.isArray(data))
+      return { status: "unavailable" };
+    const receipt = data as Record<string, unknown>;
+    if (receipt["status"] === "not_joined") return { status: "not_joined" };
+    const mode = receipt["mode"];
+    if (mode !== "casual" && mode !== "ranked") return { status: "unavailable" };
+    if (
+      receipt["status"] === "matched" &&
+      typeof receipt["roomId"] === "string" &&
+      z.string().uuid().safeParse(receipt["roomId"]).success
+    )
+      return { status: "matched", roomId: receipt["roomId"], mode };
+    if (
+      (receipt["status"] === "waiting" || receipt["status"] === "reserved") &&
+      typeof receipt["region"] === "string"
+    )
+      return { status: receipt["status"], mode, region: receipt["region"] };
+    return { status: "unavailable" };
+  });
