@@ -167,6 +167,10 @@ export class AuthoritativeMatchSession {
   ): Promise<MatchCommandOutcome> {
     this.assertBoundTicket(ticket, now);
     const input = parseMatchCommandV1(command);
+    // Reject cross-room commands before reconnecting a seat or mutating
+    // liveness. A valid ticket must not admit a command for another room.
+    if (input.roomId !== this.options.roomId)
+      return this.reject(ticket.userId, input.sequence, "command_rejected", now);
     if (this.closing || this.receipt || this.phase === "finalized")
       return this.reject(ticket.userId, input.sequence, "command_rejected", now);
     if (this.pendingCommands >= MAX_PENDING_COMMANDS)
