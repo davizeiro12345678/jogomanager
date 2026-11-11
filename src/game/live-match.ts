@@ -1,8 +1,8 @@
 import type { Player, Tactics } from "./types";
-import {
+import { emptyStats } from "./sim-contracts";
+import type {
   MatchSim,
-  emptyStats,
-  type MatchStats,
+  MatchStats,
   type PlayerRating,
   type Scorer,
   type ShotRecord,
