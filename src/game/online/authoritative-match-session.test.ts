@@ -677,13 +677,23 @@ describe("authoritative match serialization regressions", () => {
     });
   });
 
-  it("rejects a command overtaken by finalization before its hash commits", async () => {
+  it("drains an admitted command before freezing the receipt, then rejects late commands", async () => {
     const { session, engine } = createSession();
-    const input = session.receive(ticket("home"), command(1, "set_tactics"), issuedAt);
+    const admitted = command(1, "set_tactics");
+    const expectedHash = (await appendCommandHash(GENESIS_SESSION_HASH, admitted)).hash;
+    const input = session.receive(ticket("home"), admitted, issuedAt);
     const receipt = session.finalize("completed", issuedAt + 1);
-    await expect(input).resolves.toEqual({ accepted: false, reason: "command_rejected" });
-    expect(engine.tacticalChanges).toHaveLength(0);
-    expect((await receipt).commandHash).toBe(GENESIS_SESSION_HASH);
+
+    // Admission happened first. Finalization must preserve its command hash,
+    // but close the queue to all commands received after the final request.
+    await expect(input).resolves.toEqual({ accepted: true });
+    expect(engine.tacticalChanges).toHaveLength(1);
+    expect((await receipt).commandHash).toBe(expectedHash);
+    await expect(session.receive(ticket("home"), command(2, "set_tactics"), issuedAt + 2)).resolves.toEqual({
+      accepted: false,
+      reason: "command_rejected",
+    });
+    expect(engine.tacticalChanges).toHaveLength(1);
   });
 
   it("closes a queued forfeit without deadlocking or applying following commands", async () => {
