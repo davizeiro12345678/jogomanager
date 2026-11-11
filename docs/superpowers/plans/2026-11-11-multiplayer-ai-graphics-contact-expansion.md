@@ -132,3 +132,39 @@ Uma etapa só pode ser concluída com: caminho do código + SHA, testes que real
 - [ ] CI exato e teste físico concluídos.
 
 **Regra para handoff:** sempre buscar head atual do PR #132, comparar commits, não duplicar etapas já concluídas, preservar #127–#131 e atualizar o ledger com o que foi realmente executado.
+
+
+## Checkpoint de implementação adicional — 11/11/2026, PR #132
+
+**Estado dos commits:** esta expansão não está terminada. Os itens abaixo indicam código gravado na branch, **não** gates executados ou aprovação de produção. O estado anterior da PR foi lido no SHA `2bb6bcf5433d14f0d49f84ae0b6015e559cbeb6b`, e deve ser atualizado após este registro.
+
+| Etapa | Estado atual | Implementação concreta | Verificação pendente |
+|---|---|---|---|
+| P0 baseline | [~] | Diagnóstico de `LiveRoom` visual local, seed privada no servidor e contratos existentes; runbook `docs/operations/multiplayer-physics-rollout-2026-11-11.md` | Arquivos de inventário completos, métricas por hardware e ambiente |
+| P1 física | [~] | Revisão opt-in, domínio/desarme de curto alcance, retorno da bola sem teleportar atleta, goleiro com função de alcance, perseguição preditiva e testes focados | 1.000 seeds, pipeline Rapier, balanceamento de gols, foot-locking e evidência visual |
+| P2 autoridade | [~] | `authoritative-socket-bridge.server.ts` fornece contrato transportável de ticket, ACK/NACK, frame bounded, heartbeat, pressão de buffer, snapshots somente servidor e testes de transporte isolados | **Não há Durable Object conectado, emissor HMAC e cliente de snapshots em produção**; persistência/failover e tickets de sessão ainda faltam |
+| P3 modos | [~] | `matchmaking-policy.ts` implementa política pura casual/ranqueado com tolerância de MMR e região, bloqueios, rematch e testes | Fila transacional, ratings no PostgreSQL, convites, torneio, espectador e cooperativo 2×2 ainda não implementados |
+| P4 anticheat | [~] | Rejeição cross-room antes da conexão, política de UUID/limite de pacotes, validação de ticket injetável, limite de comando, CAS de resultado existente e modelo STRIDE no runbook | Verificação HMAC real ligada ao DO, auditoria de settlement, detecção de farm, dados mínimos de revisão, stress staging |
+| P5 chat/suporte | [~] | `RoomChat.tsx` reutilizado no lobby e na partida, botão silenciar local, denúncia com ID de sala validado e prefilling de ticket, reuso do outbox autenticado | Fila de moderação humana, recursos, detecção contextual calibrada, denúncias vinculadas a mensagens e validação ponta a ponta |
+| P6 IA | [~] | `ai-ball-interception.ts` prediz alvo e penaliza mudanças bruscas de direção na revisão opt-in | IA hierárquica de todo time, planejador ofensivo e defensivo, benchmark A/B |
+| P7 UI/3D | [~] | Chat acessível durante partida, botão de qualidade alta/média/baixa e aviso transparente de prévia local | Novos materiais/rigs, interpolação de snapshots de servidor, testes FPS físicos, deformação de malha e iluminação |
+| P8 release | [ ] | Novo SQL 0072, tipos/manifesto e teste SQL de trigger; checklist de staging documentado; CI de GitHub disparado | **Ainda não aprovado**: Quality Gates/Prettier/TypeScript/Vitest, staging, testes de dispositivos, ruleset admin e release |
+
+### Critérios operacionais da migration 0072
+
+- A migration `0072_match_contact_physics_revision.sql` registra revisão 1 para salas existentes e a revisão 2 para futuras salas, com `CHECK` e bloqueio de alteração direta por usuários comuns.
+- O replay servidor em `multiplayer.functions.ts` escolhe a revisão da linha persistida; para modelo 2, não invoca o worker auxiliar antigo sem contrato de paridade.
+- `LiveRoom.tsx` usa a revisão persistida para evitar simulação de modelo 2 em sala legada.
+- `tests/sql/match_contact_revision_contract.sql` e `scripts/verify-local-database.mjs` agora incluem verificação do esquema e proibição de atualização pela role `authenticated`; **o teste não foi executado localmente e a migration não foi aplicada em produção**.
+- Sem assinatura/ticket válido, não conectar WebSocket. O bridge de servidor é uma unidade de código para integração, e não uma rota Cloudflare publicada.
+- A interação com suporte não obtém automaticamente conteúdo de mensagens: o usuário abre o relato contextualizado e descreve a ocorrência sem publicar PII de terceiros.
+
+### Bloqueadores restantes
+
+- Não foi disponibilizado runtime npm/Node ou PostgreSQL isolado que pudesse executar a branch por este conector; não declarar testes verdes sem prova de CI.
+- Actions de todos os novos SHAs observados estavam `queued`; um novo commit reinicia os gates exatos.
+- Não há evidência de GPU física nem sincronização oficial do multiplayer entre navegadores.
+- A integração GitHub não possui permissão de alterar proteção da `main`; segurança de host VPS, operação de índices PostgreSQL e deploy Cloudflare exigem seus próprios gates.
+- Preservar PR #132 como Draft, não publicar alteração 0072 antes de validar commits e rollback.
+
+**Prioridade de continuação técnica:** resolver primeiro qualquer erro do CI exato; integrar Durable Object + tickets reais + snapshots de cliente em staging; depois fila transacional ranqueada, anticheat end-to-end, IA hierárquica e perfil gráfico, sempre com teste e rollback. Nenhuma dessas entregas futuras deve ser declarada concluída por existir apenas no plano.
