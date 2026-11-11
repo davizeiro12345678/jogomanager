@@ -42,39 +42,39 @@
 **Status:** Phase 1 — integration and CI stabilization. Draft release PR #132 exists; it is not merged to `main` and no production deployment has been triggered.
 
 - Repository: `davizeiro12345678/jogomanager`
-- Main SHA last read: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
+- Main SHA: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
 - Integration branch: `integration/release-2026-11-11`
-- Exact branch SHA at this checkpoint: `9ac3af9f7338b15d83530df6ee61a3a88bedf1e7`; refresh before resuming.
-- PR #132: open, Draft, base `main`, head integration branch. It is the single review/release container; do not merge until exact-head CI and admin governance gates pass.
+- **Current integration SHA:** `88bc31045b92d0a25822e8dfbec9067e805fec85` (refreshed after the previous checkpoint; refresh again before resuming).
+- PR #132: open, Draft, base `main`, head integration branch. It is the single review/release container; do not merge until exact-head CI and repository governance gates pass.
 - PR #127: closed/merged into integration (merge commit `4aedd98b88d67be9d7150902455a0aecdf3bebda`).
 - PR #128: open/draft against `main`; head `32ac4219bf5dc4a357593a381f5e918876a741d0` is an ancestor of integration. Do not cherry-pick again.
 - PR #129–#131: open/draft, retargeted to integration; selected changes have been reconciled into PR #132, but full diff review and exact-head tests remain.
 
 ### Repository governance
 
-An active repository ruleset exists, but its rule list does not include `required_status_checks`. The GitHub branch-protection endpoint returns HTTP 403 to the connected integration and no ruleset write action is available. A repository administrator must require the Quality Gates, CodSpeed, deterministic stress, migration replay, bundle comparison, and Match 3D evidence checks on `refs/heads/main`. Do not merge until this is configured.
+An active repository ruleset named `wadweew` exists, but its rule list does not include `required_status_checks`. The GitHub branch-protection endpoint returns HTTP 403 to the connected integration and no ruleset write action is available. A repository administrator must require Quality Gates, CodSpeed, deterministic stress, migration replay, bundle comparison and Match 3D evidence checks on `refs/heads/main`. Do not merge until this is configured.
 
-### Current exact-head CI run set
+### Current exact-head CI run set — SHA `88bc31045b92d0a25822e8dfbec9067e805fec85`
 
 | Workflow | Run ID | State at observation |
 |---|---:|---|
-| Auxiliary match worker | 43089449464 | queued |
-| Match 3D lifecycle/context recovery | 43089449441 | in progress |
-| Match 3D mobile draw inventory | 43089449348 | in progress |
-| Match 3D visual evidence | 43089449332 | pending |
-| Match 3D startup CPU diagnostic | 43089449462 | pending |
-| CodSpeed | 43089449360 | pending |
-| Quality gates | 43089449768 | pending |
-| Public environment/MCP safety | 43089449304 | success |
+| Quality gates | 43089675217 | queued |
+| Match 3D startup CPU diagnostic | 43089675003 | pending |
+| Match 3D visual evidence | 43089674894 | in progress |
+| Public environment and MCP safety | 43089674888 | success |
+| Match 3D mobile draw inventory | 43089674777 | in progress |
+| Match 3D lifecycle and context recovery | 43089674727 | in progress |
+| Auxiliary match worker | 43089674724 | in progress |
+| CodSpeed | 43089674703 | pending |
 
-A prior auxiliary-worker run failed on Prettier in `src/game/quick-match-catalog.test.ts`; formatting was corrected. Previous runs were canceled after branch advances. Inspect the newest exact-head runs before declaring any gate green.
+Only the public-environment/MCP-safety workflow had completed successfully. No full Quality Gates, bundle comparison, CodSpeed or physical-device acceptance result is confirmed for this SHA. Refresh runs before acting; do not use results from an older commit.
 
 ### Production database state
 
 - Autovacuum thresholds on `public.api_football_data` are applied and verified: scale factors 0.5%, thresholds 20,000. Autovacuum completed at 19:26:01 UTC and autoanalyze at 19:25:51 UTC; latest sample had zero estimated dead tuples and zero modifications since analyze.
-- Injury-count refresh remains slow: latest observed refresh was 36.024 seconds. No covering index currently exists. A concurrent index build exceeded the SQL API's 120-second timeout; its incomplete index was removed. The valid but non-covering `api_football_injury_league_time_idx` remains in use. A staging plan comparison and operator-controlled concurrent build with a longer timeout are still required.
+- Injury-count refresh remains slow: 28 recorded calls, mean 30,666.29 ms, maximum 36,022.63 ms. No covering index currently exists. A concurrent index build exceeded the SQL API's 120-second timeout; its incomplete index was removed. The valid but non-covering `api_football_injury_league_time_idx` remains in use. A staging plan comparison and operator-controlled concurrent build with a longer timeout are still required.
 - Collation mismatch remains: recorded `153.120`, actual `153.121`. Exact inventory is 251 ordinary indexes (2,172.20 MiB) plus the partitioned `realtime.messages_replay_index` parent and six child indexes. No REINDEX or collation refresh has been run.
-- API-Football changes/migrations 0067–0070 are in the branch; production 546/503 elimination is not proven until staged batch acceptance and post-deploy telemetry.
+- API-Football code defaults to 8 lanes, caps scheduled workers at 12 lanes and 120 requests/window, and enforces a shared 9 fetches/second ceiling. Production 546/503 elimination is not proven until staged batch acceptance and post-deploy telemetry.
 - No physical-device high-quality 60 FPS proof exists; headless CI evidence is not sufficient.
 - Cloudflare deployment has not been triggered. VPS gateway/Tunnel remains disabled. No active attack test was run against production.
 
@@ -131,7 +131,7 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 **Interfaces:**
 - Preserve the existing `football_queue_settings`, `football_queue_claim`, `football_queue_window` RPC contracts and durable cursor semantics.
 - Preserve deployed migration 0066; Custom450 migration is 0067, never a duplicate 0066.
-- Scheduled worker lanes must be bounded (1–16 per request); manual admin pilot remains separately bounded.
+- Scheduled workers default to 8 lanes, accept 1–12 per request, and are capped at 120 requests/window with a shared 9 fetches/second ceiling; the authenticated manual pilot remains separately bounded.
 
 - [x] Selected worker-window, importer, migration, SQL contract and baseline resolver changes are present.
 - [ ] Compare PR #129's full diff against integration; port only missing behavior and tests.
@@ -227,14 +227,13 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 - Modify: `docs/operations/featured-injury-refresh-performance.md`
 - Modify only after verified DDL approval: operational SQL/runbook or a forward migration if the provider supports it safely.
 
-**Confirmed defect:** `api_football_injury_league_cover_idx` exists with `indisvalid=false`, `indisready=false`, physical size 0 bytes. The refresh falls back to `api_football_injury_league_time_idx` and takes about 30–36 seconds. Autovacuum tuning is already applied and verified; it did not by itself prove the refresh fix.
+**Confirmed defect (read-only refresh 2026-11-11):** `api_football_injury_league_cover_idx` is currently absent; `api_football_injury_league_time_idx` remains valid/ready at about 1,976 kB. The materialized-view refresh has 28 recorded calls, mean 30,666.29 ms and maximum 36,022.63 ms. Autovacuum is healthy but has not fixed the refresh. A prior covering-index build exceeded the Supabase SQL tool's 120-second statement timeout; the incomplete index was removed. Do not retry through that same short-timeout path.
 
 - [x] Autovacuum thresholds applied and verified in production.
-- [x] Invalid covering index identified; exact intended index definition is documented.
-- [ ] Confirm current index state, database size, free storage, WAL/replica headroom and backup/PITR.
-- [ ] Obtain an explicit maintenance window.
-- [ ] Run `DROP INDEX CONCURRENTLY IF EXISTS public.api_football_injury_league_cover_idx;` outside a transaction.
-- [ ] Run `CREATE INDEX CONCURRENTLY api_football_injury_league_cover_idx ON public.api_football_data USING btree (((payload -> 'league' ->> 'id')), (((payload -> 'league' ->> 'id')::integer))) WHERE kind = 'injury';` outside a transaction.
+- [x] Confirmed the covering index is absent and the time index remains valid; the intended covering definition is documented.
+- [ ] Reconfirm current index state, database size, free storage, WAL/replica headroom, backup/PITR and provider constraints.
+- [ ] Obtain an explicit maintenance window and an operator-controlled PostgreSQL session with a suitable statement timeout.
+- [ ] If the covering index is absent (current state), create it with `CREATE INDEX CONCURRENTLY api_football_injury_league_cover_idx ON public.api_football_data USING btree (((payload -> 'league' ->> 'id')), (((payload -> 'league' ->> 'id')::integer))) WHERE kind = 'injury';` outside a transaction. If an invalid remnant reappears, inspect it and drop it concurrently before retrying.
 - [ ] Run `ANALYZE public.api_football_data;` and ordinary `VACUUM (ANALYZE) public.api_football_data;` in the approved window; never use VACUUM FULL.
 - [ ] Verify `indisvalid=true`, `indisready=true`, non-zero index size and an index-only plan where visibility permits.
 - [ ] Measure ten consecutive refreshes; record p50/p95, heap fetches and read buffers. Do not claim fixed until results support it.
