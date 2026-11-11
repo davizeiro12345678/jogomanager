@@ -2,6 +2,10 @@
 -- incrementally maintained, small projection of the 12 featured injury leagues.
 -- The legacy materialized view is retained temporarily for rollback, but its
 -- cron refresh is unscheduled after the live projection is backfilled.
+-- The production project may already contain this private schema. A fresh
+-- replay must bootstrap it without granting browser roles new privileges.
+CREATE SCHEMA IF NOT EXISTS private_performance;
+REVOKE ALL ON SCHEMA private_performance FROM PUBLIC, anon, authenticated;
 
 CREATE TABLE private_performance.featured_injury_rows (
   ref text PRIMARY KEY CHECK (char_length(ref) BETWEEN 1 AND 256),
