@@ -27,6 +27,11 @@ import { reportSilent } from "@/lib/silent-errors";
 const LiveRoom = lazy(() =>
   import("@/features/multiplayer/LiveRoom").then((module) => ({ default: module.LiveRoom })),
 );
+const MatchmakingPanel = lazy(() =>
+  import("@/features/multiplayer/MatchmakingPanel").then((module) => ({
+    default: module.MatchmakingPanel,
+  })),
+);
 
 export function MultiplayerPage() {
   const userId = useAuthUserId();
@@ -146,6 +151,28 @@ function MultiplayerAccount({ userId }: { userId: string }) {
       window.clearInterval(timer);
     };
   }, [online, room?.id]);
+
+  const openMatchedRoom = useCallback(
+    async (roomId: string): Promise<boolean> => {
+      if (!online) return false;
+      const { data, error: lookupError } = await supabase
+        .from("match_rooms")
+        .select("*")
+        .eq("id", roomId)
+        .eq("server_seeded", true)
+        .eq("status", "live")
+        .maybeSingle();
+      if (
+        lookupError ||
+        !data ||
+        (data.host_id !== userId && data.guest_id !== userId)
+      )
+        return false;
+      setRoom(data as unknown as Room);
+      return true;
+    },
+    [online, userId],
+  );
 
   async function createRoom() {
     if (!userId) return setError("Entre na conta novamente para criar uma sala.");
@@ -418,6 +445,10 @@ function MultiplayerAccount({ userId }: { userId: string }) {
               </button>
             </div>
           </SectionCard>
+
+          <Suspense fallback={null}>
+            <MatchmakingPanel clubId={club} online={online} onMatched={openMatchedRoom} />
+          </Suspense>
 
           <SectionCard className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
             <div className="flex items-center gap-2">
