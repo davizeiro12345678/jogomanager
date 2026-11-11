@@ -23,8 +23,7 @@ export interface InterceptionTarget {
   score: number;
 }
 
-const clamp = (n: number, lower: number, upper: number) =>
-  Math.max(lower, Math.min(upper, n));
+const clamp = (n: number, lower: number, upper: number) => Math.max(lower, Math.min(upper, n));
 
 /**
  * Biases the chaser toward where a rolling ball will be soon, not its old
@@ -32,16 +31,7 @@ const clamp = (n: number, lower: number, upper: number) =>
  * from the ball doesn't magically pivot at full speed.
  */
 export function predictLooseBallInterception(input: InterceptionInput): InterceptionTarget {
-  const {
-    playerX,
-    playerZ,
-    playerVx,
-    playerVz,
-    ballX,
-    ballZ,
-    ballVx,
-    ballVz,
-  } = input;
+  const { playerX, playerZ, playerVx, playerVz, ballX, ballZ, ballVx, ballVz } = input;
   const staminaFactor = 0.78 + (clamp(input.stamina, 0, 100) / 100) * 0.22;
   const speed = (2.45 + (clamp(input.pace, 0, 100) / 100) * 3.65) * staminaFactor;
   const directDistance = Math.hypot(ballX - playerX, ballZ - playerZ);
