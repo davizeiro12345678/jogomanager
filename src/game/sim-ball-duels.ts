@@ -197,15 +197,7 @@ export function resolveShot(
     sim.contactPhysicsRevision === 2 &&
     s.outcome === "saved" &&
     gk &&
-    !goalkeeperCanReach(
-      gk.x,
-      gk.z,
-      planeX,
-      crossingZ,
-      crossingHeight,
-      gk.defending,
-      gk.stamina,
-    )
+    !goalkeeperCanReach(gk.x, gk.z, planeX, crossingZ, crossingHeight, gk.defending, gk.stamina)
   ) {
     if (Math.abs(crossingZ) < GOAL_Z && crossingHeight < 2.44) {
       sim.pendingShot = null;
