@@ -208,3 +208,32 @@ Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expans
 5. Registrar evidências, atualizar flags e exigir aprovação humana de release para desmarcar Draft.
 
 **Atenção:** o objetivo do usuário foi implementar todo o plano, mas esta etapa concluiu apenas partes do código. Preservar os gates sem forçar merge ou afirmar que o multiplayer real está disponível.
+
+
+## Continuação de validação real e infraestrutura inicial — 2026-11-11
+
+**A investigação atual inspecionou os workflows de GitHub Actions, não apenas o código.**
+
+### Evidências de falhas CI encontradas (SHAs anteriores)
+
+- Quality gates `43098755846`: o hardcoded audit detectou 11 strings não traduzidas introduzidas em `RoomChat` e `LiveRoom`; corrigido reutilizando dicionários PT/EN/ES sem enfraquecer o audit/baseline.
+- O ESLint/Prettier bloqueou imports/trechos de física, interface, matchmaking e chat; vários reparos feitos. O job auxiliar `43104177324` detectou os 5 erros restantes; corrigidos posteriormente.
+- Supabase migration replay `43104177618`: a tabela antiga `football_import_private.quota_seconds` não existia no banco canônico descartável; adicionada criação condicional em 0067 sem apagar dados reais. Depois, o teste Custom450 presumiu que toda instalação tinha o plano máximo: o fixture agora configura 450000/1200 **dentro de uma transação que faz ROLLBACK**, preservando planos inferiores em produção.
+- Bundle comparator `43104177618`: antes da otimização, startup de Worker subiu 3.376 bytes gzip/3.197 bytes Brotli contra limite de 2.048 bytes. Não afrouxamos os limites. `match.worker.ts` passou a carregar `MatchSim` sob demanda, e `live-match.ts` deixou de importar esse motor como valor. O resultado de compressão exato precisa ser confirmado no CI novo.
+- O primeiro build gráfico após o lazy split falhou porque `import type` continha marcadores redundantes `type`; import corrigido.
+- Foram registrados como **sucesso no SHA anterior**, não no HEAD final: CodSpeed, regressão API-Football, testes de ambiente/MCP, teste determinístico revision-2 de 200 jogos, contratos 3D, Lighthouse shell e Rust/WASM. Estes resultados não substituem a validação do novo commit.
+
+### Código desenvolvido neste lote
+
+- Assinatura HMAC reutilizada do `ticket-signing.ts`: novo emissor `src/game/online/seat-ticket-issuer.server.ts` valida usuário, sala, assento, seed gerenciada, estado `live`, prazo de 90 s e segredo forte; sem retornar segredo de partida ou chaves da plataforma.
+- `src/lib/multiplayer-tickets.functions.ts`: endpoint autenticado pelo middleware Supabase; o segredo `MATCH_TICKET_SIGNING_SECRET` deve estar no servidor, ausente no navegador. Se não configurado, a função falha fechada.
+- `src/game/online/secure-socket-bridge.server.ts`: composição obrigatória do transporte com verificação HMAC/expiração, além da proteção contra room hopping já presente.
+- Testes novos de emissão, assinatura, expiração, adulteração de assento, impostor, configuração inválida e startup lazy do Worker.
+- Nenhuma rota de Durable Object WebSocket é ativada: esse componente ainda necessita do dono durável de sala, armazenamento de checkpoint, cron de tick e roteamento validado.
+
+### Bloqueadores que permanecem
+
+- Quality gates do **commit final após este registro** e todos os testes exatos devem terminar com sucesso, especialmente SQL 0072, TypeScript, Vitest, worker e bundle.
+- Persistência completa da sessão de autoridade, reconexão após reinício do DO, snapshots oficiais no cliente, MMR/sala ranqueada transacional, torneios e coop seguem não implementados.
+- Exigem staging: memória/CPU de sala, privacidade/moderação contextual, 100 conexões, 1000 seeds, anti-replay e qualidade gráfica física de 60 FPS; não declarar estes critérios alcançados sem resultados.
+- Não rodar deploy Cloudflare nem migrações produção, não mesclar PR #132 enquanto estiver Draft sem aprovação dos gates.
