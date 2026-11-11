@@ -129,9 +129,5 @@ it("keeps the default quick-match league backed by two identified canonical club
   const { CLUBS } = await preloadQuickMatchCatalog();
   const selected = selectableQuickMatchClubs(DEFAULT_QUICK_MATCH_LEAGUE.clubs, CLUBS);
   expect(selected.length).toBeGreaterThanOrEqual(2);
-  expect(
-    selected.every(
-      (item) => item.name.trim() && item.name.trim().toLocaleLowerCase() !== "clube",
-    ),
-  ).toBe(true);
+  expect(selected.every((item) => item.name.trim() && item.name.trim().toLocaleLowerCase() !== "clube")).toBe(true);
 });
