@@ -35,6 +35,62 @@ The per-table thresholds were applied and read back successfully. PostgreSQL the
 
 This confirms the maintenance threshold change took effect and the 122,197 estimated dead tuples were cleared. The remaining acceptance test is the next scheduled `featured_injury_counts` refresh: record its duration and plan after the visibility map has been refreshed. Do not claim the 30-second refresh is fixed until that measurement is captured.
 
+## Confirmed production root cause: invalid covering index
+
+A direct read-only catalog inspection on 11 November 2026 confirmed:
+
+- `api_football_injury_league_cover_idx` exists but `indisvalid = false`, `indisready = false`, and its physical size is 0 bytes.
+- Its intended key expressions exactly cover the injury view's league filter and grouping.
+- PostgreSQL therefore cannot use it. The observed refresh falls back to `api_football_injury_league_time_idx`, an ordinary index scan that fetched 3,176,979 heap tuples cumulatively in the sampled statistics.
+- The existing `api_football_injury_league_time_idx` is valid (about 1.9 MiB), and the materialized view's unique index is valid. The failed covering index is the concrete index-level defect.
+
+### Controlled repair (non-transactional; run one statement at a time)
+
+The following operations must be run by an operator during a monitored maintenance window, after confirming backup/PITR. `CONCURRENTLY` cannot run inside a transaction; do not place these statements in a transactional migration.
+
+```sql
+DROP INDEX CONCURRENTLY IF EXISTS public.api_football_injury_league_cover_idx;
+```
+
+Then create the intended covering partial index:
+
+```sql
+CREATE INDEX CONCURRENTLY api_football_injury_league_cover_idx
+ON public.api_football_data
+USING btree (
+  ((payload -> 'league' ->> 'id')),
+  (((payload -> 'league' ->> 'id')::integer))
+)
+WHERE kind = 'injury';
+```
+
+After creation, refresh planner statistics and visibility information in the approved window:
+
+```sql
+ANALYZE public.api_football_data;
+VACUUM (ANALYZE) public.api_football_data;
+```
+
+Do not run `VACUUM FULL`; it rewrites the 14 GB table and requires a much more disruptive lock.
+
+### Verify the repair
+
+```sql
+SELECT
+  idx.relname,
+  i.indisvalid,
+  i.indisready,
+  pg_size_pretty(pg_relation_size(idx.oid)) AS index_size,
+  pg_get_indexdef(i.indexrelid) AS definition
+FROM pg_index AS i
+JOIN pg_class AS idx ON idx.oid = i.indexrelid
+WHERE idx.relname = 'api_football_injury_league_cover_idx';
+```
+
+Expected: `indisvalid = true`, `indisready = true`, and non-zero index size.
+
+Then run `EXPLAIN (ANALYZE, BUFFERS)` against the view's defining SELECT in a controlled window (or a production clone). The expected plan is an index-only scan using the covering index where the visibility map permits, with substantially fewer heap fetches. Keep the existing concurrent materialized-view refresh and compare at least 10 subsequent runs.
+
 ## Capture the exact production plan and blockers
 
 ```sql
