@@ -9,6 +9,7 @@ CREATE TABLE private_performance.featured_injury_rows (
     league_id = ANY (ARRAY[71,72,39,140,135,78,61,94,88,128,253,262]::integer[])
   )
 );
+ALTER TABLE private_performance.featured_injury_rows OWNER TO postgres;
 ALTER TABLE private_performance.featured_injury_rows ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE private_performance.featured_injury_rows FROM PUBLIC, anon, authenticated, service_role;
 CREATE INDEX featured_injury_rows_league_idx
@@ -118,6 +119,7 @@ CREATE OR REPLACE VIEW private_performance.featured_injury_counts_live AS
 SELECT league_id, count(*)::bigint AS injury_count
 FROM private_performance.featured_injury_rows
 GROUP BY league_id;
+ALTER VIEW private_performance.featured_injury_counts_live OWNER TO postgres;
 REVOKE ALL ON TABLE private_performance.featured_injury_counts_live FROM PUBLIC, anon, authenticated;
 GRANT USAGE ON SCHEMA private_performance TO service_role;
 GRANT SELECT ON TABLE private_performance.featured_injury_counts_live TO service_role;
@@ -170,6 +172,7 @@ BEGIN
   ORDER BY r.ord;
 END;
 $function$;
+ALTER FUNCTION public.get_public_league_digest_source(integer[]) OWNER TO postgres;
 
 -- Keep the old materialized view for rollback, but stop the 30-second refresh.
 DO $$
