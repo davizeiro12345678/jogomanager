@@ -1,7 +1,6 @@
 import { expect, it, vi } from "vitest";
 
 import {
-  DEFAULT_QUICK_MATCH_LEAGUE,
   QUICK_MATCH_COUNTRY_ORDER_VARIANTS,
   QUICK_MATCH_LEAGUE_DIRECTORY,
 } from "./data/quick-match-catalog";
