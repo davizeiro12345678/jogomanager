@@ -173,3 +173,38 @@ Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expans
 - `ai-ball-interception.ts` e teste: perseguição preditiva de bola solta com velocidade, stamina, tempo de reação/curva, sem RNG nem alterar a física. `sim-team-ai.ts` opta apenas em `contactPhysicsRevision=2`.
 - `moderation.ts` + teste: URL/e-mail mascarados com alfabetos mistos não escapam das regras de link/contato; mantém termos futebolísticos normais.
 - Não houve execução local de Vitest, TypeScript, Prettier, testes visuais ou de stress: os GitHub Actions do SHA anterior estavam em fila. Confirmar o **SHA final deste lote** antes de atribuir qualquer conclusão. Não declarar multiplayer/IA/suporte/gráficos completos.
+
+
+## Checkpoint de implementação — 2026-11-11, após expansão PR #132
+
+**SHA observado antes de registrar:** `68e53b836a73ad6e5c9fbe49e52232517a1a3866`; atualizar a referência novamente ao continuar. PR segue Draft, sem merge nem deploy.
+
+### Código acrescentado na própria PR
+
+- `src/game/online/authoritative-socket-bridge.server.ts`: socket server-only com verificação criptográfica de ticket injetável, comandos em 4 KiB, ACK/NACK, snapshots do estado do servidor, finalização única, tempo de inatividade e backpressure. Não existe ligação a uma rota WebSocket Cloudflare; **não é multiplayer real implantado**.
+- `src/game/online/matchmaking-policy.ts` + testes: seleção determinística casual e ranqueada, limiar de rating crescente, região, bloqueio e proteção contra partidas repetidas. Persistência de fila e MMR ainda ausentes.
+- `src/features/multiplayer/RoomChat.tsx`: chat privado reutilizável no lobby e no campo 3D; ocultação local do adversário, canal de denúncia e entrega pelo mesmo RPC/Realtime existente, sem duplicar moderação ou outbox.
+- `src/features/multiplayer/LiveRoom.tsx`: chat durante a partida, controle alta/média/baixa e aviso de que prévia local não é placar oficial; render usa revisão física vinculada à sala no banco.
+- `src/lib/support-report-context.ts` + teste, `src/pages/contato.tsx`, `src/components/support/SupportTicketForm.tsx`: abertura de denúncia por contexto seguro `reportRoom=<uuid>`, formulário e categoria preenchidos sem dados de outra conta; corrigido fallback SSR/hidratação.
+- `src/game/match-physics-extras.ts` e `src/game/sim-ball-duels.ts`: novo teste geométrico de alcance de goleiro na revisão 2 para reduzir defesas impossíveis; testes unitários acrescentados; validar realismo estatístico antes de produção.
+- `drizzle/migrations/0072_match_contact_physics_revision.sql`, `meta/_journal.json`, `src/integrations/supabase/types.ts`: modelo por sala no banco, default 2 apenas para salas futuras e 1 para legadas, CHECK e trigger impedindo escrita de usuário comum.
+- `src/lib/multiplayer.functions.ts`: replay/settlement pelo modelo persistido, sem escolher worker auxiliar não versionado para revisão 2.
+- `tests/sql/match_contact_revision_contract.sql` + `scripts/verify-local-database.mjs`: contrato de migração, teste de papel `authenticated` e runner de PostgreSQL em memória.
+- `docs/operations/multiplayer-physics-rollout-2026-11-11.md`: runbook de staging, validação, ameaças, gates e rollback.
+
+### Validação real
+
+- A integração GitHub retornou `queued` nos workflows observados de Quality Gates, CodSpeed, Match 3D, API-Football, segurança pública e Worker, sem resultados finais no SHA mais recente observado.
+- **Nenhum** teste Vitest/TypeScript/Prettier/benchmark de GPU ou migração PostgreSQL foi executado nesta sessão; os testes escritos não são prova de aprovação.
+- **Ainda não implementado:** Durable Object e WebSocket autenticado integrados, snapshots oficiais em `LiveRoom`, fila transacional ranqueada, MMR persistido, torneios/cooperativo, IA tática hierárquica, gráfica 3D completa, gestão/recursos de moderação e teste físico de 60 FPS.
+- **Ainda não autorizado:** deploy Cloudflare, migração 0072 em produção, atualização da branch `main`, mudança de RLS ou alterações no VPS anteriormente comprometido.
+
+### Prioridade operacional imediata
+
+1. Confirmar o novo SHA e o primeiro resultado efetivo de CI. Corrigir os erros de lint/Prettier/TS/Vitest, se presentes.
+2. Validar migration 0072 + função de trigger no PostgreSQL de staging; confirmar salas antigas, autorizações e assinaturas de partidas.
+3. Conectar DO + ticket HMAC, snapshots e reconciliação em ambiente isolado e autorização do operador; sem isso, novos modos não são confiáveis.
+4. Homologar cenários de futebol com 1.000 seeds, hardware GPU real, custos de frames e evolução de IA.
+5. Registrar evidências, atualizar flags e exigir aprovação humana de release para desmarcar Draft.
+
+**Atenção:** o objetivo do usuário foi implementar todo o plano, mas esta etapa concluiu apenas partes do código. Preservar os gates sem forçar merge ou afirmar que o multiplayer real está disponível.
