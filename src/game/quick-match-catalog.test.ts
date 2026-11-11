@@ -9,6 +9,7 @@ import { LEAGUES } from "./data/leagues";
 import { preloadQuickMatchCatalog, quickMatchLeagueGroups } from "./quick-match-catalog";
 import { RUNTIME_APPROVED_LOCALES } from "@/i18n/locale-runtime-manifest";
 import type { QuickMatchLeagueSummary } from "./data/quick-match-catalog";
+import { DEFAULT_QUICK_MATCH_LEAGUE, preloadQuickMatchCatalog } from "./quick-match-catalog";
 import { randomQuickMatchPair, selectableQuickMatchClubs } from "./quick-match-selection";
 
 it("keeps the lightweight league directory and default roster aligned with the full catalog", () => {
@@ -119,4 +120,12 @@ it("always returns two distinct canonical clubs for a random matchup", () => {
   expect(pair).toEqual({ home: clubs[0], away: clubs[1] });
   expect(pair?.home.id).not.toBe(pair?.away.id);
   expect(randomQuickMatchPair([clubs[0]!], () => 0)).toBeNull();
+});
+
+
+it("keeps the default quick-match league backed by two identified canonical clubs", async () => {
+  const { CLUBS } = await preloadQuickMatchCatalog();
+  const selected = selectableQuickMatchClubs(DEFAULT_QUICK_MATCH_LEAGUE.clubs, CLUBS);
+  expect(selected.length).toBeGreaterThanOrEqual(2);
+  expect(selected.every((item) => item.name.trim() && item.name.trim().toLocaleLowerCase() !== "clube")).toBe(true);
 });
