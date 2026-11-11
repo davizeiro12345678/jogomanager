@@ -15,11 +15,7 @@ const room: TicketRoom = {
   status: "live",
   server_seeded: true,
 };
-function issuer(
-  userId: string,
-  roomOverride: TicketRoom | null = room,
-  signingSecret = secret,
-) {
+function issuer(userId: string, roomOverride: TicketRoom | null = room, signingSecret = secret) {
   return issueMatchSeatTicket(
     { loadRoom: async () => roomOverride, signingSecret, now: () => now },
     userId,
