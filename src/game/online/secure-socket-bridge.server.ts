@@ -6,6 +6,7 @@ import { verifyMatchTicketV1 } from "./ticket-signing";
 export interface SecureSocketBridgeOptions {
   session: AuthoritativeMatchSession;
   signingSecret: string;
+  persistAfterCommand?: () => Promise<void>;
   now?: () => number;
 }
 
@@ -22,6 +23,9 @@ export function createSecureMatchSocketBridge(options: SecureSocketBridgeOptions
   return new AuthoritativeSocketBridge({
     session: options.session,
     now,
+    ...(options.persistAfterCommand
+      ? { persistAfterCommand: options.persistAfterCommand }
+      : {}),
     verifyTicket: async (ticket) => {
       try {
         assertCurrentTicket(ticket, now());
