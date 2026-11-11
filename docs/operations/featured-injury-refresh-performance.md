@@ -48,6 +48,20 @@ A candidate covering expression index named `api_football_injury_league_cover_id
 
 The actual bottleneck is evidenced by the post-autovacuum plan below: the planner underestimates the matching rows by about 9.8× and the query performs an ordinary heap-fetching index scan. The next safe optimization is to compare, in staging, a covering index on both the text league ID and its integer cast against an incremental league-count summary. Do not create that index in production through the short-timeout SQL API; a reviewed operator session and a representative plan comparison are required.
 
+## Implemented in the release PR: incremental projection
+
+The release branch now contains migration `0071_incremental_featured_injury_counts.sql`:
+
+- Creates a private, compact `featured_injury_rows` projection containing only the 11 featured leagues.
+- Adds server-side triggers for injury insert/update/delete transitions. They update the projection by `ref`, so unchanged provider rows do not rewrite it.
+- Backfills the projection from the existing partial injury index with `ON CONFLICT DO NOTHING`; concurrent upserts that arrive after trigger activation keep their newer values.
+- Exposes `featured_injury_counts_live` as a small grouped view over the projection.
+- Updates `get_public_league_digest_source` to read the live projection for featured leagues while preserving the original fallback count for other leagues.
+- Unschedules the legacy hourly materialized-view refresh, retaining the old materialized view temporarily for rollback.
+- Adds a SQL contract covering source reconciliation and insert, league-change update, and delete behavior.
+
+This is a **proposed code change in PR #132**, not yet deployed to production. The migration replay and SQL contract must pass before release. After deployment, compare the live projection to the source and measure p50/p95 for the public digest RPC and its query plan. Keep the legacy materialized view until the new path has passed at least 24 hours of production verification; only then consider dropping it.
+
 ## Capture the exact production plan and blockers
 
 ```sql
