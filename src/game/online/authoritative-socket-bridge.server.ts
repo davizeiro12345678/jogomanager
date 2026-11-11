@@ -2,6 +2,7 @@ import {
   MATCH_PROTOCOL_VERSION,
   parseMatchCommandV1,
   parseMatchTicketV1,
+  type MatchReceiptV1,
   type MatchSeat,
   type MatchTicketV1,
 } from "./match-protocol";
@@ -171,7 +172,7 @@ export class AuthoritativeSocketBridge {
   }
 
   /** The Durable Object calls pulse on its own clock, never from a browser tick. */
-  async pulse(options: { publish?: boolean } = {}): Promise<import("./match-protocol").MatchReceiptV1 | null> {
+  async pulse(options: { publish?: boolean } = {}): Promise<MatchReceiptV1 | null> {
     if (this.storageFailed) throw new Error("match storage unavailable");
     const now = this.now();
     for (const peer of this.peers.values()) {
@@ -191,7 +192,7 @@ export class AuthoritativeSocketBridge {
     return receipt;
   }
 
-  broadcastReceipt(receipt: import("./match-protocol").MatchReceiptV1 | null): void {
+  broadcastReceipt(receipt: MatchReceiptV1 | null): void {
     if (receipt && this.announcedFinalKey !== receipt.idempotencyKey) {
       this.announcedFinalKey = receipt.idempotencyKey;
       this.broadcast({ type: "final", version: MATCH_PROTOCOL_VERSION, receipt });
