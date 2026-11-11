@@ -71,6 +71,15 @@ export class AuthoritativeSocketBridge {
       // exact nonce; never permit an old ticket to replace a newer seat.
       this.options.session.bindVerifiedTransportTicket(ticket, this.now());
       const seat = this.options.session.connect(ticket, this.now());
+      // The refreshed ticket and connected seat must be durable before
+      // announcing the official ready snapshot to the client.
+      try {
+        await this.options.persistAfterCommand?.();
+      } catch {
+        this.storageFailed = true;
+        this.close();
+        throw new Error("match persistence unavailable");
+      }
       const previous = this.peers.get(seat);
       const peer: Connection = {
         socket,
