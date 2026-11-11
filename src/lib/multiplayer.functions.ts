@@ -21,6 +21,7 @@ export interface MultiplayerRoomRecord {
   id: string;
   code: string;
   contact_physics_revision?: 1 | 2;
+  settlement_authority?: "legacy" | "websocket";
   host_id: string;
   guest_id: string | null;
   host_club: string;
@@ -141,7 +142,7 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error: lookupError } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_id, status, updated_at")
+      .select("id, host_id, guest_id, status, updated_at, settlement_authority")
       .eq("id", data.roomId)
       .maybeSingle();
     if (lookupError || !room) return { ok: false, reason: "not_found" };
@@ -149,6 +150,8 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
       return { ok: false, reason: "not_participant" };
     }
     if (room.status === "done") return { ok: true };
+    if (room.settlement_authority === "websocket")
+      return { ok: false, reason: "authority_only" };
     // A deterministic replay is already running under a live server-side
     // lease. An expired lease can be closed by a participant, but the CAS
     // below must beat any concurrent reclaim before deleting the private seed.
@@ -192,12 +195,14 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
       .select(
-        "id, host_id, guest_club, host_club, contact_physics_revision, server_seeded, status, state, updated_at",
+        "id, host_id, guest_club, host_club, contact_physics_revision, settlement_authority, server_seeded, status, state, updated_at",
       )
       .eq("id", data.roomId)
       .maybeSingle();
     if (error || !room) return { ok: false, reason: "not_found" };
     if (room.host_id !== context.userId) return { ok: false, reason: "not_host" };
+    if (room.settlement_authority === "websocket")
+      return { ok: false, reason: "authority_only" };
     if (room.status === "done") {
       if (!room.server_seeded) return { ok: false, reason: "room_closed" };
       const state = room.state as { hg?: unknown; ag?: unknown } | null;
