@@ -158,8 +158,9 @@ export class AuthoritativeSocketBridge {
     }
     // The room owns its clock; no client can choose a future frame number.
     this.options.session.advanceFixedTick();
+    const completed = await this.options.session.completeIfFinished(now);
     this.broadcastSnapshot();
-    const receipt = await this.options.session.expireReconnects(now);
+    const receipt = completed ?? (await this.options.session.expireReconnects(now));
     if (receipt && this.announcedFinalKey !== receipt.idempotencyKey) {
       this.announcedFinalKey = receipt.idempotencyKey;
       this.broadcast({ type: "final", version: MATCH_PROTOCOL_VERSION, receipt });
