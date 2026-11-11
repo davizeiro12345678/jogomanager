@@ -17,6 +17,19 @@ INSERT INTO matchmaking_private.ratings(user_id,rating) VALUES
  ('40000000-0000-4000-8000-000000000002',2000),
  ('40000000-0000-4000-8000-000000000003',1410);
 
+-- Prepare a server-created room under the existing trigger before exercising
+-- pair confirmation; no role changes occur inside the DO test block.
+SET LOCAL ROLE service_role;
+INSERT INTO public.match_rooms (
+  id,code,host_id,guest_id,host_club,guest_club,seed,status,server_seeded
+) VALUES (
+  '40000000-0000-4000-8000-000000000010','QUEUER001',
+  '40000000-0000-4000-8000-000000000001',
+  '40000000-0000-4000-8000-000000000003',
+  'ARS','CHE','','ready',true
+);
+RESET ROLE;
+
 DO $contract$
 DECLARE
   one uuid := '40000000-0000-4000-8000-000000000001';
@@ -65,16 +78,6 @@ BEGIN
   v_pair := public.match_queue_claim();
   IF v_pair IS NULL THEN RAISE EXCEPTION 'released pair was not claimable'; END IF;
   v_id := (v_pair->>'pairId')::uuid;
-  -- Simulate a legitimate server-created ready room under the existing
-  -- anti-spoof room trigger, not as an authenticated browser.
-  EXECUTE 'SET LOCAL ROLE service_role';
-  INSERT INTO public.match_rooms (
-    id,code,host_id,guest_id,host_club,guest_club,seed,status,server_seeded
-  ) VALUES (
-    '40000000-0000-4000-8000-000000000010','QUEUER001',one,three,'ARS','CHE','',
-    'ready',true
-  );
-  EXECUTE 'RESET ROLE';
   IF NOT public.match_queue_confirm(v_id,'40000000-0000-4000-8000-000000000010') OR
      NOT public.match_queue_confirm(v_id,'40000000-0000-4000-8000-000000000010')
   THEN RAISE EXCEPTION 'valid room did not commit pair exactly once'; END IF;
