@@ -39,9 +39,7 @@ function parseSeat(value: unknown): MatchSeat | null {
 }
 
 function parseSequence(value: unknown): number | null {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
-    ? value
-    : null;
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
 export class AuthoritativePresentationFeed {
@@ -88,20 +86,23 @@ export class AuthoritativePresentationFeed {
 
     if (input["type"] === "ready" || input["type"] === "snapshot") {
       const ready = input["type"] === "ready";
-      if (!exactKeys(input, ready ? ["type", "version", "seat", "snapshot"] : ["type", "version", "snapshot"]))
+      if (
+        !exactKeys(
+          input,
+          ready ? ["type", "version", "seat", "snapshot"] : ["type", "version", "snapshot"],
+        )
+      )
         return { kind: "ignored", reason: "malformed" };
       const seat = ready ? parseSeat(input["seat"]) : null;
       if (ready && !seat) return { kind: "ignored", reason: "malformed" };
-      if (ready && this.seat && this.seat !== seat)
-        return { kind: "ignored", reason: "conflict" };
+      if (ready && this.seat && this.seat !== seat) return { kind: "ignored", reason: "conflict" };
       let snapshot: MatchSnapshotV1;
       try {
         snapshot = parseMatchSnapshotV1(input["snapshot"]);
       } catch {
         return { kind: "ignored", reason: "malformed" };
       }
-      if (snapshot.roomId !== this.roomId)
-        return { kind: "ignored", reason: "foreign_room" };
+      if (snapshot.roomId !== this.roomId) return { kind: "ignored", reason: "foreign_room" };
       if (this.result) return { kind: "ignored", reason: "stale" };
       if (this.current) {
         if (
@@ -140,8 +141,7 @@ export class AuthoritativePresentationFeed {
       } catch {
         return { kind: "ignored", reason: "malformed" };
       }
-      if (receipt.roomId !== this.roomId)
-        return { kind: "ignored", reason: "foreign_room" };
+      if (receipt.roomId !== this.roomId) return { kind: "ignored", reason: "foreign_room" };
       if (this.result) {
         return JSON.stringify(this.result) === JSON.stringify(receipt)
           ? { kind: "ignored", reason: "stale" }
@@ -157,8 +157,10 @@ export class AuthoritativePresentationFeed {
       const sequence = parseSequence(input["sequence"]);
       if (sequence === null || sequence <= this.lastSequence)
         return { kind: "ignored", reason: "stale" };
-      if (input["reason"] !== undefined &&
-          (typeof input["reason"] !== "string" || input["reason"].length > 80))
+      if (
+        input["reason"] !== undefined &&
+        (typeof input["reason"] !== "string" || input["reason"].length > 80)
+      )
         return { kind: "ignored", reason: "malformed" };
       this.lastSequence = sequence;
       return {
@@ -167,8 +169,7 @@ export class AuthoritativePresentationFeed {
         ...(typeof input["reason"] === "string" ? { reason: input["reason"] } : {}),
       };
     }
-    if (input["type"] === "pong" && exactKeys(input, ["type", "version"]))
-      return { kind: "pong" };
+    if (input["type"] === "pong" && exactKeys(input, ["type", "version"])) return { kind: "pong" };
     return { kind: "ignored", reason: "malformed" };
   }
 }
