@@ -745,7 +745,6 @@ describe("authoritative match serialization regressions", () => {
   });
 });
 
-
 class TestMatchSocket implements MatchSocket {
   readyState = 1;
   bufferedAmount = 0;
@@ -808,8 +807,10 @@ describe("AuthoritativeSocketBridge network boundary", () => {
     expect(session.snapshot().tick).toBe(1);
     const snapshots = home.events("snapshot");
     expect(snapshots).toHaveLength(1);
-    expect((snapshots[0]?.["snapshot"] as { publicState: { score: { home: number } } })
-      .publicState.score.home).toBe(1);
+    const state = snapshots[0]?.["snapshot"] as {
+      publicState: { score: { home: number } };
+    };
+    expect(state.publicState.score.home).toBe(1);
 
     await bridge.onMessage(home, JSON.stringify({ type: "command", command: command(1) }));
     expect(home.events("nack")).toEqual(
