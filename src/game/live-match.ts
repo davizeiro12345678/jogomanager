@@ -3,15 +3,15 @@ import { emptyStats } from "./sim-contracts";
 import type {
   MatchSim,
   MatchStats,
-  type PlayerRating,
-  type Scorer,
-  type ShotRecord,
-  type Side,
-  type SimPlayer,
-  type SimView,
-  type TeamSetup,
-  type TeamTalkKind,
-  type MatchCheckpoint,
+  PlayerRating,
+  Scorer,
+  ShotRecord,
+  Side,
+  SimPlayer,
+  SimView,
+  TeamSetup,
+  TeamTalkKind,
+  MatchCheckpoint,
 } from "./sim";
 import type { WindVector } from "./ball-climate";
 import type { VisualBallState } from "./visual-ball";
