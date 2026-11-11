@@ -191,7 +191,9 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_club, host_club, contact_physics_revision, server_seeded, status, state, updated_at")
+      .select(
+        "id, host_id, guest_club, host_club, contact_physics_revision, server_seeded, status, state, updated_at",
+      )
       .eq("id", data.roomId)
       .maybeSingle();
     if (error || !room) return { ok: false, reason: "not_found" };
