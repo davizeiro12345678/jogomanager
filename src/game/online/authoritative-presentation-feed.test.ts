@@ -44,6 +44,15 @@ describe("browser-side authoritative presentation reducer", () => {
     expect(feed.confirmedSeat()).toBe("home");
   });
 
+  it("accepts an unchanged ready handshake again after a network reconnect", () => {
+    const feed = new AuthoritativePresentationFeed(room);
+    const same = frame({ type: "ready", seat: "home", snapshot: snapshot(12, 300) });
+    expect(feed.accept(same).kind).toBe("ready");
+    expect(feed.accept(same).kind).toBe("ready");
+    expect(feed.snapshot()?.revision).toBe(12);
+    expect(feed.confirmedSeat()).toBe("home");
+  });
+
   it("rejects room-hopping frames, browser seeds and unknown presentation fields", () => {
     const feed = new AuthoritativePresentationFeed(room);
     expect(
