@@ -150,11 +150,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
           <button
             type="button"
             aria-pressed={hideOpponent}
-            aria-label={
-              hideOpponent
-                ? copy.showOpponent
-                : copy.hideOpponent
-            }
+            aria-label={hideOpponent ? copy.showOpponent : copy.hideOpponent}
             onClick={() => setHideOpponent((previous) => !previous)}
             className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
           >
@@ -175,9 +171,7 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
         {status === "checking" ? (
           <p className="text-xs text-muted-foreground">{copy.checking}</p>
         ) : status === "unavailable" ? (
-          <p className="text-xs text-muted-foreground">
-            {copy.unavailable}
-          </p>
+          <p className="text-xs text-muted-foreground">{copy.unavailable}</p>
         ) : msgs.length === 0 ? (
           <p className="text-xs text-muted-foreground">{copy.empty}</p>
         ) : (
