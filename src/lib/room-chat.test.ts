@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("../pages/multiplayer.tsx", import.meta.url), "utf8");
 const server = readFileSync(new URL("./chat.functions.ts", import.meta.url), "utf8");
-const chat = readFileSync(
-  new URL("../features/multiplayer/RoomChat.tsx", import.meta.url),
+const chat = readFileSync(new URL("../features/multiplayer/RoomChat.tsx", import.meta.url), "utf8");
+const translations = readFileSync(
+  new URL("../i18n/room-chat-messages.ts", import.meta.url),
   "utf8",
 );
-const translations = readFileSync(new URL("../i18n/room-chat-messages.ts", import.meta.url), "utf8");
 const migration = readFileSync(
   new URL(
     "../../supabase/migrations/20261108013026_authorize_match_room_realtime_chat.sql",
