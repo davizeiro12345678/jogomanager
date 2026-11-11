@@ -34,6 +34,20 @@ const responseType = (message: LiveWorkerResponse) =>
 const send = (message: LiveWorkerRequest) =>
   onmessage?.({ data: message } as MessageEvent<unknown>);
 
+// MatchSim is now a genuine lazy chunk. Waiting only 20 Promise.resolve()
+// turns is insufficient when the bundler resolves the import asynchronously.
+async function waitForReady(id: number) {
+  await vi.waitFor(
+    () =>
+      expect(
+        responseMessages(worker).some(
+          (message) => message.id === id && message.ok && responseType(message) === "ready",
+        ),
+      ).toBe(true),
+    { timeout: 10_000, interval: 5 },
+  );
+}
+
 describe("match worker skip ordering", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -57,7 +71,7 @@ describe("match worker skip ordering", () => {
       seed: "worker-rules-v2",
       rulesRevision: 2,
     });
-    await flushMicrotasks();
+    await waitForReady(20);
     await vi.advanceTimersByTimeAsync(150);
     const snapshots = responseMessages(worker).filter(
       (message) => message.ok && "snapshot" in message,
@@ -93,7 +107,7 @@ describe("match worker skip ordering", () => {
       },
     ];
     for (const message of messages) send(message);
-    await flushMicrotasks();
+    await waitForReady(1);
 
     expect(
       responseMessages(worker).some(
@@ -131,7 +145,7 @@ describe("match worker skip ordering", () => {
     const home = buildTeamSetup("fla");
     const away = buildTeamSetup("pal");
     send({ id: 10, type: "startLive", home, away, seed: "skip-stop" });
-    await flushMicrotasks();
+    await waitForReady(10);
     send({ id: 11, type: "skipLive" });
     send({ id: 12, type: "stopLive" });
     await flushMicrotasks();
