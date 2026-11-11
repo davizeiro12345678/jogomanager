@@ -71,6 +71,9 @@ jobs:
           PFM_LOCAL_VERIFY=1 npm run build
           node "$RUNNER_TEMP/bundle-report.mjs" baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
+          # Restore the checked-out tree before switching revisions; the baseline
+          # analyzer and historical Vite alias normalization are temporary only.
+          git checkout -- .
       - name: Build candidate with its own locked dependency graph
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
