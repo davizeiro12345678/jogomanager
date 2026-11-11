@@ -99,6 +99,8 @@ export class AuthoritativeMatchSession {
   private receipt: MatchReceiptV1 | null = null;
   private finalizationPromise: Promise<MatchReceiptV1> | null = null;
   private closing = false;
+  /** Reject newly arriving commands while previously admitted digests drain. */
+  private closingRequested = false;
   private started = false;
   private closure: Pick<MatchReceiptV1, "closureReason" | "issuedAt" | "result"> | undefined;
   phase: MatchSessionPhase = "waiting";
@@ -171,7 +173,7 @@ export class AuthoritativeMatchSession {
     // liveness. A valid ticket must not admit a command for another room.
     if (input.roomId !== this.options.roomId)
       return this.reject(ticket.userId, input.sequence, "command_rejected", now);
-    if (this.closing || this.receipt || this.phase === "finalized")
+    if (this.closing || this.closingRequested || this.receipt || this.phase === "finalized")
       return this.reject(ticket.userId, input.sequence, "command_rejected", now);
     if (this.pendingCommands >= MAX_PENDING_COMMANDS)
       return this.reject(ticket.userId, input.sequence, "rate_limited", now);
@@ -244,7 +246,9 @@ export class AuthoritativeMatchSession {
     if (!applied) return this.reject(userId, command.sequence, "command_rejected", now);
     this.lastSequence.set(userId, command.sequence);
     this.commandHash = hash;
-    if (closureReason) await this.finalize(closureReason, now, seat);
+    // This is already inside the serial command queue. Waiting on the queue
+    // here would deadlock the accepted forfeit against itself.
+    if (closureReason) await this.signFinalReceipt(closureReason, now, seat);
     return { accepted: true };
   }
 
@@ -281,6 +285,22 @@ export class AuthoritativeMatchSession {
   }
 
   async finalize(
+    closureReason: MatchClosureReason,
+    now: number,
+    loser?: MatchSeat,
+  ): Promise<MatchReceiptV1> {
+    if (this.receipt) return this.receipt;
+    // A finalization requested while a valid command is hashing must not
+    // discard the already admitted command. Stop admitting NEW commands, let
+    // queued accepted commands finish in arrival order, then sign the hash.
+    if (this.pendingCommands > 0 && !this.closing) {
+      this.closingRequested = true;
+      await this.commandQueue;
+    }
+    return this.signFinalReceipt(closureReason, now, loser);
+  }
+
+  private async signFinalReceipt(
     closureReason: MatchClosureReason,
     now: number,
     loser?: MatchSeat,
