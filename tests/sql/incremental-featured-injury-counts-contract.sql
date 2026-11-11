@@ -7,6 +7,7 @@ DECLARE
   v_before_72 bigint;
   v_after_71 bigint;
   v_after_72 bigint;
+  v_api_count_71 bigint;
 BEGIN
   ASSERT NOT has_table_privilege('anon', 'private_performance.featured_injury_rows', 'SELECT'),
     'anonymous users must not read the private injury projection';
@@ -20,6 +21,13 @@ BEGIN
   INTO v_before_71;
   SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 72), 0)
   INTO v_before_72;
+  SELECT coalesce((
+    SELECT injury_count
+    FROM public.get_public_league_digest_source(ARRAY[71]::integer[])
+    WHERE league_id = 71
+  ), 0) INTO v_api_count_71;
+  ASSERT v_api_count_71 = v_before_71,
+    'public digest source must use the incremental count for featured leagues';
 
   ASSERT NOT EXISTS (
     WITH expected AS (
