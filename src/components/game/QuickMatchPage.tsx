@@ -7,6 +7,7 @@ import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import type { Club, League } from "@/game/types";
+import { randomQuickMatchPair, selectableQuickMatchClubs } from "@/game/quick-match-selection";
 import type { Difficulty } from "@/game/quickMatch";
 import { loadQuickLive } from "@/game/quick-match-entry";
 import {
@@ -55,16 +56,17 @@ export function QuickMatchPage() {
 
     setCatalogLoading(true);
     try {
-      const { getLeague } = await preloadQuickMatchCatalog();
+      const { getLeague, CLUBS } = await preloadQuickMatchCatalog();
       if (request !== catalogRequest.current) return;
-      const nextLeague = getLeague(id);
-      if (nextLeague.id !== id) throw new Error("Selected league was not found.");
-      const home = nextLeague.clubs[0];
-      const away = nextLeague.clubs.find((club) => club.id !== home?.id);
-      if (!home || !away) throw new Error("Selected league needs two clubs.");
+      const catalogLeague = getLeague(id);
+      if (catalogLeague.id !== id) throw new Error("Selected league was not found.");
+      const clubs = selectableQuickMatchClubs(catalogLeague.clubs, CLUBS);
+      const pair = randomQuickMatchPair(clubs);
+      if (!pair) throw new Error("Selected league needs two identified clubs.");
+      const nextLeague = { ...catalogLeague, clubs };
       setLeague(nextLeague);
-      setMyClub(home.id);
-      setOppClub(away.id);
+      setMyClub(pair.home.id);
+      setOppClub(pair.away.id);
     } catch {
       if (request === catalogRequest.current) {
         setCatalogError(true);
@@ -80,19 +82,21 @@ export function QuickMatchPage() {
     setCatalogError(false);
     setCatalogLoading(true);
     try {
-      const { LEAGUES } = await preloadQuickMatchCatalog();
+      const { LEAGUES, CLUBS } = await preloadQuickMatchCatalog();
       if (request !== catalogRequest.current) return;
-      const candidates = LEAGUES.filter((candidate) => candidate.clubs.length >= 2);
-      const nextLeague = candidates[Math.floor(Math.random() * candidates.length)];
-      if (!nextLeague) throw new Error("No league with two clubs is available.");
-      const homeIndex = Math.floor(Math.random() * nextLeague.clubs.length);
-      const home = nextLeague.clubs[homeIndex]!;
-      let away = nextLeague.clubs[Math.floor(Math.random() * nextLeague.clubs.length)]!;
-      if (away.id === home.id) away = nextLeague.clubs[(homeIndex + 1) % nextLeague.clubs.length]!;
+      const candidates = LEAGUES.flatMap((candidate) => {
+        const clubs = selectableQuickMatchClubs(candidate.clubs, CLUBS);
+        return clubs.length >= 2 ? [{ league: candidate, clubs }] : [];
+      });
+      const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+      if (!candidate) throw new Error("No league with two identified clubs is available.");
+      const pair = randomQuickMatchPair(candidate.clubs);
+      if (!pair) throw new Error("No distinct club pair is available.");
+      const nextLeague = { ...candidate.league, clubs: candidate.clubs };
       setLeague(nextLeague);
       setLeagueId(nextLeague.id);
-      setMyClub(home.id);
-      setOppClub(away.id);
+      setMyClub(pair.home.id);
+      setOppClub(pair.away.id);
     } catch {
       if (request === catalogRequest.current) setCatalogError(true);
     } finally {
