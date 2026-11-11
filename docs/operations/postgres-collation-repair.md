@@ -22,6 +22,12 @@ A read-only production inventory on 11 November 2026 found **251 ordinary indexe
 7. Only after all affected indexes are valid, run the final database refresh.
 8. Verify the recorded and actual versions match, then monitor query latency and application errors.
 
+## Production scope observed
+
+A read-only production inventory on 11 November 2026 found **253 indexes** whose key collations resolve to the database default collation, representing approximately **2,173 MB** of index storage. Four indexes exceed 100 MB; the largest is approximately 645 MB. This is not a one-index metadata fix.
+
+The maintenance window must therefore be sized from the generated inventory, actual I/O headroom and replica lag. Preserve the inventory output, process indexes one at a time, and pause if query latency, lock waits, storage latency or replication lag exceed the agreed limits. Do not blindly run a database-wide reindex during peak traffic.
+
 ## Preflight: confirm the mismatch
 
 ```sql
