@@ -4,8 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { MatchTicketV1 } from "@/game/online/match-protocol";
 
 type TicketResponse =
-  | { ok: true; ticket: MatchTicketV1 }
-  | { ok: false; reason: "unauthorized" | "unavailable" };
+  { ok: true; ticket: MatchTicketV1 } | { ok: false; reason: "unauthorized" | "unavailable" };
 
 export const getMatchSeatTicket = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
