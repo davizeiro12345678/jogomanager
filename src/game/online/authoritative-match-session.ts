@@ -195,7 +195,7 @@ export class AuthoritativeMatchSession {
     command: MatchCommandV1,
     now: number,
   ): Promise<MatchCommandOutcome> {
-    if (this.closing || this.receipt || this.phase === "finalized")
+    if (this.closing || this.receipt)
       return this.reject(userId, command.sequence, "command_rejected", now);
     if (command.roomId !== this.options.roomId)
       return this.reject(userId, command.sequence, "command_rejected", now);
