@@ -64,7 +64,7 @@ Partitioned indexes (`pg_class.relkind = 'I'`) must be reviewed separately with 
 
 ## Production inventory captured on 11 November 2026
 
-The production catalog query identified **244 collation-dependent ordinary indexes** across the database (the exact count is the sum of the schema rows below), representing approximately **2.17 GB** of index storage. The largest individual indexes were approximately 645 MB in `public` and 387 MB in `football_import_private`.
+The production catalog query identified **251 collation-dependent ordinary indexes** across the database (the exact count is the sum of the schema rows below), representing approximately **2.17 GB** of index storage. The largest individual indexes were approximately 645 MB in `public` and 387 MB in `football_import_private`.
 
 | Schema | Indexes | Approximate total |
 |---|---:|---:|
@@ -74,7 +74,7 @@ The production catalog query identified **244 collation-dependent ordinary index
 | `backup_restore` | 1 | 1.1 MB |
 | `auth` | 34 | 440 kB |
 | `storage` | 21 | 176 kB |
-| Remaining schemas | 14 | under 200 kB combined |
+| Remaining schemas | 21 | approximately 296 kB combined |
 
 There is also a partitioned index `realtime.messages_replay_index`. It must be handled through its child indexes/provider-supported procedure; do not run a concurrent reindex against the partitioned parent.
 
