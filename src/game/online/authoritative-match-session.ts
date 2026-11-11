@@ -290,7 +290,7 @@ export class AuthoritativeMatchSession {
       issuedAt: now,
       result: { ...this.options.engine.finalResult(loser) },
     });
-    this.setPhase("finalized");
+    this.phase = "finalized";
     const finalizationPromise =
       this.finalizationPromise ??
       (this.finalizationPromise = (async () => {
@@ -319,6 +319,7 @@ export class AuthoritativeMatchSession {
 
   private assertBoundTicket(ticket: MatchTicketV1, now: number): void {
     assertCurrentTicket(ticket, now);
+    if (ticket.issuedAt > now) throw new Error("match ticket is not yet valid");
     if (ticket.roomId !== this.options.roomId) {
       throw new Error("ticket room does not match this authoritative match session");
     }
