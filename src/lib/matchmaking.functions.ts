@@ -90,10 +90,7 @@ export const getMatchmakingQueueStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => z.object({}).strict().parse(input))
   .handler(async ({ context }): Promise<MatchmakingQueueStatus> => {
-    if (
-      process.env["MATCHMAKING_QUEUE_ENABLED"] !== "true" ||
-      !configuredMatchmakingRegion()
-    )
+    if (process.env["MATCHMAKING_QUEUE_ENABLED"] !== "true" || !configuredMatchmakingRegion())
       return { status: "disabled" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rpc = supabaseAdmin.rpc.bind(supabaseAdmin) as unknown as (
