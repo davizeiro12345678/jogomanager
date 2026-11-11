@@ -66,6 +66,10 @@ export class CanonicalAuthoritativeMatchEngine implements AuthoritativeMatchEngi
     );
   }
 
+  isFinished(): boolean {
+    return this.sim.finished;
+  }
+
   advanceFixedStep(): boolean {
     if (this.sim.finished) return false;
     if (this.tick >= MATCH_SIMULATION_TICK_LIMIT) {
