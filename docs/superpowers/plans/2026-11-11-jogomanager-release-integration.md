@@ -44,7 +44,7 @@
 - Repository: `davizeiro12345678/jogomanager`
 - Main SHA last read: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
 - Integration branch: `integration/release-2026-11-11`
-- Integration SHA immediately before this plan was saved: `1496e779fdf4d3deb2b462eba54429a68722f5a1` (refresh the branch head before continuing; concurrent CI fixes may advance it).
+- Integration SHA immediately before this plan was saved: `1496e779fdf4d3deb2b462eba54429a68722f5a1`; after the plan and progress ledger commits, draft PR #132 points at `ec499d621de33ee148184b7411a7197054eedbef`. Refresh the branch head before continuing.
 - PR #127: **merged** into the integration branch; merge commit `4aedd98b88d67be9d7150902455a0aecdf3bebda`.
 - PR #128: **open/draft against main**, but its head `32ac4219bf5dc4a357593a381f5e918876a741d0` is an ancestor of the integration branch. Its implementation is already present in the branch history; do not merge/cherry-pick it again.
 - PR #129: **open/draft, non-mergeable** against integration. Selected importer, Custom450 migration, SQL contract, worker-window and bundle-baseline changes have been ported; compare and reconcile remaining diff before superseding the original PR.
@@ -81,7 +81,7 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 | Catalog gateway | [~] | code and paging changes present; host integrity blocks activation |
 | Product/market | [ ] | persistent competitions/rankings, DAU/retention instrumentation, beta cohort and release notes incomplete |
 | Main branch protection | [ ] | blocked by GitHub admin permission; repository admin action required |
-| Final independent review and PR | [ ] | not started |
+| Final independent review and PR | [~] | Draft PR #132 exists; final review, all checks and readiness conversion remain |
 
 ---
 
@@ -334,7 +334,8 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 - [ ] Review visual evidence, Lighthouse, CodSpeed, bundle before/after and physical-device reports.
 - [ ] Run a fresh independent whole-branch review against the spec and Review Focus.
 - [ ] Fix all Critical/Important findings with TDD RED→GREEN and a full green suite; ledger deferred minors.
-- [ ] Create one final PR from `integration/release-2026-11-11` to `main`, reference #127–#131, attach evidence and explicit non-deploy statement.
+- [x] Create draft integration PR #132 from `integration/release-2026-11-11` to `main`, referencing #127–#131 and preserving the non-deploy statement.
+- [ ] Complete all checks/evidence and independent review; update PR #132 body, mark ready only after every release gate passes.
 - [ ] Do not merge or deploy until repository protection is configured, checks are green, operator-only DB maintenance is complete/approved, and the user explicitly authorizes release.
 
 ---
@@ -351,4 +352,4 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 8. Stop before any production DDL maintenance, VPS/Tunnel/DNS activation, main merge, or Cloudflare deploy; obtain explicit operator/release authorization.
 9. Final deliverable is one reviewable PR to `main`, not a claim that all requested outcomes are complete.
 
-**Next exact action:** inspect the newest run for the current integration branch SHA; then continue Task 1 (PR #129 reconciliation) and Task 2 (PR #130 OAuth/career-country verification). Do not start Task 6 or 7 production DDL until maintenance approval.
+**Next exact action:** inspect the newest PR #132 run for SHA `ec499d621de33ee148184b7411a7197054eedbef`; then continue Task 1 (PR #129 reconciliation) and Task 2 (PR #130 OAuth/career-country verification). Do not start Task 6 or 7 production DDL until maintenance approval.
