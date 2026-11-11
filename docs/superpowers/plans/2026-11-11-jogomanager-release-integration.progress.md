@@ -1,13 +1,52 @@
 # SDD ledger — plan: docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md
 
-## Checkpoint 2026-11-11
+## Checkpoint 2026-11-11 — refreshed after production and CI inspection
 
 - Integration branch: `integration/release-2026-11-11`
-- Exact branch SHA when this ledger was written: `ec499d621de33ee148184b7411a7197054eedbef`
-- Main SHA: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
+- Exact branch SHA at this checkpoint: `9ac3af9f7338b15d83530df6ee61a3a88bedf1e7`
+- Main SHA last read: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
+- PR #132: open, Draft, base `main`, head `integration/release-2026-11-11`; not merged and not deployed.
 - Design: `docs/superpowers/specs/2026-11-11-jogomanager-release-integration-design.md`
 - Plan: `docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md`
 - This ledger is the portable continuation record. Refresh branch SHA and CI run IDs before resuming.
+
+### PR ancestry
+
+- PR #127: closed and merged into the integration branch (merge commit `4aedd98b88d67be9d7150902455a0aecdf3bebda`).
+- PR #128: open/draft against `main`; head `32ac4219bf5dc4a357593a381f5e918876a741d0` is an ancestor of integration. Do not cherry-pick it again.
+- PR #129: open/draft, retargeted to integration; selected importer, Custom450 migration 0067, SQL contract, bounded worker changes and bundle baseline work are ported. Exact-head validation and staged importer acceptance remain.
+- PR #130: open/draft, retargeted to integration; direct Supabase OAuth, allowlist-only fallback, tests and career-country module are present. Existing-account continuity, callback, recovery/MFA and browser validation remain.
+- PR #131: open/draft, retargeted to integration; read-only gateway and paginated catalog changes are present. VPS/Tunnel/DNS activation remains blocked pending host integrity and clean rebuild evidence.
+
+### Repository governance
+
+- One active repository ruleset exists, but it does not include `required_status_checks`.
+- The branch-protection administration endpoint returns HTTP 403 to this GitHub integration; no ruleset write action is available. A repository administrator must add required checks and scope enforcement to `refs/heads/main`.
+- Do not merge PR #132 until the administrator requirement is satisfied and exact-head checks pass.
+
+### Latest exact-head CI set observed
+
+| Workflow | Run ID | State at observation |
+|---|---:|---|
+| Auxiliary match worker | 43089449464 | queued |
+| Match 3D lifecycle/context recovery | 43089449441 | in progress |
+| Match 3D mobile draw inventory | 43089449348 | in progress |
+| Match 3D visual evidence | 43089449332 | pending |
+| Match 3D startup CPU diagnostic | 43089449462 | pending |
+| CodSpeed | 43089449360 | pending |
+| Quality gates | 43089449768 | pending |
+| Public environment/MCP safety | 43089449304 | success |
+
+A previous exact-head run set was canceled when the branch advanced. A prior auxiliary-worker run failed on a Prettier assertion in `src/game/quick-match-catalog.test.ts`; that formatting has since been corrected. Do not assume the current run set is green—inspect the latest runs for the current SHA before reporting results.
+
+### Production evidence
+
+- `public.api_football_data` autovacuum thresholds are applied and read back: vacuum/analyze scale factor 0.5%, threshold 20,000. Autovacuum completed at 2026-11-11 19:26:01 UTC and autoanalyze at 19:25:51 UTC; latest sample showed zero estimated dead tuples and zero modifications since analyze.
+- The injury-count materialized-view refresh is **not fixed**. The latest observed run took 36.024 seconds at 2026-11-11 19:00 UTC. No `api_football_injury_league_cover_idx` or replacement currently exists. A concurrent covering-index build exceeded the SQL API's 120-second timeout and the incomplete index was removed. The planner still uses the valid but non-covering `api_football_injury_league_time_idx`. Staging plan comparison and an operator session with a longer timeout are required.
+- PostgreSQL collation mismatch remains: recorded `153.120`, actual `153.121`. Exact inventory: 251 ordinary indexes (2,172.20 MiB) plus the partitioned `realtime.messages_replay_index` parent and six child indexes. No REINDEX or collation refresh has been run; this is a maintenance-window operation.
+- API-Football importer changes and migrations 0067–0070 are in the branch. Elimination of production 546/503 errors is not proven until a representative staged batch and post-deploy telemetry pass.
+- No physical-device high-quality 60 FPS evidence exists. CI/headless screenshots are not accepted as physical GPU proof.
+- Cloudflare production deployment has not been triggered. VPS gateway/Tunnel remains disabled. No active attack test was run against production.
 
 ## Completed in this workflow
 
