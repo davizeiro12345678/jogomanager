@@ -16,16 +16,20 @@ BEGIN
 END;
 $permissions$;
 
--- Emulate rows that existed before these two triggers were installed. Only
--- this migration's triggers are paused; all other Auth/payment controls stay on.
-ALTER TABLE auth.users DISABLE TRIGGER enqueue_email_automation_confirmed_user;
+-- Represent old confirmed accounts and fulfilled purchases inside a
+-- disposable transaction. Do not disable triggers on auth.users: that is a
+-- Supabase-managed table owned by supabase_auth_admin, not postgres.
+-- Insert normally, then clear only our synthetic outbox receipts to model
+-- rows that predate the automation migration. No schema permissions change.
 INSERT INTO auth.users(id,email,email_confirmed_at)
 VALUES ('65000000-0000-4000-8000-000000000008','historical@outbox.example.test',now() - interval '30 days');
-ALTER TABLE auth.users ENABLE TRIGGER enqueue_email_automation_confirmed_user;
-ALTER TABLE public.user_purchases DISABLE TRIGGER enqueue_email_automation_fulfilled_purchase;
 INSERT INTO public.user_purchases(id,user_id,product_key,amount_cents,status,reference)
 VALUES ('65000000-0000-4000-8000-000000000009','65000000-0000-4000-8000-000000000008','coins_500',500,'completed','historical-outbox-fixture');
-ALTER TABLE public.user_purchases ENABLE TRIGGER enqueue_email_automation_fulfilled_purchase;
+DELETE FROM email_automation_private.outbox
+WHERE source_id IN (
+  '65000000-0000-4000-8000-000000000008'::uuid,
+  '65000000-0000-4000-8000-000000000009'::uuid
+);
 UPDATE auth.users SET email_confirmed_at = now() WHERE id = '65000000-0000-4000-8000-000000000008';
 UPDATE public.user_purchases SET status = 'completed' WHERE id = '65000000-0000-4000-8000-000000000009';
 DO $historical_no_backfill$
