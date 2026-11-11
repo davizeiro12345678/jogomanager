@@ -21,6 +21,8 @@ export type MatchClosureReason = MatchReceiptV1["closureReason"];
 
 export interface AuthoritativeMatchEngine {
   advanceFixedStep(): boolean;
+  /** Explicit completion signal from the canonical engine, never a client flag. */
+  isFinished?(): boolean;
   publicState(): MatchPublicStateV1;
   presentationEvents(): PresentationEventV1[];
   applyTactics(seat: MatchSeat, payload: TacticalCommandPayloadV1): boolean;
@@ -291,6 +293,13 @@ export class AuthoritativeMatchSession {
     if (!this.options.engine.advanceFixedStep()) return;
     this.tick += 1;
     this.revision += 1;
+  }
+
+  /** Sign terminal results only after the canonical server engine finishes. */
+  async completeIfFinished(now: number): Promise<MatchReceiptV1 | null> {
+    if (this.phase === "finalized") return this.receipt ?? this.finalize("completed", now);
+    if (!this.started || !this.options.engine.isFinished?.()) return null;
+    return this.finalize("completed", now);
   }
 
   snapshot(): MatchSnapshotV1 {
