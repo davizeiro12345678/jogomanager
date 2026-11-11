@@ -187,7 +187,7 @@ describe("staged authoritative WSS client", () => {
     second.open();
     second.message(frame({ type: "ready", seat: "home", snapshot: state(10) }));
     expect(f.client.statusSnapshot()).toBe("connected");
-    expect(f.client.officialFeed().snapshot()?.revision).toBe(10);
+    expect(f.client.officialSnapshot()?.revision).toBe(10);
     expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
     expect(JSON.parse(second.sent[1]!).command.sequence).toBe(2);
     f.client.dispose();
