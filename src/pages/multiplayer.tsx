@@ -540,4 +540,3 @@ function SideCard({
     </div>
   );
 }
-
