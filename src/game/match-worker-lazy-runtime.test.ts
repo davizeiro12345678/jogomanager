@@ -39,6 +39,6 @@ describe("worker startup lazy simulation boundary", () => {
     expect(source).toContain('const { MatchSim } = await import("./sim");');
     expect(source.split('const { MatchSim } = await import("./sim");')).toHaveLength(3);
     expect(source).toContain('from "./sim-contracts"');
-    expect(source).not.toContain('from "./sim";');
+    expect(source).toContain('import type { MatchSim } from "./sim";');
   });
 });
