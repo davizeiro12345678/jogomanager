@@ -54,8 +54,9 @@ export function LiveRoom({
   useEffect(() => {
     const controller = createLiveMatchController({
       ...setups,
-      // Opt into bounded contacts for new multiplayer presentation sessions.
-      contactPhysicsRevision: 2,
+      // Match the version pinned at room creation. Historical rooms stay
+      // on their original contact model until officially finalized.
+      contactPhysicsRevision: room.contact_physics_revision === 2 ? 2 : undefined,
       view: sim,
       onSnapshot: (view) => {
         if (authoritativeResult.current) return;
