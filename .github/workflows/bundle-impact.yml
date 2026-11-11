@@ -46,6 +46,8 @@ jobs:
           cache: npm
       - name: Verify baseline resolver compatibility
         run: node --test scripts/normalize-baseline-entities-alias.test.mjs
+      - name: Verify baseline report resolver compatibility
+        run: node --test scripts/bundle-baseline-resolver.test.mjs
       - name: Preserve analyzer and install one dependency graph for both revisions
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
