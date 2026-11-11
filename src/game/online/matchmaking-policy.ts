@@ -39,10 +39,8 @@ function blocked(a: QueuePlayer, b: QueuePlayer): boolean {
 }
 
 function rematch(a: QueuePlayer, b: QueuePlayer): boolean {
-  return (
-    a.recentOpponents?.includes(b.userId) === true ||
-    b.recentOpponents?.includes(a.userId) === true
-  );
+  return (a.recentOpponents?.includes(b.userId) === true ||
+    b.recentOpponents?.includes(a.userId) === true);
 }
 
 function valid(p: QueuePlayer, now: number): boolean {
