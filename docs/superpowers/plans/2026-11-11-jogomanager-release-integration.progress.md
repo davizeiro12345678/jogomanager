@@ -167,3 +167,9 @@ Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expans
 - **NÃO concluído:** servidor WebSocket/DO em produção, anti-cheat completo, moderação IA + recursos, novos modos, IA futebolística avançada, revisão gráfica, métricas e CI exato. A PR segue Draft; não mesclar.
 - **Observação de compatibilidade:** a nova revisão foi optada pelo construtor canônico de novas sessões online; antes do deploy, verificar persistência da revisão por sala para sessões que atravessam versões do servidor, paridade com replay e rollback seguro.
 - **Próximos gates:** Quality Gates de SHA mais recente, Prettier/TS/Vitest focado e integração, replay determinístico 1.000 seeds, métricas de deslocamento e homologação em hardware.
+
+### Segundo lote de implementação — 2026-11-11
+- `sim-ball-duels.ts`: v2 só transfere bola na dividida quando corpo **e bola** estão no raio de alcance. Novo caso `contact-missed-ball` em `contact-physics-revision.test.ts`.
+- `ai-ball-interception.ts` e teste: perseguição preditiva de bola solta com velocidade, stamina, tempo de reação/curva, sem RNG nem alterar a física. `sim-team-ai.ts` opta apenas em `contactPhysicsRevision=2`.
+- `moderation.ts` + teste: URL/e-mail mascarados com alfabetos mistos não escapam das regras de link/contato; mantém termos futebolísticos normais.
+- Não houve execução local de Vitest, TypeScript, Prettier, testes visuais ou de stress: os GitHub Actions do SHA anterior estavam em fila. Confirmar o **SHA final deste lote** antes de atribuir qualquer conclusão. Não declarar multiplayer/IA/suporte/gráficos completos.
