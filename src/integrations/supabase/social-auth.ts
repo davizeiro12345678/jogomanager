@@ -111,7 +111,14 @@ export function fallbackAuthMethods(): AuthMethods {
   const configured = typeof raw === "string" ? raw.trim() : "";
   const allowlist =
     configured && configured.toLowerCase() !== "none"
-      ? [...new Set(configured.split(",").map((value) => value.trim()).filter(Boolean))]
+      ? [
+          ...new Set(
+            configured
+              .split(",")
+              .map((value) => value.trim())
+              .filter(Boolean),
+          ),
+        ]
       : [];
   const providers = allowlist.filter(
     (provider): provider is SocialProvider =>
