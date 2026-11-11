@@ -60,7 +60,9 @@ The release branch now contains migration `0071_incremental_featured_injury_coun
 - Unschedules the legacy hourly materialized-view refresh, retaining the old materialized view temporarily for rollback.
 - Adds a SQL contract covering source reconciliation and insert, league-change update, and delete behavior.
 
-This is a **proposed code change in PR #132**, not yet deployed to production. The migration replay and SQL contract must pass before release. After deployment, compare the live projection to the source and measure p50/p95 for the public digest RPC and its query plan. Keep the legacy materialized view until the new path has passed at least 24 hours of production verification; only then consider dropping it.
+This is a **proposed code change in PR #132**, not yet deployed to production. The migration's trigger creation takes a short write lock on `api_football_data` while the initial 109k-row projection is backfilled (the measured source query was about 28 seconds). Schedule this migration off-peak, confirm the importer queue is idle, and monitor lock waits. Reads remain available; the lock only pauses writes to this provider cache while the migration transaction commits.
+
+Rollback: restore `get_public_league_digest_source` to its prior materialized-view join and re-schedule the legacy cron job before removing the live projection triggers/tables. Do not drop the legacy materialized view until the new path has passed 24 hours of production verification. The migration replay and SQL contract must pass before release. After deployment, compare the live projection to the source and measure p50/p95 for the public digest RPC and its query plan. Keep the legacy materialized view until the new path has passed at least 24 hours of production verification; only then consider dropping it.
 
 ## Capture the exact production plan and blockers
 
