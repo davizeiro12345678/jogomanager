@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { availableAuthMethods, fallbackAuthMethods } from "@/integrations/supabase/social-auth";
+import {
+  availableAuthMethods,
+  fallbackAuthMethods,
+  type AuthMethods,
+} from "@/integrations/supabase/social-auth";
 import { reportSilent } from "@/lib/silent-errors";
 
 export function useAuthMethods() {
