@@ -70,7 +70,11 @@ async function setup() {
 describe("signed WebSocket bridge composition", () => {
   it("accepts a live signed seat ticket and rejects a changed seat", async () => {
     const { homeTicket, session } = await setup();
-    const bridge = createSecureMatchSocketBridge({ session, signingSecret: secret, now: () => now });
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => now,
+    });
     const valid = new TestSocket();
     expect(await bridge.attach(valid, homeTicket)).toBe("home");
     expect(valid.sent).toHaveLength(1);
