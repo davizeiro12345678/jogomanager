@@ -1,28 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { oauthTransport, socialAuthErrorMessage, usesLovableOAuth } from "./auth-transport";
+import { oauthTransport, socialAuthErrorMessage } from "./auth-transport";
 
 describe("OAuth identity transport", () => {
-  it.each([undefined, null, "", "supabase", "supabase-direct", "unknown", false])(
-    "uses direct Supabase OAuth for mode %j",
+  it.each([undefined, null, "", "supabase", "supabase-direct", "unknown", false, "lovable"])(
+    "always keeps Supabase as the identity authority for mode %j",
     (mode) => {
-      expect(usesLovableOAuth(mode)).toBe(false);
       expect(oauthTransport(mode, "google")).toEqual({ kind: "supabase", provider: "google" });
       expect(oauthTransport(mode, "azure")).toEqual({ kind: "supabase", provider: "azure" });
+      expect(oauthTransport(mode, "github")).toEqual({ kind: "supabase", provider: "github" });
     },
   );
-
-  it("keeps the broker available only through the explicit legacy mode", () => {
-    expect(usesLovableOAuth("lovable")).toBe(true);
-    expect(oauthTransport("lovable", "google")).toEqual({ kind: "lovable", provider: "google" });
-    expect(oauthTransport("lovable", "azure")).toEqual({
-      kind: "lovable",
-      provider: "microsoft",
-    });
-    expect(oauthTransport("lovable", "github")).toEqual({
-      kind: "supabase",
-      provider: "github",
-    });
-  });
 
   it("offers another configured method when a direct provider has no credentials", () => {
     expect(
