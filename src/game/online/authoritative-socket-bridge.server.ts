@@ -44,6 +44,7 @@ const utf8 = new TextEncoder();
 export class AuthoritativeSocketBridge {
   private readonly peers = new Map<MatchSeat, Connection>();
   private readonly now: () => number;
+  private announcedFinalKey: string | null = null;
 
   constructor(private readonly options: SocketBridgeOptions) {
     this.now = options.now ?? Date.now;
@@ -56,8 +57,8 @@ export class AuthoritativeSocketBridge {
       // Signature verification happens *before* session.connect; unverified
       // input must never change room liveness, ready state or simulation.
       if (!(await this.options.verifyTicket(ticket))) throw new Error("invalid ticket signature");
-      const seat = this.options.session.connect(ticket, this.now());
       if (socket.readyState !== WS_OPEN) return null;
+      const seat = this.options.session.connect(ticket, this.now());
       const previous = this.peers.get(seat);
       const peer: Connection = {
         socket,
@@ -156,7 +157,10 @@ export class AuthoritativeSocketBridge {
     this.options.session.advanceFixedTick();
     this.broadcastSnapshot();
     const receipt = await this.options.session.expireReconnects(now);
-    if (receipt) this.broadcast({ type: "final", version: MATCH_PROTOCOL_VERSION, receipt });
+    if (receipt && this.announcedFinalKey !== receipt.idempotencyKey) {
+      this.announcedFinalKey = receipt.idempotencyKey;
+      this.broadcast({ type: "final", version: MATCH_PROTOCOL_VERSION, receipt });
+    }
   }
 
   broadcastSnapshot(): void {
