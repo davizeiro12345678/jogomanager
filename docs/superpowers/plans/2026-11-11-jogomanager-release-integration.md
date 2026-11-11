@@ -37,27 +37,46 @@
 
 ---
 
-## Exact checkpoint at handoff
+## Exact checkpoint — refreshed 2026-11-11
 
-**Status:** Phase 1 — integration and CI stabilization. The work is in progress; the release PR has not been created and nothing has been merged to `main`.
+**Status:** Phase 1 — integration and CI stabilization. Draft release PR #132 exists; it is not merged to `main` and no production deployment has been triggered.
 
 - Repository: `davizeiro12345678/jogomanager`
 - Main SHA last read: `8183b73828df7cbbc185fab4b665dbc35f0eaf29`
 - Integration branch: `integration/release-2026-11-11`
-- Integration SHA immediately before this plan was saved: `1496e779fdf4d3deb2b462eba54429a68722f5a1`; after the plan and progress ledger commits, draft PR #132 points at `ec499d621de33ee148184b7411a7197054eedbef`. Refresh the branch head before continuing.
-- PR #127: **merged** into the integration branch; merge commit `4aedd98b88d67be9d7150902455a0aecdf3bebda`.
-- PR #128: **open/draft against main**, but its head `32ac4219bf5dc4a357593a381f5e918876a741d0` is an ancestor of the integration branch. Its implementation is already present in the branch history; do not merge/cherry-pick it again.
-- PR #129: **open/draft, non-mergeable** against integration. Selected importer, Custom450 migration, SQL contract, worker-window and bundle-baseline changes have been ported; compare and reconcile remaining diff before superseding the original PR.
-- PR #130: **open/draft, non-mergeable** against integration. Direct Supabase OAuth, provider fallback, auth tests and career-country module are present; account continuity, callback, recovery and visual flow remain unverified.
-- PR #131: **open/draft, non-mergeable** against integration. Read-only gateway files and catalog pagination changes are present; do not activate VPS/Tunnel/DNS.
-- `main.protected=false` was returned by the branch endpoint. Reading branch-protection details returns 403 to the connected GitHub integration; an account/repository admin must configure protection and required checks.
-- Latest workflow runs at the last inspection were still running/queued on the exact integration head: Quality Gates, CodSpeed, Match 3D visual evidence, startup CPU diagnostic, mobile draw inventory, lifecycle/context recovery, auxiliary worker and public environment/MCP safety. A prior auxiliary-worker attempt failed on a Prettier formatting error in `src/game/quick-match-catalog.test.ts`; a later commit formatted it. Do not assume the latest attempt is green—inspect the newest run for the current branch SHA.
-- Production autovacuum tuning is applied and verified: `api_football_data` now uses 0.5% + 20,000 thresholds; a production autovacuum and autoanalyze ran, leaving `n_dead_tup=0` and `n_mod_since_analyze=0`.
-- PostgreSQL injury refresh is **not fixed**: `api_football_injury_league_cover_idx` was found invalid/not-ready and zero bytes. The concurrent repair is documented but not executed. Refresh samples remained about 30–36 seconds.
-- PostgreSQL collation mismatch is **not fixed**: recorded `153.120`, actual `153.121`. The documented inventory is 251 ordinary collation-dependent indexes (~2.17 GB) plus a partitioned Realtime index. Rebuild all affected indexes before refreshing the database collation version.
-- The generic quick-match club fallback is filtered through the canonical club catalog and regression tests were added; current exact-head CI must prove them.
-- The importer implementation and migrations 0067–0070 are in the integration branch; 546/503 elimination is not yet proven by a representative staged run or post-release production telemetry.
-- The Cloudflare workflow is intentionally restricted to a successful `push` Quality Gates run on `main`; PR CI does not publish.
+- Exact branch SHA at this checkpoint: `9ac3af9f7338b15d83530df6ee61a3a88bedf1e7`; refresh before resuming.
+- PR #132: open, Draft, base `main`, head integration branch. It is the single review/release container; do not merge until exact-head CI and admin governance gates pass.
+- PR #127: closed/merged into integration (merge commit `4aedd98b88d67be9d7150902455a0aecdf3bebda`).
+- PR #128: open/draft against `main`; head `32ac4219bf5dc4a357593a381f5e918876a741d0` is an ancestor of integration. Do not cherry-pick again.
+- PR #129–#131: open/draft, retargeted to integration; selected changes have been reconciled into PR #132, but full diff review and exact-head tests remain.
+
+### Repository governance
+
+An active repository ruleset exists, but its rule list does not include `required_status_checks`. The GitHub branch-protection endpoint returns HTTP 403 to the connected integration and no ruleset write action is available. A repository administrator must require the Quality Gates, CodSpeed, deterministic stress, migration replay, bundle comparison, and Match 3D evidence checks on `refs/heads/main`. Do not merge until this is configured.
+
+### Current exact-head CI run set
+
+| Workflow | Run ID | State at observation |
+|---|---:|---|
+| Auxiliary match worker | 43089449464 | queued |
+| Match 3D lifecycle/context recovery | 43089449441 | in progress |
+| Match 3D mobile draw inventory | 43089449348 | in progress |
+| Match 3D visual evidence | 43089449332 | pending |
+| Match 3D startup CPU diagnostic | 43089449462 | pending |
+| CodSpeed | 43089449360 | pending |
+| Quality gates | 43089449768 | pending |
+| Public environment/MCP safety | 43089449304 | success |
+
+A prior auxiliary-worker run failed on Prettier in `src/game/quick-match-catalog.test.ts`; formatting was corrected. Previous runs were canceled after branch advances. Inspect the newest exact-head runs before declaring any gate green.
+
+### Production database state
+
+- Autovacuum thresholds on `public.api_football_data` are applied and verified: scale factors 0.5%, thresholds 20,000. Autovacuum completed at 19:26:01 UTC and autoanalyze at 19:25:51 UTC; latest sample had zero estimated dead tuples and zero modifications since analyze.
+- Injury-count refresh remains slow: latest observed refresh was 36.024 seconds. No covering index currently exists. A concurrent index build exceeded the SQL API's 120-second timeout; its incomplete index was removed. The valid but non-covering `api_football_injury_league_time_idx` remains in use. A staging plan comparison and operator-controlled concurrent build with a longer timeout are still required.
+- Collation mismatch remains: recorded `153.120`, actual `153.121`. Exact inventory is 251 ordinary indexes (2,172.20 MiB) plus the partitioned `realtime.messages_replay_index` parent and six child indexes. No REINDEX or collation refresh has been run.
+- API-Football changes/migrations 0067–0070 are in the branch; production 546/503 elimination is not proven until staged batch acceptance and post-deploy telemetry.
+- No physical-device high-quality 60 FPS proof exists; headless CI evidence is not sufficient.
+- Cloudflare deployment has not been triggered. VPS gateway/Tunnel remains disabled. No active attack test was run against production.
 
 ## Progress board
 
