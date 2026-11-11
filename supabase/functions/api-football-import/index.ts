@@ -74,14 +74,19 @@ Deno.serve(async (request: Request) => {
         const limit = Number(
           value.response?.requests?.limit_day ?? value.response?.requests?.limit,
         );
-        const minuteLimit = Number(status.headers.get("x-ratelimit-limit"));
+        const minuteLimitHeader = Number(status.headers.get("x-ratelimit-limit"));
+        // Custom450 is the contracted ceiling. If the provider omits its
+        // optional header, retain that explicit plan limit instead of failing
+        // discovery and stopping every scheduled import.
+        const minuteLimit =
+          Number.isSafeInteger(minuteLimitHeader) && minuteLimitHeader > 0
+            ? Math.min(450, minuteLimitHeader)
+            : 450;
         if (
           !status.ok ||
           (value.errors && Object.keys(value.errors).length) ||
           !Number.isSafeInteger(limit) ||
-          limit < 1 ||
-          !Number.isSafeInteger(minuteLimit) ||
-          minuteLimit < 1
+          limit < 1
         )
           return reply(409, { error: "provider_status_unavailable" });
         return reply(
@@ -102,7 +107,7 @@ Deno.serve(async (request: Request) => {
     if (
       !adminToken &&
       body.workerLanes !== undefined &&
-      (!Number.isSafeInteger(body.workerLanes) || body.workerLanes < 1 || body.workerLanes > 16)
+      (!Number.isSafeInteger(body.workerLanes) || body.workerLanes < 1 || body.workerLanes > 12)
     )
       return reply(400, { error: "invalid_worker_lanes" });
     // Scheduled workers use short, bounded windows to stay below the Edge CPU
@@ -133,7 +138,7 @@ Deno.serve(async (request: Request) => {
     const { lanes, spacingMs, maxRequests } = footballWindowBudget(
       !adminToken && body.workerLanes !== undefined
         ? body.workerLanes
-        : (Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "48"),
+        : (Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "8"),
       !!adminToken,
     );
     summary.lanes = lanes;
