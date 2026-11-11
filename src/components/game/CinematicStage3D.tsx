@@ -48,7 +48,7 @@ import { CinematicSpecialSet } from "./cinematic/CinematicSpecialSet";
 import { CinematicPortraitLight } from "./cinematic/CinematicPortraitLight";
 import { CinematicActor as Figure } from "./cinematic/CinematicActor";
 import { CinematicRuntime } from "./cinematic/CinematicRuntime";
-import { CinematicFrameProbe } from "./cinematic/CinematicFrameProbe";
+import { LazyCinematicFrameProbe } from "./cinematic/LazyCinematicFrameProbe";
 import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/CinematicSetBatch";
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
@@ -548,7 +548,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               voiceClockRef={voiceClockRef}
               voicePlayingRef={voicePlayingRef}
             >
-              <CinematicFrameProbe
+              <LazyCinematicFrameProbe
                 host={host}
                 openedAt={openedAt.current}
                 stopped={paused || reduced || hidden}
