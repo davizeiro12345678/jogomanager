@@ -101,6 +101,31 @@ export async function availableAuthMethods(signal?: AbortSignal): Promise<AuthMe
   return parseAuthMethods(await response.json(), allowlist);
 }
 
+/**
+ * Keep email/password and only explicitly allowlisted social providers
+ * available when Supabase settings discovery is temporarily unavailable.
+ * No provider is guessed from client credentials or from a hard-coded default.
+ */
+export function fallbackAuthMethods(): AuthMethods {
+  const raw = import.meta.env["VITE_AUTH_PROVIDER_ALLOWLIST"];
+  const configured = typeof raw === "string" ? raw.trim() : "";
+  const allowlist =
+    configured && configured.toLowerCase() !== "none"
+      ? [...new Set(configured.split(",").map((value) => value.trim()).filter(Boolean))]
+      : [];
+  const providers = allowlist.filter(
+    (provider): provider is SocialProvider =>
+      provider in SOCIAL_LABELS || (provider.startsWith("custom:") && provider.length > 7),
+  );
+  return {
+    socialProviders: providers,
+    email: true,
+    phone: false,
+    passkeys: false,
+    signup: true,
+  };
+}
+
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {
   return { redirectTo, ...(provider === "azure" ? { scopes: "email" } : {}) };
 }
