@@ -24,7 +24,7 @@ export function useAuthMethods() {
       .catch((error) => {
         if (!controller.signal.aborted) {
           reportSilent("auth.operation", error, {
-            classification: "fatal",
+            classification: "ignorable",
             feature: "auth-methods",
             phase: "load",
             dedupeKey: "auth-methods-load",
