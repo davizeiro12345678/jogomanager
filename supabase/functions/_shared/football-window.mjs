@@ -1,13 +1,14 @@
 // The database enforces global quotas; these limits bound each invocation.
 export function footballWindowBudget(configuredLanes, pilot) {
   const parsed = Number(configuredLanes);
-  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(48, parsed);
+  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(12, parsed);
   return {
     lanes,
-    // Preserve the production 48-lease queue while keeping actual fetches
-    // under the independently enforced 9-starts/second worker ceiling.
+    // The Edge runtime previously hit WORKER_RESOURCE_LIMIT at 48 concurrent
+    // claims. Keep the durable DB lease capacity at 48, but cap each invocation
+    // to 12 lanes and 120 requests; the shared fetch clock still enforces 9/s.
     spacingMs: Math.max(110, Math.ceil(800 / lanes)),
-    maxRequests: Math.min(880, lanes * 50),
+    maxRequests: Math.min(120, lanes * 15),
   };
 }
 
