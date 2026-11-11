@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Flag, Send, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n/provider";
@@ -160,14 +159,14 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
             {hideOpponent ? <VolumeX size={14} aria-hidden /> : <Volume2 size={14} aria-hidden />}
             {hideOpponent ? "Mostrar" : "Silenciar"}
           </button>
-          <Link
-            to="/contato"
+          <a
+            href={`/contato?reportRoom=${encodeURIComponent(roomId)}`}
             aria-label="Denunciar abuso ou comportamento suspeito no multiplayer"
             className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Flag size={14} aria-hidden />
             Denunciar
-          </Link>
+          </a>
         </div>
       </div>
       <div className="max-h-40 overflow-y-auto text-sm" aria-live="polite">
