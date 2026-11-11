@@ -179,6 +179,21 @@ describe("AuthoritativeMatchSession", () => {
     ).toThrow(/room/i);
   });
 
+  it("rejects cross-room command before connecting a valid ticket", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    const wrongRoom = parseMatchCommandV1({
+      ...command(1, "ready"),
+      roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5",
+    });
+    const outcome = await session.receive(home, wrongRoom, issuedAt);
+    expect(outcome).toMatchObject({ accepted: false, reason: "command_rejected" });
+    session.disconnect(home.userId, issuedAt + 1);
+    // A rejected command never silently marked this seat as connected.
+    expect(session.phase).toBe("waiting");
+    expect(session.snapshot().tick).toBe(0);
+  });
+
   it("rejects an expired ticket whose signed expiration was extended by the caller", () => {
     const { session } = createSession();
     const extended = parseMatchTicketV1({ ...ticket("home"), expiresAt: issuedAt + 240_000 });
