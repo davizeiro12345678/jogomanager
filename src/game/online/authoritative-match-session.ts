@@ -209,7 +209,7 @@ export class AuthoritativeMatchSession {
     // Hash and validate before applying any engine effect. If hashing fails,
     // the engine remains unchanged and the queue is recovered for later input.
     const { hash } = await appendCommandHash(this.commandHash, command);
-    if (this.closing || this.receipt || this.phase === "finalized")
+    if (this.closing || this.receipt)
       return this.reject(userId, command.sequence, "command_rejected", now);
 
     let applied = true;
