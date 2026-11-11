@@ -54,6 +54,8 @@ export function LiveRoom({
   useEffect(() => {
     const controller = createLiveMatchController({
       ...setups,
+      // Opt into bounded contacts for new multiplayer presentation sessions.
+      contactPhysicsRevision: 2,
       view: sim,
       onSnapshot: (view) => {
         if (authoritativeResult.current) return;
