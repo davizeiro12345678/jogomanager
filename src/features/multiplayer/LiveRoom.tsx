@@ -90,7 +90,7 @@ export function LiveRoom({
       controller.dispose();
       controllerRef.current = null;
     };
-  }, [setups, sim]);
+  }, [setups, sim, room.contact_physics_revision]);
 
   useEffect(() => {
     if (!online || !isHost || !snap.finished || published.current) return;
@@ -201,14 +201,14 @@ export function LiveRoom({
       ) : null}
       {showChat ? (
         <aside
-          aria-label="Conversa privada durante a partida"
+          aria-label={copy.chatLabel}
           className="absolute bottom-20 right-3 z-30 w-[min(24rem,calc(100vw-1.5rem))] max-h-[50dvh] overflow-y-auto rounded-xl border border-white/20 bg-black/85 p-2 text-white backdrop-blur-xl"
         >
           <RoomChat roomId={room.id} userId={userId} />
         </aside>
       ) : null}
       <p className="pointer-events-none absolute inset-x-3 bottom-20 z-10 max-w-xs rounded-md bg-black/65 px-2 py-1 text-xs text-white/70">
-        Prévia visual local. O placar oficial é confirmado pelo servidor.
+        {copy.previewNotice}
       </p>
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
         <button
@@ -228,11 +228,11 @@ export function LiveRoom({
           className="flex items-center gap-1 rounded-full px-3 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
         >
           <MessageSquare size={13} aria-hidden="true" />
-          Chat
+          {copy.chat}
         </button>
         <button
           type="button"
-          aria-label={`Alterar qualidade gráfica, atual: ${quality}`}
+          aria-label={`${copy.qualityLabel}: ${quality}`}
           onClick={() =>
             setQuality((current) =>
               current === "alta" ? "media" : current === "media" ? "baixa" : "alta",
