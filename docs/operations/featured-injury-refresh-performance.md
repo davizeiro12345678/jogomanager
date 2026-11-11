@@ -135,7 +135,7 @@ Migration `0071_incremental_featured_injury_counts.sql` now replaces the expensi
 - An updated `get_public_league_digest_source` that reads the live projection for featured leagues and retains the existing source-count fallback for other leagues.
 - Unscheduling of the hourly `jm_refresh_featured_injury_counts_15m` job; the old materialized view is retained temporarily for rollback.
 
-The migration backfill uses `ON CONFLICT DO NOTHING` so a concurrent trigger update wins, then runs a reconciliation delete to remove any stale projection row inserted after a concurrent delete trigger. The SQL contract compares the complete projection to the source and exercises insert, league change and delete.
+The migration backfill uses `ON CONFLICT DO NOTHING` so a concurrent trigger update wins, then runs a reconciliation delete to remove any stale projection row inserted after a concurrent delete trigger. The SQL contract compares the complete projection to the source and exercises insert, league change and delete. The old materialized view is retained but no longer refreshed; a rollback to it must manually refresh and validate it before switching the digest function back.
 
 **This migration is in the Draft PR only and has not been applied to production.** Its acceptance criteria are: migration replay passes, the SQL contract passes, all 12 league counts exactly match the source, the public digest returns identical payloads/counts, and representative digest latency is measured before and after. Do not claim the 36-second refresh is resolved until staging/production validation confirms it.
 
