@@ -104,21 +104,16 @@ export function rigSectionIndices(input: RigSectionInput): Uint32Array {
     for (let side = 0; side < radial; side++) {
       const a = row * (radial + 1) + side;
       const b = a + radial + 1;
-      output[cursor++] = a;
-      output[cursor++] = a + 1;
-      output[cursor++] = b;
-      output[cursor++] = a + 1;
-      output[cursor++] = b + 1;
-      output[cursor++] = b;
+      output.set([a, a + 1, b, a + 1, b + 1, b], cursor);
+      cursor += 6;
     }
   let center = rows * (radial + 1);
   for (const mask of [1, 2])
     if (caps & mask) {
       for (let side = 0; side < radial; side++) {
         const a = center + 1 + side;
-        output[cursor++] = center;
-        output[cursor++] = mask === 1 ? a + 1 : a;
-        output[cursor++] = mask === 1 ? a : a + 1;
+        output.set([center, mask === 1 ? a + 1 : a, mask === 1 ? a : a + 1], cursor);
+        cursor += 3;
       }
       center += radial + 2;
     }
