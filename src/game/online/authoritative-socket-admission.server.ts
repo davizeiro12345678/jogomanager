@@ -74,7 +74,7 @@ export class AuthoritativeSocketAdmission {
       const ticket = parseMatchTicketV1(auth["ticket"]);
       this.state = "authenticating";
       const seat = await this.bridge.attach(this.socket, ticket);
-      if (this.state === "closed") {
+      if (this.isClosed()) {
         if (seat) this.bridge.detach(this.socket);
         return;
       }
@@ -87,6 +87,12 @@ export class AuthoritativeSocketAdmission {
     } catch {
       this.deny("ticket_rejected");
     }
+  }
+
+  // Avoid TypeScript incorrectly narrowing a mutable field across await:
+  // the timeout or another frame can close the admission while HMAC runs.
+  private isClosed(): boolean {
+    return this.state === "closed";
   }
 
   detach(): void {
