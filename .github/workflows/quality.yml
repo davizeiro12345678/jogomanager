@@ -32,6 +32,8 @@ jobs:
           node --test scripts/i18n-parity.test.mjs scripts/i18n-hardcoded.test.mjs
       - run: npm run lint
       - run: npm exec -- tsc --noEmit --pretty false
+      - name: Bundle isolated Cloudflare match authority (dry-run, no deploy)
+        run: npm exec -- wrangler deploy --dry-run --config wrangler.match-authority.jsonc
       # The complete deterministic stress suite runs in the required job below.
       - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --exclude src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
