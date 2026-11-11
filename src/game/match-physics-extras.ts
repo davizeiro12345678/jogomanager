@@ -96,3 +96,30 @@ export function firstTouchSpill(base: number, incomingSpeed: number, weather: We
   const pace = 0.7 + clamp(incomingSpeed, 0, 34) * 0.02;
   return base * pace * (weather === "rain" ? 1.18 : 1);
 }
+
+
+/**
+ * Revision-2-only goalkeeper reach at the moment the ball crosses the save
+ * plane. The athlete has already advanced continuously during the flight.
+ * This is a collision-space approximation, not a teleport or extra RNG.
+ */
+export function goalkeeperCanReach(
+  goalkeeperX: number,
+  goalkeeperZ: number,
+  planeX: number,
+  ballZ: number,
+  height: number,
+  defending: number,
+  stamina: number,
+): boolean {
+  if (![goalkeeperX, goalkeeperZ, planeX, ballZ, height, defending, stamina].every(Number.isFinite))
+    return false;
+  if (height < 0 || height > 2.65) return false;
+  const lateral = Math.abs(ballZ - goalkeeperZ);
+  const forward = Math.abs(planeX - goalkeeperX);
+  const reaction = 0.75 + (clamp(defending, 0, 100) / 100) * 1.1;
+  const fatigue = 0.75 + (clamp(stamina, 0, 100) / 100) * 0.25;
+  const reach = (0.95 + reaction) * fatigue;
+  const highBallPenalty = height > 1.8 ? (height - 1.8) * 0.22 : 0;
+  return Math.hypot(lateral, forward * 0.75) + highBallPenalty <= reach;
+}
