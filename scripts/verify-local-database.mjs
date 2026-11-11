@@ -21,11 +21,13 @@ const sources = [
   "drizzle/migrations/0063_repair_career_and_push_access.sql",
   "drizzle/migrations/0064_support_ticket_outbox.sql",
   "drizzle/migrations/0065_atomic_match_room_creation.sql",
+  "drizzle/migrations/0072_match_contact_physics_revision.sql",
 ];
 const fixtures = [
   "tests/sql/career-tombstone-generation-contract.sql",
   "tests/sql/support-outbox-contract.sql",
   "tests/sql/atomic-match-room-contract.sql",
+  "tests/sql/match_contact_revision_contract.sql",
 ];
 const digest = createHash("sha256");
 const evidence = {
