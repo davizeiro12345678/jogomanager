@@ -23,6 +23,8 @@ export interface SocketBridgeOptions {
   session: AuthoritativeMatchSession;
   /** Must cryptographically verify ticket signature, claims and revocation. */
   verifyTicket: (ticket: MatchTicketV1) => Promise<boolean>;
+  /** Called after every accepted/rejected command and before the ACK. */
+  persistAfterCommand?: () => Promise<void>;
   now?: () => number;
 }
 
@@ -45,12 +47,17 @@ export class AuthoritativeSocketBridge {
   private readonly peers = new Map<MatchSeat, Connection>();
   private readonly now: () => number;
   private announcedFinalKey: string | null = null;
+  private storageFailed = false;
 
   constructor(private readonly options: SocketBridgeOptions) {
     this.now = options.now ?? Date.now;
   }
 
   async attach(socket: MatchSocket, ticketInput: unknown): Promise<MatchSeat | null> {
+    if (this.storageFailed) {
+      socket.close(1011, "match_storage_unavailable");
+      return null;
+    }
     let ticket: MatchTicketV1;
     try {
       ticket = parseMatchTicketV1(ticketInput);
@@ -88,6 +95,10 @@ export class AuthoritativeSocketBridge {
 
   /** Called by the WebSocket runtime for each incoming frame, in receive order. */
   async onMessage(socket: MatchSocket, raw: unknown): Promise<void> {
+    if (this.storageFailed) {
+      socket.close(1011, "match_storage_unavailable");
+      return;
+    }
     const peer = this.find(socket);
     if (!peer) {
       socket.close(1008, "not_authenticated");
@@ -123,9 +134,18 @@ export class AuthoritativeSocketBridge {
       this.strike(peer, "unsupported_envelope");
       return;
     }
+    let command;
     try {
-      const command = parseMatchCommandV1(envelope["command"]);
+      command = parseMatchCommandV1(envelope["command"]);
+    } catch {
+      this.strike(peer, "invalid_command");
+      return;
+    }
+    try {
       const outcome = await this.options.session.receive(peer.ticket, command, this.now());
+      // Crash consistency: never tell the browser an authoritative command was
+      // accepted while only volatile DO memory has the new hash or result.
+      await this.options.persistAfterCommand?.();
       peer.lastActivityAt = this.now();
       this.send(peer, {
         type: outcome.accepted ? "ack" : "nack",
@@ -135,7 +155,10 @@ export class AuthoritativeSocketBridge {
       });
       if (this.options.session.phase === "finalized") this.broadcastSnapshot();
     } catch {
-      this.strike(peer, "invalid_command");
+      // We cannot reliably distinguish an engine failure from storage loss.
+      // Either case means a terminal fail-closed transport, never an ACK.
+      this.storageFailed = true;
+      this.close();
     }
   }
 
@@ -148,7 +171,8 @@ export class AuthoritativeSocketBridge {
   }
 
   /** The Durable Object calls pulse on its own clock, never from a browser tick. */
-  async pulse(): Promise<void> {
+  async pulse(options: { publish?: boolean } = {}): Promise<import("./match-protocol").MatchReceiptV1 | null> {
+    if (this.storageFailed) throw new Error("match storage unavailable");
     const now = this.now();
     for (const peer of this.peers.values()) {
       if (peer.socket.readyState !== WS_OPEN || now - peer.lastActivityAt > MAX_INACTIVE_MS) {
@@ -159,8 +183,15 @@ export class AuthoritativeSocketBridge {
     // The room owns its clock; no client can choose a future frame number.
     this.options.session.advanceFixedTick();
     const completed = await this.options.session.completeIfFinished(now);
-    this.broadcastSnapshot();
     const receipt = completed ?? (await this.options.session.expireReconnects(now));
+    if (options.publish !== false) {
+      this.broadcastSnapshot();
+      this.broadcastReceipt(receipt);
+    }
+    return receipt;
+  }
+
+  broadcastReceipt(receipt: import("./match-protocol").MatchReceiptV1 | null): void {
     if (receipt && this.announcedFinalKey !== receipt.idempotencyKey) {
       this.announcedFinalKey = receipt.idempotencyKey;
       this.broadcast({ type: "final", version: MATCH_PROTOCOL_VERSION, receipt });
