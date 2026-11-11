@@ -107,23 +107,25 @@ afterEach(() => {
 describe("staged authoritative WSS client", () => {
   it("rejects an insecure or foreign-host gateway before sending a signed ticket", () => {
     const f = fixture();
-    expect(() =>
-      new AuthoritativeMatchSocketClient({
-        gatewayUrl: "wss://evil.example/rooms",
-        pageOrigin: "https://jogomanager.com",
-        roomId,
-        issueTicket: async () => ticket(startAt),
-        onEvent: () => undefined,
-      }),
+    expect(
+      () =>
+        new AuthoritativeMatchSocketClient({
+          gatewayUrl: "wss://evil.example/rooms",
+          pageOrigin: "https://jogomanager.com",
+          roomId,
+          issueTicket: async () => ticket(startAt),
+          onEvent: () => undefined,
+        }),
     ).toThrow(/trusted/i);
-    expect(() =>
-      new AuthoritativeMatchSocketClient({
-        gatewayUrl: "ws://match.jogomanager.com/rooms",
-        pageOrigin: "https://jogomanager.com",
-        roomId,
-        issueTicket: async () => ticket(startAt),
-        onEvent: () => undefined,
-      }),
+    expect(
+      () =>
+        new AuthoritativeMatchSocketClient({
+          gatewayUrl: "ws://match.jogomanager.com/rooms",
+          pageOrigin: "https://jogomanager.com",
+          roomId,
+          issueTicket: async () => ticket(startAt),
+          onEvent: () => undefined,
+        }),
     ).toThrow(/trusted/i);
     expect(f.requests()).toBe(0);
   });
