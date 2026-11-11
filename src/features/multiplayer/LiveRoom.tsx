@@ -9,6 +9,10 @@ import { WorkerMatchView } from "@/game/live-match";
 import { buildTeamSetup } from "@/game/quickMatch";
 import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
 import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
+import {
+  AuthoritativeMatchSocketClient,
+  type AuthorityConnectionStatus,
+} from "@/game/online/authoritative-socket-client";
 import { MATCH_SETTLEMENT_LEASE_MS } from "@/lib/multiplayer-settlement";
 import type { MultiplayerRoomRecord as Room } from "@/lib/multiplayer.functions";
 import { reportSilent } from "@/lib/silent-errors";
@@ -45,6 +49,9 @@ export function LiveRoom({
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const [showChat, setShowChat] = useState(false);
+  const [authorityStatus, setAuthorityStatus] = useState<AuthorityConnectionStatus>("disconnected");
+  const socketClientRef = useRef<AuthoritativeMatchSocketClient | null>(null);
+  const [pendingForfeit, setPendingForfeit] = useState(false);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
@@ -63,7 +70,7 @@ export function LiveRoom({
       contactPhysicsRevision: room.contact_physics_revision === 2 ? 2 : undefined,
       view: sim,
       onSnapshot: (view) => {
-        if (authoritativeResult.current) return;
+        if (authoritativeResult.current || room.settlement_authority === "websocket") return;
         setSnap({
           minute: view.minute(),
           hg: view.stats.home.goals,
@@ -72,7 +79,7 @@ export function LiveRoom({
         });
       },
       onFinished: (view) => {
-        if (authoritativeResult.current) return;
+        if (authoritativeResult.current || room.settlement_authority === "websocket") return;
         setSnap({
           minute: view.minute(),
           hg: view.stats.home.goals,
@@ -93,7 +100,14 @@ export function LiveRoom({
   }, [setups, sim, room.contact_physics_revision]);
 
   useEffect(() => {
-    if (!online || !isHost || !snap.finished || published.current) return;
+    if (
+      room.settlement_authority === "websocket" ||
+      !online ||
+      !isHost ||
+      !snap.finished ||
+      published.current
+    )
+      return;
     let disposed = false;
     let attempts = 0;
     const publish = async () => {
@@ -134,7 +148,70 @@ export function LiveRoom({
       // remains the single authority if the earlier request also reaches it.
       published.current = false;
     };
-  }, [online, snap.finished, isHost, room.id]);
+  }, [online, snap.finished, isHost, room.id, room.settlement_authority]);
+
+  useEffect(() => {
+    if (room.settlement_authority !== "websocket" || !online || room.status === "done")
+      return;
+    const gateway = import.meta.env.VITE_MATCH_AUTHORITY_WS_BASE as string | undefined;
+    if (!gateway) {
+      setAuthorityStatus("unavailable");
+      return;
+    }
+    let disposed = false;
+    let client: AuthoritativeMatchSocketClient;
+    try {
+      client = new AuthoritativeMatchSocketClient({
+        gatewayUrl: new URL(`/rooms/${room.id}/socket`, gateway).toString(),
+        pageOrigin: window.location.origin,
+        roomId: room.id,
+        issueTicket: async () => {
+          const { getMatchSeatTicket } = await import("@/lib/multiplayer-tickets.functions");
+          const result = await getMatchSeatTicket({ data: { roomId: room.id } });
+          if (!result.ok) throw new Error("match ticket unavailable");
+          return result.ticket;
+        },
+        onStatus: (status) => {
+          if (disposed) return;
+          setAuthorityStatus(status);
+          if (status === "connected")
+            client.sendCommand({ kind: "ready", payload: { ready: true } });
+        },
+        onEvent: (event) => {
+          if (disposed) return;
+          if (event.kind === "ready" || event.kind === "snapshot") {
+            authoritativeResult.current = true;
+            setSnap({
+              minute: event.snapshot.publicState.minute,
+              hg: event.snapshot.publicState.score.home,
+              ag: event.snapshot.publicState.score.away,
+              finished: event.snapshot.phase === "finalized",
+            });
+          } else if (event.kind === "final") {
+            authoritativeResult.current = true;
+            controllerRef.current?.pause(true);
+            setPendingForfeit(false);
+            setSnap((current) => ({
+              minute: current.minute,
+              hg: event.receipt.result.homeGoals,
+              ag: event.receipt.result.awayGoals,
+              finished: true,
+            }));
+          }
+        },
+      });
+    } catch {
+      setAuthorityStatus("unavailable");
+      return;
+    }
+    socketClientRef.current = client;
+    client.start();
+    return () => {
+      disposed = true;
+      socketClientRef.current = null;
+      client.dispose();
+    };
+  }, [online, room.id, room.settlement_authority, room.status]);
 
   useEffect(() => {
     if (authoritativeResult.current) return;
@@ -160,6 +237,18 @@ export function LiveRoom({
     }
     setSnap({ minute: room.minute, hg: homeGoals, ag: awayGoals, finished: true });
   }, [room.minute, room.state, room.status]);
+
+  const exitLiveRoom = () => {
+    if (room.settlement_authority === "websocket" && !snap.finished) {
+      if (
+        !pendingForfeit &&
+        socketClientRef.current?.sendCommand({ kind: "forfeit", payload: { confirmed: true } })
+      )
+        setPendingForfeit(true);
+      return;
+    }
+    onExit();
+  };
 
   const home = CLUBS[room.host_club]!;
   const away = CLUBS[room.guest_club!]!;
@@ -207,8 +296,18 @@ export function LiveRoom({
           <RoomChat roomId={room.id} userId={userId} />
         </aside>
       ) : null}
-      <p className="pointer-events-none absolute inset-x-3 bottom-20 z-10 max-w-xs rounded-md bg-black/65 px-2 py-1 text-xs text-white/70">
-        {copy.previewNotice}
+      <p
+        role="status"
+        aria-live="polite"
+        className="pointer-events-none absolute inset-x-3 bottom-20 z-10 max-w-xs rounded-md bg-black/65 px-2 py-1 text-xs text-white/70"
+      >
+        {room.settlement_authority === "websocket"
+          ? authorityStatus === "connected"
+            ? copy.authorityConnected
+            : authorityStatus === "unavailable"
+              ? copy.authorityUnavailable
+              : copy.authorityConnecting
+          : copy.previewNotice}
       </p>
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
         <button
@@ -243,11 +342,22 @@ export function LiveRoom({
           {quality}
         </button>
         <button
-          onClick={onExit}
-          disabled={!online}
+          onClick={exitLiveRoom}
+          disabled={
+            !online ||
+            (room.settlement_authority === "websocket" &&
+              !snap.finished &&
+              (authorityStatus !== "connected" || pendingForfeit))
+          }
           className="rounded-full bg-white/15 px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {!online ? copy.reconnecting : snap.finished ? copy.finish : copy.leave}
+          {!online
+            ? copy.reconnecting
+            : pendingForfeit
+              ? copy.authorityForfeitPending
+              : snap.finished
+                ? copy.finish
+                : copy.leave}
         </button>
       </div>
     </main>
