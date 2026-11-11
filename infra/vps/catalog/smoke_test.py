@@ -16,7 +16,7 @@ def scan(name):
     start=time.monotonic()
     with ThreadPoolExecutor(max_workers=6) as ex:
         for batch_start in range(0, 128, 6):
-            answers=list(ex.map(get_page,range(batch_start,batch_start+6)))
+            answers=list(ex.map(get_page,range(batch_start,min(batch_start+6,128))))
             short=False
             for page, rows, cache, ms in answers:
                 stats[cache]=stats.get(cache,0)+1
