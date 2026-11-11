@@ -12,7 +12,8 @@ const pt = {
   checking: "Verificando acesso à sala…",
   unavailable: "O chat desta sala não está disponível para este participante.",
   empty: "Converse com seu adversário aqui.",
-  hidden: "As mensagens do adversário estão ocultas neste aparelho. A moderação do servidor continua ativa.",
+  hidden:
+    "As mensagens do adversário estão ocultas neste aparelho. A moderação do servidor continua ativa.",
   you: "Você",
   opponent: "Adversário",
   message: "Mensagem…",
@@ -31,7 +32,8 @@ export const ROOM_CHAT_MESSAGES: FeatureMessages<keyof typeof pt> = {
     checking: "Checking room access…",
     unavailable: "The room chat is unavailable to this participant.",
     empty: "Talk to your opponent here.",
-    hidden: "Opponent messages are hidden on this device. Server moderation remains active.",
+    hidden:
+      "Opponent messages are hidden on this device. Server moderation remains active.",
     you: "You",
     opponent: "Opponent",
     message: "Message…",
