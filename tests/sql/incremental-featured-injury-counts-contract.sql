@@ -8,6 +8,14 @@ DECLARE
   v_after_71 bigint;
   v_after_72 bigint;
 BEGIN
+  ASSERT NOT has_table_privilege('anon', 'private_performance.featured_injury_rows', 'SELECT'),
+    'anonymous users must not read the private injury projection';
+  ASSERT NOT has_table_privilege('authenticated', 'private_performance.featured_injury_rows', 'SELECT'),
+    'authenticated users must not read the private injury projection';
+  ASSERT NOT has_table_privilege('service_role', 'private_performance.featured_injury_rows', 'SELECT'),
+    'service_role must read only the aggregate view, not the raw private projection';
+  ASSERT has_table_privilege('service_role', 'private_performance.featured_injury_counts_live', 'SELECT'),
+    'service_role must be able to read the aggregate view';
   SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 71), 0)
   INTO v_before_71;
   SELECT coalesce((SELECT injury_count FROM private_performance.featured_injury_counts_live WHERE league_id = 72), 0)
