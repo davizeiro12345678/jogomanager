@@ -122,6 +122,9 @@ Uma etapa só pode ser concluída com: caminho do código + SHA, testes que real
 
 - [x] Evidências de bug localizadas em `sim.ts` e `sim-ball-duels.ts` por leitura da branch existente.
 - [x] Plano expandido priorizado e conectado à PR #132.
+- [x] **Primeiro lote de código sem CI confirmado:** physics opt-in nos contratos/Worker, recuperação de bola sem snap, tackle de alcance corporal + alcance da bola, goleiro sem reposicionamento instantâneo, separação limitada, regressões em `contact-physics-revision.test.ts`.
+- [x] **Primeiro lote de IA sem CI confirmado:** `ai-ball-interception.ts` com previsão determinística de chegada/curva, conectado apenas à revisão opt-in, com testes puros em `ai-ball-interception.test.ts`.
+- [x] **Primeiro lote de segurança/chat sem CI confirmado:** recusa cross-room antes de conexão na sessão autoritativa; detecção de links e e-mails com letras homoglíficas em `moderation.ts`; testes focados para ambos.
 - [ ] Implementação física opt-in completa + todos os testes de paridade (inspecionar commits).
 - [ ] Transporte server/DO pronto em staging.
 - [ ] Moderação/anticheat end-to-end e suporte.
