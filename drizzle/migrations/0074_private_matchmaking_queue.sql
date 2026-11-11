@@ -125,13 +125,16 @@ DECLARE
   v_now timestamptz := clock_timestamp();
   v_home matchmaking_private.queue%ROWTYPE;
   v_away matchmaking_private.queue%ROWTYPE;
+  v_home_id uuid;
+  v_away_id uuid;
+  v_count integer;
   v_pair uuid;
 BEGIN
   PERFORM pg_advisory_xact_lock(772913552);
   UPDATE matchmaking_private.pairs SET status='expired'
    WHERE status='reserved' AND expires_at<=v_now;
   DELETE FROM matchmaking_private.queue WHERE expires_at<=v_now;
-  SELECT a.*, b.* INTO v_home, v_away
+  SELECT a.user_id, b.user_id INTO v_home_id, v_away_id
     FROM matchmaking_private.queue a
     JOIN matchmaking_private.queue b
       ON a.user_id<>b.user_id
@@ -160,6 +163,8 @@ BEGIN
              abs(a.rating-b.rating), b.joined_at, b.user_id
     LIMIT 1 FOR UPDATE OF a,b SKIP LOCKED;
   IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT * INTO STRICT v_home FROM matchmaking_private.queue WHERE user_id=v_home_id;
+  SELECT * INTO STRICT v_away FROM matchmaking_private.queue WHERE user_id=v_away_id;
 
   INSERT INTO matchmaking_private.pairs(home_id,away_id,home_club,away_club,mode,created_at,expires_at)
   VALUES (v_home.user_id,v_away.user_id,v_home.club_id,v_away.club_id,v_home.mode,
@@ -167,7 +172,8 @@ BEGIN
   UPDATE matchmaking_private.queue SET
     status='reserved', reservation_id=v_pair, expires_at=v_now+interval '60 seconds'
     WHERE user_id IN (v_home.user_id,v_away.user_id) AND status='waiting';
-  IF NOT FOUND THEN RAISE EXCEPTION 'match_queue_reservation_failed'; END IF;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  IF v_count<>2 THEN RAISE EXCEPTION 'match_queue_reservation_failed'; END IF;
   RETURN jsonb_build_object('status','reserved','pairId',v_pair,'homeId',v_home.user_id,
     'awayId',v_away.user_id,'homeClub',v_home.club_id,'awayClub',v_away.club_id,
     'mode',v_home.mode,'region',v_home.region,'ratingGap',abs(v_home.rating-v_away.rating));
