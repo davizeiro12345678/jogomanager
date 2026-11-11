@@ -89,6 +89,30 @@ describe("opt-in contact physics / historical replay boundaries", () => {
     }
   });
 
+  it("does not transfer possession when defender hits the body but misses the ball", () => {
+    const sim = create("contact-missed-ball", 2);
+    try {
+      const holder = sim.players.find((player) => player.side === "home" && player.pos !== "GK")!;
+      const challenger = sim.players.find((player) => player.side === "away" && player.pos !== "GK")!;
+      sim.players.forEach((player) => {
+        player.x = 25;
+        player.z = player.side === "home" ? -12 : 12;
+      });
+      holder.x = 0;
+      holder.z = 0;
+      challenger.x = 0.8;
+      challenger.z = 0;
+      sim.ball.holder = holder.id;
+      sim.ball.x = -0.8;
+      sim.ball.z = 0;
+      sim.possession = holder.side;
+      pressure(sim, holder, 4);
+      expect(sim.ball.holder).toBe(holder.id);
+    } finally {
+      sim.dispose();
+    }
+  });
+
   it("keeps deterministic state and revision through a checkpoint recovery", () => {
     const sim = create("contact-checkpoint", 2);
     const replay = create("contact-checkpoint", 2);
