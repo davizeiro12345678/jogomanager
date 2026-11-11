@@ -2,7 +2,7 @@ import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 
 import { Link } from "@tanstack/react-router";
 
-import { Copy, LogOut, Play, RefreshCw, Send, Swords, Users, WifiOff } from "lucide-react";
+import { Copy, Flag, LogOut, Play, RefreshCw, Send, Swords, Users, Volume2, VolumeX, WifiOff } from "lucide-react";
 
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
@@ -598,6 +598,7 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
   const pendingSend = useRef<{ text: string; id: string } | null>(null);
   const sendingRef = useRef(false);
   const [sending, setSending] = useState(false);
+  const [hideOpponent, setHideOpponent] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -675,7 +676,32 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
 
   return (
     <div className="mt-5 rounded-xl border border-border/50 bg-background/40 p-3">
-      <div className="max-h-40 overflow-y-auto text-sm">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-display text-xs font-semibold uppercase tracking-[0.16em]">
+          Chat privado da sala
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={hideOpponent}
+            aria-label={hideOpponent ? "Voltar a mostrar mensagens do adversário" : "Ocultar mensagens do adversário"}
+            onClick={() => setHideOpponent((previous) => !previous)}
+            className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {hideOpponent ? <VolumeX size={14} aria-hidden /> : <Volume2 size={14} aria-hidden />}
+            {hideOpponent ? "Mostrar" : "Silenciar"}
+          </button>
+          <Link
+            to="/contato"
+            aria-label="Denunciar abuso ou comportamento suspeito no multiplayer"
+            className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Flag size={14} aria-hidden />
+            Denunciar
+          </Link>
+        </div>
+      </div>
+      <div className="max-h-40 overflow-y-auto text-sm" aria-live="polite">
         {status === "checking" ? (
           <p className="text-xs text-muted-foreground">Verificando acesso à sala…</p>
         ) : status === "unavailable" ? (
@@ -685,7 +711,9 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
         ) : msgs.length === 0 ? (
           <p className="text-xs text-muted-foreground">Converse com seu adversário aqui.</p>
         ) : (
-          msgs.map((m) => (
+          msgs
+            .filter((m) => !hideOpponent || m.senderId === userId)
+            .map((m) => (
             <p key={`${m.senderId}:${m.id}`} className="mb-1">
               <span className="text-muted-foreground">
                 {m.senderId === userId ? "Você" : "Adversário"}:{" "}
@@ -695,6 +723,11 @@ function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
           ))
         )}
       </div>
+      {hideOpponent ? (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          As mensagens do adversário estão ocultas neste aparelho. A moderação do servidor continua ativa.
+        </p>
+      ) : null}
       <form
         onSubmit={(e) => {
           e.preventDefault();
