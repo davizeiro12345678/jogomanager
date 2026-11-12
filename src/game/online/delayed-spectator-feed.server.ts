@@ -1,7 +1,4 @@
-import {
-  parseMatchSnapshotV1,
-  type MatchSnapshotV1,
-} from "./match-protocol";
+import { parseMatchSnapshotV1, type MatchSnapshotV1 } from "./match-protocol";
 
 /**
  * Server-owned spectator delay. The upstream room must authorize spectator
@@ -19,9 +16,7 @@ export class DelayedSpectatorFeed {
     private readonly delayMs = 30_000,
     private readonly capacity = 512,
   ) {
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(roomId)
-    )
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(roomId))
       throw new Error("invalid spectator room identifier");
     if (!Number.isSafeInteger(delayMs) || delayMs < 10_000 || delayMs > 300_000)
       throw new RangeError("spectator delay must be between 10 seconds and 5 minutes");
