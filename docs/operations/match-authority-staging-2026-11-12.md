@@ -8,11 +8,12 @@ The Cloudflare API authenticated to account `31b4ec9dfe5281c893ccfaaaefcfc88d` s
 |---|---|
 | Script | `jogomanager-match-authority-staging` |
 | Deployment | `b70fe3ab-5c99-47b8-8339-1b0ab6888d59` |
-| Version | `1c067b01-ca5b-40bf-b713-54d59bdcb525` |
+| Current version | `18f8b49c-8b02-4623-9911-7841b7f273f4` (2026-11-12T23:02:16.689795Z) |
 | SQLite namespace | `jogomanager-match-authority-staging_MatchRoomDO` |
 | DO namespace ID | `bdbb41fa3f1046d3b12c20c9ff87d1ea` |
 | Binding | `MATCH_ROOMS` → `MatchRoomDO` |
 | `MATCH_AUTHORITY_ENABLED` | `false` |
+| `MATCH_AUTHORITY_ENV` | `staging` |
 | `MATCH_QUEUE_CRON_ENABLED` | `false` |
 | `workers.dev` routing | **disabled** |
 | `workers.dev` previews | **disabled** |
@@ -28,6 +29,8 @@ Verified using authenticated `GET /accounts/{account_id}/workers/scripts/{name}/
 - `MATCH_AUTHORITY_ENV: staging` is a required runtime database trust boundary; `services/match-authority/supabase.ts` rejects staging connections to the production Supabase project `lguqnwvsfeefxamzeyos`. The separate production configuration declares `MATCH_AUTHORITY_ENV: production` and only trusts the intended production project.
 - Do not populate the staging Worker with a production `SUPABASE_SERVICE_ROLE_KEY`. Create a separate staging Supabase project or use an isolated disposable local database for end-to-end validation, with its own secret and explicitly approved access.
 - No SQL migration 0072–0079 was applied to Supabase production while provisioning the Cloudflare DO. No production route, Worker, or DNS record was updated.
+
+The initial REST upload applied `match-room-sqlite-v1` with `new_sqlite_classes: [\"MatchRoomDO\"]`. A subsequent attempt to resend the same migration failed with Cloudflare error **10074**, because the Durable Object class already exists. Re-uploading the **source-controlled** disabled bootstrap without repeating `migrations` succeeded and preserved the same SQLite namespace. For manual REST updates to an existing class, include the binding but **omit creation migrations**. Wrangler itself manages migration history from the checked-in configuration.
 
 ## Deploy the actual game Worker safely
 
