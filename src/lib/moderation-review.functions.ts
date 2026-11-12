@@ -50,10 +50,24 @@ export const openModerationCaseFromReport = createServerFn({ method: "POST" })
     if (!user) return { ok: false, reason: "verification_required" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     try {
+      const { data: room, error: roomError } = await supabaseAdmin
+        .from("match_rooms")
+        .select("host_id,guest_id")
+        .eq("id", data.roomId)
+        .maybeSingle();
+      if (roomError || !room?.guest_id)
+        return { ok: false, reason: "not_allowed" };
+      const subjectId =
+        room.host_id === context.userId
+          ? room.guest_id
+          : room.guest_id === context.userId
+            ? room.host_id
+            : null;
+      if (!subjectId) return { ok: false, reason: "not_allowed" };
       const result = await supabaseAdmin.rpc("open_private_moderation_case", {
         p_ticket: data.ticketId,
         p_room: data.roomId,
-        p_subject: data.subjectId,
+        p_subject: subjectId,
         p_reporter: context.userId,
       });
       if (result.error) return unavailable(result.error);
