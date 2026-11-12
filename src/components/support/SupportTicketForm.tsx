@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { submitSupportTicket } from "@/lib/support.functions";
+import { openModerationCaseFromReport } from "@/lib/moderation-review.functions";
 import { SupportTicketInput } from "@/lib/support-input";
 import { reportPrefill, reportRoomFromSearch } from "@/lib/support-report-context";
 import { useT } from "@/i18n/provider";
@@ -17,9 +18,10 @@ export function SupportTicketForm() {
   const copy = supportMessages(lang);
   const userId = useAuthUserId();
   const submit = useServerFn(submitSupportTicket);
-  const report = reportPrefill(
-    typeof window !== "undefined" ? reportRoomFromSearch(window.location.search) : null,
-  );
+  const openReportCase = useServerFn(openModerationCaseFromReport);
+  const reportRoomId =
+    typeof window !== "undefined" ? reportRoomFromSearch(window.location.search) : null;
+  const report = reportPrefill(reportRoomId);
   const [formOwner, setFormOwner] = useState(userId);
   const [category, setCategory] = useState<Category>(report?.category ?? "gameplay");
   const [subject, setSubject] = useState(report?.subject ?? "");
@@ -70,6 +72,16 @@ export function SupportTicketForm() {
       if (!isCurrent()) return;
       if (result.ok) {
         setTicket({ id: result.ticketId, status: result.status });
+        // The existing support ticket survives regardless of the optional,
+        // disabled-by-default human moderation case routing. The backend
+        // independently derives the subject from room membership.
+        if (data.category === "report" && reportRoomId) {
+          try {
+            await openReportCase({ data: { ticketId: result.ticketId, roomId: reportRoomId } });
+          } catch {
+            // Case routing is best-effort while the staging service is disabled.
+          }
+        }
       } else {
         const messages = {
           unavailable: copy.unavailable,
