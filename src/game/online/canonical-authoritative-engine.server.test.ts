@@ -78,7 +78,9 @@ describe("Canonical server-only authoritative engine", () => {
     const resumed = new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, seed, {
       contactPhysicsRevision: 2,
     });
-    const legacy = createEngine();
+    const legacy = new CanonicalAuthoritativeMatchEngine(clubs[0]!, clubs[1]!, seed, {
+      contactPhysicsRevision: 1,
+    });
     try {
       for (let step = 0; step < 60; step += 1) source.advanceFixedStep();
       const state = source.checkpoint();
