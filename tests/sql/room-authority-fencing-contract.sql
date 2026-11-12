@@ -75,6 +75,41 @@ BEGIN
 END;
 $legacy$;
 
+-- The GUC is NOT an authentication token. A browser can call set_config()
+-- in its own SQL transaction; deliberately grant temporary UPDATE and disable
+-- RLS only in this rolled-back fixture to test the trigger itself.
+INSERT INTO public.match_rooms(
+  id,code,host_id,guest_id,host_club,guest_club,seed,status,server_seeded
+) VALUES (
+  '70000000-0000-4000-8000-000000000013','GUARD002',
+  '70000000-0000-4000-8000-000000000001',
+  '70000000-0000-4000-8000-000000000002',
+  'ARS','CHE','','live',true
+);
+ALTER TABLE public.match_rooms DISABLE ROW LEVEL SECURITY;
+GRANT SELECT,UPDATE ON public.match_rooms TO authenticated;
+
+SET LOCAL ROLE authenticated;
+SELECT pg_catalog.set_config(
+  'matchmaking_private.settling_room',
+  '70000000-0000-4000-8000-000000000013',
+  true
+);
+DO $guc_spoof$
+DECLARE v_denied boolean := false;
+BEGIN
+  BEGIN
+    UPDATE public.match_rooms SET
+      status='done',state='{"hg":99,"ag":0}'::jsonb
+      WHERE id='70000000-0000-4000-8000-000000000013';
+  EXCEPTION WHEN insufficient_privilege THEN v_denied := true; END;
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'browser forged settlement GUC to overwrite websocket result';
+  END IF;
+END;
+$guc_spoof$;
+RESET ROLE;
+
 SET LOCAL ROLE authenticated;
 DO $attacker$
 BEGIN
