@@ -8,7 +8,7 @@ SET LOCAL statement_timeout='30s';
 INSERT INTO auth.users(id,email,email_confirmed_at) VALUES
  ('50000000-0000-4000-8000-000000000001','allocate-home@example.test',now()),
  ('50000000-0000-4000-8000-000000000002','allocate-away@example.test',now()),
- ('50000000-0000-4000-8000-000000000003','allocate-none@example.test');
+ ('50000000-0000-4000-8000-000000000003','allocate-none@example.test',now());
 
 DO $contract$
 DECLARE
