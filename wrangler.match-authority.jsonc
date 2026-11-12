@@ -22,9 +22,7 @@
     }
   ],
   "triggers": {
-    "crons": [
-      "* * * * *"
-    ]
+    "crons": []
   },
   "vars": {
     "MATCH_AUTHORITY_ENABLED": "false",
