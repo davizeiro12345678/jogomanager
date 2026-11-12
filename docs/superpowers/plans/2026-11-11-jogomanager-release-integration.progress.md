@@ -1,5 +1,9 @@
 # SDD ledger — plan: docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md
 
+## Continuação 12/11/2026 — adendo visual/fluidez/física/IA/SEO
+
+O proprietário solicitou a ampliação do salto visual e a continuação desta PR. O plano complementar está em `docs/superpowers/plans/2026-11-12-match3d-major-upgrade.md`, spec homônima em `specs/`, execução/evidência em `verification/pr132-upgrade-20261112/progress.md`. O lote inicial corrige recuperação de chunk cinematográfico, batching inicial com cenário assíncrono, apoio indevido de atleta expulso na IA v2 e adiciona gate SEO para as falhas reais do sitemap; preserva revisões legadas e gates. O salto visual completo, homologação física, publicação/configuração e novo crawl Semrush continuam explicitamente pendentes. Os checkpoints históricos abaixo não aprovam automaticamente a revisão combinada atual.
+
 ## Checkpoint 2026-11-11 — refreshed after production and CI inspection
 
 - Integration branch: `integration/release-2026-11-11`

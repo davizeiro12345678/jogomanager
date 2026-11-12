@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { verifyPublicSeo } from "./verify-public-seo.mjs";
 
 const PUBLIC_CHECKS = [
   { url: "https://jogomanager.com/api/health", type: "json" },
@@ -69,6 +70,7 @@ export async function verifyPublicDeployment({
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     await verifyPublicDeployment({ expectedSha: process.env["EXPECTED_COMMIT_SHA"] });
+    await verifyPublicSeo();
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Public deployment verification failed");
     process.exitCode = 1;

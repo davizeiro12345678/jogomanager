@@ -1,5 +1,9 @@
 # JogoManager Release Integration Implementation Plan
 
+## Adendo ativo — Match 3D e SEO, 12/11/2026
+
+O pedido mais recente amplia as Tasks 8–9 e a expansão física/IA sem substituir os demais pendentes. Continuar em [2026-11-12-match3d-major-upgrade.md](2026-11-12-match3d-major-upgrade.md), com [spec](../specs/2026-11-12-match3d-major-upgrade-design.md) e [ledger de execução](../../../verification/pr132-upgrade-20261112/progress.md). O adendo distingue correções verificadas neste lote do programa futuro de salto visual, GPU física e correção operacional/recrawl Semrush. Os snapshots de SHA e diagnósticos abaixo são históricos: atualizar antes de retomar.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to resume this plan task-by-task. Steps use checkbox (`- [ ]`) syntax. Read the linked design spec first. Preserve the progress state below; do not repeat completed tasks.
 
 **Goal:** Consolidate PRs #127–#131 and deliver a production-grade, evidence-backed JogoManager release candidate with secure auth, stable importer/PostgreSQL, authoritative multiplayer/chat, and measurable Match 3D performance.

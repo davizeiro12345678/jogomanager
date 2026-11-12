@@ -11,6 +11,16 @@ export interface CinematicBatchSnapshot {
   visibleSources: number;
 }
 
+function hasSameScenery(root: THREE.Group, previous: ReadonlySet<THREE.Object3D>): boolean {
+  let same = true;
+  let count = 0;
+  root.traverse((object) => {
+    count++;
+    if (!previous.has(object)) same = false;
+  });
+  return same && count === previous.size;
+}
+
 export function CinematicSetBatch({
   children,
   onReady,
@@ -20,6 +30,7 @@ export function CinematicSetBatch({
 }) {
   const group = useRef<THREE.Group>(null);
   const cleanup = useRef<StaticStadiumBatch | null>(null);
+  const waitingForScenery = useRef<ReadonlySet<THREE.Object3D> | null>(null);
   const frames = useRef(0);
   const { invalidate } = useThree();
 
@@ -39,7 +50,21 @@ export function CinematicSetBatch({
         invalidate();
         return;
       }
-      cleanup.current = batchStaticStadium(group.current);
+      // A lazy set can still be suspended after the shell's first frames.
+      // An empty batch must not permanently own scenery that arrives later,
+      // nor repeatedly serialize unchanged source materials on every frame.
+      if (waitingForScenery.current && hasSameScenery(group.current, waitingForScenery.current))
+        return;
+      const batch = batchStaticStadium(group.current);
+      if (batch.batches === 0) {
+        batch();
+        const scenery = new Set<THREE.Object3D>();
+        group.current.traverse((object) => scenery.add(object));
+        waitingForScenery.current = scenery;
+        return;
+      }
+      waitingForScenery.current = null;
+      cleanup.current = batch;
       prepared = true;
       invalidate();
     }

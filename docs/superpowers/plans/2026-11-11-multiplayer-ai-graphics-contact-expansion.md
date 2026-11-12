@@ -1,5 +1,9 @@
 # PR #132 — Plano de expansão multiplayer, confiança, IA, gráficos e física (2026-11-11)
 
+## Continuação ativa de 12/11/2026
+
+Ver [adendo do grande upgrade Match 3D](2026-11-12-match3d-major-upgrade.md), [spec](../specs/2026-11-12-match3d-major-upgrade-design.md) e [ledger verificável](../../../verification/pr132-upgrade-20261112/progress.md). Ele amplia P0/P1/P6/P7/P8, carregamento/cutscenes e SEO/Semrush, preservando o trabalho de multiplayer/moderação. O código atual já contém física de contato v2 e IA tática v2; os diagnósticos e checkboxes iniciais abaixo descrevem a cronologia, não uma lista de bugs que ainda devem ser reaplicados. Somente a evidência atual permite promover um item parcial a entregue.
+
 > **Estado inicial:** plano aprovado pelo pedido do proprietário; **não** equivale a funcionalidade entregue. Este documento amplia, sem substituir, `2026-11-11-jogomanager-release-integration.md`. A PR permanece Draft até os gates. Qualquer benchmark precisa citar dispositivo, SHA, configuração, dados crus e baseline.
 
 ## 0. Integração responsável e fronteiras

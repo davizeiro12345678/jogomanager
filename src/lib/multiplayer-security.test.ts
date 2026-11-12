@@ -73,7 +73,9 @@ describe("server-managed multiplayer results", () => {
     const liveRoom = pageSource.indexOf('if (room && room.status === "live" && room.guest_club)');
     // Distinguish the page-level offline fallback from the earlier
     // online guard in the async matchmaking callback.
-    const offlineFallback = pageSource.indexOf("if (!online) {\n    return (\n      <Shell>");
+    const offlineFallback = pageSource.search(
+      /if \(!online\) \{\r?\n {4}return \(\r?\n {6}<Shell>/,
+    );
     expect(liveRoom).toBeGreaterThanOrEqual(0);
     expect(offlineFallback).toBeGreaterThanOrEqual(0);
     expect(liveRoom).toBeLessThan(offlineFallback);

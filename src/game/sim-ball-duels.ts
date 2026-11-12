@@ -133,15 +133,7 @@ export function tryBlock(
     if (p.side === attacking || p.pos === "GK" || p.sentOff) continue;
     const swept =
       sim.contactPhysicsRevision === 2 && previous
-        ? sweptBallPlayerContact(
-            previous.x,
-            previous.z,
-            sim.ball.x,
-            sim.ball.z,
-            p.x,
-            p.z,
-            1.25,
-          )
+        ? sweptBallPlayerContact(previous.x, previous.z, sim.ball.x, sim.ball.z, p.x, p.z, 1.25)
         : null;
     if (sim.contactPhysicsRevision === 2 && previous) {
       if (!swept) continue;
@@ -409,6 +401,9 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
   let support = 0;
   for (const defender of sim.players) {
     if (defender.side !== opp.side || defender.id === opp.id) continue;
+    // V2 counts only teammates still playing; omitted revisions keep historical
+    // duel outcomes and their exact random draw order for saved replays.
+    if (defender.sentOff && sim.setup(opp.side).tacticalAiRevision === 2) continue;
     if (Math.hypot(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
   }
   const overload = 1 + Math.min(2, support) * 0.28;

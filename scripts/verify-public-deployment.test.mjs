@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { verifyPublicDeployment } from "./verify-public-deployment.mjs";
+import { verifyPublicSeo } from "./verify-public-seo.mjs";
 
 const EXPECTED_SHA = "0123456789abcdef0123456789abcdef01234567";
 const OLD_SHA = "fedcba9876543210fedcba9876543210fedcba98";
@@ -118,6 +119,140 @@ for (const url of [
       }),
       /redirected to Cloudflare Access/,
     );
+  });
+}
+
+function seoSite(overrides = {}) {
+  const pages = {
+    "/sitemap.xml": response(
+      "<urlset><url><loc>https://jogomanager.com/</loc></url><url><loc>https://jogomanager.com/tabelas/liga</loc></url></urlset>",
+      { type: "application/xml" },
+    ),
+    "/": response(
+      '<html><head><link rel="canonical" href="https://jogomanager.com/"></head><body><a href="/tabelas/liga#classificacao">Liga</a><a href="/guia">Guia</a><a href="/checkout/return?claim=private">Compra</a><a href="https://external.example/">Fonte</a></body></html>',
+    ),
+    "/tabelas/liga": response(
+      "<html><head><link href='https://jogomanager.com/tabelas/liga' rel='canonical'></head><body><a href='/guia#resumo'>Guia</a></body></html>",
+    ),
+    "/guia": response("<html><body>Guia de futebol</body></html>"),
+    ...overrides,
+  };
+  const calls = [];
+  return {
+    calls,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      const key = new URL(url).pathname;
+      const result = pages[key];
+      assert.ok(result, `Unexpected request: ${url}`);
+      return result.clone();
+    },
+  };
+}
+
+test("checks sitemap HTML and deduplicated public links without crawling external or transactional URLs", async () => {
+  const site = seoSite();
+  const result = await verifyPublicSeo({ ...site, report() {} });
+  assert.equal(result.sitemapPages, 2);
+  assert.equal(result.linkedPages, 1);
+  assert.equal(result.failures.length, 0);
+  assert.deepEqual(site.calls.map(({ url }) => new URL(url).pathname).sort(), [
+    "/",
+    "/guia",
+    "/sitemap.xml",
+    "/tabelas/liga",
+  ]);
+  for (const { options } of site.calls) {
+    assert.equal(options.redirect, "manual");
+    assert.ok(options.signal instanceof AbortSignal);
+    assert.equal(options.headers["cache-control"], "no-cache");
+    assert.match(options.headers["user-agent"], /JogoManager-Public-SEO/);
+    assert.equal(options.headers.cookie, undefined);
+    assert.equal(options.headers.authorization, undefined);
+  }
+});
+
+test("reports all server failures and noindex sitemap pages in one failed audit", async () => {
+  const unavailable = response("<html>Unavailable</html>", { status: 500 });
+  const blocked = response('<link rel="canonical" href="https://jogomanager.com/">');
+  blocked.headers.set("x-robots-tag", "noindex, follow");
+  const site = seoSite({ "/": blocked, "/tabelas/liga": unavailable });
+  await assert.rejects(verifyPublicSeo({ ...site, report() {} }), (error) => {
+    assert.equal(error.result.failures.length, 2);
+    assert.match(error.message, /noindex/);
+    assert.match(error.message, /HTTP 500/);
+    return true;
+  });
+});
+
+for (const html of [
+  '<meta content="noindex,follow" name="robots"><link rel="canonical" href="https://jogomanager.com/">',
+  '<meta name="googlebot" content="none"><link rel="canonical" href="https://jogomanager.com/">',
+  '<link rel="canonical" href="https://jogomanager.com/old">',
+  "<html><head><title>Just a moment...</title></head></html>",
+]) {
+  test(`rejects index-blocking or missing/wrong canonical HTML: ${html.slice(0, 45)}`, async () => {
+    const site = seoSite({ "/": response(html) });
+    await assert.rejects(verifyPublicSeo({ ...site, report() {} }), /noindex|canonical/);
+  });
+}
+
+test("rejects a broken internal link found on a healthy sitemap page", async () => {
+  const site = seoSite({ "/guia": response("Not found", { status: 404 }) });
+  await assert.rejects(verifyPublicSeo({ ...site, report() {} }), /\/guia.*HTTP 404/);
+});
+
+test("does not follow a redirected sitemap entry or an off-site internal link redirect", async () => {
+  const redirected = response("", { status: 301 });
+  redirected.headers.set("location", "https://external.example/login");
+  const site = seoSite({ "/tabelas/liga": redirected, "/guia": redirected });
+  await assert.rejects(verifyPublicSeo({ ...site, report() {} }), (error) => {
+    assert.match(error.message, /sitemap.*HTTP 301/);
+    assert.match(error.message, /outside the canonical origin/);
+    return true;
+  });
+  assert.ok(site.calls.every(({ url }) => new URL(url).origin === "https://jogomanager.com"));
+});
+
+test("follows bounded same-origin link redirects and checks their final status", async () => {
+  const redirected = response("", { status: 301 });
+  redirected.headers.set("location", "/tabelas/liga");
+  const site = seoSite({ "/guia": redirected });
+  const result = await verifyPublicSeo({ ...site, report() {} });
+  assert.equal(result.failures.length, 0);
+  assert.equal(site.calls.filter(({ url }) => url.endsWith("/guia")).length, 1);
+});
+
+test("fails closed instead of truncating an oversized sitemap or link inventory", async () => {
+  await assert.rejects(verifyPublicSeo({ ...seoSite(), maxPages: 1, report() {} }), /page limit/);
+  await assert.rejects(verifyPublicSeo({ ...seoSite(), maxPages: 2, report() {} }), /page limit/);
+});
+
+test("ignores script text that resembles links and decodes HTML link attributes", async () => {
+  const site = seoSite({
+    "/": response(
+      '<link rel="canonical" href="https://jogomanager.com/"><script>const example = \'<a href="/fake">\';</script><a href="/guia?x=1&amp;y=2#section">Guia</a>',
+    ),
+  });
+  await verifyPublicSeo({ ...site, report() {} });
+  assert.ok(site.calls.some(({ url }) => url === "https://jogomanager.com/guia?x=1&y=2"));
+  assert.ok(site.calls.every(({ url }) => !url.includes("/fake")));
+});
+
+for (const loc of [
+  "http://jogomanager.com/",
+  "https://www.jogomanager.com/",
+  "https://external.example/",
+  "https://jogomanager.com/checkout/return?claim=private",
+]) {
+  test(`refuses unsafe or noncanonical sitemap destinations before fetching them: ${loc}`, async () => {
+    const site = seoSite({
+      "/sitemap.xml": response(`<urlset><url><loc>${loc}</loc></url></urlset>`, {
+        type: "application/xml",
+      }),
+    });
+    await assert.rejects(verifyPublicSeo({ ...site, report() {} }), /canonical|transactional/);
+    assert.equal(site.calls.length, 1);
   });
 }
 

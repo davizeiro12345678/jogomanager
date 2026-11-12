@@ -40,7 +40,7 @@ import { prefersReducedMotion, watchReducedMotion } from "@/game/device";
 import type { Club, ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
-import { LazyCinematicStage, preloadCinematicStage } from "./cinematic-loading";
+import { createCinematicStage, preloadCinematicStage } from "./cinematic-loading";
 import { cinematicSetFor } from "@/game/cinematic-set";
 import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
 import { CutsceneDialogue } from "./CutsceneDialogue";
@@ -168,6 +168,7 @@ export function CutsceneStage({
   const [mountStage, setMountStage] = useState(false);
   const [stageLoadError, setStageLoadError] = useState<unknown>(null);
   const [stageAttempt, setStageAttempt] = useState(0);
+  const [CinematicStage, setCinematicStage] = useState(() => createCinematicStage());
   const stageKey = `${mode}:${data?.id ?? scene}:${stageAttempt}`;
   const stageIdentityRef = useRef({ key: stageKey, generation: 0 });
   if (stageIdentityRef.current.key !== stageKey) {
@@ -218,6 +219,7 @@ export function CutsceneStage({
     setStageLoadError(null);
     setStageReady(false);
     setMountStage(false);
+    setCinematicStage(createCinematicStage());
     setStageAttempt((attempt) => attempt + 1);
   }, []);
   useEffect(() => {
@@ -865,6 +867,7 @@ export function CutsceneStage({
         ) : null}
         {mode === "3d" && !stageLoadError && mountStage ? (
           <GraphicsBoundary
+            key={stageAttempt}
             fallback={
               <button
                 type="button"
@@ -882,7 +885,7 @@ export function CutsceneStage({
                 </p>
               }
             >
-              <LazyCinematicStage
+              <CinematicStage
                 key={`${data.id}:${stageAttempt}`}
                 art={data.art}
                 business={data.business}
