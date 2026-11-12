@@ -31,6 +31,14 @@ export type Database = Omit<GeneratedDatabase, "public"> & {
         };
         Returns: { ticket_id: string; status: "queued" | "delivered" | "delivery_failed" }[];
       };
+      list_private_moderation_queue: {
+        Args: { p_reviewer: string; p_limit?: number };
+        Returns: Json;
+      };
+      list_private_moderation_decisions: {
+        Args: { p_subject: string; p_limit?: number };
+        Returns: Json;
+      };
       open_private_moderation_case: {
         Args: { p_ticket: string; p_room: string; p_subject: string; p_reporter: string };
         Returns: Json;
