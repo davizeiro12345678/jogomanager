@@ -41,6 +41,10 @@ BEGIN
    'public.resolve_private_moderation_case(uuid,uuid,integer,text,text)','EXECUTE')
  OR has_function_privilege('authenticated',
    'public.appeal_private_moderation_case(uuid,uuid,uuid,text)','EXECUTE')
+ OR has_function_privilege('authenticated',
+   'public.list_private_moderation_queue(uuid,integer)','EXECUTE')
+ OR has_function_privilege('anon',
+   'public.list_private_moderation_decisions(uuid,integer)','EXECUTE')
  OR NOT has_function_privilege('service_role',
    'public.review_private_moderation_appeal(uuid,uuid,text,text)','EXECUTE')
  THEN RAISE EXCEPTION 'moderation case/appeal privilege violation'; END IF;
@@ -147,6 +151,19 @@ BEGIN
   '90000000-0000-4000-8000-000000000004','overturned',
   'Independent analysis supports overturn.');
  IF v_result->>'status'<>'overturned' THEN RAISE EXCEPTION 'appeal was not reviewed'; END IF;
+ IF jsonb_array_length(public.list_private_moderation_queue(
+   '90000000-0000-4000-8000-000000000003',20))<>0 THEN
+   RAISE EXCEPTION 'closed case was returned in open moderator queue'; END IF;
+ IF jsonb_array_length(public.list_private_moderation_decisions(
+   '90000000-0000-4000-8000-000000000002',20))<>1 THEN
+   RAISE EXCEPTION 'accused cannot discover own finalized decision'; END IF;
+ IF jsonb_array_length(public.list_private_moderation_decisions(
+   '90000000-0000-4000-8000-000000000001',20))<>0 THEN
+   RAISE EXCEPTION 'reporter accessed accused moderation history'; END IF;
+ IF (public.list_private_moderation_decisions(
+   '90000000-0000-4000-8000-000000000002',20)::text) LIKE '%case-reporter@example.test%'
+ THEN RAISE EXCEPTION 'reporter email leaked through decision list'; END IF;
+
  IF (SELECT count(*) FROM moderation_private.audit WHERE case_id=v_case)<>4
  THEN RAISE EXCEPTION 'missing or duplicated case audit events'; END IF;
  IF (SELECT count(*) FROM moderation_private.cases WHERE id=v_case)<>1
