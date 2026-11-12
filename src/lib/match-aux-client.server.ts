@@ -27,7 +27,8 @@ function safeOrigin(input: string | undefined): URL | null {
       (url.pathname !== "/" && url.pathname !== "") ||
       url.search ||
       url.hash
-    ) return null;
+    )
+      return null;
     return url;
   } catch {
     return null;
