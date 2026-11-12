@@ -32,7 +32,7 @@ export type Database = Omit<GeneratedDatabase, "public"> & {
         Returns: { ticket_id: string; status: "queued" | "delivered" | "delivery_failed" }[];
       };
       open_private_moderation_case: {
-        Args: { p_ticket: string; p_room: string; p_subject: string };
+        Args: { p_ticket: string; p_room: string; p_subject: string; p_reporter: string };
         Returns: Json;
       };
       resolve_private_moderation_case: {
