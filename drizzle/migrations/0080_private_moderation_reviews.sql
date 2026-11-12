@@ -83,6 +83,8 @@ BEGIN
   IF p_ticket IS NULL OR p_room IS NULL OR p_subject IS NULL THEN
     RAISE EXCEPTION 'invalid_report' USING ERRCODE='22023';
   END IF;
+  PERFORM pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('moderation_ticket:' || p_ticket::text, 0));
   SELECT * INTO v_ticket FROM public.support_tickets WHERE id=p_ticket;
   IF NOT FOUND OR v_ticket.category<>'report' THEN
     RAISE EXCEPTION 'report_ticket_missing' USING ERRCODE='22023';
@@ -163,6 +165,8 @@ BEGIN
     p_message IS NULL OR length(btrim(p_message)) NOT BETWEEN 20 AND 2000 THEN
     RAISE EXCEPTION 'invalid_appeal' USING ERRCODE='22023';
   END IF;
+  PERFORM pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('moderation_appeal:' || p_case::text, 0));
   SELECT * INTO v_case FROM moderation_private.cases WHERE id=p_case FOR SHARE;
   IF NOT FOUND OR v_case.subject_id<>p_appellant OR
     v_case.state<>'resolved' OR v_case.decision='dismissed' THEN
