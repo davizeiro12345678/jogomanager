@@ -138,13 +138,17 @@ Deno.serve(async (request: Request) => {
             // retry that reservation without making or counting a provider call.
             rpc: async (name: string, args: Record<string, unknown> = {}) => {
               if (name !== "football_queue_reserve_job") return rpc(name, args);
-              for (let retry = 0;; retry++) {
+              for (let retry = 0; ; retry++) {
                 try {
                   return await rpc(name, args);
                 } catch (error) {
                   const code = error instanceof Error ? error.message : "";
-                  if (!code.includes("football_minute_quota_wait") ||
-                      stopped || Date.now() >= deadline - 5000) throw error;
+                  if (
+                    !code.includes("football_minute_quota_wait") ||
+                    stopped ||
+                    Date.now() >= deadline - 5000
+                  )
+                    throw error;
                   summary.quotaWaits++;
                   await new Promise((r) => setTimeout(r, Math.min(600, 180 + retry * 90)));
                 }
@@ -212,7 +216,8 @@ Deno.serve(async (request: Request) => {
               const providerMinuteLeft = response.headers.get("x-ratelimit-remaining");
               if (providerMinuteLeft !== null && Number.isFinite(Number(providerMinuteLeft)))
                 summary.providerMinuteRemaining = Math.min(
-                  summary.providerMinuteRemaining ?? Infinity, Number(providerMinuteLeft),
+                  summary.providerMinuteRemaining ?? Infinity,
+                  Number(providerMinuteLeft),
                 );
               const remaining = response.headers.get("x-ratelimit-requests-remaining");
               if (remaining !== null && Number.isFinite(Number(remaining)))
@@ -229,15 +234,22 @@ Deno.serve(async (request: Request) => {
                 throw new Error("provider_http_" + response.status);
               }
               const body = await response.json();
-              if (body?.errors && Object.keys(body.errors).some(
-                (key: string) => /rate.?limit|quota|requests/i.test(key),
-              )) {
+              if (
+                body?.errors &&
+                Object.keys(body.errors).some((key: string) =>
+                  /rate.?limit|quota|requests/i.test(key),
+                )
+              ) {
                 summary.providerRateSource ??= "body_errors";
                 summary.providerErrorKeys ??= Object.keys(body.errors)
-                  .filter((key: string) => /^[a-zA-Z]{1,30}$/.test(key)).slice(0, 4);
+                  .filter((key: string) => /^[a-zA-Z]{1,30}$/.test(key))
+                  .slice(0, 4);
                 const rateMessage = String(body.errors.rateLimit ?? "").toLowerCase();
                 summary.providerRateHint ??= /minute/.test(rateMessage)
-                  ? "minute" : /second/.test(rateMessage) ? "second" : "unspecified";
+                  ? "minute"
+                  : /second/.test(rateMessage)
+                    ? "second"
+                    : "unspecified";
                 summary.providerRateAtMs ??= Date.now() - (deadline - 49000);
               }
               return body;

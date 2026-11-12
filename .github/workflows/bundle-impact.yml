@@ -69,9 +69,10 @@ jobs:
           p = Path("vite.config.ts")
           src = p.read_text()
           line = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
-          if src.count(line) != 1:
-              raise SystemExit("Baseline entities alias contract changed")
-          p.write_text(src.replace(line, "", 1))
+          if src.count(line) > 1:
+              raise SystemExit("Unexpected duplicate historical entities aliases")
+          if line in src:
+              p.write_text(src.replace(line, "", 1))
           PY
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
