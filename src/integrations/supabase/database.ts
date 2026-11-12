@@ -35,6 +35,10 @@ export type Database = Omit<GeneratedDatabase, "public"> & {
         Args: { p_reviewer: string; p_limit?: number };
         Returns: Json;
       };
+      list_private_moderation_appeals: {
+        Args: { p_reviewer: string; p_limit?: number };
+        Returns: Json;
+      };
       list_private_moderation_decisions: {
         Args: { p_subject: string; p_limit?: number };
         Returns: Json;
