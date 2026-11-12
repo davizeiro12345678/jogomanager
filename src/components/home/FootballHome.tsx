@@ -174,6 +174,19 @@ export function FootballHome() {
   } | null>(null);
   useEffect(() => {
     let active = true;
+    // First-time visitors do not have a guest career. Avoid importing the
+    // 30 KB+ offline persistence module and idb helpers during home hydration
+    // when readLocalCareer() could only return null. The blocked-storage case
+    // still falls back to the original validated reader.
+    try {
+      if (
+        window.localStorage.getItem("manager3d.career.v2.guest") === null &&
+        window.localStorage.getItem("manager3d.career.v1") === null
+      )
+        return;
+    } catch {
+      // Storage may be blocked or unavailable in private browsing.
+    }
     // Returning players alone need the catalogue to resolve their club name.
     void import("@/lib/careerStorage")
       .then(async ({ readLocalCareer }) => {
