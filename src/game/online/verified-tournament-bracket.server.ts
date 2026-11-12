@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  MatchReceiptV1Schema,
-  parseMatchReceiptV1,
-  type MatchReceiptV1,
-} from "./match-protocol";
+import { MatchReceiptV1Schema, parseMatchReceiptV1, type MatchReceiptV1 } from "./match-protocol";
 
 export interface TournamentMatch {
   id: string;
