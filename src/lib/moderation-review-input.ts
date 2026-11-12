@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { hasVisibleText, normalizePublicText } from "./untrusted-json";
 
+export const OpenModerationCaseInput = z
+  .object({
+    ticketId: z.string().uuid(),
+    roomId: z.string().uuid(),
+    subjectId: z.string().uuid(),
+  })
+  .strict();
+
 export const ModerationAppealInput = z
   .object({
     caseId: z.string().uuid(),
