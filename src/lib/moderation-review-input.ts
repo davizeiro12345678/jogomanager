@@ -5,7 +5,6 @@ export const OpenModerationCaseInput = z
   .object({
     ticketId: z.string().uuid(),
     roomId: z.string().uuid(),
-    subjectId: z.string().uuid(),
   })
   .strict();
 
