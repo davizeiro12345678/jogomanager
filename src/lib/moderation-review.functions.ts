@@ -170,3 +170,95 @@ export const decideModerationAppeal = createServerFn({ method: "POST" })
       return { ok: false, reason: "unavailable" };
     }
   });
+
+
+const ModerationListRequest = z.object({ limit: z.number().int().min(1).max(50) }).strict();
+const ModeratorCase = z
+  .object({
+    caseId: z.string().uuid(),
+    roomId: z.string().uuid(),
+    reporterId: z.string().uuid(),
+    subjectId: z.string().uuid(),
+    state: z.literal("open"),
+    revision: z.number().int().nonnegative(),
+    createdAt: z.string(),
+    subject: z.string(),
+    report: z.string(),
+  })
+  .strict();
+const OwnDecision = z
+  .object({
+    caseId: z.string().uuid(),
+    decision: z.enum(["dismissed", "warning", "temporary_mute"]),
+    createdAt: z.string(),
+    appealState: z.enum(["open", "upheld", "overturned"]).nullable(),
+  })
+  .strict();
+
+type ModerationListResponse<T> =
+  | { ok: true; entries: T[] }
+  | { ok: false; reason: "unavailable" | "verification_required" | "not_allowed" };
+
+export const listOpenModerationCases = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => ModerationListRequest.parse(input))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<ModerationListResponse<z.infer<typeof ModeratorCase>>> => {
+      if (!accessEnabled()) return { ok: false, reason: "unavailable" };
+      const { verifiedAccount } = await import("./verified-identity.server");
+      if (!(await verifiedAccount(context.supabase, context.userId)))
+        return { ok: false, reason: "verification_required" };
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      try {
+        const result = await supabaseAdmin.rpc("list_private_moderation_queue", {
+          p_reviewer: context.userId,
+          p_limit: data.limit,
+        });
+        if (result.error) {
+          const failure = unavailable(result.error);
+          return { ok: false, reason: failure.ok ? "unavailable" : failure.reason };
+        }
+        const parsed = z.array(ModeratorCase).safeParse(result.data);
+        return parsed.success
+          ? { ok: true, entries: parsed.data }
+          : { ok: false, reason: "unavailable" };
+      } catch {
+        return { ok: false, reason: "unavailable" };
+      }
+    },
+  );
+
+export const listOwnModerationDecisions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => ModerationListRequest.parse(input))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<ModerationListResponse<z.infer<typeof OwnDecision>>> => {
+      if (!accessEnabled()) return { ok: false, reason: "unavailable" };
+      const { verifiedAccount } = await import("./verified-identity.server");
+      if (!(await verifiedAccount(context.supabase, context.userId)))
+        return { ok: false, reason: "verification_required" };
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      try {
+        const result = await supabaseAdmin.rpc("list_private_moderation_decisions", {
+          p_subject: context.userId,
+          p_limit: data.limit,
+        });
+        if (result.error) {
+          const failure = unavailable(result.error);
+          return { ok: false, reason: failure.ok ? "unavailable" : failure.reason };
+        }
+        const parsed = z.array(OwnDecision).safeParse(result.data);
+        return parsed.success
+          ? { ok: true, entries: parsed.data }
+          : { ok: false, reason: "unavailable" };
+      } catch {
+        return { ok: false, reason: "unavailable" };
+      }
+    },
+  );
