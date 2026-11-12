@@ -237,3 +237,30 @@ Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expans
 - Persistência completa da sessão de autoridade, reconexão após reinício do DO, snapshots oficiais no cliente, MMR/sala ranqueada transacional, torneios e coop seguem não implementados.
 - Exigem staging: memória/CPU de sala, privacidade/moderação contextual, 100 conexões, 1000 seeds, anti-replay e qualidade gráfica física de 60 FPS; não declarar estes critérios alcançados sem resultados.
 - Não rodar deploy Cloudflare nem migrações produção, não mesclar PR #132 enquanto estiver Draft sem aprovação dos gates.
+
+
+## Checkpoint 12/11/2026: novos modos seguros e métricas de rede
+
+**Base certificada antes deste lote:** commit `b99a4eac913d9c4c2ee629475700fe18c44d6183`; Quality gates run `43285517886` concluiu com 13/13 jobs aprovados, além dos workflows específicos de frontend, jogo 3D, API-Football, CodSpeed e segurança. Essa aprovação **não certifica os novos commits**; os testes devem ser consultados novamente no HEAD.
+
+### Código novo deste lote na PR #132
+
+| Parte | Arquivos | Entrega verificável | Bloqueio de liberação |
+|---|---|---|---|
+| Espectadores | `src/game/online/delayed-spectator-feed.server.ts` e `.test.ts` | Buffer público de snapshots, atraso de 10–300 segundos, rejeição de frame de outra sala/seed, relógio monotônico e memória limitada | Acesso autorizado aos espectadores, ingresso WSS read-only, persistência do delay e limite de público no DO ainda não implementados |
+| Cooperativo 2×2 | `src/game/online/cooperative-command-policy.server.ts` e `.test.ts` | Quatro IDs distintos, capitão por equipe, troca autorizada de capitão, votação conjunta com 30s para desistir e bloqueio de comandos de outra equipe | Persistência de escalações, integração do 2×2 à sessão/WS, interface de permissão e conflitos ainda não implementados |
+| Torneios | `src/game/online/verified-tournament-bracket.server.ts` e `.test.ts` | Chave eliminatória de 2–32 competidores, byes determinísticos, sala vinculada, assinatura de recibo validada por callback obrigatório e resultados idempotentes | Armazenamento transacional, inscrição autenticada, chave pública, verificação HMAC ligada ao settlement e tiebreakers para empates ainda pendentes |
+| Latência online | `src/game/online/authority-latency-metrics.ts` e `.test.ts`, `authoritative-socket-client.ts` e teste de integração | Medição de input→ACK/NACK com p50/p95/p99, limites de amostras, deduplicação e descarte de dados pessoais | Benchmarks com dois aparelhos, regiões e perda de pacotes ainda não realizados |
+
+**Princípio de segurança:** os três modos são bibliotecas server-only, NÃO endpoints públicos. Nunca aceitar `userId`, score, seed, resultado ou horário do navegador como autoridade. As interfaces existentes continuam ocultando recursos não implantados. Este trabalho não altera FPS ou IA tática automaticamente, nem publica multiplayer 2×2/torneios/espectadores sem o DO.
+
+### Gates que permanecem pendentes
+
+1. **P2/P8, staging Cloudflare:** a conta Cloudflare foi consultada, e `jogomanager-match-authority-staging` ainda não existe. O workflow tem `verify` e `deploy-disabled-staging`, mas o GitHub Actions não dispõe de `CLOUDFLARE_API_TOKEN` nesse contexto. Apenas o proprietário pode fornecer um token de deploy de privilégios mínimos pela interface de Secrets, sem expor seu valor. Implantar primeiramente com `MATCH_AUTHORITY_ENABLED=false`, `MATCH_QUEUE_CRON_ENABLED=false`, `workers_dev=false` e sem rotas públicas.
+2. **P3 novos modos:** persistir e integrar espectador/torneio/2×2 ao controlador autoritativo; conectar os tickets aos assentos corretos, sem dar `forfeit` e `set_tactics` a espectadores.
+3. **P5 moderação:** triagem humana, recursos, notificações e calibração de falsos positivos ainda exigem testes de ponta a ponta.
+4. **P1/P6/P7 física, IA e gráficos:** executar A/B com sementes idênticas e avaliações físicas GPU/CPU, reduzir teleporte na apresentação R3F e atingir critérios reais de desempenho nos dispositivos alvo. Código existente de IA tática v2 não demonstra por si só superioridade de jogo.
+5. **P0/P8 evidência:** revalidar lint, TypeScript, Vitest, SQL, bundle, stress, Lighthouse e WebGL visual no SHA final. Fazer smoke test WSS com dois clientes e rollback antes de qualquer liberação ranqueada.
+6. **Publicação:** manter PR #132 Draft sem merge ou deploy geral até ter revisão de diff, staging isolado e rollback homologados. Não aplicar novas migrações nem secrets em produção sem comprovação da arquitetura.
+
+**Legenda de status:** código salvo no GitHub = implementado parcialmente [~]; somente testes e staging comprovados = entregue [x]; integração não realizada = pendente [ ].
