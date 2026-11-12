@@ -69,7 +69,7 @@ GRANT SELECT,INSERT,UPDATE ON ALL TABLES IN SCHEMA moderation_private TO service
 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA moderation_private TO service_role;
 
 CREATE FUNCTION public.open_private_moderation_case(
-  p_ticket uuid,p_room uuid,p_subject uuid
+  p_ticket uuid,p_room uuid,p_subject uuid,p_reporter uuid
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $fn$
 DECLARE
   v_ticket public.support_tickets%ROWTYPE;
@@ -80,13 +80,13 @@ BEGIN
   IF current_user<>'service_role' THEN
     RAISE EXCEPTION 'moderation_service_only' USING ERRCODE='42501';
   END IF;
-  IF p_ticket IS NULL OR p_room IS NULL OR p_subject IS NULL THEN
+  IF p_ticket IS NULL OR p_room IS NULL OR p_subject IS NULL OR p_reporter IS NULL THEN
     RAISE EXCEPTION 'invalid_report' USING ERRCODE='22023';
   END IF;
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('moderation_ticket:' || p_ticket::text, 0));
   SELECT * INTO v_ticket FROM public.support_tickets WHERE id=p_ticket;
-  IF NOT FOUND OR v_ticket.category<>'report' THEN
+  IF NOT FOUND OR v_ticket.category<>'report' OR v_ticket.user_id<>p_reporter THEN
     RAISE EXCEPTION 'report_ticket_missing' USING ERRCODE='22023';
   END IF;
   SELECT * INTO v_room FROM public.match_rooms WHERE id=p_room;
@@ -228,7 +228,7 @@ BEGIN
 END;
 $fn$;
 
-REVOKE ALL ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid)
+REVOKE ALL ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid,uuid)
   FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.resolve_private_moderation_case(uuid,uuid,integer,text,text)
   FROM PUBLIC,anon,authenticated;
@@ -236,7 +236,7 @@ REVOKE ALL ON FUNCTION public.appeal_private_moderation_case(uuid,uuid,uuid,text
   FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.review_private_moderation_appeal(uuid,uuid,text,text)
   FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid)
+GRANT EXECUTE ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid,uuid)
   TO service_role;
 GRANT EXECUTE ON FUNCTION public.resolve_private_moderation_case(uuid,uuid,integer,text,text)
   TO service_role;
