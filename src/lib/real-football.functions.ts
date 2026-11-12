@@ -150,9 +150,7 @@ export const getLeagueTable = createServerFn({ method: "GET" })
           ? injuryResult.value.data
           : [];
       const tops =
-        topResult.status === "fulfilled" && !topResult.value.error
-          ? topResult.value.data
-          : [];
+        topResult.status === "fulfilled" && !topResult.value.error ? topResult.value.data : [];
       if (injuryResult.status === "rejected" || injuryResult.value.error)
         console.warn("[public-league] Optional injury data unavailable", lg.slug);
       if (topResult.status === "rejected" || topResult.value.error)
