@@ -11,6 +11,7 @@ import {
 export class DelayedSpectatorFeed {
   private readonly pending: { releaseAt: number; snapshot: MatchSnapshotV1 }[] = [];
   private lastAccepted: MatchSnapshotV1 | null = null;
+  private lastAcceptedAt = -1;
   private lastReleased: MatchSnapshotV1 | null = null;
 
   constructor(
@@ -45,11 +46,11 @@ export class DelayedSpectatorFeed {
       if (parsed.revision <= this.lastAccepted.revision) return false;
       if (this.lastAccepted.phase === "finalized") return false;
     }
-    const last = this.pending.at(-1);
-    if (last && now < last.releaseAt - this.delayMs) return false;
+    if (now < this.lastAcceptedAt) return false;
     if (now > Number.MAX_SAFE_INTEGER - this.delayMs) return false;
 
     this.lastAccepted = structuredClone(parsed);
+    this.lastAcceptedAt = now;
     this.pending.push({ releaseAt: now + this.delayMs, snapshot: structuredClone(parsed) });
     // Bounded memory: skip old presentation-only frames rather than weaken
     // the minimum delay or backpressure the authoritative simulation.
@@ -82,6 +83,7 @@ export class DelayedSpectatorFeed {
   clear(): void {
     this.pending.length = 0;
     this.lastAccepted = null;
+    this.lastAcceptedAt = -1;
     this.lastReleased = null;
   }
 }
