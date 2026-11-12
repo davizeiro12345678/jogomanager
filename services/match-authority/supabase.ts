@@ -4,11 +4,12 @@
 export interface AuthorityDatabaseEnv {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  MATCH_AUTHORITY_ENV: "staging" | "production";
 }
 
 const ROOM_ID = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
 
-function endpoint(env: AuthorityDatabaseEnv, path: string, params?: URLSearchParams): string {
+export function validateAuthorityDatabaseTarget(env: AuthorityDatabaseEnv): URL {
   const base = new URL(env.SUPABASE_URL);
   if (
     base.protocol !== "https:" ||
@@ -17,9 +18,21 @@ function endpoint(env: AuthorityDatabaseEnv, path: string, params?: URLSearchPar
     base.search ||
     base.hash ||
     base.pathname !== "/" ||
-    !base.hostname.endsWith(".supabase.co")
+    !/^[a-z0-9-]+\\.supabase\\.co$/.test(base.hostname)
   )
     throw new Error("match authority Supabase endpoint is not trusted");
+  const projectRef = base.hostname.slice(0, -".supabase.co".length);
+  if (
+    (env.MATCH_AUTHORITY_ENV !== "staging" && env.MATCH_AUTHORITY_ENV !== "production") ||
+    (env.MATCH_AUTHORITY_ENV === "staging" && projectRef === "lguqnwvsfeefxamzeyos") ||
+    (env.MATCH_AUTHORITY_ENV === "production" && projectRef !== "lguqnwvsfeefxamzeyos")
+  )
+    throw new Error("match authority database environment does not match deployment");
+  return base;
+}
+
+function endpoint(env: AuthorityDatabaseEnv, path: string, params?: URLSearchParams): string {
+  const base = validateAuthorityDatabaseTarget(env);
   const url = new URL(path, base);
   if (params) url.search = params.toString();
   return url.toString();
