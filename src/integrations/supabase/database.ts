@@ -1,4 +1,4 @@
-import type { Database as GeneratedDatabase } from "./types";
+import type { Database as GeneratedDatabase, Json } from "./types";
 
 type PublicSchema = GeneratedDatabase["public"];
 type Functions = PublicSchema["Functions"];
@@ -30,6 +30,33 @@ export type Database = Omit<GeneratedDatabase, "public"> & {
           p_message: string;
         };
         Returns: { ticket_id: string; status: "queued" | "delivered" | "delivery_failed" }[];
+      };
+      open_private_moderation_case: {
+        Args: { p_ticket: string; p_room: string; p_subject: string };
+        Returns: Json;
+      };
+      resolve_private_moderation_case: {
+        Args: {
+          p_case: string;
+          p_reviewer: string;
+          p_revision: number;
+          p_decision: "dismissed" | "warning" | "temporary_mute";
+          p_note: string;
+        };
+        Returns: Json;
+      };
+      appeal_private_moderation_case: {
+        Args: { p_case: string; p_appellant: string; p_request: string; p_message: string };
+        Returns: Json;
+      };
+      review_private_moderation_appeal: {
+        Args: {
+          p_appeal: string;
+          p_reviewer: string;
+          p_decision: "upheld" | "overturned";
+          p_note: string;
+        };
+        Returns: Json;
       };
       claim_support_deliveries: {
         Args: { p_limit?: number; p_ticket_id?: string | null };
