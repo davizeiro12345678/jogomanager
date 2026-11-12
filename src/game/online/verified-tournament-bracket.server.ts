@@ -31,6 +31,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
  */
 export class VerifiedTournamentBracket {
   private readonly rounds: TournamentMatch[][] = [];
+  private readonly acceptedReceipts = new Map<string, string>();
 
   constructor(entrants: readonly string[]) {
     if (
@@ -108,8 +109,13 @@ export class VerifiedTournamentBracket {
     }
     if (receipt.roomId !== match.roomId) return "wrong_room";
     if (match.receiptId)
-      return match.receiptId === receipt.idempotencyKey ? "already_recorded" : "conflict";
-    if (receipt.closureReason !== "completed" || receipt.result.winner === "draw")
+      return this.acceptedReceipts.get(matchId) === JSON.stringify(receipt)
+        ? "already_recorded"
+        : "conflict";
+    if (
+      (receipt.closureReason !== "completed" && receipt.closureReason !== "forfeit") ||
+      receipt.result.winner === "draw"
+    )
       return "invalid_result";
     try {
       if (!(await verifySignedReceipt(receipt))) return "unverified";
@@ -118,8 +124,11 @@ export class VerifiedTournamentBracket {
     }
     // A concurrent verified result may have completed during the await.
     if (match.receiptId)
-      return match.receiptId === receipt.idempotencyKey ? "already_recorded" : "conflict";
+      return this.acceptedReceipts.get(matchId) === JSON.stringify(receipt)
+        ? "already_recorded"
+        : "conflict";
     match.receiptId = receipt.idempotencyKey;
+    this.acceptedReceipts.set(matchId, JSON.stringify(receipt));
     match.winnerId = receipt.result.winner === "home" ? match.homeId : match.awayId;
     this.advanceWhenReady();
     return "accepted";
