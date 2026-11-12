@@ -1,6 +1,8 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { useT } from "@/i18n/provider";
+import { moderationReviewMessages } from "@/i18n/moderation-review-messages";
 import {
   decideModerationAppeal,
   decideModerationCase,
@@ -43,6 +45,8 @@ type AppealDecision = "upheld" | "overturned";
  * mutations are server-side with authenticated caller identity.
  */
 export function ModerationReviewCenter() {
+  const { lang } = useT();
+  const copy = moderationReviewMessages(lang);
   const userId = useAuthUserId();
   const listMine = useServerFn(listOwnModerationDecisions);
   const listCases = useServerFn(listOpenModerationCases);
@@ -78,10 +82,10 @@ export function ModerationReviewCenter() {
     } else if (myResult.status === "fulfilled" && !myResult.value.ok) {
       setNotice(
         myResult.value.reason === "unavailable"
-          ? "A central de revisão ainda não foi ativada."
-          : "Não foi possível consultar suas decisões.",
+          ? copy.disabledNotice
+          : copy.queryFailed,
       );
-    } else setNotice("Não foi possível consultar a moderação.");
+    } else setNotice(copy.moderationFailed);
     setCases(caseResult.status === "fulfilled" && caseResult.value.ok ? caseResult.value.entries : []);
     setAppeals(
       appealResult.status === "fulfilled" && appealResult.value.ok ? appealResult.value.entries : [],
@@ -110,14 +114,14 @@ export function ModerationReviewCenter() {
         setCases(pending.status === "fulfilled" && pending.value.ok ? pending.value.entries : []);
         setAppeals(reviews.status === "fulfilled" && reviews.value.ok ? reviews.value.entries : []);
       } catch {
-        if (active) setNotice("Não foi possível consultar a moderação.");
+        if (active) setNotice(copy.moderationFailed);
       }
     };
     void load();
     return () => {
       active = false;
     };
-  }, [userId, listMine, listCases, listAppeals]);
+  }, [userId, listMine, listCases, listAppeals, copy.moderationFailed]);
 
   async function sendAppeal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -135,10 +139,10 @@ export function ModerationReviewCenter() {
       request.current = null;
       setAppealFor(null);
       setAppealText("");
-      setNotice("Recurso recebido para revisão humana.");
+      setNotice(copy.appealReceived);
       await reload();
     } catch {
-      setNotice("Não foi possível registrar o recurso. Você pode tentar novamente.");
+      setNotice(copy.appealFailed);
     } finally {
       setBusy(false);
     }
@@ -162,10 +166,10 @@ export function ModerationReviewCenter() {
       if (!result.ok) throw new Error(result.reason);
       setCaseFor(null);
       setCaseNote("");
-      setNotice("Decisão registrada e auditada.");
+      setNotice(copy.decisionSaved);
       await reload();
     } catch {
-      setNotice("Não foi possível concluir a decisão. Atualize a fila e verifique as permissões.");
+      setNotice(copy.decisionFailed);
     } finally {
       setBusy(false);
     }
@@ -187,47 +191,47 @@ export function ModerationReviewCenter() {
       if (!result.ok) throw new Error(result.reason);
       setReviewFor(null);
       setReviewNote("");
-      setNotice("Recurso revisado por um moderador independente.");
+      setNotice(copy.reviewSaved);
       await reload();
     } catch {
-      setNotice("Revisão indisponível. O moderador original não pode julgar o próprio recurso.");
+      setNotice(copy.reviewFailed);
     } finally {
       setBusy(false);
     }
   }
 
   if (!userId)
-    return <p className="text-sm text-muted-foreground">Entre na sua conta para consultar recursos.</p>;
+    return <p className="text-sm text-muted-foreground">{copy.signIn}</p>;
 
   return (
     <section aria-labelledby="moderation-center-title" className="mt-6 space-y-4 rounded-xl border border-border p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 id="moderation-center-title" className="font-display text-lg">Moderação e recursos</h3>
+          <h3 id="moderation-center-title" className="font-display text-lg">{copy.title}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Decisões são revisadas por pessoas. Não há banimentos permanentes automáticos nesta área.
+            {copy.description}
           </p>
         </div>
         <button type="button" onClick={() => void reload()} disabled={busy} className="min-h-11 rounded-lg border border-border px-3 text-sm">
-          Atualizar
+          {copy.refresh}
         </button>
       </div>
       {notice ? <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{notice}</p> : null}
       {!enabled ? (
         <p className="text-sm text-muted-foreground">
-          A consulta está desativada até a validação e publicação segura do serviço.
+          {copy.unavailable}
         </p>
       ) : (
         <div className="space-y-3">
-          <h4 className="font-semibold">Minhas decisões e recursos</h4>
-          {own.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma decisão registrada.</p> : null}
+          <h4 className="font-semibold">{copy.ownTitle}</h4>
+          {own.length === 0 ? <p className="text-sm text-muted-foreground">{copy.empty}</p> : null}
           {own.map((item) => (
             <div key={item.caseId} className="rounded-lg border border-border p-3 text-sm">
-              <p>Decisão: <strong>{item.decision}</strong>. Recurso: {item.appealState ?? "não enviado"}.</p>
-              <p className="mt-1 text-xs text-muted-foreground">Processo {item.caseId}</p>
+              <p>{copy.decision} <strong>{item.decision}</strong>. {copy.appeal} {item.appealState ?? copy.notSent}.</p>
+              <p className="mt-1 text-xs text-muted-foreground">{copy.case} {item.caseId}</p>
               {item.decision !== "dismissed" && item.appealState === null ? (
                 <button type="button" onClick={() => setAppealFor(item.caseId)} className="mt-3 min-h-11 rounded-lg border border-primary px-3 text-primary">
-                  Solicitar revisão humana
+                  {copy.requestAppeal}
                 </button>
               ) : null}
             </div>
@@ -235,42 +239,42 @@ export function ModerationReviewCenter() {
           {appealFor ? (
             <form onSubmit={(event) => void sendAppeal(event)} className="space-y-2 rounded-lg border border-primary/50 p-3">
               <label htmlFor="moderation-appeal-message" className="block text-sm font-medium">
-                Explique por que a decisão deve ser revista
+                {copy.appealReason}
               </label>
               <textarea id="moderation-appeal-message" value={appealText} onChange={(event) => setAppealText(event.target.value)}
                 minLength={20} maxLength={2000} required rows={4}
                 className="w-full rounded-lg border border-border bg-background p-2 text-sm" />
-              <button type="submit" disabled={busy} className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground">Enviar recurso</button>
+              <button type="submit" disabled={busy} className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground">{copy.sendAppeal}</button>
             </form>
           ) : null}
         </div>
       )}
       {cases.length > 0 ? (
-        <section className="space-y-3" aria-label="Fila privativa de denúncias">
-          <h4 className="font-semibold">Fila de revisão humana ({cases.length})</h4>
+        <section className="space-y-3" aria-label={copy.roomCases}>
+          <h4 className="font-semibold">{copy.roomCasesTitle} ({cases.length})</h4>
           {cases.map((item) => (
             <div key={item.caseId} className="rounded-lg border border-border p-3 text-sm">
               <p className="font-medium">{item.subject}</p>
               <p className="mt-2 whitespace-pre-wrap break-words text-muted-foreground">{item.report}</p>
-              <p className="mt-2 text-xs text-muted-foreground">Sala: {item.roomId}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{copy.room} {item.roomId}</p>
               <button type="button" onClick={() => setCaseFor(item.caseId)} className="mt-3 min-h-11 rounded-lg border border-border px-3">
-                Revisar denúncia
+                {copy.reviewCase}
               </button>
               {caseFor === item.caseId ? (
                 <form onSubmit={(event) => void sendCase(event)} className="mt-3 space-y-2">
-                  <label htmlFor="moderation-case-decision" className="block font-medium">Decisão</label>
+                  <label htmlFor="moderation-case-decision" className="block font-medium">{copy.decisionLabel}</label>
                   <select id="moderation-case-decision" value={caseDecision} onChange={(event) => setCaseDecision(event.target.value as CaseDecision)}
                     className="min-h-11 w-full rounded-lg border border-border bg-background p-2">
-                    <option value="dismissed">Arquivar sem punição</option>
-                    <option value="warning">Advertência</option>
-                    <option value="temporary_mute">Silenciamento temporário para revisão</option>
+                    <option value="dismissed">{copy.dismissed}</option>
+                    <option value="warning">{copy.warning}</option>
+                    <option value="temporary_mute">{copy.temporaryMute}</option>
                   </select>
-                  <label htmlFor="moderation-case-note" className="block font-medium">Justificativa privada da decisão</label>
+                  <label htmlFor="moderation-case-note" className="block font-medium">{copy.caseReason}</label>
                   <textarea id="moderation-case-note" value={caseNote} onChange={(event) => setCaseNote(event.target.value)}
                     minLength={10} maxLength={1000} required rows={3}
                     className="w-full rounded-lg border border-border bg-background p-2" />
                   <button type="submit" disabled={busy} className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground">
-                    Confirmar decisão
+                    {copy.confirmDecision}
                   </button>
                 </form>
               ) : null}
@@ -279,30 +283,30 @@ export function ModerationReviewCenter() {
         </section>
       ) : null}
       {appeals.length > 0 ? (
-        <section className="space-y-3" aria-label="Fila privativa de recursos">
-          <h4 className="font-semibold">Recursos para revisão independente ({appeals.length})</h4>
+        <section className="space-y-3" aria-label={copy.appealQueue}>
+          <h4 className="font-semibold">{copy.appealsTitle} ({appeals.length})</h4>
           {appeals.map((item) => (
             <div key={item.appealId} className="rounded-lg border border-border p-3 text-sm">
               <p className="whitespace-pre-wrap break-words">{item.message}</p>
-              <p className="mt-2 text-xs text-muted-foreground">Processo: {item.caseId}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{copy.caseLabel} {item.caseId}</p>
               <button type="button" onClick={() => setReviewFor(item.appealId)} className="mt-3 min-h-11 rounded-lg border border-border px-3">
-                Revisar recurso
+                {copy.reviewAppeal}
               </button>
               {reviewFor === item.appealId ? (
                 <form onSubmit={(event) => void sendReview(event)} className="mt-3 space-y-2">
-                  <label htmlFor="moderation-review-decision" className="block font-medium">Resultado do recurso</label>
+                  <label htmlFor="moderation-review-decision" className="block font-medium">{copy.reviewResult}</label>
                   <select id="moderation-review-decision" value={reviewDecision}
                     onChange={(event) => setReviewDecision(event.target.value as AppealDecision)}
                     className="min-h-11 w-full rounded-lg border border-border bg-background p-2">
-                    <option value="upheld">Manter decisão</option>
-                    <option value="overturned">Reverter decisão</option>
+                    <option value="upheld">{copy.upheld}</option>
+                    <option value="overturned">{copy.overturned}</option>
                   </select>
-                  <label htmlFor="moderation-review-note" className="block font-medium">Justificativa independente</label>
+                  <label htmlFor="moderation-review-note" className="block font-medium">{copy.reviewReason}</label>
                   <textarea id="moderation-review-note" value={reviewNote} onChange={(event) => setReviewNote(event.target.value)}
                     minLength={10} maxLength={1000} required rows={3}
                     className="w-full rounded-lg border border-border bg-background p-2" />
                   <button type="submit" disabled={busy} className="min-h-11 rounded-lg bg-primary px-4 text-primary-foreground">
-                    Confirmar revisão
+                    {copy.confirmReview}
                   </button>
                 </form>
               ) : null}
