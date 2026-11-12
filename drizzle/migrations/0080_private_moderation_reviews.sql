@@ -50,6 +50,17 @@ CREATE TABLE moderation_private.appeals (
     OR (state<>'open' AND reviewer_id IS NOT NULL AND reviewed_at IS NOT NULL
       AND reviewer_note IS NOT NULL))
 );
+-- Room-scoped, time-limited enforcement. No permanent player ban.
+CREATE TABLE moderation_private.room_mutes (
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  room_id uuid NOT NULL REFERENCES public.match_rooms(id) ON DELETE CASCADE,
+  case_id uuid NOT NULL REFERENCES moderation_private.cases(id) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY (user_id, room_id)
+);
+CREATE INDEX moderation_room_mutes_expiry_idx
+  ON moderation_private.room_mutes(expires_at);
 CREATE TABLE moderation_private.audit (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   case_id uuid NOT NULL REFERENCES moderation_private.cases(id) ON DELETE CASCADE,
@@ -62,6 +73,7 @@ CREATE INDEX moderation_audit_case_time_idx ON moderation_private.audit(case_id,
 ALTER TABLE moderation_private.moderators ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moderation_private.cases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moderation_private.appeals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE moderation_private.room_mutes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moderation_private.audit ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON ALL TABLES IN SCHEMA moderation_private FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA moderation_private FROM PUBLIC,anon,authenticated;
@@ -147,6 +159,14 @@ BEGIN
     revision=revision+1,updated_at=clock_timestamp() WHERE id=p_case;
   INSERT INTO moderation_private.audit(case_id,actor_id,event)
     VALUES(p_case,p_reviewer,'decided');
+  IF p_decision='temporary_mute' THEN
+    INSERT INTO moderation_private.room_mutes(user_id,room_id,case_id,expires_at)
+    VALUES(v_case.subject_id,v_case.room_id,p_case,
+      clock_timestamp() + interval '15 minutes')
+    ON CONFLICT(user_id,room_id) DO UPDATE
+      SET case_id=EXCLUDED.case_id,
+          expires_at=greatest(moderation_private.room_mutes.expires_at,EXCLUDED.expires_at);
+  END IF;
   RETURN jsonb_build_object('status','resolved','revision',p_revision+1);
 END;
 $fn$;
@@ -221,6 +241,9 @@ BEGIN
   END IF;
   UPDATE moderation_private.appeals SET state=p_decision,reviewer_id=p_reviewer,
     reviewer_note=btrim(p_note),reviewed_at=clock_timestamp() WHERE id=p_appeal;
+  IF p_decision='overturned' THEN
+    DELETE FROM moderation_private.room_mutes WHERE case_id=v_case.id;
+  END IF;
   INSERT INTO moderation_private.audit(case_id,actor_id,event)
     VALUES(v_case.id,p_reviewer,
       CASE WHEN p_decision='upheld' THEN 'appeal_upheld' ELSE 'appeal_overturned' END);
@@ -314,6 +337,41 @@ BEGIN
   RETURN v_result;
 END;
 $fn$;
+
+-- An existing private, server-only chat receipt RPC is moved unchanged.
+-- This service-role wrapper adds room-scoped mute enforcement before
+-- admitting any new Realtime chat receipt. Global chat remains unaffected.
+ALTER FUNCTION public.admit_room_chat_message(uuid,uuid,uuid,text,text,text)
+  SET SCHEMA room_chat_private;
+REVOKE ALL ON FUNCTION room_chat_private.admit_room_chat_message(uuid,uuid,uuid,text,text,text)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION room_chat_private.admit_room_chat_message(uuid,uuid,uuid,text,text,text)
+  TO service_role;
+
+CREATE FUNCTION public.admit_room_chat_message(
+  p_user_id uuid,p_room_id uuid,p_message_id uuid,
+  p_payload_hash text,p_repeat_fingerprint text,p_moderation_reason text
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $fn$
+DECLARE v_until timestamptz;
+BEGIN
+  IF current_user<>'service_role' THEN
+    RAISE EXCEPTION 'room_chat_service_only' USING ERRCODE='42501';
+  END IF;
+  SELECT expires_at INTO v_until FROM moderation_private.room_mutes
+    WHERE user_id=p_user_id AND room_id=p_room_id
+      AND expires_at>clock_timestamp();
+  IF FOUND THEN
+    RETURN jsonb_build_object('status','muted','until',v_until);
+  END IF;
+  RETURN room_chat_private.admit_room_chat_message(
+    p_user_id,p_room_id,p_message_id,
+    p_payload_hash,p_repeat_fingerprint,p_moderation_reason);
+END;
+$fn$;
+REVOKE ALL ON FUNCTION public.admit_room_chat_message(uuid,uuid,uuid,text,text,text)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.admit_room_chat_message(uuid,uuid,uuid,text,text,text)
+  TO service_role;
 
 REVOKE ALL ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid,uuid)
   FROM PUBLIC,anon,authenticated;
