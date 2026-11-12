@@ -140,8 +140,7 @@ export function sweptBallPlayerContact(
   athleteZ: number,
   radius: number,
 ): { fraction: number; distance: number } | null {
-  if (![fromX, fromZ, toX, toZ, athleteX, athleteZ, radius].every(Number.isFinite))
-    return null;
+  if (![fromX, fromZ, toX, toZ, athleteX, athleteZ, radius].every(Number.isFinite)) return null;
   if (radius <= 0 || radius > 3) return null;
   const dx = toX - fromX;
   const dz = toZ - fromZ;
@@ -152,7 +151,5 @@ export function sweptBallPlayerContact(
       ? Math.max(0, Math.min(1, ((athleteX - fromX) * dx + (athleteZ - fromZ) * dz) / lengthSq))
       : 1;
   const distance = Math.hypot(fromX + dx * closest - athleteX, fromZ + dz * closest - athleteZ);
-  return Number.isFinite(distance) && distance <= radius
-    ? { fraction: closest, distance }
-    : null;
+  return Number.isFinite(distance) && distance <= radius ? { fraction: closest, distance } : null;
 }

@@ -89,10 +89,7 @@ afterEach(() => vi.useRealTimers());
 describe("two independent authoritative client transports, without physical devices", () => {
   it("admits separate signed seats and broadcasts the same canonical clock and score", async () => {
     let steps = 0;
-    const [homeTicket, awayTicket] = await Promise.all([
-      seatTicket("home"),
-      seatTicket("away"),
-    ]);
+    const [homeTicket, awayTicket] = await Promise.all([seatTicket("home"), seatTicket("away")]);
     const session = new AuthoritativeMatchSession({
       roomId,
       homeTicket,
@@ -130,10 +127,11 @@ describe("two independent authoritative client transports, without physical devi
         issueTicket: () => seatTicket(seat),
         onEvent: () => undefined,
         onStatus: (status) => {
-          if (status === "connected") clients[seat].sendCommand({
-            kind: "ready",
-            payload: { ready: true },
-          });
+          if (status === "connected")
+            clients[seat].sendCommand({
+              kind: "ready",
+              payload: { ready: true },
+            });
         },
         socketFactory: () => {
           const socket = new LoopbackSocket(bridge);
@@ -176,10 +174,7 @@ describe("two independent authoritative client transports, without physical devi
   });
 
   it("rejects tampered second-device ticket before admitting its seat", async () => {
-    const [homeTicket, awayTicket] = await Promise.all([
-      seatTicket("home"),
-      seatTicket("away"),
-    ]);
+    const [homeTicket, awayTicket] = await Promise.all([seatTicket("home"), seatTicket("away")]);
     const session = new AuthoritativeMatchSession({
       roomId,
       homeTicket,

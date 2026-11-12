@@ -133,15 +133,7 @@ export function tryBlock(
     if (p.side === attacking || p.pos === "GK" || p.sentOff) continue;
     const swept =
       sim.contactPhysicsRevision === 2 && previous
-        ? sweptBallPlayerContact(
-            previous.x,
-            previous.z,
-            sim.ball.x,
-            sim.ball.z,
-            p.x,
-            p.z,
-            1.25,
-          )
+        ? sweptBallPlayerContact(previous.x, previous.z, sim.ball.x, sim.ball.z, p.x, p.z, 1.25)
         : null;
     if (sim.contactPhysicsRevision === 2 && previous) {
       if (!swept) continue;

@@ -100,8 +100,7 @@ export class CooperativeCommandPolicy {
       for (const [userId, time] of checkpoint.votes[seat]) {
         if (expected.seatForUser(userId) !== seat || time > now)
           throw new Error("forged cooperative forfeit vote");
-        if (now - time < FORFEIT_VOTE_WINDOW_MS)
-          expected.forfeitVotes[seat].set(userId, time);
+        if (now - time < FORFEIT_VOTE_WINDOW_MS) expected.forfeitVotes[seat].set(userId, time);
       }
     }
     for (const seat of checkpoint.approved) expected.approvedForfeit.add(seat);

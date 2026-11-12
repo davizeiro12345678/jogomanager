@@ -3,7 +3,8 @@ import { featureMessages, type FeatureMessages } from "./feature-messages";
 
 const pt = {
   title: "Moderação e recursos",
-  description: "Decisões são revisadas por pessoas. Não há banimentos permanentes automáticos nesta área.",
+  description:
+    "Decisões são revisadas por pessoas. Não há banimentos permanentes automáticos nesta área.",
   refresh: "Atualizar",
   unavailable: "A consulta está desativada até a validação e publicação segura do serviço.",
   ownTitle: "Minhas decisões e recursos",
@@ -44,7 +45,8 @@ const pt = {
   decisionFailed: "Não foi possível concluir a decisão. Atualize a fila e verifique as permissões.",
   reviewSaved: "Recurso revisado por um moderador independente.",
   reviewFailed: "Revisão indisponível. O moderador original não pode julgar o próprio recurso.",
-  centerIntro: "Consulte decisões da sua conta e solicite revisão humana. A fila de denúncias é visível apenas para moderadores autorizados, após a ativação segura do serviço.",
+  centerIntro:
+    "Consulte decisões da sua conta e solicite revisão humana. A fila de denúncias é visível apenas para moderadores autorizados, após a ativação segura do serviço.",
   loading: "Carregando opções de moderação…",
   open: "Consultar decisões e recursos",
   sectionAria: "Moderação com revisão humana",
@@ -94,14 +96,16 @@ export const MODERATION_REVIEW_MESSAGES: FeatureMessages<keyof typeof pt> = {
     decisionFailed: "Unable to finalize the decision. Refresh the queue and verify access.",
     reviewSaved: "Appeal reviewed by an independent moderator.",
     reviewFailed: "Review unavailable. The original moderator cannot review the same case appeal.",
-    centerIntro: "Review your account decisions and request a human appeal. The report queue is visible only to approved moderators after secure activation.",
+    centerIntro:
+      "Review your account decisions and request a human appeal. The report queue is visible only to approved moderators after secure activation.",
     loading: "Loading moderation options…",
     open: "View decisions and appeals",
     sectionAria: "Human moderation and appeals",
   },
   es: {
     title: "Moderación y recursos",
-    description: "Las decisiones son revisadas por personas. No hay suspensiones permanentes automáticas.",
+    description:
+      "Las decisiones son revisadas por personas. No hay suspensiones permanentes automáticas.",
     refresh: "Actualizar",
     unavailable: "La consulta está desactivada hasta la validación y publicación segura.",
     ownTitle: "Mis decisiones y recursos",
@@ -141,8 +145,10 @@ export const MODERATION_REVIEW_MESSAGES: FeatureMessages<keyof typeof pt> = {
     decisionSaved: "Decisión registrada y auditada.",
     decisionFailed: "No se pudo finalizar la decisión. Actualiza la cola y verifica el acceso.",
     reviewSaved: "Recurso revisado por otro moderador independiente.",
-    reviewFailed: "Revisión no disponible. El moderador original no puede revisar su propio recurso.",
-    centerIntro: "Consulta las decisiones de tu cuenta y solicita una revisión humana. Solo los moderadores autorizados pueden ver la cola de denuncias después de la activación segura.",
+    reviewFailed:
+      "Revisión no disponible. El moderador original no puede revisar su propio recurso.",
+    centerIntro:
+      "Consulta las decisiones de tu cuenta y solicita una revisión humana. Solo los moderadores autorizados pueden ver la cola de denuncias después de la activación segura.",
     loading: "Cargando opciones de moderación…",
     open: "Consultar decisiones y recursos",
     sectionAria: "Moderación y recursos humanos",

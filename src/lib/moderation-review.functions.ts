@@ -161,7 +161,8 @@ export const decideModerationAppeal = createServerFn({ method: "POST" })
       });
       if (result.error) return unavailable(result.error);
       const parsed = ModeratorActionResult.safeParse(result.data);
-      return parsed.success && ["upheld", "overturned", "already_reviewed"].includes(parsed.data.status)
+      return parsed.success &&
+        ["upheld", "overturned", "already_reviewed"].includes(parsed.data.status)
         ? { ok: true, status: parsed.data.status }
         : { ok: false, reason: "unavailable" };
     } catch {
@@ -270,26 +271,28 @@ export const listOwnModerationDecisions = createServerFn({ method: "GET" })
 export const listPendingModerationAppeals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ModerationListRequest.parse(input))
-  .handler(async ({ data, context }): Promise<ModerationListResponse<z.infer<typeof PendingAppeal>>> => {
-    if (!accessEnabled()) return { ok: false, reason: "unavailable" };
-    const { verifiedAccount } = await import("./verified-identity.server");
-    if (!(await verifiedAccount(context.supabase, context.userId)))
-      return { ok: false, reason: "verification_required" };
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    try {
-      const result = await supabaseAdmin.rpc("list_private_moderation_appeals", {
-        p_reviewer: context.userId,
-        p_limit: data.limit,
-      });
-      if (result.error) {
-        const failure = unavailable(result.error);
-        return { ok: false, reason: failure.ok ? "unavailable" : failure.reason };
+  .handler(
+    async ({ data, context }): Promise<ModerationListResponse<z.infer<typeof PendingAppeal>>> => {
+      if (!accessEnabled()) return { ok: false, reason: "unavailable" };
+      const { verifiedAccount } = await import("./verified-identity.server");
+      if (!(await verifiedAccount(context.supabase, context.userId)))
+        return { ok: false, reason: "verification_required" };
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      try {
+        const result = await supabaseAdmin.rpc("list_private_moderation_appeals", {
+          p_reviewer: context.userId,
+          p_limit: data.limit,
+        });
+        if (result.error) {
+          const failure = unavailable(result.error);
+          return { ok: false, reason: failure.ok ? "unavailable" : failure.reason };
+        }
+        const parsed = z.array(PendingAppeal).safeParse(result.data);
+        return parsed.success
+          ? { ok: true, entries: parsed.data }
+          : { ok: false, reason: "unavailable" };
+      } catch {
+        return { ok: false, reason: "unavailable" };
       }
-      const parsed = z.array(PendingAppeal).safeParse(result.data);
-      return parsed.success
-        ? { ok: true, entries: parsed.data }
-        : { ok: false, reason: "unavailable" };
-    } catch {
-      return { ok: false, reason: "unavailable" };
-    }
-  });
+    },
+  );

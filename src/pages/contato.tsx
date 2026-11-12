@@ -121,9 +121,7 @@ export function ContatoPage() {
           aria-label={moderationCopy.sectionAria}
         >
           <h2 className="font-display text-xl">{moderationCopy.title}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {moderationCopy.centerIntro}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{moderationCopy.centerIntro}</p>
           {moderationOpen ? (
             <Suspense
               fallback={
