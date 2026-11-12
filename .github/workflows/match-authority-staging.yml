@@ -10,6 +10,14 @@ on:
       - .github/workflows/match-authority-staging.yml
       - services/match-authority/**
       - wrangler.match-authority.jsonc
+      # The Worker imports these modules. Publishing only on changes under
+      # services/ can leave live staging running stale ticket/physics code.
+      - src/game/online/**
+      - src/game/sim.ts
+      - src/game/sim-*.ts
+      - src/game/match-*.ts
+      - package.json
+      - package-lock.json
   workflow_dispatch:
     inputs:
       confirm:
