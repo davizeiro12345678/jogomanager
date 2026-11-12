@@ -20,9 +20,10 @@ const signed = (roomId: string, winner: "home" | "away" = "home"): MatchReceiptV
   roomId,
   simulationVersion: "contact-2",
   commandHash: "b".repeat(64),
-  result: winner === "home"
-    ? { homeGoals: 2, awayGoals: 1, winner }
-    : { homeGoals: 1, awayGoals: 2, winner },
+  result:
+    winner === "home"
+      ? { homeGoals: 2, awayGoals: 1, winner }
+      : { homeGoals: 1, awayGoals: 2, winner },
   closureReason: "completed",
   idempotencyKey: "cfc44841-72f2-41d6-9494-6d9dc424386a",
   issuedAt: 1_700_000_000_000,
@@ -70,9 +71,7 @@ describe("server-verified knockout tournaments", () => {
     ]);
     expect(bracket.bindRoom("r2m1", rooms[1]!)).toBe(true);
     expect(bracket.bindRoom("r2m2", rooms[2]!)).toBe(true);
-    expect(await bracket.submitResult("r2m1", signed(rooms[1]!, "away"), verify)).toBe(
-      "accepted",
-    );
+    expect(await bracket.submitResult("r2m1", signed(rooms[1]!, "away"), verify)).toBe("accepted");
     expect(await bracket.submitResult("r2m2", signed(rooms[2]!), verify)).toBe("accepted");
 
     const final = bracket.bracket()[2]![0]!;
@@ -107,10 +106,16 @@ describe("server-verified knockout tournaments", () => {
       result: { homeGoals: 1, awayGoals: 1, winner: "draw" },
     };
     expect(await bracket.submitResult("r1m1", draw, verify)).toBe("invalid_result");
-    expect(await bracket.submitResult("r1m1", {
-      ...signed(rooms[0]!),
-      closureReason: "forfeit",
-    }, verify)).toBe("accepted");
+    expect(
+      await bracket.submitResult(
+        "r1m1",
+        {
+          ...signed(rooms[0]!),
+          closureReason: "forfeit",
+        },
+        verify,
+      ),
+    ).toBe("accepted");
   });
 
   it("does not accept duplicate entrants or tamper with the exported bracket", () => {
