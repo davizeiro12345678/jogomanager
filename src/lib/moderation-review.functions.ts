@@ -55,8 +55,7 @@ export const openModerationCaseFromReport = createServerFn({ method: "POST" })
         .select("host_id,guest_id")
         .eq("id", data.roomId)
         .maybeSingle();
-      if (roomError || !room?.guest_id)
-        return { ok: false, reason: "not_allowed" };
+      if (roomError || !room?.guest_id) return { ok: false, reason: "not_allowed" };
       const subjectId =
         room.host_id === context.userId
           ? room.guest_id
@@ -162,15 +161,13 @@ export const decideModerationAppeal = createServerFn({ method: "POST" })
       });
       if (result.error) return unavailable(result.error);
       const parsed = ModeratorActionResult.safeParse(result.data);
-      return parsed.success &&
-          ["upheld", "overturned", "already_reviewed"].includes(parsed.data.status)
+      return parsed.success && ["upheld", "overturned", "already_reviewed"].includes(parsed.data.status)
         ? { ok: true, status: parsed.data.status }
         : { ok: false, reason: "unavailable" };
     } catch {
       return { ok: false, reason: "unavailable" };
     }
   });
-
 
 const ModerationListRequest = z.object({ limit: z.number().int().min(1).max(50) }).strict();
 const ModeratorCase = z
@@ -197,16 +194,13 @@ const OwnDecision = z
 
 type ModerationListResponse<T> =
   | { ok: true; entries: T[] }
-  | { ok: false; reason: "unavailable" | "verification_required" | "not_allowed" };
+  | { ok: false; reason: "unavailable" | "verification_required" | "not_allowed" | "conflict" };
 
 export const listOpenModerationCases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ModerationListRequest.parse(input))
   .handler(
-    async ({
-      data,
-      context,
-    }): Promise<ModerationListResponse<z.infer<typeof ModeratorCase>>> => {
+    async ({ data, context }): Promise<ModerationListResponse<z.infer<typeof ModeratorCase>>> => {
       if (!accessEnabled()) return { ok: false, reason: "unavailable" };
       const { verifiedAccount } = await import("./verified-identity.server");
       if (!(await verifiedAccount(context.supabase, context.userId)))
@@ -235,10 +229,7 @@ export const listOwnModerationDecisions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ModerationListRequest.parse(input))
   .handler(
-    async ({
-      data,
-      context,
-    }): Promise<ModerationListResponse<z.infer<typeof OwnDecision>>> => {
+    async ({ data, context }): Promise<ModerationListResponse<z.infer<typeof OwnDecision>>> => {
       if (!accessEnabled()) return { ok: false, reason: "unavailable" };
       const { verifiedAccount } = await import("./verified-identity.server");
       if (!(await verifiedAccount(context.supabase, context.userId)))
