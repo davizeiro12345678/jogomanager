@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  loadPrivateTournament,
-  savePrivateTournament,
-} from "./private-tournament-store.server";
+import { loadPrivateTournament, savePrivateTournament } from "./private-tournament-store.server";
 import { VerifiedTournamentBracket } from "./verified-tournament-bracket.server";
 import type { MatchReceiptV1 } from "./match-protocol";
 
@@ -127,19 +124,23 @@ describe("private tournament repository", () => {
       entries[0]!.receipt.signature = "forgedsignaturewithoutmatchinghmac";
     });
     await expect(loadPrivateTournament(storage, tournamentId, verify)).rejects.toThrow();
-    expect(await loadPrivateTournament(storage, "26bfc4ad-dd2d-47cc-9806-f5f01d83d661", verify)).toBeNull();
+    expect(
+      await loadPrivateTournament(storage, "26bfc4ad-dd2d-47cc-9806-f5f01d83d661", verify),
+    ).toBeNull();
   });
 
   it("rejects impossible CAS revisions before contacting the server", async () => {
     const storage = mockStorage();
     const bracket = new VerifiedTournamentBracket([organizerId, awayId]);
-    await expect(savePrivateTournament(storage, {
-      tournamentId,
-      organizerId,
-      region: "sa",
-      expectedRevision: -2,
-      bracket,
-    })).rejects.toThrow();
+    await expect(
+      savePrivateTournament(storage, {
+        tournamentId,
+        organizerId,
+        region: "sa",
+        expectedRevision: -2,
+        bracket,
+      }),
+    ).rejects.toThrow();
     expect(storage.rpc).not.toHaveBeenCalled();
   });
 });
