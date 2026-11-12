@@ -12,6 +12,7 @@ import {
   goalkeeperCanReach,
   parryReboundSpeed,
   shotProfile,
+  sweptBallPlayerContact,
 } from "./match-physics-extras";
 import { type Side, type SimPlayer } from "./sim-contracts";
 import {
@@ -118,19 +119,47 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
  * Defesa ativa: um adversário no caminho pode bloquear o chute/passe.
  * Devolve verdadeiro quando a jogada foi encerrada aqui.
  */
-export function tryBlock(sim: MatchSim, dt: number): boolean {
+export function tryBlock(
+  sim: MatchSim,
+  dt: number,
+  previous?: { x: number; z: number; height: number },
+): boolean {
   const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
-  if (speed < 8 || sim.ball.height > 1.9) return false;
+  if (speed < 8 || (sim.contactPhysicsRevision !== 2 && sim.ball.height > 1.9)) return false;
   const attacking = sim.pendingShot?.side ?? (sim.pass ? sim.lastTouch : null);
   if (!attacking) return false;
 
   for (const p of sim.players) {
     if (p.side === attacking || p.pos === "GK" || p.sentOff) continue;
-    const d = Math.hypot(p.x - sim.ball.x, p.z - sim.ball.z);
-    if (d > 1.25) continue;
+    const swept =
+      sim.contactPhysicsRevision === 2 && previous
+        ? sweptBallPlayerContact(
+            previous.x,
+            previous.z,
+            sim.ball.x,
+            sim.ball.z,
+            p.x,
+            p.z,
+            1.25,
+          )
+        : null;
+    if (sim.contactPhysicsRevision === 2 && previous) {
+      if (!swept) continue;
+      const height = previous.height + (sim.ball.height - previous.height) * swept.fraction;
+      if (height > 1.9 || height < 0) continue;
+    } else if (Math.hypot(p.x - sim.ball.x, p.z - sim.ball.z) > 1.25 || sim.ball.height > 1.9)
+      continue;
     const chance = (0.35 + (p.defending / 100) * 0.5) * Math.min(1, dt * 30);
     if (sim.rnd() > chance) continue;
 
+    // Move the v2 collision to the actual swept contact point before the
+    // rebound. A fast ball cannot jump the defender and then rebound metres
+    // ahead of the athlete. Historical revision-1 games stay unchanged.
+    if (swept && previous) {
+      sim.ball.x = previous.x + (sim.ball.x - previous.x) * swept.fraction;
+      sim.ball.z = previous.z + (sim.ball.z - previous.z) * swept.fraction;
+      sim.ball.height = previous.height + (sim.ball.height - previous.height) * swept.fraction;
+    }
     const slide = sim.rnd() < 0.45;
     sim.trigger(p, slide ? "slide" : "block", 0.7);
     p.tackles++;
