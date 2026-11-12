@@ -78,6 +78,7 @@ ALTER TABLE moderation_private.audit ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON ALL TABLES IN SCHEMA moderation_private FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA moderation_private FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT,UPDATE ON ALL TABLES IN SCHEMA moderation_private TO service_role;
+GRANT DELETE ON moderation_private.room_mutes TO service_role;
 GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA moderation_private TO service_role;
 
 CREATE FUNCTION public.open_private_moderation_case(
