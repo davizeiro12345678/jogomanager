@@ -125,7 +125,7 @@ export const getLeagueTable = createServerFn({ method: "GET" })
       const row = rows?.[0];
       const raw = standingPayload(row?.payload);
       if (!row || !raw) return null;
-      const [injuryResult, topResult] = await Promise.all([
+      const [injuryResult, topResult] = await Promise.allSettled([
         db
           .from("api_football_data")
           .select("payload")
@@ -142,10 +142,21 @@ export const getLeagueTable = createServerFn({ method: "GET" })
             `assists_${lg.id}_${raw.league.season}`,
           ]),
       ]);
-      if (injuryResult.error || topResult.error)
-        throw new Error("Não foi possível carregar os dados completos da liga.");
-      const inj = injuryResult.data;
-      const tops = topResult.data;
+      // Standings are the primary public content. A temporary failure in the
+      // optional injury/scoring feeds must not turn all 12 league pages into 5XX.
+      // Never fabricate unavailable statistics or expose upstream errors.
+      const inj =
+        injuryResult.status === "fulfilled" && !injuryResult.value.error
+          ? injuryResult.value.data
+          : [];
+      const tops =
+        topResult.status === "fulfilled" && !topResult.value.error
+          ? topResult.value.data
+          : [];
+      if (injuryResult.status === "rejected" || injuryResult.value.error)
+        console.warn("[public-league] Optional injury data unavailable", lg.slug);
+      if (topResult.status === "rejected" || topResult.value.error)
+        console.warn("[public-league] Optional scoring data unavailable", lg.slug);
       const seen = new Set<string>();
       const injuries = (inj ?? [])
         .map((i) => i.payload as unknown as RawInjury)
