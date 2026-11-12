@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  OpenModerationCaseInput,
   ModerationAppealInput,
   ModerationAppealReviewInput,
   ModerationCaseReviewInput,
@@ -9,6 +10,17 @@ const user = "237b600e-68f9-44fb-9d62-10fd6c23bc83";
 const request = "2a6aa49c-dc35-4bfd-8890-26ae5684240d";
 
 describe("moderation review request validation", () => {
+  it("rejects spoofed reporter IDs while accepting UUID-only report context", () => {
+    const data = { ticketId: request, roomId: user, subjectId: request };
+    expect(OpenModerationCaseInput.safeParse(data).success).toBe(true);
+    expect(
+      OpenModerationCaseInput.safeParse({ ...data, reporterId: user }).success,
+    ).toBe(false);
+    expect(OpenModerationCaseInput.safeParse({ ...data, roomId: "wrong" }).success).toBe(
+      false,
+    );
+  });
+
   it("accepts one well-formed appeal with stable client-generated idempotency ID", () => {
     const parsed = ModerationAppealInput.parse({
       caseId: user,
