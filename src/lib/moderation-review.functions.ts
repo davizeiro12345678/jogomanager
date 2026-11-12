@@ -183,6 +183,15 @@ const ModeratorCase = z
     report: z.string(),
   })
   .strict();
+const PendingAppeal = z
+  .object({
+    appealId: z.string().uuid(),
+    caseId: z.string().uuid(),
+    appellantId: z.string().uuid(),
+    message: z.string().min(20).max(2000),
+    createdAt: z.string(),
+  })
+  .strict();
 const OwnDecision = z
   .object({
     caseId: z.string().uuid(),
@@ -253,3 +262,34 @@ export const listOwnModerationDecisions = createServerFn({ method: "GET" })
       }
     },
   );
+
+/**
+ * Reviewers see only appeals they did not originally judge.
+ * The SQL function enforces both active membership and reviewer separation.
+ */
+export const listPendingModerationAppeals = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => ModerationListRequest.parse(input))
+  .handler(async ({ data, context }): Promise<ModerationListResponse<z.infer<typeof PendingAppeal>>> => {
+    if (!accessEnabled()) return { ok: false, reason: "unavailable" };
+    const { verifiedAccount } = await import("./verified-identity.server");
+    if (!(await verifiedAccount(context.supabase, context.userId)))
+      return { ok: false, reason: "verification_required" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    try {
+      const result = await supabaseAdmin.rpc("list_private_moderation_appeals", {
+        p_reviewer: context.userId,
+        p_limit: data.limit,
+      });
+      if (result.error) {
+        const failure = unavailable(result.error);
+        return { ok: false, reason: failure.ok ? "unavailable" : failure.reason };
+      }
+      const parsed = z.array(PendingAppeal).safeParse(result.data);
+      return parsed.success
+        ? { ok: true, entries: parsed.data }
+        : { ok: false, reason: "unavailable" };
+    } catch {
+      return { ok: false, reason: "unavailable" };
+    }
+  });
