@@ -119,7 +119,7 @@ SET LOCAL ROLE authenticated;
 DO $attacker$
 BEGIN
   BEGIN
-    UPDATE public.match_rooms SET settlement_authority='legacy'
+    UPDATE public.match_rooms SET settlement_authority='websocket'
       WHERE id='70000000-0000-4000-8000-000000000011';
     RAISE EXCEPTION 'browser modified settlement protocol';
   EXCEPTION WHEN insufficient_privilege THEN NULL; END;
