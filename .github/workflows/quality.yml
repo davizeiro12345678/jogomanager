@@ -213,6 +213,7 @@ jobs:
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/authoritative-match-settlement-contract.sql
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0077_room_authority_fencing.sql
           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/room-authority-fencing-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0078_matchmaking_reservation_fk_index.sql
       - name: Verify private support quota, idempotency, delivery leases and retry fencing
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/support-outbox-contract.sql
       - name: Verify atomic private room creation, host quotas and bounded empty-lobby expiration
