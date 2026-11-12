@@ -44,13 +44,16 @@ $verified$;
 
 -- Manual legacy lobby must remain compatible with historical host replay.
 INSERT INTO public.match_rooms(
- id,code,host_id,guest_id,host_club,guest_club,seed,status,server_seeded
+ id,code,host_id,host_club,seed,status,server_seeded
 ) VALUES (
  '70000000-0000-4000-8000-000000000011','GUARD001',
  '70000000-0000-4000-8000-000000000001',
- '70000000-0000-4000-8000-000000000002',
- 'ARS','CHE','','ready',true
+ 'ARS','','open',true
 );
+UPDATE public.match_rooms SET
+  guest_id='70000000-0000-4000-8000-000000000002',
+  guest_club='CHE',status='ready'
+  WHERE id='70000000-0000-4000-8000-000000000011';
 UPDATE public.match_rooms SET status='live'
   WHERE id='70000000-0000-4000-8000-000000000011';
 DO $legacy$
@@ -78,6 +81,7 @@ $legacy$;
 -- The GUC is NOT an authentication token. A browser can call set_config()
 -- in its own SQL transaction; deliberately grant temporary UPDATE and disable
 -- RLS only in this rolled-back fixture to test the trigger itself.
+SET LOCAL ROLE service_role;
 INSERT INTO public.match_rooms(
   id,code,host_id,guest_id,host_club,guest_club,seed,status,server_seeded
 ) VALUES (
@@ -86,6 +90,7 @@ INSERT INTO public.match_rooms(
   '70000000-0000-4000-8000-000000000002',
   'ARS','CHE','','live',true
 );
+RESET ROLE;
 ALTER TABLE public.match_rooms DISABLE ROW LEVEL SECURITY;
 GRANT SELECT,UPDATE ON public.match_rooms TO authenticated;
 
