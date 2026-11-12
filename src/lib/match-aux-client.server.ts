@@ -100,13 +100,11 @@ export async function simulateOnMatchAux(input: {
     // Re-sign on every retry. Never reuse an expiring HMAC timestamp.
     const timestamp = String(Date.now());
     const signatureBytes = new Uint8Array(
-      await crypto.subtle.sign(
-        "HMAC",
-        cryptoKey,
-        new TextEncoder().encode(`${timestamp}.${body}`),
-      ),
+      await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(`${timestamp}.${body}`)),
     );
-    const signature = Array.from(signatureBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const signature = Array.from(signatureBytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+      "",
+    );
     const response = await fetch(url, {
       method: "POST",
       headers: {
