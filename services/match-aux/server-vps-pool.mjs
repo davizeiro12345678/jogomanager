@@ -22,7 +22,9 @@ db.exec(
     " status TEXT NOT NULL CHECK(status IN ('running','finished','failed'))," +
     " result TEXT, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL)",
 );
-const lookup = db.prepare("SELECT digest,status,result,created_at FROM replay_jobs WHERE room_id=?");
+const lookup = db.prepare(
+  "SELECT digest,status,result,created_at FROM replay_jobs WHERE room_id=?",
+);
 const claim = db.prepare(
   "INSERT INTO replay_jobs(room_id,digest,status,result,created_at,expires_at)" +
     " VALUES(?,?,'running',NULL,?,?)",
@@ -66,7 +68,8 @@ const parse = (input) => {
     typeof v.seed !== "string" ||
     v.seed.length < 16 ||
     v.seed.length > 128
-  ) throw Error("invalid_body");
+  )
+    throw Error("invalid_body");
   return v;
 };
 
@@ -87,7 +90,14 @@ const server = createServer(async (req, res) => {
   } catch {
     return respond(res, 413, { error: "payload_too_large" });
   }
-  if (!verifyRequest(req.headers["x-pfm-timestamp"] ?? "", raw, req.headers["x-pfm-signature"] ?? "", key))
+  if (
+    !verifyRequest(
+      req.headers["x-pfm-timestamp"] ?? "",
+      raw,
+      req.headers["x-pfm-signature"] ?? "",
+      key,
+    )
+  )
     return respond(res, 401, { error: "unauthorized" });
 
   let job;
@@ -127,7 +137,8 @@ const server = createServer(async (req, res) => {
       !Number.isInteger(result.ag) ||
       !Number.isInteger(result.minute) ||
       !Number.isInteger(result.steps)
-    ) throw Error("invalid_result");
+    )
+      throw Error("invalid_result");
 
     if (finish.run(JSON.stringify(result), job.roomId, digest).changes !== 1)
       throw Error("lost_job");
