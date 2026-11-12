@@ -1,6 +1,15 @@
 name: Prepare and deploy disabled match authority staging
 
 on:
+  # Deploy ONLY the fully disabled, unrouted, isolated staging Worker from
+  # this integration branch. Do not merge the 800+ file PR to test a DO.
+  push:
+    branches:
+      - integration/release-2026-11-11
+    paths:
+      - .github/workflows/match-authority-staging.yml
+      - services/match-authority/**
+      - wrangler.match-authority.jsonc
   workflow_dispatch:
     inputs:
       confirm:
@@ -17,7 +26,14 @@ concurrency:
 
 jobs:
   verify:
-    if: ${{ github.ref == 'refs/heads/main' && inputs.confirm == 'STAGING' }}
+    if: >-
+      ${{
+        (github.event_name == 'push' &&
+         github.ref == 'refs/heads/integration/release-2026-11-11') ||
+        (github.event_name == 'workflow_dispatch' &&
+         github.ref == 'refs/heads/main' &&
+         inputs.confirm == 'STAGING')
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
