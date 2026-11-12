@@ -50,6 +50,16 @@ describe("anti-stream-sniping spectator delay", () => {
     expect(feed.replayLastReleased()?.revision).toBe(10);
   });
 
+  it("never shortens an enforced delay when the server clock moves backwards", () => {
+    const feed = new DelayedSpectatorFeed(roomId, 30_000, 1);
+    expect(feed.push(snapshot(1), start + 10_000)).toBe(true);
+    expect(feed.poll(start + 40_000)?.revision).toBe(1);
+    expect(feed.push(snapshot(2), start)).toBe(false);
+    expect(feed.push(snapshot(2), start + 10_001)).toBe(true);
+    expect(feed.poll(start + 40_000)).toBeNull();
+    expect(feed.poll(start + 40_001)?.revision).toBe(2);
+  });
+
   it("returns detached public snapshots and resets state on room disposal", () => {
     const feed = new DelayedSpectatorFeed(roomId);
     expect(feed.push(snapshot(1), start)).toBe(true);
