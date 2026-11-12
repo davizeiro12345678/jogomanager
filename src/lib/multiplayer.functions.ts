@@ -317,19 +317,24 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       if (secretError || !secret?.seed) return { ok: false, reason: "invalid_room" };
 
       // Only the trusted server may choose the remote authority.
-      // Default production behavior stays unchanged until static-IP
-      // egress, secrets, and Atlas connectivity pass an end-to-end test.
+      // The canonical local replay remains available during a VPS outage.
       const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
-      let result: { hg: number; ag: number; minute: number };
-      if (matchAuxEnabled()) {
-        const verified = await simulateOnMatchAux({
-          roomId: room.id,
-          homeClub: room.host_club,
-          awayClub: room.guest_club,
-          seed: secret.seed,
-        });
-        result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
-      } else {
+      let result: { hg: number; ag: number; minute: number } | null = null;
+      if (matchAuxEnabled(room.id)) {
+        try {
+          const verified = await simulateOnMatchAux({
+            roomId: room.id,
+            homeClub: room.host_club,
+            awayClub: room.guest_club,
+            seed: secret.seed,
+          });
+          result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
+        } catch {
+          // A remote outage must not leave an otherwise valid room in settling.
+          console.warn("match_aux_unavailable_falling_back_to_local");
+        }
+      }
+      if (!result) {
         const sim = new MatchSim(
           buildTeamSetup(room.host_club),
           buildTeamSetup(room.guest_club),

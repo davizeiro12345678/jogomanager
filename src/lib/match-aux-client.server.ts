@@ -12,12 +12,56 @@ export type AuxiliaryMatchResult = {
   steps: number;
 };
 
-function configured(): boolean {
-  return Boolean(process.env["MATCH_AUX_URL"]?.trim());
+const MATCH_AUX_HOST = "matches-vps.jogomanager.com";
+
+function safeOrigin(input: string | undefined): URL | null {
+  if (!input) return null;
+  try {
+    const url = new URL(input);
+    if (
+      url.protocol !== "https:" ||
+      url.hostname !== MATCH_AUX_HOST ||
+      url.port ||
+      url.username ||
+      url.password ||
+      (url.pathname !== "/" && url.pathname !== "") ||
+      url.search ||
+      url.hash
+    )
+      return null;
+    return url;
+  } catch {
+    return null;
+  }
 }
 
-export function matchAuxEnabled(): boolean {
-  return configured();
+function configured(): boolean {
+  const key = process.env["MATCH_AUX_SIGNING_KEY"];
+  return Boolean(safeOrigin(process.env["MATCH_AUX_URL"]) && key && key.length >= 32);
+}
+
+/** Stable per-room canary. Not an authorization boundary. */
+function rolloutBucket(roomId: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < roomId.length; i += 1) {
+    hash = Math.imul(hash ^ roomId.charCodeAt(i), 16777619) >>> 0;
+  }
+  return hash % 100;
+}
+
+/**
+ * Fail closed unless explicitly enabled. The canary is server-only and
+ * cannot be changed by the browser. Default rollout is 0%.
+ */
+export function matchAuxEnabled(roomId?: string): boolean {
+  if (process.env["MATCH_AUX_ENABLED"] !== "1" || !configured() || !roomId) return false;
+  const percentage = Number(process.env["MATCH_AUX_ROLLOUT_PERCENT"] ?? "0");
+  return (
+    Number.isSafeInteger(percentage) &&
+    percentage > 0 &&
+    percentage <= 100 &&
+    rolloutBucket(roomId) < percentage
+  );
 }
 
 export async function simulateOnMatchAux(input: {
@@ -26,7 +70,7 @@ export async function simulateOnMatchAux(input: {
   awayClub: string;
   seed: string;
 }): Promise<AuxiliaryMatchResult> {
-  const base = process.env["MATCH_AUX_URL"];
+  const base = safeOrigin(process.env["MATCH_AUX_URL"]);
   const key = process.env["MATCH_AUX_SIGNING_KEY"];
   if (!base || !key || key.length < 32) throw new Error("match_aux_not_configured");
   const url = new URL("/v1/simulate", base);
@@ -53,6 +97,8 @@ export async function simulateOnMatchAux(input: {
     },
     body,
     cache: "no-store",
+    credentials: "omit",
+    redirect: "error",
     signal: AbortSignal.timeout(18_000),
   });
   if (!response.ok) throw new Error("match_aux_not_available");
