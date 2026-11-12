@@ -73,7 +73,9 @@ jobs:
               config.vars?.MATCH_AUTHORITY_ENABLED !== 'false' ||
               config.vars?.MATCH_QUEUE_CRON_ENABLED !== 'false' ||
               config.workers_dev !== false ||
-              config.routes?.length) {
+              config.routes?.length ||
+              config.triggers?.crons?.length ||
+              config.vars?.MATCH_AUTHORITY_ENV !== 'staging') {
             throw new Error('Staging config would expose an active match endpoint');
           }"
       - name: Build staging Durable Object without publishing
