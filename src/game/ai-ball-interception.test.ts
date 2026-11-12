@@ -38,6 +38,27 @@ describe("predictive loose-ball pursuit", () => {
     }
   });
 
+  it("never targets a point outside the playable surface", () => {
+    const far = predictLooseBallInterception({
+      ...base,
+      playerX: 43,
+      ballX: 49,
+      ballZ: 31,
+      ballVx: 60,
+      ballVz: 38,
+    });
+    expect(far.x).toBeLessThanOrEqual(51.5);
+    expect(far.z).toBeLessThanOrEqual(33);
+    expect(Number.isFinite(far.score)).toBe(true);
+  });
+
+  it("refuses non-finite player or ball telemetry before it can poison team AI", () => {
+    const invalid = predictLooseBallInterception({ ...base, playerX: Number.NaN });
+    expect(invalid).toEqual({ x: 6, z: 2, score: 1_000_000 });
+    const corruptedBall = predictLooseBallInterception({ ...base, ballX: Infinity });
+    expect(corruptedBall).toEqual({ x: 0, z: 2, score: 1_000_000 });
+  });
+
   it("handles a stationary close ball with finite coordinates", () => {
     const target = predictLooseBallInterception({
       ...base,
