@@ -34,7 +34,12 @@ export class DelayedSpectatorFeed {
    */
   push(input: unknown, now: number): boolean {
     if (!Number.isSafeInteger(now) || now < 0) return false;
-    const parsed = parseMatchSnapshotV1(input, this.lastAccepted ?? undefined);
+    let parsed: MatchSnapshotV1;
+    try {
+      parsed = parseMatchSnapshotV1(input, this.lastAccepted ?? undefined);
+    } catch {
+      return false;
+    }
     if (parsed.roomId !== this.roomId) return false;
     if (this.lastAccepted) {
       if (parsed.revision <= this.lastAccepted.revision) return false;
