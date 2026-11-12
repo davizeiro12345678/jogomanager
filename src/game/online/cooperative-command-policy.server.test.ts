@@ -15,14 +15,20 @@ const now = 1_700_000_000_000;
 
 describe("server-owned cooperative 2v2 authorization", () => {
   it("requires four unique, canonical participants", () => {
-    expect(() => new CooperativeCommandPolicy({
-      ...players,
-      away: { ...players.away, partnerId: players.home.partnerId },
-    })).toThrow();
-    expect(() => new CooperativeCommandPolicy({
-      ...players,
-      home: { ...players.home, captainId: "forged" },
-    })).toThrow();
+    expect(
+      () =>
+        new CooperativeCommandPolicy({
+          ...players,
+          away: { ...players.away, partnerId: players.home.partnerId },
+        }),
+    ).toThrow();
+    expect(
+      () =>
+        new CooperativeCommandPolicy({
+          ...players,
+          home: { ...players.home, captainId: "forged" },
+        }),
+    ).toThrow();
   });
 
   it("enforces team boundaries and allows tactical commands only to the captain", () => {
