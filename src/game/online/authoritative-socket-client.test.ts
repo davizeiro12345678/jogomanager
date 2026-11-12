@@ -157,6 +157,29 @@ describe("staged authoritative WSS client", () => {
     f.client.dispose();
   });
 
+  it("records non-identifying command-to-ACK latency and ignores repeated ACK frames", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    f.advance(125);
+    socket.message(frame({ type: "ack", sequence: 1 }));
+    socket.message(frame({ type: "ack", sequence: 1 }));
+    expect(f.client.latencySummary()).toMatchObject({
+      samples: 1,
+      accepted: 1,
+      rejected: 0,
+      pending: 0,
+      p50Ms: 125,
+      p95Ms: 125,
+      p99Ms: 125,
+    });
+    f.client.dispose();
+  });
+
   it("rejects forged seats and does not join a room from a different domain", async () => {
     const f = fixture();
     f.client.start();
