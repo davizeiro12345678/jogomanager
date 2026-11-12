@@ -79,12 +79,12 @@ jobs:
             throw new Error('Staging config would expose an active match endpoint');
           }"
       - name: Build staging Durable Object without publishing
-        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run --outdir .staging-match-authority
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run --outdir staging-match-authority-bundle
       - name: Preserve audited staging bundle, no runtime secrets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: disabled-match-authority-bundle
-          path: .staging-match-authority/
+          path: staging-match-authority-bundle/
           if-no-files-found: error
           retention-days: 7
 
