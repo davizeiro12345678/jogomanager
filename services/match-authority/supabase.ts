@@ -75,7 +75,8 @@ export async function loadPrivateLiveRoom(
 ): Promise<PrivateMatchDescriptor | null> {
   if (!ROOM_ID.test(roomId)) return null;
   const params = new URLSearchParams({
-    select: "id,host_id,guest_id,host_club,guest_club,status,server_seeded,contact_physics_revision",
+    select:
+      "id,host_id,guest_id,host_club,guest_club,status,server_seeded,contact_physics_revision",
     id: `eq.${roomId}`,
     limit: "1",
   });
