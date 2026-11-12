@@ -16,9 +16,7 @@ describe("moderation review request validation", () => {
     expect(
       OpenModerationCaseInput.safeParse({ ...data, reporterId: user, subjectId: request }).success,
     ).toBe(false);
-    expect(OpenModerationCaseInput.safeParse({ ...data, roomId: "wrong" }).success).toBe(
-      false,
-    );
+    expect(OpenModerationCaseInput.safeParse({ ...data, roomId: "wrong" }).success).toBe(false);
   });
 
   it("accepts one well-formed appeal with stable client-generated idempotency ID", () => {
@@ -95,11 +93,11 @@ describe("moderation review request validation", () => {
   it("allows only explicit uphold or overturn appeal decisions", () => {
     const valid = { appealId: user, decision: "overturned", note: "Independent review completed." };
     expect(ModerationAppealReviewInput.safeParse(valid).success).toBe(true);
-    expect(
-      ModerationAppealReviewInput.safeParse({ ...valid, decision: "ignore" }).success,
-    ).toBe(false);
-    expect(
-      ModerationAppealReviewInput.safeParse({ ...valid, reviewerId: request }).success,
-    ).toBe(false);
+    expect(ModerationAppealReviewInput.safeParse({ ...valid, decision: "ignore" }).success).toBe(
+      false,
+    );
+    expect(ModerationAppealReviewInput.safeParse({ ...valid, reviewerId: request }).success).toBe(
+      false,
+    );
   });
 });
