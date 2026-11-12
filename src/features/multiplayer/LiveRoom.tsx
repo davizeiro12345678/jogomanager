@@ -97,7 +97,7 @@ export function LiveRoom({
       controller.dispose();
       controllerRef.current = null;
     };
-  }, [setups, sim, room.contact_physics_revision]);
+  }, [setups, sim, room.contact_physics_revision, room.settlement_authority]);
 
   useEffect(() => {
     if (
