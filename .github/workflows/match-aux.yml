@@ -4,6 +4,7 @@ on:
     paths:
       - 'services/match-aux/**'
       - 'src/lib/match-aux-client.server.ts'
+      - 'src/lib/match-aux-client.server.test.ts'
       - 'src/lib/multiplayer.functions.ts'
       - '.github/workflows/match-aux.yml'
   workflow_dispatch:
@@ -24,6 +25,8 @@ jobs:
         run: npm install --prefix services/match-aux --ignore-scripts --no-audit --no-fund
       - name: HMAC and replay contract tests
         run: node --import tsx --test services/match-aux/signature.test.mjs services/match-aux/engine.test.mjs
+      - name: Cloudflare VPS transport authentication and retry tests
+        run: npm exec -- vitest run src/lib/match-aux-client.server.test.ts --pool=forks --maxWorkers=1
       - name: Strict TypeScript
         run: npm exec -- tsc --noEmit --pretty false
       - name: Lint and formatting
