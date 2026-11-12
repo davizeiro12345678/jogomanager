@@ -75,9 +75,7 @@ describe("Cloudflare-to-VPS signed match transport", () => {
       const timestamp = headers.get("x-pfm-timestamp")!;
       const signature = headers.get("x-pfm-signature");
       expect(signature).toBe(
-        createHmac("sha256", SECRET)
-          .update(`${timestamp}.${options?.body}`)
-          .digest("hex"),
+        createHmac("sha256", SECRET).update(`${timestamp}.${options?.body}`).digest("hex"),
       );
       expect(headers.get("authorization")).toBeNull();
       return success();
@@ -108,7 +106,10 @@ describe("Cloudflare-to-VPS signed match transport", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ hg: 200, ag: 0 })));
     await expect(simulateOnMatchAux(input)).rejects.toThrow("match_aux_invalid_result");
 
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ error: "unauthorized" }, { status: 401 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(Response.json({ error: "unauthorized" }, { status: 401 })),
+    );
     await expect(simulateOnMatchAux(input)).rejects.toThrow("match_aux_not_available");
   });
 
