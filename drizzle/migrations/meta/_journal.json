@@ -547,6 +547,13 @@
       "when": 1794432000000,
       "tag": "0077_room_authority_fencing",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1794510000000,
+      "tag": "0078_matchmaking_reservation_fk_index",
+      "breakpoints": true
     }
   ]
 }
