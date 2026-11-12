@@ -63,6 +63,10 @@ jobs:
           src/game/online/secure-socket-bridge.server.test.ts
           src/game/online/authoritative-socket-client.test.ts
           src/game/online/authoritative-presentation-feed.test.ts
+          src/game/online/authoritative-two-client.integration.test.ts
+          src/game/online/cooperative-command-policy.server.test.ts
+          src/game/match-physics-extras.test.ts
+          src/game/ai-ball-interception.test.ts
           --pool=forks --maxWorkers=1
       - name: Confirm Cloudflare target is staging and cannot serve active matches
         run: |
