@@ -42,7 +42,7 @@ export class MatchWorkerPool {
 
   spawn(slot) {
     if (this.closed) return;
-    const worker = new Worker(this.workerUrl, { execArgv: process.execArgv });
+    const worker = new Worker(this.workerUrl, { execArgv: ["--import", "tsx"] });
     slot.worker = worker;
     slot.active = null;
     const fail = (reason) => {
