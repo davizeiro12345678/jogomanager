@@ -395,7 +395,7 @@ export class AuthoritativeMatchSession {
           sequence < 0,
       ) ||
       checkpoint.readySeats.some((seat) => seat !== "home" && seat !== "away") ||
-      checkpoint.receipt && checkpoint.receipt.roomId !== this.options.roomId
+      (checkpoint.receipt && checkpoint.receipt.roomId !== this.options.roomId)
     )
       throw new Error("invalid authoritative session checkpoint");
 
@@ -410,14 +410,12 @@ export class AuthoritativeMatchSession {
     this.lastSequence.clear();
     for (const [user, sequence] of checkpoint.sequences) this.lastSequence.set(user, sequence);
     this.rateWindows.clear();
-    for (const [key, values] of checkpoint.rateWindows)
-      this.rateWindows.set(key, [...values]);
+    for (const [key, values] of checkpoint.rateWindows) this.rateWindows.set(key, [...values]);
     this.reconnectDeadlines.clear();
     for (const [seat, deadline] of checkpoint.reconnectDeadlines)
       this.reconnectDeadlines.set(seat, deadline);
     this.tactics.clear();
-    for (const [seat, plan] of checkpoint.tactics)
-      this.tactics.set(seat, structuredClone(plan));
+    for (const [seat, plan] of checkpoint.tactics) this.tactics.set(seat, structuredClone(plan));
     this.commandHash = checkpoint.commandHash;
     this.tick = checkpoint.tick;
     this.revision = checkpoint.revision;
