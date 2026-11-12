@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { MatchCommandKind, MatchSeat } from "./match-protocol";
 
 export interface CooperativeSide {
@@ -17,6 +18,27 @@ export type CooperativeVoteOutcome =
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FORFEIT_VOTE_WINDOW_MS = 30_000;
+const CooperativeSideSchema = z
+  .object({ captainId: z.string().uuid(), partnerId: z.string().uuid() })
+  .strict();
+const CooperativeRosterSchema = z
+  .object({ home: CooperativeSideSchema, away: CooperativeSideSchema })
+  .strict();
+const CooperativeCheckpointSchema = z
+  .object({
+    version: z.literal(1),
+    roster: CooperativeRosterSchema,
+    votes: z
+      .object({
+        home: z.array(z.tuple([z.string().uuid(), z.number().int().nonnegative()])).max(1),
+        away: z.array(z.tuple([z.string().uuid(), z.number().int().nonnegative()])).max(1),
+      })
+      .strict(),
+    approved: z.array(z.enum(["home", "away"])).max(2),
+  })
+  .strict();
+
+export type CooperativeCheckpointV1 = z.infer<typeof CooperativeCheckpointSchema>;
 
 /**
  * Defensive 2x2 authorization boundary. It does not enable a public 2x2 mode.
@@ -31,6 +53,60 @@ export class CooperativeCommandPolicy {
     away: new Map(),
   };
   private readonly approvedForfeit = new Set<MatchSeat>();
+
+  /**
+   * Private durable state. The trusted room owner must write it before it
+   * acknowledges a vote or captain transfer. Never expose it to spectators.
+   */
+  checkpoint(): CooperativeCheckpointV1 {
+    return {
+      version: 1,
+      roster: structuredClone(this.roster),
+      votes: {
+        home: [...this.forfeitVotes.home],
+        away: [...this.forfeitVotes.away],
+      },
+      approved: [...this.approvedForfeit].sort(),
+    };
+  }
+
+  /** Reject mismatched team memberships, forged votes and stale revisions. */
+  static restoreCheckpoint(
+    trustedRoster: CooperativeTeamRoster,
+    checkpointInput: unknown,
+    now: number,
+  ): CooperativeCommandPolicy {
+    if (!Number.isSafeInteger(now) || now < 0) throw new Error("invalid recovery clock");
+    const checkpoint = CooperativeCheckpointSchema.parse(checkpointInput);
+    const expected = new CooperativeCommandPolicy(trustedRoster);
+    for (const seat of ["home", "away"] as const) {
+      const actual = checkpoint.roster[seat];
+      const verified = trustedRoster[seat];
+      if (
+        new Set([actual.captainId, actual.partnerId]).size !== 2 ||
+        ![actual.captainId, actual.partnerId].every(
+          (id) => id === verified.captainId || id === verified.partnerId,
+        )
+      )
+        throw new Error("cooperative checkpoint membership mismatch");
+    }
+    if (new Set(checkpoint.approved).size !== checkpoint.approved.length)
+      throw new Error("duplicate approved team");
+    expected.roster.home = { ...checkpoint.roster.home };
+    expected.roster.away = { ...checkpoint.roster.away };
+    for (const seat of ["home", "away"] as const) {
+      if (checkpoint.approved.includes(seat) && checkpoint.votes[seat].length)
+        throw new Error("approved forfeit cannot also have pending votes");
+      for (const [userId, time] of checkpoint.votes[seat]) {
+        if (expected.seatForUser(userId) !== seat || time > now)
+          throw new Error("forged cooperative forfeit vote");
+        if (now - time < FORFEIT_VOTE_WINDOW_MS)
+          expected.forfeitVotes[seat].set(userId, time);
+      }
+    }
+    for (const seat of checkpoint.approved) expected.approvedForfeit.add(seat);
+    return expected;
+  }
 
   constructor(roster: CooperativeTeamRoster) {
     const ids = [
