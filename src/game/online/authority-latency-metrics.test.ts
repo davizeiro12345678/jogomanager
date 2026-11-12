@@ -4,7 +4,11 @@ import { AuthorityLatencyMetrics } from "./authority-latency-metrics";
 describe("privacy-preserving match command latency", () => {
   it("measures exact p50/p95/p99 on acknowledged and rejected commands", () => {
     const metrics = new AuthorityLatencyMetrics();
-    for (const [sequence, delay] of [[1, 50], [2, 100], [3, 150]] as const) {
+    for (const [sequence, delay] of [
+      [1, 50],
+      [2, 100],
+      [3, 150],
+    ] as const) {
       expect(metrics.recordSent(sequence, 10_000)).toBe(true);
       expect(metrics.recordAcknowledged(sequence, 10_000 + delay, sequence === 3)).toBe(true);
     }
