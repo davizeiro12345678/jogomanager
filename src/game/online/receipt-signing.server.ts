@@ -34,8 +34,7 @@ function encode(bytes: Uint8Array): string {
 function decode(signature: string): Uint8Array<ArrayBuffer> {
   if (!/^[A-Za-z0-9_-]{43,44}$/.test(signature)) throw new Error("invalid HMAC format");
   const raw = atob(
-    signature.replace(/-/g, "+").replace(/_/g, "/") +
-      "=".repeat((4 - (signature.length % 4)) % 4),
+    signature.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (signature.length % 4)) % 4),
   );
   const bytes = new Uint8Array(raw.length);
   for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
