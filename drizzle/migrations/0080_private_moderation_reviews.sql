@@ -286,6 +286,35 @@ BEGIN
 END;
 $fn$;
 
+-- Only an independent moderator can see pending appeal evidence. Neither
+-- the original reviewer nor an ordinary authenticated player can query it.
+CREATE FUNCTION public.list_private_moderation_appeals(
+  p_reviewer uuid,p_limit integer DEFAULT 20
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $fn$
+DECLARE v_result jsonb;
+BEGIN
+  IF current_user<>'service_role' THEN
+    RAISE EXCEPTION 'moderation_service_only' USING ERRCODE='42501';
+  END IF;
+  IF p_reviewer IS NULL OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 50 OR
+    NOT EXISTS(SELECT 1 FROM moderation_private.moderators
+      WHERE user_id=p_reviewer AND active) THEN
+    RAISE EXCEPTION 'moderator_not_authorized' USING ERRCODE='42501';
+  END IF;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'appealId',q.id,'caseId',q.case_id,'appellantId',q.appellant_id,
+    'message',q.message,'createdAt',q.created_at
+  ) ORDER BY q.created_at,q.id),'[]'::jsonb) INTO v_result FROM (
+    SELECT a.id,a.case_id,a.appellant_id,a.message,a.created_at
+    FROM moderation_private.appeals a
+    JOIN moderation_private.cases c ON c.id=a.case_id
+    WHERE a.state='open' AND c.reviewer_id<>p_reviewer
+    ORDER BY a.created_at,a.id LIMIT p_limit
+  ) q;
+  RETURN v_result;
+END;
+$fn$;
+
 REVOKE ALL ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid,uuid)
   FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.resolve_private_moderation_case(uuid,uuid,integer,text,text)
@@ -308,4 +337,7 @@ REVOKE ALL ON FUNCTION public.list_private_moderation_decisions(uuid,integer)
   FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.list_private_moderation_queue(uuid,integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.list_private_moderation_decisions(uuid,integer) TO service_role;
+REVOKE ALL ON FUNCTION public.list_private_moderation_appeals(uuid,integer)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.list_private_moderation_appeals(uuid,integer) TO service_role;
 COMMIT;
