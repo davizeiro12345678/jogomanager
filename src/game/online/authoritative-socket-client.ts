@@ -1,4 +1,5 @@
 import { getRealtimeReconnectDelayMs } from "../multiplayer-connection";
+import { AuthorityLatencyMetrics } from "./authority-latency-metrics";
 import {
   MATCH_PROTOCOL_VERSION,
   assertCurrentTicket,
@@ -48,6 +49,7 @@ const AUTH_DEADLINE_MS = 5_000;
  */
 export class AuthoritativeMatchSocketClient {
   private readonly feed: AuthoritativePresentationFeed;
+  private readonly ackLatency = new AuthorityLatencyMetrics();
   private readonly url: string;
   private socket: AuthorityClientSocket | null = null;
   private ticket: MatchTicketV1 | null = null;
@@ -112,6 +114,11 @@ export class AuthoritativeMatchSocketClient {
     return this.feed.receipt();
   }
 
+  /** Aggregated command-to-ACK times only; no player identifiers or secrets. */
+  latencySummary(): ReturnType<AuthorityLatencyMetrics["summary"]> {
+    return this.ackLatency.summary();
+  }
+
   /**
    * Input is shaped as a command without authority fields. Zod refuses an
    * injected score, seed or identity. Never reuse a sequence after a failed
@@ -131,6 +138,7 @@ export class AuthoritativeMatchSocketClient {
     this.sequence += 1;
     try {
       socket.send(JSON.stringify({ type: "command", command }));
+      this.ackLatency.recordSent(command.sequence, (this.options.now ?? Date.now)());
       return true;
     } catch {
       socket.close(1011, "send_failed");
@@ -177,6 +185,12 @@ export class AuthoritativeMatchSocketClient {
       socket.onmessage = (message) => {
         if (!this.isCurrent(socket, generation)) return;
         const event = this.feed.accept(message.data);
+        if (event.kind === "ack" || event.kind === "nack")
+          this.ackLatency.recordAcknowledged(
+            event.sequence,
+            (this.options.now ?? Date.now)(),
+            event.kind === "nack",
+          );
         if (event.kind === "ready") {
           if (event.seat !== candidate.seat) {
             this.status("unavailable");
