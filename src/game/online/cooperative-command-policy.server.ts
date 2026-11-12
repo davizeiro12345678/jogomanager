@@ -77,8 +77,7 @@ export class CooperativeCommandPolicy {
   voteToForfeit(userId: string, seat: MatchSeat, now: number): CooperativeVoteOutcome {
     if (this.seatForUser(userId) !== seat) return { status: "rejected", reason: "unauthorized" };
     if (!Number.isSafeInteger(now) || now < 0) return { status: "rejected", reason: "expired" };
-    if (this.approvedForfeit.has(seat))
-      return { status: "rejected", reason: "already_approved" };
+    if (this.approvedForfeit.has(seat)) return { status: "rejected", reason: "already_approved" };
     const votes = this.forfeitVotes[seat];
     for (const [voter, timestamp] of votes)
       if (now < timestamp || now - timestamp >= FORFEIT_VOTE_WINDOW_MS) votes.delete(voter);
