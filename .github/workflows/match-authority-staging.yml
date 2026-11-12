@@ -77,7 +77,14 @@ jobs:
             throw new Error('Staging config would expose an active match endpoint');
           }"
       - name: Build staging Durable Object without publishing
-        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run --outdir .staging-match-authority
+      - name: Preserve audited staging bundle, no runtime secrets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: disabled-match-authority-bundle
+          path: .staging-match-authority/
+          if-no-files-found: error
+          retention-days: 7
 
   deploy-disabled-staging:
     needs: verify
@@ -93,14 +100,19 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Reject missing Cloudflare deployment credentials
+      - name: Check whether least-privilege staging deployment credentials are connected
+        id: credentials
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
         run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Cloudflare API token missing"; exit 1; }
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Cloudflare account ID missing"; exit 1; }
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Cloudflare CI deployment skipped. Staging bootstrap exists, but the full game Worker cannot replace it until a scoped CLOUDFLARE_API_TOKEN is connected."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Publish disabled isolated staging Worker only
+        if: steps.credentials.outputs.ready == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
