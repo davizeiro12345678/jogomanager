@@ -252,7 +252,11 @@ describe("AuthoritativeMatchSession", () => {
     ).toEqual({ accepted: false, reason: "sequence_not_monotonic" });
     recovered.session.connect(away, issuedAt + 1_000);
     expect(recovered.session.phase).toBe("live");
-    const accepted = await recovered.session.receive(home, command(3, "ack_snapshot"), issuedAt + 1_001);
+    const accepted = await recovered.session.receive(
+      home,
+      command(3, "ack_snapshot"),
+      issuedAt + 1_001,
+    );
     expect(accepted.accepted).toBe(true);
     expect(recovered.session.lastTacticsFor("home")?.formation).toBe("4-3-3");
     const receipt = await recovered.session.finalize("completed", issuedAt + 1_002);
