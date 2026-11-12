@@ -6,10 +6,15 @@ SET LOCAL statement_timeout='30s';
 
 INSERT INTO auth.users(id,email,email_confirmed_at) VALUES
  ('60000000-0000-4000-8000-000000000001','score-home@example.test',now()),
- ('60000000-0000-4000-8000-000000000002','score-away@example.test');
+ ('60000000-0000-4000-8000-000000000002','score-away@example.test',now());
 INSERT INTO matchmaking_private.ratings(user_id,rating) VALUES
  ('60000000-0000-4000-8000-000000000001',1400),
  ('60000000-0000-4000-8000-000000000002',1400);
+-- The production match owner inserts live rooms using service_role.
+-- A plain postgres fixture would correctly be rejected by the historical
+-- browser room-insert guard, which the ranked allocator only bypasses for a
+-- matching private reservation.
+SET LOCAL ROLE service_role;
 INSERT INTO public.match_rooms(
   id,code,host_id,guest_id,host_club,guest_club,status,seed,server_seeded
 ) VALUES (
@@ -18,6 +23,7 @@ INSERT INTO public.match_rooms(
  '60000000-0000-4000-8000-000000000002',
  'ARS','CHE','live','',true
 );
+RESET ROLE;
 INSERT INTO public.match_room_secrets(room_id,seed)
 VALUES ('60000000-0000-4000-8000-000000000010','test-private-staging-seed-000123');
 INSERT INTO matchmaking_private.pairs(
