@@ -82,6 +82,59 @@ describe("server-owned cooperative 2v2 authorization", () => {
     });
   });
 
+  it("restores one in-flight teammate vote and a changed captain from a private checkpoint", () => {
+    const first = new CooperativeCommandPolicy(players);
+    expect(first.transferCaptain("home", players.home.captainId, players.home.partnerId)).toBe(
+      true,
+    );
+    first.voteToForfeit(players.home.captainId, "home", now);
+    const checkpoint = first.checkpoint();
+    const resumed = CooperativeCommandPolicy.restoreCheckpoint(players, checkpoint, now + 200);
+    expect(resumed.checkpoint()).toEqual(checkpoint);
+    expect(resumed.canExecute(players.home.partnerId, "home", "set_tactics")).toBe(true);
+    expect(resumed.canExecute(players.home.captainId, "home", "set_tactics")).toBe(false);
+    expect(resumed.voteToForfeit(players.home.partnerId, "home", now + 200)).toEqual({
+      status: "approved",
+      votes: 2,
+    });
+    const finalized = CooperativeCommandPolicy.restoreCheckpoint(
+      players,
+      resumed.checkpoint(),
+      now + 300,
+    );
+    expect(finalized.isForfeitApproved("home")).toBe(true);
+    expect(finalized.voteToForfeit(players.home.captainId, "home", now + 301)).toEqual({
+      status: "rejected",
+      reason: "already_approved",
+    });
+  });
+
+  it("drops expired pending votes and rejects forged or cross-team checkpoint members", () => {
+    const policy = new CooperativeCommandPolicy(players);
+    policy.voteToForfeit(players.away.captainId, "away", now);
+    const snapshot = policy.checkpoint();
+    const expired = CooperativeCommandPolicy.restoreCheckpoint(players, snapshot, now + 30_001);
+    expect(expired.voteToForfeit(players.away.partnerId, "away", now + 30_001)).toEqual({
+      status: "pending",
+      votes: 1,
+    });
+    const impostor = structuredClone(snapshot);
+    impostor.roster.away.partnerId = players.home.partnerId;
+    expect(() => CooperativeCommandPolicy.restoreCheckpoint(players, impostor, now + 50)).toThrow();
+    const forgedVote = structuredClone(snapshot);
+    forgedVote.votes.away[0]![0] = players.home.captainId;
+    expect(() =>
+      CooperativeCommandPolicy.restoreCheckpoint(players, forgedVote, now + 50),
+    ).toThrow();
+    const fromFuture = structuredClone(snapshot);
+    fromFuture.votes.away[0]![1] = now + 9999;
+    expect(() =>
+      CooperativeCommandPolicy.restoreCheckpoint(players, fromFuture, now + 50),
+    ).toThrow();
+    const extraKey = { ...snapshot, leakedSecret: "do-not-trust" };
+    expect(() => CooperativeCommandPolicy.restoreCheckpoint(players, extraKey, now + 50)).toThrow();
+  });
+
   it("captain transfer invalidates prior votes and keeps the team boundary", () => {
     const policy = new CooperativeCommandPolicy(players);
     policy.voteToForfeit(players.home.captainId, "home", now);
