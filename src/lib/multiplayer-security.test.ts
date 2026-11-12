@@ -71,8 +71,11 @@ describe("server-managed multiplayer results", () => {
 
   it("keeps a live room mounted during a temporary browser disconnect", () => {
     const liveRoom = pageSource.indexOf('if (room && room.status === "live" && room.guest_club)');
-    const offlineFallback = pageSource.indexOf("if (!online)");
+    // Distinguish the page-level offline fallback from the earlier
+    // online guard in the async matchmaking callback.
+    const offlineFallback = pageSource.indexOf("if (!online) {\n    return (\n      <Shell>");
     expect(liveRoom).toBeGreaterThanOrEqual(0);
+    expect(offlineFallback).toBeGreaterThanOrEqual(0);
     expect(liveRoom).toBeLessThan(offlineFallback);
     expect(pageSource).toContain("online={online}");
     expect(liveRoomSource).toContain("controller.pause(document.hidden || !onlineRef.current)");
