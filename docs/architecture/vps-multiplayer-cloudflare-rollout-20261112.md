@@ -6,7 +6,7 @@ Status: staged canary, no automatic production cutover.
 
 - Browser/TanStack: logged-in room actions through server functions. Never sends the private match seed or HMAC secret to the browser.
 - Supabase: authenticates players, stores rooms, private server seeds, CAS settlement lease, authoritative results and Realtime presentation events. Preserve the existing RLS policies and server-side membership checks.
-- 0Ping VPS: runs the canonical deterministic `services/match-aux` simulation on loopback port 3219, with signed HMAC-SHA256 POST requests and anti-replay timestamp checks. Its MongoDB job record is for idempotent replay only; the final room result remains in Supabase.
+- 0Ping VPS: runs the canonical deterministic `services/match-aux` simulation on loopback port 3219, with signed HMAC-SHA256 POST requests and anti-replay timestamp checks. The currently running VPS `server-vps.mjs` uses a local SQLite WAL `replay_jobs` table for idempotent replay; this is an auxiliary job cache, not the source of player progress. Final authoritative match state is committed to Supabase through the TanStack CAS settlement path. The separate repository `server.mjs` uses MongoDB Atlas, but it is **not** the running VPS service. Do not confuse the two deployments.
 - Cloudflare Tunnel: `matches-vps.jogomanager.com/v1/simulate` -> `127.0.0.1:3219`. `vps-multiplayer.jogomanager.com/health/live|ready` -> `127.0.0.1:3218`; all other paths return 404.
 - Cloudflare Workers: existing wildcard route `*/*` must not intercept the two dedicated tunnel hostnames. Add explicit no-script routes for those hosts if missing. Never expose the Supabase secret key or VPS SSH.
 
