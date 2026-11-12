@@ -1,7 +1,4 @@
-import {
-  parseMatchReceiptV1,
-  type MatchReceiptV1,
-} from "./match-protocol";
+import { parseMatchReceiptV1, type MatchReceiptV1 } from "./match-protocol";
 
 export interface TournamentMatch {
   id: string;
@@ -87,8 +84,7 @@ export class VerifiedTournamentBracket {
     const match = this.find(matchId);
     if (!match || !match.awayId || match.winnerId) return false;
     if (match.roomId) return match.roomId === roomId;
-    if (this.rounds.some((round) => round.some((game) => game.roomId === roomId)))
-      return false;
+    if (this.rounds.some((round) => round.some((game) => game.roomId === roomId))) return false;
     match.roomId = roomId;
     return true;
   }
