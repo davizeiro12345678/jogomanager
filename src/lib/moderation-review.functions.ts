@@ -58,7 +58,11 @@ export const submitModerationAppeal = createServerFn({ method: "POST" })
       if (result.error) return unavailable(result.error);
       const parsed = ModeratorActionResult.safeParse(result.data);
       return parsed.success && ["opened", "already_open"].includes(parsed.data.status)
-        ? { ok: true, status: parsed.data.status, id: parsed.data.appealId }
+        ? {
+            ok: true,
+            status: parsed.data.status,
+            ...(parsed.data.appealId ? { id: parsed.data.appealId } : {}),
+          }
         : { ok: false, reason: "unavailable" };
     } catch {
       return { ok: false, reason: "unavailable" };
