@@ -7,13 +7,12 @@ import type { AuthoritativeSessionCheckpointV1 } from "../../src/game/online/aut
 import { AuthoritativeSocketAdmission } from "../../src/game/online/authoritative-socket-admission.server";
 import { createSecureMatchSocketBridge } from "../../src/game/online/secure-socket-bridge.server";
 import { createMatchTicketNonce, signMatchTicketV1 } from "../../src/game/online/ticket-signing";
-import { createMatchReceiptSigner, verifySignedMatchReceipt } from "../../src/game/online/receipt-signing.server";
-import type { MatchReceiptV1, MatchSeat } from "../../src/game/online/match-protocol";
 import {
-  allocateQueuePair,
-  loadPrivateLiveRoom,
-  settleAuthorityReceipt,
-} from "./supabase";
+  createMatchReceiptSigner,
+  verifySignedMatchReceipt,
+} from "../../src/game/online/receipt-signing.server";
+import type { MatchReceiptV1, MatchSeat } from "../../src/game/online/match-protocol";
+import { allocateQueuePair, loadPrivateLiveRoom, settleAuthorityReceipt } from "./supabase";
 import type { AuthorityDatabaseEnv, PrivateMatchDescriptor } from "./supabase";
 
 interface Env extends AuthorityDatabaseEnv {
@@ -46,8 +45,7 @@ const MAX_PENDING_SOCKETS = 8;
  */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (env.MATCH_AUTHORITY_ENABLED !== "true")
-      return new Response(null, { status: 404 });
+    if (env.MATCH_AUTHORITY_ENABLED !== "true") return new Response(null, { status: 404 });
     const url = new URL(request.url);
     const roomId = PATH.exec(url.pathname)?.[1]?.toLowerCase();
     if (
@@ -65,19 +63,16 @@ export default {
 
   /** Opt-in bounded allocation, serialized by the Postgres advisory lock. */
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-    if (
-      env.MATCH_AUTHORITY_ENABLED !== "true" ||
-      env.MATCH_QUEUE_CRON_ENABLED !== "true"
-    )
+    if (env.MATCH_AUTHORITY_ENABLED !== "true" || env.MATCH_QUEUE_CRON_ENABLED !== "true")
       return;
     for (let attempt = 0; attempt < 12; attempt += 1) {
       const result = await allocateQueuePair(env);
-      if (!result || (typeof result === "object" && (result as { status?: string }).status === "host_capacity"))
-        return;
       if (
-        typeof result !== "object" ||
-        (result as { status?: string }).status !== "allocated"
+        !result ||
+        (typeof result === "object" && (result as { status?: string }).status === "host_capacity")
       )
+        return;
+      if (typeof result !== "object" || (result as { status?: string }).status !== "allocated")
         throw new Error("Match allocation returned an invalid result");
     }
   },
@@ -106,8 +101,7 @@ export class MatchRoomDO extends DurableObject<Env> {
   private async ensureLoaded(roomId: string | null): Promise<void> {
     if (this.failed) throw new Error("match owner is unavailable");
     if (this.session) {
-      if (roomId && this.room?.roomId !== roomId)
-        throw new Error("match object identity mismatch");
+      if (roomId && this.room?.roomId !== roomId) throw new Error("match object identity mismatch");
       if (roomId) {
         const live = await loadPrivateLiveRoom(this.env, roomId);
         if (
