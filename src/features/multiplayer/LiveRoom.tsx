@@ -151,9 +151,8 @@ export function LiveRoom({
   }, [online, snap.finished, isHost, room.id, room.settlement_authority]);
 
   useEffect(() => {
-    if (room.settlement_authority !== "websocket" || !online || room.status === "done")
-      return;
-    const gateway = import.meta.env.VITE_MATCH_AUTHORITY_WS_BASE as string | undefined;
+    if (room.settlement_authority !== "websocket" || !online || room.status === "done") return;
+    const gateway = import.meta.env["VITE_MATCH_AUTHORITY_WS_BASE"] as string | undefined;
     if (!gateway) {
       setAuthorityStatus("unavailable");
       return;
