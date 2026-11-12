@@ -31,13 +31,14 @@ BEGIN
   IF current_user<>'service_role' THEN
     RAISE EXCEPTION 'tournament_server_only' USING ERRCODE='42501';
   END IF;
-  IF p_id IS NULL OR p_owner IS NULL OR p_region NOT IN ('sa','na','eu','apac')
+  IF p_id IS NULL OR p_owner IS NULL OR (p_region IS NULL OR p_region NOT IN ('sa','na','eu','apac'))
     OR p_revision IS NULL OR p_revision<(-1) OR p_revision>=9223372036854775807
-    OR p_completed IS NULL OR jsonb_typeof(p_checkpoint)<>'object'
-    OR p_checkpoint->'version'<>'1'::jsonb
-    OR jsonb_typeof(p_checkpoint->'entrants')<>'array'
-    OR jsonb_typeof(p_checkpoint->'results')<>'array'
-    OR jsonb_typeof(p_checkpoint->'pendingRooms')<>'array'
+    OR p_completed IS NULL OR p_checkpoint IS NULL
+    OR jsonb_typeof(p_checkpoint) IS DISTINCT FROM 'object'
+    OR p_checkpoint->'version' IS DISTINCT FROM '1'::jsonb
+    OR jsonb_typeof(p_checkpoint->'entrants') IS DISTINCT FROM 'array'
+    OR jsonb_typeof(p_checkpoint->'results') IS DISTINCT FROM 'array'
+    OR jsonb_typeof(p_checkpoint->'pendingRooms') IS DISTINCT FROM 'array'
     OR jsonb_array_length(p_checkpoint->'entrants') NOT BETWEEN 2 AND 32
     OR jsonb_array_length(p_checkpoint->'results')>31
     OR jsonb_array_length(p_checkpoint->'pendingRooms')>16
