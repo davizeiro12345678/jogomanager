@@ -1,0 +1,22 @@
+[Unit]
+Description=JogoManager public competitions and clubs mirror
+Wants=network-online.target postgresql@18-main.service
+After=network-online.target postgresql@18-main.service
+
+[Service]
+Type=oneshot
+User=postgres
+Group=postgres
+EnvironmentFile=/etc/jogomanager/supabase-public.env
+ExecStart=/usr/bin/python3 /opt/jm-postgres-mirror/sync_public_catalog.py --tables competitions clubs
+Nice=10
+CPUQuota=50%
+MemoryMax=512M
+TimeoutStartSec=1200
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/postgresql
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0077
