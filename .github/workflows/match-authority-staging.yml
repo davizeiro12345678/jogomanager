@@ -1,0 +1,83 @@
+name: Prepare and deploy disabled match authority staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type STAGING to deploy the isolated, disabled Worker"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jogomanager-match-authority-staging
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.confirm == 'STAGING' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e3e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm exec -- tsc --noEmit --pretty false
+      - name: Directed authoritative transport and replay tests
+        run: >-
+          npm exec -- vitest run
+          src/game/online/canonical-authoritative-engine.server.test.ts
+          src/game/online/authoritative-match-session.test.ts
+          src/game/online/secure-socket-bridge.server.test.ts
+          src/game/online/authoritative-socket-client.test.ts
+          src/game/online/authoritative-presentation-feed.test.ts
+          --pool=forks --maxWorkers=1
+      - name: Confirm Cloudflare target is staging and cannot serve active matches
+        run: |
+          node --input-type=module -e "
+          import { readFileSync } from 'node:fs';
+          const config = JSON.parse(readFileSync('wrangler.match-authority.jsonc', 'utf8'));
+          if (config.name !== 'jogomanager-match-authority-staging' ||
+              config.vars?.MATCH_AUTHORITY_ENABLED !== 'false' ||
+              config.vars?.MATCH_QUEUE_CRON_ENABLED !== 'false' ||
+              config.workers_dev !== false ||
+              config.routes?.length) {
+            throw new Error('Staging config would expose an active match endpoint');
+          }"
+      - name: Build staging Durable Object without publishing
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run
+
+  deploy-disabled-staging:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: match-authority-staging
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e3e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Reject missing Cloudflare deployment credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Cloudflare API token missing"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Cloudflare account ID missing"; exit 1; }
+      - name: Publish disabled isolated staging Worker only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc
