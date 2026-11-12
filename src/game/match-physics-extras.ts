@@ -124,3 +124,35 @@ export function goalkeeperCanReach(
   // weaker influence than lateral mismatch, but remains bounded.
   return Math.hypot(lateral, forward * 0.2) + highBallPenalty <= reach;
 }
+
+/**
+ * Closest swept contact point for a fast-moving ball and a stationary athlete.
+ * Unlike a frame-end overlap check, this cannot tunnel through a defender.
+ * The caller must check ball height at the returned fraction as well.
+ * No random input, movement, collision response or allocation-heavy sampling.
+ */
+export function sweptBallPlayerContact(
+  fromX: number,
+  fromZ: number,
+  toX: number,
+  toZ: number,
+  athleteX: number,
+  athleteZ: number,
+  radius: number,
+): { fraction: number; distance: number } | null {
+  if (![fromX, fromZ, toX, toZ, athleteX, athleteZ, radius].every(Number.isFinite))
+    return null;
+  if (radius <= 0 || radius > 3) return null;
+  const dx = toX - fromX;
+  const dz = toZ - fromZ;
+  const lengthSq = dx * dx + dz * dz;
+  if (!Number.isFinite(lengthSq)) return null;
+  const closest =
+    lengthSq > 1e-10
+      ? Math.max(0, Math.min(1, ((athleteX - fromX) * dx + (athleteZ - fromZ) * dz) / lengthSq))
+      : 1;
+  const distance = Math.hypot(fromX + dx * closest - athleteX, fromZ + dz * closest - athleteZ);
+  return Number.isFinite(distance) && distance <= radius
+    ? { fraction: closest, distance }
+    : null;
+}
