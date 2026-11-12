@@ -36,7 +36,7 @@ BEGIN
  OR has_table_privilege('anon','moderation_private.cases','SELECT')
  OR has_table_privilege('authenticated','moderation_private.appeals','SELECT')
  OR has_function_privilege('anon',
-   'public.open_private_moderation_case(uuid,uuid,uuid)','EXECUTE')
+   'public.open_private_moderation_case(uuid,uuid,uuid,uuid)','EXECUTE')
  OR has_function_privilege('authenticated',
    'public.resolve_private_moderation_case(uuid,uuid,integer,text,text)','EXECUTE')
  OR has_function_privilege('authenticated',
@@ -62,13 +62,15 @@ BEGIN
  v_result:=public.open_private_moderation_case(
   '90000000-0000-4000-8000-000000000007',
   '90000000-0000-4000-8000-000000000006',
-  '90000000-0000-4000-8000-000000000002');
+  '90000000-0000-4000-8000-000000000002',
+  '90000000-0000-4000-8000-000000000001');
  IF v_result->>'status'<>'opened' THEN RAISE EXCEPTION 'failed to open report'; END IF;
  v_case:=(v_result->>'caseId')::uuid;
  v_result:=public.open_private_moderation_case(
   '90000000-0000-4000-8000-000000000007',
   '90000000-0000-4000-8000-000000000006',
-  '90000000-0000-4000-8000-000000000002');
+  '90000000-0000-4000-8000-000000000002',
+  '90000000-0000-4000-8000-000000000001');
  IF v_result->>'status'<>'already_open' OR (v_result->>'caseId')::uuid<>v_case
  THEN RAISE EXCEPTION 'moderation report was not idempotent'; END IF;
 
@@ -77,9 +79,20 @@ BEGIN
    PERFORM public.open_private_moderation_case(
    '90000000-0000-4000-8000-000000000007',
    '90000000-0000-4000-8000-000000000006',
-   '90000000-0000-4000-8000-000000000005');
+   '90000000-0000-4000-8000-000000000005',
+   '90000000-0000-4000-8000-000000000001');
  EXCEPTION WHEN insufficient_privilege THEN v_rejected:=true; END;
  IF NOT v_rejected THEN RAISE EXCEPTION 'reported subject outside room accepted'; END IF;
+
+ v_rejected:=false;
+ BEGIN
+   PERFORM public.open_private_moderation_case(
+     '90000000-0000-4000-8000-000000000007',
+     '90000000-0000-4000-8000-000000000006',
+     '90000000-0000-4000-8000-000000000002',
+     '90000000-0000-4000-8000-000000000005');
+ EXCEPTION WHEN invalid_parameter_value THEN v_rejected:=true; END;
+ IF NOT v_rejected THEN RAISE EXCEPTION 'unrelated account took over a real report'; END IF;
 
  v_rejected:=false;
  BEGIN
