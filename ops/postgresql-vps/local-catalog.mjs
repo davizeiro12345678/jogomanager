@@ -3,23 +3,23 @@
  * The Supabase PostgreSQL database remains authoritative; this cache is replaceable.
  * Executed solely inside the localhost VPS bridge process as the unprivileged jmsbapi OS user.
  */
-import pg from 'pg';
+import pg from "pg";
 
 const pool = new pg.Pool({
-  host: '/var/run/postgresql',
-  database: 'jogomanager_local',
-  user: 'jmsbapi',
+  host: "/var/run/postgresql",
+  database: "jogomanager_local",
+  user: "jmsbapi",
   max: 3,
   min: 0,
   connectionTimeoutMillis: 350,
   idleTimeoutMillis: 10000,
   query_timeout: 2000,
   statement_timeout: 1500,
-  options: '-c default_transaction_read_only=on',
+  options: "-c default_transaction_read_only=on",
   allowExitOnIdle: true,
 });
 
-pool.on('error', () => {
+pool.on("error", () => {
   // A disconnected idle client is discarded by the pool.
   // Sensitive connection details must never reach a public HTTP response.
 });
@@ -45,7 +45,8 @@ export async function cachedCompetitions(limit) {
       values: [limit],
     });
     if (result.rowCount === 0) return null;
-    if (result.rows.some((row) => typeof row.id !== 'string' || typeof row.name !== 'string')) return null;
+    if (result.rows.some((row) => typeof row.id !== "string" || typeof row.name !== "string"))
+      return null;
     return result.rows;
   } catch {
     return null;
