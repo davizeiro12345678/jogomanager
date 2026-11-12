@@ -1,4 +1,9 @@
-import { parseMatchReceiptV1, type MatchReceiptV1 } from "./match-protocol";
+import { z } from "zod";
+import {
+  MatchReceiptV1Schema,
+  parseMatchReceiptV1,
+  type MatchReceiptV1,
+} from "./match-protocol";
 
 export interface TournamentMatch {
   id: string;
@@ -21,6 +26,25 @@ export type TournamentResult =
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const MatchIdentifierSchema = z.string().regex(/^r[1-6]m(?:[1-9]|1[0-6])$/);
+const RoomAssignmentSchema = z
+  .object({ matchId: MatchIdentifierSchema, roomId: z.string().uuid() })
+  .strict();
+const RecordedResultSchema = RoomAssignmentSchema.extend({
+  receipt: MatchReceiptV1Schema,
+}).strict();
+
+const TournamentCheckpointSchema = z
+  .object({
+    version: z.literal(1),
+    entrants: z.array(z.string().uuid()).min(2).max(32),
+    results: z.array(RecordedResultSchema).max(31),
+    pendingRooms: z.array(RoomAssignmentSchema).max(16),
+  })
+  .strict();
+
+export type VerifiedTournamentCheckpointV1 = z.infer<typeof TournamentCheckpointSchema>;
+
 /**
  * Server-owned single elimination with deterministic first-round byes.
  * Registration, room creation and signed-receipt verification are separate
@@ -29,6 +53,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 export class VerifiedTournamentBracket {
   private readonly rounds: TournamentMatch[][] = [];
   private readonly acceptedReceipts = new Map<string, string>();
+  private readonly acceptedRecords: VerifiedTournamentCheckpointV1["results"] = [];
+  private readonly entrants: string[];
 
   constructor(entrants: readonly string[]) {
     if (
@@ -38,6 +64,7 @@ export class VerifiedTournamentBracket {
       new Set(entrants).size !== entrants.length
     )
       throw new Error("invalid tournament entrants");
+    this.entrants = [...entrants];
     const size = 2 ** Math.ceil(Math.log2(entrants.length));
     const byes = size - entrants.length;
     const matches: TournamentMatch[] = [];
@@ -72,6 +99,45 @@ export class VerifiedTournamentBracket {
 
   bracket(): TournamentMatch[][] {
     return structuredClone(this.rounds);
+  }
+
+  /**
+   * An immutable replayable server-side snapshot. Storage must be private.
+   * Only the server's HMAC verifier may authorize restoration of receipts.
+   * Never hand this checkpoint to an untrusted browser.
+   */
+  checkpoint(): VerifiedTournamentCheckpointV1 {
+    return {
+      version: 1,
+      entrants: [...this.entrants],
+      results: structuredClone(this.acceptedRecords),
+      pendingRooms: this.rounds
+        .flatMap((round) => round)
+        .filter((match) => match.roomId !== null && match.receiptId === null)
+        .map((match) => ({ matchId: match.id, roomId: match.roomId! })),
+    };
+  }
+
+  /**
+   * Rebuild deterministic brackets by replaying every signed receipt.
+   * A corrupted or tampered private snapshot is rejected, not trusted.
+   */
+  static async restoreCheckpoint(
+    input: unknown,
+    verifySignedReceipt: (receipt: MatchReceiptV1) => Promise<boolean>,
+  ): Promise<VerifiedTournamentBracket> {
+    const checkpoint = TournamentCheckpointSchema.parse(input);
+    const bracket = new VerifiedTournamentBracket(checkpoint.entrants);
+    for (const { matchId, roomId, receipt } of checkpoint.results) {
+      if (roomId !== receipt.roomId || !bracket.bindRoom(matchId, roomId))
+        throw new Error("invalid tournament checkpoint room binding");
+      if ((await bracket.submitResult(matchId, receipt, verifySignedReceipt)) !== "accepted")
+        throw new Error("unverified or conflicting tournament checkpoint receipt");
+    }
+    for (const { matchId, roomId } of checkpoint.pendingRooms)
+      if (!bracket.bindRoom(matchId, roomId))
+        throw new Error("duplicate or invalid tournament pending room");
+    return bracket;
   }
 
   champion(): string | null {
@@ -125,6 +191,11 @@ export class VerifiedTournamentBracket {
         : "conflict";
     match.receiptId = receipt.idempotencyKey;
     this.acceptedReceipts.set(matchId, JSON.stringify(receipt));
+    this.acceptedRecords.push({
+      matchId,
+      roomId: receipt.roomId,
+      receipt: structuredClone(receipt),
+    });
     match.winnerId = receipt.result.winner === "home" ? match.homeId : match.awayId;
     this.advanceWhenReady();
     return "accepted";
