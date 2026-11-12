@@ -12,6 +12,7 @@ import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
 import { reportRoomFromSearch } from "@/lib/support-report-context";
 import { useT } from "@/i18n/provider";
 import { creatorMessages } from "@/i18n/creator-messages";
+import { moderationReviewMessages } from "@/i18n/moderation-review-messages";
 
 const CHANNELS = [
   {
@@ -61,6 +62,7 @@ const ModerationReviewCenter = lazy(() =>
 export function ContatoPage() {
   const { lang } = useT();
   const copy = creatorMessages(lang);
+  const moderationCopy = moderationReviewMessages(lang);
   // Render the same initial HTML on server and browser, then open contextually.
   const [supportOpen, setSupportOpen] = useState(false);
   const [moderationOpen, setModerationOpen] = useState(false);
@@ -116,18 +118,17 @@ export function ContatoPage() {
 
         <section
           className="surface-card mt-6 rounded-xl border border-border/60 p-5"
-          aria-label="Moderação com revisão humana"
+          aria-label={moderationCopy.sectionAria}
         >
-          <h2 className="font-display text-xl">Moderação e recursos</h2>
+          <h2 className="font-display text-xl">{moderationCopy.title}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Consulte decisões da sua conta e solicite revisão humana. A fila de denúncias é
-            visível apenas para moderadores autorizados, após a ativação segura do serviço.
+            {moderationCopy.centerIntro}
           </p>
           {moderationOpen ? (
             <Suspense
               fallback={
                 <p role="status" className="mt-4 text-sm text-muted-foreground">
-                  Carregando opções de moderação…
+                  {moderationCopy.loading}
                 </p>
               }
             >
@@ -139,7 +140,7 @@ export function ContatoPage() {
               onClick={() => setModerationOpen(true)}
               className="mt-4 min-h-11 rounded-lg border border-border px-4 text-sm"
             >
-              Consultar decisões e recursos
+              {moderationCopy.open}
             </button>
           )}
         </section>
