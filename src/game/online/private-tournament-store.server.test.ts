@@ -40,7 +40,10 @@ function mockStorage() {
       return { data: { status: "saved", revision: row.revision }, error: null };
     }
     if (name === "get_private_tournament_checkpoint")
-      return { data: row ? structuredClone(row) : null, error: null };
+      return {
+        data: row && row.id === args["p_id"] ? structuredClone(row) : null,
+        error: null,
+      };
     return { data: null, error: { message: "unknown RPC" } };
   });
   return {
