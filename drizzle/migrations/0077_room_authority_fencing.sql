@@ -37,9 +37,11 @@ BEGIN
         USING ERRCODE='42501';
     END IF;
     IF OLD.settlement_authority='websocket' AND OLD.status<>'done' AND
-      NEW.status='done' AND
-      current_setting('matchmaking_private.settling_room',true)
-        IS DISTINCT FROM OLD.id::text THEN
+      NEW.status='done' AND (
+        current_user NOT IN ('service_role','postgres') OR
+        current_setting('matchmaking_private.settling_room',true)
+          IS DISTINCT FROM OLD.id::text
+      ) THEN
       RAISE EXCEPTION 'websocket result requires the signed settlement RPC'
         USING ERRCODE='42501';
     END IF;
