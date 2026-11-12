@@ -36,6 +36,7 @@ import { colorClash, kitFor } from "@/game/kits";
 import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
 import type { GradeWeather } from "@/game/graphics/grade";
 import { matchLighting } from "@/game/match-lighting";
+import { shadowMapSizeFor } from "@/game/graphics/shadow-map-budget";
 import { matchLook, type Weather } from "@/game/matchday";
 import type { SimView } from "@/game/sim-contracts";
 import { useVisual } from "@/game/visual-settings";
@@ -117,6 +118,7 @@ export function StadiumScene({
 
   const lighting = matchLighting(time, look.weather, quality === "baixa");
   const sunColor = lighting.keyColor;
+  const shadowResolution = shadowMapSizeFor(quality, pressure);
   const visualBall = presentationBall(sim);
 
   return (
@@ -157,13 +159,7 @@ export function StadiumScene({
         intensity={lighting.keyIntensity}
         color={sunColor}
         castShadow={shadows && budget.shadows}
-        shadow-mapSize={
-          quality === "alta" && pressure < 5
-            ? [2048, 2048]
-            : quality === "media"
-              ? [1024, 1024]
-              : [512, 512]
-        }
+        shadow-mapSize={[shadowResolution, shadowResolution]}
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
         shadow-radius={quality === "alta" ? 2.4 : 1.2}
