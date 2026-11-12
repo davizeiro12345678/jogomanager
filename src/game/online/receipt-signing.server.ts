@@ -54,10 +54,7 @@ export function createMatchReceiptSigner(secret: string): MatchReceiptSigner {
   };
 }
 
-export async function verifySignedMatchReceipt(
-  input: unknown,
-  secret: string,
-): Promise<boolean> {
+export async function verifySignedMatchReceipt(input: unknown, secret: string): Promise<boolean> {
   try {
     const receipt = parseMatchReceiptV1(input);
     const { signature, ...unsigned } = receipt;
