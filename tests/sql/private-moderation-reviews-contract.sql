@@ -43,6 +43,8 @@ BEGIN
    'public.appeal_private_moderation_case(uuid,uuid,uuid,text)','EXECUTE')
  OR has_function_privilege('authenticated',
    'public.list_private_moderation_queue(uuid,integer)','EXECUTE')
+ OR has_function_privilege('authenticated',
+   'public.list_private_moderation_appeals(uuid,integer)','EXECUTE')
  OR has_function_privilege('anon',
    'public.list_private_moderation_decisions(uuid,integer)','EXECUTE')
  OR NOT has_function_privilege('service_role',
@@ -138,6 +140,12 @@ BEGIN
   'Please review this decision and the match context.');
  IF v_result->>'status'<>'already_open'
  THEN RAISE EXCEPTION 'appeal retry created duplicate'; END IF;
+ IF jsonb_array_length(public.list_private_moderation_appeals(
+   '90000000-0000-4000-8000-000000000003',20))<>0 THEN
+   RAISE EXCEPTION 'original reviewer can access own appeal'; END IF;
+ IF jsonb_array_length(public.list_private_moderation_appeals(
+   '90000000-0000-4000-8000-000000000004',20))<>1 THEN
+   RAISE EXCEPTION 'independent reviewer has no appeal queue'; END IF;
 
  v_rejected:=false;
  BEGIN
@@ -151,6 +159,9 @@ BEGIN
   '90000000-0000-4000-8000-000000000004','overturned',
   'Independent analysis supports overturn.');
  IF v_result->>'status'<>'overturned' THEN RAISE EXCEPTION 'appeal was not reviewed'; END IF;
+ IF jsonb_array_length(public.list_private_moderation_appeals(
+   '90000000-0000-4000-8000-000000000004',20))<>0 THEN
+   RAISE EXCEPTION 'completed appeal still visible to moderators'; END IF;
  IF jsonb_array_length(public.list_private_moderation_queue(
    '90000000-0000-4000-8000-000000000003',20))<>0 THEN
    RAISE EXCEPTION 'closed case was returned in open moderator queue'; END IF;
