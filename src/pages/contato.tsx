@@ -12,6 +12,7 @@ import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
 import { reportRoomFromSearch } from "@/lib/support-report-context";
 import { useT } from "@/i18n/provider";
 import { creatorMessages } from "@/i18n/creator-messages";
+import { moderationReviewMessages } from "@/i18n/moderation-review-messages";
 
 const CHANNELS = [
   {
@@ -52,11 +53,19 @@ const SupportTicketForm = lazy(() =>
   })),
 );
 
+const ModerationReviewCenter = lazy(() =>
+  import("@/components/support/ModerationReviewCenter").then((module) => ({
+    default: module.ModerationReviewCenter,
+  })),
+);
+
 export function ContatoPage() {
   const { lang } = useT();
   const copy = creatorMessages(lang);
+  const moderationCopy = moderationReviewMessages(lang);
   // Render the same initial HTML on server and browser, then open contextually.
   const [supportOpen, setSupportOpen] = useState(false);
+  const [moderationOpen, setModerationOpen] = useState(false);
   useEffect(() => {
     if (reportRoomFromSearch(window.location.search) !== null) setSupportOpen(true);
   }, []);
@@ -103,6 +112,33 @@ export function ContatoPage() {
               className="mt-4 min-h-11 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
             >
               {copy.supportStart}
+            </button>
+          )}
+        </section>
+
+        <section
+          className="surface-card mt-6 rounded-xl border border-border/60 p-5"
+          aria-label={moderationCopy.sectionAria}
+        >
+          <h2 className="font-display text-xl">{moderationCopy.title}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{moderationCopy.centerIntro}</p>
+          {moderationOpen ? (
+            <Suspense
+              fallback={
+                <p role="status" className="mt-4 text-sm text-muted-foreground">
+                  {moderationCopy.loading}
+                </p>
+              }
+            >
+              <ModerationReviewCenter />
+            </Suspense>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setModerationOpen(true)}
+              className="mt-4 min-h-11 rounded-lg border border-border px-4 text-sm"
+            >
+              {moderationCopy.open}
             </button>
           )}
         </section>

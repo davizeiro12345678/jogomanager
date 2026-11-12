@@ -110,14 +110,24 @@ BEGIN
 
  v_result:=public.resolve_private_moderation_case(
   v_case,'90000000-0000-4000-8000-000000000003',0,
-  'warning','Case reviewed with available evidence.');
+  'temporary_mute','Case reviewed with available evidence.');
  IF v_result->>'status'<>'resolved' OR (v_result->>'revision')::int<>1
  THEN RAISE EXCEPTION 'moderation case did not resolve once'; END IF;
  v_result:=public.resolve_private_moderation_case(
   v_case,'90000000-0000-4000-8000-000000000003',0,
-  'warning','Case reviewed with available evidence.');
+  'temporary_mute','Case reviewed with available evidence.');
  IF v_result->>'status'<>'already_resolved'
  THEN RAISE EXCEPTION 'moderation retry was not idempotent'; END IF;
+ IF (SELECT count(*) FROM moderation_private.room_mutes
+     WHERE user_id='90000000-0000-4000-8000-000000000002'
+       AND room_id='90000000-0000-4000-8000-000000000006')<>1
+ THEN RAISE EXCEPTION 'human temporary mute was not recorded'; END IF;
+ IF (public.admit_room_chat_message(
+   '90000000-0000-4000-8000-000000000002',
+   '90000000-0000-4000-8000-000000000006',
+   '90000000-0000-4000-8000-000000000011',
+   repeat('a',64),repeat('b',64),NULL)->>'status')<>'muted'
+ THEN RAISE EXCEPTION 'room chat bypassed active human mute'; END IF;
 
  v_rejected:=false;
  BEGIN
@@ -159,6 +169,10 @@ BEGIN
   '90000000-0000-4000-8000-000000000004','overturned',
   'Independent analysis supports overturn.');
  IF v_result->>'status'<>'overturned' THEN RAISE EXCEPTION 'appeal was not reviewed'; END IF;
+ IF EXISTS (SELECT 1 FROM moderation_private.room_mutes
+     WHERE user_id='90000000-0000-4000-8000-000000000002'
+       AND room_id='90000000-0000-4000-8000-000000000006')
+ THEN RAISE EXCEPTION 'overturned appeal did not revoke human mute'; END IF;
  IF jsonb_array_length(public.list_private_moderation_appeals(
    '90000000-0000-4000-8000-000000000004',20))<>0 THEN
    RAISE EXCEPTION 'completed appeal still visible to moderators'; END IF;
