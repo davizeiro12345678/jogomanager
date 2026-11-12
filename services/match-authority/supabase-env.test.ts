@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  validateAuthorityDatabaseTarget,
-  type AuthorityDatabaseEnv,
-} from "./supabase";
+import { validateAuthorityDatabaseTarget, type AuthorityDatabaseEnv } from "./supabase";
 
 const serviceKey = "testing-local-only-no-real-privileges-123456789";
 const makeEnv = (
