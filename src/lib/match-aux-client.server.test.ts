@@ -64,11 +64,12 @@ describe("server-side VPS match authority canary", () => {
 
   it("signs the remote request without forwarding browser credentials", async () => {
     configureCanary();
-    const fetchMock = vi.fn(async (_url: URL, _options: RequestInit) =>
-      new Response(JSON.stringify({ hg: 2, ag: 1, minute: 90, steps: 30000 }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+    const fetchMock = vi.fn(
+      async (_url: URL, _options: RequestInit) =>
+        new Response(JSON.stringify({ hg: 2, ag: 1, minute: 90, steps: 30000 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
     );
     vi.stubGlobal("fetch", fetchMock);
     const result = await simulateOnMatchAux({
