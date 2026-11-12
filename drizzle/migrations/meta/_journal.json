@@ -561,6 +561,13 @@
       "when": 1794513600000,
       "tag": "0079_private_tournament_checkpoints",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1794517200000,
+      "tag": "0080_private_moderation_reviews",
+      "breakpoints": true
     }
   ]
 }
