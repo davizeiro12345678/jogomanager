@@ -118,6 +118,41 @@ describe("server-verified knockout tournaments", () => {
     ).toBe("accepted");
   });
 
+  it("restores an in-flight tournament through signed receipts and pending rooms", async () => {
+    const bracket = new VerifiedTournamentBracket(entrants);
+    bracket.bindRoom("r1m4", rooms[0]!);
+    const firstReceipt = signed(rooms[0]!);
+    expect(await bracket.submitResult("r1m4", firstReceipt, verify)).toBe("accepted");
+    bracket.bindRoom("r2m1", rooms[1]!);
+
+    const checkpoint = bracket.checkpoint();
+    const resumed = await VerifiedTournamentBracket.restoreCheckpoint(checkpoint, verify);
+    expect(resumed.bracket()).toEqual(bracket.bracket());
+    expect(resumed.checkpoint()).toEqual(checkpoint);
+    expect(await resumed.submitResult("r1m4", firstReceipt, verify)).toBe("already_recorded");
+    expect(resumed.bindRoom("r2m1", rooms[2]!)).toBe(false);
+    expect(await resumed.submitResult("r2m1", signed(rooms[1]!), verify)).toBe("accepted");
+    expect(bracket.bracket()[1]![0]!.winnerId).toBeNull();
+  });
+
+  it("refuses checkpoint corruption, forged result and replayed room binding", async () => {
+    const bracket = new VerifiedTournamentBracket(entrants);
+    bracket.bindRoom("r1m4", rooms[0]!);
+    await bracket.submitResult("r1m4", signed(rooms[0]!), verify);
+    const saved = bracket.checkpoint();
+    const forged = structuredClone(saved);
+    forged.results[0]!.receipt.signature = "tamperedhmacsignaturewithuntrustedbytes";
+    await expect(VerifiedTournamentBracket.restoreCheckpoint(forged, verify)).rejects.toThrow();
+    const duplicate = structuredClone(saved);
+    duplicate.pendingRooms.push({ matchId: "r1m4", roomId: rooms[0]! });
+    await expect(VerifiedTournamentBracket.restoreCheckpoint(duplicate, verify)).rejects.toThrow();
+    const wrongRoom = structuredClone(saved);
+    wrongRoom.results[0]!.roomId = rooms[2]!;
+    await expect(VerifiedTournamentBracket.restoreCheckpoint(wrongRoom, verify)).rejects.toThrow();
+    const extra = { ...saved, untrustedWinner: entrants[4] };
+    await expect(VerifiedTournamentBracket.restoreCheckpoint(extra, verify)).rejects.toThrow();
+  });
+
   it("does not accept duplicate entrants or tamper with the exported bracket", () => {
     expect(() => new VerifiedTournamentBracket([entrants[0]!, entrants[0]!])).toThrow();
     expect(() => new VerifiedTournamentBracket(["malformed", entrants[1]!])).toThrow();
