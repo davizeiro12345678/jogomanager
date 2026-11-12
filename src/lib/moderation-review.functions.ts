@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
+  OpenModerationCaseInput,
   ModerationAppealInput,
   ModerationAppealReviewInput,
   ModerationCaseReviewInput,
@@ -37,6 +38,37 @@ function unavailable(error: { code?: string } | null): ModerationReviewResult {
     return { ok: false, reason: "conflict" };
   return { ok: false, reason: "unavailable" };
 }
+
+/** A report ticket must belong to the authenticated reporter and real room. */
+export const openModerationCaseFromReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => OpenModerationCaseInput.parse(input))
+  .handler(async ({ data, context }): Promise<ModerationReviewResult> => {
+    if (!accessEnabled()) return { ok: false, reason: "unavailable" };
+    const { verifiedAccount } = await import("./verified-identity.server");
+    const user = await verifiedAccount(context.supabase, context.userId);
+    if (!user) return { ok: false, reason: "verification_required" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    try {
+      const result = await supabaseAdmin.rpc("open_private_moderation_case", {
+        p_ticket: data.ticketId,
+        p_room: data.roomId,
+        p_subject: data.subjectId,
+        p_reporter: context.userId,
+      });
+      if (result.error) return unavailable(result.error);
+      const parsed = ModeratorActionResult.safeParse(result.data);
+      return parsed.success && ["opened", "already_open"].includes(parsed.data.status)
+        ? {
+            ok: true,
+            status: parsed.data.status,
+            ...(parsed.data.caseId ? { id: parsed.data.caseId } : {}),
+          }
+        : { ok: false, reason: "unavailable" };
+    } catch {
+      return { ok: false, reason: "unavailable" };
+    }
+  });
 
 export const submitModerationAppeal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
