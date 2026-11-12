@@ -63,8 +63,7 @@ export default {
 
   /** Opt-in bounded allocation, serialized by the Postgres advisory lock. */
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-    if (env.MATCH_AUTHORITY_ENABLED !== "true" || env.MATCH_QUEUE_CRON_ENABLED !== "true")
-      return;
+    if (env.MATCH_AUTHORITY_ENABLED !== "true" || env.MATCH_QUEUE_CRON_ENABLED !== "true") return;
     for (let attempt = 0; attempt < 12; attempt += 1) {
       const result = await allocateQueuePair(env);
       if (
