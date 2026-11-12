@@ -52,11 +52,18 @@ const SupportTicketForm = lazy(() =>
   })),
 );
 
+const ModerationReviewCenter = lazy(() =>
+  import("@/components/support/ModerationReviewCenter").then((module) => ({
+    default: module.ModerationReviewCenter,
+  })),
+);
+
 export function ContatoPage() {
   const { lang } = useT();
   const copy = creatorMessages(lang);
   // Render the same initial HTML on server and browser, then open contextually.
   const [supportOpen, setSupportOpen] = useState(false);
+  const [moderationOpen, setModerationOpen] = useState(false);
   useEffect(() => {
     if (reportRoomFromSearch(window.location.search) !== null) setSupportOpen(true);
   }, []);
@@ -103,6 +110,36 @@ export function ContatoPage() {
               className="mt-4 min-h-11 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
             >
               {copy.supportStart}
+            </button>
+          )}
+        </section>
+
+        <section
+          className="surface-card mt-6 rounded-xl border border-border/60 p-5"
+          aria-label="Moderação com revisão humana"
+        >
+          <h2 className="font-display text-xl">Moderação e recursos</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Consulte decisões da sua conta e solicite revisão humana. A fila de denúncias é
+            visível apenas para moderadores autorizados, após a ativação segura do serviço.
+          </p>
+          {moderationOpen ? (
+            <Suspense
+              fallback={
+                <p role="status" className="mt-4 text-sm text-muted-foreground">
+                  Carregando opções de moderação…
+                </p>
+              }
+            >
+              <ModerationReviewCenter />
+            </Suspense>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setModerationOpen(true)}
+              className="mt-4 min-h-11 rounded-lg border border-border px-4 text-sm"
+            >
+              Consultar decisões e recursos
             </button>
           )}
         </section>
