@@ -228,6 +228,64 @@ BEGIN
 END;
 $fn$;
 
+-- A reviewer sees evidence only after an authenticated server checks its own
+-- moderator allowlist. Private ticket emails and billing details are omitted.
+CREATE FUNCTION public.list_private_moderation_queue(
+  p_reviewer uuid,p_limit integer DEFAULT 20
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $fn$
+DECLARE v_result jsonb;
+BEGIN
+  IF current_user<>'service_role' THEN
+    RAISE EXCEPTION 'moderation_service_only' USING ERRCODE='42501';
+  END IF;
+  IF p_reviewer IS NULL OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 50 OR
+     NOT EXISTS(SELECT 1 FROM moderation_private.moderators
+       WHERE user_id=p_reviewer AND active) THEN
+    RAISE EXCEPTION 'moderator_not_authorized' USING ERRCODE='42501';
+  END IF;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'caseId',q.id,'roomId',q.room_id,'subjectId',q.subject_id,
+    'reporterId',q.reporter_id,'state',q.state,
+    'revision',q.revision,'createdAt',q.created_at,
+    'subject',q.ticket_subject,'report',q.ticket_message
+  ) ORDER BY q.created_at,q.id),'[]'::jsonb) INTO v_result FROM (
+    SELECT c.id,c.room_id,c.subject_id,c.reporter_id,c.state,
+      c.revision,c.created_at,t.subject AS ticket_subject,t.message AS ticket_message
+    FROM moderation_private.cases c
+    JOIN public.support_tickets t ON t.id=c.ticket_id
+    WHERE c.state='open' ORDER BY c.created_at,c.id LIMIT p_limit
+  ) q;
+  RETURN v_result;
+END;
+$fn$;
+
+-- An accused player sees only their own finalized decision and appeal state,
+-- never the reporter's contact address, evidence text, or staff notes.
+CREATE FUNCTION public.list_private_moderation_decisions(
+  p_subject uuid,p_limit integer DEFAULT 20
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $fn$
+DECLARE v_result jsonb;
+BEGIN
+  IF current_user<>'service_role' THEN
+    RAISE EXCEPTION 'moderation_service_only' USING ERRCODE='42501';
+  END IF;
+  IF p_subject IS NULL OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 50 THEN
+    RAISE EXCEPTION 'invalid_moderation_user_query' USING ERRCODE='22023';
+  END IF;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'caseId',q.id,'decision',q.decision,'createdAt',q.created_at,
+    'appealState',q.appeal_state
+  ) ORDER BY q.created_at DESC,q.id DESC),'[]'::jsonb) INTO v_result FROM (
+    SELECT c.id,c.decision,c.created_at,a.state AS appeal_state
+    FROM moderation_private.cases c
+    LEFT JOIN moderation_private.appeals a ON a.case_id=c.id
+    WHERE c.subject_id=p_subject AND c.state='resolved'
+    ORDER BY c.created_at DESC,c.id DESC LIMIT p_limit
+  ) q;
+  RETURN v_result;
+END;
+$fn$;
+
 REVOKE ALL ON FUNCTION public.open_private_moderation_case(uuid,uuid,uuid,uuid)
   FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.resolve_private_moderation_case(uuid,uuid,integer,text,text)
@@ -244,4 +302,10 @@ GRANT EXECUTE ON FUNCTION public.appeal_private_moderation_case(uuid,uuid,uuid,t
   TO service_role;
 GRANT EXECUTE ON FUNCTION public.review_private_moderation_appeal(uuid,uuid,text,text)
   TO service_role;
+REVOKE ALL ON FUNCTION public.list_private_moderation_queue(uuid,integer)
+  FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.list_private_moderation_decisions(uuid,integer)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.list_private_moderation_queue(uuid,integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.list_private_moderation_decisions(uuid,integer) TO service_role;
 COMMIT;
