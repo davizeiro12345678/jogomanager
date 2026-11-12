@@ -1461,7 +1461,7 @@ export class MatchSim {
     }
 
     // --- bloqueio da defesa e interceptação no caminho da bola ---
-    if (this.tryBlock(dt)) return;
+    if (this.tryBlock(dt, previousBall)) return;
 
     // --- finalização em voo: resolve quando a bola chega na área do gol ---
     if (this.pendingShot && this.resolveShot(previousBall)) return;
@@ -1546,8 +1546,11 @@ export class MatchSim {
     ballDuels.controlBall(this, p, ballSpeed, h);
   }
 
-  /** @internal */ tryBlock(dt: number): boolean {
-    return ballDuels.tryBlock(this, dt);
+  /** @internal */ tryBlock(
+    dt: number,
+    previous?: { x: number; z: number; height: number },
+  ): boolean {
+    return ballDuels.tryBlock(this, dt, previous);
   }
 
   /** @internal */ resolveShot(
