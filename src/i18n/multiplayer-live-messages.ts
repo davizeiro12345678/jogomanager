@@ -43,7 +43,8 @@ export const MULTIPLAYER_LIVE_MESSAGES: FeatureMessages<keyof typeof pt> = {
     chatLabel: "Conversación privada durante el partido",
     previewNotice: "Vista local. El marcador oficial lo confirma el servidor.",
     authorityConnecting: "Conectando con el servidor autoritativo de partidos…",
-    authorityConnected: "Marcador oficial del servidor. La animación 3D sigue siendo una vista local.",
+    authorityConnected:
+      "Marcador oficial del servidor. La animación 3D sigue siendo una vista local.",
     authorityUnavailable: "Conexión oficial no disponible. No se publicará un resultado local.",
     authorityForfeitPending: "Confirmando abandono…",
     qualityLabel: "Cambiar calidad gráfica, actual",
