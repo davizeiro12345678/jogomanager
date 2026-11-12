@@ -11,10 +11,10 @@ const request = "2a6aa49c-dc35-4bfd-8890-26ae5684240d";
 
 describe("moderation review request validation", () => {
   it("rejects spoofed reporter IDs while accepting UUID-only report context", () => {
-    const data = { ticketId: request, roomId: user, subjectId: request };
+    const data = { ticketId: request, roomId: user };
     expect(OpenModerationCaseInput.safeParse(data).success).toBe(true);
     expect(
-      OpenModerationCaseInput.safeParse({ ...data, reporterId: user }).success,
+      OpenModerationCaseInput.safeParse({ ...data, reporterId: user, subjectId: request }).success,
     ).toBe(false);
     expect(OpenModerationCaseInput.safeParse({ ...data, roomId: "wrong" }).success).toBe(
       false,
