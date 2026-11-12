@@ -29,5 +29,16 @@
     "MATCH_QUEUE_CRON_ENABLED": "false",
     "ALLOWED_ORIGIN": "https://jogomanager.com",
     "MATCH_AUTHORITY_ENV": "staging"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    }
   }
 }
