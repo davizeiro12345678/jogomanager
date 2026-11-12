@@ -30,5 +30,16 @@
     "ALLOWED_ORIGIN": "https://jogomanager.com",
     "SUPABASE_URL": "https://lguqnwvsfeefxamzeyos.supabase.co",
     "MATCH_AUTHORITY_ENV": "production"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.02
+    }
   }
 }
