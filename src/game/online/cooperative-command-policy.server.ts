@@ -56,8 +56,7 @@ export class CooperativeCommandPolicy {
     if (this.seatForUser(userId) !== seat) return false;
     const side = this.roster[seat];
     if (kind === "ready" || kind === "ack_snapshot") return true;
-    if (kind === "set_tactics" || kind === "substitute")
-      return side.captainId === userId;
+    if (kind === "set_tactics" || kind === "substitute") return side.captainId === userId;
     // Forfeit must pass both members' server-recorded votes first.
     return false;
   }
@@ -76,10 +75,8 @@ export class CooperativeCommandPolicy {
    * owner; no score or closure receipt is produced here.
    */
   voteToForfeit(userId: string, seat: MatchSeat, now: number): CooperativeVoteOutcome {
-    if (this.seatForUser(userId) !== seat)
-      return { status: "rejected", reason: "unauthorized" };
-    if (!Number.isSafeInteger(now) || now < 0)
-      return { status: "rejected", reason: "expired" };
+    if (this.seatForUser(userId) !== seat) return { status: "rejected", reason: "unauthorized" };
+    if (!Number.isSafeInteger(now) || now < 0) return { status: "rejected", reason: "expired" };
     if (this.approvedForfeit.has(seat))
       return { status: "rejected", reason: "already_approved" };
     const votes = this.forfeitVotes[seat];
