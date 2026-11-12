@@ -23,7 +23,7 @@ jobs:
       - name: Install isolated MongoDB driver
         run: npm install --prefix services/match-aux --ignore-scripts --no-audit --no-fund
       - name: HMAC and replay contract tests
-        run: node --import tsx --test services/match-aux/signature.test.mjs services/match-aux/engine.test.mjs
+        run: node --import tsx --test services/match-aux/signature.test.mjs services/match-aux/engine.test.mjs services/match-aux/worker-pool.test.mjs
       - name: Strict TypeScript
         run: npm exec -- tsc --noEmit --pretty false
       - name: Lint and formatting
