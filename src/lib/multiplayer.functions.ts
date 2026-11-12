@@ -150,8 +150,7 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
       return { ok: false, reason: "not_participant" };
     }
     if (room.status === "done") return { ok: true };
-    if (room.settlement_authority === "websocket")
-      return { ok: false, reason: "authority_only" };
+    if (room.settlement_authority === "websocket") return { ok: false, reason: "authority_only" };
     // A deterministic replay is already running under a live server-side
     // lease. An expired lease can be closed by a participant, but the CAS
     // below must beat any concurrent reclaim before deleting the private seed.
@@ -201,8 +200,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error || !room) return { ok: false, reason: "not_found" };
     if (room.host_id !== context.userId) return { ok: false, reason: "not_host" };
-    if (room.settlement_authority === "websocket")
-      return { ok: false, reason: "authority_only" };
+    if (room.settlement_authority === "websocket") return { ok: false, reason: "authority_only" };
     if (room.status === "done") {
       if (!room.server_seeded) return { ok: false, reason: "room_closed" };
       const state = room.state as { hg?: unknown; ag?: unknown } | null;
