@@ -16,7 +16,9 @@
   "migrations": [
     {
       "tag": "match-room-sqlite-v1",
-      "new_sqlite_classes": ["MatchRoomDO"]
+      "new_sqlite_classes": [
+        "MatchRoomDO"
+      ]
     }
   ],
   "triggers": {
@@ -26,6 +28,7 @@
     "MATCH_AUTHORITY_ENABLED": "false",
     "MATCH_QUEUE_CRON_ENABLED": "false",
     "ALLOWED_ORIGIN": "https://jogomanager.com",
-    "SUPABASE_URL": "https://lguqnwvsfeefxamzeyos.supabase.co"
+    "SUPABASE_URL": "https://lguqnwvsfeefxamzeyos.supabase.co",
+    "MATCH_AUTHORITY_ENV": "production"
   }
 }
