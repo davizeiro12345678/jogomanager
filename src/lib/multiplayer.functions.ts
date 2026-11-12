@@ -321,7 +321,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       // egress, secrets, and Atlas connectivity pass an end-to-end test.
       const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
       let result: { hg: number; ag: number; minute: number };
-      if (matchAuxEnabled()) {
+      if (matchAuxEnabled(room.id)) {
         const verified = await simulateOnMatchAux({
           roomId: room.id,
           homeClub: room.host_club,
