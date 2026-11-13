@@ -88,4 +88,5 @@ Merge, deploy, ativação de partidas reais, segredos, operações do VPS e manu
 ## Fontes técnicas consultadas
 
 - [Three.js WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer.html): `compileAsync` e pré-compilação; suporte e comportamento devem ser conferidos na versão instalada `0.186.x`.
+- [Three.js Texture](https://threejs.org/docs/pages/Texture.html): dimensões, formato e tipo não podem mudar após o primeiro uso; o streaming de detalhes mantém a alocação final estável.
 - `AGENTS.md`, `docs/critical-performance.md`, contratos e testes da própria revisão.

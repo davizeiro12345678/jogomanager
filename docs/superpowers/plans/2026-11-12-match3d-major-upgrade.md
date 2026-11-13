@@ -52,9 +52,9 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 **Interfaces:** manter preload deduplicado; produzir uma nova identidade React.lazy por tentativa após rejeição, sem remontar cada frame nem duplicar downloads bem-sucedidos.
 
-- [ ] RED: falhar primeiro import, renderizar fallback, tentar novamente e resolver o segundo import; verificar conteúdo real da segunda cena, duas tentativas e nenhuma rejeição reapresentada.
-- [ ] Implementar reset do boundary/identidade no evento de retry; preservar desmontagem, skip, diálogo e import em voo.
-- [ ] GREEN: executar testes de loading/stage/controles e TypeScript. Expected: retry restaura 3D sem reload; sucesso em cache não refaz import.
+- [x] RED: falhar primeiro import, renderizar fallback, tentar novamente e resolver o segundo import; verificar conteúdo real da segunda cena, duas tentativas e nenhuma rejeição reapresentada.
+- [x] Implementar reset do boundary/identidade no evento de retry; preservar desmontagem, skip, diálogo e import em voo.
+- [x] GREEN: executar testes de loading/stage/controles e TypeScript. Expected: retry restaura 3D sem reload; sucesso em cache não refaz import. Evidência e escopo no ledger; campanha completa de FPS continua pendente.
 - [ ] Verificar navegador com download interrompido e reabertura repetida; coletar primeiro frame e recursos retidos.
 - [ ] Commit pequeno com evidência; marcar [~] se o comportamento foi testado mas o navegador/GPU ainda faltar.
 
@@ -64,9 +64,9 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 **Interfaces:** `verifyPublicSeo({ fetchImpl = fetch, report = console.log, maxPages = 120 } = {})` consome sitemap e URLs públicas reais; produz relatório sanitizado de status final, redirects, canonical, X-Robots-Tag/meta robots e links internos. Teto padrão 120 URLs, 3 requisições simultâneas, 15 s/requisição, 2 MB/resposta e 4 redirects. Não substitui recrawl Semrush nem detecta todo soft error 200.
 
-- [ ] RED: fetch injetado com objetos Response reais e sitemap contendo página 500, HTML noindex, canonical divergente, link quebrado e página privada legítima fora do sitemap; verificar saída reprovada e diagnósticos por URL. Complementar com execução HTTP real de integração se a fronteira de rede mudar.
-- [ ] Implementar auditoria limitada e rejeição dos defeitos sem retirar checagem de SHA/readiness. Timeouts/erros de rede reprovam, não viram sucesso silencioso.
-- [ ] GREEN: executar node:test; caso saudável completo aprova e endpoints privados não são crawleados por autenticação.
+- [x] RED: fetch injetado com objetos Response reais e sitemap contendo página 500, HTML noindex, canonical divergente, link quebrado e página privada legítima fora do sitemap; verificar saída reprovada e diagnósticos por URL. Complementar com execução HTTP real de integração se a fronteira de rede mudar.
+- [x] Implementar auditoria limitada e rejeição dos defeitos sem retirar checagem de SHA/readiness. Timeouts/erros de rede reprovam, não viram sucesso silencioso.
+- [x] GREEN: executar node:test; caso saudável completo aprova e endpoints privados não são crawleados por autenticação. 38/38 testes; a sondagem real de produção reprovou corretamente e não constitui correção remota.
 - [ ] Preservar intenção de noindex/nofollow; diferenciar robots.txt de bloqueio WAF com URL/UA e evento específico.
 - [ ] Pós-release: deploy da revisão aprovada com bindings privados corretos, 12 tabelas respondendo conteúdo válido, sitemap indexável e recrawl Semrush. Configuração/publicação e recrawl não estão concluídos por adicionar este gate.
 
@@ -108,6 +108,8 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 ### Task 7: gramado, iluminação, estádio e torcida
 
+**Incremento concreto encontrado no smoke:** `stadium/textures/turf-detail.ts` enviava placeholders 1×1 à GPU e depois imagens 512×512 para a mesma textura. A correção mantém dimensões finais desde a criação, com normal/roughness neutras e 2 MiB CPU compartilhados iniciais. `stadium/textures/turf-detail.test.ts` cobre geração assíncrona, identidade, retenção e cancelamento; detalhes RED/GREEN e novo smoke no ledger. Este incremento não conclui a direção de arte inteira desta Task.
+
 **Files:** `src/game/pitch-material.ts`, `grass-material.ts`, `match-lighting.ts`, `stadium-background-material.ts`, `src/components/game/stadium/StadiumTurf.tsx`, `StadiumEnvironment.tsx`, `StadiumStructure.tsx`, `StadiumCrowdDecor.tsx` e testes existentes.
 
 **Interfaces:** preservar `createPitchSurfaceMaterial`, material de blades e identidade estável da IBL; assets externos exigem origem/licença/hash e compressão verificável.
@@ -148,8 +150,8 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 **Interfaces:** manter helpers v2 atuais; correção estreita de expulso só na revisão v2; evolução grande define revisão nova e persiste seu ID em todas as fronteiras.
 
-- [ ] RED imediato: usar `MatchSim.sendOff()` e uma disputa legal próxima ao corner; atleta expulso estacionado fora de campo não fornece bônus de pressão v2; apoio ativo ainda funciona e v1 mantém comportamento/draw order.
-- [ ] Implementar exclusão versionada e GREEN do teste focado + tática/física/replay relacionados.
+- [x] RED imediato: usar `MatchSim.sendOff()` e uma disputa legal próxima ao corner; atleta expulso estacionado fora de campo não fornece bônus de pressão v2; apoio ativo ainda funciona e v1 mantém comportamento/draw order.
+- [x] Implementar exclusão versionada e GREEN do teste focado + tática/física/replay relacionados. 40 testes em cinco arquivos; IA coletiva futura ainda pendente.
 - [ ] Para revisão futura, RED de ETA com aceleração/fadiga/bola alta, ocupação de setor, cobertura de segunda linha, apoio de terceiro homem e reação sem ler futuro.
 - [ ] Implementar percepção em janelas/grade reutilizada e coordenação treinador→setor→atleta com ações limitadas e explicáveis. Sem rede/RNG extra por tick.
 - [ ] GREEN e A/B ≥1.000 seeds pareadas home/away: xG, progressão, perdas, compactação, impedimentos, custo p95/tick e hashes. Não usar vitória isolada como prova de IA melhor.
@@ -180,4 +182,4 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 ## Registro de execução
 
-Ver `verification/pr132-upgrade-20261112/progress.md`. A execução inicial trata Tasks 2–3 e a correção delimitada de Task 10; o restante do salto visual permanece um programa de implementação com gates, sem alegação de entrega total.
+Ver `verification/pr132-upgrade-20261112/progress.md`. A execução inicial trata Tasks 2–3, a correção de textura delimitada de Task 7 e a correção delimitada de Task 10; o restante do salto visual permanece um programa de implementação com gates, sem alegação de entrega total.

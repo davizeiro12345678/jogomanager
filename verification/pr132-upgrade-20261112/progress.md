@@ -1,5 +1,25 @@
 # SDD ledger — plan: docs/superpowers/plans/2026-11-12-match3d-major-upgrade.md
 
+## Checkpoint final local — substitui estados pendentes abaixo
+
+- Código combinado com a remota `aa5e1fbd`, incluindo a correção de textura: **422 arquivos / 2.620 testes aprovados**, zero falhas, `npm test` exit 0 (326,06 s), Node 24.22.0.
+- Lint completo zero erros/avisos; `tsc --noEmit --pretty false`, build gráfico, build da aplicação e `bundle:check` finais: exit 0. SEO node:test 38/38 e scripts de desempenho 38/38.
+- Testes stress de 200 seeds, replay SQL, matriz Lighthouse, comparador de bundle baseline/candidate e campanhas físicas completas dependem dos workflows/gates de release. Não são aprovados pela suíte padrão, que exclui os dois arquivos stress conforme o script do projeto.
+- Revisão independente dos lotes: zero Critical/Important. Os dois Minor de batching e demais limitações/rulings permanecem registrados abaixo.
+- A base remota `aa5e1fbd` ainda tinha falhas nos runs `Quality gates 43331681903` e `Match 3D lifecycle/context recovery 43331681847`; o novo SHA deve ser avaliado integralmente, sem aproveitar sucesso de uma revisão anterior.
+- Planejamento ampliado e correções prontos para envio à PR #132 existente, mantendo Draft. Sem merge em main, deploy ou escrita em produção.
+
+## Task 7 — correção adicional de alocação de textura
+
+- `stadium/textures/turf-detail.ts` agora cria as duas texturas neutras em 512×512; geração assíncrona troca dados sem alterar identidade/dimensões após upload. Custo inicial compartilhado: 2 MiB CPU para placeholders; não há alocação por atleta/frame.
+- RED real: largura inicial 1 em vez de 512. GREEN: sete testes em três arquivos, cobrindo neutralidade, dados finais, identidade, ownership/cancelamento, retorno da lane e paridade TS/WASM.
+- Revisão independente somente deste delta: zero Critical/Important/Minor; reviewer repetiu quatro testes de lifecycle/paridade com sucesso. ESLint focado e types completos aprovados.
+- Novo build gráfico e smoke `graphics-high-v1` na mesma Iris Xe/ANGLE: 60 s completos, zero erros e **zero avisos GL_INVALID_VALUE**; permaneceram depreciação de Clock e aviso de precisão de shader do driver. Captura `match-texture-fixed.jpg`, dados e console em `texture-browser-diagnostic.json`.
+- Diagnóstico observado: **30,62 FPS** em alta, com suíte/build/lint em execução concorrente. Não é baseline/candidate controlado, nem 30 s warmup + três janelas de 90 s, e não aprova o gate de 60 FPS. O resultado adverso foi preservado, sem recategorizar alta como cinema.
+- Ruling: antecipar a alocação neutra ao tamanho final respeita o contrato Three/WebGL2 e preserva compartilhamento — custo se errado: 2 MiB CPU iniciais adicionais até substituição pelo mapa final e upload inicial maior; medir primeiro frame no protocolo final.
+- Integração local: `d483f30f` contém o lote inicial; merge normal `030685e5` incorporou a remota `aa5e1fbd` e preservou moderação/localização concorrentes. Não houve reescrita de histórico.
+- Nova suíte completa, lint/types e build executados após esse merge e a correção de textura; aguardar o resultado final abaixo antes de atribuir aprovação ao código combinado.
+
 ## Checkpoint local anterior à correção adicional de textura
 
 - `npm test` repetido: **421 arquivos e 2.618 testes aprovados**, zero falhas, exit 0 (319,89 s).
