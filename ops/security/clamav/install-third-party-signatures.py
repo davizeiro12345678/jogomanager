@@ -49,7 +49,7 @@ ditekshen_enabled="yes"
 ditekshen_dbs_rating="MEDIUM"
 # Avoid detecting legitimate remote-management agents on this VPS.
 # Keep only malware-focused ditekshen rules, not indicator_rmm.ldb.
-declare -a ditekshen_dbs=( "clamav.ldb|MEDIUM" )
+# RMM-specific rule is omitted from the verified upstream master.conf by a narrow patch.
 twinclams_enabled="yes"
 twinclams_dbs_rating="MEDIUM"
 linuxmalwaredetect_update_hours="24"
@@ -74,6 +74,44 @@ def fetch_and_verify() -> dict[str, bytes]:
         downloaded[name] = content
         print("PINNED_GIT_BLOB_OK", name, actual, len(content), flush=True)
     return downloaded
+
+
+def patched_master(data: bytes) -> bytes:
+    old = b"indicator_rmm.ldb|MEDIUM # detects remote monitoring and management tooling"
+    new = b"# indicator_rmm.ldb|MEDIUM # intentionally disabled on game VPS to avoid RMM false positives"
+    if data.count(old) != 1:
+        raise RuntimeError("Pinned master config unexpected: cannot disable RMM-only feed")
+    return data.replace(old, new, 1)
+
+
+def save_verified_upgrade(path: Path, data: bytes, previous: bytes, mode: int) -> None:
+    if not path.exists():
+        save_new(path, data, mode)
+        return
+    if path.is_symlink():
+        raise RuntimeError(f"Symlinked config prohibited: {path}")
+    existing = path.read_bytes()
+    if existing == data:
+        print("ALREADY_CURRENT", path, flush=True)
+        return
+    if existing != previous:
+        raise RuntimeError(f"Existing config not identical to verified previous version: {path}")
+    backup = BACKUP / (path.name + ".before-rmm-fix-20261113")
+    if backup.exists() and backup.read_bytes() != previous:
+        raise RuntimeError(f"Backup conflict: {backup}")
+    if not backup.exists():
+        fd = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as out:
+            out.write(existing)
+    pending = path.with_name(path.name + ".pending")
+    fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+    with os.fdopen(fd, "wb") as out:
+        out.write(data)
+        out.flush()
+        os.fsync(out.fileno())
+    os.chmod(pending, mode)
+    os.replace(pending, path)
+    print("CONFIG_UPGRADED", path, flush=True)
 
 
 def save_new(path: Path, data: bytes, mode: int) -> None:
@@ -124,9 +162,11 @@ def main() -> None:
         os.chmod(BACKUP / "clamav-third-party-before-v8-20261113.tar.gz", 0o600)
         print("SIGNATURE_BACKUP_CREATED")
     save_new(UPDATER, downloaded["clamav-unofficial-sigs.sh"], 0o750)
-    save_new(CONFIG / "master.conf", downloaded["master.conf"], 0o640)
+    save_verified_upgrade(CONFIG / "master.conf", patched_master(downloaded["master.conf"]), downloaded["master.conf"], 0o640)
     save_new(CONFIG / "os.conf", downloaded["os.conf"], 0o640)
-    save_new(CONFIG / "user.conf", USER_CONF.encode(), 0o640)
+    legacy_line = '# RMM-specific rule is omitted from the verified upstream master.conf by a narrow patch.'
+    previous_user = USER_CONF.replace(legacy_line, 'declare -a ditekshen_dbs=( "clamav.ldb|MEDIUM" )').encode()
+    save_verified_upgrade(CONFIG / "user.conf", USER_CONF.encode(), previous_user, 0o640)
     run(["bash", "-n", str(UPDATER)])
     info = run([str(UPDATER), "--information"], timeout=50)
     print("UPDATER_CONFIG_CHECK_OK", info.stdout[-1000:].replace("\n", " | "), flush=True)
