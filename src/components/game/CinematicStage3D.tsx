@@ -56,7 +56,13 @@ import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 
 import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
-import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
+// Corporate boards are only needed for authored business cutscenes.
+// Keep the locale/artwork generator outside every other cinematic startup.
+const CinematicBusinessDressing = lazy(() =>
+  import("./cinematic/CinematicBusinessDressing").then((module) => ({
+    default: module.CinematicBusinessDressing,
+  })),
+);
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
 import { CinematicProgramWarmup } from "./cinematic/CinematicProgramWarmup";
 import { CinematicSetBoundary } from "./cinematic/CinematicSetCommit";
@@ -274,13 +280,15 @@ function Stage({
       >
         {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
         {business ? (
-          <CinematicBusinessDressing
-            business={business}
-            primary={primary}
-            secondary={secondary}
-            quality={quality}
-            language={language ?? "pt-BR"}
-          />
+          <Suspense fallback={<group />}>
+            <CinematicBusinessDressing
+              business={business}
+              primary={primary}
+              secondary={secondary}
+              quality={quality}
+              language={language ?? "pt-BR"}
+            />
+          </Suspense>
         ) : null}
         <CinematicStoryDressing
           kind={kind}
