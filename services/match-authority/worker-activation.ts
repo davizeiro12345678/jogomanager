@@ -13,8 +13,7 @@ export interface MatchAuthorityActivationEnv extends AuthorityDatabaseEnv {
 }
 
 export function validateMatchAuthorityActivation(env: MatchAuthorityActivationEnv): void {
-  if (env.MATCH_AUTHORITY_ENABLED !== "true")
-    throw new Error("match authority is disabled");
+  if (env.MATCH_AUTHORITY_ENABLED !== "true") throw new Error("match authority is disabled");
 
   validateAuthorityDatabaseTarget(env);
   const origin =
