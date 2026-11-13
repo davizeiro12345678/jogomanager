@@ -25,8 +25,13 @@ class SignatureDeploymentTests(unittest.TestCase):
             self.assertIn(setting + '="no"', conf)
 
     def test_no_remote_management_false_positives(self):
-        self.assertIn('declare -a ditekshen_dbs=( "clamav.ldb|MEDIUM" )', clamav.USER_CONF)
+        self.assertNotIn("declare -a ditekshen_dbs=", clamav.USER_CONF)
         self.assertNotIn("indicator_rmm.ldb|MEDIUM", clamav.USER_CONF)
+        patched = clamav.patched_master(
+            b"indicator_rmm.ldb|MEDIUM # detects remote monitoring and management tooling"
+        )
+        self.assertIn(b"# indicator_rmm.ldb|MEDIUM", patched)
+        self.assertNotIn(b"\nindicator_rmm.ldb|MEDIUM", patched)
 
     def test_no_autodelete_or_self_upgrade(self):
         conf = clamav.USER_CONF
