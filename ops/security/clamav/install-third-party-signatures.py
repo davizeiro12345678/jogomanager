@@ -47,6 +47,9 @@ linuxmalwaredetect_enabled="yes"
 linuxmalwaredetect_dbs_rating="LOW"
 ditekshen_enabled="yes"
 ditekshen_dbs_rating="MEDIUM"
+# Avoid detecting legitimate remote-management agents on this VPS.
+# Keep only malware-focused ditekshen rules, not indicator_rmm.ldb.
+declare -a ditekshen_dbs=( "clamav.ldb|MEDIUM" )
 twinclams_enabled="yes"
 twinclams_dbs_rating="MEDIUM"
 linuxmalwaredetect_update_hours="24"
