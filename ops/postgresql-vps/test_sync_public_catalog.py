@@ -12,7 +12,23 @@ spec.loader.exec_module(mirror)
 
 class PublicCatalogSafetyTests(unittest.TestCase):
     def test_only_known_public_catalog_tables(self):
-        self.assertEqual(set(mirror.FIELDS), {"competitions", "clubs", "players"})
+        self.assertEqual(set(mirror.FIELDS), {"competitions", "clubs", "players", "stadiums", "kits", "competition_seasons", "official_teams", "official_venues", "official_players"})
+
+    def test_official_source_id_is_preserved(self):
+        self.assertEqual(mirror.KEY_FIELD["official_teams"], "source_id")
+        self.assertEqual(mirror.KEY_FIELD["stadiums"], "id")
+        sql = mirror.transaction_sql("official_teams", [
+            {"source_id": "official-123", "name": "Fixture FC", "sport": "Soccer",
+             "updated_at": "2026-11-13T00:00:00Z"}
+        ])
+        self.assertIn("official-123", sql)
+        self.assertIn("kind='official_teams'", sql)
+
+    def test_public_table_fields_are_explicit(self):
+        for kind, fields in mirror.FIELDS.items():
+            self.assertIn(mirror.KEY_FIELD[kind], fields)
+            self.assertIn("updated_at", fields)
+            self.assertGreater(mirror.MAX_ROWS[kind], mirror.MIN_ROWS[kind])
 
     def test_private_tables_are_refused(self):
         with self.assertRaises(ValueError):
