@@ -1,4 +1,4 @@
-import { createElement, type ComponentType } from "react";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthMethods } from "@/integrations/supabase/social-auth";
@@ -24,10 +24,11 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: React.ReactNode }) => createElement("a", null, children),
 }));
 
-import { Route } from "./auth";
+// Exercise the real browser page, not the SSR-only placeholder of its route.
+import { AuthPage } from "@/pages/auth";
 
 function renderAuth() {
-  return renderToStaticMarkup(createElement(Route.options.component as ComponentType));
+  return renderToStaticMarkup(createElement(AuthPage));
 }
 
 beforeEach(() => {
