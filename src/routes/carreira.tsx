@@ -29,5 +29,8 @@ export const Route = createFileRoute("/carreira")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/carreira"), "CoachCareerPage"),
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/carreira"), "CoachCareerPage"),
 });

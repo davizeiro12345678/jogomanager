@@ -20,5 +20,8 @@ export const Route = createFileRoute("/coletiva")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/coletiva"), "PressPage"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/coletiva"), "PressPage"),
 });

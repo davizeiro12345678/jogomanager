@@ -24,5 +24,8 @@ export const Route = createFileRoute("/history")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/history"), "HistoryPage"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/history"), "HistoryPage"),
 });

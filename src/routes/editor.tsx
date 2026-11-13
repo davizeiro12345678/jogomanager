@@ -31,5 +31,8 @@ export const Route = createFileRoute("/editor")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/editor"), "EditorPage"),
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/editor"), "EditorPage"),
 });

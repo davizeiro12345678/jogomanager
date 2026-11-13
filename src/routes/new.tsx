@@ -24,5 +24,8 @@ export const Route = createFileRoute("/new")({
       },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/new"), "NewCareer"),
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/new"), "NewCareer"),
 });

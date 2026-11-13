@@ -29,5 +29,8 @@ export const Route = createFileRoute("/assistente")({
       },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/assistente"), "AssistentePage"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/assistente"), "AssistentePage"),
 });

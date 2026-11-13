@@ -475,7 +475,8 @@ test("browser-only gameplay routes cannot pull page and 3D graphs into SSR eager
   ]) {
     const source = readFileSync(path.join(root, `src/routes/${route}.tsx`), "utf8");
     assert.match(source, /\bssr:\s*false\b/, `${route} should remain client-only`);
-    assert.match(source, /component:\s*lazyRouteComponent\(/, `${route} needs a lazy page`);
+    assert.match(source, /component:\s*import\.meta\.env\.SSR/, `${route} requires SSR pruning`);
+    assert.match(source, /:\s*lazyRouteComponent\(/, `${route} needs a client lazy page`);
     assert.doesNotMatch(source, /import\s*\{[^}]+\}\s*from\s*["']@\/pages\//);
   }
 });

@@ -5,5 +5,8 @@ import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 export const Route = createFileRoute("/finances")({
   ssr: false,
   head: () => loadGamePageHead("/finances"),
-  component: lazyRouteComponent(() => import("@/pages/finances"), "FinancesPage"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/finances"), "FinancesPage"),
 });

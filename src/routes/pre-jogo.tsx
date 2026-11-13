@@ -16,5 +16,8 @@ export const Route = createFileRoute("/pre-jogo")({
       { name: "robots", content: "noindex, follow" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/pre-jogo"), "PreMatchPage"),
+  // A browser-only screen must not enter the Cloudflare server module graph.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/pre-jogo"), "PreMatchPage"),
 });

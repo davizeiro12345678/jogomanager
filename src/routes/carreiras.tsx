@@ -12,5 +12,8 @@ export const Route = createFileRoute("/carreiras")({
       { name: "robots", content: "noindex, follow" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/carreiras"), "CareersHub"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/carreiras"), "CareersHub"),
 });

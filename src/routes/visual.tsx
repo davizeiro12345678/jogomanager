@@ -13,5 +13,8 @@ import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 export const Route = createFileRoute("/visual")({
   ssr: false,
   head: () => loadGamePageHead("/visual"),
-  component: lazyRouteComponent(() => import("@/pages/visual"), "VisualPage"),
+  // A browser-only screen must not enter the Cloudflare server module graph.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/visual"), "VisualPage"),
 });

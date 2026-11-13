@@ -5,5 +5,8 @@ import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
   head: () => loadGamePageHead("/dashboard"),
-  component: lazyRouteComponent(() => import("@/pages/dashboard"), "Dashboard"),
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/dashboard"), "Dashboard"),
 });

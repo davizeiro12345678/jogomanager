@@ -22,5 +22,8 @@ export const Route = createFileRoute("/replays")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/replays"), "ReplaysPage"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/replays"), "ReplaysPage"),
 });

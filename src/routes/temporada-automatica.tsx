@@ -24,5 +24,8 @@ export const Route = createFileRoute("/temporada-automatica")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/temporada-automatica"), "AutoSeasonPage"),
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/temporada-automatica"), "AutoSeasonPage"),
 });

@@ -24,5 +24,8 @@ export const Route = createFileRoute("/scouting")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: lazyRouteComponent(() => import("@/pages/scouting"), "ScoutingPage"),
+  // A browser-only screen must not enter the Cloudflare server module graph.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/scouting"), "ScoutingPage"),
 });
