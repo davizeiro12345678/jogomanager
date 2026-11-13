@@ -68,9 +68,26 @@ it("keeps the full catalog and named player rosters out of quick-match startup",
     path.relative(projectRoot, file).replaceAll("\\", "/"),
   );
 
-  expect(startupSources).toContain("src/game/data/quick-match-catalog.ts");
-  expect(startupSources).not.toContain("src/game/data/leagues.ts");
-  expect(startupSources).not.toContain("src/game/data/squads.ts");
-  expect(startupSources).not.toContain("src/game/data/names.ts");
-  expect(startupSources).not.toContain("src/lib/official-assets-loader.ts");
+  // The route loads QuickMatchPage asynchronously: even the small league
+  // directory must stay outside the eagerly imported route module.
+  expect(startupSources).not.toContain("src/components/game/QuickMatchPage.tsx");
+  expect(startupSources).not.toContain("src/game/data/quick-match-catalog.ts");
+
+  // Once the selection page loads, only the lightweight directory is eager.
+  // Named rosters, complete leagues, and 3D assets remain on-demand.
+  const pageEntry = fileURLToPath(
+    new URL("../components/game/QuickMatchPage.tsx", import.meta.url),
+  );
+  const pageVisited = new Set<string>();
+  visitStaticImports(pageEntry, pageVisited);
+  const pageSources = [...pageVisited].map((file) =>
+    path.relative(projectRoot, file).replaceAll("\\", "/"),
+  );
+  expect(pageSources).toContain("src/game/data/quick-match-catalog.ts");
+  for (const sources of [startupSources, pageSources]) {
+    expect(sources).not.toContain("src/game/data/leagues.ts");
+    expect(sources).not.toContain("src/game/data/squads.ts");
+    expect(sources).not.toContain("src/game/data/names.ts");
+    expect(sources).not.toContain("src/lib/official-assets-loader.ts");
+  }
 });
