@@ -13,6 +13,7 @@ import {
 } from "../../src/game/online/receipt-signing.server";
 import type { MatchReceiptV1, MatchSeat } from "../../src/game/online/match-protocol";
 import { allocateQueuePair, loadPrivateLiveRoom, settleAuthorityReceipt } from "./supabase";
+import { validateMatchAuthorityActivation } from "./worker-activation";
 import type { AuthorityDatabaseEnv, PrivateMatchDescriptor } from "./supabase";
 
 interface Env extends AuthorityDatabaseEnv {
@@ -46,6 +47,11 @@ const MAX_PENDING_SOCKETS = 8;
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (env.MATCH_AUTHORITY_ENABLED !== "true") return new Response(null, { status: 404 });
+    try {
+      validateMatchAuthorityActivation(env);
+    } catch {
+      return new Response("Match unavailable", { status: 503 });
+    }
     const url = new URL(request.url);
     const roomId = PATH.exec(url.pathname)?.[1]?.toLowerCase();
     if (
@@ -64,6 +70,7 @@ export default {
   /** Opt-in bounded allocation, serialized by the Postgres advisory lock. */
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     if (env.MATCH_AUTHORITY_ENABLED !== "true" || env.MATCH_QUEUE_CRON_ENABLED !== "true") return;
+    validateMatchAuthorityActivation(env);
     for (let attempt = 0; attempt < 12; attempt += 1) {
       const result = await allocateQueuePair(env);
       if (
@@ -124,12 +131,7 @@ export class MatchRoomDO extends DurableObject<Env> {
   }
 
   private async load(roomId: string | null): Promise<void> {
-    if (
-      this.env.MATCH_AUTHORITY_ENABLED !== "true" ||
-      this.env.MATCH_TICKET_SIGNING_SECRET.trim().length < 32 ||
-      this.env.MATCH_RECEIPT_SIGNING_SECRET.trim().length < 32
-    )
-      throw new Error("match owner configuration is incomplete");
+    validateMatchAuthorityActivation(this.env);
     const prior = await this.ctx.storage.get<PersistentRoom>("match");
     if (prior && (prior.version !== 1 || (roomId && prior.room.roomId !== roomId)))
       throw new Error("incompatible durable room checkpoint");
