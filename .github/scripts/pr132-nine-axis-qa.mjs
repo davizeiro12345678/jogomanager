@@ -536,22 +536,21 @@ try {
 // non-source assets and deleted files. This is NOT a formal human security
 // review; the static analyzer above inspects code and records exact lines.
 try {
-  const paths = execFileSync(
-    "git",
-    ["diff", "--name-only", "-z", "origin/main...HEAD"],
-    { encoding: "utf8", maxBuffer: 8_000_000 },
-  )
+  const paths = execFileSync("git", ["diff", "--name-only", "-z", "origin/main...HEAD"], {
+    encoding: "utf8",
+    maxBuffer: 8_000_000,
+  })
     .split("\0")
     .filter(Boolean);
   const inventory = [];
+  const infrastructure = /^(?:\\.github\\/workflows\\/|drizzle\\/migrations\\/|services\\/match-authority\\/|cloudflare\\/)/;
+  const sensitive = /(?:auth|payment|stripe|secret|moderation|realtime|multiplayer|matchmaking|security|ticket|anticheat)/i;
+  const visuals = /(?:cinematic|stadium|renderer|webgl|webgpu|physics|shaders|texture|graphics|3d)/i;
   const riskGroup = (file) => {
-    if (/^(?:\.github\/workflows\/|drizzle\/migrations\/|services\/match-authority\/|cloudflare\/)/.test(file))
-      return "critical-infrastructure";
-    if (/(?:auth|payment|stripe|secret|moderation|realtime|multiplayer|matchmaking|security|ticket|anticheat)/i.test(file))
-      return "security-sensitive";
-    if (/(?:cinematic|stadium|renderer|webgl|webgpu|physics|shaders|texture|graphics|3d)/i.test(file))
-      return "graphics-or-simulation";
-    if (/^(?:src|tests|scripts|services)\//.test(file)) return "application-or-tests";
+    if (infrastructure.test(file)) return "critical-infrastructure";
+    if (sensitive.test(file)) return "security-sensitive";
+    if (visuals.test(file)) return "graphics-or-simulation";
+    if (/^(?:src|tests|scripts|services)\\//.test(file)) return "application-or-tests";
     return "documentation-or-assets";
   };
   for (const file of paths) {
@@ -561,7 +560,11 @@ try {
     try {
       const info = await stat(file);
       sizeBytes = info.size;
-      if (info.isFile() && info.size <= 2_000_000 && /\.(?:ts|tsx|mjs|js|json|yaml|yml|css|md|sql|html)$/i.test(file))
+      if (
+        info.isFile() &&
+        info.size <= 2_000_000 &&
+        /\.(?:ts|tsx|mjs|js|json|yaml|yml|css|md|sql|html)$/i.test(file)
+      )
         lineCount = (await readFile(file, "utf8")).split(/\r?\n/).length;
     } catch {
       state = "deleted-or-unavailable";
@@ -580,14 +583,12 @@ try {
     path.join(output, "full-pr-file-inventory.json"),
     JSON.stringify({ sha, total: inventory.length, counts, files: inventory }, null, 2) + "\n",
   );
-  await writeFile(
-    path.join(output, "full-pr-file-inventory.csv"),
-    ["path,state,sizeBytes,lineCount,riskGroup", ...inventory.map((item) =>
-      [item.path, item.state, item.sizeBytes ?? "", item.lineCount ?? "", item.riskGroup]
-        .map((value) => '"' + String(value).replace(/"/g, '""') + '"')
-        .join(","),
-    )].join("\n") + "\n",
-  );
+  const csv = ["path,state,sizeBytes,lineCount,riskGroup"];
+  for (const item of inventory) {
+    const cells = [item.path, item.state, item.sizeBytes ?? "", item.lineCount ?? "", item.riskGroup];
+    csv.push(cells.map((value) => '"' + String(value).replace(/"/g, '""') + '"').join(","));
+  }
+  await writeFile(path.join(output, "full-pr-file-inventory.csv"), csv.join("\n") + "\n");
   find(
     "static",
     "review",
