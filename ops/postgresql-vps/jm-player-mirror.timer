@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh public athlete data twice daily
+
+[Timer]
+OnCalendar=*-*-* 03,15:00:00 UTC
+RandomizedDelaySec=1800
+Persistent=true
+
+[Install]
+WantedBy=timers.target

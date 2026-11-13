@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh public competitions and clubs cache hourly
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target
