@@ -22,10 +22,12 @@ const sink = process.platform === "win32" ? "NUL" : "/dev/null";
 const TARGETS = Object.freeze({
   home: "https://jogomanager.com/",
   robots: "https://jogomanager.com/robots.txt",
-  catalog: "https://catalog-vps.jogomanager.com/v1/public/clubs?limit=100&page=0",
+  catalog:
+    "https://catalog-vps.jogomanager.com/v1/public/clubs?limit=100&page=0",
   multiplayer: "https://vps-multiplayer.jogomanager.com/health/live",
 });
-const METRIC = "\nJGM_TIMING:%{http_code}|%{time_namelookup}|%{time_connect}|%{time_appconnect}|%{time_starttransfer}|%{time_total}\n";
+const METRIC =
+  "\nJGM_TIMING:%{http_code}|%{time_namelookup}|%{time_connect}|%{time_appconnect}|%{time_starttransfer}|%{time_total}\n";
 
 function percentile(numbers, proportion) {
   if (!numbers.length) return null;
@@ -42,12 +44,18 @@ function round(value) {
 }
 
 function parseResult(stdout) {
-  const expression = /JGM_TIMING:(\d{3})\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)/;
+  const expression =
+    /JGM_TIMING:(\d{3})\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)/;
   const time = expression.exec(stdout);
   if (!time) throw new Error("Curl did not return timing data.");
   const headerBlocks = stdout.slice(0, time.index).split(/\r?\n\r?\n/);
-  const headers = headerBlocks.filter((value) => /^HTTP\/[\d.]+\s+\d{3}/m.test(value)).at(-1) ?? "";
-  const get = (name) => new RegExp("^" + name + ":\\s*([^\\r\\n]+)", "im").exec(headers)?.[1] ?? null;
+  const headers =
+    headerBlocks
+      .filter((value) => /^HTTP\/[\d.]+\s+\d{3}/m.test(value))
+      .at(-1) ?? "";
+  const get = (name) =>
+    new RegExp("^" + name + ":\\s*([^\\r\\n]+)", "im").exec(headers)?.[1] ??
+    null;
   const app = /(?:^|,)\s*app;dur=([\d.]+)/i.exec(get("server-timing") ?? "");
   const ray = /-([A-Z]{3})$/.exec(get("cf-ray") ?? "");
   return {
@@ -65,8 +73,20 @@ function parseResult(stdout) {
 
 async function sample(url) {
   const args = [
-    "--silent", "--show-error", "--connect-timeout", "4", "--max-time", "8",
-    "--dump-header", "-", "--output", sink, "--write-out", METRIC, "--", url,
+    "--silent",
+    "--show-error",
+    "--connect-timeout",
+    "4",
+    "--max-time",
+    "8",
+    "--dump-header",
+    "-",
+    "--output",
+    sink,
+    "--write-out",
+    METRIC,
+    "--",
+    url,
   ];
   const { stdout } = await execute("curl", args, {
     timeout: 10_000,
@@ -77,7 +97,12 @@ async function sample(url) {
 }
 
 function parseOptions(argv) {
-  const options = { samples: 12, only: Object.keys(TARGETS), output: null, selfTest: false };
+  const options = {
+    samples: 12,
+    only: Object.keys(TARGETS),
+    output: null,
+    selfTest: false,
+  };
   for (const arg of argv) {
     if (arg === "--self-test") options.selfTest = true;
     else if (arg.startsWith("--samples=")) {
@@ -90,12 +115,21 @@ function parseOptions(argv) {
       throw new Error("Unknown argument: " + arg);
     }
   }
-  if (!Number.isInteger(options.samples) || options.samples < 2 || options.samples > 30) {
+  if (
+    !Number.isInteger(options.samples) ||
+    options.samples < 2 ||
+    options.samples > 30
+  ) {
     throw new Error("samples must be an integer between 2 and 30.");
   }
-  if (!options.only.length || new Set(options.only).size !== options.only.length ||
-      options.only.some((name) => !Object.hasOwn(TARGETS, name))) {
-    throw new Error("only must contain unique names from: " + Object.keys(TARGETS).join(", "));
+  if (
+    !options.only.length ||
+    new Set(options.only).size !== options.only.length ||
+    options.only.some((name) => !Object.hasOwn(TARGETS, name))
+  ) {
+    throw new Error(
+      "only must contain unique names from: " + Object.keys(TARGETS).join(", "),
+    );
   }
   return options;
 }
@@ -137,7 +171,8 @@ function selfTest() {
   assert.equal(percentile([1, 2, 3, 4], 0.95), 4);
   assert.throws(() => parseOptions(["--samples=500"]));
   assert.throws(() => parseOptions(["--only=checkout"]));
-  const wire = "HTTP/2 200\r\nserver-timing: app;dur=21.4\r\ncf-cache-status: HIT\r\ncf-ray: abc-SAO\r\n\r\nJGM_TIMING:200|0.001|0.012|0.022|0.076|0.088";
+  const wire =
+    "HTTP/2 200\r\nserver-timing: app;dur=21.4\r\ncf-cache-status: HIT\r\ncf-ray: abc-SAO\r\n\r\nJGM_TIMING:200|0.001|0.012|0.022|0.076|0.088";
   const parsed = parseResult(wire);
   assert.equal(parsed.ttfbMs, 76);
   assert.equal(parsed.appMs, 21.4);
@@ -156,17 +191,28 @@ async function main() {
       try {
         observations.push(await sample(TARGETS[name]));
       } catch (error) {
-        observations.push({ status: "error", message: error instanceof Error ? error.message.slice(0, 120) : "unknown" });
+        observations.push({
+          status: "error",
+          message:
+            error instanceof Error ? error.message.slice(0, 120) : "unknown",
+        });
       }
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
     const item = summarize(name, observations);
-    console.log(JSON.stringify({
-      name, success: item.success, samples: item.samples,
-      firstRequestMs: item.firstRequestMs, medianTtfbMs: item.medianTtfbMs,
-      warmMedianMs: item.warmMedianMs, p95TtfbMs: item.p95TtfbMs,
-      medianAppMs: item.medianAppMs, httpCodes: item.httpCodes,
-    }));
+    console.log(
+      JSON.stringify({
+        name,
+        success: item.success,
+        samples: item.samples,
+        firstRequestMs: item.firstRequestMs,
+        medianTtfbMs: item.medianTtfbMs,
+        warmMedianMs: item.warmMedianMs,
+        p95TtfbMs: item.p95TtfbMs,
+        medianAppMs: item.medianAppMs,
+        httpCodes: item.httpCodes,
+      }),
+    );
     targets.push(item);
   }
   const report = {
@@ -181,8 +227,10 @@ async function main() {
     ],
     targets,
   };
-  if (options.output) await writeFile(options.output, JSON.stringify(report, null, 2) + "\n");
-  if (targets.some((item) => item.success !== item.samples)) process.exitCode = 1;
+  if (options.output)
+    await writeFile(options.output, JSON.stringify(report, null, 2) + "\n");
+  if (targets.some((item) => item.success !== item.samples))
+    process.exitCode = 1;
 }
 main().catch((error) => {
   console.error(error);
