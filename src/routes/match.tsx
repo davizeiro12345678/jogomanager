@@ -1,11 +1,11 @@
 import { loadGamePageHead } from "@/lib/load-game-page-head";
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
-import { MatchPage } from "@/pages/match";
 
 export const Route = createFileRoute("/match")({
   ssr: false,
   head: () => loadGamePageHead("/match"),
-  component: MatchPage,
+  // Defer the browser-only graph: do not eagerly link 3D/physics into SSR.
+  component: lazyRouteComponent(() => import("@/pages/match"), "MatchPage"),
 });
