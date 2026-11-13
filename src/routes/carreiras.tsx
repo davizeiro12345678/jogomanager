@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { CareersHub } from "@/pages/carreiras";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/carreiras")({
   ssr: false,
@@ -14,5 +12,5 @@ export const Route = createFileRoute("/carreiras")({
       { name: "robots", content: "noindex, follow" },
     ],
   }),
-  component: CareersHub,
+  component: lazyRouteComponent(() => import("@/pages/carreiras"), "CareersHub"),
 });

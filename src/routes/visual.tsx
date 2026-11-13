@@ -8,12 +8,10 @@ import { loadGamePageHead } from "@/lib/load-game-page-head";
  * torcida, clima, horário, corte do gramado (geral e por clube) e efeitos.
  */
 
-import { createFileRoute } from "@tanstack/react-router";
-
-import { VisualPage } from "@/pages/visual";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/visual")({
   ssr: false,
   head: () => loadGamePageHead("/visual"),
-  component: VisualPage,
+  component: lazyRouteComponent(() => import("@/pages/visual"), "VisualPage"),
 });
