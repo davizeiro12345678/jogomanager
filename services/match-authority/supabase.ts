@@ -9,7 +9,7 @@ export interface AuthorityDatabaseEnv {
   STAGING_SUPABASE_PROJECT_REF?: string;
 }
 
-const ROOM_ID = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
+const ROOM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function validateAuthorityDatabaseTarget(env: AuthorityDatabaseEnv): URL {
   const base = new URL(env.SUPABASE_URL);
@@ -20,7 +20,7 @@ export function validateAuthorityDatabaseTarget(env: AuthorityDatabaseEnv): URL 
     base.search ||
     base.hash ||
     base.pathname !== "/" ||
-    !/^[a-z0-9-]+\\.supabase\\.co$/.test(base.hostname)
+    !/^[a-z0-9-]+[.]supabase[.]co$/.test(base.hostname)
   )
     throw new Error("match authority Supabase endpoint is not trusted");
   const projectRef = base.hostname.slice(0, -".supabase.co".length);
