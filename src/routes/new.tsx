@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { NewCareer } from "@/pages/new";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/new")({
   ssr: false,
@@ -26,5 +24,5 @@ export const Route = createFileRoute("/new")({
       },
     ],
   }),
-  component: NewCareer,
+  component: lazyRouteComponent(() => import("@/pages/new"), "NewCareer"),
 });

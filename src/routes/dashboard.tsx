@@ -1,11 +1,9 @@
 import { loadGamePageHead } from "@/lib/load-game-page-head";
 
-import { createFileRoute } from "@tanstack/react-router";
-
-import { Dashboard } from "@/pages/dashboard";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
   head: () => loadGamePageHead("/dashboard"),
-  component: Dashboard,
+  component: lazyRouteComponent(() => import("@/pages/dashboard"), "Dashboard"),
 });

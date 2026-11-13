@@ -442,3 +442,27 @@ test("multiplayer analyzer uses the existing static/root/hydration closure and e
     rmSync(cwd, { recursive: true, force: true });
   }
 });
+
+test("browser-only gameplay routes cannot pull page and 3D graphs into SSR eagerly", () => {
+  for (const route of [
+    "carreira",
+    "dashboard",
+    "new",
+    "squad",
+    "editor",
+    "tactics",
+    "stats",
+    "club",
+    "pre-jogo",
+    "training",
+    "scouting",
+    "cup",
+    "match",
+    "multiplayer",
+  ]) {
+    const source = readFileSync(path.join(root, `src/routes/${route}.tsx`), "utf8");
+    assert.match(source, /\bssr:\s*false\b/, `${route} should remain client-only`);
+    assert.match(source, /component:\s*lazyRouteComponent\(/, `${route} needs a lazy page`);
+    assert.doesNotMatch(source, /import\s*\{[^}]+\}\s*from\s*["']@\/pages\//);
+  }
+});

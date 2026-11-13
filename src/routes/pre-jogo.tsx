@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { PreMatchPage } from "@/pages/pre-jogo";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/pre-jogo")({
   ssr: false,
@@ -18,5 +16,5 @@ export const Route = createFileRoute("/pre-jogo")({
       { name: "robots", content: "noindex, follow" },
     ],
   }),
-  component: PreMatchPage,
+  component: lazyRouteComponent(() => import("@/pages/pre-jogo"), "PreMatchPage"),
 });

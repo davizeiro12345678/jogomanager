@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { ScoutingPage } from "@/pages/scouting";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/scouting")({
   ssr: false,
@@ -26,5 +24,5 @@ export const Route = createFileRoute("/scouting")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: ScoutingPage,
+  component: lazyRouteComponent(() => import("@/pages/scouting"), "ScoutingPage"),
 });
