@@ -27,7 +27,7 @@
   "vars": {
     "MATCH_AUTHORITY_ENABLED": "false",
     "MATCH_QUEUE_CRON_ENABLED": "false",
-    "ALLOWED_ORIGIN": "https://jogomanager.com",
+    "ALLOWED_ORIGIN": "https://staging.jogomanager.com",
     "MATCH_AUTHORITY_ENV": "staging"
   },
   "observability": {
