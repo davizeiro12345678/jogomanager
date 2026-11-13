@@ -44,7 +44,7 @@ afterEach(() => {
 
 it.each(["empty", "unmergeable"] as const)(
   "keeps a %s stage usable and batches scenery that arrives later",
-  (initial) => {
+  async (initial) => {
     const group = new THREE.Group();
     const scenery = new THREE.Group();
     group.add(scenery);
@@ -64,13 +64,14 @@ it.each(["empty", "unmergeable"] as const)(
         onReady: (snapshot) => snapshots.push(snapshot),
       }),
     );
+    await vi.waitFor(() => expect(hooks.invalidations).toBeGreaterThan(0));
     hooks.refs[0]!.current = group;
     const frame = hooks.frames[0]!;
 
     expect(() => {
       for (let index = 0; index < 6; index++) frame();
     }).not.toThrow();
-    expect(hooks.invalidations).toBeLessThanOrEqual(3);
+    expect(hooks.invalidations).toBeLessThanOrEqual(4);
     expect(batches).toHaveBeenCalledTimes(1);
 
     if (initial === "empty") scenery.add(first);
@@ -88,7 +89,7 @@ it.each(["empty", "unmergeable"] as const)(
   },
 );
 
-it("replaces a positive batch after nested late scenery settles, and removes departed geometry", () => {
+it("replaces a positive batch after nested late scenery settles, and removes departed geometry", async () => {
   const root = new THREE.Group();
   const branch = new THREE.Group();
   root.add(branch);
@@ -106,6 +107,7 @@ it("replaces a positive batch after nested late scenery settles, and removes dep
       onReady: (snapshot) => snapshots.push(snapshot),
     }),
   );
+  await vi.waitFor(() => expect(hooks.invalidations).toBeGreaterThan(0));
   hooks.refs[0]!.current = root;
   const frame = hooks.frames[0]!;
   for (let index = 0; index < 6; index++) frame();
@@ -134,7 +136,7 @@ it("replaces a positive batch after nested late scenery settles, and removes dep
   expect(sourceDispose).not.toHaveBeenCalled();
 });
 
-it("ignores dynamic actor churn and releases generated resources and hierarchy listeners on reopen", () => {
+it("ignores dynamic actor churn and releases generated resources and hierarchy listeners on reopen", async () => {
   const root = new THREE.Group();
   const material = new THREE.MeshStandardMaterial();
   const geometry = new THREE.BoxGeometry();
@@ -150,8 +152,12 @@ it("ignores dynamic actor churn and releases generated resources and hierarchy l
   const removeListener = vi.spyOn(root, "removeEventListener");
   const sourceDispose = vi.spyOn(geometry, "dispose");
   for (let cycle = 0; cycle < 3; cycle++) {
+    const priorInvalidations = hooks.invalidations;
     renderToStaticMarkup(createElement(CinematicSetBatch, { children: createElement("group") }));
-    hooks.refs.at(-2)!.current = root;
+    await vi.waitFor(() =>
+      expect(hooks.invalidations).toBeGreaterThan(priorInvalidations),
+    );
+    hooks.refs.at(-3)!.current = root;
     const frame = hooks.frames.at(-1)!;
     for (let index = 0; index < 4; index++) frame();
     const generated = root.children.find(
