@@ -247,7 +247,12 @@ function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNa
       ? compressedOrFallback(jerseyRough, WHITE_ROUGHNESS, jerseyRoughness, "fiberRough")
       : null,
     skinRough: hi ? compressedOrFallback("sweatMask", WHITE_ROUGHNESS, skinRoughness) : null,
-    hairNormal: hi ? compressedOrFallback("hairNormal", FLAT_NORMAL, hairStrandNormal) : null,
+    // The published hair_normal.ktx2 is a grayscale height field (RGB near
+    // 127), not tangent-space normals. Streaming it into normalMap flips the
+    // scalp's normals and produces silver bands despite the matte pigment.
+    // Reuse the existing immutable fibre normal instead of requesting that
+    // asset. One shared map keeps the same shader feature and texture slot.
+    hairNormal: hi ? (hairStrandNormal() ?? FLAT_NORMAL) : null,
     // Fine fibres retain a broad response even when an old compressed
     // roughness asset contains near-black channels from an earlier bake.
     hairRough: hi ? garmentRoughness("shorts") : null,
