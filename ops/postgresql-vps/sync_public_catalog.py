@@ -18,9 +18,20 @@ FIELDS = {
     "competitions": ("id", "name", "country", "tier", "club_count", "logo_url", "updated_at"),
     "clubs": ("id", "competition_id", "name", "short_name", "country", "crest_url", "strength", "updated_at"),
     "players": ("id", "club_id", "name", "position", "overall", "updated_at"),
+    "stadiums": ("id", "name", "city", "country", "capacity", "updated_at"),
+    "kits": ("id", "club_id", "season", "kind", "base_color", "updated_at"),
+    "competition_seasons": ("id", "competition_id", "season", "status", "updated_at"),
+    "official_teams": ("source_id", "league_source_id", "name", "sport", "updated_at"),
+    "official_venues": ("source_id", "name", "city", "country", "capacity", "updated_at"),
+    "official_players": ("source_id", "team_source_id", "name", "position", "sport", "updated_at"),
 }
-MIN_ROWS = {"competitions": 100, "clubs": 1000, "players": 1000}
-MAX_ROWS = {"competitions": 20000, "clubs": 200000, "players": 1000000}
+KEY_FIELD = {table: ("source_id" if table.startswith("official_") else "id") for table in FIELDS}
+MIN_ROWS = {"competitions": 100, "clubs": 1000, "players": 1000,
+            "stadiums": 100, "kits": 100, "competition_seasons": 100,
+            "official_teams": 1000, "official_venues": 1000, "official_players": 1000}
+MAX_ROWS = {"competitions": 20000, "clubs": 200000, "players": 1000000,
+            "stadiums": 50000, "kits": 30000, "competition_seasons": 50000,
+            "official_teams": 150000, "official_venues": 100000, "official_players": 150000}
 PAGE_SIZE = 1000
 
 def publishable_key() -> str:
@@ -33,12 +44,13 @@ def publishable_key() -> str:
 
 def fetch_rows(kind: str, key: str) -> list[dict]:
     fields = FIELDS[kind]
+    key_field = KEY_FIELD[kind]
     rows: list[dict] = []
     seen: set[str] = set()
     offset = 0
     while True:
         query = urllib.parse.urlencode({
-            "select": ",".join(fields), "order": "id.asc", "limit": PAGE_SIZE, "offset": offset,
+            "select": ",".join(fields), "order": key_field + ".asc", "limit": PAGE_SIZE, "offset": offset,
         })
         request = urllib.request.Request(
             f"{PROJECT_URL}/rest/v1/{kind}?{query}", method="GET",
@@ -68,7 +80,7 @@ def fetch_rows(kind: str, key: str) -> list[dict]:
         for item in page:
             if not isinstance(item, dict) or any(field not in item for field in fields):
                 raise RuntimeError(f"Invalid {kind} record")
-            item_id = str(item["id"])
+            item_id = str(item[key_field])
             if not item_id or len(item_id) > 256 or item_id in seen:
                 raise RuntimeError(f"Duplicate or invalid {kind} identifier")
             seen.add(item_id)
@@ -90,7 +102,7 @@ def transaction_sql(kind: str, rows: list[dict]) -> str:
     writer = csv.writer(csv_output, quoting=csv.QUOTE_ALL, lineterminator="\n")
     for row in rows:
         writer.writerow([
-            str(row["id"]),
+            str(row[KEY_FIELD[kind]]),
             json.dumps(row, ensure_ascii=False, separators=(",", ":")),
             row.get("updated_at") or "",
         ])
