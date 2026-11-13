@@ -577,8 +577,10 @@ try {
     "services/match-authority/",
     "cloudflare/",
   ];
-  const sensitive = /(?:auth|payment|stripe|secret|moderation|realtime|multiplayer|matchmaking|security|ticket|anticheat)/i;
-  const visuals = /(?:cinematic|stadium|renderer|webgl|webgpu|physics|shaders|texture|graphics|3d)/i;
+  const sensitive =
+    /(?:auth|payment|stripe|secret|moderation|realtime|multiplayer|matchmaking|security|ticket|anticheat)/i;
+  const visuals =
+    /(?:cinematic|stadium|renderer|webgl|webgpu|physics|shaders|texture|graphics|3d)/i;
   const riskGroup = (file) => {
     if (infrastructure.some((root) => file.startsWith(root))) return "critical-infrastructure";
     if (sensitive.test(file)) return "security-sensitive";
