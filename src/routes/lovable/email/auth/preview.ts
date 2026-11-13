@@ -1,12 +1,5 @@
 import * as React from "react";
-import { render } from "@react-email/render";
 import { createFileRoute } from "@tanstack/react-router";
-import { SignupEmail } from "@/lib/email-templates/signup";
-import { InviteEmail } from "@/lib/email-templates/invite";
-import { MagicLinkEmail } from "@/lib/email-templates/magic-link";
-import { RecoveryEmail } from "@/lib/email-templates/recovery";
-import { EmailChangeEmail } from "@/lib/email-templates/email-change";
-import { ReauthenticationEmail } from "@/lib/email-templates/reauthentication";
 
 type EmailTemplatePreview = (props: Record<string, string>) => React.ReactElement;
 
@@ -15,13 +8,23 @@ const toPreviewComponent =
   (props) =>
     React.createElement(component, props as Props);
 
-const EMAIL_TEMPLATES: Record<string, EmailTemplatePreview> = {
-  signup: toPreviewComponent(SignupEmail),
-  invite: toPreviewComponent(InviteEmail),
-  magiclink: toPreviewComponent(MagicLinkEmail),
-  recovery: toPreviewComponent(RecoveryEmail),
-  email_change: toPreviewComponent(EmailChangeEmail),
-  reauthentication: toPreviewComponent(ReauthenticationEmail),
+const EMAIL_TEMPLATES: Record<string, () => Promise<EmailTemplatePreview>> = {
+  signup: () =>
+    import("@/lib/email-templates/signup").then((m) => toPreviewComponent(m.SignupEmail)),
+  invite: () =>
+    import("@/lib/email-templates/invite").then((m) => toPreviewComponent(m.InviteEmail)),
+  magiclink: () =>
+    import("@/lib/email-templates/magic-link").then((m) => toPreviewComponent(m.MagicLinkEmail)),
+  recovery: () =>
+    import("@/lib/email-templates/recovery").then((m) => toPreviewComponent(m.RecoveryEmail)),
+  email_change: () =>
+    import("@/lib/email-templates/email-change").then((m) =>
+      toPreviewComponent(m.EmailChangeEmail),
+    ),
+  reauthentication: () =>
+    import("@/lib/email-templates/reauthentication").then((m) =>
+      toPreviewComponent(m.ReauthenticationEmail),
+    ),
 };
 
 // Configuration
@@ -100,14 +103,20 @@ export const Route = createFileRoute("/lovable/email/auth/preview")({
         }
 
         const type = body.type;
-        const EmailTemplate = Object.hasOwn(EMAIL_TEMPLATES, type)
+        const loadTemplate = Object.hasOwn(EMAIL_TEMPLATES, type)
           ? EMAIL_TEMPLATES[type]
           : undefined;
 
-        if (!EmailTemplate) {
+        if (!loadTemplate) {
           return Response.json({ error: `Unknown email type: ${type}` }, { status: 400 });
         }
 
+        // Unauthorized or malformed requests never evaluate the React Email
+        // renderer or template package during edge Worker initialization.
+        const [{ render }, EmailTemplate] = await Promise.all([
+          import("@react-email/render"),
+          loadTemplate(),
+        ]);
         const sampleData = SAMPLE_DATA[type] || {};
         const html = await render(React.createElement(EmailTemplate, sampleData));
 

@@ -496,11 +496,27 @@ test("browser-only gameplay routes cannot pull page and 3D graphs into SSR eager
 
 test("legacy multiplayer SSR does not eagerly evaluate the match physics engine", () => {
   const source = readFileSync(path.join(root, "src/lib/multiplayer.functions.ts"), "utf8");
-  assert.doesNotMatch(source, /import\\s+\\{[^}]*MatchSim[^}]*\\}\\s+from\\s+["']@\\/game\\/sim["']/);
-  assert.doesNotMatch(source, /import\\s+\\{\\s*buildTeamSetup\\s*\\}\\s+from\\s+["']@\\/game\\/quickMatch["']/);
-  assert.match(source, /import\\(["']@\\/game\\/sim["']\\)/);
-  assert.match(source, /import\\(["']@\\/game\\/quickMatch["']\\)/);
+  assert.ok(!source.includes('import { buildTeamSetup } from "@/game/quickMatch";'));
   assert.ok(!source.includes('import { CLUBS } from "@/game/data/leagues";'));
+  assert.ok(!source.includes('MatchSim,\n} from "@/game/sim";'));
+  assert.ok(source.includes('import("@/game/sim")'));
+  assert.ok(source.includes('import("@/game/quickMatch")'));
   assert.ok(source.includes('import("@/game/data/leagues")'));
+});
 
+test("restricted email previews do not eagerly bundle rendering SDKs on every edge request", () => {
+  for (const route of [
+    "src/routes/lovable/email/auth/preview.ts",
+    "src/routes/lovable/email/transactional/preview.ts",
+  ]) {
+    const source = readFileSync(path.join(root, route), "utf8");
+    assert.ok(!source.includes('import { render } from "@react-email/render";'));
+    assert.ok(source.includes('import("@react-email/render")'));
+  }
+  const transactional = readFileSync(
+    path.join(root, "src/routes/lovable/email/transactional/preview.ts"),
+    "utf8",
+  );
+  assert.ok(!transactional.includes('import { TEMPLATES } from "@/lib/email-templates/registry";'));
+  assert.ok(transactional.includes('import("@/lib/email-templates/registry")'));
 });
