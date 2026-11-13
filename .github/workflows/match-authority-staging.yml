@@ -67,6 +67,7 @@ jobs:
           src/game/online/cooperative-command-policy.server.test.ts
           src/game/match-physics-extras.test.ts
           src/game/ai-ball-interception.test.ts
+          services/match-authority/supabase-env.test.ts
           --pool=forks --maxWorkers=1
       - name: Confirm Cloudflare target is staging and cannot serve active matches
         run: |
@@ -79,16 +80,46 @@ jobs:
               config.workers_dev !== false ||
               config.routes?.length ||
               config.triggers?.crons?.length ||
-              config.vars?.MATCH_AUTHORITY_ENV !== 'staging') {
+              config.vars?.MATCH_AUTHORITY_ENV !== 'staging' ||
+              config.vars?.ALLOWED_ORIGIN !== 'https://staging.jogomanager.com') {
             throw new Error('Staging config would expose an active match endpoint');
           }"
       - name: Build staging Durable Object without publishing
         run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run --outdir staging-match-authority-bundle
+      - name: Smoke test the real Worker bundle on local loopback, with all flags disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm exec -- wrangler dev --config wrangler.match-authority.jsonc --local --ip 127.0.0.1 --port 8787 > "$RUNNER_TEMP/staging-worker-local.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          READY=0
+          for attempt in $(seq 1 60); do
+            code=$(curl --silent --max-time 2 --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8787/ || true)
+            if [ "$code" = 404 ]; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              tail -n 60 "$RUNNER_TEMP/staging-worker-local.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            tail -n 60 "$RUNNER_TEMP/staging-worker-local.log"
+            exit 1
+          fi
+          node scripts/verify-disabled-match-authority.mjs \
+            http://127.0.0.1:8787 \
+            verification/match-authority-staging/local-closed-gate.json
       - name: Preserve audited staging bundle, no runtime secrets
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: disabled-match-authority-bundle
-          path: staging-match-authority-bundle/
+          path: |
+            staging-match-authority-bundle/
+            verification/match-authority-staging/local-closed-gate.json
           if-no-files-found: error
           retention-days: 7
 
