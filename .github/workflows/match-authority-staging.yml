@@ -18,6 +18,7 @@ on:
       - src/game/match-*.ts
       - package.json
       - package-lock.json
+      - scripts/verify-disabled-match-authority.mjs
   workflow_dispatch:
     inputs:
       confirm:
