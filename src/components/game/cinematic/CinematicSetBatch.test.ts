@@ -154,9 +154,7 @@ it("ignores dynamic actor churn and releases generated resources and hierarchy l
   for (let cycle = 0; cycle < 3; cycle++) {
     const priorInvalidations = hooks.invalidations;
     renderToStaticMarkup(createElement(CinematicSetBatch, { children: createElement("group") }));
-    await vi.waitFor(() =>
-      expect(hooks.invalidations).toBeGreaterThan(priorInvalidations),
-    );
+    await vi.waitFor(() => expect(hooks.invalidations).toBeGreaterThan(priorInvalidations));
     hooks.refs.at(-3)!.current = root;
     const frame = hooks.frames.at(-1)!;
     for (let index = 0; index < 4; index++) frame();
