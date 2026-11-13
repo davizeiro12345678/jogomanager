@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const [originText, outputText, sha] = process.argv.slice(2);
@@ -500,6 +500,10 @@ try {
     inspectedChangedCodeFiles: files.length,
     reviewCandidates: staticResults.length,
   };
+  await writeFile(
+    path.join(output, "full-static-findings.json"),
+    JSON.stringify({ sha, total: staticResults.length, findings: staticResults }, null, 2) + "\n",
+  );
   for (const item of staticResults.slice(0, 160)) {
     find(
       "static",
@@ -525,6 +529,79 @@ try {
     { scope: "diff" },
     "Could not compare changed sources: " + String(error.message).slice(0, 190),
     "Ensure full git history and origin/main are available in checkout.",
+  );
+}
+
+// Independent *coverage inventory* of every changed PR path, including
+// non-source assets and deleted files. This is NOT a formal human security
+// review; the static analyzer above inspects code and records exact lines.
+try {
+  const paths = execFileSync(
+    "git",
+    ["diff", "--name-only", "-z", "origin/main...HEAD"],
+    { encoding: "utf8", maxBuffer: 8_000_000 },
+  )
+    .split("\0")
+    .filter(Boolean);
+  const inventory = [];
+  const riskGroup = (file) => {
+    if (/^(?:\.github\/workflows\/|drizzle\/migrations\/|services\/match-authority\/|cloudflare\/)/.test(file))
+      return "critical-infrastructure";
+    if (/(?:auth|payment|stripe|secret|moderation|realtime|multiplayer|matchmaking|security|ticket|anticheat)/i.test(file))
+      return "security-sensitive";
+    if (/(?:cinematic|stadium|renderer|webgl|webgpu|physics|shaders|texture|graphics|3d)/i.test(file))
+      return "graphics-or-simulation";
+    if (/^(?:src|tests|scripts|services)\//.test(file)) return "application-or-tests";
+    return "documentation-or-assets";
+  };
+  for (const file of paths) {
+    let sizeBytes = null;
+    let lineCount = null;
+    let state = "present";
+    try {
+      const info = await stat(file);
+      sizeBytes = info.size;
+      if (info.isFile() && info.size <= 2_000_000 && /\.(?:ts|tsx|mjs|js|json|yaml|yml|css|md|sql|html)$/i.test(file))
+        lineCount = (await readFile(file, "utf8")).split(/\r?\n/).length;
+    } catch {
+      state = "deleted-or-unavailable";
+    }
+    inventory.push({ path: file, state, sizeBytes, lineCount, riskGroup: riskGroup(file) });
+  }
+  const counts = Object.fromEntries(
+    [...new Set(inventory.map((item) => item.riskGroup))].map((group) => [
+      group,
+      inventory.filter((item) => item.riskGroup === group).length,
+    ]),
+  );
+  report.axes.static.metrics.allChangedFiles = inventory.length;
+  report.axes.static.metrics.changeRiskGroups = counts;
+  await writeFile(
+    path.join(output, "full-pr-file-inventory.json"),
+    JSON.stringify({ sha, total: inventory.length, counts, files: inventory }, null, 2) + "\n",
+  );
+  await writeFile(
+    path.join(output, "full-pr-file-inventory.csv"),
+    ["path,state,sizeBytes,lineCount,riskGroup", ...inventory.map((item) =>
+      [item.path, item.state, item.sizeBytes ?? "", item.lineCount ?? "", item.riskGroup]
+        .map((value) => '"' + String(value).replace(/"/g, '""') + '"')
+        .join(","),
+    )].join("\n") + "\n",
+  );
+  find(
+    "static",
+    "review",
+    { files: inventory.length, scope: "file inventory" },
+    "All changed paths were catalogued by type and risk. Source heuristics do not certify the contents of all files.",
+    "Review critical infrastructure, trust boundaries, compiled assets and all remaining code manually before merge.",
+  );
+} catch (error) {
+  find(
+    "static",
+    "warning",
+    { phase: "full-pr-inventory" },
+    "Full PR file inventory could not be generated: " + String(error.message).slice(0, 180),
+    "Check the checkout base history and git diff permissions.",
   );
 }
 
@@ -570,7 +647,8 @@ const md = [
       ),
   ),
   "",
-  "Evidence includes browser screenshot PNG files, a WebM interaction recording, JSON timing and source review candidates.",
+  "Evidence includes PNG screenshots, WebM interaction video, JSON timings, full-pr-file-inventory.json/.csv, and full-static-findings.json.",
+  "Inventory covers all changed paths, while regex static review covers only eligible source files. Neither is a formal independent review of every changed line.",
   "A browser selector or bundled stack location is **not** proof of the original TypeScript source line. Static audit locations are exact source file and line.",
   "",
 ];
