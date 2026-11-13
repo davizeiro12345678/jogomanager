@@ -70,6 +70,7 @@ jobs:
           src/game/ai-ball-interception.test.ts
           services/match-authority/supabase-env.test.ts
           services/match-authority/supabase-room-validation.test.ts
+          services/match-authority/worker-activation.test.ts
           --pool=forks --maxWorkers=1
       - name: Confirm Cloudflare target is staging and cannot serve active matches
         run: |
