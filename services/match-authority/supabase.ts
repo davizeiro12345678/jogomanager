@@ -5,6 +5,8 @@ export interface AuthorityDatabaseEnv {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   MATCH_AUTHORITY_ENV: "staging" | "production";
+  /** Explicit project allowlist for staging. Must never be the production ref. */
+  STAGING_SUPABASE_PROJECT_REF?: string;
 }
 
 const ROOM_ID = /^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
@@ -22,9 +24,14 @@ export function validateAuthorityDatabaseTarget(env: AuthorityDatabaseEnv): URL 
   )
     throw new Error("match authority Supabase endpoint is not trusted");
   const projectRef = base.hostname.slice(0, -".supabase.co".length);
+  const configuredStagingRef = env.STAGING_SUPABASE_PROJECT_REF;
   if (
     (env.MATCH_AUTHORITY_ENV !== "staging" && env.MATCH_AUTHORITY_ENV !== "production") ||
-    (env.MATCH_AUTHORITY_ENV === "staging" && projectRef === "lguqnwvsfeefxamzeyos") ||
+    (env.MATCH_AUTHORITY_ENV === "staging" &&
+      (!configuredStagingRef ||
+        !/^[a-z0-9]{20}$/.test(configuredStagingRef) ||
+        configuredStagingRef === "lguqnwvsfeefxamzeyos" ||
+        projectRef !== configuredStagingRef)) ||
     (env.MATCH_AUTHORITY_ENV === "production" && projectRef !== "lguqnwvsfeefxamzeyos")
   )
     throw new Error("match authority database environment does not match deployment");
@@ -51,7 +58,9 @@ async function request(
     method,
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(env.SUPABASE_SERVICE_ROLE_KEY.startsWith("sb_secret_")
+        ? {}
+        : { Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` }),
       Accept: "application/json",
       ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
     },
