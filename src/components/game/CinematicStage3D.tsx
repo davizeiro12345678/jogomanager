@@ -17,6 +17,7 @@ import {
   startTransition,
   Suspense,
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -57,6 +58,8 @@ import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
 import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
+import { CinematicProgramWarmup } from "./cinematic/CinematicProgramWarmup";
+import { CinematicSetBoundary } from "./cinematic/CinematicSetCommit";
 import { resolveCinematicSetLoader } from "./cinematic/sets/registry";
 
 import {
@@ -119,6 +122,8 @@ function Stage({
   light = "neutra",
   festive = false,
   enhanced = true,
+  prepareHero,
+  warmupHost,
   onBatch,
   onUnavailable,
   transitionController,
@@ -141,6 +146,8 @@ function Stage({
   light?: LineLight;
   festive?: boolean;
   enhanced?: boolean;
+  prepareHero: boolean;
+  warmupHost: RefObject<HTMLDivElement | null>;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
   onUnavailable?: (() => void) | undefined;
   transitionController: TransitionController;
@@ -150,6 +157,15 @@ function Stage({
     const loader = resolveCinematicSetLoader(kind);
     return loader ? lazy(loader) : null;
   }, [kind]);
+  const selectedSetIdentity = useMemo(
+    () => ({ set: SelectedSet, art, quality }),
+    [SelectedSet, art, quality],
+  );
+  const [committedSet, setCommittedSet] = useState<object | null>(null);
+  const selectedSetCommitted = useCallback(
+    () => setCommittedSet(selectedSetIdentity),
+    [selectedSetIdentity],
+  );
   useEffect(() => {
     if (!SelectedSet) onUnavailable?.();
   }, [SelectedSet, onUnavailable]);
@@ -163,7 +179,18 @@ function Stage({
   const stagedActor = cinematicStageActorFor(art, speaker, festive);
   const residentSpeaker = stagedActor?.presence === "resident" ? stagedActor.role : null;
   const setScene = SelectedSet ? (
-    <Suspense fallback={<group />}>
+    <CinematicSetBoundary
+      onCommitted={selectedSetCommitted}
+      scenery={
+        art === "medical" || art === "gym" ? (
+          <CinematicSpecialSet
+            medical={art === "medical"}
+            primary={primary}
+            speaker={residentSpeaker}
+          />
+        ) : null
+      }
+    >
       <SelectedSet
         primary={primary}
         secondary={secondary}
@@ -171,7 +198,7 @@ function Stage({
         festive={festive}
         training={art === "training"}
       />
-    </Suspense>
+    </CinematicSetBoundary>
   ) : (
     <group />
   );
@@ -262,13 +289,6 @@ function Stage({
           secondary={secondary}
           quality={quality}
         />
-        {art === "medical" || art === "gym" ? (
-          <CinematicSpecialSet
-            medical={art === "medical"}
-            primary={primary}
-            speaker={residentSpeaker}
-          />
-        ) : null}
         {onUnavailable ? (
           <CinematicSetErrorBoundary key={kind} onUnavailable={onUnavailable}>
             {setScene}
@@ -277,30 +297,37 @@ function Stage({
           setScene
         )}
         {stagedActor?.presence === "overlay" ? (
-          <Figure
-            key={`speaker-${art}-${stagedActor.role}`}
-            x={stagedActor.mark[0]}
-            z={stagedActor.mark[1]}
-            color={
-              stagedActor.role === "captain" || stagedActor.role === "fan"
-                ? primary
-                : stagedActor.role === "referee"
-                  ? "#222d36"
-                  : secondary
-            }
-            shorts="#19232b"
-            seed={hashSeed(`cinematic-speaker:${stagedActor.role}`)}
-            role={stagedActor.role}
-            costume={
-              stagedActor.role === "captain" || stagedActor.role === "fan" ? "player" : "staff"
-            }
-            clipboard={
-              stagedActor.role === "assistant" ||
-              stagedActor.role === "doctor" ||
-              stagedActor.role === "scout"
-            }
-            acting
-          />
+          <CinematicProgramWarmup
+            key={`speaker-${art}-${stagedActor.role}-${quality}`}
+            enabled={prepareHero && committedSet === selectedSetIdentity}
+            requireEnvironment={enhanced && quality !== "baixa"}
+            host={warmupHost}
+          >
+            <Figure
+              key={`speaker-${art}-${stagedActor.role}`}
+              x={stagedActor.mark[0]}
+              z={stagedActor.mark[1]}
+              color={
+                stagedActor.role === "captain" || stagedActor.role === "fan"
+                  ? primary
+                  : stagedActor.role === "referee"
+                    ? "#222d36"
+                    : secondary
+              }
+              shorts="#19232b"
+              seed={hashSeed(`cinematic-speaker:${stagedActor.role}`)}
+              role={stagedActor.role}
+              costume={
+                stagedActor.role === "captain" || stagedActor.role === "fan" ? "player" : "staff"
+              }
+              clipboard={
+                stagedActor.role === "assistant" ||
+                stagedActor.role === "doctor" ||
+                stagedActor.role === "scout"
+              }
+              acting
+            />
+          </CinematicProgramWarmup>
         ) : null}
       </CinematicSetBatch>
     </>
@@ -576,6 +603,8 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 festive={(art === "trophy" || art === "celebration") && mood === "good"}
                 onBatch={onBatch}
                 enhanced={showEnhanced}
+                prepareHero={ready && (showEnhanced || !enhancedAllowed)}
+                warmupHost={host}
                 onUnavailable={onUnavailable}
                 transitionController={transitionController}
               />
