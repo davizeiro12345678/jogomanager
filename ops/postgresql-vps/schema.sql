@@ -3,7 +3,7 @@ CREATE SCHEMA IF NOT EXISTS jm_cache;
 REVOKE ALL ON SCHEMA jm_cache FROM PUBLIC;
 
 CREATE TABLE IF NOT EXISTS jm_cache.catalog_entries (
-  kind text NOT NULL CHECK (kind IN ('competitions', 'clubs', 'players')),
+  kind text NOT NULL CHECK (kind IN ('competitions', 'clubs', 'players', 'stadiums', 'kits', 'competition_seasons', 'official_teams', 'official_venues', 'official_players')),
   id text NOT NULL,
   payload jsonb NOT NULL,
   source_updated_at timestamptz,
@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS jm_catalog_entries_updated_idx
 
 CREATE TABLE IF NOT EXISTS jm_cache.sync_runs (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  kind text NOT NULL CHECK (kind IN ('competitions', 'clubs', 'players')),
+  kind text NOT NULL CHECK (kind IN ('competitions', 'clubs', 'players', 'stadiums', 'kits', 'competition_seasons', 'official_teams', 'official_venues', 'official_players')),
   row_count integer NOT NULL CHECK (row_count >= 0),
   finished_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
