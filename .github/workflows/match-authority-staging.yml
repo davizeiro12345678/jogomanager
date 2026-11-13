@@ -91,7 +91,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm exec -- wrangler dev --config wrangler.match-authority.jsonc --local --ip 127.0.0.1 --port 8787 > "$RUNNER_TEMP/staging-worker-local.log" 2>&1 &
+          # Locked Wrangler/workerd is behind the November 11 compatibility date.
+          # This date override affects ONLY the isolated fail-closed emulator.
+          # Keep the real deploy/dry-run config at 2026-11-11.
+          npm exec -- wrangler dev --config wrangler.match-authority.jsonc --compatibility-date 2026-10-26 --local --ip 127.0.0.1 --port 8787 > "$RUNNER_TEMP/staging-worker-local.log" 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           READY=0
