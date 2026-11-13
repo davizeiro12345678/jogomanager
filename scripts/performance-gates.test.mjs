@@ -493,3 +493,11 @@ test("browser-only gameplay routes cannot pull page and 3D graphs into SSR eager
     assert.doesNotMatch(source, /import\s*\{[^}]+\}\s*from\s*["']@\/pages\//);
   }
 });
+
+test("legacy multiplayer SSR does not eagerly evaluate the match physics engine", () => {
+  const source = readFileSync(path.join(root, "src/lib/multiplayer.functions.ts"), "utf8");
+  assert.doesNotMatch(source, /import\\s+\\{[^}]*MatchSim[^}]*\\}\\s+from\\s+["']@\\/game\\/sim["']/);
+  assert.doesNotMatch(source, /import\\s+\\{\\s*buildTeamSetup\\s*\\}\\s+from\\s+["']@\\/game\\/quickMatch["']/);
+  assert.match(source, /import\\(["']@\\/game\\/sim["']\\)/);
+  assert.match(source, /import\\(["']@\\/game\\/quickMatch["']\\)/);
+});

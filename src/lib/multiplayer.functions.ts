@@ -4,13 +4,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { CLUBS } from "@/game/data/leagues";
-import { buildTeamSetup } from "@/game/quickMatch";
-import {
-  LIVE_MATCH_CLOCK_SCALE,
-  MATCH_SIMULATION_STEP,
-  MATCH_SIMULATION_TICK_LIMIT,
-  MatchSim,
-} from "@/game/sim";
 import {
   createSettlementLeaseGuard,
   isSettlementLeaseExpired,
@@ -312,6 +305,18 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         });
         result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
       } else {
+        // Import physics and team construction only for the trusted legacy replay.
+        // Ordinary SSR, room joins and auxiliary authority never evaluate this graph.
+        const [{ buildTeamSetup }, simulation] = await Promise.all([
+          import("@/game/quickMatch"),
+          import("@/game/sim"),
+        ]);
+        const {
+          MatchSim,
+          LIVE_MATCH_CLOCK_SCALE,
+          MATCH_SIMULATION_STEP,
+          MATCH_SIMULATION_TICK_LIMIT,
+        } = simulation;
         const sim = new MatchSim(
           buildTeamSetup(room.host_club),
           buildTeamSetup(room.guest_club),
