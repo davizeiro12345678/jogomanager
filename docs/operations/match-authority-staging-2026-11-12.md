@@ -52,3 +52,79 @@ Once a full disabled bundle is published by the authorized deployment mechanism:
 ## Gates still open
 
 The staging DO namespace exists but no full-engine staging runtime, no spectator/tournament/coop live integration, no two-device physical test, and no production release approval. PR #132 stays Draft. Runbook progress is evidence of partial implementation rather than an all-done claim.
+
+
+## Continuação de 13/11: vínculo exato ao banco e smoke do Worker completo
+
+O conector Cloudflare confirma que o script remoto `jogomanager-match-authority-staging`
+ainda é o bootstrap isolado (implantação de 12/11). Seu Durable Object SQLite
+`MatchRoomDO` está criado, com `MATCH_AUTHORITY_ENABLED=false`,
+`MATCH_QUEUE_CRON_ENABLED=false`, `workers.dev=false`, prévias públicas
+desabilitadas e nenhuma rota/domínio. Não é uma instalação do motor completo.
+
+### Segurança do vínculo ao PostgreSQL
+
+`services/match-authority/supabase.ts` passou a exigir
+`STAGING_SUPABASE_PROJECT_REF` **exato**, com 20 caracteres alfanuméricos
+minúsculos, além de `MATCH_AUTHORITY_ENV=staging`. Qualquer valor ausente,
+desconhecido ou igual a `lguqnwvsfeefxamzeyos` (produção) é rejeitado
+antes de uma chamada REST. A configuração versionada não contém o ref do
+staging enquanto o projeto não for criado. Isto é propositalmente fail closed.
+
+O worker continua recebendo uma chave somente do servidor pelo nome legado
+`SUPABASE_SERVICE_ROLE_KEY`. O transporte aceita a chave moderna
+`sb_secret_...` no cabeçalho `apikey` **sem** `Authorization: Bearer`
+(falso JWT); mantém `Authorization: Bearer` para a chave JWT legada.
+Os testes locais são sintéticos, não usam contas, chaves ou dados reais.
+
+A origem permitida pelo config isolado mudou de produção para
+`https://staging.jogomanager.com`. Este domínio **não está publicado nem
+autorizado automaticamente**; uma futura rota privada deverá usar política
+Cloudflare Access/autenticação equivalente e ingressos assinados com prazo.
+
+### Prova local executável sem secrets
+
+`.github/workflows/match-authority-staging.yml` agora valida o ref da
+origem, a identidade de staging, o lint/TypeScript, transporte e regressões
+do banco. Depois executa `wrangler deploy --dry-run` para compilar o
+**Worker completo** `worker.ts` sem publicar e inicia esse mesmo código
+em loopback pelo Wrangler local. O script
+`scripts/verify-disabled-match-authority.mjs` exige HTTP 404 em todas as
+rotas testadas, inclusive tentativas de upgrade WebSocket e GET com token em
+query string. O artefato conserva
+`verification/match-authority-staging/local-closed-gate.json`.
+**Teste local fail closed não homologa sockets reais nem a implantação remota.**
+
+### Sequência obrigatória antes da implantação ativa
+
+1. Confirmar **qual organização Supabase** receberá o novo projeto,
+   analisar a cotação real e aprovar explicitamente o valor antes de criar
+   o projeto. Há somente a organização
+   `krbqafglupgymoynhaut` listada pelo acesso atual, mas não há
+   autorização específica de cobrança.
+2. Criar projeto **independente**, preferencialmente `sa-east-1`
+   quando a região for adequada à latência, sem clonar dados, usuários ou
+   credenciais de produção. Registrar somente a referência pública e o
+   número da migração, nunca tokens.
+3. Aplicar as migrações versionadas na base de staging,
+   incluindo `0079` para matchmaking/torneios e `0080` para
+   moderação humana, precedidas pelas dependências. Validar grants,
+   RLS, `anon` e `authenticated` negativos, serviço com permissão
+   mínima possível e integridade de SQL contra o replay do CI.
+4. Provisionar variáveis e segredos **somente** no Worker
+   `jogomanager-match-authority-staging`: `SUPABASE_URL`,
+   `STAGING_SUPABASE_PROJECT_REF`, chave de serviço restrita ao
+   staging e assinaturas independentes para tickets/recibos. A API não
+   permitirá comunicar-se com a referência de produção.
+5. Quando o workflow aprovar, publicar a versão **desativada** e
+   reconsultar bindings, rotas e flags. Só depois configurar uma rota
+   **privada e autenticada** específica de staging. Ativar apenas sala
+   de teste por vez, sem cron de filas nem tráfego de produção.
+6. Testar dois dispositivos e quatro conexões reais, IPs distintos,
+   troca de rede, reconnect, duplicação de tickets, heartbeat, forfeit,
+   replay, isolamento por sala, checkpoint/eviction, idempotência de
+   recibos, suspensão do Worker e rollback. Salvar métricas e traços
+   **sem dados pessoais**. Nenhum teste sintético substitui essa campanha.
+
+O PR permanece Draft. Nenhum deploy de motor, route de produção,
+migração remota ou cobrança é consequência automática deste documento.
