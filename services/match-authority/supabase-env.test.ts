@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   allocateQueuePair,
+  loadPrivateLiveRoom,
   validateAuthorityDatabaseTarget,
   type AuthorityDatabaseEnv,
 } from "./supabase";
@@ -93,6 +94,22 @@ describe("match authority database isolation", () => {
     await allocateQueuePair(env);
     const headers = new Headers(client.mock.calls[0]![1]?.headers);
     expect(headers.get("Authorization")).toBe(`Bearer ${serviceKey}`);
+  });
+
+  it("accepts a numeric UUID for staging room lookup and rejects malformed IDs before the network", async () => {
+    const client = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response("[]", { headers: { "content-type": "application/json" } }));
+    const staging = makeEnv(stagingUrl, "staging");
+    const validRoom = "12345678-1234-4123-8123-123456789012";
+
+    expect(await loadPrivateLiveRoom(staging, validRoom)).toBeNull();
+    expect(client).toHaveBeenCalledTimes(1);
+    expect(String(client.mock.calls[0]![0])).toContain("id=eq.");
+    expect(String(client.mock.calls[0]![0])).toContain(validRoom);
+
+    expect(await loadPrivateLiveRoom(staging, "bad-room")).toBeNull();
+    expect(client).toHaveBeenCalledTimes(1);
   });
 
   it("requires an explicit deployment identity to avoid accidental DB mixing", () => {
