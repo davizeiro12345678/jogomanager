@@ -22,8 +22,7 @@ const sink = process.platform === "win32" ? "NUL" : "/dev/null";
 const TARGETS = Object.freeze({
   home: "https://jogomanager.com/",
   robots: "https://jogomanager.com/robots.txt",
-  catalog:
-    "https://catalog-vps.jogomanager.com/v1/public/clubs?limit=100&page=0",
+  catalog: "https://catalog-vps.jogomanager.com/v1/public/clubs?limit=100&page=0",
   multiplayer: "https://vps-multiplayer.jogomanager.com/health/live",
 });
 const METRIC =
@@ -44,18 +43,13 @@ function round(value) {
 }
 
 function parseResult(stdout) {
-  const expression =
-    /JGM_TIMING:(\d{3})\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)/;
+  const expression = /JGM_TIMING:(\d{3})\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)\|([\d.]+)/;
   const time = expression.exec(stdout);
   if (!time) throw new Error("Curl did not return timing data.");
   const headerBlocks = stdout.slice(0, time.index).split(/\r?\n\r?\n/);
-  const headers =
-    headerBlocks
-      .filter((value) => /^HTTP\/[\d.]+\s+\d{3}/m.test(value))
-      .at(-1) ?? "";
+  const headers = headerBlocks.filter((value) => /^HTTP\/[\d.]+\s+\d{3}/m.test(value)).at(-1) ?? "";
   const get = (name) =>
-    new RegExp("^" + name + ":\\s*([^\\r\\n]+)", "im").exec(headers)?.[1] ??
-    null;
+    new RegExp("^" + name + ":\\s*([^\\r\\n]+)", "im").exec(headers)?.[1] ?? null;
   const app = /(?:^|,)\s*app;dur=([\d.]+)/i.exec(get("server-timing") ?? "");
   const ray = /-([A-Z]{3})$/.exec(get("cf-ray") ?? "");
   return {
@@ -115,11 +109,7 @@ function parseOptions(argv) {
       throw new Error("Unknown argument: " + arg);
     }
   }
-  if (
-    !Number.isInteger(options.samples) ||
-    options.samples < 2 ||
-    options.samples > 30
-  ) {
+  if (!Number.isInteger(options.samples) || options.samples < 2 || options.samples > 30) {
     throw new Error("samples must be an integer between 2 and 30.");
   }
   if (
@@ -127,9 +117,7 @@ function parseOptions(argv) {
     new Set(options.only).size !== options.only.length ||
     options.only.some((name) => !Object.hasOwn(TARGETS, name))
   ) {
-    throw new Error(
-      "only must contain unique names from: " + Object.keys(TARGETS).join(", "),
-    );
+    throw new Error("only must contain unique names from: " + Object.keys(TARGETS).join(", "));
   }
   return options;
 }
@@ -193,8 +181,7 @@ async function main() {
       } catch (error) {
         observations.push({
           status: "error",
-          message:
-            error instanceof Error ? error.message.slice(0, 120) : "unknown",
+          message: error instanceof Error ? error.message.slice(0, 120) : "unknown",
         });
       }
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -227,10 +214,8 @@ async function main() {
     ],
     targets,
   };
-  if (options.output)
-    await writeFile(options.output, JSON.stringify(report, null, 2) + "\n");
-  if (targets.some((item) => item.success !== item.samples))
-    process.exitCode = 1;
+  if (options.output) await writeFile(options.output, JSON.stringify(report, null, 2) + "\n");
+  if (targets.some((item) => item.success !== item.samples)) process.exitCode = 1;
 }
 main().catch((error) => {
   console.error(error);
