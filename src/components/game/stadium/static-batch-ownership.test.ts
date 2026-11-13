@@ -7,6 +7,7 @@ import * as batching from "@/game/static-stadium-batch";
 const hooks = vi.hoisted(() => ({
   frames: [] as (() => void)[],
   refs: [] as { current: unknown }[],
+  unmounts: [] as (() => void)[],
 }));
 vi.mock("@react-three/fiber", () => ({
   useFrame: (frame: () => void) => hooks.frames.push(frame),
@@ -15,6 +16,10 @@ vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
   return {
     ...actual,
+    useLayoutEffect: (effect: () => (() => void) | undefined) => {
+      const cleanup = effect();
+      if (cleanup) hooks.unmounts.push(cleanup);
+    },
     useRef: <T>(value: T) => {
       const ref = actual.useRef(value);
       if (value === null) hooks.refs.push(ref);
@@ -25,6 +30,8 @@ vi.mock("react", async (original) => {
 import { StaticBatch } from "./StaticBatch";
 
 afterEach(() => {
+  for (const unmount of hooks.unmounts) unmount();
+  hooks.unmounts.length = 0;
   for (let index = 1; index < hooks.refs.length; index += 2)
     (hooks.refs[index]?.current as (() => void) | null)?.();
   hooks.frames.length = 0;
@@ -132,4 +139,17 @@ it("rebuilds without rebatching a source whose transform changes", () => {
   expect(spy).toHaveBeenCalledTimes(2);
   expect(moving.visible).toBe(true);
   expect(root.children).toContain(moving);
+});
+
+it("keeps clean mounted frames on the raw observation path", () => {
+  const root = new THREE.Group();
+  for (let index = 0; index < 2; index++)
+    root.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+  renderToStaticMarkup(createElement(StaticBatch, { children: createElement("group") }));
+  hooks.refs[0]!.current = root;
+  const frame = hooks.frames[0]!;
+  for (let index = 0; index < 4; index++) frame();
+  const format = vi.spyOn(Number.prototype, "toPrecision");
+  for (let index = 0; index < 120; index++) frame();
+  expect(format).not.toHaveBeenCalled();
 });

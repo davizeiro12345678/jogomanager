@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { tagCensus, type CensusBucket } from "./scene-census";
+import { observeStaticHierarchy, StaticValueObservation } from "./static-state-observation";
 
 export type StaticStadiumBatchPolicy = {
   bucket?: CensusBucket;
@@ -511,6 +512,169 @@ export function captureStaticStadiumState(
   };
   visit(group);
   return { revision: parts.join("\n"), sourceCount, eligibleCount };
+}
+
+/** Preserve canonical revisions while avoiding their string construction on
+ * clean frames. In-place Three values still require a cheap read each frame;
+ * material.version alone does not observe color, roughness or texture UV edits. */
+export function createStaticStadiumObserver(group: THREE.Group, onHierarchyChange?: () => void) {
+  const hierarchy = observeStaticHierarchy(group, onHierarchyChange);
+  const raw = new StaticValueObservation();
+  const materials = new Set<THREE.Material>();
+  const geometries = new Set<THREE.BufferGeometry>();
+  let hiddenSources = new Set<THREE.Object3D>();
+  let record: StaticBatchRecord | null = null;
+  let state: StaticStadiumState | null = null;
+  let closed = false;
+
+  const observeMaterial = (material: THREE.Material) => {
+    // The reference at every use observes reassignment; shared resources are
+    // expanded once in this tape, regardless of the number of source meshes.
+    raw.put(material);
+    if (materials.has(material)) return;
+    materials.add(material);
+    const value = material as THREE.Material & Record<string, unknown>;
+    raw.put(material.uuid);
+    raw.put(material.version);
+    raw.put(material.type);
+    for (const key of MATERIAL_STATE_KEYS) raw.value(value[key]);
+    for (const key of MATERIAL_VALUE_KEYS) raw.value(value[key]);
+    for (const key of MATERIAL_TEXTURE_KEYS) raw.value(value[key]);
+    raw.put(Object.hasOwn(value, "onBeforeCompile"));
+    raw.put(Object.hasOwn(value, "customProgramCacheKey"));
+    raw.value(value["color"]);
+  };
+  const observeGeometry = (geometry: THREE.BufferGeometry) => {
+    raw.put(geometry);
+    if (geometries.has(geometry)) return;
+    geometries.add(geometry);
+    raw.put(geometry.uuid);
+    raw.put(geometry.drawRange.start);
+    raw.put(geometry.drawRange.count);
+    const index = geometry.index as (THREE.BufferAttribute & { uuid?: string }) | null;
+    raw.put(index?.uuid);
+    raw.put(index?.version);
+    raw.put(index?.count);
+    let attributes = 0;
+    for (const name in geometry.attributes) {
+      if (!Object.hasOwn(geometry.attributes, name)) continue;
+      attributes++;
+      const attribute = geometry.attributes[name]! as THREE.BufferAttribute & { uuid?: string };
+      raw.put(name);
+      raw.put(attribute.uuid);
+      raw.put(attribute.version);
+      raw.put(attribute.count);
+      raw.put(attribute.itemSize);
+      raw.put(attribute.normalized);
+    }
+    raw.put(attributes);
+    raw.put(geometry.groups.length);
+    for (const entry of geometry.groups) {
+      raw.put(entry.start);
+      raw.put(entry.count);
+      raw.put(entry.materialIndex);
+    }
+  };
+  const observeEligibility = (mesh: THREE.Mesh) => {
+    raw.put(Boolean(mesh.geometry?.getAttribute("position")));
+    raw.put(Boolean((mesh as THREE.InstancedMesh).isInstancedMesh));
+    raw.put(Boolean((mesh as THREE.SkinnedMesh).isSkinnedMesh));
+    const material = mesh.material;
+    raw.put(Array.isArray(material));
+    const observe = (value: THREE.Material) => {
+      raw.put(value.type);
+      raw.put(value.transparent);
+      raw.put(value.alphaTest);
+      raw.put(Boolean((value as THREE.ShaderMaterial).isShaderMaterial));
+      raw.put(materialHasCustomProgram(value));
+      raw.put(materialHasUnsupportedState(value));
+    };
+    if (Array.isArray(material)) {
+      raw.put(material.length);
+      for (const value of material) observe(value);
+    } else observe(material);
+    raw.put(callbacksAreCustom(mesh));
+    raw.put(Boolean(mesh.customDepthMaterial));
+    raw.put(Boolean(mesh.customDistanceMaterial));
+  };
+  let exclude: ReadonlySet<THREE.Mesh> | undefined;
+  const visit = (object: THREE.Object3D) => {
+    if (generatedBatch(object) || (object !== group && hasDynamicAncestor(object))) return;
+    const mesh = object as THREE.Mesh;
+    if (mesh.isMesh && exclude?.has(mesh)) {
+      for (const child of object.children) visit(child);
+      return;
+    }
+    const includeTransform =
+      !hasDynamicAncestor(object) && (!mesh.isMesh || eligibleMesh(mesh, exclude));
+    raw.put(object.uuid);
+    raw.put(object.type);
+    raw.put(hiddenSources.has(object) || object.visible);
+    raw.put(object.layers.mask);
+    raw.put(object.renderOrder);
+    raw.put(includeTransform);
+    if (includeTransform) {
+      raw.put(object.matrixAutoUpdate);
+      raw.put(object.matrixWorldAutoUpdate);
+      for (const number of object.matrix.elements) raw.put(number);
+      for (const number of object.matrixWorld.elements) raw.put(number);
+    }
+    raw.put(Boolean(mesh.isMesh));
+    if (mesh.isMesh) {
+      raw.put(mesh.castShadow);
+      raw.put(mesh.receiveShadow);
+      raw.put(mesh.frustumCulled);
+      raw.put(Boolean((mesh as THREE.InstancedMesh).isInstancedMesh));
+      raw.put(Boolean((mesh as THREE.SkinnedMesh).isSkinnedMesh));
+      raw.put(callbacksAreCustom(mesh));
+      if (includeTransform) {
+        if (mesh.geometry) observeGeometry(mesh.geometry);
+        if (Array.isArray(mesh.material)) {
+          raw.put(mesh.material.length);
+          for (const material of mesh.material) observeMaterial(material);
+        } else if (mesh.material) observeMaterial(mesh.material);
+      } else observeEligibility(mesh);
+    }
+    raw.put(object.userData["cinematicDynamic"] === true);
+    raw.put(object.userData["staticBatchDynamic"] === true);
+    for (const child of object.children) visit(child);
+  };
+  return {
+    get hierarchyRevision() {
+      return hierarchy.revision;
+    },
+    read(policy: Pick<StaticStadiumBatchPolicy, "exclude"> = {}): StaticStadiumState {
+      if (closed) throw new Error("Static stadium observer is closed.");
+      // Poll direct dynamic tag changes as well as hierarchy events.
+      void hierarchy.revision;
+      const nextRecord = batchRecord(group);
+      if (nextRecord !== record) {
+        record = nextRecord;
+        hiddenSources = sourceSet(group);
+      }
+      exclude = policy.exclude;
+      group.updateWorldMatrix(true, true);
+      materials.clear();
+      geometries.clear();
+      raw.begin();
+      visit(group);
+      const changed = raw.finish();
+      if (!state || changed) state = captureStaticStadiumState(group, policy);
+      return state;
+    },
+    dispose() {
+      if (closed) return;
+      closed = true;
+      hierarchy.dispose();
+      raw.clear();
+      materials.clear();
+      geometries.clear();
+      hiddenSources.clear();
+      record = null;
+      state = null;
+      exclude = undefined;
+    },
+  };
 }
 
 function bucketFor(object: THREE.Object3D): CensusBucket {

@@ -3,7 +3,7 @@ import { useContext, useLayoutEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import {
   batchStaticStadium,
-  captureStaticStadiumState,
+  createStaticStadiumObserver,
   type StaticStadiumBatch,
 } from "@/game/static-stadium-batch";
 import type { CensusBucket } from "@/game/scene-census";
@@ -34,6 +34,7 @@ export function StaticBatch({
   const settled = useRef({ revision: "", frames: 0 });
   const dynamicSources = useRef(new Set<THREE.Mesh>());
   const cleanup = useRef<StaticStadiumBatch | null>(null);
+  const observer = useRef<ReturnType<typeof createStaticStadiumObserver> | undefined>(undefined);
 
   useLayoutEffect(() => {
     pending.current = true;
@@ -42,6 +43,8 @@ export function StaticBatch({
     return () => {
       cleanup.current?.();
       cleanup.current = null;
+      observer.current?.dispose();
+      observer.current = undefined;
     };
   }, [signature, active, bucket, shadows, textureRevision]);
 
@@ -51,7 +54,8 @@ export function StaticBatch({
     if (!active) return;
 
     const currentBatch = cleanup.current;
-    let state = captureStaticStadiumState(currentRoot, {
+    const observation = (observer.current ??= createStaticStadiumObserver(currentRoot));
+    let state = observation.read({
       exclude: dynamicSources.current,
     });
     if (currentBatch && !currentBatch.isCurrent(state.revision)) {
@@ -64,7 +68,7 @@ export function StaticBatch({
       settled.current = { revision: "", frames: 0 };
       // Cleanup restored source visibility and changed the exclusion set.
       // Only this transition needs a fresh capture in the same frame.
-      state = captureStaticStadiumState(currentRoot, { exclude: dynamicSources.current });
+      state = observation.read({ exclude: dynamicSources.current });
     }
 
     if (pending.current) {

@@ -9,6 +9,7 @@ const hooks = vi.hoisted(() => ({
   frames: [] as (() => void)[],
   refs: [] as { current: unknown }[],
   invalidations: 0,
+  unmounts: [] as (() => void)[],
 }));
 vi.mock("@react-three/fiber", () => ({
   useFrame: (frame: () => void) => hooks.frames.push(frame),
@@ -18,6 +19,10 @@ vi.mock("react", async (original) => {
   const actual = await original<typeof import("react")>();
   return {
     ...actual,
+    useEffect: (effect: () => (() => void) | undefined) => {
+      const cleanup = effect();
+      if (cleanup) hooks.unmounts.push(cleanup);
+    },
     useRef: <T>(value: T) => {
       const ref = actual.useRef(value);
       if (value === null) hooks.refs.push(ref);
@@ -28,6 +33,8 @@ vi.mock("react", async (original) => {
 import { CinematicSetBatch, type CinematicBatchSnapshot } from "./CinematicSetBatch";
 
 afterEach(() => {
+  for (const unmount of hooks.unmounts) unmount();
+  hooks.unmounts.length = 0;
   (hooks.refs[1]?.current as StaticStadiumBatch | null)?.();
   hooks.frames.length = 0;
   hooks.refs.length = 0;
@@ -70,6 +77,8 @@ it.each(["empty", "unmergeable"] as const)(
     const late = new THREE.Mesh(geometry, material);
     scenery.add(late);
     frame();
+    frame();
+    frame();
 
     expect(first.visible).toBe(false);
     expect(late.visible).toBe(false);
@@ -78,3 +87,95 @@ it.each(["empty", "unmergeable"] as const)(
     if (initial === "unmergeable") expect(unmatched.visible).toBe(true);
   },
 );
+
+it("replaces a positive batch after nested late scenery settles, and removes departed geometry", () => {
+  const root = new THREE.Group();
+  const branch = new THREE.Group();
+  root.add(branch);
+  const material = new THREE.MeshStandardMaterial();
+  const geometry = new THREE.BoxGeometry();
+  const first = new THREE.Mesh(geometry, material);
+  const second = new THREE.Mesh(geometry, material);
+  branch.add(first, second);
+  const batches = vi.spyOn(batching, "batchStaticStadium");
+  const sourceDispose = vi.spyOn(geometry, "dispose");
+  const snapshots: CinematicBatchSnapshot[] = [];
+  renderToStaticMarkup(
+    createElement(CinematicSetBatch, {
+      children: createElement("group"),
+      onReady: (snapshot) => snapshots.push(snapshot),
+    }),
+  );
+  hooks.refs[0]!.current = root;
+  const frame = hooks.frames[0]!;
+  for (let index = 0; index < 6; index++) frame();
+  expect(first.visible).toBe(false);
+  const late = new THREE.Mesh(geometry, material);
+  branch.add(late);
+  frame();
+  expect(first.visible).toBe(true);
+  expect(late.visible).toBe(true);
+  const later = new THREE.Mesh(geometry, material);
+  branch.add(later);
+  frame();
+  expect(batches).toHaveBeenCalledTimes(1);
+  frame();
+  frame();
+  expect(snapshots.at(-1)).toEqual({ sources: 4, batches: 1, visibleSources: 0 });
+  expect(batches).toHaveBeenCalledTimes(2);
+  branch.remove(late);
+  frame();
+  frame();
+  frame();
+  expect(snapshots.at(-1)).toEqual({ sources: 3, batches: 1, visibleSources: 0 });
+  expect(batches).toHaveBeenCalledTimes(3);
+  for (let index = 0; index < 120; index++) frame();
+  expect(batches).toHaveBeenCalledTimes(3);
+  expect(sourceDispose).not.toHaveBeenCalled();
+});
+
+it("ignores dynamic actor churn and releases generated resources and hierarchy listeners on reopen", () => {
+  const root = new THREE.Group();
+  const material = new THREE.MeshStandardMaterial();
+  const geometry = new THREE.BoxGeometry();
+  const first = new THREE.Mesh(geometry, material);
+  const second = new THREE.Mesh(geometry, material);
+  const hidden = new THREE.Mesh(geometry, material);
+  hidden.visible = false;
+  const actor = new THREE.Group();
+  actor.userData["cinematicDynamic"] = true;
+  root.add(first, second, hidden, actor);
+  const batches = vi.spyOn(batching, "batchStaticStadium");
+  const addListener = vi.spyOn(root, "addEventListener");
+  const removeListener = vi.spyOn(root, "removeEventListener");
+  const sourceDispose = vi.spyOn(geometry, "dispose");
+  for (let cycle = 0; cycle < 3; cycle++) {
+    renderToStaticMarkup(createElement(CinematicSetBatch, { children: createElement("group") }));
+    hooks.refs.at(-2)!.current = root;
+    const frame = hooks.frames.at(-1)!;
+    for (let index = 0; index < 4; index++) frame();
+    const generated = root.children.find(
+      (child) => child.userData["staticBatchGenerated"] === true,
+    )!;
+    const mesh = generated.children[0] as THREE.Mesh;
+    const disposeGeometry = vi.spyOn(mesh.geometry, "dispose");
+    const disposeMaterial = vi.spyOn(mesh.material as THREE.Material, "dispose");
+    const invalidations = hooks.invalidations;
+    actor.add(new THREE.Group());
+    actor.position.x++;
+    for (let index = 0; index < 4; index++) frame();
+    expect(hooks.invalidations).toBe(invalidations);
+    expect(first.visible).toBe(false);
+    expect(hidden.visible).toBe(false);
+    hooks.unmounts.at(-1)!();
+    expect(root.children).toEqual([first, second, hidden, actor]);
+    expect(first.visible).toBe(true);
+    expect(hidden.visible).toBe(false);
+    expect(disposeGeometry).toHaveBeenCalledTimes(1);
+    expect(disposeMaterial).toHaveBeenCalledTimes(1);
+  }
+  expect(batches).toHaveBeenCalledTimes(3);
+  expect(addListener).toHaveBeenCalledTimes(6);
+  expect(removeListener).toHaveBeenCalledTimes(6);
+  expect(sourceDispose).not.toHaveBeenCalled();
+});

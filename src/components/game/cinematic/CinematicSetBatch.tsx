@@ -1,7 +1,11 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
-import { batchStaticStadium, type StaticStadiumBatch } from "@/game/static-stadium-batch";
+import {
+  batchStaticStadium,
+  createStaticStadiumObserver,
+  type StaticStadiumBatch,
+} from "@/game/static-stadium-batch";
 
 /** Batch after React has mounted every static descendant. Animated actors,
  * FX, instances and skinned surfaces retain their original frame updates. */
@@ -9,16 +13,6 @@ export interface CinematicBatchSnapshot {
   sources: number;
   batches: number;
   visibleSources: number;
-}
-
-function hasSameScenery(root: THREE.Group, previous: ReadonlySet<THREE.Object3D>): boolean {
-  let same = true;
-  let count = 0;
-  root.traverse((object) => {
-    count++;
-    if (!previous.has(object)) same = false;
-  });
-  return same && count === previous.size;
 }
 
 export function CinematicSetBatch({
@@ -30,7 +24,9 @@ export function CinematicSetBatch({
 }) {
   const group = useRef<THREE.Group>(null);
   const cleanup = useRef<StaticStadiumBatch | null>(null);
-  const waitingForScenery = useRef<ReadonlySet<THREE.Object3D> | null>(null);
+  const observer = useRef<ReturnType<typeof createStaticStadiumObserver> | undefined>(undefined);
+  const settled = useRef({ revision: -1, frames: 0 });
+  const batchedRevision = useRef(-1);
   const frames = useRef(0);
   const { invalidate } = useThree();
 
@@ -38,38 +34,51 @@ export function CinematicSetBatch({
     () => () => {
       cleanup.current?.();
       cleanup.current = null;
+      observer.current?.dispose();
+      observer.current = undefined;
+      settled.current = { revision: -1, frames: 0 };
+      batchedRevision.current = -1;
+      frames.current = 0;
     },
     [],
   );
 
   useFrame(() => {
     if (!group.current) return;
+    const observation = (observer.current ??= createStaticStadiumObserver(
+      group.current,
+      invalidate,
+    ));
+    const revision = observation.hierarchyRevision;
+    const stable = settled.current;
+    if (stable.revision !== revision) {
+      cleanup.current?.();
+      cleanup.current = null;
+      stable.revision = revision;
+      stable.frames = 0;
+    } else stable.frames++;
     let prepared = false;
-    if (!cleanup.current) {
-      if (++frames.current < 3) {
+    ++frames.current;
+    if (batchedRevision.current !== revision) {
+      if (frames.current < 3 || stable.frames < 2) {
         invalidate();
         return;
       }
-      // A lazy set can still be suspended after the shell's first frames.
-      // An empty batch must not permanently own scenery that arrives later,
-      // nor repeatedly serialize unchanged source materials on every frame.
-      if (waitingForScenery.current && hasSameScenery(group.current, waitingForScenery.current))
-        return;
+      // Hierarchy events admit nested lazy descendants after either a positive
+      // or empty result. Generated batches and dynamic actors never restart this.
       const batch = batchStaticStadium(group.current);
+      batchedRevision.current = revision;
       if (batch.batches === 0) {
         batch();
-        const scenery = new Set<THREE.Object3D>();
-        group.current.traverse((object) => scenery.add(object));
-        waitingForScenery.current = scenery;
         return;
       }
-      waitingForScenery.current = null;
       cleanup.current = batch;
       prepared = true;
       invalidate();
     }
+    if (!cleanup.current) return;
     cleanup.current.hideSources();
-    if (prepared || ++frames.current % 60 === 0) {
+    if (prepared || frames.current % 60 === 0) {
       const stats = group.current.userData["staticBatch"] as {
         sources: THREE.Mesh[];
         batches: number;
