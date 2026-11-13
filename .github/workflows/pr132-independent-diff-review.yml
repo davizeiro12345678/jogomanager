@@ -43,7 +43,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pr132-full-diff"
           node --input-type=module <<'NODE'
           import { execFileSync } from "node:child_process";
-          import { readFile, stat, mkdir, writeFile } from "node:fs/promises";
+          import { readFile, lstat, mkdir, writeFile } from "node:fs/promises";
           import { createHash } from "node:crypto";
           import path from "node:path";
 
@@ -122,9 +122,12 @@ jobs:
               candidates: [],
             };
             try {
-              const info = await stat(file);
+              const info = await lstat(file);
               row.bytes = info.size;
-              if (info.isDirectory()) {
+              if (info.isSymbolicLink()) {
+                // Never follow repository symlinks into runner-local files.
+                row.mode = "symlink-not-followed";
+              } else if (info.isDirectory()) {
                 row.mode = "directory";
               } else if (info.size > 4 * 1024 * 1024) {
                 row.mode = "oversized";
