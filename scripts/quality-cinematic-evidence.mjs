@@ -20,7 +20,7 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch({
   channel: "msedge",
   headless: false,
-  args: ["--force-high-performance-gpu"],
+  args: ["--force-high-performance-gpu", "--force_high_performance_gpu"],
 });
 const context = await browser.newContext({
   viewport: { width: 1280, height: 720 },

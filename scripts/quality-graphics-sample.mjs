@@ -20,7 +20,9 @@ const recordVideo = process.env["QA_RECORD_VIDEO"] === "1";
 const browser = await chromium.launch({
   channel: "msedge",
   headless: !headed,
-  args: highPerformanceGpu ? ["--force-high-performance-gpu"] : [],
+  // Keep the driver-workaround spelling as well as the browser-level switch:
+  // on Windows hybrid laptops the latter alone can still leave ANGLE on Intel.
+  args: highPerformanceGpu ? ["--force-high-performance-gpu", "--force_high_performance_gpu"] : [],
 });
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1000 },
