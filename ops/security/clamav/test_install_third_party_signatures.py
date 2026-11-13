@@ -24,6 +24,10 @@ class SignatureDeploymentTests(unittest.TestCase):
         for setting in ("sanesecurity_enabled", "interserver_enabled", "malwareexpert_enabled", "malwarepatrol_enabled", "securiteinfo_enabled"):
             self.assertIn(setting + '="no"', conf)
 
+    def test_no_remote_management_false_positives(self):
+        self.assertIn('declare -a ditekshen_dbs=( "clamav.ldb|MEDIUM" )', clamav.USER_CONF)
+        self.assertNotIn("indicator_rmm.ldb|MEDIUM", clamav.USER_CONF)
+
     def test_no_autodelete_or_self_upgrade(self):
         conf = clamav.USER_CONF
         for item in ('remove_disabled_databases="no"', 'allow_upgrades="no"', 'enable_yararules="no"', 'user_configuration_complete="yes"'):
