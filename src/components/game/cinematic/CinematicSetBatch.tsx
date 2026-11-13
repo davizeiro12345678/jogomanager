@@ -4,7 +4,7 @@ import * as THREE from "three";
 import type { StaticStadiumBatch } from "@/game/static-stadium-batch";
 
 type StaticStadiumBatchObserver = ReturnType<
-  typeof import("@/game/static-stadium-batch")["createStaticStadiumObserver"]
+  (typeof import("@/game/static-stadium-batch"))["createStaticStadiumObserver"]
 >;
 
 /** Batch after React has mounted every static descendant. Animated actors,
