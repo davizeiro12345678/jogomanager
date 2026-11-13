@@ -543,14 +543,20 @@ try {
     .split("\0")
     .filter(Boolean);
   const inventory = [];
-  const infrastructure = /^(?:\\.github\\/workflows\\/|drizzle\\/migrations\\/|services\\/match-authority\\/|cloudflare\\/)/;
+  const infrastructure = [
+    ".github/workflows/",
+    "drizzle/migrations/",
+    "services/match-authority/",
+    "cloudflare/",
+  ];
   const sensitive = /(?:auth|payment|stripe|secret|moderation|realtime|multiplayer|matchmaking|security|ticket|anticheat)/i;
   const visuals = /(?:cinematic|stadium|renderer|webgl|webgpu|physics|shaders|texture|graphics|3d)/i;
   const riskGroup = (file) => {
-    if (infrastructure.test(file)) return "critical-infrastructure";
+    if (infrastructure.some((root) => file.startsWith(root))) return "critical-infrastructure";
     if (sensitive.test(file)) return "security-sensitive";
     if (visuals.test(file)) return "graphics-or-simulation";
-    if (/^(?:src|tests|scripts|services)\\//.test(file)) return "application-or-tests";
+    if (["src/", "tests/", "scripts/", "services/"].some((root) => file.startsWith(root)))
+      return "application-or-tests";
     return "documentation-or-assets";
   };
   for (const file of paths) {
@@ -569,7 +575,13 @@ try {
     } catch {
       state = "deleted-or-unavailable";
     }
-    inventory.push({ path: file, state, sizeBytes, lineCount, riskGroup: riskGroup(file) });
+    inventory.push({
+      path: file,
+      state,
+      sizeBytes,
+      lineCount,
+      riskGroup: riskGroup(file),
+    });
   }
   const counts = Object.fromEntries(
     [...new Set(inventory.map((item) => item.riskGroup))].map((group) => [
@@ -585,7 +597,13 @@ try {
   );
   const csv = ["path,state,sizeBytes,lineCount,riskGroup"];
   for (const item of inventory) {
-    const cells = [item.path, item.state, item.sizeBytes ?? "", item.lineCount ?? "", item.riskGroup];
+    const cells = [
+      item.path,
+      item.state,
+      item.sizeBytes ?? "",
+      item.lineCount ?? "",
+      item.riskGroup,
+    ];
     csv.push(cells.map((value) => '"' + String(value).replace(/"/g, '""') + '"').join(","));
   }
   await writeFile(path.join(output, "full-pr-file-inventory.csv"), csv.join("\n") + "\n");
