@@ -1,11 +1,11 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
-import {
-  batchStaticStadium,
-  createStaticStadiumObserver,
-  type StaticStadiumBatch,
-} from "@/game/static-stadium-batch";
+import type { StaticStadiumBatch } from "@/game/static-stadium-batch";
+
+type StaticStadiumBatchObserver = ReturnType<
+  typeof import("@/game/static-stadium-batch")["createStaticStadiumObserver"]
+>;
 
 /** Batch after React has mounted every static descendant. Animated actors,
  * FX, instances and skinned surfaces retain their original frame updates. */
@@ -24,11 +24,30 @@ export function CinematicSetBatch({
 }) {
   const group = useRef<THREE.Group>(null);
   const cleanup = useRef<StaticStadiumBatch | null>(null);
-  const observer = useRef<ReturnType<typeof createStaticStadiumObserver> | undefined>(undefined);
+  const observer = useRef<StaticStadiumBatchObserver | undefined>(undefined);
+  const batchingModule = useRef<typeof import("@/game/static-stadium-batch") | null>(null);
   const settled = useRef({ revision: -1, frames: 0 });
   const batchedRevision = useRef(-1);
   const frames = useRef(0);
   const { invalidate } = useThree();
+
+  // Keep optional static-batch implementation outside the cinematic startup
+  // static import closure; render the original scene immediately while it loads.
+  // A loader failure only disables batching, never hides scenery or game UI.
+  useEffect(() => {
+    let active = true;
+    void import("@/game/static-stadium-batch")
+      .then((module) => {
+        if (!active) return;
+        batchingModule.current = module;
+        invalidate();
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      batchingModule.current = null;
+    };
+  }, [invalidate]);
 
   useEffect(
     () => () => {
@@ -44,8 +63,9 @@ export function CinematicSetBatch({
   );
 
   useFrame(() => {
-    if (!group.current) return;
-    const observation = (observer.current ??= createStaticStadiumObserver(
+    const module = batchingModule.current;
+    if (!group.current || !module) return;
+    const observation = (observer.current ??= module.createStaticStadiumObserver(
       group.current,
       invalidate,
     ));
@@ -66,7 +86,7 @@ export function CinematicSetBatch({
       }
       // Hierarchy events admit nested lazy descendants after either a positive
       // or empty result. Generated batches and dynamic actors never restart this.
-      const batch = batchStaticStadium(group.current);
+      const batch = module.batchStaticStadium(group.current);
       batchedRevision.current = revision;
       if (batch.batches === 0) {
         batch();
