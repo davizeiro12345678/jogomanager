@@ -1,7 +1,9 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import type { Group } from "three";
-import { invalidateScenePrograms, promoteScenePrograms } from "@/game/graphics-warmup";
+// Keep shader compilation and its generation cache off the initial cinematic
+// static import graph. This code is only needed after the optional actor
+// enters the idle-warmup window, never for first paint.
 
 /** Only optional overlay actors wait here. The set, dialogue, first-frame
  * callbacks and Canvas owner continue independently. */
@@ -64,11 +66,24 @@ export function CinematicProgramWarmup({
           ? "parallel"
           : "driver-poll";
       }
-      void promoteScenePrograms(gl, actor, camera, consumer.signal, scene).then((status) => {
-        if (!active || consumer.signal.aborted || document.hidden || lost) return;
-        publish(status, startedAt, programsBefore);
-        invalidate();
-      });
+      void import("@/game/graphics-warmup")
+        .then(({ promoteScenePrograms }) => {
+          if (!active || consumer.signal.aborted || document.hidden || lost)
+            return "cancelled" as const;
+          return promoteScenePrograms(gl, actor, camera, consumer.signal, scene);
+        })
+        .then((status) => {
+          if (!active || consumer.signal.aborted || document.hidden || lost) return;
+          publish(status, startedAt, programsBefore);
+          invalidate();
+        })
+        .catch(() => {
+          if (!active || consumer.signal.aborted || document.hidden || lost) return;
+          // An optional shader warmup must never leave the hero actor hidden.
+          actor.visible = true;
+          publish("failed", startedAt, programsBefore);
+          invalidate();
+        });
     };
     const schedule = () => {
       if (!active || lost || document.hidden || actor.visible) return;
@@ -86,7 +101,12 @@ export function CinematicProgramWarmup({
     const contextLost = () => {
       lost = true;
       withdraw();
-      invalidateScenePrograms(gl);
+      // If the optional module was never requested it has no renderer cache.
+      // Loading it now still guarantees that an in-flight import cannot start
+      // compiling after the context was invalidated.
+      void import("@/game/graphics-warmup")
+        .then(({ invalidateScenePrograms }) => invalidateScenePrograms(gl))
+        .catch(() => undefined);
     };
     document.addEventListener("visibilitychange", visibility);
     gl.domElement.addEventListener("webglcontextlost", contextLost);
