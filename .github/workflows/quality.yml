@@ -46,6 +46,17 @@ jobs:
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Audit Cloudflare Worker static import graph after build
+        run: |
+          node scripts/audit-worker-startup.mjs --self-test
+          node scripts/audit-worker-startup.mjs --output=worker-startup-graph.json
+      - name: Upload Worker startup graph diagnostic
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cloudflare-worker-startup-graph
+          path: worker-startup-graph.json
+          if-no-files-found: warn
       - run: npm run bundle:check
 
   bundle-impact:
