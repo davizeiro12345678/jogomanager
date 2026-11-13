@@ -38,6 +38,7 @@ class SignatureDeploymentTests(unittest.TestCase):
         for item in ('remove_disabled_databases="no"', 'allow_upgrades="no"', 'enable_yararules="no"', 'user_configuration_complete="yes"'):
             self.assertIn(item, conf)
         self.assertNotIn("--remove", clamav.UPDATER.as_posix())
+        self.assertIn('enable_random="no"', conf)
 
 if __name__ == "__main__":
     unittest.main()
