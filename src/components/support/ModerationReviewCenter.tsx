@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useT } from "@/i18n/provider";
 import { moderationReviewMessages } from "@/i18n/moderation-review-messages";
+import { mayShowModerationData } from "@/lib/moderation-identity";
 import {
   decideModerationAppeal,
   decideModerationCase,
@@ -69,13 +70,29 @@ export function ModerationReviewCenter() {
   const [reviewDecision, setReviewDecision] = useState<AppealDecision>("upheld");
   const [reviewNote, setReviewNote] = useState("");
   const request = useRef<{ caseId: string; message: string; requestId: string } | null>(null);
+  // Private review data belongs to one authenticated identity. A login switch
+  // must hide previous results immediately, before effects or fetches settle.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const currentUser = useRef(userId);
+  useEffect(() => {
+    currentUser.current = userId;
+    request.current = null;
+    setAppealFor(null);
+    setCaseFor(null);
+    setReviewFor(null);
+    setBusy(false);
+    setNotice("");
+  }, [userId]);
 
   async function reload(): Promise<void> {
+    const requestedFor = userId;
+    if (!requestedFor) return;
     const [myResult, caseResult, appealResult] = await Promise.allSettled([
       listMine({ data: { limit: 20 } }),
       listCases({ data: { limit: 20 } }),
       listAppeals({ data: { limit: 20 } }),
     ]);
+    if (currentUser.current !== requestedFor) return;
     if (myResult.status === "fulfilled" && myResult.value.ok) {
       setOwn(myResult.value.entries);
       setEnabled(true);
@@ -90,6 +107,7 @@ export function ModerationReviewCenter() {
         ? appealResult.value.entries
         : [],
     );
+    setLoadedFor(requestedFor);
   }
 
   useEffect(() => {
@@ -98,6 +116,7 @@ export function ModerationReviewCenter() {
       setCases([]);
       setAppeals([]);
       setEnabled(false);
+      setLoadedFor(null);
       return;
     }
     let active = true;
@@ -108,13 +127,17 @@ export function ModerationReviewCenter() {
           listCases({ data: { limit: 20 } }),
           listAppeals({ data: { limit: 20 } }),
         ]);
-        if (!active) return;
+        if (!active || currentUser.current !== userId) return;
         setEnabled(mine.status === "fulfilled" && mine.value.ok);
         setOwn(mine.status === "fulfilled" && mine.value.ok ? mine.value.entries : []);
         setCases(pending.status === "fulfilled" && pending.value.ok ? pending.value.entries : []);
         setAppeals(reviews.status === "fulfilled" && reviews.value.ok ? reviews.value.entries : []);
+        setLoadedFor(userId);
       } catch {
-        if (active) setNotice(copy.moderationFailed);
+        if (active && currentUser.current === userId) {
+          setNotice(copy.moderationFailed);
+          setLoadedFor(userId);
+        }
       }
     };
     void load();
@@ -126,6 +149,7 @@ export function ModerationReviewCenter() {
   async function sendAppeal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!appealFor || busy || !enabled) return;
+    const requestedFor = userId;
     setBusy(true);
     setNotice("");
     const message = appealText.trim();
@@ -139,6 +163,7 @@ export function ModerationReviewCenter() {
       const result = await submitAppeal({
         data: { caseId: appealFor, requestId: request.current.requestId, message },
       });
+      if (currentUser.current !== requestedFor) return;
       if (!result.ok) throw new Error(result.reason);
       request.current = null;
       setAppealFor(null);
@@ -146,9 +171,9 @@ export function ModerationReviewCenter() {
       setNotice(copy.appealReceived);
       await reload();
     } catch {
-      setNotice(copy.appealFailed);
+      if (currentUser.current === requestedFor) setNotice(copy.appealFailed);
     } finally {
-      setBusy(false);
+      if (currentUser.current === requestedFor) setBusy(false);
     }
   }
 
@@ -156,6 +181,7 @@ export function ModerationReviewCenter() {
     event.preventDefault();
     const selected = cases.find((item) => item.caseId === caseFor);
     if (!selected || busy) return;
+    const requestedFor = userId;
     setBusy(true);
     setNotice("");
     try {
@@ -167,21 +193,23 @@ export function ModerationReviewCenter() {
           note: caseNote.trim(),
         },
       });
+      if (currentUser.current !== requestedFor) return;
       if (!result.ok) throw new Error(result.reason);
       setCaseFor(null);
       setCaseNote("");
       setNotice(copy.decisionSaved);
       await reload();
     } catch {
-      setNotice(copy.decisionFailed);
+      if (currentUser.current === requestedFor) setNotice(copy.decisionFailed);
     } finally {
-      setBusy(false);
+      if (currentUser.current === requestedFor) setBusy(false);
     }
   }
 
   async function sendReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!reviewFor || busy) return;
+    const requestedFor = userId;
     setBusy(true);
     setNotice("");
     try {
@@ -192,19 +220,26 @@ export function ModerationReviewCenter() {
           note: reviewNote.trim(),
         },
       });
+      if (currentUser.current !== requestedFor) return;
       if (!result.ok) throw new Error(result.reason);
       setReviewFor(null);
       setReviewNote("");
       setNotice(copy.reviewSaved);
       await reload();
     } catch {
-      setNotice(copy.reviewFailed);
+      if (currentUser.current === requestedFor) setNotice(copy.reviewFailed);
     } finally {
-      setBusy(false);
+      if (currentUser.current === requestedFor) setBusy(false);
     }
   }
 
   if (!userId) return <p className="text-sm text-muted-foreground">{copy.signIn}</p>;
+  if (!mayShowModerationData(userId, loadedFor))
+    return (
+      <p role="status" className="text-sm text-muted-foreground">
+        {copy.loading}
+      </p>
+    );
 
   return (
     <section
