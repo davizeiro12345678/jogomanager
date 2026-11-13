@@ -255,9 +255,37 @@ try {
       });
       if (await toggle.count()) {
         await toggle.first().click({ timeout: 9000 });
-        await page.waitForTimeout(500);
+        await page
+          .locator("#moderation-center-title")
+          .waitFor({ state: "visible", timeout: 3500 })
+          .catch(() => undefined);
         await png(page, "contato-moderation-open");
-        report.axes.interaction.metrics["moderationViewOpened"] = true;
+        const view = await page.evaluate(() => ({
+          pathname: location.pathname,
+          mounted: Boolean(document.getElementById("moderation-center-title")),
+          bodyTextChars: (document.body.innerText || "").trim().length,
+        }));
+        report.axes.interaction.metrics["moderationViewOpened"] = view.mounted;
+        report.axes.interaction.metrics["moderationViewAfterClick"] = view;
+        if (!view.mounted || view.pathname !== "/contato") {
+          find(
+            "interaction",
+            "warning",
+            {
+              route: "/contato",
+              afterClick: view.pathname,
+              sourceHint: "src/components/support/ModerationReviewCenter.tsx",
+            },
+            "Click did not produce a visible moderation review center; the preview may have redirected to sign-in.",
+            "Verify feature flag, authenticated access, redirect and lazy boundary with an isolated test account. A successful click alone does not prove functionality.",
+          );
+        }
+        if (view.pathname !== "/contato") {
+          await page.goto(new URL("/contato", origin).href, {
+            waitUntil: "domcontentloaded",
+          });
+          await page.waitForTimeout(650);
+        }
       } else {
         find(
           "interaction",
