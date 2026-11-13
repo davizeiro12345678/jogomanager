@@ -1,0 +1,48 @@
+name: PR132 staging one-shot source formatter
+
+on:
+  push:
+    branches:
+      - integration/release-2026-11-11
+    paths:
+      - .github/workflows/pr132-staging-format-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr132-staging-format-once
+  cancel-in-progress: false
+
+jobs:
+  format:
+    if: github.repository == 'davizeiro12345678/jogomanager'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Format only staging isolation and runtime smoke files
+        run: |
+          npm exec -- prettier --write \
+            services/match-authority/supabase.ts \
+            services/match-authority/supabase-env.test.ts \
+            scripts/verify-disabled-match-authority.mjs
+      - name: Save formatting to the existing integration branch
+        run: |
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- services/match-authority/supabase.ts services/match-authority/supabase-env.test.ts scripts/verify-disabled-match-authority.mjs
+          if git diff --cached --quiet; then
+            echo 'Nothing to format.'
+            exit 0
+          fi
+          git commit -m 'style(staging): apply verified Prettier to isolated DB and loopback smoke'
+          git push origin HEAD:integration/release-2026-11-11
