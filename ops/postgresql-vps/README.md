@@ -18,12 +18,14 @@ Do not automatically execute this on an untrusted host. First complete the malwa
    ```conf
    listen_addresses = '127.0.0.1'
    password_encryption = 'scram-sha-256'
-   shared_buffers = '4GB'
+   shared_buffers = '14GB'
    effective_cache_size = '24GB'
-   work_mem = '8MB'
+   work_mem = '4MB'
    maintenance_work_mem = '512MB'
    autovacuum_work_mem = '256MB'
-   max_connections = 60
+   max_connections = 550
+   reserved_connections = 10
+   superuser_reserved_connections = 5
    max_wal_size = '4GB'
    checkpoint_completion_target = 0.9
    effective_io_concurrency = 64
@@ -65,3 +67,10 @@ Do **not** point private endpoints or the match-authority settlement code at the
 Run `python3 -m unittest test_sync_public_catalog.py` before deploying. For reversal, disable both timers and leave the local catalog intact; the existing VPS API continues to query Supabase until it is explicitly switched. Roll back the PostgreSQL major upgrade to the old cluster only after ensuring the new version has not accepted writes that the old version lacks. Test restoring the off-host backup.
 
 **Not performed by this repository:** installing packages on the VPS, copying any secret, refreshing private user data, or starting ClamAV. These are separate authorized server operations.
+## 13 Nov 2026: live sizing and extended public mirror
+
+The VPS local PostgreSQL 18.7 is verified at `shared_buffers=14GB`, `max_connections=550`, `work_mem=4MB`, `effective_cache_size=24GB`, `reserved_connections=10`, and `superuser_reserved_connections=5`. PostgreSQL stays on loopback. The prior configuration and pre-change database dump were saved under `/var/backups/jm-postgresql`. The 550 slots are a maximum, not a target of 550 simultaneous heavy queries. The 14GB buffer allocation is substantial relative to the initial local data size, and has not demonstrated a performance advantage yet.
+
+The read-only Supabase catalog mirror supports six additional RLS-public tables: `stadiums`, `kits`, `competition_seasons`, `official_teams`, `official_venues`, and `official_players`. Apply `migrations/20261113_expand_public_catalog.sql` ONLY to the local `jogomanager_local` cluster, deploy the updated Python importer, verify every catalog count and then enable `jm-expanded-catalog-mirror.timer` for a low-load daily update.
+
+The local database is **not** a complete or bidirectional replica. Confidential `api_football_data`, auth records, careers, saves, subscriptions, payments, and match settlements stay authoritative in Supabase. Authenticated API requests must continue to enforce each user's JWT and row-level permissions. Full direct PostgreSQL logical replication requires a restricted replication credential, verified TLS, retention/lag monitoring, a security audit of the VPS, and an explicit table scope; never copy a Supabase service-role key into clients or this repository.
