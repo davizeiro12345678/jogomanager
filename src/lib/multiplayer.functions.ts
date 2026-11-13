@@ -3,12 +3,17 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
-import { CLUBS } from "@/game/data/leagues";
 import {
   createSettlementLeaseGuard,
   isSettlementLeaseExpired,
   settlementLeaseCutoff,
 } from "@/lib/multiplayer-settlement";
+
+// Load the club catalogue only for authenticated, validated multiplayer requests.
+async function hasKnownClub(clubId: string): Promise<boolean> {
+  const { CLUBS } = await import("@/game/data/leagues");
+  return Object.hasOwn(CLUBS, clubId);
+}
 
 export interface MultiplayerRoomRecord {
   id: string;
@@ -42,7 +47,7 @@ export const createMatchRoom = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!Object.hasOwn(CLUBS, data.hostClub)) return { ok: false, reason: "invalid_club" };
+    if (!(await hasKnownClub(data.hostClub))) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { createPrivateMatchRoom } = await import("./multiplayer-room-create.server");
@@ -58,7 +63,7 @@ export const joinMatchRoom = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!Object.hasOwn(CLUBS, data.guestClub)) return { ok: false, reason: "invalid_club" };
+    if (!(await hasKnownClub(data.guestClub))) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
@@ -95,8 +100,8 @@ export const startMatchRoom = createServerFn({ method: "POST" })
       currentRoom.status !== "ready" ||
       !currentRoom.server_seeded ||
       !currentRoom.guest_club ||
-      !Object.hasOwn(CLUBS, currentRoom.host_club) ||
-      !Object.hasOwn(CLUBS, currentRoom.guest_club)
+      !(await hasKnownClub(currentRoom.host_club)) ||
+      !(await hasKnownClub(currentRoom.guest_club))
     ) {
       return { ok: false, reason: "room_not_ready" };
     }
@@ -212,7 +217,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     if (!room.server_seeded || !room.guest_club) {
       return { ok: false, reason: "invalid_room" };
     }
-    if (!Object.hasOwn(CLUBS, room.host_club) || !Object.hasOwn(CLUBS, room.guest_club)) {
+    if (!(await hasKnownClub(room.host_club)) || !(await hasKnownClub(room.guest_club))) {
       return { ok: false, reason: "invalid_room" };
     }
 

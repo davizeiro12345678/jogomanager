@@ -500,4 +500,7 @@ test("legacy multiplayer SSR does not eagerly evaluate the match physics engine"
   assert.doesNotMatch(source, /import\\s+\\{\\s*buildTeamSetup\\s*\\}\\s+from\\s+["']@\\/game\\/quickMatch["']/);
   assert.match(source, /import\\(["']@\\/game\\/sim["']\\)/);
   assert.match(source, /import\\(["']@\\/game\\/quickMatch["']\\)/);
+  assert.ok(!source.includes('import { CLUBS } from "@/game/data/leagues";'));
+  assert.ok(source.includes('import("@/game/data/leagues")'));
+
 });
