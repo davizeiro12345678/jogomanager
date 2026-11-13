@@ -2,8 +2,10 @@ import { request } from "node:http";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const [target = "http://127.0.0.1:8787", output = "verification/match-authority-staging/local-closed-gate.json"] =
-  process.argv.slice(2);
+const [
+  target = "http://127.0.0.1:8787",
+  output = "verification/match-authority-staging/local-closed-gate.json",
+] = process.argv.slice(2);
 const origin = new URL(target);
 if (origin.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(origin.hostname))
   throw new Error("Only a loopback Wrangler emulator is accepted for disabled-stage smoke tests");
@@ -28,28 +30,24 @@ const checks = [
 ];
 const probe = ({ path, method, headers }) =>
   new Promise((done, reject) => {
-    const req = request(
-      new URL(path, origin),
-      { method, headers, timeout: 4_000 },
-      (res) => {
-        let bytes = 0;
-        res.on("data", (chunk) => {
-          bytes += chunk.length;
-          if (bytes > 8_192) req.destroy(new Error("Unexpected large response"));
-        });
-        res.on("end", () =>
-          done({
-            path,
-            method,
-            upgradeAttempt: Boolean(headers?.Upgrade),
-            status: res.statusCode,
-            bytes,
-            setCookie: Boolean(res.headers["set-cookie"]),
-          }),
-        );
-        res.on("error", reject);
-      },
-    );
+    const req = request(new URL(path, origin), { method, headers, timeout: 4_000 }, (res) => {
+      let bytes = 0;
+      res.on("data", (chunk) => {
+        bytes += chunk.length;
+        if (bytes > 8_192) req.destroy(new Error("Unexpected large response"));
+      });
+      res.on("end", () =>
+        done({
+          path,
+          method,
+          upgradeAttempt: Boolean(headers?.Upgrade),
+          status: res.statusCode,
+          bytes,
+          setCookie: Boolean(res.headers["set-cookie"]),
+        }),
+      );
+      res.on("error", reject);
+    });
     req.on("timeout", () => req.destroy(new Error("Local Worker timed out")));
     req.on("upgrade", () => req.destroy(new Error("Disabled staging upgraded a WebSocket")));
     req.on("error", reject);

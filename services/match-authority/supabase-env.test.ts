@@ -35,18 +35,14 @@ describe("match authority database isolation", () => {
         makeEnv("https://lguqnwvsfeefxamzeyos.supabase.co", "production"),
       ),
     ).not.toThrow();
-    expect(() =>
-      validateAuthorityDatabaseTarget(
-        makeEnv(stagingUrl, "production"),
-      ),
-    ).toThrow(/environment/);
+    expect(() => validateAuthorityDatabaseTarget(makeEnv(stagingUrl, "production"))).toThrow(
+      /environment/,
+    );
   });
 
   it("allows a different staging project and rejects untrusted hosts", () => {
     const staging = makeEnv(stagingUrl, "staging");
-    expect(validateAuthorityDatabaseTarget(staging).hostname).toBe(
-      `${stagingRef}.supabase.co`,
-    );
+    expect(validateAuthorityDatabaseTarget(staging).hostname).toBe(`${stagingRef}.supabase.co`);
     for (const url of [
       `http://${stagingRef}.supabase.co`,
       `https://${stagingRef}.supabase.co.evil.test`,
@@ -90,9 +86,9 @@ describe("match authority database isolation", () => {
   });
 
   it("preserves legacy service role bearer compatibility for isolated clients", async () => {
-    const client = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ status: "empty" })),
-    );
+    const client = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ status: "empty" })));
     const env = makeEnv(stagingUrl, "staging");
     await allocateQueuePair(env);
     const headers = new Headers(client.mock.calls[0]![1]?.headers);
