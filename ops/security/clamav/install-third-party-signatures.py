@@ -52,6 +52,8 @@ ditekshen_dbs_rating="MEDIUM"
 # RMM-specific rule is omitted from the verified upstream master.conf by a narrow patch.
 twinclams_enabled="yes"
 twinclams_dbs_rating="MEDIUM"
+# systemd timer is randomized, so disable an additional 1-10 minute jitter per execution.
+enable_random="no"
 linuxmalwaredetect_update_hours="24"
 ditekshen_update_hours="24"
 twinclams_update_hours="24"
