@@ -1,8 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 import { createAthleteSearch } from "@/lib/athlete-route-search";
-
-import { CreateAthletePage } from "@/pages/jogador.novo";
 
 export const Route = createFileRoute("/jogador/novo")({
   ssr: false,
@@ -24,5 +22,8 @@ export const Route = createFileRoute("/jogador/novo")({
       { name: "robots", content: "noindex, follow" },
     ],
   }),
-  component: CreateAthletePage,
+  // Preserve validated route search, but do not bundle its browser UI into SSR.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/jogador.novo"), "CreateAthletePage"),
 });
