@@ -145,10 +145,13 @@ export const getLeagueTable = createServerFn({ method: "GET" })
             `assists_${lg.id}_${raw.league.season}`,
           ]),
       ]);
-      if (injuryResult.error || topResult.error)
-        throw new Error("Não foi possível carregar os dados completos da liga.");
-      const inj = injuryResult.data;
-      const tops = topResult.data;
+      // Standings are the primary resource. A timeout or temporary failure
+      // in optional injury/scorer projections must not turn a valid public
+      // league table into HTTP 500. Do not invent missing player statistics.
+      if (injuryResult.error) console.warn("Public league injuries temporarily unavailable");
+      if (topResult.error) console.warn("Public league top statistics temporarily unavailable");
+      const inj = injuryResult.error ? [] : injuryResult.data;
+      const tops = topResult.error ? [] : topResult.data;
       const seen = new Set<string>();
       const injuries = (inj ?? [])
         .map((i) => i.payload as unknown as RawInjury)
