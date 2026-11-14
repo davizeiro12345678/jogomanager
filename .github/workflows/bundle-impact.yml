@@ -32,7 +32,7 @@ concurrency:
 jobs:
   bundle:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - name: Checkout candidate with complete base history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -44,53 +44,52 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Preserve analyzer and install one dependency graph for both revisions
+      - name: Preserve candidate analyzers for baseline build
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
-          cp package.json "$RUNNER_TEMP/bundle-package.json"
-          cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
-          sha256sum package-lock.json > "$RUNNER_TEMP/bundle-dependency-lock.sha256"
-          npm ci
-      - name: Build baseline from PR base SHA
+          cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"
+          cp scripts/normalize-baseline-entities-alias.test.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.test.mjs"
+          cp .github/workflows/bundle-impact.yml "$RUNNER_TEMP/bundle-impact.yml"
+      - name: Build baseline with its own locked dependency graph
         env:
           BASE_SHA: ${{ inputs.baseline_ref }}
         run: |
           git checkout --detach "$BASE_SHA"
-          # Isolate application-source changes using the candidate's exact,
-          # audited dependency graph, as required by AGENTS.md. Both builds
-          # keep their own source files and identical installed dependencies.
-          cp "$RUNNER_TEMP/bundle-package.json" package.json
-          cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
-          # The old global "entities" alias breaks nested entities/decode with the
-          # candidate lockfile. Normalize only that resolver compatibility line;
-          # no performance or application logic is changed in the baseline.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("vite.config.ts")
-          src = p.read_text()
-          line = '        entities: path.resolve(import.meta.dirname, "node_modules/entities"),\n'
-          if src.count(line) != 1:
-              raise SystemExit("Baseline entities alias contract changed")
-          p.write_text(src.replace(line, "", 1))
-          PY
+          sha256sum package-lock.json > "$RUNNER_TEMP/baseline-dependency-lock.sha256"
+          npm ci
+          # Execute the candidate resolver contract against baseline source with
+          # the baseline's own installed TypeScript dependency graph.
+          mkdir -p "$RUNNER_TEMP/baseline-contract/scripts" "$RUNNER_TEMP/baseline-contract/.github/workflows"
+          cp "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" "$RUNNER_TEMP/baseline-contract/scripts/"
+          cp "$RUNNER_TEMP/normalize-baseline-entities-alias.test.mjs" "$RUNNER_TEMP/baseline-contract/scripts/"
+          cp vite.config.ts "$RUNNER_TEMP/baseline-contract/vite.config.ts"
+          cp "$RUNNER_TEMP/bundle-impact.yml" "$RUNNER_TEMP/baseline-contract/.github/workflows/bundle-impact.yml"
+          node --test "$RUNNER_TEMP/baseline-contract/scripts/normalize-baseline-entities-alias.test.mjs"
+          # Normalize only the exact historical bare alias after the contract passes.
+          node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
+          # Run the candidate analyzer from inside the baseline checkout so ESM
+          # resolves dependencies from the baseline's own node_modules.
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
-          git restore scripts/bundle-report.mjs package.json package-lock.json vite.config.ts
-      - name: Build proposed commit on the same runner
+          # Restore the checked-out tree before switching revisions; the baseline
+          # analyzer and historical Vite alias normalization are temporary only.
+          git checkout -- .
+          git clean -fd
+      - name: Build candidate with its own locked dependency graph
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
         run: |
           git checkout --detach "$HEAD_SHA"
-          cmp package.json "$RUNNER_TEMP/bundle-package.json"
-          cmp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
+          sha256sum package-lock.json > verification/bundle-2026-10-01/candidate-dependency-lock.sha256
+          npm ci
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/bundle-report.mjs candidate .output/public/assets
           cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
-          cp "$RUNNER_TEMP/bundle-dependency-lock.sha256" verification/bundle-2026-10-01/dependency-lock.sha256
+          cp "$RUNNER_TEMP/baseline-dependency-lock.sha256" verification/bundle-2026-10-01/baseline-dependency-lock.sha256
           node scripts/compare-bundle-reports.mjs \
             verification/bundle-2026-10-01/baseline.json \
             verification/bundle-2026-10-01/candidate.json --check
@@ -104,5 +103,6 @@ jobs:
             bundle-impact.json
             verification/bundle-2026-10-01/baseline.json
             verification/bundle-2026-10-01/candidate.json
-            verification/bundle-2026-10-01/dependency-lock.sha256
+            verification/bundle-2026-10-01/baseline-dependency-lock.sha256
+            verification/bundle-2026-10-01/candidate-dependency-lock.sha256
           if-no-files-found: error

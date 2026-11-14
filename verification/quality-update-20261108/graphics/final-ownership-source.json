@@ -1,0 +1,579 @@
+{
+  "capturedAt": "2026-11-09T01:02:23.498Z",
+  "node": "v24.22.0",
+  "head": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "fixture": {
+    "path": "dist-benchmark/graphics-benchmark.html",
+    "bytes": 2101,
+    "sha256": "291886abea73e62820a9b34cc821e37d5adef6317c9efde4cbdfd8602fff6388"
+  },
+  "lock": {
+    "path": "package-lock.json",
+    "bytes": 542785,
+    "sha256": "5eae50109a34ea612a39cf13b8b349d7e2925ea7694972b2b7fc4746ce514dea"
+  },
+  "sources": [
+    {
+      "path": "src/components/game/CinematicStage3D.tsx",
+      "bytes": 22098,
+      "sha256": "59e8d31d94d23efda391fac7bf84ba231820f2cb15648cdc59b355ab1c329ada"
+    },
+    {
+      "path": "src/components/game/FrameProbe.tsx",
+      "bytes": 12661,
+      "sha256": "885f69c04cf88655d149fefe0b7ab9ec692d1d63662d0d2e050648700520fc60"
+    },
+    {
+      "path": "src/components/game/cinematic/CinematicEnvironment.tsx",
+      "bytes": 874,
+      "sha256": "1207bcfd0a911bf5f64eecaf72869c3ad94aaa514a728111d391f392d5665d64"
+    },
+    {
+      "path": "src/components/game/cinematic/CinematicFrameProbe.tsx",
+      "bytes": 5192,
+      "sha256": "829574ae08adcfa51af1cbf03a3cc8088dd9d1019cc1317994873473c45ffe83"
+    },
+    {
+      "path": "src/components/game/players/LowPlayers.tsx",
+      "bytes": 22378,
+      "sha256": "172efe6cab46001aed729c95043c898afb678513b1530604a97962ef0de05554"
+    },
+    {
+      "path": "src/components/game/players/MatchPlayers.tsx",
+      "bytes": 11640,
+      "sha256": "9173e48b32cdd1d767b14b873cd89dabd7ac5a7921d1c4ab3ddd7950e4eda330"
+    },
+    {
+      "path": "src/components/game/players/PlayerRig.tsx",
+      "bytes": 11275,
+      "sha256": "0a541727be893de4cbfe90ac293d72e5298e22eeea2cb08d3bbe5d005611d09d"
+    },
+    {
+      "path": "src/components/game/players/player-rig-animation.test.ts",
+      "bytes": 2896,
+      "sha256": "5d0eb603dfe7d376cf878d73942a4dcc0e2b965c2d34706d88b0f38b4e6eff59"
+    },
+    {
+      "path": "src/components/game/players/player-rig-animation.ts",
+      "bytes": 1814,
+      "sha256": "ba17ef45cc8ffe8a78711d781250fdcfa79bfb8fe28bae0652dc7042d468694a"
+    },
+    {
+      "path": "src/components/game/players/player-rig-contract.ts",
+      "bytes": 2401,
+      "sha256": "8d234575a744232d36a8dc83b7572c491761935713709463cc6e8295e477606f"
+    },
+    {
+      "path": "src/components/game/players/player-rig-face.ts",
+      "bytes": 4678,
+      "sha256": "cfe2b1807ef4087e9b4d289463405bd681c84e2c8f5227b5c93033a84539dc8a"
+    },
+    {
+      "path": "src/components/game/players/player-rig-frame.test.ts",
+      "bytes": 574,
+      "sha256": "f75fbf894f2870545ce4955c283e3012c5b25275a0175812a86284e65c4c345d"
+    },
+    {
+      "path": "src/components/game/players/player-rig-frame.ts",
+      "bytes": 24797,
+      "sha256": "d4d2530f278c504185fbfb153fe934ba576012a2c57fc0c8e13d0bd93d56865b"
+    },
+    {
+      "path": "src/components/game/players/player-rig-meshes.ts",
+      "bytes": 10700,
+      "sha256": "1b7f7306a75c5d51b63ed2aabfce7ced5710ac4d387c7fb7df07e70207396363"
+    },
+    {
+      "path": "src/components/game/stadium/StadiumEnvironment.tsx",
+      "bytes": 1886,
+      "sha256": "d96eb1f24e16b6b587e82833a6a4686a86f48af2dcc01ab7f7c3e68fabda628c"
+    },
+    {
+      "path": "src/components/game/stadium/StadiumScene.tsx",
+      "bytes": 12022,
+      "sha256": "0a6625412efed71a9f4eed619447e69dc861ae514c4d2ef829fd7d501af9c3c0"
+    },
+    {
+      "path": "src/game/athlete-cloth.ts",
+      "bytes": 13232,
+      "sha256": "e8e154d22e55f670bfefe471ad087bf70b0c61baa9a0a2e31938173243348f1d"
+    },
+    {
+      "path": "src/game/dormant-resource-pool.ts",
+      "bytes": 3903,
+      "sha256": "4ef244a979b69e90cbd45b986d593794a80ef8ca25e98dd09cd65ee4544fd04e"
+    },
+    {
+      "path": "src/game/instance-transform.ts",
+      "bytes": 2570,
+      "sha256": "63e484ca7004da88835d8f059ccbacff53660e2750aa6b070cacc6256c7f7bf4"
+    },
+    {
+      "path": "src/game/match-rig-pool.ts",
+      "bytes": 1683,
+      "sha256": "5c0b8b77a94ed7ade757f9cf7da7aeabe0cdd4458c22e4d966305d5c1e8fe2b9"
+    },
+    {
+      "path": "src/game/rig-section-kernel.ts",
+      "bytes": 4580,
+      "sha256": "45737a965aec0f5f5c98eeaf1a9a448f4026fd2a9869e64261409db042959ec9"
+    },
+    {
+      "path": "src/game/rig-skin.ts",
+      "bytes": 28969,
+      "sha256": "7d8bcdecad2a7d6774250da54ea9a385021a28851d0b8154398899aa57c4db3e"
+    },
+    {
+      "path": "src/game/rigid-actor-batch.ts",
+      "bytes": 7220,
+      "sha256": "67ad532c3f81574db5af0d650345ccfa59e5bb078ecdc972d54de946ba4cc0fc"
+    }
+  ],
+  "compiledJavaScriptAssets": [
+    {
+      "path": "dist-benchmark/assets/AccessibilityDialog-B4RngCNF.js",
+      "bytes": 36869,
+      "sha256": "de995337a8c6beb30139334ea37b32ce917e9b095a31c2828f5c4cfe62d82580"
+    },
+    {
+      "path": "dist-benchmark/assets/BusArrival-BKF2Yjmh.js",
+      "bytes": 6185,
+      "sha256": "073b7ab101441fa3a509661754e1a446ba62af07e4dc72cae184072d506e58da"
+    },
+    {
+      "path": "dist-benchmark/assets/CinematicCrowd-aox04-jH.js",
+      "bytes": 3278,
+      "sha256": "daf7e5057c81d77732206fbb6eb19803c8d52201d8c681ec9215a913f72f66e1"
+    },
+    {
+      "path": "dist-benchmark/assets/CinematicLens-5Z00jJd8.js",
+      "bytes": 1618,
+      "sha256": "d9219a45dc23d4d11190847c20080d156e083a618b7f852766345a18cac472ff"
+    },
+    {
+      "path": "dist-benchmark/assets/CinematicStage3D-CKnHZAUs.js",
+      "bytes": 70052,
+      "sha256": "c2ffed93f78390a87e9768c35da8138ddcb015542a72281c448ac11987e8e9c7"
+    },
+    {
+      "path": "dist-benchmark/assets/CutsceneBackdrop-9DOIZ9wW.js",
+      "bytes": 16990,
+      "sha256": "c7c8d692fe83e267f4b462fa5508410b208db77ce83f82276ca25869bd9f51dd"
+    },
+    {
+      "path": "dist-benchmark/assets/CutsceneSettings-By_tGDE_.js",
+      "bytes": 2635,
+      "sha256": "a61bd3565730e81eb06d650aef03d5bca85b8ffe136fa4a9662d0d2827dea8fd"
+    },
+    {
+      "path": "dist-benchmark/assets/GraphicsBoundary-BbjFlbaS.js",
+      "bytes": 1319,
+      "sha256": "916690c6167ea8a6dafa7f4b059fd8ac043367964f1a2b81f668906b7aa31b68"
+    },
+    {
+      "path": "dist-benchmark/assets/HdrSanitize-B5b3Jsef.js",
+      "bytes": 288969,
+      "sha256": "550f98b90419ce253261b747993c26878d2a199bd88d07d00e4d4d926366245c"
+    },
+    {
+      "path": "dist-benchmark/assets/Lightformer-D5P_kLLZ.js",
+      "bytes": 52966,
+      "sha256": "57ee35937296fd908d129d587d10c17ac4a4ba7cbfac23e8406ad71854217c43"
+    },
+    {
+      "path": "dist-benchmark/assets/LockerRoom-CGicBzLU.js",
+      "bytes": 3032,
+      "sha256": "052ed88519e61943c1fc46afde4a8feb85963c7a8923dea79efbac7b889055d0"
+    },
+    {
+      "path": "dist-benchmark/assets/Office-DLcHJ1vn.js",
+      "bytes": 2030,
+      "sha256": "82b5a34b92a55c185f70f89687ee9a731508dd3e9de8413c7395a649e3240def"
+    },
+    {
+      "path": "dist-benchmark/assets/PitchEntry-DZui2pAs.js",
+      "bytes": 4516,
+      "sha256": "6e7f94c2ba675ed98d5deaf3535850a40310c96dee2236efdc3f59343cf4867d"
+    },
+    {
+      "path": "dist-benchmark/assets/PlayerRig-HZ7TxGQk.js",
+      "bytes": 21597,
+      "sha256": "46d56ed1b7c64494e7177af22c1b42eaf248515a976c4b4ab2b46658c0b8685e"
+    },
+    {
+      "path": "dist-benchmark/assets/PostFX-BypVJuGL.js",
+      "bytes": 6310,
+      "sha256": "b42808aef6056404efbe1401c82dc2c569a481c62154adcdf022c1488da64876"
+    },
+    {
+      "path": "dist-benchmark/assets/PressRoom-F08SjtfS.js",
+      "bytes": 1954,
+      "sha256": "c0369870fb28845a8a0fc8d1d1bc75ff4dba40f3b276925cd936fb86dabf084d"
+    },
+    {
+      "path": "dist-benchmark/assets/Stands-6xYB67Qt.js",
+      "bytes": 1392,
+      "sha256": "2e71552e96b85baa7495511af33019c12d124adcb6ba99c0777df57c8137b286"
+    },
+    {
+      "path": "dist-benchmark/assets/Tunnel-DIVUMdFA.js",
+      "bytes": 2217,
+      "sha256": "3a60326ccdb1a898a421a837659676b54429ac52ac978c70bac9885addd592d5"
+    },
+    {
+      "path": "dist-benchmark/assets/ar-Wl-d78ub.js",
+      "bytes": 12164,
+      "sha256": "d83a056e410d273af3d181f701e6b30207a33b23f8a289d5e064616ad858a8a7"
+    },
+    {
+      "path": "dist-benchmark/assets/basis_transcoder-o4Hde_L7.js",
+      "bytes": 57529,
+      "sha256": "8478b5b6d6b74e7d3082b89f6417321d8d1dc0307f2b30d4484bb11b441696a1"
+    },
+    {
+      "path": "dist-benchmark/assets/benchmark-afYDx_f1.js",
+      "bytes": 233353,
+      "sha256": "6dfdc74910fc5f2a7250494227415796c988ffb107ad37731f5e8c1b88e45167"
+    },
+    {
+      "path": "dist-benchmark/assets/bn-B4JGAz-S.js",
+      "bytes": 15666,
+      "sha256": "a4c51ac7a2e16adcba119aa5e6da1f2ab8434bfc44874a6433fc278778ae0443"
+    },
+    {
+      "path": "dist-benchmark/assets/bootstrap-messages-DlrxxEjU.js",
+      "bytes": 19038,
+      "sha256": "b7408d0a002362c73a8dc998ff44d3d85d9bd2aeffbfd8b1860a6302782faf76"
+    },
+    {
+      "path": "dist-benchmark/assets/cinema-BTgmdCh3.js",
+      "bytes": 92188,
+      "sha256": "87025bdf4774bee110c18f4ab01dcb48cb612da937f090ff355cfdc0542a7a82"
+    },
+    {
+      "path": "dist-benchmark/assets/cinematic-artwork-POgV1iUo.js",
+      "bytes": 3600,
+      "sha256": "4753bd65ae023067c8ee1d5317e3d9e19efe1b1a3136008de3b6124d1d5b6ffc"
+    },
+    {
+      "path": "dist-benchmark/assets/cinematic-runtime-BATVWDuH.js",
+      "bytes": 398,
+      "sha256": "72c7d6bd424ce1671b1e490d4944c2cc02bb4bb8026f4bd40717c52a16eb2093"
+    },
+    {
+      "path": "dist-benchmark/assets/cinematic-surfaces-Vfv2r6O5.js",
+      "bytes": 28447,
+      "sha256": "9a05aba586501022b2b699b76e07ee79ae4dc98627babcd69d6eeb0dc45b8cc3"
+    },
+    {
+      "path": "dist-benchmark/assets/club-reference-Cf_EOyn7.js",
+      "bytes": 576878,
+      "sha256": "323547ef73640e81cf4647d0cc7fed1ff36606639ee3f1fce062c84246cbd158"
+    },
+    {
+      "path": "dist-benchmark/assets/context-DDsqjxEX.js",
+      "bytes": 267,
+      "sha256": "516caa530528e143db77ecb899d3efadf748e224a62f7980141baf62bd91b14e"
+    },
+    {
+      "path": "dist-benchmark/assets/createLucideIcon-q3MZMmnf.js",
+      "bytes": 3100,
+      "sha256": "4076424583cd61c0385bdb196e81041d457a3d4a8f642a10bb512c0f42b90ca1"
+    },
+    {
+      "path": "dist-benchmark/assets/crowd-visibility.worker-B04GL9Y9.js",
+      "bytes": 14390,
+      "sha256": "e2b9ba1a9fdc3dcd58c0b2ba0cf7c5a14ec672639d942edc6e0eeb6ad5ff4353"
+    },
+    {
+      "path": "dist-benchmark/assets/de-BYi0xRaa.js",
+      "bytes": 9467,
+      "sha256": "f375a9884fa0aab139c89ee13f6cfeb16f5f85185c35c7594f01268870a08a77"
+    },
+    {
+      "path": "dist-benchmark/assets/device-3w7MqpG0.js",
+      "bytes": 905,
+      "sha256": "7f0fcd9861991a89da300744cdf17ab40d2202e2fab7e43751508eb7de2d746e"
+    },
+    {
+      "path": "dist-benchmark/assets/es-Cnp567ZE.js",
+      "bytes": 9500,
+      "sha256": "19b1c2e8df0c950a12fd85baa678f09911fb1c8660aea90eff592d1a8923c6fa"
+    },
+    {
+      "path": "dist-benchmark/assets/extends-CvVTau-c.js",
+      "bytes": 231,
+      "sha256": "e50b0d8e7e74580bb4eab859a2db258e83bcc5a77551aca2eb99120badee5888"
+    },
+    {
+      "path": "dist-benchmark/assets/fa-D_bbz4q1.js",
+      "bytes": 12663,
+      "sha256": "9596e5376047bc28bf207f33bf1d783c3903a933e1e3b4813d861427ffb9d6e1"
+    },
+    {
+      "path": "dist-benchmark/assets/fr-CLaYDczR.js",
+      "bytes": 9844,
+      "sha256": "3c40655095318b6c9c60e435fa03a3491fd371b8a7ed35621abf7052089a37b1"
+    },
+    {
+      "path": "dist-benchmark/assets/graphics-fixture.worker-C3BD9_S1.js",
+      "bytes": 467255,
+      "sha256": "a2121337fa1dde4abaaaf1a6cb9aac01227b39cd4ad85b9c0b90b601f9b1c374"
+    },
+    {
+      "path": "dist-benchmark/assets/graphics-renderer-metadata-BM_DB4rR.js",
+      "bytes": 937,
+      "sha256": "dd8048c4e95c35a523ca028488ba1def938c8d9cde00400ec4d83b009c3fe09c"
+    },
+    {
+      "path": "dist-benchmark/assets/graphics-telemetry-stub-DqSSxSRy.js",
+      "bytes": 45,
+      "sha256": "b841eaf08cdc1bd173fc96b32367a579fb2dbaefcec23d2377af0a224a1f9257"
+    },
+    {
+      "path": "dist-benchmark/assets/grass-instances.worker-9CI1gvfn.js",
+      "bytes": 890,
+      "sha256": "aed24e24e891e721ade01affe87ffcfc8fa76240cc3f9b2456ae6cf8a80f335b"
+    },
+    {
+      "path": "dist-benchmark/assets/hash-XwsJ2yy9.js",
+      "bytes": 87,
+      "sha256": "0577c75445c1c0f0458a53d5d9b0735e4ad3f4c26a34c822dd496fedc729cd6a"
+    },
+    {
+      "path": "dist-benchmark/assets/hi-DVQutNr8.js",
+      "bytes": 14745,
+      "sha256": "efbb27f4bddb609a4c6c3b4cf9dc9d9c2934186850ae6258fe40b5399b1f02f0"
+    },
+    {
+      "path": "dist-benchmark/assets/id-CSAxos-N.js",
+      "bytes": 8633,
+      "sha256": "a8fa77f332d39adf3d89dffc060f3efb66f72bf5f45b21ed80afb117b7f016a1"
+    },
+    {
+      "path": "dist-benchmark/assets/it-8nZsnnKW.js",
+      "bytes": 9511,
+      "sha256": "466ab7b295d601050e1e045816a6852c1aff35732b7fa58754e79d01566838ab"
+    },
+    {
+      "path": "dist-benchmark/assets/ja-cGB64R7U.js",
+      "bytes": 10739,
+      "sha256": "8f0c0020859903da18117075c25817ebe3b0ed8172647cada314aa4dea36a0ea"
+    },
+    {
+      "path": "dist-benchmark/assets/jsx-runtime-D3jfb0Ew.js",
+      "bytes": 8901,
+      "sha256": "a2c68294426b0ded53fa2d6c97bb39c4a51f99e5e4b23e7953a2c69298e361f8"
+    },
+    {
+      "path": "dist-benchmark/assets/ko-BygGiYFB.js",
+      "bytes": 10163,
+      "sha256": "53f3cfdc2688b500482e34473b365ddff56f7d9176c4d7f16a8e171210d226cb"
+    },
+    {
+      "path": "dist-benchmark/assets/live-match-B3BZxbvV.js",
+      "bytes": 25322,
+      "sha256": "0e06303e7f46cfe233a3b98e08f4d62956071a683d46e4f463bd954e5f227acc"
+    },
+    {
+      "path": "dist-benchmark/assets/locale-pack-loader-DGsSq4wW.js",
+      "bytes": 2333,
+      "sha256": "c705a637d89f955a225cd0b4a3138095192c18857abe1ef47cdcddb73d253054"
+    },
+    {
+      "path": "dist-benchmark/assets/locale-runtime-manifest-BvHAHKRx.js",
+      "bytes": 264,
+      "sha256": "b41b877565f35fdf34fa721f0d701b5c2b476d4c0bd991a195dca34e69d0fe9a"
+    },
+    {
+      "path": "dist-benchmark/assets/lovable-error-reporting-CJGbe3WH.js",
+      "bytes": 517,
+      "sha256": "706c70ab623b6284cf2374e6c6c5121e379d6614e95fbb3a27d5eeadaf199b36"
+    },
+    {
+      "path": "dist-benchmark/assets/maath.esm-B7GwMZVn.js",
+      "bytes": 8347,
+      "sha256": "92f72c9e8a28e104f12e8ac7443d7aa9fa5c37e9ae17b27175190c3316ff644a"
+    },
+    {
+      "path": "dist-benchmark/assets/messages-DDNbDKe8.js",
+      "bytes": 61389,
+      "sha256": "110f1f91b3988a2763d2806027772c0c523d64f4be4f5918a7056c4cd536eb93"
+    },
+    {
+      "path": "dist-benchmark/assets/mr-C3IvuSKY.js",
+      "bytes": 14822,
+      "sha256": "2575a1768b7af9208b65f0d0f381db9ea79aed86dc66259bd52633266a3543f9"
+    },
+    {
+      "path": "dist-benchmark/assets/pa-Bz1OnggQ.js",
+      "bytes": 14194,
+      "sha256": "dee0688359339b4b66cceb8364e58bb185156fa8be9669dfb0926c70d50c76bf"
+    },
+    {
+      "path": "dist-benchmark/assets/pl-Ca-z46Q0.js",
+      "bytes": 8962,
+      "sha256": "29ef262f090631f8cafadc4b8fed71975e4314e7e4992620b38ed66a8630ba99"
+    },
+    {
+      "path": "dist-benchmark/assets/player-materials-CVMRx2P2.js",
+      "bytes": 14280,
+      "sha256": "196655e6d51188c54af561178e0eddb3da20ee2cac35fc6961b3fe67975792df"
+    },
+    {
+      "path": "dist-benchmark/assets/player-surface-6wF4yIVl.js",
+      "bytes": 196226,
+      "sha256": "61df19e5ca585884093e19d35e00afa2032ff99b58b617eb5980df89004475ef"
+    },
+    {
+      "path": "dist-benchmark/assets/players-CAQdByqd.js",
+      "bytes": 160070,
+      "sha256": "85290932203b917133f38efc5d092cfdad58bb6e5b7119920893692f49ef36ae"
+    },
+    {
+      "path": "dist-benchmark/assets/point-size-guard-Bor8Sf9K.js",
+      "bytes": 261,
+      "sha256": "ecbc6402585866c9746cc95b90fc3f4574618c7d60b24116968e8ea9934ac868"
+    },
+    {
+      "path": "dist-benchmark/assets/preload-helper-DjzSQ1t3.js",
+      "bytes": 1383,
+      "sha256": "66c990b6727d220a346b45d00ee48d433c8d59ef03fbf8b91c6cdadeeadfdf3f"
+    },
+    {
+      "path": "dist-benchmark/assets/pt-PT-C7TcRXZX.js",
+      "bytes": 9501,
+      "sha256": "f784b59e7a19bfb1d0722a1a3292c44c92d9ce65c0d48040397e57bad14b4dfb"
+    },
+    {
+      "path": "dist-benchmark/assets/react-three-fiber.esm-DefF_0eM.js",
+      "bytes": 538010,
+      "sha256": "fcd7f8854f46029ab0ebdc3e6efae3670943892452722adc24958587a56f4ee0"
+    },
+    {
+      "path": "dist-benchmark/assets/registry-D2rrRAKN.js",
+      "bytes": 3147,
+      "sha256": "e4b3de6b48904d9f7e404c5ab6018025bf04410df24224bb983aae4aa0979d5c"
+    },
+    {
+      "path": "dist-benchmark/assets/rig-geometry.worker-49Mf-W08.js",
+      "bytes": 9841,
+      "sha256": "8248c291f9dab9083495244d5adcaaa0d3c712cf35c56fa7f58b3f9ac91857dd"
+    },
+    {
+      "path": "dist-benchmark/assets/rng-_VpWMgIX.js",
+      "bytes": 10822,
+      "sha256": "0378fd25ae236978d3d4f6e1858917ab300a3210c91b6f72084e87ac327b867c"
+    },
+    {
+      "path": "dist-benchmark/assets/ru-CJRi9ulP.js",
+      "bytes": 12298,
+      "sha256": "ff015782ab84443ffbef62594d8e9250d2026d1bc1dc5dee38cf15c369c7fbbc"
+    },
+    {
+      "path": "dist-benchmark/assets/scene-census-D2wiI4F1.js",
+      "bytes": 3690,
+      "sha256": "1a3fb3beff836b3aa1a11ff90c51fa3e73984bbbe63ca5a01e9c3aab61b066e3"
+    },
+    {
+      "path": "dist-benchmark/assets/scheduler-BpwWJQsl.js",
+      "bytes": 3551,
+      "sha256": "79477663fe21637a1b17616379d5a00b9179f3c4979c864554965b7a366dc5e7"
+    },
+    {
+      "path": "dist-benchmark/assets/search-CBncK8aW.js",
+      "bytes": 214,
+      "sha256": "d881503600de0c9fdfd3572977e88238cf200321735d1e5230eca06f9a2aba67"
+    },
+    {
+      "path": "dist-benchmark/assets/shared-BIijyfk_.js",
+      "bytes": 2713,
+      "sha256": "a56f3a9f0adf50a53a450a1b24f716a77513c244ffdbadb92b2577a1350fd843"
+    },
+    {
+      "path": "dist-benchmark/assets/shared-seat-transforms.worker-B0L9ZPb4.js",
+      "bytes": 1044,
+      "sha256": "ad5b9d56fd2dd0924b6bbefc49155c2092a0744a5ded96b88a7cbf0f3ccc8486"
+    },
+    {
+      "path": "dist-benchmark/assets/silent-errors-BVc3bOfB.js",
+      "bytes": 4620,
+      "sha256": "5ca9ab530c989e21be665447c5b48f651d37ab1102bd3c0b2937a5e70bc4dbe8"
+    },
+    {
+      "path": "dist-benchmark/assets/styles-DdpYwo6T.js",
+      "bytes": 2158,
+      "sha256": "5572f5a2bf97348dcac3fe22168e08b9716327807530ea1aab2a5bd1f7bf3d76"
+    },
+    {
+      "path": "dist-benchmark/assets/surface-context-state-D6x60gH8.js",
+      "bytes": 74532,
+      "sha256": "3be98d47b0f8878d02263f7f15426e7312aec50501664da60312a5ae8f87d758"
+    },
+    {
+      "path": "dist-benchmark/assets/sw-C4IQ2_C8.js",
+      "bytes": 8772,
+      "sha256": "239422ca1ce25f8c2e7ca75a1eb683553f0fced003e417eab440e85d3d4aab14"
+    },
+    {
+      "path": "dist-benchmark/assets/ta-BLsGGPC8.js",
+      "bytes": 17631,
+      "sha256": "4d623168c8df6b20584af1f1bd1274c498afcfd1b26e6dd85af2d3800f1b60e3"
+    },
+    {
+      "path": "dist-benchmark/assets/te-CvvabSQZ.js",
+      "bytes": 16633,
+      "sha256": "6b540361e1ffb318138e02c4bbe51db0ef8988fd1f42c4215e277fd9408926fa"
+    },
+    {
+      "path": "dist-benchmark/assets/th-BCDOvE7-.js",
+      "bytes": 16346,
+      "sha256": "97ff1d94fa3a9bb55c61c5505f7125d6c79bcaf83aecb675748448b4a8f035d0"
+    },
+    {
+      "path": "dist-benchmark/assets/three.core-CqqFKHSV.js",
+      "bytes": 379000,
+      "sha256": "798d06b0662e75074395b041bbd21cb9065ae48b1754fe7cefe724df31faf350"
+    },
+    {
+      "path": "dist-benchmark/assets/three.webgpu-V5MP-uBd.js",
+      "bytes": 704952,
+      "sha256": "3083c7cc862ea955d0ccbd43371e02297fe66726046aa8653c63b25bb7e45264"
+    },
+    {
+      "path": "dist-benchmark/assets/tr-ByIm_gbc.js",
+      "bytes": 8816,
+      "sha256": "c1e11364166b05de0e5b984ad751a18674340c26ef9b419a9836ee0aa33c3663"
+    },
+    {
+      "path": "dist-benchmark/assets/turf-detail.worker-CXkQ1Xj0.js",
+      "bytes": 7743,
+      "sha256": "8bb002b5651d185de083b79b6877caf7a0068bfffacc2d8cdbd58133970f30f3"
+    },
+    {
+      "path": "dist-benchmark/assets/ur-DnwRwcw7.js",
+      "bytes": 12399,
+      "sha256": "f59bd1acb7a56d4719949382da2f384763f82bc4488136e80abeaf22e14cf1f9"
+    },
+    {
+      "path": "dist-benchmark/assets/useDisposable-DpDI2TEd.js",
+      "bytes": 507,
+      "sha256": "e3641c68c574c1e98a0b01535165cb978d31bd042f71b65e91da0c0134105e7d"
+    },
+    {
+      "path": "dist-benchmark/assets/utils-BvOpA5B1.js",
+      "bytes": 30799,
+      "sha256": "19743272b2fe7ea3d86cf980890c6af4909083a0393d5ab6d324d7f899718159"
+    },
+    {
+      "path": "dist-benchmark/assets/vi-e21JMSZp.js",
+      "bytes": 10423,
+      "sha256": "5270353e3beddba69b2fbb4a0823037c0cfacd238859b5851633d43a9358190a"
+    },
+    {
+      "path": "dist-benchmark/assets/zh-CN-Be0YiBcb.js",
+      "bytes": 8899,
+      "sha256": "bb6d095115764d4680bd82bb354d2538f7832864e710ee237c2b52543ea9ad30"
+    }
+  ]
+}

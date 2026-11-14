@@ -42,6 +42,19 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   const output = new Float32Array(rigSectionVertexCount(input) * 5);
   const bottom = rings[0]!;
   const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
+  // Every ring has the same angular profile. Evaluate the transcendental
+  // functions once per radial direction, rather than once per vertex. Keep
+  // Float64 intermediates and an independently owned Float32 output.
+  const angular = new Float64Array((radial + 1) * 3);
+  for (let side = 0; side <= radial; side++) {
+    const u = side / radial;
+    const angle = u * Math.PI * 2;
+    const sine = Math.sin(angle);
+    const cosine = Math.cos(angle);
+    angular[side * 3] = Math.sign(sine) * Math.abs(sine) ** roundness;
+    angular[side * 3 + 1] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
+    angular[side * 3 + 2] = u;
+  }
   let cursor = 0;
   // Write to the owned typed buffer directly. Allocating a temporary five-
   // element array for every 3D vertex creates unnecessary GC pressure.
@@ -54,17 +67,15 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   };
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;
+    const v = (rings[offset]! - bottom) / span;
     for (let side = 0; side <= radial; side++) {
-      const u = side / radial;
-      const angle = u * Math.PI * 2;
-      const sine = Math.sin(angle);
-      const cosine = Math.cos(angle);
+      const direction = side * 3;
       write(
-        Math.sign(sine) * Math.abs(sine) ** roundness * rings[offset + 1]!,
+        angular[direction]! * rings[offset + 1]!,
         rings[offset]!,
-        Math.sign(cosine) * Math.abs(cosine) ** roundness * rings[offset + 2]! + rings[offset + 3]!,
-        u,
-        (rings[offset]! - bottom) / span,
+        angular[direction + 1]! * rings[offset + 2]! + rings[offset + 3]!,
+        angular[direction + 2]!,
+        v,
       );
     }
   }

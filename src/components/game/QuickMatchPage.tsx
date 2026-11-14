@@ -1,19 +1,21 @@
 import { Link } from "@tanstack/react-router";
 import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useId, useRef, useState } from "react";
+import { lazy, memo, Suspense, useId, useRef, useState } from "react";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import type { Club, League } from "@/game/types";
+import { randomQuickMatchPair, selectableQuickMatchClubs } from "@/game/quick-match-selection";
 import type { Difficulty } from "@/game/quickMatch";
 import { loadQuickLive } from "@/game/quick-match-entry";
 import {
   DEFAULT_QUICK_MATCH_LEAGUE,
   preloadQuickMatchCatalog,
+  quickMatchLeagueGroups,
   QUICK_MATCH_LEAGUE_DIRECTORY,
-  type QuickMatchLeagueSummary,
+  type QuickMatchLeagueGroup,
 } from "@/game/quick-match-catalog";
 import { useT } from "@/i18n/provider";
 import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
@@ -39,31 +41,22 @@ export function QuickMatchPage() {
     const request = ++catalogRequest.current;
     setCatalogError(false);
     setLeagueId(id);
-
     if (id === league.id) {
       setCatalogLoading(false);
       return;
     }
-    if (id === DEFAULT_QUICK_MATCH_LEAGUE.id) {
-      setLeague(DEFAULT_QUICK_MATCH_LEAGUE);
-      setMyClub(DEFAULT_QUICK_MATCH_LEAGUE.clubs[0]!.id);
-      setOppClub(DEFAULT_QUICK_MATCH_LEAGUE.clubs[1]!.id);
-      setCatalogLoading(false);
-      return;
-    }
-
     setCatalogLoading(true);
     try {
-      const { getLeague } = await preloadQuickMatchCatalog();
+      const { getLeague, CLUBS } = await preloadQuickMatchCatalog();
       if (request !== catalogRequest.current) return;
-      const nextLeague = getLeague(id);
-      if (nextLeague.id !== id) throw new Error("Selected league was not found.");
-      const home = nextLeague.clubs[0];
-      const away = nextLeague.clubs.find((club) => club.id !== home?.id);
-      if (!home || !away) throw new Error("Selected league needs two clubs.");
-      setLeague(nextLeague);
-      setMyClub(home.id);
-      setOppClub(away.id);
+      const catalogLeague = getLeague(id);
+      if (catalogLeague.id !== id) throw new Error("Selected league was not found.");
+      const clubs = selectableQuickMatchClubs(catalogLeague.clubs, CLUBS);
+      const pair = randomQuickMatchPair(clubs);
+      if (!pair) throw new Error("Selected league needs two identified clubs.");
+      setLeague({ ...catalogLeague, clubs });
+      setMyClub(pair.home.id);
+      setOppClub(pair.away.id);
     } catch {
       if (request === catalogRequest.current) {
         setCatalogError(true);
@@ -79,19 +72,20 @@ export function QuickMatchPage() {
     setCatalogError(false);
     setCatalogLoading(true);
     try {
-      const { LEAGUES } = await preloadQuickMatchCatalog();
+      const { LEAGUES, CLUBS } = await preloadQuickMatchCatalog();
       if (request !== catalogRequest.current) return;
-      const candidates = LEAGUES.filter((candidate) => candidate.clubs.length >= 2);
-      const nextLeague = candidates[Math.floor(Math.random() * candidates.length)];
-      if (!nextLeague) throw new Error("No league with two clubs is available.");
-      const homeIndex = Math.floor(Math.random() * nextLeague.clubs.length);
-      const home = nextLeague.clubs[homeIndex]!;
-      let away = nextLeague.clubs[Math.floor(Math.random() * nextLeague.clubs.length)]!;
-      if (away.id === home.id) away = nextLeague.clubs[(homeIndex + 1) % nextLeague.clubs.length]!;
-      setLeague(nextLeague);
-      setLeagueId(nextLeague.id);
-      setMyClub(home.id);
-      setOppClub(away.id);
+      const candidates = LEAGUES.flatMap((candidate) => {
+        const clubs = selectableQuickMatchClubs(candidate.clubs, CLUBS);
+        return clubs.length >= 2 ? [{ league: candidate, clubs }] : [];
+      });
+      const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+      if (!candidate) throw new Error("No league with two identified clubs is available.");
+      const pair = randomQuickMatchPair(candidate.clubs);
+      if (!pair) throw new Error("No distinct club pair is available.");
+      setLeague({ ...candidate.league, clubs: candidate.clubs });
+      setLeagueId(candidate.league.id);
+      setMyClub(pair.home.id);
+      setOppClub(pair.away.id);
     } catch {
       if (request === catalogRequest.current) setCatalogError(true);
     } finally {
@@ -116,14 +110,7 @@ export function QuickMatchPage() {
     );
   }
 
-  // One collator per render avoids ICU setup for every comparison.
-  const countryCompare = new Intl.Collator(lang).compare;
-  const leagueGroups = QUICK_MATCH_LEAGUE_DIRECTORY.reduce<
-    Record<string, QuickMatchLeagueSummary[]>
-  >((groups, entry) => {
-    (groups[entry.country] ??= []).push(entry);
-    return groups;
-  }, {});
+  const leagueGroups = quickMatchLeagueGroups(lang);
   const selectedLeagueSummary =
     QUICK_MATCH_LEAGUE_DIRECTORY.find((entry) => entry.id === leagueId) ?? league;
 
@@ -159,17 +146,7 @@ export function QuickMatchPage() {
             disabled={catalogLoading}
             className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {Object.entries(leagueGroups)
-              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
-              .map(([country, leagues]) => (
-                <optgroup key={country} label={country}>
-                  {leagues.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+            <LeagueOptions groups={leagueGroups} />
           </select>
         </div>
 
@@ -304,12 +281,40 @@ function TeamPicker({
         onChange={(event) => onChange(event.currentTarget.value)}
         className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        {clubs.map((club) => (
-          <option key={club.id} value={club.id} disabled={club.id === disabled}>
-            {club.name}
-          </option>
-        ))}
+        <ClubOptions clubs={clubs} disabled={disabled} />
       </select>
     </section>
   );
 }
+
+// The labels do not change with interface language. Reuse the native option
+// subtree while language detection or unrelated selection controls rerender.
+const LeagueOptions = memo(function LeagueOptions({
+  groups,
+}: {
+  groups: readonly QuickMatchLeagueGroup[];
+}) {
+  return groups.map(({ country, leagues }) => (
+    <optgroup key={country} label={country}>
+      {leagues.map((entry) => (
+        <option key={entry.id} value={entry.id}>
+          {entry.name}
+        </option>
+      ))}
+    </optgroup>
+  ));
+});
+
+const ClubOptions = memo(function ClubOptions({
+  clubs,
+  disabled,
+}: {
+  clubs: readonly Club[];
+  disabled: string;
+}) {
+  return clubs.map((club) => (
+    <option key={club.id} value={club.id} disabled={club.id === disabled}>
+      {club.name}
+    </option>
+  ));
+});

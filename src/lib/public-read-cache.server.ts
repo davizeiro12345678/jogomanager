@@ -1,6 +1,8 @@
 type CacheOptions = {
   ttlMs: number;
   maxEntries: number;
+  loadTimeoutMs?: number;
+  maxConcurrentLoads?: number;
   now?: () => number;
 };
 
@@ -15,10 +17,27 @@ type Entry<T> = {
  * permissions, balances and provider credentials must never enter this cache.
  * Both settled values and pending requests count towards its fixed capacity.
  */
-export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: CacheOptions) {
-  if (!Number.isFinite(ttlMs) || ttlMs <= 0 || !Number.isInteger(maxEntries) || maxEntries < 1)
+export function createPublicReadCache<T>({
+  ttlMs,
+  maxEntries,
+  loadTimeoutMs = 15_000,
+  maxConcurrentLoads = 16,
+  now = Date.now,
+}: CacheOptions) {
+  if (
+    !Number.isFinite(ttlMs) ||
+    ttlMs <= 0 ||
+    !Number.isInteger(maxEntries) ||
+    maxEntries < 1 ||
+    !Number.isFinite(loadTimeoutMs) ||
+    loadTimeoutMs < 1 ||
+    loadTimeoutMs > 2_147_483_647 ||
+    !Number.isInteger(maxConcurrentLoads) ||
+    maxConcurrentLoads < 1
+  )
     throw new Error("Invalid public cache capacity or freshness.");
   const entries = new Map<string, Entry<T>>();
+  let pendingLoads = 0;
 
   return {
     get size() {
@@ -31,16 +50,41 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
         entries.set(key, previous);
         return previous.promise;
       }
+      // Evicting an entry does not cancel its database request. Track physical
+      // loads separately so distinct-key bursts cannot bypass the capacity.
+      if (pendingLoads >= maxConcurrentLoads)
+        return Promise.reject(new Error("Public data capacity temporarily unavailable."));
       entries.delete(key);
       while (entries.size >= maxEntries) entries.delete(entries.keys().next().value!);
 
+      let timeout: ReturnType<typeof setTimeout>;
+      const deadline = new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Public data request timed out.")),
+          loadTimeoutMs,
+        );
+      });
+      pendingLoads++;
+      const upstream = Promise.resolve()
+        .then(load)
+        .then(
+          (value) => {
+            pendingLoads--;
+            return value;
+          },
+          (error: unknown) => {
+            pendingLoads--;
+            throw error;
+          },
+        );
       const entry: Entry<T> = {
         pending: true,
         expiresAt: 0,
-        promise: Promise.resolve().then(load),
+        promise: Promise.race([upstream, deadline]),
       };
       entry.promise = entry.promise.then(
         (value) => {
+          clearTimeout(timeout);
           // A late request must not resurrect an evicted key or replace a
           // newer request for the same key after capacity eviction.
           if (entries.get(key) === entry) {
@@ -50,6 +94,7 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
           return value;
         },
         (error: unknown) => {
+          clearTimeout(timeout);
           if (entries.get(key) === entry) entries.delete(key);
           throw error;
         },

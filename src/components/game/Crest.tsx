@@ -2,7 +2,12 @@ import { useEffect, useId, useState } from "react";
 
 import type { Club } from "@/game/types";
 import { badgeFor, crestStyleFor } from "@/game/customStyle";
-import { loadOfficialAssets, officialCrest, subscribeOfficial } from "@/lib/officialAssets";
+import {
+  deferOfficialAssets,
+  loadOfficialAssets,
+  officialCrest,
+  subscribeOfficial,
+} from "@/lib/officialAssets";
 
 function hash(str: string) {
   let h = 2166136261;
@@ -73,11 +78,14 @@ export function Crest({
   club,
   size = 44,
   detail = "auto",
+  loading = "eager",
 }: {
   club: Club;
   size?: number;
   /** `full` shows emblem, founding year and metal rim; `simple` is optimised for tiny sizes. */
   detail?: "auto" | "simple" | "full";
+  /** The picker can paint its bundled crest before optional catalogue I/O. */
+  loading?: "eager" | "idle";
 }) {
   const uid = useId().replace(/:/g, "");
   const [custom, setCustom] = useState<string | undefined>(undefined);
@@ -87,12 +95,14 @@ export function Crest({
     setImgFailed(false);
     const sync = () => setCustom(badgeFor(club.id) ?? officialCrest(club.id));
     sync();
-    void loadOfficialAssets();
+    const cancelLoad = loading === "idle" ? deferOfficialAssets() : undefined;
+    if (loading === "eager") void loadOfficialAssets();
     const off = subscribeOfficial(sync);
     return () => {
       off();
+      cancelLoad?.();
     };
-  }, [club.id]);
+  }, [club.id, loading]);
 
   const h = hash(club.id);
   const style = crestStyleFor(club.id);

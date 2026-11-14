@@ -1,0 +1,91 @@
+name: PR 132 nine-axis visual, security and interaction QA
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "services/**"
+      - "drizzle/**"
+      - "scripts/**"
+      - ".github/scripts/pr132-nine-axis-qa.mjs"
+      - ".github/workflows/pr132-nine-axis-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr132-nine-axis-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nine-axis:
+    name: Nine-axis UI/interaction/security evidence
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 132 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NODE_USE_ENV_PROXY: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Verify QA audit syntax and immutable revision
+        run: |
+          node --check .github/scripts/pr132-nine-axis-qa.mjs
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - run: npm ci
+      - name: Build anonymous SSR preview, without external credentials
+        run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Install isolated browser evidence runtime
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pr132-qa-tools" --no-package-lock --no-save playwright@1.62.1
+          command -v google-chrome
+          # Playwright's recordVideo needs the matching FFmpeg build. The
+          # system Chromium binary alone does not provide it.
+          "$RUNNER_TEMP/pr132-qa-tools/node_modules/.bin/playwright" install ffmpeg
+      - name: Nine QA dimensions with exact source candidates, browser video and screenshots
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/pr132-qa-tools/node_modules/playwright
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pr132-nine-axis"
+          npx nitro preview --host 127.0.0.1 --port 4173 \
+            > "$RUNNER_TEMP/pr132-nine-axis/preview.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          READY=0
+          for i in $(seq 1 100); do
+            if curl -fsS --max-time 2 -o /dev/null http://127.0.0.1:4173/; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              tail -n 50 "$RUNNER_TEMP/pr132-nine-axis/preview.log"
+              exit 1
+            fi
+            sleep 2
+          done
+          if [ "$READY" -ne 1 ]; then
+            tail -n 50 "$RUNNER_TEMP/pr132-nine-axis/preview.log"
+            exit 1
+          fi
+          export PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)"
+          node .github/scripts/pr132-nine-axis-qa.mjs \
+            http://127.0.0.1:4173 \
+            "$RUNNER_TEMP/pr132-nine-axis" \
+            "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Upload reproducible nine-axis QA screenshots, video, metrics and remediation
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pr132-nine-axis-qa
+          path: ${{ runner.temp }}/pr132-nine-axis/
+          if-no-files-found: warn
+          retention-days: 14

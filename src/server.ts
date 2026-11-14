@@ -1,4 +1,5 @@
 import "./lib/error-capture.server";
+import { createAnonymousEdgeHtmlCache } from "./lib/public-html-edge-cache";
 import { compressPublicHtml } from "./lib/public-html-compression";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -47,14 +48,37 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+/**
+ * Nitro's Cloudflare adapter attaches env and context to request.runtime,
+ * then its lazy SSR service calls fetch(request) with no extra arguments.
+ * Recover only that trusted adapter-owned per-request context; globals such as
+ * __env__ are shared between requests and can race under concurrency.
+ */
+export function resolveWorkerRuntimeContext(request: Request, env: unknown, ctx: unknown) {
+  const runtime = (
+    request as Request & {
+      runtime?: { name?: string; cloudflare?: { env?: unknown; context?: unknown } };
+    }
+  ).runtime;
+  const attached = runtime?.name === "cloudflare" ? runtime.cloudflare : undefined;
+  return { env: env ?? attached?.env, ctx: ctx ?? attached?.context };
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     // The duration only covers initial handler/response creation, not streamed body completion.
     const ssrStart = performance.now();
+    let entryLoadMs = 0;
+    let handlerMs = 0;
     const measured = (response: Response): Response => {
       const durationMs = Math.max(0, performance.now() - ssrStart);
       // secureResponse already builds a fresh mutable response; no extra copy.
-      response.headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
+      // Cold entry import and route-level SSR are distinct latency sources.
+      // Duration ends when headers are ready; streamed body is not included.
+      response.headers.append(
+        "server-timing",
+        `app;dur=${durationMs.toFixed(1)}, entry;dur=${entryLoadMs.toFixed(1)}, ssr;dur=${handlerMs.toFixed(1)}`,
+      );
       return response;
     };
     // Rebuild from public fields: a cross-realm Request may not be cloneable.
@@ -68,16 +92,34 @@ export default {
       init.duplex = "half";
     }
     const verifiedRequest = new Request(request.url, init);
+    const platform = resolveWorkerRuntimeContext(request, env, ctx);
     const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
+    const edgeCache = createAnonymousEdgeHtmlCache(verifiedRequest, platform.env, platform.ctx);
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return measured(protect(redirect));
     try {
+      // The cache is consulted inside the Worker, after checking all request
+      // cookies, so authenticated and personalized requests always execute SSR.
+      if (edgeCache) {
+        const cached = await edgeCache.read(nonce);
+        if (cached) {
+          const hit = measured(protect(cached));
+          hit.headers.set("x-jgm-edge-html-cache", "HIT");
+          return compressPublicHtml(hit, verifiedRequest);
+        }
+      }
+      const loadStart = performance.now();
       const handler = await getServerEntry();
-      const response = await handler.fetch(verifiedRequest, env, ctx);
-      return compressPublicHtml(
-        measured(protect(await normalizeCatastrophicSsrResponse(response))),
-        verifiedRequest,
-      );
+      entryLoadMs = performance.now() - loadStart;
+      const handlerStart = performance.now();
+      const response = await handler.fetch(verifiedRequest, platform.env, platform.ctx);
+      handlerMs = performance.now() - handlerStart;
+      const protectedResponse = measured(protect(await normalizeCatastrophicSsrResponse(response)));
+      if (edgeCache) {
+        edgeCache.store(protectedResponse);
+        protectedResponse.headers.set("x-jgm-edge-html-cache", "MISS");
+      }
+      return compressPublicHtml(protectedResponse, verifiedRequest);
     } catch (error) {
       console.error(error);
       const errorResponse = new Response(renderErrorPage(), {

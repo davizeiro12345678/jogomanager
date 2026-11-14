@@ -1,0 +1,61 @@
+{
+  "node": "v24.22.0",
+  "results": [
+    {
+      "id": "athlete",
+      "keeper": false,
+      "radial": 16,
+      "mergeLods": false,
+      "cloneCount": 160,
+      "copiedBytes": 4274160,
+      "outputBytes": 3409380,
+      "groupCount": 16,
+      "geometryAndMorphSha256": "21630c1bc0d716e948e07b1cb9e8e7b3e2c1ba127951befa5294b97b11c43d5e"
+    },
+    {
+      "id": "keeper",
+      "keeper": true,
+      "radial": 16,
+      "mergeLods": false,
+      "cloneCount": 161,
+      "copiedBytes": 4455632,
+      "outputBytes": 3647812,
+      "groupCount": 21,
+      "geometryAndMorphSha256": "ebb970ae7b146715281ab89957e1def21ed5365a1f5e6d002bae10064d329183"
+    },
+    {
+      "id": "cinematic",
+      "keeper": false,
+      "radial": 16,
+      "mergeLods": true,
+      "cloneCount": 183,
+      "copiedBytes": 4414752,
+      "outputBytes": 3513660,
+      "groupCount": 16,
+      "geometryAndMorphSha256": "4f7f92c7d52d37f789a1f871313d7924f075a9d31129c86291c85274654ce612"
+    },
+    {
+      "id": "staff",
+      "keeper": false,
+      "radial": 12,
+      "mergeLods": true,
+      "staffStyle": "jacket",
+      "cloneCount": 160,
+      "copiedBytes": 4064796,
+      "outputBytes": 3472122,
+      "groupCount": 17,
+      "geometryAndMorphSha256": "04ee1e9990ba3ed672916b8b5b490945f7806bbdf53cefcd6ac3b5f211752bf8"
+    },
+    {
+      "id": "medium",
+      "keeper": false,
+      "radial": 8,
+      "mergeLods": false,
+      "cloneCount": 144,
+      "copiedBytes": 1136152,
+      "outputBytes": 976944,
+      "groupCount": 17,
+      "geometryAndMorphSha256": "d36f4e85cddbe79c8be3afc09a57520428543964028eb8f3459b76f2d6367b10"
+    }
+  ]
+}

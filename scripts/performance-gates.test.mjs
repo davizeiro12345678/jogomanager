@@ -42,6 +42,7 @@ const surfaces = [
   { name: "index-home.js", surface: "home" },
   { name: "new-career.js", surface: "new" },
   { name: "partida-rapida-route.js" },
+  { name: "multiplayer-route.js" },
   { name: "match-execution-contract.js" },
   { name: "match-command-validation.js" },
   { name: "match-physics-extras.js" },
@@ -59,6 +60,7 @@ const fixture = () => ({
   totalBrotliBytes: 80_000,
   entries: surfaces.map((entry) => ({
     ...entry,
+    startupBytes: 60_000,
     startupGzipBytes: 10_000,
     startupBrotliBytes: 8_000,
   })),
@@ -144,6 +146,40 @@ test("bundle gate rejects route startup growth above 2 KiB", () => {
     result.report.violations.join("\n"),
     /Match 3D.*growth 2049 bytes exceeds allowed \+2048 bytes/,
   );
+});
+
+test("multiplayer lobby reports startup raw and keeps the same 2 KiB transport growth allowance", () => {
+  const result = compare((candidate) => {
+    const lobby = candidate.entries.find((entry) => entry.name.startsWith("multiplayer-"));
+    lobby.startupBytes -= 15_000;
+    lobby.startupGzipBytes += 2_048;
+    lobby.startupBrotliBytes += 2_048;
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.report.violations, []);
+  const raw = result.report.rows.find((row) => row.label === "Lobby multiplayer startup raw");
+  assert.equal(raw.before, 60_000);
+  assert.equal(raw.after, 45_000);
+  for (const label of ["Lobby multiplayer startup (gzip)", "Lobby multiplayer startup (Brotli Q6)"])
+    assert.equal(result.report.rows.find((row) => row.label === label).maxIncreaseBytes, 2_048);
+});
+
+test("multiplayer lobby cannot bypass the growth gate or disappear from a comparison", () => {
+  for (const metric of ["startupGzipBytes", "startupBrotliBytes"]) {
+    const result = compare((candidate) => {
+      candidate.entries.find((entry) => entry.name.startsWith("multiplayer-"))[metric] += 2_049;
+    });
+    assert.equal(result.status, 1);
+    assert.match(
+      result.report.violations.join("\n"),
+      /Lobby multiplayer.*growth 2049 bytes exceeds allowed \+2048 bytes/,
+    );
+  }
+  const missing = compare((candidate) => {
+    candidate.entries = candidate.entries.filter((entry) => !entry.name.startsWith("multiplayer-"));
+  });
+  assert.equal(missing.status, 1);
+  assert.match(missing.report.violations.join("\n"), /Lobby multiplayer.*missing required route/);
 });
 
 test("bundle gate cannot pass by dropping a required route", () => {
@@ -346,4 +382,141 @@ test("startup measurement retains the deferred hydration runtime and its bootstr
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test("multiplayer analyzer uses the existing static/root/hydration closure and excludes lazy live graphics", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "multiplayer-startup-"));
+  try {
+    const sources = {
+      "index-bootstrap.js": 'export const start=()=>import("./hydrate-app-test.js");',
+      "hydrate-app-test.js": 'import "./renderer.js"; import "./router.js";',
+      "renderer.js": 'export const renderer="mandatory hydration runtime";',
+      "router.js": 'export const dashboard=()=>import("./dashboard-lazy.js");',
+      "dashboard-lazy.js": 'export const screen="unopened dashboard";',
+      "multiplayer-route.js":
+        'import "./lobby-shared.js"; export const live=()=>import("./LiveRoom-live.js");',
+      "lobby-shared.js": 'import "./renderer.js"; export const lobby="room list";',
+      "LiveRoom-live.js": 'import "./Stadium3D-live.js"; export const live="active match";',
+      "Stadium3D-live.js": 'export const graphics="deferred graphics";',
+    };
+    for (const [name, source] of Object.entries(sources))
+      writeFileSync(path.join(cwd, name), source);
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd],
+      { cwd, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(
+      readFileSync(path.join(cwd, "verification/bundle-2026-10-01/fixture.json"), "utf8"),
+    );
+    const entry = report.entries.find((entry) => entry.name === "multiplayer-route.js");
+    assert.deepEqual(entry.dependencies.sort(), [
+      "lobby-shared.js",
+      "multiplayer-route.js",
+      "renderer.js",
+    ]);
+    assert.deepEqual(entry.startupDependencies.sort(), [
+      "hydrate-app-test.js",
+      "index-bootstrap.js",
+      "lobby-shared.js",
+      "multiplayer-route.js",
+      "renderer.js",
+      "router.js",
+    ]);
+    for (const [metric, total] of [
+      ["startupBytes", "bytes"],
+      ["startupGzipBytes", "gzipBytes"],
+      ["startupBrotliBytes", "brotliBytes"],
+    ]) {
+      assert.equal(
+        entry[metric],
+        report.chunks
+          .filter((chunk) => entry.startupDependencies.includes(chunk.name))
+          .reduce((sum, chunk) => sum + chunk[total], 0),
+      );
+    }
+    assert.ok(!entry.startupDependencies.includes("LiveRoom-live.js"));
+    assert.ok(!entry.startupDependencies.includes("Stadium3D-live.js"));
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test("browser-only gameplay routes cannot pull page and 3D graphs into SSR eagerly", () => {
+  for (const route of [
+    "carreira",
+    "dashboard",
+    "new",
+    "squad",
+    "editor",
+    "tactics",
+    "stats",
+    "club",
+    "pre-jogo",
+    "training",
+    "scouting",
+    "cup",
+    "board",
+    "league",
+    "perfil",
+    "visual",
+    "replays",
+    "history",
+    "finances",
+    "coletiva",
+    "transfers",
+    "carreiras",
+    "conquistas",
+    "temporada-automatica",
+    "assistente",
+    "auth",
+    "loja",
+    "chat",
+    "news",
+    "compras",
+    "cadastro",
+    "clube.novo",
+    "jogador.novo",
+    "jogador.index",
+    "jogador.painel",
+    "checkout/claim",
+    "checkout/guest",
+    "checkout/return",
+    "match",
+    "multiplayer",
+  ]) {
+    const source = readFileSync(path.join(root, `src/routes/${route}.tsx`), "utf8");
+    assert.match(source, /\bssr:\s*false\b/, `${route} should remain client-only`);
+    assert.match(source, /component:\s*import\.meta\.env\.SSR/, `${route} requires SSR pruning`);
+    assert.match(source, /:\s*lazyRouteComponent\(/, `${route} needs a client lazy page`);
+    assert.doesNotMatch(source, /import\s*\{[^}]+\}\s*from\s*["']@\/pages\//);
+  }
+});
+
+test("legacy multiplayer SSR does not eagerly evaluate the match physics engine", () => {
+  const source = readFileSync(path.join(root, "src/lib/multiplayer.functions.ts"), "utf8");
+  assert.ok(!source.includes('import { buildTeamSetup } from "@/game/quickMatch";'));
+  assert.ok(!source.includes('import { CLUBS } from "@/game/data/leagues";'));
+  assert.ok(!source.includes('MatchSim,\n} from "@/game/sim";'));
+  assert.ok(source.includes('import("@/game/sim")'));
+  assert.ok(source.includes('import("@/game/quickMatch")'));
+  assert.ok(source.includes('import("@/game/data/leagues")'));
+});
+
+test("restricted email previews do not eagerly bundle rendering SDKs on every edge request", () => {
+  for (const route of [
+    "src/routes/lovable/email/auth/preview.ts",
+    "src/routes/lovable/email/transactional/preview.ts",
+  ]) {
+    const source = readFileSync(path.join(root, route), "utf8");
+    assert.ok(!source.includes('import { render } from "@react-email/render";'));
+    assert.ok(source.includes('import("@react-email/render")'));
+  }
+  const transactional = readFileSync(
+    path.join(root, "src/routes/lovable/email/transactional/preview.ts"),
+    "utf8",
+  );
+  assert.ok(!transactional.includes('import { TEMPLATES } from "@/lib/email-templates/registry";'));
+  assert.ok(transactional.includes('import("@/lib/email-templates/registry")'));
 });

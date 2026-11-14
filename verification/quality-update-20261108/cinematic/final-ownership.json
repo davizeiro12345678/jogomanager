@@ -1,0 +1,6075 @@
+{
+  "tag": "final-ownership",
+  "startedAt": "2026-11-09T01:10:56.538Z",
+  "protocol": {
+    "quality": "alta",
+    "viewport": {
+      "width": 1280,
+      "height": 720,
+      "dpr": 1
+    },
+    "headed": true,
+    "highPerformanceGpu": true,
+    "durationSeconds": 60,
+    "videoRecording": false,
+    "scene": "prematch-locker",
+    "autoplay": true,
+    "narration": false,
+    "scope": "Local cinematic transition diagnostic, completed-render one-second windows including startup; not the broadcast certification protocol."
+  },
+  "samples": [
+    {
+      "frames": 10,
+      "meanMs": 400.25999999940393,
+      "fps": 2.4983760555676042,
+      "onePercentLow": 0.31297924947634365,
+      "p50": 41,
+      "p95": 3195.0999999940395,
+      "p99": 3195.0999999940395,
+      "maxMs": 3195.0999999940395,
+      "stalls": 5,
+      "now": 5672,
+      "draws": 48.3,
+      "triangles": 33360.4,
+      "geometries": 187,
+      "textures": 45,
+      "programs": 30,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 4.541,
+      "heapUsedBytes": 48561644,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 11434697
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 11434697
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 28,
+      "meanMs": 194.16071428571428,
+      "fps": 5.1503724822955945,
+      "onePercentLow": 0.19453360568038128,
+      "p50": 8.599999994039536,
+      "p95": 70.20000000298023,
+      "p99": 5140.5,
+      "maxMs": 5140.5,
+      "stalls": 2,
+      "now": 11108.5,
+      "draws": 166.03571428571428,
+      "triangles": 302634.14285714284,
+      "geometries": 199,
+      "textures": 50,
+      "programs": 53,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 9.9775,
+      "heapUsedBytes": 54836347,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 12133801
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 12133801
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 3,
+      "meanMs": 1816.4000000009935,
+      "fps": 0.5505395287378623,
+      "onePercentLow": 0.18413493407979464,
+      "p50": 10.200000002980232,
+      "p95": 5430.79999999702,
+      "p99": 5430.79999999702,
+      "maxMs": 5430.79999999702,
+      "stalls": 1,
+      "now": 16557.70000000298,
+      "draws": 181.33333333333334,
+      "triangles": 303910.3333333333,
+      "geometries": 201,
+      "textures": 93,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 15.426700000002981,
+      "heapUsedBytes": 50269537,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 12483353
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 12483353
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 92,
+      "meanMs": 10.87391304338108,
+      "fps": 91.96321471493624,
+      "onePercentLow": 4.582951420652345,
+      "p50": 7.200000002980232,
+      "p95": 20.599999994039536,
+      "p99": 218.20000000298023,
+      "maxMs": 218.20000000298023,
+      "stalls": 2,
+      "now": 17558.09999999404,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 100,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 16.427099999994038,
+      "heapUsedBytes": 48464978,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14231109
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14231109
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.924137931034482,
+      "fps": 144.4223107569721,
+      "onePercentLow": 93.02325581395348,
+      "p50": 7,
+      "p95": 8.5,
+      "p99": 10.5,
+      "maxMs": 11,
+      "stalls": 0,
+      "now": 18562.09999999404,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 17.43109999999404,
+      "heapUsedBytes": 62744714,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.949655172434347,
+      "fps": 143.89203135811368,
+      "onePercentLow": 98.52216757446865,
+      "p50": 6.899999991059303,
+      "p95": 8.300000011920929,
+      "p99": 9.099999994039536,
+      "maxMs": 11.199999988079071,
+      "stalls": 0,
+      "now": 19569.79999999702,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 18.43879999999702,
+      "heapUsedBytes": 71381705,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 121,
+      "meanMs": 8.269421487677196,
+      "fps": 120.92744353279915,
+      "onePercentLow": 11.848341232436676,
+      "p50": 7.0999999940395355,
+      "p95": 9.100000008940697,
+      "p99": 31.099999994039536,
+      "maxMs": 137.70000000298023,
+      "stalls": 1,
+      "now": 20570.40000000596,
+      "draws": 215.3388429752066,
+      "triangles": 359106.7355371901,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 19.43940000000596,
+      "heapUsedBytes": 72060805,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.945138888847497,
+      "fps": 143.98560144071413,
+      "onePercentLow": 108.10810810810811,
+      "p50": 6.899999991059303,
+      "p95": 8,
+      "p99": 9.099999994039536,
+      "maxMs": 9.400000005960464,
+      "stalls": 0,
+      "now": 21570.5,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 20.4395,
+      "heapUsedBytes": 63147077,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.938620689614066,
+      "fps": 144.1208627381563,
+      "onePercentLow": 109.8901097821435,
+      "p50": 7,
+      "p95": 8.200000002980232,
+      "p99": 8.400000005960464,
+      "maxMs": 9.800000011920929,
+      "stalls": 0,
+      "now": 22576.59999999404,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 21.44559999999404,
+      "heapUsedBytes": 71283499,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.947222222263615,
+      "fps": 143.94242302993007,
+      "onePercentLow": 118.3431952245337,
+      "p50": 7,
+      "p95": 8.200000002980232,
+      "p99": 8.400000005960464,
+      "maxMs": 8.5,
+      "stalls": 0,
+      "now": 23577,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 22.446,
+      "heapUsedBytes": 77419931,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.944444444444445,
+      "fps": 144,
+      "onePercentLow": 101.52284262423545,
+      "p50": 6.9000000059604645,
+      "p95": 8.5,
+      "p99": 9.5,
+      "maxMs": 10.200000002980232,
+      "stalls": 0,
+      "now": 24577,
+      "draws": 191.1875,
+      "triangles": 359754.875,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 23.446,
+      "heapUsedBytes": 61564424,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.945138888847497,
+      "fps": 143.98560144071413,
+      "onePercentLow": 111.73184353821377,
+      "p50": 7,
+      "p95": 8.099999994039536,
+      "p99": 8.700000002980232,
+      "maxMs": 9.200000002980232,
+      "stalls": 0,
+      "now": 25577.09999999404,
+      "draws": 183,
+      "triangles": 304651,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 24.44609999999404,
+      "heapUsedBytes": 71170249,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.933103448358075,
+      "fps": 144.23555157493342,
+      "onePercentLow": 117.6470588235294,
+      "p50": 6.9000000059604645,
+      "p95": 8.199999988079071,
+      "p99": 8.399999991059303,
+      "maxMs": 8.600000008940697,
+      "stalls": 0,
+      "now": 26582.40000000596,
+      "draws": 182.8206896551724,
+      "triangles": 304648.84827586205,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 25.45140000000596,
+      "heapUsedBytes": 74325080,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.945138888847497,
+      "fps": 143.98560144071413,
+      "onePercentLow": 111.11111111111111,
+      "p50": 6.800000011920929,
+      "p95": 8.400000005960464,
+      "p99": 8.5,
+      "maxMs": 9.5,
+      "stalls": 0,
+      "now": 27582.5,
+      "draws": 182,
+      "triangles": 304639,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 26.4515,
+      "heapUsedBytes": 77303901,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 140,
+      "meanMs": 7.162857142835856,
+      "fps": 139.60909453571605,
+      "onePercentLow": 41.666666666666664,
+      "p50": 6.9000000059604645,
+      "p95": 8.299999997019768,
+      "p99": 10,
+      "maxMs": 38,
+      "stalls": 0,
+      "now": 28585.29999999702,
+      "draws": 191.22857142857143,
+      "triangles": 305144.14285714284,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 27.45429999999702,
+      "heapUsedBytes": 85791546,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.922758620669102,
+      "fps": 144.45108587410888,
+      "onePercentLow": 112.99435035858744,
+      "p50": 6.9000000059604645,
+      "p95": 8.200000002980232,
+      "p99": 8.699999988079071,
+      "maxMs": 9,
+      "stalls": 0,
+      "now": 29589.09999999404,
+      "draws": 200.15172413793104,
+      "triangles": 305645.0689655172,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 28.45809999999404,
+      "heapUsedBytes": 69430700,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.947916666666667,
+      "fps": 143.928035982009,
+      "onePercentLow": 100,
+      "p50": 7.0999999940395355,
+      "p95": 8.5,
+      "p99": 9.799999997019768,
+      "maxMs": 10.200000002980232,
+      "stalls": 0,
+      "now": 30589.59999999404,
+      "draws": 200,
+      "triangles": 305639,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 29.45859999999404,
+      "heapUsedBytes": 73090156,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.953472222305006,
+      "fps": 143.8130430423306,
+      "onePercentLow": 116.95906436825324,
+      "p50": 7,
+      "p95": 8.200000002980232,
+      "p99": 8.299999997019768,
+      "maxMs": 8.799999997019768,
+      "stalls": 0,
+      "now": 31590.90000000596,
+      "draws": 200,
+      "triangles": 305639,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 100,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 30.45990000000596,
+      "heapUsedBytes": 76697346,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 35,
+      "meanMs": 28.637142857483454,
+      "fps": 34.91968472471688,
+      "onePercentLow": 2.3889154323426696,
+      "p50": 9.599999994039536,
+      "p95": 83.79999999701977,
+      "p99": 418.6000000089407,
+      "maxMs": 418.6000000089407,
+      "stalls": 4,
+      "now": 33115.40000000596,
+      "draws": 139.4857142857143,
+      "triangles": 242787.6,
+      "geometries": 187,
+      "textures": 45,
+      "programs": 32,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 1.1715,
+      "heapUsedBytes": 39457708,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 11434697
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 11434697
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 47,
+      "meanMs": 21.340425531914892,
+      "fps": 46.85942173479562,
+      "onePercentLow": 1.735207357288168,
+      "p50": 9.200000002980232,
+      "p95": 15.700000002980232,
+      "p99": 576.2999999970198,
+      "maxMs": 576.2999999970198,
+      "stalls": 1,
+      "now": 34118.40000000596,
+      "draws": 210.06382978723406,
+      "triangles": 299963.02127659577,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 2.1745,
+      "heapUsedBytes": 73611679,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 130,
+      "meanMs": 7.705384615292916,
+      "fps": 129.7793750639384,
+      "onePercentLow": 71.17437723929652,
+      "p50": 7.200000002980232,
+      "p95": 12.600000008940697,
+      "p99": 13.599999994039536,
+      "maxMs": 14.5,
+      "stalls": 0,
+      "now": 35120.09999999404,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 3.176199999988079,
+      "heapUsedBytes": 58015512,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 133,
+      "meanMs": 7.56015037593985,
+      "fps": 132.2725012431626,
+      "onePercentLow": 72.72727272727273,
+      "p50": 7.199999988079071,
+      "p95": 11.799999997019768,
+      "p99": 12.5,
+      "maxMs": 15,
+      "stalls": 0,
+      "now": 36125.59999999404,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 4.181699999988079,
+      "heapUsedBytes": 61865001,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 138,
+      "meanMs": 7.2521739131298615,
+      "fps": 137.88968824775802,
+      "onePercentLow": 81.96721309473104,
+      "p50": 7,
+      "p95": 10.400000005960464,
+      "p99": 11.800000011920929,
+      "maxMs": 12.599999994039536,
+      "stalls": 0,
+      "now": 37126.40000000596,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 5.1825,
+      "heapUsedBytes": 65894594,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 115,
+      "meanMs": 8.715652173887129,
+      "fps": 114.73610695434694,
+      "onePercentLow": 14.925373134328359,
+      "p50": 7.399999991059303,
+      "p95": 12.5,
+      "p99": 14.700000002980232,
+      "maxMs": 119.29999999701977,
+      "stalls": 1,
+      "now": 38128.70000000298,
+      "draws": 210.6782608695652,
+      "triangles": 401725.3304347826,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 6.184799999997019,
+      "heapUsedBytes": 94788183,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 130,
+      "meanMs": 7.7253846153616905,
+      "fps": 129.44339340872824,
+      "onePercentLow": 72.20216605721374,
+      "p50": 7.5,
+      "p95": 10.900000005960464,
+      "p99": 13.5,
+      "maxMs": 14.200000002980232,
+      "stalls": 0,
+      "now": 39133,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 7.189099999994039,
+      "heapUsedBytes": 72945899,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.952777777798474,
+      "fps": 143.82740711103813,
+      "onePercentLow": 113.63636357863703,
+      "p50": 7,
+      "p95": 8.200000002980232,
+      "p99": 8.600000008940697,
+      "maxMs": 9,
+      "stalls": 0,
+      "now": 40134.20000000298,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 8.19029999999702,
+      "heapUsedBytes": 78652118,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.93448275862069,
+      "fps": 144.20686225758328,
+      "onePercentLow": 112.35955048654887,
+      "p50": 6.9000000059604645,
+      "p95": 8.200000002980232,
+      "p99": 8.800000011920929,
+      "maxMs": 9,
+      "stalls": 0,
+      "now": 41139.70000000298,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 9.19579999999702,
+      "heapUsedBytes": 83802616,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.947222222160134,
+      "fps": 143.94242303207412,
+      "onePercentLow": 114.28571418840058,
+      "p50": 6.9000000059604645,
+      "p95": 8.299999997019768,
+      "p99": 8.700000002980232,
+      "maxMs": 8.800000011920929,
+      "stalls": 0,
+      "now": 42140.09999999404,
+      "draws": 185.35416666666666,
+      "triangles": 323017.7083333333,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 10.19619999998808,
+      "heapUsedBytes": 92875149,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.949655172434347,
+      "fps": 143.89203135811368,
+      "onePercentLow": 105.82010587016431,
+      "p50": 7,
+      "p95": 8.199999988079071,
+      "p99": 9.399999991059303,
+      "maxMs": 9.5,
+      "stalls": 0,
+      "now": 43147.79999999702,
+      "draws": 183,
+      "triangles": 304651,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 11.203899999991059,
+      "heapUsedBytes": 75142815,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.922758620669102,
+      "fps": 144.45108587410888,
+      "onePercentLow": 119.76047902054407,
+      "p50": 6.9000000059604645,
+      "p95": 8.200000002980232,
+      "p99": 8.299999997019768,
+      "maxMs": 8.400000005960464,
+      "stalls": 0,
+      "now": 44151.59999999404,
+      "draws": 182.53103448275863,
+      "triangles": 304645.3724137931,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 12.20769999998808,
+      "heapUsedBytes": 77478484,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.944444444444445,
+      "fps": 144,
+      "onePercentLow": 109.89010987211549,
+      "p50": 7,
+      "p95": 8,
+      "p99": 8.200000002980232,
+      "maxMs": 10,
+      "stalls": 0,
+      "now": 45151.59999999404,
+      "draws": 182,
+      "triangles": 304639,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 13.20769999998808,
+      "heapUsedBytes": 79252039,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 140,
+      "meanMs": 7.157857142921005,
+      "fps": 139.7066161049306,
+      "onePercentLow": 43.85964911420755,
+      "p50": 7.0999999940395355,
+      "p95": 8.100000008940697,
+      "p99": 11.100000008940697,
+      "maxMs": 34.5,
+      "stalls": 0,
+      "now": 46153.70000000298,
+      "draws": 196.9142857142857,
+      "triangles": 305457.5714285714,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 14.20979999999702,
+      "heapUsedBytes": 89863429,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.936551724117377,
+      "fps": 144.16384967233014,
+      "onePercentLow": 98.52216750214872,
+      "p50": 7,
+      "p95": 8.399999991059303,
+      "p99": 9.599999994039536,
+      "maxMs": 10.700000002980232,
+      "stalls": 0,
+      "now": 47159.5,
+      "draws": 200,
+      "triangles": 305639,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 15.215599999994039,
+      "heapUsedBytes": 96297076,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.939310344848139,
+      "fps": 144.10653945494985,
+      "onePercentLow": 90.09009013846655,
+      "p50": 6.899999991059303,
+      "p95": 8.200000002980232,
+      "p99": 11.099999994039536,
+      "maxMs": 11.099999994039536,
+      "stalls": 0,
+      "now": 48165.70000000298,
+      "draws": 200,
+      "triangles": 305639,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 16.22179999999702,
+      "heapUsedBytes": 99785440,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 37,
+      "meanMs": 32.7027027027027,
+      "fps": 30.578512396694215,
+      "onePercentLow": 2.6838432635963416,
+      "p50": 8.900000005960464,
+      "p95": 267.8999999910593,
+      "p99": 372.59999999403954,
+      "maxMs": 372.59999999403954,
+      "stalls": 4,
+      "now": 50668.79999999702,
+      "draws": 145.9189189189189,
+      "triangles": 254123.9189189189,
+      "geometries": 201,
+      "textures": 90,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 1.3668999999910594,
+      "heapUsedBytes": 51486440,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 11434697
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 11434697
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 130,
+      "meanMs": 7.732307692330617,
+      "fps": 129.32749701513586,
+      "onePercentLow": 66.88963209368919,
+      "p50": 7.299999997019768,
+      "p95": 12.099999994039536,
+      "p99": 14.700000002980232,
+      "maxMs": 15.200000002980232,
+      "stalls": 0,
+      "now": 51674,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 2.3720999999940395,
+      "heapUsedBytes": 75565622,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.9420689654761345,
+      "fps": 144.04927478726268,
+      "onePercentLow": 109.89010996208748,
+      "p50": 6.9000000059604645,
+      "p95": 8.400000005960464,
+      "p99": 9,
+      "maxMs": 9.199999988079071,
+      "stalls": 0,
+      "now": 52680.59999999404,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 3.378699999988079,
+      "heapUsedBytes": 84112206,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.936551724220144,
+      "fps": 144.1638496701943,
+      "onePercentLow": 112.99435035858744,
+      "p50": 7,
+      "p95": 8,
+      "p99": 8.399999991059303,
+      "maxMs": 9.299999997019768,
+      "stalls": 0,
+      "now": 53686.40000000596,
+      "draws": 214,
+      "triangles": 306479,
+      "geometries": 201,
+      "textures": 102,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 4.3845,
+      "heapUsedBytes": 63425679,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 120,
+      "meanMs": 8.3375,
+      "fps": 119.94002998500748,
+      "onePercentLow": 13.850415511893663,
+      "p50": 7.0999999940395355,
+      "p95": 11.400000005960464,
+      "p99": 13,
+      "maxMs": 131.40000000596046,
+      "stalls": 1,
+      "now": 54686.90000000596,
+      "draws": 215.79166666666666,
+      "triangles": 347100.76666666666,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 5.385,
+      "heapUsedBytes": 81056762,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.958333333333333,
+      "fps": 143.7125748502994,
+      "onePercentLow": 95.69377994524254,
+      "p50": 6.9000000059604645,
+      "p95": 8.200000002980232,
+      "p99": 10.299999997019768,
+      "maxMs": 10.599999994039536,
+      "stalls": 0,
+      "now": 55688.90000000596,
+      "draws": 203.0625,
+      "triangles": 430607.75,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 6.387,
+      "heapUsedBytes": 93165423,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 145,
+      "meanMs": 6.944827586206896,
+      "fps": 143.99205561072492,
+      "onePercentLow": 96.61835747401231,
+      "p50": 6.9000000059604645,
+      "p95": 8.100000008940697,
+      "p99": 8.700000002980232,
+      "maxMs": 12,
+      "stalls": 0,
+      "now": 56695.90000000596,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 7.394,
+      "heapUsedBytes": 73780270,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 144,
+      "meanMs": 6.978472222160134,
+      "fps": 143.29784058242728,
+      "onePercentLow": 96.15384616762312,
+      "p50": 6.9000000059604645,
+      "p95": 8.399999991059303,
+      "p99": 10.199999988079071,
+      "maxMs": 10.600000008940697,
+      "stalls": 0,
+      "now": 57700.79999999702,
+      "draws": 203,
+      "triangles": 430607,
+      "geometries": 218,
+      "textures": 106,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 8.398899999991059,
+      "heapUsedBytes": 78369227,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 131,
+            "draws": 131,
+            "triangles": 263086,
+            "shadowCasters": 44,
+            "geometryBytes": 11579552,
+            "textureBytes": 15978839
+          }
+        },
+        "total": {
+          "meshes": 143,
+          "draws": 143,
+          "triangles": 265236,
+          "shadowCasters": 48,
+          "geometryBytes": 11863352,
+          "textureBytes": 15978839
+        },
+        "materials": 135
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 139,
+      "meanMs": 7.244604316546763,
+      "fps": 138.03376365441906,
+      "onePercentLow": 76.3358778104965,
+      "p50": 7,
+      "p95": 10.200000002980232,
+      "p99": 12.100000008940697,
+      "maxMs": 14.100000008940697,
+      "stalls": 0,
+      "now": 58707.79999999702,
+      "draws": 192.86330935251797,
+      "triangles": 369892.7410071943,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 9.405899999991059,
+      "heapUsedBytes": 84848469,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 137,
+      "meanMs": 7.339416058394161,
+      "fps": 136.25062158130282,
+      "onePercentLow": 79.36507940262324,
+      "p50": 7.100000008940697,
+      "p95": 10.800000011920929,
+      "p99": 12.5,
+      "maxMs": 12.699999988079071,
+      "stalls": 0,
+      "now": 59713.29999999702,
+      "draws": 183,
+      "triangles": 304651,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 10.41139999999106,
+      "heapUsedBytes": 92330680,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    },
+    {
+      "frames": 117,
+      "meanMs": 8.567521367572311,
+      "fps": 116.71987230577045,
+      "onePercentLow": 70.67137809931509,
+      "p50": 8.299999997019768,
+      "p95": 12.600000008940697,
+      "p99": 14,
+      "maxMs": 14.299999997019768,
+      "stalls": 0,
+      "now": 60715.70000000298,
+      "draws": 182.93162393162393,
+      "triangles": 304650.1794871795,
+      "geometries": 201,
+      "textures": 105,
+      "programs": 82,
+      "width": 1269,
+      "height": 720,
+      "dpr": 1.0000000149011612,
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (NVIDIA)",
+        "rendererClass": "hardware",
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "elapsed": 11.41379999999702,
+      "heapUsedBytes": 87613743,
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "playerLow": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "crowd": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "grass": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "props": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "static": {
+            "meshes": 12,
+            "draws": 12,
+            "triangles": 2150,
+            "shadowCasters": 4,
+            "geometryBytes": 283800,
+            "textureBytes": 0
+          },
+          "goal": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "ball": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "sky": {
+            "meshes": 0,
+            "draws": 0,
+            "triangles": 0,
+            "shadowCasters": 0,
+            "geometryBytes": 0,
+            "textureBytes": 0
+          },
+          "other": {
+            "meshes": 114,
+            "draws": 114,
+            "triangles": 191492,
+            "shadowCasters": 39,
+            "geometryBytes": 8537396,
+            "textureBytes": 14930209
+          }
+        },
+        "total": {
+          "meshes": 126,
+          "draws": 126,
+          "triangles": 193642,
+          "shadowCasters": 43,
+          "geometryBytes": 8821196,
+          "textureBytes": 14930209
+        },
+        "materials": 122
+      },
+      "measurement": "completed renders; visible running scene; one second window"
+    }
+  ],
+  "transitions": [
+    {
+      "wallSeconds": 1.508,
+      "cycle": 1,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "0.527",
+      "cinematicLineTime": "0.527",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "emphasis",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "environment",
+      "cinematicActorPresence": "environment",
+      "cinematicShotType": "master",
+      "cinematicFraming": "establishing",
+      "cinematicDraws": "28",
+      "cinematicTriangles": "3470",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "538.4",
+      "interactiveFrameMs": "538.4",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0"
+    },
+    {
+      "wallSeconds": 19.343,
+      "cycle": 1,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "4.708",
+      "cinematicLineTime": "0.119",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "assistant",
+      "cinematicActorPresence": "overlay",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "237",
+      "cinematicTriangles": "432445",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "538.4",
+      "interactiveFrameMs": "538.4",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "143.9",
+      "frameP95Ms": "8.3",
+      "frameResources": "{\"geometries\":201,\"textures\":102,\"programs\":100,\"materials\":122,\"geometryBytes\":8821196,\"textureBytes\":14930209,\"compressed\":{\"residentBytes\":4893728,\"residentTextures\":14,\"droppedMips\":6,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 23.26,
+      "cycle": 1,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "8.638",
+      "cinematicLineTime": "0.125",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "manager",
+      "cinematicActorPresence": "resident",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "180",
+      "cinematicTriangles": "304641",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "538.4",
+      "interactiveFrameMs": "538.4",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "143.9",
+      "frameP95Ms": "8.2",
+      "frameResources": "{\"geometries\":218,\"textures\":106,\"programs\":100,\"materials\":135,\"geometryBytes\":11863352,\"textureBytes\":15978839,\"compressed\":{\"residentBytes\":5592832,\"residentTextures\":16,\"droppedMips\":6,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 27.125,
+      "cycle": 1,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "12.500",
+      "cinematicLineTime": "0.077",
+      "cinematicGesture": "rally",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "captain",
+      "cinematicActorPresence": "resident",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "182",
+      "cinematicTriangles": "304639",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "538.4",
+      "interactiveFrameMs": "538.4",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "144.0",
+      "frameP95Ms": "8.4",
+      "frameResources": "{\"geometries\":201,\"textures\":105,\"programs\":100,\"materials\":122,\"geometryBytes\":8821196,\"textureBytes\":14930209,\"compressed\":{\"residentBytes\":5592832,\"residentTextures\":16,\"droppedMips\":6,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 31.565,
+      "cycle": 2,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "0.415",
+      "cinematicLineTime": "0.415",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "emphasis",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "environment",
+      "cinematicActorPresence": "environment",
+      "cinematicShotType": "master",
+      "cinematicFraming": "establishing",
+      "cinematicDraws": "28",
+      "cinematicTriangles": "3470",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "169.2",
+      "interactiveFrameMs": "169.2",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0"
+    },
+    {
+      "wallSeconds": 36.638,
+      "cycle": 2,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "4.648",
+      "cinematicLineTime": "0.186",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "assistant",
+      "cinematicActorPresence": "overlay",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "237",
+      "cinematicTriangles": "432445",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "169.2",
+      "interactiveFrameMs": "169.2",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "137.9",
+      "frameP95Ms": "10.4",
+      "frameResources": "{\"geometries\":201,\"textures\":102,\"programs\":82,\"materials\":122,\"geometryBytes\":8821196,\"textureBytes\":14930209,\"compressed\":{\"residentBytes\":4893728,\"residentTextures\":14,\"droppedMips\":12,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 40.545,
+      "cycle": 2,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "8.560",
+      "cinematicLineTime": "0.139",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "manager",
+      "cinematicActorPresence": "resident",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "180",
+      "cinematicTriangles": "304641",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "169.2",
+      "interactiveFrameMs": "169.2",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "144.2",
+      "frameP95Ms": "8.2",
+      "frameResources": "{\"geometries\":218,\"textures\":106,\"programs\":82,\"materials\":135,\"geometryBytes\":11863352,\"textureBytes\":15978839,\"compressed\":{\"residentBytes\":5592832,\"residentTextures\":16,\"droppedMips\":12,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 44.451,
+      "cycle": 2,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "12.462",
+      "cinematicLineTime": "0.132",
+      "cinematicGesture": "rally",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "captain",
+      "cinematicActorPresence": "resident",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "182",
+      "cinematicTriangles": "304639",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "169.2",
+      "interactiveFrameMs": "169.2",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "144.0",
+      "frameP95Ms": "8.0",
+      "frameResources": "{\"geometries\":201,\"textures\":105,\"programs\":82,\"materials\":122,\"geometryBytes\":8821196,\"textureBytes\":14930209,\"compressed\":{\"residentBytes\":5592832,\"residentTextures\":16,\"droppedMips\":12,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 49.166,
+      "cycle": 3,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "0.438",
+      "cinematicLineTime": "0.438",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "emphasis",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "environment",
+      "cinematicActorPresence": "environment",
+      "cinematicShotType": "master",
+      "cinematicFraming": "establishing",
+      "cinematicDraws": "165",
+      "cinematicTriangles": "302626",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "156.9",
+      "interactiveFrameMs": "156.9",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0"
+    },
+    {
+      "wallSeconds": 53.568,
+      "cycle": 3,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "4.549",
+      "cinematicLineTime": "0.174",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "assistant",
+      "cinematicActorPresence": "overlay",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "237",
+      "cinematicTriangles": "432445",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "156.9",
+      "interactiveFrameMs": "156.9",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "144.2",
+      "frameP95Ms": "8.0",
+      "frameResources": "{\"geometries\":201,\"textures\":102,\"programs\":82,\"materials\":122,\"geometryBytes\":8821196,\"textureBytes\":14930209,\"compressed\":{\"residentBytes\":4893728,\"residentTextures\":14,\"droppedMips\":18,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    },
+    {
+      "wallSeconds": 57.577,
+      "cycle": 3,
+      "cinematicSet": "locker",
+      "cinematicQuality": "alta",
+      "cinematicPressure": "0",
+      "cinematicGpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "cinematicTime": "8.557",
+      "cinematicLineTime": "0.242",
+      "cinematicGesture": "explain",
+      "cinematicDeliveryPhase": "preparation",
+      "cinematicDrill": "dribble",
+      "cinematicSubject": "manager",
+      "cinematicActorPresence": "resident",
+      "cinematicShotType": "dialogue",
+      "cinematicFraming": "dialogue",
+      "cinematicDraws": "183",
+      "cinematicTriangles": "304651",
+      "renderWidth": "1269",
+      "renderHeight": "720",
+      "renderDpr": "1.0000000149011612",
+      "rendererBackend": "webgl2",
+      "rendererClass": "hardware",
+      "firstFrameMs": "156.9",
+      "interactiveFrameMs": "156.9",
+      "cinematicReady": "true",
+      "staticSources": "66",
+      "staticBatches": "12",
+      "staticVisibleSources": "0",
+      "cinematicFps": "143.3",
+      "frameP95Ms": "8.4",
+      "frameResources": "{\"geometries\":218,\"textures\":106,\"programs\":82,\"materials\":135,\"geometryBytes\":11863352,\"textureBytes\":15978839,\"compressed\":{\"residentBytes\":5592832,\"residentTextures\":16,\"droppedMips\":18,\"rejectedUncompressed\":0,\"rejectedOverBudget\":0}}"
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "windows": 45,
+    "cycles": 3,
+    "transitions": 11,
+    "frames": 5555,
+    "sampledMs": 57231.0000000149,
+    "weightedFps": 97.0627806608054,
+    "stallsOver50ms": 22,
+    "maxFrameMs": 5430.79999999702,
+    "windowP95MaxMs": 5430.79999999702,
+    "windowP99MaxMs": 5430.79999999702,
+    "windowOnePercentLowMin": 0.18413493407979464,
+    "percentileScope": "Per-window extrema; global p95/p99/1% low cannot be reconstructed from summaries.",
+    "renderer": {
+      "kind": "webgl2",
+      "renderer": "fl",
+      "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "gpuVendor": "Google Inc. (NVIDIA)",
+      "rendererClass": "hardware",
+      "maxTextureSize": 16384,
+      "maxAnisotropy": 16
+    }
+  },
+  "complete": true,
+  "completedAt": "2026-11-09T01:11:57.680Z"
+}

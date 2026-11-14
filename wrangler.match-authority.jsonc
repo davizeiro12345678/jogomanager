@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jogomanager-match-authority-staging",
+  "main": "services/match-authority/worker.ts",
+  "compatibility_date": "2026-11-11",
+  "workers_dev": false,
+  "send_metrics": false,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MATCH_ROOMS",
+        "class_name": "MatchRoomDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "match-room-sqlite-v1",
+      "new_sqlite_classes": [
+        "MatchRoomDO"
+      ]
+    }
+  ],
+  "triggers": {
+    "crons": []
+  },
+  "vars": {
+    "MATCH_AUTHORITY_ENABLED": "false",
+    "MATCH_QUEUE_CRON_ENABLED": "false",
+    "ALLOWED_ORIGIN": "https://staging.jogomanager.com",
+    "MATCH_AUTHORITY_ENV": "staging"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    }
+  }
+}

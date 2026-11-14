@@ -1,5 +1,6 @@
 import { responseIndexingPolicy } from "./public-indexing";
 import { isPublicContentPath } from "./public-content-routes";
+import { hasSensitiveCookie } from "./anonymous-cookie";
 
 /** Supplied only by the outer server entry, never copied from an incoming header. */
 export const CSP_NONCE_HEADER = "x-manager-csp-nonce";
@@ -64,6 +65,11 @@ export function secureResponse(response: Response, request: Request, nonce?: str
         `script-src ${SCRIPT_SOURCES} 'wasm-unsafe-eval'${nonce ? ` 'nonce-${nonce}'` : ""}`,
       ].join("; "),
     );
+    // HTML contains a request-unique CSP nonce. Do not let Cloudflare's
+    // response cache serve it before this Worker can rotate the nonce.
+    // A separate, opt-in internal Cache API stores a private sanitized copy.
+    headers.set("cloudflare-cdn-cache-control", "no-store");
+    headers.set("cdn-cache-control", "no-store");
   }
   const indexing =
     response.status >= 400
@@ -76,10 +82,16 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     (indexing && contentType.includes("text/html")) ||
     headers.has("set-cookie") ||
     request.headers.has("authorization") ||
-    (contentType.includes("text/html") && request.headers.has("cookie")) ||
+    (contentType.includes("text/html") &&
+      request.headers.has("cookie") &&
+      (!isPublicContentPath(url.pathname) || hasSensitiveCookie(request.headers))) ||
     !["GET", "HEAD"].includes(request.method)
   ) {
     headers.set("cache-control", "no-store");
+    // CDN-specific directives take precedence over Cache-Control at the edge.
+    // Replace a conflicting upstream policy on every private/error response.
+    headers.set("cdn-cache-control", "no-store");
+    headers.set("cloudflare-cdn-cache-control", "no-store");
   } else if (
     response.status === 200 &&
     contentType.includes("text/html") &&

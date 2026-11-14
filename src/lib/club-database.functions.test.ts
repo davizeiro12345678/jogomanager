@@ -28,6 +28,37 @@ afterEach(() => {
 });
 
 describe("public club data integration", () => {
+  it("starts independent team and alias reads concurrently while coalescing identical profiles", async () => {
+    let releaseAliases!: (response: Response) => void;
+    const aliases = new Promise<Response>((resolve) => {
+      releaseAliases = resolve;
+    });
+    const reads: string[] = [];
+    request.mockImplementation(async (input) => {
+      const path = new URL(String(input)).pathname;
+      reads.push(path);
+      if (path.endsWith("/clubs"))
+        return Response.json({ id: "fixture", name: "Fixture", stadiums: null });
+      if (path.endsWith("/club_catalog_links")) return aliases;
+      if (path.endsWith("/official_teams") || path.endsWith("/players")) return Response.json([]);
+      throw new Error("Unexpected public projection");
+    });
+    const { getClubDatabaseProfile } = await import("./club-database.functions");
+    const first = getClubDatabaseProfile({ data: { clubId: "fixture" } });
+    const duplicate = getClubDatabaseProfile({ data: { clubId: "fixture" } });
+    try {
+      await vi.waitFor(
+        () => expect(reads.some((path) => path.endsWith("/official_teams"))).toBe(true),
+        { timeout: 1_000 },
+      );
+      expect(reads.some((path) => path.endsWith("/players"))).toBe(false);
+    } finally {
+      releaseAliases(Response.json([]));
+    }
+    expect(await first).toEqual(await duplicate);
+    expect(reads.filter((path) => path.endsWith("/clubs"))).toHaveLength(1);
+    expect(reads.filter((path) => path.endsWith("/official_teams"))).toHaveLength(1);
+  });
   it("connects provider athletes and canonical results without leaking private provider payloads", async () => {
     request.mockImplementation(async (input) => {
       const url = new URL(String(input));

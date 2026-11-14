@@ -1,22 +1,22 @@
 import type { Player, Tactics } from "./types";
-import {
+import { emptyStats } from "./sim-contracts";
+import type {
   MatchSim,
-  emptyStats,
-  type MatchStats,
-  type PlayerRating,
-  type Scorer,
-  type ShotRecord,
-  type Side,
-  type SimPlayer,
-  type SimView,
-  type TeamSetup,
-  type TeamTalkKind,
-  type MatchCheckpoint,
+  MatchStats,
+  PlayerRating,
+  Scorer,
+  ShotRecord,
+  Side,
+  SimPlayer,
+  SimView,
+  TeamSetup,
+  TeamTalkKind,
+  MatchCheckpoint,
 } from "./sim";
 import type { WindVector } from "./ball-climate";
 import type { VisualBallState } from "./visual-ball";
 import type { MatchPhase, ShootoutKick, WeatherKind } from "./sim-rules";
-import type { MatchExecutionContract } from "./match-execution-contract";
+import type { MatchExecutionContract, MatchRulesRevision } from "./match-execution-contract";
 import type { PackedLiveSnapshot } from "./live-transport";
 import {
   applyLivePlayerBuffer,
@@ -75,6 +75,8 @@ export type LiveWorkerRequest =
       home: TeamSetup;
       away: TeamSetup;
       seed: string;
+      rulesRevision?: MatchRulesRevision | undefined;
+      contactPhysicsRevision?: 2 | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
       compact?: boolean;
@@ -101,6 +103,8 @@ export type LiveWorkerRequest =
       home: TeamSetup;
       away: TeamSetup;
       seed: string;
+      rulesRevision?: MatchRulesRevision | undefined;
+      contactPhysicsRevision?: 2 | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
     }

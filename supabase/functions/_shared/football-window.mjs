@@ -1,14 +1,14 @@
 // The database enforces global quotas; these limits bound each invocation.
 export function footballWindowBudget(configuredLanes, pilot) {
   const parsed = Number(configuredLanes);
-  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(48, parsed);
+  const lanes = pilot || !Number.isInteger(parsed) || parsed < 1 ? 1 : Math.min(12, parsed);
   return {
     lanes,
-    // Twenty provider requests per second is the Custom450 burst ceiling.
-    // The database remains the shared authority across overlapping workers.
+    // The Edge runtime previously hit WORKER_RESOURCE_LIMIT at 48 concurrent
+    // claims. Keep the durable DB lease capacity at 48, but cap each invocation
+    // to 12 lanes and 120 requests; the shared fetch clock still enforces 9/s.
     spacingMs: Math.max(110, Math.ceil(800 / lanes)),
-    // One 40-second worker window, without raising provider/global quotas.
-    maxRequests: Math.min(880, lanes * 50),
+    maxRequests: Math.min(120, lanes * 15),
   };
 }
 
@@ -50,10 +50,15 @@ export function footballProviderRateError(response) {
 export function validateFootballPage(body, job) {
   if (!body || typeof body !== "object") throw new Error("provider_reported_error");
   if (body.errors && Object.keys(body.errors).length) {
-    // API-SPORTS can return rateLimit inside a successful HTTP response.
-    if (Object.keys(body.errors).some((key) => /rate.?limit|quota|requests/i.test(key)))
-      throw new Error("provider_rate_wait");
-    throw new Error("provider_reported_error");
+    const errors = body.errors;
+    if (Object.hasOwn(errors, "rateLimit")) throw new Error("provider_rate_wait");
+    if (typeof errors.requests === "string" && /daily|per day|per-day/i.test(errors.requests))
+      throw new Error("provider_daily_quota");
+    const kind = ["token", "plan", "requests", "parameters", "time", "query", "subscription"].find(
+      (key) => Object.hasOwn(errors, key),
+    );
+    // Retain only a known category, never a provider-supplied message or data.
+    throw new Error(kind ? `provider_reported_error_${kind}` : "provider_reported_error");
   }
   if (
     !Array.isArray(body.response) &&
@@ -101,19 +106,43 @@ export function validateFootballPage(body, job) {
 // Commit the validated provider response before any catalog writes. A new
 // lease can reuse it after interruption, while each attempted request is
 // reserved and counted atomically on its durable job.
-export async function loadFootballJobPage(job, { rpc, beforeRequest, requestPage }) {
+export async function loadFootballJobPage(
+  job,
+  {
+    rpc,
+    beforeRequest,
+    requestPage,
+    wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  },
+) {
   if (job.cached_body) return validateFootballPage(job.cached_body, job);
-  await beforeRequest();
   const lease = { p_path: job.path, p_lease: job.lease_token };
-  await rpc("football_queue_reserve_job", lease);
+  let quotaWaitMs = 1_000;
+  while (true) {
+    // Recheck the invocation deadline and pace every attempt. A rejected
+    // reservation never reaches the provider or consumes a daily token.
+    await beforeRequest();
+    try {
+      await rpc("football_queue_reserve_job", lease);
+      break;
+    } catch (error) {
+      if (!error || typeof error !== "object" || error.message !== "football_minute_quota_wait")
+        throw error;
+      await wait(quotaWaitMs);
+      quotaWaitMs = Math.min(quotaWaitMs * 2, 5_000);
+    }
+  }
   const page = validateFootballPage(await requestPage(), job);
   await rpc("football_queue_cache_page", { ...lease, p_body: page });
   return page;
 }
 
 export function footballErrorCode(error) {
-  const value = error instanceof Error ? error.message : "unknown_error";
-  return /^(football_(daily_|minute_)?quota_wait|provider_(rate_wait|daily_quota|http_[0-9]{3}|reported_error|invalid_list|page_mismatch|invalid_fixture)|window_budget|database_[A-Za-z0-9_]+|invalid_provider_path)$/.test(
+  const value =
+    error && typeof error === "object" && typeof error.message === "string"
+      ? error.message
+      : "unknown_error";
+  return /^(football_(daily_|minute_)?quota_wait|provider_(rate_wait|daily_quota|http_[0-9]{3}|reported_error(?:_(?:token|plan|requests|parameters|time|query|subscription))?|invalid_list|page_mismatch|invalid_fixture)|window_budget|database_[A-Za-z0-9_]+|invalid_provider_path)$/.test(
     value,
   )
     ? value

@@ -270,6 +270,7 @@ export interface FinanceEventSettlement {
 
 /** Registra uma receita de fechamento sem duplicá-la ao reprocessar o save. */
 export function settleSeasonPrize(state: CareerState, prize: number): FinanceEventSettlement {
+  if (!finiteAmount(prize)) return { state, settled: false };
   const id = `season-prize-${state.clubId}-${state.season}`;
   const entry: FinanceLedgerEntry = {
     id,

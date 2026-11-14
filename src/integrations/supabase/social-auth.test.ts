@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   availableAuthMethods,
-  lovableOAuthProvider,
+  fallbackAuthMethods,
   parseAuthMethods,
   socialOAuthOptions,
   socialProviderLabel,
@@ -94,15 +94,22 @@ describe("configured authentication methods", () => {
     },
   );
 
-  it("only brokers providers the Lovable SDK supports", () => {
-    expect(lovableOAuthProvider("google")).toBe("google");
-    expect(lovableOAuthProvider("azure")).toBe("microsoft");
-    expect(lovableOAuthProvider("apple")).toBe("apple");
-    for (const provider of parseAuthMethods(enabledSettings).socialProviders.filter(
-      (value) => value !== "google" && value !== "azure",
-    )) {
-      expect(lovableOAuthProvider(provider)).toBeUndefined();
-    }
+  it("does not invent a social provider when discovery fails without an allowlist", () => {
+    vi.stubEnv("VITE_AUTH_PROVIDER_ALLOWLIST", "");
+    expect(fallbackAuthMethods().socialProviders).toEqual([]);
+    vi.unstubAllEnvs();
+  });
+
+  it("uses only the explicit provider allowlist in degraded discovery mode", () => {
+    vi.stubEnv("VITE_AUTH_PROVIDER_ALLOWLIST", "google,github,google,not-a-provider");
+    expect(fallbackAuthMethods()).toEqual({
+      socialProviders: ["google", "github"],
+      email: true,
+      phone: false,
+      passkeys: false,
+      signup: true,
+    });
+    vi.unstubAllEnvs();
   });
 
   it("preserves the callback destination for every configured direct provider", () => {

@@ -32,16 +32,33 @@ jobs:
           node --test scripts/i18n-parity.test.mjs scripts/i18n-hardcoded.test.mjs
       - run: npm run lint
       - run: npm exec -- tsc --noEmit --pretty false
+      - name: Bundle isolated Cloudflare match authority (dry-run, no deploy)
+        run: npm exec -- wrangler deploy --dry-run --config wrangler.match-authority.jsonc
       # The complete deterministic stress suite runs in the required job below.
-      - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1
+      - run: npm exec -- vitest run --exclude src/game/sim.stress.test.ts --exclude src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1
       - run: node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs
       - run: node --test scripts/database-growth-snapshot.test.mjs
+      - name: Compile read-only VPS catalog gateway
+        run: python3 -m py_compile infra/vps/catalog/gateway.py infra/vps/catalog/smoke_test.py
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - run: node --test scripts/benchmark-edge-ttfb.test.mjs
+      - run: node --check scripts/verify-worker-preview-cache.mjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates
       - run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Audit Cloudflare Worker static import graph after build
+        run: |
+          node scripts/audit-worker-startup.mjs --self-test
+          node scripts/audit-worker-startup.mjs --output=worker-startup-graph.json
+      - name: Upload Worker startup graph diagnostic
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cloudflare-worker-startup-graph
+          path: worker-startup-graph.json
+          if-no-files-found: warn
       - run: npm run bundle:check
 
   bundle-impact:
@@ -71,6 +88,28 @@ jobs:
         with:
           name: simulation-stress-results
           path: stress-results.json
+          if-no-files-found: error
+
+  simulation-stress-v2:
+    name: Critical 200-match revision-2 stress
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Execute all 200 revision-2 seeds and their independent replays
+        run: node node_modules/vitest/vitest.mjs run src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile=rules-stress-results.json
+      - name: Require every revision-2 seed to have executed and passed
+        run: node scripts/verify-rules-stress-report.mjs rules-stress-results.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: simulation-rules-v2-stress-results
+          path: rules-stress-results.json
           if-no-files-found: error
 
   match-setup-performance:
@@ -111,6 +150,7 @@ jobs:
         verify,
         bundle-impact,
         simulation-stress,
+        simulation-stress-v2,
         match-setup-performance,
         game-assets,
         graphics-contract,
@@ -157,6 +197,47 @@ jobs:
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
       - name: Apply the forward career tombstone and generation migration to the disposable database
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0061_career_tombstone_generation.sql
+      - name: Apply forward room chat, career repair and support migrations to the disposable database
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0062_room_chat_rate_limits.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0063_repair_career_and_push_access.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0064_support_ticket_outbox.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0065_atomic_match_room_creation.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0066_api_football_claim_concurrency_48.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0067_api_football_full_custom450_quota.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/api-football-custom450-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0068_room_chat_admission.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0069_email_automation_outbox.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0073_chat_infractions_dependency.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/chat-infractions-dependency-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/room-chat-admission-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/email-automation-outbox-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0070_api_football_data_autovacuum_tuning.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/api-football-autovacuum-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0071_incremental_featured_injury_counts.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/incremental-featured-injury-counts-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0072_match_contact_physics_revision.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/match_contact_revision_contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0074_private_matchmaking_queue.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/private-matchmaking-queue-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0075_atomic_ranked_match_allocation.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/atomic-ranked-match-allocation-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0076_authoritative_match_settlement.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/authoritative-match-settlement-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0077_room_authority_fencing.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/room-authority-fencing-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0078_matchmaking_reservation_fk_index.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0079_private_tournament_checkpoints.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/private-tournament-checkpoint-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0080_private_moderation_reviews.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/private-moderation-reviews-contract.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0081_sharded_featured_injury_counts.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0082_fast_featured_injury_digest.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/sharded-featured-injury-counts-contract.sql
+      - name: Verify private support quota, idempotency, delivery leases and retry fencing
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/support-outbox-contract.sql
+      - name: Verify atomic private room creation, host quotas and bounded empty-lobby expiration
+        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/atomic-match-room-contract.sql
       - name: Verify career tombstone generation and server-only access
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/career-tombstone-generation-contract.sql
       - name: Verify application schema, ownership, and grants

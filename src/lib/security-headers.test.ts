@@ -4,10 +4,28 @@ import { publicPageRedirect } from "./public-page-redirects";
 import { renderErrorPage } from "./error-page";
 const deps = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock("@tanstack/react-start/server-entry", () => ({ default: { fetch: deps.fetch } }));
-import server from "../server";
+import server, { resolveWorkerRuntimeContext } from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
+  it("overrides higher-priority CDN cache headers on private and authenticated responses", () => {
+    for (const path of ["/api/private/profile", "/auth", "/assets/public.js"]) {
+      const response = secureResponse(
+        new Response("private", {
+          headers: {
+            "cache-control": "public, max-age=3600",
+            "cdn-cache-control": "public, s-maxage=86400",
+            "cloudflare-cdn-cache-control": "public, max-age=86400",
+          },
+        }),
+        new Request(`https://jogomanager.com${path}`, {
+          headers: { authorization: "Bearer fixture" },
+        }),
+      );
+      for (const header of ["cache-control", "cdn-cache-control", "cloudflare-cdn-cache-control"])
+        expect(response.headers.get(header)).toBe("no-store");
+    }
+  });
   it("adds protections to recovered h3 failures and thrown failures", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const fail of [false, true]) {
@@ -56,6 +74,33 @@ describe("outer response protection", () => {
     expect(response.headers.get("server-timing")).toMatch(/app;dur=\d+(?:\.\d+)?/);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("content-security-policy")).toContain("object-src 'none'");
+  });
+
+  it("recovers per-request Cloudflare env and waitUntil when Nitro drops fetch arguments", async () => {
+    const env = { PUBLIC_HTML_EDGE_CACHE_ENABLED: "0", TEST_BINDING: "scoped" };
+    const context = { waitUntil: vi.fn() };
+    const request = new Request("https://jogomanager.com/");
+    Object.defineProperty(request, "runtime", {
+      value: { name: "cloudflare", cloudflare: { env, context } },
+    });
+    expect(resolveWorkerRuntimeContext(request, undefined, undefined)).toEqual({
+      env,
+      ctx: context,
+    });
+    const explicitEnv = { TEST_BINDING: "explicit" };
+    const explicitCtx = {};
+    expect(resolveWorkerRuntimeContext(request, explicitEnv, explicitCtx)).toEqual({
+      env: explicitEnv,
+      ctx: explicitCtx,
+    });
+    deps.fetch.mockResolvedValue(
+      new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+    );
+    const response = await server.fetch(request, undefined, undefined);
+    expect(response.status).toBe(200);
+    const call = deps.fetch.mock.calls.at(-1)!;
+    expect(call[1]).toBe(env);
+    expect(call[2]).toBe(context);
   });
 
   it("rebuilds a cross-realm Request from public fields before SSR", async () => {
@@ -122,6 +167,21 @@ describe("outer response protection", () => {
     expect(run("no-store")).toBe("no-store");
     expect(run("no-cache", { cookie: "session=fixture" })).toBe("no-store");
     expect(run("no-cache", {}, "POST")).toBe("no-store");
+  });
+  it("preserves anonymous public caching for the Cloudflare bot cookie, but blocks real sessions", () => {
+    const page = (cookie: string) =>
+      secureResponse(
+        new Response("public", { headers: { "content-type": "text/html" } }),
+        new Request("https://jogomanager.com/", { headers: { cookie } }),
+      );
+    expect(page("__cf_bm=opaque-bot-token").headers.get("cache-control")).toContain("s-maxage=300");
+    expect(page("__cf_bm=opaque-bot-token").headers.get("cdn-cache-control")).toBe("no-store");
+    expect(page("__cf_bm=opaque-bot-token").headers.get("cloudflare-cdn-cache-control")).toBe(
+      "no-store",
+    );
+    expect(page("__cf_bm=opaque-bot-token; session=secret").headers.get("cache-control")).toBe(
+      "no-store",
+    );
   });
   it("preserves static caching and public indexing and implements bodyless HEAD", async () => {
     const asset = secureResponse(

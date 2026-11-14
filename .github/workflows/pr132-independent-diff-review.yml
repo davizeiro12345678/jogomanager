@@ -1,0 +1,241 @@
+name: PR 132 independent full-diff risk inventory
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "services/**"
+      - "scripts/**"
+      - "drizzle/**"
+      - ".github/**"
+      - "docs/**"
+      - "verification/**"
+      - "supabase/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr132-independent-diff-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-diff:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 132 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+      - name: Independently enumerate every changed file, including binary assets
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          mkdir -p "$RUNNER_TEMP/pr132-full-diff"
+          node --input-type=module <<'NODE'
+          import { execFileSync } from "node:child_process";
+          import { readFile, lstat, mkdir, writeFile } from "node:fs/promises";
+          import { createHash } from "node:crypto";
+          import path from "node:path";
+
+          const output = path.join(process.env.RUNNER_TEMP, "pr132-full-diff");
+          await mkdir(output, { recursive: true });
+          const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+          const base = execFileSync("git", ["merge-base", "origin/main", "HEAD"], { encoding: "utf8" }).trim();
+          const changed = execFileSync("git", ["diff", "--name-only", "-z", base, "HEAD"])
+            .toString("utf8")
+            .split("\0")
+            .filter(Boolean);
+          const areas = [
+            ["authorization", /(?:auth|oauth|mfa|jwt|token|rls|secret|policy|security)/i],
+            ["payments", /(?:stripe|checkout|payment|wallet|purchase|subscription)/i],
+            ["database", /(?:drizzle\/migrations|supabase|\/sql\/|db|database)/i],
+            ["multiplayer", /(?:multiplayer|match-authority|\/online\/|cooperative|matchmaking|tournament|spectator)/i],
+            ["graphics", /(?:cinematic|stadium|graphics|render|shader|texture|cutscene|\.glb|\.gltf)/i],
+            ["testing", /(?:\.test\.|\.spec\.|\/tests\/|\/verification\/)/i],
+            ["ci", /(?:\.github\/workflows|\/scripts\/)/i],
+            ["documentation", /(?:^docs\/|\.md$|\.json$)/i],
+          ];
+          const rules = [
+            {
+              id: "dynamic-code-execution",
+              expression: /\b(?:eval\s*\(|new\s+Function\s*\()/,
+              severity: "important-review",
+              why: "Dynamic JavaScript execution can turn data into code.",
+              fix: "Replace evaluation with explicit typed parsers and an allowlist of operations.",
+            },
+            {
+              id: "unsafe-html",
+              expression: /dangerouslySetInnerHTML|\binnerHTML\s*=/,
+              severity: "important-review",
+              why: "A raw HTML rendering sink deserves XSS and sanitization review.",
+              fix: "Use React text nodes or a vetted sanitizer and strict CSP with tests.",
+            },
+            {
+              id: "privileged-key-boundary",
+              expression: /service_role|SUPABASE_SERVICE_ROLE_KEY|CLOUDFLARE_API_TOKEN/,
+              severity: "important-review",
+              why: "A privileged credential or role appears in this file.",
+              fix: "Ensure it is only used on a trusted server, never in browser output, bundles or logs.",
+            },
+            {
+              id: "process-launch",
+              expression: /(?:child_process|execFileSync|spawnSync|\.exec\s*\()/,
+              severity: "review",
+              why: "Native process invocation or command execution should be audited.",
+              fix: "Use fixed binaries and argument arrays; reject untrusted shell strings.",
+            },
+            {
+              id: "broad-sql-grant",
+              expression: /GRANT\s+ALL\s+ON|DISABLE\s+ROW\s+LEVEL\s+SECURITY/i,
+              severity: "important-review",
+              why: "Broad database permissions require a manual access-control proof.",
+              fix: "Restrict roles, verify RLS and add anon/authenticated negative SQL tests.",
+            },
+            {
+              id: "unchecked-network-access",
+              expression: /\bfetch\s*\(|new\s+WebSocket\s*\(/,
+              severity: "review",
+              why: "Network calls should enforce timeouts, origin/room scope and schema validation.",
+              fix: "Validate URLs and origin, limit payloads and expose redacted diagnostics.",
+            },
+          ];
+          const rows = [];
+          const counts = { binary: 0, missing: 0, text: 0, oversized: 0, importantReview: 0 };
+          for (const file of changed) {
+            const row = {
+              file,
+              category: areas.find(([_, rule]) => rule.test(file))?.[0] ?? "other",
+              bytes: 0,
+              lines: null,
+              sha256: null,
+              mode: null,
+              candidates: [],
+            };
+            try {
+              const info = await lstat(file);
+              row.bytes = info.size;
+              if (info.isSymbolicLink()) {
+                // Never follow repository symlinks into runner-local files.
+                row.mode = "symlink-not-followed";
+              } else if (info.isDirectory()) {
+                row.mode = "directory";
+              } else if (info.size > 4 * 1024 * 1024) {
+                row.mode = "oversized";
+                counts.oversized++;
+              } else {
+                const buffer = await readFile(file);
+                row.sha256 = createHash("sha256").update(buffer).digest("hex");
+                if (buffer.includes(0)) {
+                  row.mode = "binary";
+                  counts.binary++;
+                } else {
+                  row.mode = "text";
+                  counts.text++;
+                  const lines = buffer.toString("utf8").split(/\r?\n/);
+                  row.lines = lines.length;
+                  if (/\.(?:mjs|cjs|js|jsx|ts|tsx|sql|sh)$/.test(file)) {
+                    for (let i = 0; i < lines.length; ++i) {
+                      for (const rule of rules) {
+                        if (rule.expression.test(lines[i])) {
+                          row.candidates.push({
+                            rule: rule.id,
+                            severity: rule.severity,
+                            line: i + 1,
+                            why: rule.why,
+                            fix: rule.fix,
+                          });
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              row.mode = "deleted-or-inaccessible";
+              row.readError = String(error.code ?? "unreadable");
+              counts.missing++;
+            }
+            if (row.candidates.some((x) => x.severity === "important-review"))
+              counts.importantReview++;
+            rows.push(row);
+          }
+          const summary = {
+            commit: head,
+            compareBase: base,
+            countedFiles: rows.length,
+            counts,
+            byArea: Object.fromEntries(
+              [...new Set(rows.map((x) => x.category))].map((key) => [
+                key,
+                rows.filter((x) => x.category === key).length,
+              ]),
+            ),
+            reviewScope:
+              "Automated inventory of ALL changed files; rule matches are review leads, NOT confirmed vulnerabilities. No independent human approval has occurred.",
+            externalBrowserEvidence: ".github/workflows/pr132-nine-axis-qa.yml",
+          };
+          const important = rows
+            .filter((x) => x.candidates.some((c) => c.severity === "important-review"))
+            .slice(0, 100);
+          const safe = (x) => String(x).replace(/[|\r\n]/g, " ").slice(0, 150);
+          const md = [
+            "# PR #132: complete changed-file review inventory",
+            "",
+            "HEAD: " + head,
+            "",
+            "Comparison merge-base: " + base,
+            "",
+            "**" + rows.length + " changed paths reviewed by automated inventory.** This is NOT a signed independent human review of each implementation.",
+            "",
+            "| Category | Paths |",
+            "|---|---:|",
+            ...Object.entries(summary.byArea).map(([a, n]) => "| " + a + " | " + n + " |"),
+            "",
+            "Binary files: " + counts.binary + "; missing/deleted: " + counts.missing + "; text: " + counts.text + "; oversized: " + counts.oversized + ".",
+            "",
+            "## First 100 sensitive source hotspots, with file/line and repair guidance",
+            "",
+            ...important.flatMap((row) =>
+              row.candidates
+                .filter((c) => c.severity === "important-review")
+                .slice(0, 4)
+                .map((c) =>
+                  "- [" + safe(row.file) + ":" + c.line + "](https://github.com/davizeiro12345678/jogomanager/blob/" + head + "/" + encodeURI(row.file) + "#L" + c.line + ") " +
+                  safe(c.rule) + ": " + safe(c.why) + " **Review:** " + safe(c.fix),
+                ),
+            ),
+            "",
+            "## Interpretation",
+            "",
+            "The artifact full-review-manifest.json contains **every** path and file-specific audit candidates, including image/video/other binary metadata. Heuristic matches are not exploit findings. A separate independent reviewer must still inspect application behavior, relevant diffs, data access and ownership.",
+            "Screenshots, browser video, interaction errors and timing metrics are produced by the adjacent nine-axis workflow.",
+          ];
+          await writeFile(path.join(output, "full-review-manifest.json"), JSON.stringify({ summary, files: rows }, null, 2));
+          await writeFile(path.join(output, "summary.md"), md.join("\n") + "\n");
+          if (process.env.GITHUB_STEP_SUMMARY) {
+            await writeFile(process.env.GITHUB_STEP_SUMMARY, md.slice(0, 35).join("\n") + "\n", { flag: "a" });
+          }
+          console.log(JSON.stringify(summary));
+          if (rows.length < 850) {
+            console.error("Changed-file enumeration was unexpectedly incomplete");
+            process.exitCode = 1;
+          }
+          NODE
+      - name: Upload every file location and risk remediation, including binary inventory
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pr132-complete-diff-inventory
+          path: ${{ runner.temp }}/pr132-full-diff/
+          if-no-files-found: error
+          retention-days: 14

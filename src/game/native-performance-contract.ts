@@ -1,3 +1,5 @@
+import { graphicsRendererClass } from "./graphics-renderer-metadata";
+
 /** Native GPU measurement protocol; CPU performance belongs to CodSpeed. */
 export function nativeMeasurementTiming(search: string) {
   const params = new URLSearchParams(search);
@@ -42,7 +44,18 @@ export function assessNativePerformance(sample: {
   adaptive: boolean | undefined;
 }) {
   const reasons: string[] = [];
-  if (!sample.complete) reasons.push("measurement-incomplete");
+  if (
+    !Number.isSafeInteger(sample.warmupMs) ||
+    !Number.isSafeInteger(sample.measurementMs) ||
+    sample.warmupMs < 0 ||
+    sample.measurementMs <= 0 ||
+    !Number.isFinite(sample.coveredMs) ||
+    sample.coveredMs < 0 ||
+    !Number.isSafeInteger(sample.interruptions) ||
+    sample.interruptions < 0
+  )
+    reasons.push("invalid-measurement-timing");
+  if (sample.complete !== true) reasons.push("measurement-incomplete");
   if (sample.interruptions) reasons.push("visibility-interrupted");
   if (!Number.isFinite(sample.coveredMs) || sample.coveredMs < sample.measurementMs - 1)
     reasons.push("measurement-coverage-incomplete");
@@ -55,14 +68,13 @@ export function assessNativePerformance(sample: {
     sample.quality !== "alta"
   )
     reasons.push("quality-contract-mismatch");
-  if (
-    !sample.gpuRenderer ||
-    /swiftshader|llvmpipe|softpipe|lavapipe|software|basic render/i.test(sample.gpuRenderer)
-  )
+  if (graphicsRendererClass(sample.gpuRenderer) !== "hardware")
     reasons.push("native-gpu-unverified");
-  if (!Number.isFinite(sample.fps) || sample.fps < 45) reasons.push("mean-fps-below-45");
-  if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 28)
-    reasons.push("p95-above-28ms");
+  if (!Number.isFinite(sample.fps) || sample.fps < 60) reasons.push("mean-fps-below-60");
+  if (!Number.isFinite(sample.p95) || sample.p95 <= 0 || sample.p95 > 20)
+    reasons.push("p95-above-20ms");
+  if (!Number.isFinite(sample.onePercentLow) || sample.onePercentLow < 50)
+    reasons.push("one-percent-low-below-50");
   const stretchReasons = [...reasons];
   if (sample.warmupMs < 60000 || sample.measurementMs < 300000)
     stretchReasons.push("extended-protocol-incomplete");
@@ -72,7 +84,15 @@ export function assessNativePerformance(sample: {
   if (!Number.isFinite(sample.onePercentLow) || sample.onePercentLow < 50)
     stretchReasons.push("one-percent-low-below-50");
   return {
-    target: { quality: "alta", width: 1280, height: 720, dpr: 1, fps: 45, p95Ms: 28 },
+    target: {
+      quality: "alta",
+      width: 1280,
+      height: 720,
+      dpr: 1,
+      fps: 60,
+      p95Ms: 20,
+      onePercentLow: 50,
+    },
     passes: reasons.length === 0,
     reasons,
     stretch: { targetFps: 69, passes: stretchReasons.length === 0, reasons: stretchReasons },

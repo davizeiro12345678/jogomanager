@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkBackendHealth } from "./backend-health.server";
+import { checkBackendHealth, selectBackendHealthEnvironment } from "./backend-health.server";
 
 const env = {
   SUPABASE_URL: "https://project.supabase.co",
@@ -72,5 +72,46 @@ describe("backend readiness", () => {
     const result = await checkBackendHealth(env, vi.fn().mockRejectedValue(new Error("secret")));
     expect(result.checks.auth).toBe(false);
     expect(JSON.stringify(result)).not.toContain("private-test-key");
+  });
+});
+
+describe("backend health runtime environment", () => {
+  it("reads native Worker bindings when process.env lacks the backend keys", () => {
+    const selected = selectBackendHealthEnvironment({}, {
+      SUPABASE_URL: "https://isolated.supabase.co",
+      SUPABASE_PUBLISHABLE_KEY: "publishable-from-binding",
+      SUPABASE_SERVICE_ROLE_KEY: "server-secret-from-binding",
+      UNRELATED_PRIVATE_SECRET: "must-not-be-imported",
+    });
+    expect(selected).toEqual({
+      SUPABASE_URL: "https://isolated.supabase.co",
+      SUPABASE_PUBLISHABLE_KEY: "publishable-from-binding",
+      SUPABASE_SERVICE_ROLE_KEY: "server-secret-from-binding",
+    });
+  });
+
+  it("preserves the Node preview fallback for absent or invalid bindings", () => {
+    const nodeEnvironment = {
+      SUPABASE_URL: "https://node-preview.supabase.co",
+      SUPABASE_PUBLISHABLE_KEY: "node-public",
+      SUPABASE_SERVICE_ROLE_KEY: "node-secret",
+    };
+    expect(selectBackendHealthEnvironment(nodeEnvironment)).toBe(nodeEnvironment);
+    expect(
+      selectBackendHealthEnvironment(nodeEnvironment, {
+        SUPABASE_URL: "",
+        SUPABASE_PUBLISHABLE_KEY: null,
+        SUPABASE_SERVICE_ROLE_KEY: 42,
+      }),
+    ).toEqual(nodeEnvironment);
+  });
+
+  it("prefers Worker over stale Node process.env only for explicit health keys", () => {
+    const selected = selectBackendHealthEnvironment(
+      { SUPABASE_URL: "https://wrong.supabase.co", OTHER: "unmodified" },
+      { SUPABASE_URL: "https://correct.supabase.co", OTHER: "do-not-overwrite" },
+    );
+    expect(selected.SUPABASE_URL).toBe("https://correct.supabase.co");
+    expect(selected.OTHER).toBe("unmodified");
   });
 });

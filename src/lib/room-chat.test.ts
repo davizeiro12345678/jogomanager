@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const page = readFileSync(new URL("../pages/multiplayer.tsx", import.meta.url), "utf8");
 const server = readFileSync(new URL("./chat.functions.ts", import.meta.url), "utf8");
+const chat = readFileSync(new URL("../features/multiplayer/RoomChat.tsx", import.meta.url), "utf8");
+const translations = readFileSync(
+  new URL("../i18n/room-chat-messages.ts", import.meta.url),
+  "utf8",
+);
 const migration = readFileSync(
   new URL(
     "../../supabase/migrations/20261108013026_authorize_match_room_realtime_chat.sql",
@@ -19,20 +24,23 @@ describe("authoritative room chat", () => {
   it("remounts by authoritative auth identity and checks stale async identity before joining", () => {
     expect(page).toContain("const userId = useAuthUserId()");
     expect(page).toContain("<MultiplayerAccount key={userId} userId={userId} />");
-    expect(page).toContain("user.id !== userId");
+    expect(chat).toContain("user.id !== userId");
+    expect(chat).toContain("if (disposed) return");
     expect(page).toContain("<RoomChat key={`${userId}:${room.id}`}");
-    expect(page).toContain("removeChannel(ch)");
+    expect(chat).toContain("removeChannel(ch)");
   });
-  it("submits only roomId/text; server verifies token identity, membership and active state", () => {
-    expect(page).toContain("sendRoomChatMessage({ data: { roomId, text: value } })");
+  it("submits roomId/text and an idempotent client id; server delegates admission to the atomic RPC", () => {
+    expect(chat).toContain(
+      "sendRoomChatMessage({ data: { roomId, text: value, clientMessageId } })",
+    );
     expect(server).toContain(".middleware([requireSupabaseAuth])");
-    expect(server).toContain("room.host_id !== context.userId && room.guest_id !== context.userId");
-    expect(server).toContain('["open", "ready", "live", "settling"]');
-    expect(server).toMatch(/moderateMessage\([\s\S]*?data\.text/);
+    expect(server).toContain('rpc("admit_room_chat_message"');
+    expect(server).toContain("p_user_id: context.userId");
+    expect(server).toContain("moderateMessage(data.text)");
     expect(server).toContain("chat_infractions");
     expect(server).toContain("muteUntil(");
-    expect(server).toContain("room_chat_rate_limits");
-    expect(server).toContain("second_bucket: bucket");
+    expect(server).toContain("p_message_id: id");
+    expect(server).toContain("p_repeat_fingerprint: hashes.repeatFingerprint");
     expect(server).toContain("/realtime/v1/api/broadcast");
     expect(server).toContain("senderId: context.userId");
     expect(server).not.toContain("data.senderId");
@@ -61,16 +69,18 @@ describe("authoritative room chat", () => {
 
 describe("room chat client feedback and identity", () => {
   it("classifies own broadcasts from the authenticated sender before the send response", () => {
-    expect(page).toContain('m.senderId === userId ? "Você" : "Adversário"');
-    expect(page).not.toContain("ownMessageIds");
+    expect(chat).toContain("m.senderId === userId ? copy.you : copy.opponent");
+    expect(translations).toContain('you: "Você"');
+    expect(translations).toContain('opponent: "Adversário"');
+    expect(chat).not.toContain("ownMessageIds");
   });
   it("preserves input on rejected sends and announces server/network failures accessibly", () => {
-    expect(page).toContain('setText((current) => (current === value ? "" : current))');
-    expect(page).toContain("result.message ??");
-    expect(page).toContain('result.reason === "rate_limited"');
-    expect(page).toContain('role="alert"');
-    expect(page).toContain('setFeedback(t("screen.error"))');
-    expect(page).not.toContain('setStatus("unavailable");\n            });');
+    expect(chat).toContain('setText((current) => (current === value ? "" : current))');
+    expect(chat).toContain("result.message ??");
+    expect(chat).toContain('result.reason === "rate_limited"');
+    expect(chat).toContain('role="alert"');
+    expect(chat).toContain('setFeedback(t("screen.error"))');
+    expect(chat).not.toContain('setStatus("unavailable");\n            });');
   });
   it("uses runtime translations for loading text and keeps error strings out of JSX", () => {
     expect(page).toContain('t("common.loading")');

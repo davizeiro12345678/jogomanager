@@ -5,11 +5,15 @@ import { lookFor } from "./player-model";
 
 const stream = vi.hoisted(() => ({
   loaded: new Map<string, unknown>(),
+  requested: new Set<string>(),
   listeners: new Set<(reset?: boolean) => void>(),
 }));
 
 vi.mock("./textures/ktx2", () => ({
-  ktx2: (name: string) => stream.loaded.get(name) ?? null,
+  ktx2: (name: string) => {
+    stream.requested.add(name);
+    return stream.loaded.get(name) ?? null;
+  },
   needsKtx2ProceduralFallback: (_name: string) => false,
   onKtx2Ready: (listener: (reset?: boolean) => void) => {
     stream.listeners.add(listener);
@@ -35,6 +39,7 @@ function arrive(name: string, texture: THREE.Texture) {
 
 afterEach(() => {
   stream.loaded.clear();
+  stream.requested.clear();
   for (const listener of stream.listeners) listener(true);
 });
 
@@ -108,7 +113,7 @@ it("keeps shader versions stable when a compressed map replaces an existing map"
   release();
 });
 
-it("updates retained, evicted materials until their final owner releases them", () => {
+it("keeps a valid hair normal when the legacy grayscale height asset arrives, including after eviction", () => {
   const look = lookFor("evicted-live-hair", "DF");
   const set = playerMaterials(look, kit, new THREE.Texture(), "alta");
   const release = retainPlayerMaterials(set);
@@ -117,14 +122,47 @@ it("updates retained, evicted materials until their final owner releases them", 
     playerMaterials(look, kit, new THREE.Texture(), "media");
   }
   const hair = set.hair as THREE.MeshStandardMaterial;
-  const first = new THREE.Texture();
+  const normal = hair.normalMap;
+  const version = hair.version;
+  // The published hair_normal.ktx2 contains equal RGB channels near 127.
+  // Interpreted as tangent normals, its Z points inward or along the scalp.
+  const first = new THREE.DataTexture(new Uint8Array([115, 115, 115, 255]), 1, 1);
   arrive("hairNormal", first);
-  expect(hair.normalMap).toBe(first);
+  expect(normal).not.toBeNull();
+  expect(hair.normalMap).toBe(normal);
+  expect(hair.normalMap).not.toBe(first);
+  expect(hair.version).toBe(version);
+  expect(stream.requested.has("hairNormal")).toBe(false);
+  const shin = set.shin as THREE.MeshStandardMaterial;
+  const shinNormal = new THREE.Texture();
+  arrive("shinNormal", shinNormal);
+  expect(shin.normalMap).toBe(shinNormal);
   expect(dispose).not.toHaveBeenCalled();
   release();
   expect(dispose).toHaveBeenCalledOnce();
   arrive("hairNormal", new THREE.Texture());
-  expect(hair.normalMap).toBe(first);
+  expect(hair.normalMap).toBe(normal);
+  arrive("shinNormal", new THREE.Texture());
+  expect(shin.normalMap).toBe(shinNormal);
+});
+
+it("shares the same valid hair normal across seeded pigments without changing distant LOD features", () => {
+  const look = lookFor("hair-normal-identity", "MF");
+  const first = playerMaterials(look, kit, new THREE.Texture(), "alta");
+  const second = playerMaterials(
+    { ...look, hairColor: "#c8a24a" },
+    kit,
+    new THREE.Texture(),
+    "alta",
+  );
+  const hair = first.hair as THREE.MeshStandardMaterial;
+  expect(hair.normalMap).toBe((second.hair as THREE.MeshStandardMaterial).normalMap);
+  expect(hair.color.getHexString()).toBe(look.hairColor.slice(1));
+  expect((second.hair as THREE.MeshStandardMaterial).color.getHexString()).toBe("c8a24a");
+  for (const quality of ["media", "baixa"] as const) {
+    const set = playerMaterials(look, kit, new THREE.Texture(), quality);
+    expect((set.hair as THREE.MeshStandardMaterial).normalMap).toBeNull();
+  }
 });
 
 it("keeps all high-quality shader features stable as sweat, hair, boot and shin maps arrive", () => {

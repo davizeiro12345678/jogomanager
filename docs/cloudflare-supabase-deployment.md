@@ -52,7 +52,11 @@ O projeto antigo `vylshefvsjggyjlhfups`, apontado pelo código original e pela c
 
 O TanStack Start executa SSR, rotas HTTP e funções do servidor no Cloudflare Workers, com os arquivos públicos servidos pelo binding `ASSETS`. O Supabase administra autenticação, Postgres, RLS e Realtime. D1 não substitui a autenticação nem os registros de carreira do Supabase nesta configuração.
 
-O login usa Supabase Auth diretamente (`VITE_AUTH_MODE=supabase`), com cadastro por e-mail, confirmação, recuperação de senha e PKCE. Botões de provedores sociais aparecem apenas quando o provedor está configurado. A compatibilidade com o login do Lovable continua disponível quando esse modo é explicitamente selecionado.
+O login usa Supabase Auth com PKCE, cadastro por e-mail, recuperação, chaves de acesso e OAuth direto. Antes da publicação, confira a URL do site e autorize `https://jogomanager.com/auth` em Authentication → URL Configuration. Nos provedores sociais, use `https://lguqnwvsfeefxamzeyos.supabase.co/auth/v1/callback` como callback do aplicativo OAuth e mantenha as credenciais no Supabase.
+
+O jogo mostra provedores habilitados pelo projeto. A variável pública `VITE_AUTH_PROVIDER_ALLOWLIST` pode limitar essa lista a provedores já validados, com IDs separados por vírgula (por exemplo, `google,github,azure`). Use `none` para ocultar os botões sociais temporariamente. No deploy automatizado, configure a variável no ambiente do GitHub Actions.
+
+Antes do merge, teste uma conta existente com Google e confirme que o ID Supabase e a carreira continuam os mesmos. Teste também cadastro, e-mail de recuperação, passkey e MFA em uma conta de teste. Usuários que entravam pelo Lovable precisam usar um método que dê acesso ao mesmo usuário Supabase, como o mesmo Google ou um link enviado ao e-mail já verificado. O corte não transfere contas de outro projeto.
 
 ## Banco instalado
 

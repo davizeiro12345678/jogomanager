@@ -1,4 +1,4 @@
-import { createElement, type ComponentType } from "react";
+import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthMethods } from "@/integrations/supabase/social-auth";
@@ -24,10 +24,11 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: React.ReactNode }) => createElement("a", null, children),
 }));
 
-import { Route } from "./auth";
+// Exercise the real browser page, not the SSR-only placeholder of its route.
+import { AuthPage } from "@/pages/auth";
 
 function renderAuth() {
-  return renderToStaticMarkup(createElement(Route.options.component as ComponentType));
+  return renderToStaticMarkup(createElement(AuthPage));
 }
 
 beforeEach(() => {
@@ -71,16 +72,11 @@ describe("game login screen", () => {
     expect(markup).toContain("Entrar por link ou código de e-mail");
   });
 
-  it("keeps additional Supabase providers in Lovable mode and hides disabled Apple", () => {
-    vi.stubEnv("VITE_AUTH_MODE", "lovable");
-    try {
-      const markup = renderAuth();
-      expect(markup).toContain("Continuar com Discord");
-      expect(markup).toContain("Continuar com GitHub");
-      expect(markup).not.toContain("Continuar com Apple");
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("uses the game's Supabase login options without offering Lovable sign-in", () => {
+    const markup = renderAuth();
+    expect(markup).toContain("Continuar com Google");
+    expect(markup).toContain("Continuar com GitHub");
+    expect(markup).not.toContain("Continue with Lovable");
   });
 
   it("does not offer disabled email or passkey flows", () => {

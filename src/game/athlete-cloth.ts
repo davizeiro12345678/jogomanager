@@ -123,6 +123,7 @@ export class ClothDynamics {
 }
 
 type Garment = { kind: "shirt" | "shorts"; bindings: number[][] };
+const preparedGarments = new WeakMap<THREE.BufferGeometry, Garment["kind"]>();
 
 /** Five native morphs per garment, built once. Only five coefficients per draw
  * change each frame; there is no per-frame vertex loop or custom shader patch.
@@ -149,7 +150,14 @@ export class AthleteCloth {
         uv = geometry.getAttribute("uv"),
         skinIndex = geometry.getAttribute("skinIndex"),
         skinWeight = geometry.getAttribute("skinWeight");
+      // A dormant match rig retains its immutable morph buffers. Each mounted
+      // owner still receives fresh dynamics and fresh mesh bindings.
+      if (preparedGarments.get(geometry) === kind) {
+        this.garments.set(geometry, { kind, bindings: [] });
+        continue;
+      }
       const weights = new Float32Array(position.count);
+      const radial = new Float64Array(position.count * 2);
       const normals: THREE.Float32BufferAttribute[] = [],
         deltas: THREE.Float32BufferAttribute[] = [];
       const centerY = p.hipY + p.hipH * 0.5;
@@ -167,30 +175,38 @@ export class AthleteCloth {
           weights[i] =
             Math.sin(Math.PI * v) ** 1.5 * (1 - THREE.MathUtils.smoothstep(v, 0.68, 0.88));
         }
+        const arm = upperArms.includes(owner) || forearms.includes(owner);
+        const openingSide =
+          skinIndex.getY(i) === leftFemur && skinIndex.getZ(i) === rightFemur
+            ? skinWeight.getY(i) >= skinWeight.getZ(i)
+              ? 1
+              : -1
+            : Math.sign(position.getX(i));
+        const center =
+          kind === "shirt" && arm
+            ? Math.sign(position.getX(i)) * p.shoulderW * 0.52
+            : kind === "shorts" && position.getY(i) < p.hipY - p.hipH * 0.6
+              ? openingSide * p.hipW * 0.36
+              : 0;
+        const x = position.getX(i) - center,
+          z = position.getZ(i);
+        const r = Math.max(0.01, Math.hypot(x, z));
+        radial[i * 2] = x / r;
+        radial[i * 2 + 1] = z / r;
       }
       const baseNormals = geometry.getAttribute("normal");
+      // Normal reconstruction consumes only positions and indices. Reuse one
+      // scratch surface instead of cloning UVs, skin weights, colors and
+      // existing morph buffers five times for each promoted athlete.
+      const deformed = new THREE.BufferGeometry();
+      deformed.setAttribute("position", position.clone());
+      if (geometry.index) deformed.setIndex(geometry.index);
+      const deformedPosition = deformed.getAttribute("position");
       for (let target = 0; target < 5; target++) {
         const delta = new Float32Array(position.count * 3);
         for (let i = 0; i < position.count; i++) {
-          const owner = skinIndex.getX(i);
-          const arm = upperArms.includes(owner) || forearms.includes(owner);
-          const openingSide =
-            skinIndex.getY(i) === leftFemur && skinIndex.getZ(i) === rightFemur
-              ? skinWeight.getY(i) >= skinWeight.getZ(i)
-                ? 1
-                : -1
-              : Math.sign(position.getX(i));
-          const center =
-            kind === "shirt" && arm
-              ? Math.sign(position.getX(i)) * p.shoulderW * 0.52
-              : kind === "shorts" && position.getY(i) < p.hipY - p.hipH * 0.6
-                ? openingSide * p.hipW * 0.36
-                : 0;
-          const x = position.getX(i) - center,
-            z = position.getZ(i),
-            r = Math.max(0.01, Math.hypot(x, z));
-          const nx = x / r,
-            nz = z / r,
+          const nx = radial[i * 2]!,
+            nz = radial[i * 2 + 1]!,
             w = weights[i]!;
           if (target < 4) {
             const axis = target < 2 ? 0 : 2,
@@ -210,8 +226,6 @@ export class AthleteCloth {
           }
         }
         // Relative normals are derived from the actual deformed garment.
-        const deformed = geometry.clone(),
-          deformedPosition = deformed.getAttribute("position");
         for (let i = 0; i < position.count; i++)
           deformedPosition.setXYZ(
             i,
@@ -226,13 +240,14 @@ export class AthleteCloth {
           for (let c = 0; c < 3; c++)
             normalDelta[i * 3 + c] =
               targetNormal.getComponent(i, c) - baseNormals.getComponent(i, c);
-        deformed.dispose();
         deltas.push(new THREE.Float32BufferAttribute(delta, 3));
         normals.push(new THREE.Float32BufferAttribute(normalDelta, 3));
       }
+      deformed.dispose();
       geometry.morphTargetsRelative = true;
       geometry.morphAttributes.position = deltas;
       geometry.morphAttributes.normal = normals;
+      preparedGarments.set(geometry, kind);
       this.garments.set(geometry, { kind, bindings: [] });
     }
   }

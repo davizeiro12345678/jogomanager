@@ -1,4 +1,5 @@
 import { FORMATIONS } from "./formations";
+import { isCareerFormation } from "./career-tactics";
 import { selectionRating } from "./match-readiness";
 import type { AttributeSource } from "./player-development";
 import type { Player, Position, FormationKey } from "./types";
@@ -17,12 +18,14 @@ const COVER_ORDER: Record<Position, Position[]> = {
 export function pickLineup(players: Player[], formation: FormationKey, source?: AttributeSource) {
   // Formação desconhecida (save antigo, tática corrompida): cai no 4-3-3 em vez
   // de estourar e derrubar a tela inteira.
-  const slots = FORMATIONS[formation] ?? FORMATIONS["4-3-3"];
-  const available = [...players]
+  const slots = FORMATIONS[isCareerFormation(formation) ? formation : "4-3-3"];
+  // Compute readiness once per eligible athlete. Recomputing inside sort
+  // evaluated the same athlete repeatedly, especially with deep formations.
+  const available = players
     .filter((p) => !p.suspended && p.injuryWeeks === 0)
-    .sort(
-      (a, b) => selectionRating(b, source) - selectionRating(a, source) || a.id.localeCompare(b.id),
-    );
+    .map((player) => ({ player, rating: selectionRating(player, source) }))
+    .sort((a, b) => b.rating - a.rating || a.player.id.localeCompare(b.player.id))
+    .map(({ player }) => player);
   const taken = new Set<string>();
   const picks: Player[] = new Array(slots.length).fill(undefined);
 

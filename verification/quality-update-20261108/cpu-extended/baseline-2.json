@@ -1,0 +1,597 @@
+{
+  "tag": "baseline-2",
+  "root": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-baseline-20261108",
+  "capturedAt": "2026-11-09T00:02:38.888Z",
+  "sourceSha": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "sourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "lockSha256": "5eae50109a34ea612a39cf13b8b349d7e2925ea7694972b2b7fc4746ce514dea",
+  "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+  "environment": {
+    "node": "v24.22.0",
+    "v8": "13.6.233.17-node.57",
+    "platform": "win32",
+    "arch": "x64",
+    "kernel": "10.0.26300",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12500H",
+    "logicalProcessors": 16
+  },
+  "protocol": {
+    "registrations": "existing CodSpeed match, season and rig fixtures",
+    "timeMs": 1000,
+    "warmupMs": 250,
+    "instrument": "local Tinybench performance timer; not CodSpeed CI simulation, GPU or FPS"
+  },
+  "checkpoints": [
+    {
+      "seed": "bench-setup",
+      "tick": 0,
+      "sha256": "0236b8c7688d253429183a55948527e765553777b3ba5594ea455c9496d17d37"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 300,
+      "sha256": "bfb675ec632825975841e8a3c2a6d4ebf3e137ff154db2b9451cf3f4896476ec"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 600,
+      "sha256": "606a8aaff8ee4e5885c56e7fbb9baedce15a4eeca0150a625b779eefdba8b5b8"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 900,
+      "sha256": "03e2d078ef64dfc35d38e01508415560ad682c0004c6af88b50747c49f6d2d73"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1200,
+      "sha256": "5a8c80ccc465b393f9e5252757fd093b25d1c6dcefa31b5619028689256b0e78"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1500,
+      "sha256": "4a872644589008bced1874fab31f8da08e1b8a55feaa908ccfece357bbcdd830"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1800,
+      "sha256": "1428985a80793e1cd0c1213059928c99c34d6ecbede32f215fc72f3f79d0b2a7"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 0,
+      "sha256": "124bb748f674740a9d9fd61d45132d4ec0dde2041504a0e0540deea769f30702"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 300,
+      "sha256": "a27838532974083d8fd2254f6aba18ec18a9bfaafa5b97839a4f09b686346893"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 600,
+      "sha256": "69138f8e0cdb83deda5a6af0d8c2ea1e06bfba46c8f7dc08a5ddcb4a24235b2c"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 900,
+      "sha256": "c064adff5d217dc6ec0fd6d7fc1c7d310b65a7eefe6a31b163fb64794517d594"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1200,
+      "sha256": "b63181a2379c691a3b7d2a894c4a7ae1a7c6d4445331dd503bc7893be07e395c"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1500,
+      "sha256": "da3f8a79a6455f57511e18578be1a1fd36a844a44a6449f6ee914c0387acd464"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1800,
+      "sha256": "873fdef590dff75076b9a3ef82c193d43bf83669f910e17cb6e562f9a0dcef0c"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 0,
+      "sha256": "e91c793926b22d0397eca129719135cc1391195ee34029bb2238b2529d63ab1b"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 300,
+      "sha256": "2d03c2fe37905e82e77b65dbc9d637a6fc25a3565a24285b20fd6e57d85fbf7c"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 600,
+      "sha256": "b77aaa4f2e226637e60ae662670cf2dd6cfaf1cf83c8fe391cf701e2c507ef7d"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 900,
+      "sha256": "902ca14adcc18cd460f77cfe8006378ce5bf159e0dba9e225c12f339459cc592"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1200,
+      "sha256": "4ea114c561df375dd56a3d9eff203cf34ef7e97754fa5157d5b0ae20ad516e46"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1500,
+      "sha256": "25c6652b6ca91d760c1d61f6fdb94ac176878364c93370729b23a5451c2368d3"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1800,
+      "sha256": "5ca9a091342c9abdc028fca7083e7bb48ee44b7a70df4dfc5b8a7685c4e400ca"
+    }
+  ],
+  "cases": [
+    {
+      "name": "match setup: buildTeamSetup",
+      "runs": 6176,
+      "latencyMs": {
+        "aad": 0.05766484708482951,
+        "critical": 1.96,
+        "df": 6175,
+        "mad": 0.014300000000275759,
+        "max": 1.4971000000005006,
+        "mean": 0.1619385362694407,
+        "min": 0.09690000000045984,
+        "moe": 0.0022682244289539215,
+        "p50": 0.1271999999999025,
+        "p75": 0.1601999999995769,
+        "p99": 0.513075000000299,
+        "p995": 0.6396624999999858,
+        "p999": 0.9187274999989932,
+        "rme": 1.4006699586193285,
+        "sd": 0.09094599857731894,
+        "sem": 0.0011572573617111845,
+        "variance": 0.008271174657225698
+      },
+      "raw": {
+        "file": "baseline-2-0.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 6176,
+        "sha256": "a806ba3d425f58599fdf2386d511c520fac3842f792eb820709a4fd5068d92a9"
+      }
+    },
+    {
+      "name": "match setup: new MatchSim",
+      "runs": 2984,
+      "latencyMs": {
+        "aad": 0.11858071524448227,
+        "critical": 1.96,
+        "df": 2983,
+        "mad": 0.03299999999944703,
+        "max": 1.9012000000002445,
+        "mean": 0.3351673592493371,
+        "min": 0.19790000000102737,
+        "moe": 0.006037194376817711,
+        "p50": 0.26269999999931315,
+        "p75": 0.3451999999997497,
+        "p99": 0.9377369999984698,
+        "p995": 1.0607444999989457,
+        "p999": 1.4169870999996539,
+        "rme": 1.8012477081118545,
+        "sd": 0.16825907493887932,
+        "sem": 0.0030802012126620974,
+        "variance": 0.028311116299287405
+      },
+      "raw": {
+        "file": "baseline-2-1.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 2984,
+        "sha256": "1dbdca293859dbd01a96c91683f5530f2516474af3c5fe9159d88fddb622e0ae"
+      }
+    },
+    {
+      "name": "match simulation: 300 live ticks",
+      "runs": 171,
+      "latencyMs": {
+        "aad": 0.9876939571150355,
+        "critical": 1.9740167076257829,
+        "df": 170,
+        "mad": 0.5608999999985826,
+        "max": 14.317800000000716,
+        "mean": 5.863411695906491,
+        "min": 4.393100000001141,
+        "moe": 0.2221337310732894,
+        "p50": 5.42949999999837,
+        "p75": 6.192250000000058,
+        "p99": 11.062930000000971,
+        "p995": 12.089099999999704,
+        "p999": 13.872060000000543,
+        "rme": 3.7884723535338796,
+        "sd": 1.4715050008842125,
+        "sem": 0.11252879989068441,
+        "variance": 2.165326967627246
+      },
+      "raw": {
+        "file": "baseline-2-2.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 171,
+        "sha256": "75dbf0e70ab1ef37ae666790a2770f3a572cdb236b182b4fed188c3db02e39f6"
+      }
+    },
+    {
+      "name": "match simulation: 120 coarse steps",
+      "runs": 257,
+      "latencyMs": {
+        "aad": 0.5908190646338862,
+        "critical": 1.9692738896550193,
+        "df": 256,
+        "mad": 0.34909999999945285,
+        "max": 7.600000000000364,
+        "mean": 3.902690661478642,
+        "min": 2.9523000000008324,
+        "moe": 0.09956476329355682,
+        "p50": 3.657499999999345,
+        "p75": 4.14180000000124,
+        "p99": 6.526196000000054,
+        "p995": 7.243907999999646,
+        "p999": 7.559475200000117,
+        "rme": 2.5511825540339896,
+        "sd": 0.8105244208940784,
+        "sem": 0.05055912426229281,
+        "variance": 0.6569498368656812
+      },
+      "raw": {
+        "file": "baseline-2-3.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 257,
+        "sha256": "8fe921e95a53591b4943f92ecfb768f6ad9e8d1152cae2e47c1f90479cc434dd"
+      }
+    },
+    {
+      "name": "live match: snapshotMatch",
+      "runs": 318718,
+      "latencyMs": {
+        "aad": 0.0015252475034590715,
+        "critical": 1.96,
+        "df": 318717,
+        "mad": 0.0005000000019208528,
+        "max": 1.1640999999999622,
+        "mean": 0.0031375802433511314,
+        "min": 0.001299999999901047,
+        "moe": 0.00003308243891382892,
+        "p50": 0.002200000000811997,
+        "p75": 0.003299999998489511,
+        "p99": 0.011399999999412103,
+        "p995": 0.019199999998818384,
+        "p999": 0.07612830000053832,
+        "rme": 1.0543933970751553,
+        "sd": 0.00952894331902747,
+        "sem": 0.00001687879536419843,
+        "variance": 0.00009080076077723824
+      },
+      "raw": {
+        "file": "baseline-2-4.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 318718,
+        "sha256": "7259b14dda6a6b23c0a611bafb7a0135aba34dd95a66645302deba24a1a36565"
+      }
+    },
+    {
+      "name": "live match: WorkerMatchView.apply",
+      "runs": 61283,
+      "latencyMs": {
+        "aad": 0.0033432669533102984,
+        "critical": 1.96,
+        "df": 61282,
+        "mad": 0.0007000000005064066,
+        "max": 6.674800000000687,
+        "mean": 0.016317854870027855,
+        "min": 0.01089999999931024,
+        "moe": 0.00024888636621336766,
+        "p50": 0.014600000000427826,
+        "p75": 0.01539999999840802,
+        "p99": 0.04201799999933431,
+        "p995": 0.05879999999888241,
+        "p999": 0.14744359999952592,
+        "rme": 1.5252394888651366,
+        "sd": 0.031435114331406895,
+        "sem": 0.00012698283990477942,
+        "variance": 0.000988166413028623
+      },
+      "raw": {
+        "file": "baseline-2-5.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 61283,
+        "sha256": "bf2acee006a17a7332ebc2a8aea9eab728590f6c6bf7c088dbe6d0905808594d"
+      }
+    },
+    {
+      "name": "replay codec: encodeReplay",
+      "runs": 64,
+      "latencyMs": {
+        "aad": 3.5566050292968328,
+        "critical": 1.998340541772196,
+        "df": 63,
+        "mad": 0.9831499999991138,
+        "max": 41.91109999999935,
+        "mean": 18.06303593749999,
+        "min": 13.249700000000303,
+        "moe": 1.4415109073379209,
+        "p50": 16.231249999999818,
+        "p75": 17.78202499999952,
+        "p99": 41.21614699999918,
+        "p995": 41.56362349999927,
+        "p999": 41.84160469999933,
+        "rme": 7.980446433953299,
+        "sd": 5.7708318565545,
+        "sem": 0.7213539820693124,
+        "variance": 33.302500316624254
+      },
+      "raw": {
+        "file": "baseline-2-6.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 64,
+        "sha256": "210d0bc8cf7246524e937a981e77bc6373cf50d60b2825f6387a109352b1d66b"
+      }
+    },
+    {
+      "name": "replay codec: decodeReplay",
+      "runs": 86,
+      "latencyMs": {
+        "aad": 4.24150854515948,
+        "critical": 1.988267907310378,
+        "df": 85,
+        "mad": 3.5484499999993204,
+        "max": 45.09699999999975,
+        "mean": 11.818117441860501,
+        "min": 5.3836000000010245,
+        "moe": 1.3063616670158724,
+        "p50": 10.737500000000182,
+        "p75": 14.430699999998524,
+        "p99": 37.50717999999939,
+        "p995": 41.302089999999566,
+        "p999": 44.338017999999764,
+        "rme": 11.053889703182833,
+        "sd": 6.093092219867447,
+        "sem": 0.6570350314526016,
+        "variance": 37.12577279980922
+      },
+      "raw": {
+        "file": "baseline-2-7.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 86,
+        "sha256": "a0cb0c95881e5406d00dc183947024fb725d5d561bf510a6cfc43cf276ef5e77"
+      }
+    },
+    {
+      "name": "season: generateFixtures",
+      "runs": 37840,
+      "latencyMs": {
+        "aad": 0.010726133469512565,
+        "critical": 1.96,
+        "df": 37839,
+        "mad": 0.0017000000007101335,
+        "max": 40.84819999999854,
+        "mean": 0.026427589851998903,
+        "min": 0.014400000000023283,
+        "moe": 0.002134470075338558,
+        "p50": 0.019700000000739237,
+        "p75": 0.024299999997310806,
+        "p99": 0.10936100000075391,
+        "p995": 0.1458609999998044,
+        "p999": 0.466132199998181,
+        "rme": 8.076673231619392,
+        "sd": 0.2118407781302776,
+        "sem": 0.001089015344560489,
+        "variance": 0.0448765152788415
+      },
+      "raw": {
+        "file": "baseline-2-8.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 37840,
+        "sha256": "8aca6030f186db8ca90911cbba5678af4f098d1fae90eb9ba831fc71e9688fb3"
+      }
+    },
+    {
+      "name": "season: tableFromFixtures",
+      "runs": 25062,
+      "latencyMs": {
+        "aad": 0.010002920818916551,
+        "critical": 1.96,
+        "df": 25061,
+        "mad": 0.00240000000121654,
+        "max": 1.2894999999989523,
+        "mean": 0.039902146676229176,
+        "min": 0.027099999999336433,
+        "moe": 0.00038586475881740423,
+        "p50": 0.03419999999823631,
+        "p75": 0.03800000000046566,
+        "p99": 0.13127799999925616,
+        "p995": 0.1835390000007282,
+        "p999": 0.48879130000008886,
+        "rme": 0.9670275685876185,
+        "sd": 0.03116641918330676,
+        "sem": 0.0001968697749068389,
+        "variance": 0.0009713456847095916
+      },
+      "raw": {
+        "file": "baseline-2-9.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 25062,
+        "sha256": "540f88061d12b4b1622e50406473a84231afb7f6f1490f289a2834a9d80436a5"
+      }
+    },
+    {
+      "name": "season: simulateDivisionTable",
+      "runs": 254,
+      "latencyMs": {
+        "aad": 0.5603517701036939,
+        "critical": 1.969384804219895,
+        "df": 253,
+        "mad": 0.3323500000005879,
+        "max": 7.4196999999985565,
+        "mean": 3.9504047244093337,
+        "min": 2.804599999999482,
+        "moe": 0.10206970409314418,
+        "p50": 3.736399999999776,
+        "p75": 4.1709749999999985,
+        "p99": 6.992179999999898,
+        "p995": 7.126916499999678,
+        "p999": 7.351921299998827,
+        "rme": 2.583778402816833,
+        "sd": 0.8260058658463127,
+        "sem": 0.051828217560343996,
+        "variance": 0.6822856904125169
+      },
+      "raw": {
+        "file": "baseline-2-10.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 254,
+        "sha256": "f08b8e4eb447f9f0e32ca5c56dc5d755e11616ec8fd4812df71e44eaedd4445f"
+      }
+    },
+    {
+      "name": "rng: makeRng 10k draws",
+      "runs": 11278,
+      "latencyMs": {
+        "aad": 0.012048159698439852,
+        "critical": 1.96,
+        "df": 11277,
+        "mad": 0.0051000000021304,
+        "max": 1.0148000000008324,
+        "mean": 0.08867663592835533,
+        "min": 0.06469999999899301,
+        "moe": 0.0005372084086624645,
+        "p50": 0.08290000000124564,
+        "p75": 0.08989999999903375,
+        "p99": 0.1805690000013054,
+        "p995": 0.22707650000036642,
+        "p999": 0.5041088999995662,
+        "rme": 0.6058060311359716,
+        "sd": 0.029107357208157873,
+        "sem": 0.0002740859227869717,
+        "variance": 0.0008472382436433001
+      },
+      "raw": {
+        "file": "baseline-2-11.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 11278,
+        "sha256": "4ee75644ecaada6632d578015aa257ef089b9e202797dd2e3930e29880da8aae"
+      }
+    },
+    {
+      "name": "rig geometry: fallback 64 radial",
+      "runs": 9717,
+      "latencyMs": {
+        "aad": 0.03838244178101133,
+        "critical": 1.96,
+        "df": 9716,
+        "mad": 0.009499999996478437,
+        "max": 6.097200000000157,
+        "mean": 0.10292625295872565,
+        "min": 0.056300000000192085,
+        "moe": 0.0020594527563837124,
+        "p50": 0.07859999999709544,
+        "p75": 0.12370000000009895,
+        "p99": 0.2733879999992497,
+        "p995": 0.33391400000124133,
+        "p999": 0.6778611999990689,
+        "rme": 2.00090132224047,
+        "sd": 0.10357665078970232,
+        "sem": 0.001050741202236588,
+        "variance": 0.010728122588811943
+      },
+      "raw": {
+        "file": "baseline-2-12.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 9717,
+        "sha256": "75f7cbdc2bac47eb412a17bba5be955e067f25f2226c75ad8534e25b5c9d13f0"
+      }
+    },
+    {
+      "name": "rig geometry: fallback 16 radial",
+      "runs": 45632,
+      "latencyMs": {
+        "aad": 0.007685113448335205,
+        "critical": 1.96,
+        "df": 45631,
+        "mad": 0.0013999999973748345,
+        "max": 7.5450999999993655,
+        "mean": 0.02191506179873174,
+        "min": 0.012499999997089617,
+        "moe": 0.00044835791373906713,
+        "p50": 0.017700000000331784,
+        "p75": 0.01929999999993015,
+        "p99": 0.0937999999987369,
+        "p995": 0.11678449999961242,
+        "p999": 0.21703689999962067,
+        "rme": 2.0458893424841462,
+        "sd": 0.04886563202010487,
+        "sem": 0.00022875403762197304,
+        "variance": 0.002387849992724298
+      },
+      "raw": {
+        "file": "baseline-2-13.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 45632,
+        "sha256": "0140bae8be164aa81245fffb835250aa99aacaeb946dcb764c5e7efa83ee0a8d"
+      }
+    },
+    {
+      "name": "rig geometry: Rust/WASM 64 radial",
+      "runs": 7342,
+      "latencyMs": {
+        "aad": 0.028134520605576183,
+        "critical": 1.96,
+        "df": 7341,
+        "mad": 0.006849999999758438,
+        "max": 4.289000000000669,
+        "mean": 0.13621360664669493,
+        "min": 0.09930000000167638,
+        "moe": 0.0021092495698154493,
+        "p50": 0.12110000000029686,
+        "p75": 0.12899999999717693,
+        "p99": 0.36900899999942416,
+        "p995": 0.49330150000019796,
+        "p999": 1.1479170000018202,
+        "rme": 1.5484866906771886,
+        "sd": 0.09221022631562047,
+        "sem": 0.0010761477397017599,
+        "variance": 0.008502725837177946
+      },
+      "raw": {
+        "file": "baseline-2-14.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 7342,
+        "sha256": "a94d2e90ca16673ec540ffa9ffa9a9cdaff1bfc71475e8c0b859dac5e23cf631"
+      }
+    },
+    {
+      "name": "rig geometry: Rust/WASM 16 radial",
+      "runs": 28531,
+      "latencyMs": {
+        "aad": 0.010045201945858504,
+        "critical": 1.96,
+        "df": 28530,
+        "mad": 0.0020000000040454324,
+        "max": 4.798099999999977,
+        "mean": 0.03504976341522295,
+        "min": 0.02449999999953434,
+        "moe": 0.000578435765041474,
+        "p50": 0.029400000003079185,
+        "p75": 0.031899999998131534,
+        "p99": 0.10816999999951811,
+        "p995": 0.15300999999963008,
+        "p999": 0.30583399999917277,
+        "rme": 1.6503271596699156,
+        "sd": 0.04984912772990603,
+        "sem": 0.0002951202882864664,
+        "variance": 0.0024849355354324863
+      },
+      "raw": {
+        "file": "baseline-2-15.f64.gz",
+        "encoding": "gzip Float64 native little endian, milliseconds",
+        "count": 28531,
+        "sha256": "acdea44591658f7ce0a2986a3233d252fbe49728856eebfd6ca996e8595a64b0"
+      }
+    }
+  ]
+}

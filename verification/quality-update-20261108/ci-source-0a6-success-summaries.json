@@ -1,0 +1,1310 @@
+{
+  "recordedAt": "2026-11-09 01:09:19 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "vitest": {
+    "jobId": 128922613526,
+    "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+    "selected": [
+      "2026-11-09T01:00:50.4135022Z Download action repository 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)",
+      "2026-11-09T01:00:52.0039705Z HEAD is now at ea58b87 Merge 0a6a04e581571a367cc1c742ead21f984abbbc1b into c20036f33a8f7d8eff15012d276606a3964e4a54",
+      "2026-11-09T01:00:52.0371209Z ##[group]Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "2026-11-09T01:01:10.4406686Z     \"nav.replays\",",
+      "2026-11-09T01:01:10.4442002Z       \"reviewRequired\": true,",
+      "2026-11-09T01:01:10.4446200Z       \"status\": \"draft\",",
+      "2026-11-09T01:01:10.4447200Z       \"keyCount\": 238,",
+      "2026-11-09T01:01:10.4482001Z     {",
+      "2026-11-09T01:01:10.4590200Z       \"runtimeEligible\": false,",
+      "2026-11-09T01:01:10.4620017Z       \"locale\": \"cy\",",
+      "2026-11-09T01:01:10.9820007Z         \"line\": 217,",
+      "2026-11-09T01:01:10.9862000Z       },",
+      "2026-11-09T01:01:10.9924769Z         \"text\": \"O 3D recebe esses resultados e cuida da apresentação: animações de corrida e chute, câmera de transmissão, iluminação do estádio, torcida e replays. Como a apresentação não decide nada, ela pode ficar mais leve num celular sem alterar o placar, e a mesma partida pode ser reassistida com o mesmo resultado.\"",
+      "2026-11-09T01:01:10.9958200Z         \"line\": 64,",
+      "2026-11-09T01:01:11.0112008Z         \"line\": 110,",
+      "2026-11-09T01:01:11.0120059Z         \"file\": \"src/components/game/athlete/PlayerWeekTab.tsx\",",
+      "2026-11-09T01:01:11.0122008Z         \"line\": 68,",
+      "2026-11-09T01:01:11.0200012Z         \"file\": \"src/components/game/coach/CoachClubOverview.tsx\",",
+      "2026-11-09T01:01:11.0200067Z         \"line\": 41,",
+      "2026-11-09T01:01:11.0200143Z         \"kind\": \"jsx-attribute:label\",",
+      "2026-11-09T01:01:11.0200199Z         \"text\": \"Diretoria\"",
+      "2026-11-09T01:01:11.0200253Z       },",
+      "2026-11-09T01:01:11.0200303Z       {",
+      "2026-11-09T01:01:11.0200408Z         \"file\": \"src/components/game/coach/CoachClubOverview.tsx\",",
+      "2026-11-09T01:01:11.0200464Z         \"line\": 42,",
+      "2026-11-09T01:01:11.0200537Z         \"kind\": \"jsx-attribute:label\",",
+      "2026-11-09T01:01:11.0200596Z         \"text\": \"Torcida\"",
+      "2026-11-09T01:01:11.0200641Z       },",
+      "2026-11-09T01:01:11.0200691Z       {",
+      "2026-11-09T01:01:11.0200801Z         \"file\": \"src/components/game/coach/CoachClubOverview.tsx\",",
+      "2026-11-09T01:01:11.0200850Z         \"line\": 44,",
+      "2026-11-09T01:01:11.0200923Z         \"kind\": \"jsx-attribute:label\",",
+      "2026-11-09T01:01:11.0220006Z         \"line\": 165,",
+      "2026-11-09T01:01:11.0220065Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.0232007Z         \"line\": 112,",
+      "2026-11-09T01:01:11.0252008Z       {",
+      "2026-11-09T01:01:11.0320007Z         \"text\": \"Situação\"",
+      "2026-11-09T01:01:11.0320056Z       },",
+      "2026-11-09T01:01:11.0322008Z         \"text\": \"Como devem jogar\"",
+      "2026-11-09T01:01:11.0362891Z         \"text\": \"200 mil\"",
+      "2026-11-09T01:01:11.0372006Z         \"text\": \"Partida rápida\"",
+      "2026-11-09T01:01:11.0389002Z         \"text\": \"Ver replays\"",
+      "2026-11-09T01:01:11.0396200Z         \"line\": 138,",
+      "2026-11-09T01:01:11.0404200Z       },",
+      "2026-11-09T01:01:11.0420033Z       },",
+      "2026-11-09T01:01:11.0420084Z       {",
+      "2026-11-09T01:01:11.0442008Z       {",
+      "2026-11-09T01:01:11.0480200Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.0513673Z         \"line\": 200,",
+      "2026-11-09T01:01:11.0520073Z       {",
+      "2026-11-09T01:01:11.0541710Z         \"text\": \"Os pacotes de estádio, de temas e de comemorações alteram apenas a aparência: cortes de gramado, bandeirões e mosaicos da torcida, temas de interface e novas comemorações em 3D com câmera própria no replay do gol. Eles não mexem em atributos, tática nem simulação. A partida é decidida lance a lance por um motor determinístico, e o visual é só a forma de desenhar o que esse motor calcula.\"",
+      "2026-11-09T01:01:11.0598707Z         \"line\": 200,",
+      "2026-11-09T01:01:11.0642008Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.0669200Z         \"line\": 370,",
+      "2026-11-09T01:01:11.0720032Z       {",
+      "2026-11-09T01:01:11.0820021Z       },",
+      "2026-11-09T01:01:11.0879779Z         \"line\": 200,",
+      "2026-11-09T01:01:11.0882009Z       },",
+      "2026-11-09T01:01:11.0960200Z         \"line\": 438,",
+      "2026-11-09T01:01:11.0970200Z       },",
+      "2026-11-09T01:01:11.1020000Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.1052002Z       },",
+      "2026-11-09T01:01:11.1102003Z       {",
+      "2026-11-09T01:01:11.1200022Z         \"line\": 513,",
+      "2026-11-09T01:01:11.1200260Z         \"kind\": \"jsx-attribute:label\",",
+      "2026-11-09T01:01:11.1200546Z         \"text\": \"Confiança\"",
+      "2026-11-09T01:01:11.1200769Z       },",
+      "2026-11-09T01:01:11.1200940Z       {",
+      "2026-11-09T01:01:11.1220014Z         \"text\": \"3. Rodízio: proteja a equipe sem perder a organização\"",
+      "2026-11-09T01:01:11.1220089Z       },",
+      "2026-11-09T01:01:11.1243874Z         \"line\": 200,",
+      "2026-11-09T01:01:11.1262404Z         \"text\": \"Exemplo fictício, em unidades monetárias: com caixa de 1 milhão, receitas confirmadas de 300 mil e custos previstos de 800 mil no período, a projeção termina em 500 mil. Se você reservar 200 mil para imprevistos, restam 300 mil para decisões novas. Uma contratação de 250 mil com salários adicionais de 100 mil no mesmo período ultrapassa esse limite em 50 mil. O preço da transferência sozinho esconderia o risco.\"",
+      "2026-11-09T01:01:11.1320072Z       {",
+      "2026-11-09T01:01:11.1350200Z         \"line\": 136,",
+      "2026-11-09T01:01:11.1420034Z       {",
+      "2026-11-09T01:01:11.1422200Z         \"file\": \"src/pages/guia-de-scouting.tsx\",",
+      "2026-11-09T01:01:11.1477200Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.1520052Z       },",
+      "2026-11-09T01:01:11.1552009Z       },",
+      "2026-11-09T01:01:11.1687200Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.1720061Z         \"file\": \"src/pages/match.tsx\",",
+      "2026-11-09T01:01:11.1735200Z         \"text\": \"Gestão da partida\"",
+      "2026-11-09T01:01:11.1856898Z         \"text\": \"Exemplo fictício: o candidato A custa 200 mil e recebe 10 mil por semana; o B custa 400 mil e recebe 4 mil. Em 30 semanas, os totais ilustrativos seriam 500 mil e 520 mil, sem outros encargos. A diferença seria de 20 mil, embora o preço inicial de B fosse o dobro. O caixa imediato, a função e o prazo do compromisso também importam.\"",
+      "2026-11-09T01:01:11.1920020Z         \"file\": \"src/pages/modo-carreira-de-jogador.tsx\",",
+      "2026-11-09T01:01:11.1935600Z         \"text\": \"O servidor está confirmando o resultado com o replay oficial. A sala será atualizada automaticamente.\"",
+      "2026-11-09T01:01:11.1951200Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2000018Z         \"text\": \"SUA PRÓXIMA HISTÓRIA\"",
+      "2026-11-09T01:01:11.2000099Z       },",
+      "2026-11-09T01:01:11.2000172Z       {",
+      "2026-11-09T01:01:11.2000281Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2000368Z         \"line\": 806,",
+      "2026-11-09T01:01:11.2000459Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2000586Z         \"text\": \"estrelas ·\"",
+      "2026-11-09T01:01:11.2000666Z       },",
+      "2026-11-09T01:01:11.2000740Z       {",
+      "2026-11-09T01:01:11.2000840Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2000952Z         \"line\": 811,",
+      "2026-11-09T01:01:11.2001045Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2001126Z         \"text\": \"estrelas.\"",
+      "2026-11-09T01:01:11.2001201Z       },",
+      "2026-11-09T01:01:11.2001277Z       {",
+      "2026-11-09T01:01:11.2001412Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2001493Z         \"line\": 811,",
+      "2026-11-09T01:01:11.2001579Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2001717Z         \"text\": \"Volte ao perfil: este clube exige\"",
+      "2026-11-09T01:01:11.2001791Z       },",
+      "2026-11-09T01:01:11.2001866Z       {",
+      "2026-11-09T01:01:11.2001968Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2002041Z         \"line\": 821,",
+      "2026-11-09T01:01:11.2002132Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2002465Z         \"text\": \"Começar esta carreira no lugar da carreira atual neste aparelho.\"",
+      "2026-11-09T01:01:11.2002544Z       },",
+      "2026-11-09T01:01:11.2002617Z       {",
+      "2026-11-09T01:01:11.2002725Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2002811Z         \"line\": 843,",
+      "2026-11-09T01:01:11.2002896Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2003067Z         \"text\": \"Preparando sua carreira…\"",
+      "2026-11-09T01:01:11.2003146Z       },",
+      "2026-11-09T01:01:11.2003218Z       {",
+      "2026-11-09T01:01:11.2003330Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2003413Z         \"line\": 847,",
+      "2026-11-09T01:01:11.2003505Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2003588Z         \"text\": \"Assumir\"",
+      "2026-11-09T01:01:11.2003804Z       },",
+      "2026-11-09T01:01:11.2003884Z       {",
+      "2026-11-09T01:01:11.2003988Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2004072Z         \"line\": 856,",
+      "2026-11-09T01:01:11.2004160Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2004485Z         \"text\": \"Selecione um clube para revisar e começar sua carreira.\"",
+      "2026-11-09T01:01:11.2004567Z       },",
+      "2026-11-09T01:01:11.2004646Z       {",
+      "2026-11-09T01:01:11.2004761Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2004840Z         \"line\": 874,",
+      "2026-11-09T01:01:11.2004928Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2005017Z         \"text\": \"Voltar\"",
+      "2026-11-09T01:01:11.2005094Z       },",
+      "2026-11-09T01:01:11.2005174Z       {",
+      "2026-11-09T01:01:11.2005286Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2005365Z         \"line\": 909,",
+      "2026-11-09T01:01:11.2005451Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2005661Z         \"text\": \"Seu primeiro dia no clube está começando…\"",
+      "2026-11-09T01:01:11.2005741Z       },",
+      "2026-11-09T01:01:11.2005823Z       {",
+      "2026-11-09T01:01:11.2005933Z         \"file\": \"src/pages/new.tsx\",",
+      "2026-11-09T01:01:11.2006021Z         \"line\": 911,",
+      "2026-11-09T01:01:11.2006103Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2006212Z         \"text\": \"Ir para o clube\"",
+      "2026-11-09T01:01:11.2006290Z       },",
+      "2026-11-09T01:01:11.2006367Z       {",
+      "2026-11-09T01:01:11.2006607Z         \"file\": \"src/pages/news.tsx\",",
+      "2026-11-09T01:01:11.2006698Z         \"line\": 35,",
+      "2026-11-09T01:01:11.2006820Z         \"kind\": \"jsx-attribute:title\",",
+      "2026-11-09T01:01:11.2006969Z         \"text\": \"Central de notícias\"",
+      "2026-11-09T01:01:11.2007053Z       },",
+      "2026-11-09T01:01:11.2007134Z       {",
+      "2026-11-09T01:01:11.2007251Z         \"file\": \"src/pages/news.tsx\",",
+      "2026-11-09T01:01:11.2007340Z         \"line\": 39,",
+      "2026-11-09T01:01:11.2007459Z         \"kind\": \"jsx-attribute:title\",",
+      "2026-11-09T01:01:11.2007616Z         \"text\": \"Nenhuma notícia ainda\"",
+      "2026-11-09T01:01:11.2007688Z       },",
+      "2026-11-09T01:01:11.2007762Z       {",
+      "2026-11-09T01:01:11.2007878Z         \"file\": \"src/pages/news.tsx\",",
+      "2026-11-09T01:01:11.2007957Z         \"line\": 41,",
+      "2026-11-09T01:01:11.2008047Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2008176Z         \"text\": \"Jogar a primeira rodada\"",
+      "2026-11-09T01:01:11.2008248Z       },",
+      "2026-11-09T01:01:11.2008328Z       {",
+      "2026-11-09T01:01:11.2008451Z         \"file\": \"src/pages/news.tsx\",",
+      "2026-11-09T01:01:11.2008539Z         \"line\": 60,",
+      "2026-11-09T01:01:11.2008625Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2008749Z         \"text\": \"· Rodada\"",
+      "2026-11-09T01:01:11.2008834Z       },",
+      "2026-11-09T01:01:11.2008908Z       {",
+      "2026-11-09T01:01:11.2009028Z         \"file\": \"src/pages/news.tsx\",",
+      "2026-11-09T01:01:11.2009116Z         \"line\": 60,",
+      "2026-11-09T01:01:11.2009201Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2009295Z         \"text\": \"Temporada\"",
+      "2026-11-09T01:01:11.2009372Z       },",
+      "2026-11-09T01:01:11.2009447Z       {",
+      "2026-11-09T01:01:11.2009570Z         \"file\": \"src/pages/perfil.tsx\",",
+      "2026-11-09T01:01:11.2009660Z         \"line\": 125,",
+      "2026-11-09T01:01:11.2009756Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2009873Z         \"text\": \"· Rodada\"",
+      "2026-11-09T01:01:11.2009952Z       },",
+      "2026-11-09T01:01:11.2058200Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2137200Z         \"text\": \"Ajustar táticas\"",
+      "2026-11-09T01:01:11.2156200Z         \"line\": 299,",
+      "2026-11-09T01:01:11.2192044Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2192583Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2193279Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2193899Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2194404Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2195008Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2195547Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2196152Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2196397Z         \"text\": \"Galeria de replays\"",
+      "2026-11-09T01:01:11.2202772Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2203364Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2203562Z         \"text\": \"Nenhum replay salvo\"",
+      "2026-11-09T01:01:11.2203732Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2204113Z         \"file\": \"src/pages/replays.tsx\",",
+      "2026-11-09T01:01:11.2272004Z         \"line\": 428,",
+      "2026-11-09T01:01:11.2302002Z         \"kind\": \"jsx-text\",",
+      "2026-11-09T01:01:11.2320045Z         \"line\": 232,",
+      "2026-11-09T01:01:11.2350200Z       },",
+      "2026-11-09T01:01:11.2352004Z         \"text\": \"Limpar filtros\"",
+      "2026-11-09T01:01:11.2388200Z         \"line\": 452,",
+      "2026-11-09T01:01:11.6715315Z ℹ tests 11",
+      "2026-11-09T01:01:11.6715716Z ℹ pass 11",
+      "2026-11-09T01:01:11.6715897Z ℹ fail 0",
+      "2026-11-09T01:01:11.6716284Z ℹ skipped 0",
+      "2026-11-09T01:01:50.7675276Z ##[group]Run npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+      "2026-11-09T01:01:50.7675917Z npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+      "2026-11-09T01:02:12.1979706Z stderr | src/game/simWorkerClient.test.ts > live match worker lifecycle > clears the local fallback interval when the failed worker's controller is disposed",
+      "2026-11-09T01:02:12.1981529Z   message: 'worker failed',",
+      "2026-11-09T01:02:12.2017314Z   message: 'worker failed before first tick',",
+      "2026-11-09T01:02:14.4792369Z Verified webhook processing failed: Error: temporary database outage",
+      "2026-11-09T01:02:14.4792816Z     at /home/runner/work/jogomanager/jogomanager/src/routes/api/public/payments/-webhook.test.ts:200:46",
+      "2026-11-09T01:02:14.4818233Z Verified webhook processing failed: Error: temporary database outage",
+      "2026-11-09T01:02:14.4833585Z Webhook verification failed: Error: invalid signature",
+      "2026-11-09T01:02:14.4845627Z Verified webhook processing failed: Error: temporary offer lookup failure",
+      "2026-11-09T01:03:19.9770927Z  ✓ src/game/player-leg-continuity.test.ts (14 tests) 22003ms",
+      "2026-11-09T01:03:55.1538777Z stdout | src/game/replay-codec.test.ts > versioned replay codec > reports the byte comparison used to decide whether v3 is justified",
+      "2026-11-09T01:03:55.1657717Z  ✓ src/game/replay-codec.test.ts (3 tests) 5168ms",
+      "2026-11-09T01:03:55.1687365Z    ✓ versioned replay codec (3)",
+      "2026-11-09T01:03:55.1688037Z      ✓ round-trips legacy-shaped replays with score, seek and visual context 917ms",
+      "2026-11-09T01:04:11.0312093Z  Test Files  371 passed (371)",
+      "2026-11-09T01:04:11.0319395Z       Tests  2203 passed (2203)",
+      "2026-11-09T01:04:11.0324734Z    Duration  139.90s (tests 83%, import 13%, transform 3%, worker 1%)",
+      "2026-11-09T01:04:11.4061164Z ℹ tests 36",
+      "2026-11-09T01:04:11.4061405Z ℹ pass 36",
+      "2026-11-09T01:04:11.4061519Z ℹ fail 0",
+      "2026-11-09T01:04:11.4061766Z ℹ skipped 0",
+      "2026-11-09T01:04:11.4985957Z ℹ tests 4",
+      "2026-11-09T01:04:11.4986336Z ℹ pass 4",
+      "2026-11-09T01:04:11.4986605Z ℹ fail 0",
+      "2026-11-09T01:04:11.4986992Z ℹ skipped 0",
+      "2026-11-09T01:04:11.5884940Z ✔ rejects a 200 response redirected to Access: https://team.cloudflareaccess.com/login (0.245079ms)",
+      "2026-11-09T01:04:11.5885901Z ✔ rejects a 200 response redirected to Access: https://cloudflareaccess.com/login (0.194934ms)",
+      "2026-11-09T01:04:11.5887024Z ✔ rejects a 200 response redirected to Access: https://jogomanager.com/cdn-cgi/access/login (0.108764ms)",
+      "2026-11-09T01:04:11.5896998Z ✔ rejects an Access page with HTTP 200: Cloudflare Access (0.256577ms)",
+      "2026-11-09T01:04:11.5897772Z ✔ rejects an Access page with HTTP 200: /cdn-cgi/access/login (0.165099ms)",
+      "2026-11-09T01:04:11.5898634Z ✔ rejects an Access page with HTTP 200: Log in to private Cloudflare Workers (0.110547ms)",
+      "2026-11-09T01:04:11.5973420Z ℹ tests 23",
+      "2026-11-09T01:04:11.5973819Z ℹ pass 23",
+      "2026-11-09T01:04:11.5973997Z ℹ fail 0",
+      "2026-11-09T01:04:11.5974299Z ℹ skipped 0",
+      "2026-11-09T01:04:11.6784745Z ℹ tests 4",
+      "2026-11-09T01:04:11.6785156Z ℹ pass 4",
+      "2026-11-09T01:04:11.6785333Z ℹ fail 0",
+      "2026-11-09T01:04:11.6787172Z ℹ skipped 0",
+      "2026-11-09T01:04:11.8630122Z ℹ tests 30",
+      "2026-11-09T01:04:11.8630365Z ℹ pass 30",
+      "2026-11-09T01:04:11.8630477Z ℹ fail 0",
+      "2026-11-09T01:04:11.8630724Z ℹ skipped 0",
+      "2026-11-09T01:04:12.0073446Z ✔ stops after two extra NO_NAVSTART attempts and remains failed (5.034908ms)",
+      "2026-11-09T01:04:12.6822331Z ✔ stress gate accepts the executed 200-match suite (21.386257ms)",
+      "2026-11-09T01:04:12.6823543Z ✔ stress gate rejects skipped, missing and failed suites (76.541043ms)",
+      "2026-11-09T01:04:12.6920866Z ℹ tests 34",
+      "2026-11-09T01:04:12.6921110Z ℹ pass 34",
+      "2026-11-09T01:04:12.6921229Z ℹ fail 0",
+      "2026-11-09T01:04:12.6921478Z ℹ skipped 0",
+      "2026-11-09T01:04:19.6516011Z .output/public/assets/replays-CIyqlqiO.js                              5.43 kB │ gzip:     2.12 kB",
+      "2026-11-09T01:04:19.6539013Z .output/public/assets/replay-DGaszQ64.js                               8.36 kB │ gzip:     3.32 kB",
+      "2026-11-09T01:04:21.2920013Z node_modules/.nitro/vite/services/ssr/assets/crowd_visibility_wasm_bg-C-AYAFiE.wasm                90.41 kB │ gzip:    30.42 kB",
+      "2026-11-09T01:04:21.3101711Z node_modules/.nitro/vite/services/ssr/assets/replays-CYKg3pyL.js                                    8.44 kB │ gzip:     2.80 kB",
+      "2026-11-09T01:04:21.3145904Z node_modules/.nitro/vite/services/ssr/assets/replay-Be_5Fw9B.js                                    15.10 kB │ gzip:     4.85 kB",
+      "2026-11-09T01:04:22.6648200Z .output/server/_ssr/overall-BqQrol58.mjs                               3.85 kB │ gzip:     1.70 kB",
+      "2026-11-09T01:04:22.6721468Z .output/server/_ssr/replays-CYKg3pyL.mjs                               9.71 kB │ gzip:     2.91 kB",
+      "2026-11-09T01:04:22.6757587Z .output/server/_ssr/replay-Be_5Fw9B.mjs                               15.16 kB │ gzip:     4.89 kB",
+      "2026-11-09T01:04:23.5329969Z       \"gzipBytes\": 20002,",
+      "2026-11-09T01:04:23.5465512Z       \"brotliBytes\": 6200,",
+      "2026-11-09T01:04:23.5501731Z         \"replay-DGaszQ64.js\"",
+      "2026-11-09T01:04:23.5519532Z         \"replay-DGaszQ64.js\",",
+      "2026-11-09T01:04:23.5520010Z         \"useRouteContext-DCXljPWq.js\",",
+      "2026-11-09T01:04:23.5572007Z         \"real-football.functions-BJt9mIdj.js\",",
+      "2026-11-09T01:04:23.5592008Z         \"redirect-DmtLUW0N.js\",",
+      "2026-11-09T01:04:23.5602689Z         \"replays-CIyqlqiO.js\",",
+      "2026-11-09T01:04:23.8345741Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/"
+    ]
+  },
+  "stress": {
+    "jobId": 128922613844,
+    "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+    "selected": [
+      "2026-11-09T01:00:51.4291769Z Download action repository 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)",
+      "2026-11-09T01:00:51.6857785Z Complete job name: Critical 200-match deterministic stress",
+      "2026-11-09T01:00:53.1871635Z HEAD is now at ea58b87 Merge 0a6a04e581571a367cc1c742ead21f984abbbc1b into c20036f33a8f7d8eff15012d276606a3964e4a54",
+      "2026-11-09T01:00:53.2302435Z ##[group]Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "2026-11-09T01:01:02.8979200Z npm warn     @react-three/drei@\"^9.103.0\" from r3f-perf@7.2.3",
+      "2026-11-09T01:01:19.0936348Z > vitest run src/game/sim.stress.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile=stress-results.json",
+      "2026-11-09T01:06:43.5866158Z  ✓ src/game/sim.stress.test.ts (1 test) 323157ms",
+      "2026-11-09T01:06:43.5868807Z      ✓ finishes 200 seeded matches and reproduces each result inside the worker guard 323155ms",
+      "2026-11-09T01:06:43.5915747Z  Test Files  1 passed (1)",
+      "2026-11-09T01:06:43.5916686Z       Tests  1 passed (1)",
+      "2026-11-09T01:06:43.5918069Z    Duration  324.20s (tests 100%)",
+      "2026-11-09T01:06:43.6616994Z Stress gate passed: 1 executed assertion(s), 200 seeds and independent deterministic replays.",
+      "2026-11-09T01:06:45.3359657Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/"
+    ]
+  },
+  "runs": [
+    {
+      "id": 42543242369,
+      "name": "Match 3D visual evidence",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 385,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242369/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242369/logs",
+      "workflow_id": 396443128
+    },
+    {
+      "id": 42543242371,
+      "name": "Public environment and MCP safety",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 101,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242371/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242371/logs",
+      "workflow_id": 392131112
+    },
+    {
+      "id": 42543242246,
+      "name": "Auxiliary match worker",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 227,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242246/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242246/logs",
+      "workflow_id": 395365701
+    },
+    {
+      "id": 42543242321,
+      "name": "Match 3D mobile draw inventory",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 312,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242321/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242321/logs",
+      "workflow_id": 396587026
+    },
+    {
+      "id": 42543242291,
+      "name": "Match 3D lifecycle and context recovery",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 312,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242291/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242291/logs",
+      "workflow_id": 396587027
+    },
+    {
+      "id": 42543242353,
+      "name": "CodSpeed",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 1081,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242353/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242353/logs",
+      "workflow_id": 377615822
+    },
+    {
+      "id": 42543242360,
+      "name": "Match 3D startup CPU diagnostic",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 427,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242360/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242360/logs",
+      "workflow_id": 396558805
+    },
+    {
+      "id": 42543242306,
+      "name": "Quality gates",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 1239,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242306/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42543242306/logs",
+      "workflow_id": 365551523
+    }
+  ],
+  "qualityJobs": [
+    {
+      "id": 128922613526,
+      "name": "Build, types and tests",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify i18n parity and hardcoded audit",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm run lint",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run npm exec -- tsc --noEmit --pretty false",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run node --test cloudflare/sportsdb-importer/api-quota.test.mjs cloudflare/sportsdb-importer/public-rate-limit.test.mjs cloudflare/sportsdb-importer/worker-security.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run node --test scripts/database-growth-snapshot.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run node --test scripts/verify-public-deployment.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Run node --test scripts/font-loading.test.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify Edge Function authentication and import contracts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Run npm run test:performance-gates",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Run PFM_LOCAL_VERIFY=1 npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Run npm run bundle:check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        }
+      ]
+    },
+    {
+      "id": 128922613760,
+      "name": "Lighthouse shell audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run PFM_LOCAL_VERIFY=1 npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        }
+      ]
+    },
+    {
+      "id": 128922613807,
+      "name": "Supabase migration replay and access contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Verify recorded migration history and preserved legacy files",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Verify database startup failure handling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Start local Supabase Postgres",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Replay the complete canonical migration history",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Apply the forward growth-observability migration to the disposable database",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Apply the forward career tombstone and generation migration to the disposable database",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Apply forward room chat, career repair and support migrations to the disposable database",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Verify private support quota, idempotency, delivery leases and retry fencing",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Verify atomic private room creation, host quotas and bounded empty-lobby expiration",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify career tombstone generation and server-only access",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Verify application schema, ownership, and grants",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Verify private room chat Realtime authorization",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Verify public catalog and bounded identity enrichment",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Verify future tables require explicit API grants",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35
+        }
+      ]
+    },
+    {
+      "id": 128922613810,
+      "name": "Production dependency audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci --ignore-scripts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm audit --omit=dev --audit-level=high",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 128922613834,
+      "name": "Lighthouse mobile multi-page audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run PFM_LOCAL_VERIFY=1 npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        }
+      ]
+    },
+    {
+      "id": 128922613837,
+      "name": "Rust kernels and generated WASM parity",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run cargo fmt --manifest-path wasm/crowd-visibility/Cargo.toml -- --check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run npm run wasm:test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run cargo install wasm-pack --version 0.15.0 --locked",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Preserve shipped WASM for validation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Build WASM with an isolated tool cache",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Verify generated bindings",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify freshly generated WASM parity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Verify shipped WASM parity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        }
+      ]
+    },
+    {
+      "id": 128922613844,
+      "name": "Critical 200-match deterministic stress",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Execute all 200 seeds and their independent replays",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Require executed and passing stress assertions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 128922613895,
+      "name": "Critical same-runner MatchSim construction",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Checkout baseline in a separate directory",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Use identical installed dependencies for both revisions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Compare CPU in ABBA order and verify deterministic checkpoints",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Post Checkout candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        }
+      ]
+    },
+    {
+      "id": 128922613930,
+      "name": "Deterministic 3D benchmark contract",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm exec -- vitest run src/game/graphics-benchmark-contract.test.ts src/game/rapier-ball-authority.test.ts --pool=forks --maxWorkers=1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm exec -- vite build --config scripts/graphics-vite.config.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 128922613994,
+      "name": "Critical startup bundle comparison / bundle",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout candidate with complete base history",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Setup Node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Preserve analyzer and install one dependency graph for both revisions",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Build baseline from PR base SHA",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Build proposed commit on the same runner",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Upload reproducible comparison",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Setup Node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Checkout candidate with complete base history",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 128922613996,
+      "name": "3D asset compression contract",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run node scripts/verify-game-assets.mjs",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        }
+      ]
+    },
+    {
+      "id": 128924324222,
+      "name": "Critical performance release gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42543242306,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Require every critical job to have passed",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        }
+      ]
+    }
+  ]
+}

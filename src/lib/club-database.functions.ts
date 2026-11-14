@@ -22,12 +22,19 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
       if (clubResult.error) throw new Error("Não foi possível carregar a identidade do clube.");
       const club = clubResult.data;
       if (!club) return null;
-      const links = await db
-        .from("club_catalog_links")
-        .select("source_club_id")
-        .eq("club_id", club.id)
-        .limit(4);
+      // Identity aliases and official-team identity depend only on the club.
+      // Start them together instead of adding a serial Data API round trip.
+      const [links, teamResult] = await Promise.all([
+        db.from("club_catalog_links").select("source_club_id").eq("club_id", club.id).limit(4),
+        db
+          .from("official_teams")
+          .select("source_id,venue_source_id")
+          .eq("local_club_id", club.id)
+          .order("source_id")
+          .limit(5),
+      ]);
       if (links.error) throw new Error("Não foi possível resolver a identidade do elenco.");
+      if (teamResult.error) throw new Error("Não foi possível resolver o clube na base oficial.");
       const clubIds = [club.id, ...(links.data ?? []).map((link) => link.source_club_id)];
       const playersResult = await db
         .from("players")
@@ -39,13 +46,6 @@ export const getClubDatabaseProfile = createServerFn({ method: "GET" })
         .order("id")
         .limit(8);
       if (playersResult.error) throw new Error("Não foi possível carregar os atletas oficiais.");
-      const teamResult = await db
-        .from("official_teams")
-        .select("source_id,venue_source_id")
-        .eq("local_club_id", club.id)
-        .order("source_id")
-        .limit(5);
-      if (teamResult.error) throw new Error("Não foi possível resolver o clube na base oficial.");
       const ids = (teamResult.data ?? []).map((team) => team.source_id);
       type Stadium = { name: string; capacity: number | null; photo_url: string | null } | null;
       let stadium = (

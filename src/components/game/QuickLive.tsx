@@ -69,8 +69,11 @@ export default function QuickLive({
     const ai = aiTactics(difficulty);
     return {
       home: buildTeamSetup(myId),
-      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
       seed,
+      rulesRevision: 2 as const,
     };
   }, [myId, oppId, difficulty, seed]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
@@ -222,7 +225,13 @@ export default function QuickLive({
 
   return (
     <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} paused={paused || done} />
+      <Stadium3D
+        sim={sim}
+        mode={camera}
+        quality={quality}
+        paused={paused || done}
+        measurementKey={`quick:r${setups.rulesRevision ?? 1}:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
+      />
       <button
         type="button"
         onClick={() => {

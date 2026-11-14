@@ -365,13 +365,15 @@ export function readAthleteEnvelope(
   if (!isBrowser()) return null;
   const index = readIndex(owner);
   const indexed = index.slots[slot];
-  if (indexed?.kind === "deleted") return null;
-
   const stored = normalizeAthleteSaveEnvelope(
     parseJson(getStorageValue(ENVELOPE_KEY(slot, owner))),
     slot,
   );
-  if (stored && (!indexed || indexed.kind !== "saved" || indexed.revision <= stored.revision)) {
+  // A new career can occupy a deleted slot before its index update succeeds.
+  // Only a validated, strictly newer envelope may supersede that tombstone;
+  // deleted wins equal/older revisions and never falls back to a raw mirror.
+  if (indexed?.kind === "deleted" && (!stored || stored.revision <= indexed.revision)) return null;
+  if (stored && (!indexed || indexed.revision <= stored.revision)) {
     const nextIndex = applyAthleteIndexEntry(index, indexEntryFromEnvelope(stored));
     if (nextIndex !== index) void writeIndex(nextIndex, owner);
     return stored;
@@ -405,11 +407,17 @@ export function writeAthlete(
 ): AthleteSaveEnvelope | null {
   if (!isBrowser() || !isAthleteSlot(state.slot)) return null;
   const index = readIndex(owner);
-  const envelope = createAthleteSaveEnvelope(
-    state,
-    (index.slots[state.slot]?.revision ?? 0) + 1,
-    Date.now(),
+  // An envelope is committed before its recoverable index. If an index write
+  // failed, allocating from the index alone would reuse a cloud operation ID.
+  const persisted = normalizeAthleteSaveEnvelope(
+    parseJson(getStorageValue(ENVELOPE_KEY(state.slot, owner))),
+    state.slot,
   );
+  const previousRevision = Math.max(
+    index.slots[state.slot]?.revision ?? 0,
+    persisted?.revision ?? 0,
+  );
+  const envelope = createAthleteSaveEnvelope(state, previousRevision + 1, Date.now());
   if (!envelope) return null;
   const nextIndex = applyAthleteIndexEntry(index, indexEntryFromEnvelope(envelope));
   return persistEnvelope(envelope, nextIndex, owner) ? envelope : null;

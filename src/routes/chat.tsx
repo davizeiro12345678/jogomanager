@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { ChatPage } from "@/pages/chat";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/chat")({
   ssr: false,
@@ -26,5 +24,8 @@ export const Route = createFileRoute("/chat")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: ChatPage,
+  // Browser-only page: keep its dependencies out of SSR Worker initialization.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/chat"), "ChatPage"),
 });

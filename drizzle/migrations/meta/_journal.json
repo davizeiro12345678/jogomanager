@@ -430,10 +430,157 @@
       "breakpoints": true
     },
     {
+      "idx": 61,
+      "version": "7",
+      "when": 1794148522000,
+      "tag": "0061_career_tombstone_generation",
+      "breakpoints": true
+    },
+    {
       "idx": 62,
       "version": "7",
       "when": 1794148523000,
       "tag": "0062_room_chat_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1794179700000,
+      "tag": "0063_repair_career_and_push_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1794180000000,
+      "tag": "0064_support_ticket_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1794180300000,
+      "tag": "0065_atomic_match_room_creation",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1794255369000,
+      "tag": "0066_api_football_claim_concurrency_48",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1794256000000,
+      "tag": "0067_api_football_full_custom450_quota",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1794257000000,
+      "tag": "0068_room_chat_admission",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1794257100000,
+      "tag": "0069_email_automation_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1794257200000,
+      "tag": "0070_api_football_data_autovacuum_tuning",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1794257300000,
+      "tag": "0071_incremental_featured_injury_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1794428400000,
+      "tag": "0072_match_contact_physics_revision",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1794428450000,
+      "tag": "0073_chat_infractions_dependency",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1794428500000,
+      "tag": "0074_private_matchmaking_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1794430000000,
+      "tag": "0075_atomic_ranked_match_allocation",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1794431000000,
+      "tag": "0076_authoritative_match_settlement",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1794432000000,
+      "tag": "0077_room_authority_fencing",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1794510000000,
+      "tag": "0078_matchmaking_reservation_fk_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1794513600000,
+      "tag": "0079_private_tournament_checkpoints",
+      "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1794517200000,
+      "tag": "0080_private_moderation_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1794520800000,
+      "tag": "0081_sharded_featured_injury_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794524400000,
+      "tag": "0082_fast_featured_injury_digest",
       "breakpoints": true
     }
   ]

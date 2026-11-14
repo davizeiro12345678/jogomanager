@@ -4,6 +4,8 @@ import { reportSilent } from "@/lib/silent-errors";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { FrameMetrics, heapUsedBytes } from "@/game/frame-metrics";
+import { FrameCampaign } from "@/game/frame-campaign";
+import { validMatchRulesRevision, type MatchRulesRevision } from "@/game/match-execution-contract";
 import { FrameRateWindow } from "@/game/frame-rate-window";
 import {
   assessNativePerformance,
@@ -13,6 +15,7 @@ import {
 import { censusBudgetUse, censusFitsBudget, censusScene } from "@/game/scene-census";
 
 type GraphicsBenchmarkMetadata = {
+  rulesRevision?: MatchRulesRevision;
   tierBatch?: "instanced" | "merged" | "legacy";
   id: string;
   label: string;
@@ -30,6 +33,7 @@ type GraphicsBenchmarkMetadata = {
     seed: string | null;
     quality: string | null;
     camera: string | null;
+    rulesRevision?: string | null;
   };
 };
 
@@ -43,7 +47,9 @@ function benchmarkMetadata(): GraphicsBenchmarkMetadata | null {
     .__PFM_GRAPHICS_BENCHMARK__;
   if (!value || typeof value !== "object") return null;
   const candidate = value as Partial<GraphicsBenchmarkMetadata>;
-  return typeof candidate.id === "string" && typeof candidate.seed === "string"
+  return typeof candidate.id === "string" &&
+    typeof candidate.seed === "string" &&
+    (candidate.rulesRevision === undefined || validMatchRulesRevision(candidate.rulesRevision))
     ? (candidate as GraphicsBenchmarkMetadata)
     : null;
 }
@@ -75,14 +81,26 @@ function hardwareMetadata(renderer: ReturnType<typeof rendererMetadata>) {
 }
 
 /** Opt-in benchmark only: count ALL render passes, then reset once per frame. */
-export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: boolean }) {
-  const effective = useRef({ quality, adaptive });
-  effective.current = { quality, adaptive };
+export function FrameProbe({
+  quality,
+  adaptive,
+  measurementKey = "stadium",
+  suspended = false,
+}: {
+  quality: string;
+  adaptive: boolean;
+  measurementKey?: string;
+  suspended?: boolean;
+}) {
+  const effective = useRef({ quality, adaptive, measurementKey, suspended });
+  effective.current = { quality, adaptive, measurementKey, suspended };
+  const interruptMeasurement = useRef<((suspended: boolean) => void) | null>(null);
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
   // Telemetria opcional (com consentimento): 30 s de amostra após 10 s de partida.
   useEffect(() => {
     if (location.pathname.includes("graphics-benchmark")) return;
+    if (suspended) return;
     const metrics = new FrameMetrics();
     const start = performance.now();
     let last = start;
@@ -106,7 +124,10 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       }
     });
     return stop;
-  }, [gl]);
+  }, [gl, quality, adaptive, measurementKey, suspended]);
+  useEffect(() => {
+    interruptMeasurement.current?.(suspended);
+  }, [suspended]);
   useEffect(() => {
     if (!location.pathname.includes("graphics-benchmark")) return;
     const meter = new FrameRateWindow();
@@ -119,18 +140,37 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
     if (!location.pathname.includes("graphics-benchmark")) return;
     const timing = nativeMeasurementTiming(location.search);
     const endMs = timing.warmupMs + timing.measurementMs;
-    const metrics = new FrameMetrics(90000);
+    const campaign = new FrameCampaign(90000);
     const start = performance.now();
     let last = start;
     let report = start;
-    let interruptions = document.hidden ? 1 : 0;
-    let coveredMs = 0;
+    let interruptions = document.hidden || effective.current.suspended ? 1 : 0;
     let initialContract: string | null = null;
     let contractChanged = false;
+    let contractCache:
+      | {
+          width: number;
+          height: number;
+          dpr: number;
+          quality: string;
+          adaptive: boolean;
+          scene: string;
+          scenario: GraphicsBenchmarkMetadata | null;
+          rulesRevision: MatchRulesRevision | undefined;
+        }
+      | undefined;
+    let currentContract = "";
     const onVisibility = () => {
       if (document.hidden) interruptions++;
+      campaign.interrupt();
       last = performance.now();
     };
+    const onSuspend = (isSuspended: boolean) => {
+      if (isSuspended) interruptions++;
+      campaign.interrupt();
+      last = performance.now();
+    };
+    interruptMeasurement.current = onSuspend;
     document.addEventListener("visibilitychange", onVisibility);
     let firstFrame: number | null = null;
     let longTasks = 0;
@@ -159,18 +199,55 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
         return;
       }
       if (firstFrame === null && frame.draws > 0) firstFrame = now - start;
-      const currentContract = `${frame.width}:${frame.height}:${frame.dpr}:${effective.current.quality}:${effective.current.adaptive}:${benchmarkMetadata()?.camera}`;
+      const scenario = benchmarkMetadata();
+      const state = effective.current;
+      if (
+        !contractCache ||
+        contractCache.width !== frame.width ||
+        contractCache.height !== frame.height ||
+        contractCache.dpr !== frame.dpr ||
+        contractCache.quality !== state.quality ||
+        contractCache.adaptive !== state.adaptive ||
+        contractCache.scene !== state.measurementKey ||
+        contractCache.scenario !== scenario ||
+        contractCache.rulesRevision !== (scenario ? (scenario.rulesRevision ?? 1) : undefined)
+      ) {
+        contractCache = {
+          width: frame.width,
+          height: frame.height,
+          dpr: frame.dpr,
+          quality: state.quality,
+          adaptive: state.adaptive,
+          scene: state.measurementKey,
+          scenario,
+          rulesRevision: scenario ? (scenario.rulesRevision ?? 1) : undefined,
+        };
+        currentContract = JSON.stringify(contractCache);
+      }
       if (initialContract === null) initialContract = currentContract;
       else if (initialContract !== currentContract) contractChanged = true;
+      const previousCampaign = campaign.switchContext({
+        phase: "match",
+        key: currentContract,
+        quality: effective.current.quality,
+        rulesRevision: scenario ? (scenario.rulesRevision ?? 1) : undefined,
+      });
+      if (previousCampaign) {
+        window.dispatchEvent(
+          new CustomEvent("graphics-campaign", {
+            detail: { ...previousCampaign, reason: "context-changed", complete: false },
+          }),
+        );
+        drawSum = triangleSum = maxDraws = measured = 0;
+      }
       const interval = nativeFrameInterval(
         last - start,
         now - start,
         timing.warmupMs,
         timing.measurementMs,
       );
-      if (!document.hidden && interval > 0) {
-        metrics.add(interval);
-        coveredMs += interval;
+      if (!document.hidden && !effective.current.suspended && !previousCampaign && interval > 0) {
+        campaign.recordInterval(interval);
         drawSum += frame.draws;
         triangleSum += frame.triangles;
         maxDraws = Math.max(maxDraws, frame.draws);
@@ -178,7 +255,39 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
       }
       if (now - report >= 1000) {
         report = now;
-        const frameSummary = metrics.summary();
+        const complete = now - start >= endMs;
+        const campaignSummary = campaign.snapshot(complete);
+        const frameSummary = campaignSummary.summary;
+        const coveredMs = frameSummary.coverage.observedMs;
+        const acceptance = assessNativePerformance({
+          ...frameSummary,
+          ...timing,
+          complete,
+          interruptions,
+          coveredMs,
+          contractChanged,
+          adaptive: effective.current.adaptive,
+          width: frame.width,
+          height: frame.height,
+          dpr: frame.dpr,
+          quality:
+            effective.current.quality === benchmarkMetadata()?.quality
+              ? effective.current.quality
+              : "mismatch",
+          gpuRenderer: renderer.gpuRenderer,
+        });
+        if (!frameSummary.coverage.completeDistribution) {
+          acceptance.passes = false;
+          acceptance.reasons.push("sample-capacity-exceeded");
+          acceptance.stretch.passes = false;
+          acceptance.stretch.reasons.push("sample-capacity-exceeded");
+        }
+        if (frameSummary.coverage.invalidSamples) {
+          acceptance.passes = false;
+          acceptance.reasons.push("invalid-frame-interval");
+          acceptance.stretch.passes = false;
+          acceptance.stretch.reasons.push("invalid-frame-interval");
+        }
         // Censo por subsistema: atribui desenhos/triângulos a jogadores,
         // torcida, grama, props, estrutura, gol, bola e céu. Sem isso, um
         // total de 700 desenhos não diz o que consertar.
@@ -196,7 +305,11 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
           bones: number;
           visibleSources: number;
         }[] = [];
+        const rigPools: Record<string, number>[] = [];
         scene.traverse((object) => {
+          const pool = object.userData["matchRigPool"] as
+            { stats: Record<string, number> } | undefined;
+          if (pool) rigPools.push({ ...pool.stats });
           const actors = object.userData["rigidActorBatch"] as
             { sources: { visible: boolean }[]; draws: number; bones: number } | undefined;
           if (actors)
@@ -235,6 +348,13 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
           new CustomEvent("graphics-sample", {
             detail: {
               ...frameSummary,
+              phase: "match",
+              quality: effective.current.quality,
+              campaign: {
+                ...campaignSummary,
+                complete,
+                intervalPolicy: "clipped to protocol warmup/end boundaries",
+              },
               elapsed: (now - start) / 1000,
               complete: now - start >= endMs,
               protocol: {
@@ -245,23 +365,7 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
                 adaptive: effective.current.adaptive,
                 longTasksScope: "whole run including warmup",
               },
-              acceptance: assessNativePerformance({
-                ...frameSummary,
-                ...timing,
-                complete: now - start >= endMs,
-                interruptions,
-                coveredMs,
-                contractChanged,
-                adaptive: effective.current.adaptive,
-                width: frame.width,
-                height: frame.height,
-                dpr: frame.dpr,
-                quality:
-                  effective.current.quality === benchmarkMetadata()?.quality
-                    ? effective.current.quality
-                    : "mismatch",
-                gpuRenderer: renderer.gpuRenderer,
-              }),
+              acceptance,
               draws: measured ? drawSum / measured : 0,
               maxDraws,
               triangles: measured ? triangleSum / measured : 0,
@@ -272,6 +376,7 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
               materials: census.materials,
               staticBatches,
               actorBatches,
+              rigPools,
               census: {
                 buckets: census.buckets,
                 total: census.total,
@@ -318,12 +423,24 @@ export function FrameProbe({ quality, adaptive }: { quality: string; adaptive: b
         );
         if (now - start >= endMs) {
           finalReport = true;
+          window.dispatchEvent(
+            new CustomEvent("graphics-campaign", {
+              detail: { ...campaignSummary, reason: "protocol-complete", complete: true },
+            }),
+          );
           observer?.disconnect();
         }
       }
       last = now;
     });
     return () => {
+      if (!finalReport)
+        window.dispatchEvent(
+          new CustomEvent("graphics-campaign", {
+            detail: { ...campaign.snapshot(true), reason: "probe-disposed", complete: false },
+          }),
+        );
+      if (interruptMeasurement.current === onSuspend) interruptMeasurement.current = null;
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
       observer?.disconnect();

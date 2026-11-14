@@ -1,0 +1,88 @@
+{
+  "recordedAt": "2026-11-09 02:21:13 UTC",
+  "head": "2d567421031a56b6f67d5d8c88e2ef05a0b2a650",
+  "earlierSource": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "blockedPriorHead": "bc8982f32f53f5514cc8fdf6f3768df03729c2e0",
+  "runs": [
+    {
+      "id": 42550425678,
+      "name": "Match 3D startup CPU diagnostic",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 430,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425678/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425678/logs",
+      "workflow_id": 396558805
+    },
+    {
+      "id": 42550425625,
+      "name": "Match 3D lifecycle and context recovery",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 315,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425625/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425625/logs",
+      "workflow_id": 396587027
+    },
+    {
+      "id": 42550425644,
+      "name": "CodSpeed",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 1084,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425644/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425644/logs",
+      "workflow_id": 377615822
+    },
+    {
+      "id": 42550425591,
+      "name": "Auxiliary match worker",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 229,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425591/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425591/logs",
+      "workflow_id": 395365701
+    },
+    {
+      "id": 42550425691,
+      "name": "Public environment and MCP safety",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 103,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425691/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425691/logs",
+      "workflow_id": 392131112
+    },
+    {
+      "id": 42550425641,
+      "name": "Match 3D visual evidence",
+      "status": "pending",
+      "conclusion": null,
+      "run_number": 388,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425641/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425641/logs",
+      "workflow_id": 396443128
+    },
+    {
+      "id": 42550425604,
+      "name": "Match 3D mobile draw inventory",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 315,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425604/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425604/logs",
+      "workflow_id": 396587026
+    },
+    {
+      "id": 42550425638,
+      "name": "Quality gates",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 1242,
+      "jobs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425638/jobs",
+      "logs_url": "https://api.github.com/repos/davizeiro12345678/jogomanager/actions/runs/42550425638/logs",
+      "workflow_id": 365551523
+    }
+  ]
+}

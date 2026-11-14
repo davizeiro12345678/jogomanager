@@ -1,0 +1,237 @@
+{
+  "collectedAt": "2026-11-09T02:31:38.567Z",
+  "sourceSHA": "2d567421031a56b6f67d5d8c88e2ef05a0b2a650",
+  "baseSHA": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "runId": 42550425644,
+  "publicURL": "https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108",
+  "aggregateDashboardLabel": "+26%",
+  "aggregateMethod": "Unknown service aggregation; UI rounded label only. Commit history labels are incremental historical results, not current aggregate.",
+  "classification": {
+    "improved": 7,
+    "regressed": 2,
+    "untouched": 7
+  },
+  "warnings": {
+    "hardwareChangedSignificant": 9,
+    "syscallDominated": 3,
+    "noFlamegraph": 1
+  },
+  "rows": [
+    {
+      "name": "live match: snapshotMatch",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "-24%",
+      "base": {
+        "value": "968.9",
+        "unit": "µs"
+      },
+      "head": {
+        "value": "1,281.7",
+        "unit": "µs"
+      }
+    },
+    {
+      "name": "match setup: new MatchSim",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "-5%",
+      "base": {
+        "value": "4.9",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "5.2",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "season: generateFixtures",
+      "path": "src/game/benchmarks/season.ts",
+      "efficiencyUI": "×2.1",
+      "base": {
+        "value": "665.6",
+        "unit": "µs"
+      },
+      "head": {
+        "value": "318.5",
+        "unit": "µs"
+      }
+    },
+    {
+      "name": "rig geometry: Rust/WASM 64 radial",
+      "path": "src/game/benchmarks/rig.ts",
+      "efficiencyUI": "+79%",
+      "base": {
+        "value": "1,378.9",
+        "unit": "µs"
+      },
+      "head": {
+        "value": "768.8",
+        "unit": "µs"
+      }
+    },
+    {
+      "name": "rig geometry: Rust/WASM 16 radial",
+      "path": "src/game/benchmarks/rig.ts",
+      "efficiencyUI": "+56%",
+      "base": {
+        "value": "403",
+        "unit": "µs"
+      },
+      "head": {
+        "value": "258",
+        "unit": "µs"
+      }
+    },
+    {
+      "name": "rig geometry: fallback 64 radial",
+      "path": "src/game/benchmarks/rig.ts",
+      "efficiencyUI": "+38%",
+      "base": {
+        "value": "1.9",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "1.4",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "rig geometry: fallback 16 radial",
+      "path": "src/game/benchmarks/rig.ts",
+      "efficiencyUI": "+27%",
+      "base": {
+        "value": "608.4",
+        "unit": "µs"
+      },
+      "head": {
+        "value": "478.4",
+        "unit": "µs"
+      }
+    },
+    {
+      "name": "match setup: buildTeamSetup",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "+6%",
+      "base": {
+        "value": "4.6",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "4.3",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "season: tableFromFixtures",
+      "path": "src/game/benchmarks/season.ts",
+      "efficiencyUI": "+2%",
+      "base": {
+        "value": "2.4",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "2.4",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "replay codec: decodeReplay",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "+1%",
+      "base": {
+        "value": "389.7",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "386.6",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "live match: WorkerMatchView.apply",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "-1%",
+      "base": {
+        "value": "357.5",
+        "unit": "µs"
+      },
+      "head": {
+        "value": "359.7",
+        "unit": "µs"
+      }
+    },
+    {
+      "name": "match simulation: 300 live ticks",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "+1%",
+      "base": {
+        "value": "134.1",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "133.3",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "match simulation: 120 coarse steps",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "+1%",
+      "base": {
+        "value": "80.9",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "80.5",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "season: simulateDivisionTable",
+      "path": "src/game/benchmarks/season.ts",
+      "efficiencyUI": "0%",
+      "base": {
+        "value": "62.9",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "62.6",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "replay codec: encodeReplay",
+      "path": "src/game/benchmarks/match.ts",
+      "efficiencyUI": "0%",
+      "base": {
+        "value": "574.3",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "574.1",
+        "unit": "ms"
+      }
+    },
+    {
+      "name": "rng: makeRng 10k draws",
+      "path": "src/game/benchmarks/season.ts",
+      "efficiencyUI": "0%",
+      "base": {
+        "value": "1.4",
+        "unit": "ms"
+      },
+      "head": {
+        "value": "1.4",
+        "unit": "ms"
+      }
+    }
+  ],
+  "rawPageText": "## Improve match pacing, career durability and multiplayer boundaries\n\n#128\n\nComparing\n\ncodex/massive-quality-20261108\n\n(\n\n2d56742\n\n) with\n\nmain\n\n(\n\nc20036f\n\n)\n\n+26%\n\n**Improvement**:   7\n\n**Regression**:   2\n\n**Untouched**:   7\n\n---\n\n9 benchmarks with a significant change ran on different hardware\n\nTheir base and head results were measured on machines with a different CPU, core count or memory, so the changes might not come from the code. Run base and head on the same runner type.\n\n---\n\n3 benchmarks are dominated by system calls\n\nSystem calls cannot be simulated consistently and are left out of the measure. The reported value understates the real cost. Switch to the Walltime instrument to measure them.\n\n---\n\n1 benchmark has no flamegraph\n\nThe flamegraph wasn't generated: most of the time was spent in runtime internals, which would leave nothing useful to analyze.\n\nShow affected benchmarks\n\n## Benchmarks\n\n16 total\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nlive match: snapshotMatch\n\nsrc/game/benchmarks/match.ts\n\n-24%\n\n968.9 µs1,281.7 µs\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nmatch setup: new MatchSim\n\nsrc/game/benchmarks/match.ts\n\n-5%\n\n4.9 ms5.2 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nseason: generateFixtures\n\nsrc/game/benchmarks/season.ts\n\n×2.1\n\n665.6 µs318.5 µs\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nrig geometry: Rust/WASM 64 radial\n\nsrc/game/benchmarks/rig.ts\n\n+79%\n\n1,378.9 µs768.8 µs\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nrig geometry: Rust/WASM 16 radial\n\nsrc/game/benchmarks/rig.ts\n\n+56%\n\n403 µs258 µs\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nrig geometry: fallback 64 radial\n\nsrc/game/benchmarks/rig.ts\n\n+38%\n\n1.9 ms1.4 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nrig geometry: fallback 16 radial\n\nsrc/game/benchmarks/rig.ts\n\n+27%\n\n608.4 µs478.4 µs\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nmatch setup: buildTeamSetup\n\nsrc/game/benchmarks/match.ts\n\n+6%\n\n4.6 ms4.3 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nseason: tableFromFixtures\n\nsrc/game/benchmarks/season.ts\n\n+2%\n\n2.4 ms2.4 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nreplay codec: decodeReplay\n\nsrc/game/benchmarks/match.ts\n\n+1%\n\n389.7 ms386.6 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nlive match: WorkerMatchView.apply\n\nsrc/game/benchmarks/match.ts\n\n-1%\n\n357.5 µs359.7 µs\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nmatch simulation: 300 live ticks\n\nsrc/game/benchmarks/match.ts\n\n+1%\n\n134.1 ms133.3 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nmatch simulation: 120 coarse steps\n\nsrc/game/benchmarks/match.ts\n\n+1%\n\n80.9 ms80.5 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nseason: simulateDivisionTable\n\nsrc/game/benchmarks/season.ts\n\n0%\n\n62.9 ms62.6 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nreplay codec: encodeReplay\n\nsrc/game/benchmarks/match.ts\n\n0%\n\n574.3 ms574.1 ms\n\nUses the CPU Simulation instrument  \nto collect CPU performance metrics.\n\nrng: makeRng 10k draws\n\nsrc/game/benchmarks/season.ts\n\n0%\n\n1.4 ms1.4 ms\n\n## Commits\n\nClick on a commit to change the comparison range\n\nBase\n\nmain\n\nc20036f\n\n+32.18%\n\nImprove match pacing, career durability, and online boundaries\n\n0a6a04e\n\n2 hours ago\n\n by davizeiro12345678\n\n+12.06%\n\nAdd measured quality evidence and fix mobile career steps\n\nbc8982f\n\n34 minutes ago\n\n by davizeiro12345678\n\n-18.39%\n\nPrecompute quick match options to reduce mobile startup work\n\n2d56742\n\n10 minutes ago\n\n by davizeiro12345678\n\n© 2026 CodSpeed Technology\n\nHome Terms Privacy Docs",
+  "rawBotBody": "<!-- __CODSPEED_PERFORMANCE_REPORT_COMMENT__ -->\n## Merging this PR will regress 2 benchmarks\n\n<details>\n<summary><b>2 warnings</b></summary>\n\n> :warning: **3 benchmarks are dominated by system calls**\n>\n> System calls cannot be simulated consistently and are left out of the measure. The reported value understates the real cost. Switch to the Walltime instrument to measure them.\n>\n> [Learn more about system calls](https://codspeed.io/docs/instruments/cpu?utm_source=github&utm_medium=comment-v2&utm_content=significant_sys_time#system-calls)\n>\n> [See affected benchmarks](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?q=has%3Asignificant_sys_time&utm_source=github&utm_medium=comment-v2&utm_content=affected_benchmarks)\n\n> :warning: **9 benchmarks with a significant change ran on different hardware**\n>\n> Their base and head results were measured on machines with a different CPU, core count or memory, so the changes might not come from the code. Run base and head on the same runner type.\n>\n> [Learn more about Macro Runners](https://codspeed.io/docs/features/macro-runners?utm_source=github&utm_medium=comment-v2&utm_content=hardware_change)\n>\n> [See affected benchmarks](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?q=has%3Ahardware_change&utm_source=github&utm_medium=comment-v2&utm_content=affected_benchmarks)\n\n</details>\n\n\n`⚡ 7` improved benchmarks  \n`❌ 2` regressed benchmarks  \n`✅ 7` untouched benchmarks  \n\n\n> [!WARNING]\n> Please fix the performance issues or [acknowledge them on CodSpeed](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?q=is%3Aregression&utm_source=github&utm_medium=comment-v2&utm_content=acknowledge).\n\n### Performance Changes\n\n|     | Benchmark | `BASE` | `HEAD` | Efficiency |\n| --- | --------- | ------ | ------ | ---------- |\n| ❌ | [`` live match: snapshotMatch ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Fmatch.ts%3A%3Alive%2520match%3A%2520snapshotMatch&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 968.9 µs | 1,281.7 µs | -24.4% |\n| ❌ | [`` match setup: new MatchSim ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Fmatch.ts%3A%3Amatch%2520setup%3A%2520new%2520MatchSim&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 4.9 ms | 5.2 ms | -5.46% |\n| ⚡ | [`` season: generateFixtures ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Fseason.ts%3A%3Aseason%3A%2520generateFixtures&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 665.6 µs | 318.5 µs | ×2.1 |\n| ⚡ | [`` rig geometry: Rust/WASM 64 radial ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Frig.ts%3A%3Arig%2520geometry%3A%2520Rust%2FWASM%252064%2520radial&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 1,378.9 µs | 768.8 µs | +79.34% |\n| ⚡ | [`` rig geometry: Rust/WASM 16 radial ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Frig.ts%3A%3Arig%2520geometry%3A%2520Rust%2FWASM%252016%2520radial&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 403 µs | 258 µs | +56.19% |\n| ⚡ | [`` rig geometry: fallback 64 radial ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Frig.ts%3A%3Arig%2520geometry%3A%2520fallback%252064%2520radial&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 1.9 ms | 1.4 ms | +37.6% |\n| ⚡ | [`` rig geometry: fallback 16 radial ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Frig.ts%3A%3Arig%2520geometry%3A%2520fallback%252016%2520radial&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 608.4 µs | 478.4 µs | +27.19% |\n| ⚡ | [`` match setup: buildTeamSetup ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Fmatch.ts%3A%3Amatch%2520setup%3A%2520buildTeamSetup&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 4.6 ms | 4.3 ms | +5.56% |\n| ⚡ | [`` season: tableFromFixtures ``](https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?uri=src%2Fgame%2Fbenchmarks%2Fseason.ts%3A%3Aseason%3A%2520tableFromFixtures&runnerMode=Simulation&utm_source=github&utm_medium=comment-v2&utm_content=benchmark) | 2.4 ms | 2.4 ms | +2.42% |\n\n> [!TIP]\n> Investigate this regression by commenting `@codspeedbot fix this regression` on this PR, or directly use the [CodSpeed MCP](https://codspeed.io/docs/ai/mcp?utm_source=github&utm_medium=comment-v2&utm_content=mcp_tip_regression) with your agent.\n\n---\n\n<sub>Comparing <code>codex/massive-quality-20261108</code> (2d56742) with <code>main</code> (c20036f)</sub>\n\n<a href=\"https://app.codspeed.io/davizeiro12345678/jogomanager/branches/codex%2Fmassive-quality-20261108?utm_source=github&utm_medium=comment-v2&utm_content=button\">\n  <picture>\n    <source media=\"(prefers-color-scheme: dark)\" srcset=\"https://codspeed.io/pr-report/open-in-codspeed-dark.svg\">\n    <source media=\"(prefers-color-scheme: light)\" srcset=\"https://codspeed.io/pr-report/open-in-codspeed-light.svg\">\n    <img alt=\"Open in CodSpeed\" src=\"https://codspeed.io/pr-report/open-in-codspeed-light.svg\" width=\"169\" height=\"32\">\n  </picture>\n</a>\n\n",
+  "limitations": [
+    "Service CPU simulation, not game FPS or wall-time",
+    "Nine significant rows changed hardware; changes may not derive from source",
+    "Rounded values copied exactly; do not recompute exact service percentages from them",
+    "User target +89% across all16 benchmarks not achieved"
+  ]
+}

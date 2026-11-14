@@ -1,8 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 import { safeAuthNext } from "@/lib/auth-next";
-
-import { AuthPage } from "@/pages/auth";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -27,5 +25,8 @@ export const Route = createFileRoute("/auth")({
       },
     ],
   }),
-  component: AuthPage,
+  // Browser-only page: keep its dependencies out of SSR Worker initialization.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/auth"), "AuthPage"),
 });

@@ -1,0 +1,162 @@
+name: Prepare and deploy disabled match authority staging
+
+on:
+  # Deploy ONLY the fully disabled, unrouted, isolated staging Worker from
+  # this integration branch. Do not merge the 800+ file PR to test a DO.
+  push:
+    branches:
+      - integration/release-2026-11-11
+    paths:
+      - .github/workflows/match-authority-staging.yml
+      - services/match-authority/**
+      - wrangler.match-authority.jsonc
+      # The Worker imports these modules. Publishing only on changes under
+      # services/ can leave live staging running stale ticket/physics code.
+      - src/game/online/**
+      - src/game/sim.ts
+      - src/game/sim-*.ts
+      - src/game/match-*.ts
+      - package.json
+      - package-lock.json
+      - scripts/verify-disabled-match-authority.mjs
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type STAGING to deploy the isolated, disabled Worker"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jogomanager-match-authority-staging
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: >-
+      ${{
+        (github.event_name == 'push' &&
+         github.ref == 'refs/heads/integration/release-2026-11-11') ||
+        (github.event_name == 'workflow_dispatch' &&
+         github.ref == 'refs/heads/main' &&
+         inputs.confirm == 'STAGING')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm exec -- tsc --noEmit --pretty false
+      - name: Directed authoritative transport and replay tests
+        run: >-
+          npm exec -- vitest run
+          src/game/online/canonical-authoritative-engine.server.test.ts
+          src/game/online/authoritative-match-session.test.ts
+          src/game/online/secure-socket-bridge.server.test.ts
+          src/game/online/authoritative-socket-client.test.ts
+          src/game/online/authoritative-presentation-feed.test.ts
+          src/game/online/authoritative-two-client.integration.test.ts
+          src/game/online/cooperative-command-policy.server.test.ts
+          src/game/match-physics-extras.test.ts
+          src/game/ai-ball-interception.test.ts
+          services/match-authority/supabase-env.test.ts
+          services/match-authority/supabase-room-validation.test.ts
+          services/match-authority/worker-activation.test.ts
+          --pool=forks --maxWorkers=1
+      - name: Confirm Cloudflare target is staging and cannot serve active matches
+        run: |
+          node --input-type=module -e "
+          import { readFileSync } from 'node:fs';
+          const config = JSON.parse(readFileSync('wrangler.match-authority.jsonc', 'utf8'));
+          if (config.name !== 'jogomanager-match-authority-staging' ||
+              config.vars?.MATCH_AUTHORITY_ENABLED !== 'false' ||
+              config.vars?.MATCH_QUEUE_CRON_ENABLED !== 'false' ||
+              config.workers_dev !== false ||
+              config.routes?.length ||
+              config.triggers?.crons?.length ||
+              config.vars?.MATCH_AUTHORITY_ENV !== 'staging' ||
+              config.vars?.ALLOWED_ORIGIN !== 'https://staging.jogomanager.com') {
+            throw new Error('Staging config would expose an active match endpoint');
+          }"
+      - name: Build staging Durable Object without publishing
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run --outdir staging-match-authority-bundle
+      - name: Smoke test the real Worker bundle on local loopback, with all flags disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Locked Wrangler/workerd is behind the November 11 compatibility date.
+          # This date override affects ONLY the isolated fail-closed emulator.
+          # Keep the real deploy/dry-run config at 2026-11-11.
+          npm exec -- wrangler dev --config wrangler.match-authority.jsonc --compatibility-date 2026-10-26 --local --ip 127.0.0.1 --port 8787 > "$RUNNER_TEMP/staging-worker-local.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          READY=0
+          for attempt in $(seq 1 60); do
+            code=$(curl --silent --max-time 2 --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8787/ || true)
+            if [ "$code" = 404 ]; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              tail -n 60 "$RUNNER_TEMP/staging-worker-local.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            tail -n 60 "$RUNNER_TEMP/staging-worker-local.log"
+            exit 1
+          fi
+          node scripts/verify-disabled-match-authority.mjs \
+            http://127.0.0.1:8787 \
+            verification/match-authority-staging/local-closed-gate.json
+      - name: Preserve audited staging bundle, no runtime secrets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: disabled-match-authority-bundle
+          path: |
+            staging-match-authority-bundle/
+            verification/match-authority-staging/local-closed-gate.json
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-disabled-staging:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: match-authority-staging
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Check whether least-privilege staging deployment credentials are connected
+        id: credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Cloudflare CI deployment skipped. Staging bootstrap exists, but the full game Worker cannot replace it until a scoped CLOUDFLARE_API_TOKEN is connected."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish disabled isolated staging Worker only
+        if: steps.credentials.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc

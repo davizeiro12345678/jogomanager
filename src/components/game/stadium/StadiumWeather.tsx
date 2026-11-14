@@ -1,9 +1,13 @@
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useVisual } from "@/game/visual-settings";
 import { FIELD_X, FIELD_Z } from "@/game/sim";
 import type { Quality } from "../Stadium3D";
+import {
+  initializeWeatherInstanceMatrices,
+  writeWeatherInstancePosition,
+} from "@/game/weather-instance-data";
 import {
   createStadiumCosmeticRng,
   createWeatherDrops,
@@ -43,14 +47,21 @@ export function Weather({
     WEATHER_POOL_CAPACITY,
   );
   const ref = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
   const drops = useMemo(() => createWeatherDrops(fixtureKey), [fixtureKey]);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    initializeWeatherInstanceMatrices(mesh.instanceMatrix.array as Float32Array, rain, wind);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [rain, snow, wind]);
 
   useFrame((_, rawDt) => {
     const mesh = ref.current;
     if (!mesh) return;
     const dt = Math.min(rawDt, 0.05);
     const fall = rain ? 34 : 2.4;
+    const matrices = mesh.instanceMatrix.array as Float32Array;
     mesh.count = count;
     for (let i = 0; i < count; i++) {
       const d = drops[i]!;
@@ -61,13 +72,13 @@ export function Weather({
         d.cycle += 1;
         spawnDrop(d, fixtureKey);
       }
-      dummy.position.set(d.x, d.y, d.z);
-      dummy.rotation.set(0, 0, rain ? wind * 0.28 : 0);
-      dummy.scale.set(1, rain ? 1 : 0.5, 1);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
+      writeWeatherInstancePosition(matrices, i, d.x, d.y, d.z);
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    if (count > 0) {
+      mesh.instanceMatrix.clearUpdateRanges();
+      mesh.instanceMatrix.addUpdateRange(0, count * 16);
+      mesh.instanceMatrix.needsUpdate = true;
+    }
   });
 
   if (!rain && !snow) return null;

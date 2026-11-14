@@ -106,7 +106,6 @@ try {
   await mkdir(path.join(root, ".wrangler/logs"), { recursive: true });
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
-      VITE_AUTH_MODE: settings["VITE_AUTH_MODE"] || "supabase",
       NITRO_PRESET: "cloudflare-module",
       PFM_CLOUDFLARE_BUILD: "1",
     });

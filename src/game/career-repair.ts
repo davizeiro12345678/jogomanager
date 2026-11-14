@@ -12,6 +12,7 @@ import type {
   TrainingReport,
 } from "./types";
 import { MAX_TRACKED_FINANCE_EVENT_IDS } from "./career-finances";
+import { normalizedCareerTactics } from "./career-tactics";
 import {
   repairPlayerIdentities,
   repairShirtNumbers,
@@ -168,6 +169,14 @@ export interface RepairResult {
 
 export function repairCareer(input: CareerState): RepairResult {
   const fixes: string[] = [];
+  const tactics = normalizedCareerTactics(input.tactics);
+  if (
+    !input.tactics ||
+    Object.entries(tactics).some(
+      ([key, value]) => input.tactics[key as keyof typeof tactics] !== value,
+    )
+  )
+    fixes.push("Tática com valores inválidos corrigida");
 
   // 1. atributos de jogadores dentro da faixa válida
   let badPlayers = 0;
@@ -362,6 +371,7 @@ export function repairCareer(input: CareerState): RepairResult {
   return {
     state: {
       ...input,
+      tactics,
       players,
       lineup,
       bench,

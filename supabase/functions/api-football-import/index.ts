@@ -74,6 +74,14 @@ Deno.serve(async (request: Request) => {
         const limit = Number(
           value.response?.requests?.limit_day ?? value.response?.requests?.limit,
         );
+        const minuteLimitHeader = Number(status.headers.get("x-ratelimit-limit"));
+        // Custom450 is the contracted ceiling. If the provider omits its
+        // optional header, retain that explicit plan limit instead of failing
+        // discovery and stopping every scheduled import.
+        const minuteLimit =
+          Number.isSafeInteger(minuteLimitHeader) && minuteLimitHeader > 0
+            ? Math.min(450, minuteLimitHeader)
+            : 450;
         if (
           !status.ok ||
           (value.errors && Object.keys(value.errors).length) ||
@@ -87,7 +95,7 @@ Deno.serve(async (request: Request) => {
             p_key: body.key,
             p_url: Deno.env.get("SUPABASE_URL"),
             p_daily: limit,
-            p_minute: Number(status.headers.get("x-ratelimit-limit")) || 450,
+            p_minute: minuteLimit,
           }),
         );
       }
@@ -96,7 +104,15 @@ Deno.serve(async (request: Request) => {
     if (!settings.apiKey) return reply(409, { error: "queue_not_configured" });
     if (!adminToken && (!settings.enabled || Date.parse(settings.nextRunAt) > Date.now()))
       return reply(200, { paused: true });
-    const deadline = Date.now() + 49000,
+    if (
+      !adminToken &&
+      body.workerLanes !== undefined &&
+      (!Number.isSafeInteger(body.workerLanes) || body.workerLanes < 1 || body.workerLanes > 12)
+    )
+      return reply(400, { error: "invalid_worker_lanes" });
+    // Scheduled workers use short, bounded windows to stay below the Edge CPU
+    // budget. The authenticated manual pilot retains its longer single lane.
+    const deadline = Date.now() + (adminToken ? 45000 : 18000),
       summary = {
         completed: 0,
         failed: 0,
@@ -120,7 +136,9 @@ Deno.serve(async (request: Request) => {
       nextRequest = Date.now(),
       nextProviderRequest = Date.now();
     const { lanes, spacingMs, maxRequests } = footballWindowBudget(
-      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "48",
+      !adminToken && body.workerLanes !== undefined
+        ? body.workerLanes
+        : (Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "8"),
       !!adminToken,
     );
     summary.lanes = lanes;
@@ -138,13 +156,17 @@ Deno.serve(async (request: Request) => {
             // retry that reservation without making or counting a provider call.
             rpc: async (name: string, args: Record<string, unknown> = {}) => {
               if (name !== "football_queue_reserve_job") return rpc(name, args);
-              for (let retry = 0;; retry++) {
+              for (let retry = 0; ; retry++) {
                 try {
                   return await rpc(name, args);
                 } catch (error) {
                   const code = error instanceof Error ? error.message : "";
-                  if (!code.includes("football_minute_quota_wait") ||
-                      stopped || Date.now() >= deadline - 5000) throw error;
+                  if (
+                    !code.includes("football_minute_quota_wait") ||
+                    stopped ||
+                    Date.now() >= deadline - 5000
+                  )
+                    throw error;
                   summary.quotaWaits++;
                   await new Promise((r) => setTimeout(r, Math.min(600, 180 + retry * 90)));
                 }
@@ -212,7 +234,8 @@ Deno.serve(async (request: Request) => {
               const providerMinuteLeft = response.headers.get("x-ratelimit-remaining");
               if (providerMinuteLeft !== null && Number.isFinite(Number(providerMinuteLeft)))
                 summary.providerMinuteRemaining = Math.min(
-                  summary.providerMinuteRemaining ?? Infinity, Number(providerMinuteLeft),
+                  summary.providerMinuteRemaining ?? Infinity,
+                  Number(providerMinuteLeft),
                 );
               const remaining = response.headers.get("x-ratelimit-requests-remaining");
               if (remaining !== null && Number.isFinite(Number(remaining)))
@@ -229,15 +252,22 @@ Deno.serve(async (request: Request) => {
                 throw new Error("provider_http_" + response.status);
               }
               const body = await response.json();
-              if (body?.errors && Object.keys(body.errors).some(
-                (key: string) => /rate.?limit|quota|requests/i.test(key),
-              )) {
+              if (
+                body?.errors &&
+                Object.keys(body.errors).some((key: string) =>
+                  /rate.?limit|quota|requests/i.test(key),
+                )
+              ) {
                 summary.providerRateSource ??= "body_errors";
                 summary.providerErrorKeys ??= Object.keys(body.errors)
-                  .filter((key: string) => /^[a-zA-Z]{1,30}$/.test(key)).slice(0, 4);
+                  .filter((key: string) => /^[a-zA-Z]{1,30}$/.test(key))
+                  .slice(0, 4);
                 const rateMessage = String(body.errors.rateLimit ?? "").toLowerCase();
                 summary.providerRateHint ??= /minute/.test(rateMessage)
-                  ? "minute" : /second/.test(rateMessage) ? "second" : "unspecified";
+                  ? "minute"
+                  : /second/.test(rateMessage)
+                    ? "second"
+                    : "unspecified";
                 summary.providerRateAtMs ??= Date.now() - (deadline - 49000);
               }
               return body;
