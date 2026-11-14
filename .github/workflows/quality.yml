@@ -311,6 +311,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: PFM_LOCAL_VERIFY=1 npm run build
+      # Prime the CI runner's Chrome binary/OS caches, not the website.
+      # Each scored Lighthouse run still navigates from a fresh browser profile,
+      # and pessimistic thresholds still apply to every scored run.
+      - name: Calibrate cold Chrome executable before mobile Lighthouse
+        run: |
+          browser="$(command -v google-chrome-stable || command -v google-chrome || true)"
+          if [ -n "$browser" ]; then
+            profile="$(mktemp -d)"
+            timeout 20s "$browser" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --no-first-run --user-data-dir="$profile" --dump-dom about:blank > /dev/null || true
+            rm -rf "$profile"
+          else
+            echo "Chrome executable not found on PATH; Lighthouse action will select its browser."
+          fi
       - uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
         with:
           configPath: .lighthouserc.mobile.cjs
