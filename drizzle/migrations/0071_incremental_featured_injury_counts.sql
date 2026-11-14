@@ -4,10 +4,27 @@
 -- cron refresh is unscheduled after the live projection is backfilled.
 -- The production project may already contain this private schema. A fresh
 -- replay must bootstrap it without granting browser roles new privileges.
+-- On the deployed Supabase project, online phase1/phase2/phase3 migrations
+-- ran with short metadata locks and a resumable keyset backfill. A future
+-- canonical replay must not reconstruct the 109k-row projection under the
+-- importer's write lock. Fail closed when an online backfill is incomplete.
+SET LOCAL lock_timeout = '3s';
+DO $online_guard$
+DECLARE v_incomplete boolean;
+BEGIN
+ IF to_regclass('private_performance.featured_injury_backfill_state') IS NOT NULL THEN
+   EXECUTE 'SELECT EXISTS (SELECT 1 FROM private_performance.featured_injury_backfill_state WHERE singleton AND NOT complete)'
+     INTO v_incomplete;
+   IF v_incomplete THEN
+     RAISE EXCEPTION 'Finish online featured injury backfill before applying canonical 0071';
+   END IF;
+ END IF;
+END $online_guard$;
+
 CREATE SCHEMA IF NOT EXISTS private_performance;
 REVOKE ALL ON SCHEMA private_performance FROM PUBLIC, anon, authenticated;
 
-CREATE TABLE private_performance.featured_injury_rows (
+CREATE TABLE IF NOT EXISTS private_performance.featured_injury_rows (
   ref text PRIMARY KEY CHECK (char_length(ref) BETWEEN 1 AND 256),
   league_id integer NOT NULL CHECK (
     league_id = ANY (ARRAY[71,72,39,140,135,78,61,94,88,128,253,262]::integer[])
@@ -16,8 +33,25 @@ CREATE TABLE private_performance.featured_injury_rows (
 ALTER TABLE private_performance.featured_injury_rows OWNER TO postgres;
 ALTER TABLE private_performance.featured_injury_rows ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE private_performance.featured_injury_rows FROM PUBLIC, anon, authenticated, service_role;
-CREATE INDEX featured_injury_rows_league_idx
+CREATE INDEX IF NOT EXISTS featured_injury_rows_league_idx
   ON private_performance.featured_injury_rows (league_id);
+
+-- A completed production keyset backfill is a verified equivalent of the
+-- monolithic seed below. Fresh / disposable replay databases start empty and
+-- execute the original seed and reconciliation in this same transaction.
+CREATE TABLE IF NOT EXISTS private_performance.featured_injury_backfill_state (
+  singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+  last_ref text NOT NULL DEFAULT '',
+  scanned bigint NOT NULL DEFAULT 0 CHECK(scanned >= 0),
+  inserted bigint NOT NULL DEFAULT 0 CHECK(inserted >= 0),
+  complete boolean NOT NULL DEFAULT false,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE private_performance.featured_injury_backfill_state ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private_performance.featured_injury_backfill_state
+  FROM PUBLIC, anon, authenticated, service_role;
+INSERT INTO private_performance.featured_injury_backfill_state(singleton)
+VALUES(true) ON CONFLICT(singleton) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION private_performance.sync_featured_injury_row()
 RETURNS trigger
@@ -85,14 +119,10 @@ FOR EACH ROW
 WHEN (OLD.kind = 'injury')
 EXECUTE FUNCTION private_performance.sync_featured_injury_row();
 
--- Apply this file as one transactional migration. CREATE TRIGGER obtains a
--- SHARE ROW EXCLUSIVE lock on the source table and retains it until commit, so
--- concurrent importer writes wait until the projection backfill is complete
--- and the triggers become visible atomically. Do not execute statements from
--- this file separately in autocommit mode.
---
--- ON CONFLICT DO NOTHING also makes the backfill safe if a projection row was
--- populated by a prior controlled retry; trigger updates remain authoritative.
+-- Fresh database: seed in the current transaction; live production: the
+-- verified resumable keyset backfill already ran in small transactions.
+-- Never seed 15GB of provider cache under a long write lock in production.
+-- ON CONFLICT DO NOTHING keeps this safe for controlled replays.
 INSERT INTO private_performance.featured_injury_rows(ref, league_id)
 SELECT
   ref,
@@ -102,6 +132,10 @@ WHERE kind = 'injury'
   AND payload -> 'league' ->> 'id' = ANY (
     ARRAY['71','72','39','140','135','78','61','94','88','128','253','262']::text[]
   )
+  AND NOT EXISTS (
+    SELECT 1 FROM private_performance.featured_injury_backfill_state
+    WHERE singleton AND complete AND scanned > 0
+  )
 ON CONFLICT (ref) DO NOTHING;
 
 -- Reconcile rows that were deleted or moved out of the featured set while the
@@ -110,6 +144,10 @@ ON CONFLICT (ref) DO NOTHING;
 -- inserted by the earlier backfill after a concurrent delete trigger ran.
 DELETE FROM private_performance.featured_injury_rows AS summary
 WHERE NOT EXISTS (
+  SELECT 1 FROM private_performance.featured_injury_backfill_state
+  WHERE singleton AND complete AND scanned > 0
+)
+AND NOT EXISTS (
   SELECT 1
   FROM public.api_football_data AS source
   WHERE source.kind = 'injury'
