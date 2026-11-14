@@ -22,7 +22,18 @@ export async function verifyPublicDeployment({
       signal: AbortSignal.timeout(30_000),
     });
     if (response.status !== 200) {
-      throw new Error(`${url}: expected HTTP 200 for anonymous visitors; got ${response.status}`);
+      // A 403 may come from the Worker, an upstream service, or a Cloudflare security rule.
+      // Use only the sanitized Ray ID to correlate the request with Security Events.
+      const rayHeader = response.headers.get("cf-ray") ?? "";
+      const ray = /^[a-f0-9]{8,32}-[a-z]{3}$/i.test(rayHeader) ? rayHeader : "unavailable";
+      const challenge = response.headers.get("cf-mitigated") === "challenge";
+      const diagnostic =
+        response.status === 403
+          ? ` [CF-Ray: ${ray}; Cloudflare challenge: ${challenge ? "yes" : "no"}; inspect Security Events and origin logs]`
+          : "";
+      throw new Error(
+        `${url}: expected HTTP 200 for anonymous visitors; got ${response.status}${diagnostic}`,
+      );
     }
     const destination = new URL(response.url || url);
     if (
