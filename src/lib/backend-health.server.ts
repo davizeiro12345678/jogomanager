@@ -1,5 +1,44 @@
 type Environment = Record<string, string | undefined>;
 
+/**
+ * Read the three health-check dependencies from native Cloudflare Worker
+ * bindings when available. Nitro/Node previews may expose only process.env.
+ * Never copy arbitrary Worker bindings into a public response or global state.
+ */
+export function selectBackendHealthEnvironment(
+  nodeEnvironment: Environment,
+  workerBindings?: Record<string, unknown>,
+): Environment {
+  if (!workerBindings) return nodeEnvironment;
+  const selected = { ...nodeEnvironment };
+  for (const name of [
+    "SUPABASE_URL",
+    "SUPABASE_PUBLISHABLE_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+  ] as const) {
+    const binding = workerBindings[name];
+    if (typeof binding === "string" && binding.length > 0) selected[name] = binding;
+  }
+  return selected;
+}
+
+/** Recover adapter-attached bindings from the *current* request only.
+ * Nitro may attach runtime.cloudflare to the Request even when the
+ * cloudflare:workers dynamic import is unavailable in a preview bundle.
+ * No request header, cookie, URL, or global mutable cache is trusted here.
+ */
+export function requestCloudflareBindings(request: Request): Record<string, unknown> | undefined {
+  const attached = (
+    request as Request & {
+      runtime?: { name?: string; cloudflare?: { env?: unknown } };
+    }
+  ).runtime;
+  const bindings = attached?.name === "cloudflare" ? attached.cloudflare?.env : undefined;
+  return bindings && typeof bindings === "object"
+    ? (bindings as Record<string, unknown>)
+    : undefined;
+}
+
 // Replaced by Vite from the checked-out Git revision. It is not a mutable Worker variable.
 declare const __JOGOMANAGER_BUILD_COMMIT__: string | null;
 

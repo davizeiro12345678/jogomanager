@@ -147,7 +147,10 @@ describe("public league projections", () => {
       request.mockImplementation(async (input) => {
         const url = requestUrl(input);
         const kind = url.searchParams.get("kind");
-        if (kind === "eq.standings")
+        if (kind === "eq.standings") {
+          expect(url.searchParams.getAll("ref")).toEqual(
+            expect.arrayContaining(["like.71:%", "gte.71:", "lt.71:z"]),
+          );
           return Response.json([
             {
               ref: "71:2027",
@@ -155,6 +158,7 @@ describe("public league projections", () => {
               updated_at: "2027-05-01T00:00:00Z",
             },
           ]);
+        }
         if (kind === "eq.top_stats") {
           expect(url.searchParams.get("ref")).toBe("in.(scorers_71_2027,assists_71_2027)");
           return Response.json([
@@ -200,27 +204,40 @@ describe("public league projections", () => {
     },
   );
 
-  it("refuses to retain an incomplete league projection after an auxiliary query error", async () => {
-    let unavailable = true;
-    request.mockImplementation(async (input) => {
-      const kind = requestUrl(input).searchParams.get("kind");
-      if (kind === "eq.standings")
-        return Response.json([
-          { ref: "71:2027", payload: leaguePayload(), updated_at: "2027-05-01T00:00:00Z" },
-        ]);
-      if (kind === "eq.injury" && unavailable)
-        return Response.json({ message: "private error" }, { status: 400 });
-      return Response.json([]);
-    });
-    await expect(
-      functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } }),
-    ).rejects.toThrow("dados completos");
-    unavailable = false;
-    expect(
-      (await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } }))?.season,
-    ).toBe(2027);
-    expect(request).toHaveBeenCalledTimes(6);
-  });
+  it.each(["injury", "top_stats"])(
+    "keeps verified standings visible if optional %s data is unavailable",
+    async (failedKind) => {
+      let unavailable = true;
+      request.mockImplementation(async (input) => {
+        const kind = requestUrl(input).searchParams.get("kind");
+        if (kind === "eq.standings")
+          return Response.json([
+            { ref: "71:2027", payload: leaguePayload(), updated_at: "2027-05-01T00:00:00Z" },
+          ]);
+        if (kind === `eq.${failedKind}` && unavailable)
+          return Response.json({ message: "private error" }, { status: 400 });
+        return Response.json([]);
+      });
+      const partial = await functions.getLeagueTable({
+        data: { slug: "brasileirao-serie-a" },
+      });
+      expect(partial?.season).toBe(2027);
+      expect(partial?.groups[0]).toHaveLength(6);
+      expect(partial?.injuries).toEqual([]);
+      expect(partial?.scorers).toEqual([]);
+      expect(partial?.assisters).toEqual([]);
+      expect(JSON.stringify(partial)).not.toContain("private error");
+      expect(JSON.stringify(partial)).not.toContain("provider_internal");
+      expect(request).toHaveBeenCalledTimes(3);
+      unavailable = false;
+      // The public projection has a documented five-minute TTL. An optional
+      // failure does not invalidate real standings or cause repeated DB bursts.
+      expect(await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } })).toEqual(
+        partial,
+      );
+      expect(request).toHaveBeenCalledTimes(3);
+    },
+  );
 
   it("does not query unknown leagues or malformed club names", async () => {
     expect(await functions.getLeagueTable({ data: { slug: "unknown" } })).toBeNull();

@@ -1,5 +1,6 @@
 {
   "name": "tanstack_start_ts",
+  "packageManager": "bun@1.4.4",
   "private": true,
   "sideEffects": false,
   "type": "module",

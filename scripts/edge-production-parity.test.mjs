@@ -330,10 +330,14 @@ test("API-Football bounds scheduled work and keeps the manual pilot single-lane"
 
 test("API-Football treats HTTP 200 rateLimit payloads as backpressure, not data", () => {
   assert.throws(
-    () => validateFootballPage({
-      errors: { rateLimit: "You have reached your per-minute request limit." },
-      response: [],
-    }, { kind: "player_team", path: "/players/teams?player=7" }),
+    () =>
+      validateFootballPage(
+        {
+          errors: { rateLimit: "You have reached your per-minute request limit." },
+          response: [],
+        },
+        { kind: "player_team", path: "/players/teams?player=7" },
+      ),
     /provider_rate_wait/,
   );
 });

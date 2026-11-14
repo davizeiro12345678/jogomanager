@@ -32,9 +32,37 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+/**
+ * The Cloudflare Worker does not guarantee that secret bindings are copied to
+ * process.env. Read its native bindings instead, with Node preview fallback.
+ * Imports are server-only; the service key never reaches the browser bundle.
+ */
+let cloudflareBindings: Record<string, unknown> | undefined;
+try {
+  cloudflareBindings = (await import("cloudflare:workers")).env as Record<string, unknown>;
+} catch {
+  // Native Workers bindings do not exist during the local Node preview.
+}
+
+export function resolveSupabaseServerConfiguration(
+  bindings: Record<string, unknown> | undefined,
+  nodeEnvironment: Record<string, string | undefined>,
+) {
+  const read = (name: "SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY") => {
+    const value = bindings?.[name];
+    return typeof value === "string" && value.length > 0 ? value : nodeEnvironment[name];
+  };
+  return {
+    SUPABASE_URL: read("SUPABASE_URL"),
+    SUPABASE_SERVICE_ROLE_KEY: read("SUPABASE_SERVICE_ROLE_KEY"),
+  };
+}
+
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = process.env["SUPABASE_URL"];
-  const SUPABASE_SERVICE_ROLE_KEY = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = resolveSupabaseServerConfiguration(
+    cloudflareBindings,
+    process.env,
+  );
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
