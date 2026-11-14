@@ -1,5 +1,6 @@
 import { responseIndexingPolicy } from "./public-indexing";
 import { isPublicContentPath } from "./public-content-routes";
+import { hasSensitiveCookie } from "./anonymous-cookie";
 
 /** Supplied only by the outer server entry, never copied from an incoming header. */
 export const CSP_NONCE_HEADER = "x-manager-csp-nonce";
@@ -76,7 +77,9 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     (indexing && contentType.includes("text/html")) ||
     headers.has("set-cookie") ||
     request.headers.has("authorization") ||
-    (contentType.includes("text/html") && request.headers.has("cookie")) ||
+    (contentType.includes("text/html") &&
+      request.headers.has("cookie") &&
+      (!isPublicContentPath(url.pathname) || hasSensitiveCookie(request.headers))) ||
     !["GET", "HEAD"].includes(request.method)
   ) {
     headers.set("cache-control", "no-store");

@@ -1,4 +1,5 @@
 import "./lib/error-capture.server";
+import { createAnonymousEdgeHtmlCache } from "./lib/public-html-edge-cache";
 import { compressPublicHtml } from "./lib/public-html-compression";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -76,19 +77,32 @@ export default {
     }
     const verifiedRequest = new Request(request.url, init);
     const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
+    const edgeCache = createAnonymousEdgeHtmlCache(verifiedRequest, env, ctx);
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return measured(protect(redirect));
     try {
+      // The cache is consulted inside the Worker, after checking all request
+      // cookies, so authenticated and personalized requests always execute SSR.
+      if (edgeCache) {
+        const cached = await edgeCache.read(nonce);
+        if (cached) {
+          const hit = measured(protect(cached));
+          hit.headers.set("x-jgm-edge-html-cache", "HIT");
+          return compressPublicHtml(hit, verifiedRequest);
+        }
+      }
       const loadStart = performance.now();
       const handler = await getServerEntry();
       entryLoadMs = performance.now() - loadStart;
       const handlerStart = performance.now();
       const response = await handler.fetch(verifiedRequest, env, ctx);
       handlerMs = performance.now() - handlerStart;
-      return compressPublicHtml(
-        measured(protect(await normalizeCatastrophicSsrResponse(response))),
-        verifiedRequest,
-      );
+      const protectedResponse = measured(protect(await normalizeCatastrophicSsrResponse(response)));
+      if (edgeCache) {
+        edgeCache.store(protectedResponse);
+        protectedResponse.headers.set("x-jgm-edge-html-cache", "MISS");
+      }
+      return compressPublicHtml(protectedResponse, verifiedRequest);
     } catch (error) {
       console.error(error);
       const errorResponse = new Response(renderErrorPage(), {

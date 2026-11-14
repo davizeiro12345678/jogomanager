@@ -141,6 +141,17 @@ describe("outer response protection", () => {
     expect(run("no-cache", { cookie: "session=fixture" })).toBe("no-store");
     expect(run("no-cache", {}, "POST")).toBe("no-store");
   });
+  it("preserves anonymous public caching for the Cloudflare bot cookie, but blocks real sessions", () => {
+    const page = (cookie: string) =>
+      secureResponse(
+        new Response("public", { headers: { "content-type": "text/html" } }),
+        new Request("https://jogomanager.com/", { headers: { cookie } }),
+      );
+    expect(page("__cf_bm=opaque-bot-token").headers.get("cache-control")).toContain("s-maxage=300");
+    expect(page("__cf_bm=opaque-bot-token; session=secret").headers.get("cache-control")).toBe(
+      "no-store",
+    );
+  });
   it("preserves static caching and public indexing and implements bodyless HEAD", async () => {
     const asset = secureResponse(
       new Response("asset"),
