@@ -304,7 +304,8 @@ export function FootballHome() {
             width={1600}
             height={912}
             fetchPriority="high"
-            decoding="sync"
+            // AVIF decode should not synchronously monopolize the mobile main thread.
+            decoding="async"
           />
         </picture>
         <div className="home-hero-shade" aria-hidden="true" />
