@@ -33,7 +33,7 @@ function tags(body, name) {
 }
 
 function blockedRobots(value = "") {
-  return /(?:^|[\s,:])(?:noindex|none)(?:$|[\s,;])/i.test(value);
+  return /(?:^|[\s,:])(?:noindex|nofollow|none)(?:$|[\s,;])/i.test(value);
 }
 
 async function boundedBody(response) {
@@ -147,7 +147,7 @@ export async function verifyPublicSeo({
             /^(?:robots|googlebot|bingbot)$/i.test(meta.name ?? "") && blockedRobots(meta.content),
         )
       )
-        fail(url, "sitemap page is blocked by noindex");
+        fail(url, "sitemap page is blocked by noindex/nofollow");
       const canonicals = tags(body, "link").filter((link) =>
         /(?:^|\s)canonical(?:\s|$)/i.test(link.rel ?? ""),
       );

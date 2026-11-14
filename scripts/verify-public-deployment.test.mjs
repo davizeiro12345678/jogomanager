@@ -187,6 +187,7 @@ test("reports all server failures and noindex sitemap pages in one failed audit"
 
 for (const html of [
   '<meta content="noindex,follow" name="robots"><link rel="canonical" href="https://jogomanager.com/">',
+  '<meta content="nofollow" name="robots"><link rel="canonical" href="https://jogomanager.com/">',
   '<meta name="googlebot" content="none"><link rel="canonical" href="https://jogomanager.com/">',
   '<link rel="canonical" href="https://jogomanager.com/old">',
   "<html><head><title>Just a moment...</title></head></html>",
@@ -196,6 +197,15 @@ for (const html of [
     await assert.rejects(verifyPublicSeo({ ...site, report() {} }), /noindex|canonical/);
   });
 }
+
+test("rejects a sitemap page carrying an X-Robots-Tag nofollow directive", async () => {
+  const page = response('<link rel="canonical" href="https://jogomanager.com/">');
+  page.headers.set("x-robots-tag", "index, nofollow");
+  await assert.rejects(
+    verifyPublicSeo({ ...seoSite({ "/": page }), report() {} }),
+    /sitemap page is blocked by noindex\/nofollow/,
+  );
+});
 
 test("rejects a broken internal link found on a healthy sitemap page", async () => {
   const site = seoSite({ "/guia": response("Not found", { status: 404 }) });

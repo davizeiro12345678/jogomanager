@@ -9,6 +9,17 @@
 - A base remota `aa5e1fbd` ainda tinha falhas nos runs `Quality gates 43331681903` e `Match 3D lifecycle/context recovery 43331681847`; o novo SHA deve ser avaliado integralmente, sem aproveitar sucesso de uma revisão anterior.
 - Planejamento ampliado e correções prontos para envio à PR #132 existente, mantendo Draft. Sem merge em main, deploy ou escrita em produção.
 
+## Incremento de 14/11/2026 — validação pós-correção
+
+- Checkout isolado `/home/ubuntu/jogomanager-pr132`, branch `integration/release-2026-11-11`; HEAD local e ponta remota conferidos em `e02d9596c740fd47b4945d4e7b6d425d8193c054` antes do commit. Node 24.22.0 e `npm ci --ignore-scripts --no-audit --no-fund` concluído com exit 0 (824 pacotes instalados).
+- Task 3: o gate `verify-public-seo.mjs` agora considera `nofollow` bloqueador tanto em meta robots quanto em `X-Robots-Tag`; testes cobrem meta `nofollow` isolado e cabeçalho. `node --test scripts/verify-public-deployment.test.mjs`: 42/42 aprovados.
+- Corrigidos os defeitos estritos de TypeScript do teste de readiness (`noPropertyAccessFromIndexSignature`) e a ausência de tipo do módulo virtual `cloudflare:workers`; aplicada formatação exigida pelo lint. `tsc --noEmit --pretty false` e `npm run lint`: exit 0.
+- Vitest focado de readiness/warmup: 21/21; `npm run test:performance-gates`: 41/41; suíte `npm test` (exclui os testes de stress conforme script do projeto): 428 arquivos e 2.698 testes aprovados, exit 0.
+- `npm run graphics:build`, `npm run build` e `npm run bundle:check` executados em sequência: cadeia completa exit 0. O JSON absoluto produzido pelo comparador foi removido como artefato transitório; o build também reformatou uma linha gerada de `routeTree.gen.ts`, mudança sem relação com a correção e descartada.
+- Nenhuma mudança adicional foi feita nas frentes sem defeito reproduzível/local seguro. O check histórico do Worker `stadium-stewards` segue sem causa reproduzida nesta execução; reavaliar os checks remotos no SHA publicado.
+- Permanecem sem certificação a campanha comparável de FPS/estabilidade térmica e homologação em aparelhos reais, staging independente, smoke visual abrangente, stress/replay fora da suíte padrão e correção/recrawl SEO operacional em produção. Não marcar essas etapas como concluídas; manter a PR Draft.
+- Nenhum merge em `main`, deploy, mudança de segredo, migração em produção ou ativação de funcionalidades reais. Próximo passo autorizado: enviar este incremento à branch existente da PR #132 e observar os checks do SHA novo.
+
 ## Task 7 — correção adicional de alocação de textura
 
 - `stadium/textures/turf-detail.ts` agora cria as duas texturas neutras em 512×512; geração assíncrona troca dados sem alterar identidade/dimensões após upload. Custo inicial compartilhado: 2 MiB CPU para placeholders; não há alocação por atleta/frame.

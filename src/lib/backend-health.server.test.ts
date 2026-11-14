@@ -77,12 +77,15 @@ describe("backend readiness", () => {
 
 describe("backend health runtime environment", () => {
   it("reads native Worker bindings when process.env lacks the backend keys", () => {
-    const selected = selectBackendHealthEnvironment({}, {
-      SUPABASE_URL: "https://isolated.supabase.co",
-      SUPABASE_PUBLISHABLE_KEY: "publishable-from-binding",
-      SUPABASE_SERVICE_ROLE_KEY: "server-secret-from-binding",
-      UNRELATED_PRIVATE_SECRET: "must-not-be-imported",
-    });
+    const selected = selectBackendHealthEnvironment(
+      {},
+      {
+        SUPABASE_URL: "https://isolated.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "publishable-from-binding",
+        SUPABASE_SERVICE_ROLE_KEY: "server-secret-from-binding",
+        UNRELATED_PRIVATE_SECRET: "must-not-be-imported",
+      },
+    );
     expect(selected).toEqual({
       SUPABASE_URL: "https://isolated.supabase.co",
       SUPABASE_PUBLISHABLE_KEY: "publishable-from-binding",
@@ -111,7 +114,7 @@ describe("backend health runtime environment", () => {
       { SUPABASE_URL: "https://wrong.supabase.co", OTHER: "unmodified" },
       { SUPABASE_URL: "https://correct.supabase.co", OTHER: "do-not-overwrite" },
     );
-    expect(selected.SUPABASE_URL).toBe("https://correct.supabase.co");
-    expect(selected.OTHER).toBe("unmodified");
+    expect(selected["SUPABASE_URL"]).toBe("https://correct.supabase.co");
+    expect(selected["OTHER"]).toBe("unmodified");
   });
 });
