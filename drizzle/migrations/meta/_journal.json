@@ -568,6 +568,20 @@
       "when": 1794517200000,
       "tag": "0080_private_moderation_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1794520800000,
+      "tag": "0081_sharded_featured_injury_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1794524400000,
+      "tag": "0082_fast_featured_injury_digest",
+      "breakpoints": true
     }
   ]
 }
