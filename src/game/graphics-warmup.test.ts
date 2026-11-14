@@ -133,7 +133,9 @@ describe("scene program preparation", () => {
         expect(view).toBe(camera);
         expect(target).toBe(scene);
         submittedVisible = subject.visible;
-        return new Promise<void>((resolve) => { finish = resolve; });
+        return new Promise<void>((resolve) => {
+          finish = resolve;
+        });
       },
     };
     const result = promoteScenePrograms(
