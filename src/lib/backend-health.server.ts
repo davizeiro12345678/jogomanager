@@ -34,7 +34,9 @@ export function requestCloudflareBindings(request: Request): Record<string, unkn
     }
   ).runtime;
   const bindings = attached?.name === "cloudflare" ? attached.cloudflare?.env : undefined;
-  return bindings && typeof bindings === "object" ? (bindings as Record<string, unknown>) : undefined;
+  return bindings && typeof bindings === "object"
+    ? (bindings as Record<string, unknown>)
+    : undefined;
 }
 
 // Replaced by Vite from the checked-out Git revision. It is not a mutable Worker variable.
