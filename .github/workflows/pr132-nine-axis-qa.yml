@@ -56,7 +56,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/pr132-nine-axis"
-          npx nitro preview --host 127.0.0.1 --port 4173 \
+          # Nitro's proxy can accept requests before its preview initializes.
+          # Serve the same built Worker directly; the HTTP readiness gate remains.
+          npx wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 \
             > "$RUNNER_TEMP/pr132-nine-axis/preview.log" 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
