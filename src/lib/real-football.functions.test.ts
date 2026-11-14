@@ -147,7 +147,10 @@ describe("public league projections", () => {
       request.mockImplementation(async (input) => {
         const url = requestUrl(input);
         const kind = url.searchParams.get("kind");
-        if (kind === "eq.standings")
+        if (kind === "eq.standings") {
+          expect(url.searchParams.getAll("ref")).toEqual(
+            expect.arrayContaining(["like.71:%", "gte.71:", "lt.71:z"]),
+          );
           return Response.json([
             {
               ref: "71:2027",
@@ -155,6 +158,7 @@ describe("public league projections", () => {
               updated_at: "2027-05-01T00:00:00Z",
             },
           ]);
+        }
         if (kind === "eq.top_stats") {
           expect(url.searchParams.get("ref")).toBe("in.(scorers_71_2027,assists_71_2027)");
           return Response.json([

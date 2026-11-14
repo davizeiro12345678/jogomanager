@@ -119,6 +119,9 @@ export const getLeagueTable = createServerFn({ method: "GET" })
         .select("ref, payload, updated_at")
         .eq("kind", "standings")
         .like("ref", `${lg.id}:%`)
+        // Restrict the indexed league:season range before ordering.
+        .gte("ref", `${lg.id}:`)
+        .lt("ref", `${lg.id}:z`)
         .order("ref", { ascending: false })
         .limit(1);
       if (standingsError) throw new Error("Não foi possível carregar a tabela da liga.");

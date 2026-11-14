@@ -206,6 +206,10 @@ BEGIN
     FROM public.api_football_data a
     WHERE a.kind = 'standings'
       AND a.ref LIKE r.id::text || ':%'
+      -- Numeric season standings keys use '<league>:<season>'; explicit range
+      -- bounds turn the large primary-key scan into an indexed lookup.
+      AND a.ref >= r.id::text || ':'
+      AND a.ref < r.id::text || ':z'
     ORDER BY a.ref DESC
     LIMIT 1
   ) standings ON true
