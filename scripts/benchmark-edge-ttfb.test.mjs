@@ -15,9 +15,10 @@ test("TTFB median and p95 are computed from sorted same-status samples", () => {
 });
 
 test("Server-Timing parsing never extracts cookie, user IDs or arbitrary headers", () => {
-  assert.deepEqual(
-    serverTimingDurations("app;dur=172.4, entry;dur=41.2, ssr;dur=99"),
-    { app: 172.4, entry: 41.2, ssr: 99 },
-  );
+  assert.deepEqual(serverTimingDurations("app;dur=172.4, entry;dur=41.2, ssr;dur=99"), {
+    app: 172.4,
+    entry: 41.2,
+    ssr: 99,
+  });
   assert.deepEqual(serverTimingDurations("cache;desc=secret, app;dur=2"), { app: 2 });
 });

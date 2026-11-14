@@ -73,7 +73,9 @@ async function main() {
     throw new Error("--samples must be between 3 and 30");
   const reports = [];
   for (const url of TARGETS) reports.push(await measure(url, samples));
-  process.stdout.write(JSON.stringify({ generatedAt: new Date().toISOString(), samples, reports }, null, 2) + "\n");
+  process.stdout.write(
+    JSON.stringify({ generatedAt: new Date().toISOString(), samples, reports }, null, 2) + "\n",
+  );
   if (reports.some((r) => r.statusCodes[200] !== samples)) process.exitCode = 1;
 }
 
