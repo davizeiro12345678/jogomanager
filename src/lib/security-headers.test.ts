@@ -92,7 +92,7 @@ describe("outer response protection", () => {
     }
   });
 
-  it("preserves noindex on non-GET/HEAD, non-HTML and intentionally restricted public responses", () => {
+  it("keeps noindex on other methods, non-HTML and stronger directives", () => {
     const cases = [
       { method: "POST", contentType: "text/html", robots: "noindex, follow" },
       { method: "GET", contentType: "application/json", robots: "noindex, follow" },
