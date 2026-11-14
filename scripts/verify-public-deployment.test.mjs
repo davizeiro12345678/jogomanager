@@ -320,3 +320,27 @@ for (const url of [
     );
   });
 }
+
+test("includes a safe CF-Ray correlation ID when the edge or origin returns HTTP 403", async () => {
+  const forbidden = response("Forbidden", { status: 403 });
+  forbidden.headers.set("cf-ray", "a5a8a141396f1fa0-GIG");
+  forbidden.headers.set("cf-mitigated", "challenge");
+  await assert.rejects(
+    verifyExpectedDeployment({ fetchImpl: async () => forbidden, report() {} }),
+    /got 403 \[CF-Ray: a5a8a141396f1fa0-GIG; Cloudflare challenge: yes;/,
+  );
+});
+
+test("redacts untrusted 403 headers instead of logging arbitrary response data", async () => {
+  const forbidden = response("sensitive origin error body", { status: 403 });
+  forbidden.headers.set("cf-ray", "secret-invalid-id");
+  forbidden.headers.set("server", "internal-private-server");
+  await assert.rejects(
+    verifyExpectedDeployment({ fetchImpl: async () => forbidden, report() {} }),
+    (error) => {
+      assert.match(error.message, /got 403 \[CF-Ray: unavailable; Cloudflare challenge: no;/);
+      assert.doesNotMatch(error.message, /secret-invalid-id|internal-private-server|sensitive/);
+      return true;
+    },
+  );
+});
