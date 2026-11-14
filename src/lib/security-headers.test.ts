@@ -148,6 +148,8 @@ describe("outer response protection", () => {
         new Request("https://jogomanager.com/", { headers: { cookie } }),
       );
     expect(page("__cf_bm=opaque-bot-token").headers.get("cache-control")).toContain("s-maxage=300");
+    expect(page("__cf_bm=opaque-bot-token").headers.get("cdn-cache-control")).toBe("no-store");
+    expect(page("__cf_bm=opaque-bot-token").headers.get("cloudflare-cdn-cache-control")).toBe("no-store");
     expect(page("__cf_bm=opaque-bot-token; session=secret").headers.get("cache-control")).toBe(
       "no-store",
     );

@@ -65,6 +65,11 @@ export function secureResponse(response: Response, request: Request, nonce?: str
         `script-src ${SCRIPT_SOURCES} 'wasm-unsafe-eval'${nonce ? ` 'nonce-${nonce}'` : ""}`,
       ].join("; "),
     );
+    // HTML contains a request-unique CSP nonce. Do not let Cloudflare's
+    // response cache serve it before this Worker can rotate the nonce.
+    // A separate, opt-in internal Cache API stores a private sanitized copy.
+    headers.set("cloudflare-cdn-cache-control", "no-store");
+    headers.set("cdn-cache-control", "no-store");
   }
   const indexing =
     response.status >= 400

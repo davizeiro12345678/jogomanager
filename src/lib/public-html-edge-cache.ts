@@ -138,6 +138,10 @@ export function createAnonymousEdgeHtmlCache(
         headers.delete("content-length");
         headers.delete("etag");
         headers.delete("vary");
+        // The *outbound* HTML forbids caching before this Worker; the
+        // internal key has a different policy so Cache API can store it.
+        headers.delete("cdn-cache-control");
+        headers.delete("cloudflare-cdn-cache-control");
         headers.set("cache-control", `public, max-age=${CACHE_SECONDS}`);
         const copy = new Response(response.clone().body, { status: 200, headers });
         waitUntil(cache.put(key, copy).catch(() => undefined));

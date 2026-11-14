@@ -165,6 +165,12 @@ describe("anonymous SSR edge cache safety", () => {
     expect(body).not.toContain('content="old"');
     expect(serving.headers.get("content-security-policy-report-only")).toContain("'nonce-second'");
     expect(serving.headers.get("cache-control")).toContain("max-age=0");
+    expect(serving.headers.get("cloudflare-cdn-cache-control")).toBe("no-store");
+    expect(serving.headers.get("cdn-cache-control")).toBe("no-store");
+    const internal = [...values.values()][0]!;
+    expect(internal.headers.get("cache-control")).toContain("max-age=180");
+    expect(internal.headers.has("cdn-cache-control")).toBe(false);
+    expect(internal.headers.has("cloudflare-cdn-cache-control")).toBe(false);
     expect(cache.match).toHaveBeenCalledTimes(2);
     expect(cache.put).toHaveBeenCalledTimes(1);
   });
