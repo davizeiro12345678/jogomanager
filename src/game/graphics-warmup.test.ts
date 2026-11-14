@@ -120,6 +120,58 @@ describe("scene program preparation", () => {
     expect(blockingCompiles).toBe(0);
   });
 
+  it("submits hidden actor shaders as visible while preserving render-time invisibility", async () => {
+    const object = new Group();
+    const camera = new PerspectiveCamera();
+    const scene = new Scene();
+    object.visible = false;
+    let submittedVisible = false;
+    let finish!: () => void;
+    const renderer = {
+      compileAsync(subject: Object3D, view: Camera, target?: Scene) {
+        expect(subject).toBe(object);
+        expect(view).toBe(camera);
+        expect(target).toBe(scene);
+        submittedVisible = subject.visible;
+        return new Promise<void>((resolve) => { finish = resolve; });
+      },
+    };
+    const result = promoteScenePrograms(
+      renderer,
+      object,
+      camera,
+      new AbortController().signal,
+      scene,
+    );
+    await Promise.resolve();
+    expect(submittedVisible).toBe(true);
+    expect(object.visible).toBe(false);
+    finish();
+    expect(await result).toBe("ready");
+    expect(object.visible).toBe(true);
+  });
+
+  it("restores hidden actor visibility when compileAsync throws synchronously", async () => {
+    const object = new Group();
+    object.visible = false;
+    const renderer = {
+      compileAsync() {
+        expect(object.visible).toBe(true);
+        throw new Error("driver context lost");
+      },
+    };
+    await expect(
+      prepareScenePrograms(
+        renderer,
+        object,
+        new PerspectiveCamera(),
+        new AbortController().signal,
+        new Scene(),
+      ),
+    ).rejects.toThrow("driver context lost");
+    expect(object.visible).toBe(false);
+  });
+
   it("keeps an actual hero group hidden until its preparation finishes", async () => {
     const { renderer, object, camera, scene, compilations } = fixture();
     object.visible = false;
