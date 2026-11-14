@@ -22,6 +22,21 @@ export function selectBackendHealthEnvironment(
   return selected;
 }
 
+/** Recover adapter-attached bindings from the *current* request only.
+ * Nitro may attach runtime.cloudflare to the Request even when the
+ * cloudflare:workers dynamic import is unavailable in a preview bundle.
+ * No request header, cookie, URL, or global mutable cache is trusted here.
+ */
+export function requestCloudflareBindings(request: Request): Record<string, unknown> | undefined {
+  const attached = (
+    request as Request & {
+      runtime?: { name?: string; cloudflare?: { env?: unknown } };
+    }
+  ).runtime;
+  const bindings = attached?.name === "cloudflare" ? attached.cloudflare?.env : undefined;
+  return bindings && typeof bindings === "object" ? (bindings as Record<string, unknown>) : undefined;
+}
+
 // Replaced by Vite from the checked-out Git revision. It is not a mutable Worker variable.
 declare const __JOGOMANAGER_BUILD_COMMIT__: string | null;
 
