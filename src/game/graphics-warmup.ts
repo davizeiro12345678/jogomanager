@@ -93,7 +93,19 @@ export function prepareScenePrograms(
     compilation.result = Promise.resolve()
       .then(async (): Promise<ProgramPreparation> => {
         if (current.lifetime.signal.aborted || compilation.consumers === 0) return "cancelled";
-        await renderer.compileAsync!(object, camera, targetScene);
+        // Three traverses visible descendants when collecting shader programs.
+        // The hero remains hidden for actual renders, but must be visible during
+        // the synchronous compileAsync submission so its materials are visited.
+        // Restore visibility BEFORE awaiting GPU completion to avoid flashing.
+        const wasVisible = object.visible;
+        let pending: Promise<unknown>;
+        try {
+          object.visible = true;
+          pending = renderer.compileAsync!(object, camera, targetScene);
+        } finally {
+          object.visible = wasVisible;
+        }
+        await pending;
         return current.lifetime.signal.aborted ? "cancelled" : "ready";
       })
       .finally(() => current.jobs.delete(compilation));
