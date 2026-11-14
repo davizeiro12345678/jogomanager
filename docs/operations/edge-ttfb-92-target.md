@@ -29,3 +29,23 @@ node scripts/benchmark-edge-ttfb.mjs --samples=24 --url=https://jogomanager.com/
 A rotina usa GET, lê o corpo inteiro para concluir a transmissão SSR e o preenchimento do cache, registra tempo até o primeiro byte, status, Cloudflare colo, tempo app/entry/ssr, HIT/MISS e p50/p95. O comando termina com código 2 caso a meta não seja atingida, não reduz silenciosamente o limiar.
 
 Conferir também na aba Network: CSP report-only atualizada a cada resposta, nenhuma identidade/cookie privado em resposta reutilizada, ausência de regressões em auth/multiplayer/pagamentos, respostas 200/404/503 e `Set-Cookie`, HTML gzip e identity, Lighthouse mobile e Web Vitals reais. Somente declarar a meta atingida após comparação consistente da versão publicada com amostras suficientes.
+
+## Resultado do canário real (14/11/2026)
+
+Uma versão de **PREVIEW isolada**, com build exata do SHA `29bdc39657771c259dd50bbedde7bb13b9b68f23`, foi publicada sob o Worker `jogomanager-web` com slug `ttfb-pr132-safe`, sem trocar a versão de produção. Preview D1: `jogomanager-preview`. Binding `PUBLIC_HTML_EDGE_CACHE_ENABLED="1"` **somente na Preview**, sem credenciais Supabase nem Stripe. URL de Preview: `https://ttfb-pr132-safe-jogomanager-web.davizeiro10-jogos.workers.dev/`. Deployment inicial reportou startup da instância de **3ms**, número fornecido pela Cloudflare, diferente de TTFB.
+
+**Falha real encontrada e corrigida antes da medição:** Nitro `lazyService` passa ao serviço SSR apenas `fetch(req)`, sem `env` nem `context` posicionais. Eles são injetados em `request.runtime.cloudflare.env/context`. O cache opt-in inicialmente não via os bindings, causando 0 HITs. O SHA mencionado implementa recuperação por requisição, sem globais compartilhadas. Depois disso a Preview registrou 1 MISS e 11 HITs consecutivos; `Server-Timing: app` caiu para cerca de 4ms nos HITs.
+
+**Testes de segurança reais** com `node scripts/verify-worker-preview-cache.mjs --url=https://ttfb-pr132-safe-jogomanager-web.davizeiro10-jogos.workers.dev/`: PASS, 6/6 HITs com seis nonces distintos, `meta[property="csp-nonce"]` alinhado ao nonce de cada resposta, CSP report-only recomputada por requisição, sessões e bearer bypass `no-store`, URLs com query e `/auth` sem cache, `__cf_bm` isolado pode usar HIT. Em todas as respostas testadas, `cdn-cache-control: no-store` impede cachear HTML na frente do Worker. As regras de CDN para assets continuam intactas.
+
+**Comparação por Node fetch, 30 GETs para cada hostname na mesma máquina brasileira, colo GIG:**
+
+| Métrica | Produção anterior | Preview opt-in | Diferença |
+|---|---:|---:|---:|
+| TTFB p50 | 67,70ms | 49,25ms | −27,25% |
+| TTFB p95 | 1.345,65ms | 123,86ms | **−90,80%** |
+| Handler `app` p95 | 112ms | 5ms | **−95,54%** |
+| HIT | 0/30 (flag indisponível) | 30/30 | n/a |
+
+**A meta de 92% no TTFB fim a fim NÃO foi demonstrada.** A comparação foi entre produção e um Preview com outro hostname, e o Preview não tinha o mesmo backend Supabase. São amostras pequenas e a produção tem outliers frios, portanto estes percentuais **não são prova de ganho de produção**. É preciso um teste A/B pareado em produção com bindings equivalentes, IPs/colos iguais, proteção contra cookies pessoais, revisão da release e rollback monitorado. A flag de produção continua desabilitada.
+
