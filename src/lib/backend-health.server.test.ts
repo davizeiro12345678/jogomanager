@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { checkBackendHealth, selectBackendHealthEnvironment } from "./backend-health.server";
+import {
+  checkBackendHealth,
+  requestCloudflareBindings,
+  selectBackendHealthEnvironment,
+} from "./backend-health.server";
 
 const env = {
   SUPABASE_URL: "https://project.supabase.co",
@@ -72,6 +76,34 @@ describe("backend readiness", () => {
     const result = await checkBackendHealth(env, vi.fn().mockRejectedValue(new Error("secret")));
     expect(result.checks.auth).toBe(false);
     expect(JSON.stringify(result)).not.toContain("private-test-key");
+  });
+});
+
+describe("request-scoped Cloudflare health bindings", () => {
+  it("reads only adapter-attached Worker context", () => {
+    const request = new Request("https://jogomanager.com/api/health");
+    const env = { SUPABASE_URL: "https://staging.supabase.co" };
+    Object.defineProperty(request, "runtime", {
+      value: { name: "cloudflare", cloudflare: { env } },
+    });
+    expect(requestCloudflareBindings(request)).toBe(env);
+    expect(
+      selectBackendHealthEnvironment({}, requestCloudflareBindings(request)),
+    ).toEqual(env);
+  });
+
+  it("does not trust headers or non-Cloudflare runtime state", () => {
+    const request = new Request("https://jogomanager.com/api/health", {
+      headers: { "x-worker-env": "forged", authorization: "Bearer fixture" },
+    });
+    expect(requestCloudflareBindings(request)).toBeUndefined();
+    Object.defineProperty(request, "runtime", {
+      value: {
+        name: "external",
+        cloudflare: { env: { SUPABASE_SERVICE_ROLE_KEY: "forged" } },
+      },
+    });
+    expect(requestCloudflareBindings(request)).toBeUndefined();
   });
 });
 
