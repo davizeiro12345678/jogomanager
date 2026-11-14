@@ -4,7 +4,7 @@ import { publicPageRedirect } from "./public-page-redirects";
 import { renderErrorPage } from "./error-page";
 const deps = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock("@tanstack/react-start/server-entry", () => ({ default: { fetch: deps.fetch } }));
-import server from "../server";
+import server, { resolveWorkerRuntimeContext } from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
@@ -74,6 +74,33 @@ describe("outer response protection", () => {
     expect(response.headers.get("server-timing")).toMatch(/app;dur=\d+(?:\.\d+)?/);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("content-security-policy")).toContain("object-src 'none'");
+  });
+
+  it("recovers per-request Cloudflare env and waitUntil when Nitro drops fetch arguments", async () => {
+    const env = { PUBLIC_HTML_EDGE_CACHE_ENABLED: "0", TEST_BINDING: "scoped" };
+    const context = { waitUntil: vi.fn() };
+    const request = new Request("https://jogomanager.com/");
+    Object.defineProperty(request, "runtime", {
+      value: { name: "cloudflare", cloudflare: { env, context } },
+    });
+    expect(resolveWorkerRuntimeContext(request, undefined, undefined)).toEqual({
+      env,
+      ctx: context,
+    });
+    const explicitEnv = { TEST_BINDING: "explicit" };
+    const explicitCtx = {};
+    expect(resolveWorkerRuntimeContext(request, explicitEnv, explicitCtx)).toEqual({
+      env: explicitEnv,
+      ctx: explicitCtx,
+    });
+    deps.fetch.mockResolvedValue(
+      new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+    );
+    const response = await server.fetch(request, undefined, undefined);
+    expect(response.status).toBe(200);
+    const call = deps.fetch.mock.calls.at(-1)!;
+    expect(call[1]).toBe(env);
+    expect(call[2]).toBe(context);
   });
 
   it("rebuilds a cross-realm Request from public fields before SSR", async () => {

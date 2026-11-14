@@ -48,6 +48,22 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+/**
+ * Nitro's Cloudflare adapter attaches env and context to request.runtime,
+ * then its lazy SSR service calls fetch(request) with no extra arguments.
+ * Recover only that trusted adapter-owned per-request context; globals such as
+ * __env__ are shared between requests and can race under concurrency.
+ */
+export function resolveWorkerRuntimeContext(request: Request, env: unknown, ctx: unknown) {
+  const runtime = (
+    request as Request & {
+      runtime?: { name?: string; cloudflare?: { env?: unknown; context?: unknown } };
+    }
+  ).runtime;
+  const attached = runtime?.name === "cloudflare" ? runtime.cloudflare : undefined;
+  return { env: env ?? attached?.env, ctx: ctx ?? attached?.context };
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     // The duration only covers initial handler/response creation, not streamed body completion.
@@ -76,8 +92,9 @@ export default {
       init.duplex = "half";
     }
     const verifiedRequest = new Request(request.url, init);
+    const platform = resolveWorkerRuntimeContext(request, env, ctx);
     const protect = (response: Response) => secureResponse(response, verifiedRequest, nonce);
-    const edgeCache = createAnonymousEdgeHtmlCache(verifiedRequest, env, ctx);
+    const edgeCache = createAnonymousEdgeHtmlCache(verifiedRequest, platform.env, platform.ctx);
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return measured(protect(redirect));
     try {
@@ -95,7 +112,7 @@ export default {
       const handler = await getServerEntry();
       entryLoadMs = performance.now() - loadStart;
       const handlerStart = performance.now();
-      const response = await handler.fetch(verifiedRequest, env, ctx);
+      const response = await handler.fetch(verifiedRequest, platform.env, platform.ctx);
       handlerMs = performance.now() - handlerStart;
       const protectedResponse = measured(protect(await normalizeCatastrophicSsrResponse(response)));
       if (edgeCache) {
