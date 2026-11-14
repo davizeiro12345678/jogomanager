@@ -49,3 +49,20 @@ Uma versão de **PREVIEW isolada**, com build exata do SHA `29bdc39657771c259dd5
 
 **A meta de 92% no TTFB fim a fim NÃO foi demonstrada.** A comparação foi entre produção e um Preview com outro hostname, e o Preview não tinha o mesmo backend Supabase. São amostras pequenas e a produção tem outliers frios, portanto estes percentuais **não são prova de ganho de produção**. É preciso um teste A/B pareado em produção com bindings equivalentes, IPs/colos iguais, proteção contra cookies pessoais, revisão da release e rollback monitorado. A flag de produção continua desabilitada.
 
+
+## Comparação real entre produção e Preview (14/11/2026, Cloudflare GIG)
+
+Foram executados 28 pares alternados de **GET** na mesma máquina e no mesmo colo GIG, consumindo o HTML completo. O Preview **ttfb-pr132-safe** já estava quente e apresentou 28/28 HITs, 28/28 HTTP 200:
+
+| Métrica | Produção anterior | Preview com cache | Diferença |
+| --- | ---: | ---: | ---: |
+| TTFB p50 | 71,93 ms | 49,02 ms | -31,85% |
+| TTFB p95 | 1.280,12 ms | 138,16 ms | **-89,21%** |
+| TTFB p95 sem primeira amostra | 499,84 ms | 111,14 ms | -77,77% |
+| Server-Timing app p95 | 106 ms | 6 ms | -94,34% |
+
+A medição é curta, limitada a um único colo e Preview com dependências potencialmente diferentes. **A meta de 92% no p95 não foi atingida nesta amostra**, e nenhum resultado deve ser vendido como benefício comprovado de produção.
+
+**Correção de CI da Cloudflare:** Workers Builds usava Bun 1.2.15, incompatível com `bun.lock` v3. O Preview da branch `integration/release-2026-11-11` passou a usar Bun 1.4.4, mas o lock ainda divergia de `package.json` nos overrides Hono/React Email. Regeneramos `bun.lock` com Bun 1.4.4 e verificamos `bun install --frozen-lockfile --lockfile-only` antes de publicar o commit no PR. O build do Preview da branch voltou a concluir com sucesso, sem implantar em produção.
+
+**Ativação restrita:** `vite.config.ts` agora declara `previews.vars.PUBLIC_HTML_EDGE_CACHE_ENABLED="1"`, enquanto não existe a flag na configuração de produção. Assim, todo Preview atualizado testa o cache de 180 segundos e a rotação dos nonces sem alterar `jogomanager.com`. A condição para release permanece: revalidar a versão atual do PR com `scripts/verify-worker-preview-cache.mjs`, comparar TTFB com GET no mesmo POP, confirmar os Quality Gates e aplicar rollout controlado.
