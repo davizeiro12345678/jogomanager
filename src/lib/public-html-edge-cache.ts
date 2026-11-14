@@ -13,6 +13,16 @@ const CACHEABLE_PAGES = new Set([
   "/dicas-de-gestao",
   "/perguntas-frequentes",
   "/sobre",
+  // Editorial pages are anonymous SSR with no per-user data or prices.
+  // Protected routes, checkout, multiplayer, and live league tables remain excluded.
+  "/analise-de-partida-de-futebol",
+  "/comparativo-jogos-manager",
+  "/glossario-do-futebol",
+  "/jogar-offline",
+  "/jogo-de-manager-de-futebol",
+  "/mercado-de-transferencias",
+  "/planejamento-de-elenco",
+  "/regras",
 ]);
 const CACHE_SECONDS = 180;
 const MAX_CACHE_HTML_BYTES = 256 * 1024;
