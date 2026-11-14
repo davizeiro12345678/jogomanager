@@ -146,13 +146,14 @@ export function compareFrameCampaigns(baseManifest, headManifest, requirements =
     head: summarizeCampaignRun(head[i], requirements),
   }));
   const fingerprint = pair[0].base.fingerprint;
-  const campaignKey = pair[0].base.campaignKey;
   const phase = pair[0].base.phase;
   const baseRevision = pair[0].base.revision;
   const headRevision = pair[0].head.revision;
   for (const p of pair) {
     assert(p.base.fingerprint === fingerprint && p.head.fingerprint === fingerprint, "Hardware/software/scene mismatch: comparisons refused");
-    assert(p.base.campaignKey === campaignKey && p.head.campaignKey === campaignKey && p.base.phase === phase && p.head.phase === phase, "Mismatched campaign context");
+    // FrameCampaign.context.key can contain an opening timestamp/unique mount
+    // identity. The canonical scene, preset, seed and view are in setup.
+    assert(p.base.phase === phase && p.head.phase === phase, "Mismatched campaign phase");
     assert(p.base.revision === baseRevision && p.head.revision === headRevision, "Mixed commit revisions");
   }
   const metrics = ["fps", "p95Ms", "p99Ms", "onePercentLowFps", "framesOver50Ms"];
