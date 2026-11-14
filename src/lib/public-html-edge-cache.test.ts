@@ -66,9 +66,31 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("anonymous SSR edge cache safety", () => {
   it("accepts only explicit public GET pages without state or query parameters", () => {
-    for (const path of ["/", "/guias", "/guia-de-scouting", "/melhores-formacoes"])
+    for (const path of [
+      "/",
+      "/guias",
+      "/guia-de-scouting",
+      "/melhores-formacoes",
+      "/jogo-de-manager-de-futebol",
+      "/jogar-offline",
+      "/analise-de-partida-de-futebol",
+      "/comparativo-jogos-manager",
+      "/glossario-do-futebol",
+      "/mercado-de-transferencias",
+      "/planejamento-de-elenco",
+      "/regras",
+    ])
       expect(isEligibleAnonymousHtmlRequest(request(path))).toBe(true);
-    for (const path of ["/auth", "/dashboard", "/api/health", "/produtos", "/?utm_source=ads"])
+    for (const path of [
+      "/auth",
+      "/dashboard",
+      "/api/health",
+      "/produtos",
+      "/tabelas",
+      "/multiplayer",
+      "/checkout",
+      "/?utm_source=ads",
+    ])
       expect(isEligibleAnonymousHtmlRequest(request(path))).toBe(false);
     for (const headers of [
       { cookie: "session=secret" },
