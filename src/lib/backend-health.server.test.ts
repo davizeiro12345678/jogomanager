@@ -87,9 +87,7 @@ describe("request-scoped Cloudflare health bindings", () => {
       value: { name: "cloudflare", cloudflare: { env } },
     });
     expect(requestCloudflareBindings(request)).toBe(env);
-    expect(
-      selectBackendHealthEnvironment({}, requestCloudflareBindings(request)),
-    ).toEqual(env);
+    expect(selectBackendHealthEnvironment({}, requestCloudflareBindings(request))).toEqual(env);
   });
 
   it("does not trust headers or non-Cloudflare runtime state", () => {
