@@ -5,7 +5,10 @@ const { onExecutePostLogin } = require("./post-login-supabase-role.cjs");
 function testContext(secretClientId, appClientId) {
   const calls = [];
   return {
-    event: { secrets: secretClientId ? { PFM3D_AUTH0_CLIENT_ID: secretClientId } : {}, client: { client_id: appClientId } },
+    event: {
+      secrets: secretClientId ? { PFM3D_AUTH0_CLIENT_ID: secretClientId } : {},
+      client: { client_id: appClientId },
+    },
     api: { idToken: { setCustomClaim: (key, value) => calls.push([key, value]) } },
     calls,
   };
