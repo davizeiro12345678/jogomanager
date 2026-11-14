@@ -232,9 +232,9 @@ describe("public league projections", () => {
       unavailable = false;
       // The public projection has a documented five-minute TTL. An optional
       // failure does not invalidate real standings or cause repeated DB bursts.
-      expect(
-        await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } }),
-      ).toEqual(partial);
+      expect(await functions.getLeagueTable({ data: { slug: "brasileirao-serie-a" } })).toEqual(
+        partial,
+      );
       expect(request).toHaveBeenCalledTimes(3);
     },
   );
