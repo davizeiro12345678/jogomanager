@@ -90,6 +90,8 @@ export function CinematicSetBatch({
       batchedRevision.current = revision;
       if (batch.batches === 0) {
         batch();
+        // A completed empty pass is still meaningful diagnostic evidence.
+        onReady?.({ sources: 0, batches: 0, visibleSources: 0 });
         return;
       }
       cleanup.current = batch;

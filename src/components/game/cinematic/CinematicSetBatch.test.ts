@@ -73,6 +73,7 @@ it.each(["empty", "unmergeable"] as const)(
     }).not.toThrow();
     expect(hooks.invalidations).toBeLessThanOrEqual(4);
     expect(batches).toHaveBeenCalledTimes(1);
+    expect(snapshots).toEqual([{ sources: 0, batches: 0, visibleSources: 0 }]);
 
     if (initial === "empty") scenery.add(first);
     const late = new THREE.Mesh(geometry, material);
