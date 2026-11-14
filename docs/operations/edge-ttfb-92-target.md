@@ -12,7 +12,7 @@ Não é aceitável comparar HEAD com GET, comparar países diferentes nem confun
 
 ## Otimização implementada na branch, desabilitada até homologação
 
-O cache de HTML anônimo (TTL **180s**) só funciona no Worker, **após validar método, path, cookies, auth, range, query, cache directives**. A chave incorpora o commit de release e o hostname. Captura apenas `GET` público em uma allowlist explícita. Retorna `x-jgm-edge-html-cache: HIT|MISS` para medir.
+O cache de HTML anônimo (TTL **180s na home; 3600s em 14 rotas editoriais estáveis, exceto home**) só funciona no Worker, **após validar método, path, cookies, auth, range, query, cache directives**. A chave incorpora o commit de release e o hostname. Captura apenas `GET` público em uma allowlist explícita. Retorna `x-jgm-edge-html-cache: HIT|MISS` para medir.
 
 - Cache HIT **não executa o TanStack SSR** nem solicita a projeção de ligas.
 - Um `HTMLRewriter` em cada HIT substitui todos os atributos `nonce` e o conteúdo de `<meta property="csp-nonce">` por um nonce novo. A proteção `secureResponse` recompõe a CSP report-only para o nonce novo. **Não usar Workers Cache na frente do Worker para o HTML que contém nonce**, pois o hit poderia ignorar a renovação.

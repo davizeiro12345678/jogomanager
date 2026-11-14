@@ -24,7 +24,10 @@ const CACHEABLE_PAGES = new Set([
   "/planejamento-de-elenco",
   "/regras",
 ]);
-const CACHE_SECONDS = 180;
+// Public league pulse needs a short snapshot; authored editorial pages are
+// release-pinned and can remain hot until the next build invalidates their key.
+const HOME_CACHE_SECONDS = 180;
+const EDITORIAL_CACHE_SECONDS = 3600;
 const MAX_CACHE_HTML_BYTES = 256 * 1024;
 
 type EdgeCache = Pick<Cache, "match" | "put">;
@@ -192,7 +195,10 @@ export function createAnonymousEdgeHtmlCache(
         // internal key has a different policy so Cache API can store it.
         headers.delete("cdn-cache-control");
         headers.delete("cloudflare-cdn-cache-control");
-        headers.set("cache-control", `public, max-age=${CACHE_SECONDS}`);
+        headers.set(
+          "cache-control",
+          `public, max-age=${original.pathname === "/" ? HOME_CACHE_SECONDS : EDITORIAL_CACHE_SECONDS}`,
+        );
         const body = response.clone().body;
         if (!body) return;
         waitUntil(

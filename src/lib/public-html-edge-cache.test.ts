@@ -195,6 +195,21 @@ describe("anonymous SSR edge cache safety", () => {
     expect(internal.headers.has("cloudflare-cdn-cache-control")).toBe(false);
     expect(cache.match).toHaveBeenCalledTimes(2);
     expect(cache.put).toHaveBeenCalledTimes(1);
+
+    // Authored editorial content changes only when the git-pinned release
+    // changes, unlike the home page's live league pulse.
+    const editorial = createAnonymousEdgeHtmlCache(request("/guias"), enabled, context, version)!;
+    editorial.store(
+      secureResponse(
+        new Response(html, { headers: { "content-type": "text/html" } }),
+        request("/guias"),
+        "first",
+      ),
+    );
+    await Promise.all(fills);
+    const storedEditorial = [...values.entries()].find(([key]) => key.endsWith("/guias"))?.[1];
+    expect(storedEditorial?.headers.get("cache-control")).toBe("public, max-age=3600");
+    expect(storedEditorial?.headers.has("cdn-cache-control")).toBe(false);
   });
 
   it("enforces the byte limit on streamed SSR even when Content-Length is absent", async () => {
