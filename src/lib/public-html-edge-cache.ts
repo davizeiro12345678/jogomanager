@@ -15,6 +15,7 @@ const CACHEABLE_PAGES = new Set([
   "/sobre",
 ]);
 const CACHE_SECONDS = 180;
+const MAX_CACHE_HTML_BYTES = 256 * 1024;
 
 type EdgeCache = Pick<Cache, "match" | "put">;
 type EdgeContext = { waitUntil: (promise: Promise<unknown>) => void };
@@ -55,7 +56,46 @@ export function isStorablePublicHtml(response: Response): boolean {
   if (vary && vary.split(",").some((field) => field.trim().toLowerCase() !== "accept-encoding"))
     return false;
   const length = Number(response.headers.get("content-length") ?? 0);
-  return Number.isFinite(length) && length <= 256 * 1024;
+  return Number.isFinite(length) && length >= 0 && length <= MAX_CACHE_HTML_BYTES;
+}
+
+/** A streamed SSR response often lacks Content-Length. Bound the actual
+ * bytes of only the background copy, never the visitor's original response.
+ */
+async function readBoundedHtml(stream: ReadableStream<Uint8Array>): Promise<ArrayBuffer | null> {
+  const reader = stream.getReader();
+  const parts: Uint8Array[] = [];
+  let length = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      length += value.byteLength;
+      if (length > MAX_CACHE_HTML_BYTES) {
+        await reader.cancel("HTML exceeds edge cache size");
+        return null;
+      }
+      parts.push(value);
+    }
+    const result = new ArrayBuffer(length);
+    const bytes = new Uint8Array(result);
+    let offset = 0;
+    for (const part of parts) {
+      bytes.set(part, offset);
+      offset += part.byteLength;
+    }
+    return result;
+  } catch {
+    try {
+      await reader.cancel("HTML cache read failed");
+    } catch {
+      // A cache failure must never prevent streaming the original response.
+    }
+    return null;
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 export type AnonymousEdgeHtmlCache = {
@@ -143,8 +183,17 @@ export function createAnonymousEdgeHtmlCache(
         headers.delete("cdn-cache-control");
         headers.delete("cloudflare-cdn-cache-control");
         headers.set("cache-control", `public, max-age=${CACHE_SECONDS}`);
-        const copy = new Response(response.clone().body, { status: 200, headers });
-        waitUntil(cache.put(key, copy).catch(() => undefined));
+        const body = response.clone().body;
+        if (!body) return;
+        waitUntil(
+          readBoundedHtml(body)
+            .then((buffer) =>
+              buffer === null
+                ? undefined
+                : cache.put(key, new Response(buffer, { status: 200, headers })),
+            )
+            .catch(() => undefined),
+        );
       } catch {
         // A failed cache fill does not change the response already streaming.
       }

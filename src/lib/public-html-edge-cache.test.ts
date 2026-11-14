@@ -174,4 +174,52 @@ describe("anonymous SSR edge cache safety", () => {
     expect(cache.match).toHaveBeenCalledTimes(2);
     expect(cache.put).toHaveBeenCalledTimes(1);
   });
+
+  it("enforces the byte limit on streamed SSR even when Content-Length is absent", async () => {
+    const cache = {
+      match: vi.fn(async () => undefined),
+      put: vi.fn(async (_key: Request, response: Response) => {
+        await response.arrayBuffer();
+      }),
+    };
+    vi.stubGlobal("caches", { default: cache });
+    vi.stubGlobal("HTMLRewriter", TestHtmlRewriter);
+    const pending: Promise<unknown>[] = [];
+    const edge = createAnonymousEdgeHtmlCache(
+      request(),
+      { PUBLIC_HTML_EDGE_CACHE_ENABLED: "1" },
+      { waitUntil: (promise: Promise<unknown>) => pending.push(promise) },
+      version,
+    )!;
+
+    const big = new ArrayBuffer(256 * 1024 + 1);
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(big, 0, 131072));
+        controller.enqueue(new Uint8Array(big, 131072));
+        controller.close();
+      },
+    });
+    const oversized = secureResponse(
+      new Response(stream, { headers: { "content-type": "text/html" } }),
+      request(),
+      "nonce",
+    );
+    expect(isStorablePublicHtml(oversized)).toBe(true);
+    edge.store(oversized);
+    await Promise.all(pending);
+    expect(cache.put).not.toHaveBeenCalled();
+    // The visitor still receives the complete original streamed response.
+    expect((await oversized.arrayBuffer()).byteLength).toBe(big.byteLength);
+
+    const underLimit = secureResponse(
+      new Response(new ArrayBuffer(8192), { headers: { "content-type": "text/html" } }),
+      request(),
+      "nonce",
+    );
+    edge.store(underLimit);
+    await Promise.all(pending);
+    expect(cache.put).toHaveBeenCalledTimes(1);
+    expect((await underLimit.arrayBuffer()).byteLength).toBe(8192);
+  });
 });
