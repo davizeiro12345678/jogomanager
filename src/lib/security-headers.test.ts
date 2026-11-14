@@ -92,6 +92,26 @@ describe("outer response protection", () => {
     }
   });
 
+  it("preserves noindex on non-GET/HEAD, non-HTML and intentionally restricted public responses", () => {
+    const cases = [
+      { method: "POST", contentType: "text/html", robots: "noindex, follow" },
+      { method: "GET", contentType: "application/json", robots: "noindex, follow" },
+      { method: "GET", contentType: "text/html", robots: "noindex, nofollow" },
+      { method: "HEAD", contentType: "text/html", robots: "noindex" },
+    ];
+    for (const { method, contentType, robots } of cases) {
+      const response = secureResponse(
+        new Response("public resource", {
+          status: 200,
+          headers: { "content-type": contentType, "x-robots-tag": robots },
+        }),
+        new Request("https://jogomanager.com/melhores-formacoes", { method }),
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-robots-tag"), `${method} ${contentType}`).toBe(robots);
+    }
+  });
+
   it("adds protections to recovered h3 failures and thrown failures", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const fail of [false, true]) {
