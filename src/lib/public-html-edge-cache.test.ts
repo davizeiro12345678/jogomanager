@@ -40,7 +40,7 @@ class TestHtmlRewriter {
             }
             if (entry.selector === 'meta[property="csp-nonce"]') {
               content = content.replace(
-                /(<meta\\s+property="csp-nonce"\\s+content=")[^"]*(")/,
+                /(<meta\s+property="csp-nonce"\s+content=")[^"]*(")/,
                 (_whole, before: string, after: string) => {
                   let value = "old";
                   entry.element({ setAttribute: (_name, v) => (value = v) });

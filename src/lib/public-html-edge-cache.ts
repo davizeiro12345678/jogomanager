@@ -40,7 +40,7 @@ export function isEligibleAnonymousHtmlRequest(request: Request): boolean {
   for (const name of ["range", "if-none-match", "if-modified-since"]) {
     if (request.headers.has(name)) return false;
   }
-  if (/\\b(?:no-cache|no-store)\\b/i.test(request.headers.get("cache-control") ?? "")) return false;
+  if (/\b(?:no-cache|no-store)\b/i.test(request.headers.get("cache-control") ?? "")) return false;
   const dest = request.headers.get("sec-fetch-dest");
   return dest === null || dest === "document" || dest === "empty";
 }
@@ -50,7 +50,7 @@ export function isStorablePublicHtml(response: Response): boolean {
   if (!response.headers.get("content-type")?.toLowerCase().startsWith("text/html")) return false;
   if (response.headers.has("content-encoding")) return false;
   const policy = response.headers.get("cache-control") ?? "";
-  if (!/\\bpublic\\b/i.test(policy) || /\\b(?:private|no-store)\\b/i.test(policy)) return false;
+  if (!/\bpublic\b/i.test(policy) || /\b(?:private|no-store)\b/i.test(policy)) return false;
   const vary = response.headers.get("vary");
   if (vary && vary.split(",").some((field) => field.trim().toLowerCase() !== "accept-encoding"))
     return false;
