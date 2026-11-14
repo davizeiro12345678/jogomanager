@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  compareFrameCampaigns,
-  summarizeCampaignRun,
-} from "./compare-frame-campaigns.mjs";
+import { compareFrameCampaigns, summarizeCampaignRun } from "./compare-frame-campaigns.mjs";
 
 const REQ = { repetitions: 2, warmupMs: 20, measuredMs: 100, thermalWindowMs: 30 };
 const SHA1 = "0123456789abcdef0123456789abcdef01234567";
@@ -77,12 +74,24 @@ test("rejects a different GPU, DPR or sample scene instead of reporting a fake s
 
 test("rejects hidden-tab interruption, dropped frames, incomplete evidence and video overhead", () => {
   for (const mutate of [
-    (run) => { run.report.interruptions = 1; },
-    (run) => { run.report.captureDroppedFrames = 5; },
-    (run) => { run.report.quantilesScope = "newest-retained-intervals-only"; },
-    (run) => { run.report.summary.coverage.completeDistribution = false; },
-    (run) => { run.headless = true; },
-    (run) => { run.recordVideo = true; },
+    (run) => {
+      run.report.interruptions = 1;
+    },
+    (run) => {
+      run.report.captureDroppedFrames = 5;
+    },
+    (run) => {
+      run.report.quantilesScope = "newest-retained-intervals-only";
+    },
+    (run) => {
+      run.report.summary.coverage.completeDistribution = false;
+    },
+    (run) => {
+      run.headless = true;
+    },
+    (run) => {
+      run.recordVideo = true;
+    },
   ]) {
     const candidate = fixture();
     mutate(candidate);
@@ -91,14 +100,25 @@ test("rejects hidden-tab interruption, dropped frames, incomplete evidence and v
 });
 
 test("enforces duration, repeated runs, revision identity and finite intervals", () => {
-  assert.throws(() => summarizeCampaignRun(fixture(), { ...REQ, measuredMs: 600_000 }), /Insufficient active/);
-  assert.throws(() => compareFrameCampaigns({ runs: [fixture()] }, { runs: [fixture(SHA2)] }, REQ), /repetitions/);
+  assert.throws(
+    () => summarizeCampaignRun(fixture(), { ...REQ, measuredMs: 600_000 }),
+    /Insufficient active/,
+  );
+  assert.throws(
+    () => compareFrameCampaigns({ runs: [fixture()] }, { runs: [fixture(SHA2)] }, REQ),
+    /repetitions/,
+  );
   const invalid = fixture();
   invalid.report.rawFrameMs[5] = Number.NaN;
   assert.throws(() => summarizeCampaignRun(invalid, REQ), /Invalid frame interval/);
   const mixed = fixture(SHA1);
   assert.throws(
-    () => compareFrameCampaigns({ runs: [fixture(), fixture()] }, { runs: [fixture(SHA2), mixed] }, REQ),
+    () =>
+      compareFrameCampaigns(
+        { runs: [fixture(), fixture()] },
+        { runs: [fixture(SHA2), mixed] },
+        REQ,
+      ),
     /Mixed commit revisions/,
   );
 });
