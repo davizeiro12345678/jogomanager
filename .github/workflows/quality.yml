@@ -42,6 +42,7 @@ jobs:
         run: python3 -m py_compile infra/vps/catalog/gateway.py infra/vps/catalog/smoke_test.py
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - run: node --test scripts/benchmark-edge-ttfb.test.mjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates

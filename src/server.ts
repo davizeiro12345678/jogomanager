@@ -51,10 +51,17 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     // The duration only covers initial handler/response creation, not streamed body completion.
     const ssrStart = performance.now();
+    let entryLoadMs = 0;
+    let handlerMs = 0;
     const measured = (response: Response): Response => {
       const durationMs = Math.max(0, performance.now() - ssrStart);
       // secureResponse already builds a fresh mutable response; no extra copy.
-      response.headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
+      // Cold entry import and route-level SSR are distinct latency sources.
+      // Duration ends when headers are ready; streamed body is not included.
+      response.headers.append(
+        "server-timing",
+        `app;dur=${durationMs.toFixed(1)}, entry;dur=${entryLoadMs.toFixed(1)}, ssr;dur=${handlerMs.toFixed(1)}`,
+      );
       return response;
     };
     // Rebuild from public fields: a cross-realm Request may not be cloneable.
@@ -72,8 +79,12 @@ export default {
     const redirect = publicPageRedirect(verifiedRequest);
     if (redirect) return measured(protect(redirect));
     try {
+      const loadStart = performance.now();
       const handler = await getServerEntry();
+      entryLoadMs = performance.now() - loadStart;
+      const handlerStart = performance.now();
       const response = await handler.fetch(verifiedRequest, env, ctx);
+      handlerMs = performance.now() - handlerStart;
       return compressPublicHtml(
         measured(protect(await normalizeCatastrophicSsrResponse(response))),
         verifiedRequest,
