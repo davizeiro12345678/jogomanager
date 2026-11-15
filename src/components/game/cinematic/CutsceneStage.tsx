@@ -863,7 +863,7 @@ export function CutsceneStage({
           </div>
         ) : null}
         {mode === "3d" && stageLoadError ? (
-          <CutsceneLoadFallback onIllustrated={onUnavailable} onRetry={retryStage} />
+          <CutsceneLoadFallback onIllustrated={() => onUnavailable()} onRetry={retryStage} />
         ) : null}
         {mode === "3d" && !stageLoadError && mountStage ? (
           <GraphicsBoundary
