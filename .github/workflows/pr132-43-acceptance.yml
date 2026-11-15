@@ -105,7 +105,7 @@ jobs:
         id: gate14
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/cooperative-command-policy.server.test.ts --pool=forks --maxWorkers=1
+        run: npm exec -- vitest run src/game/online/cooperative-command-policy.server.test.ts src/game/online/cooperative-seat-ticket-v2.server.test.ts --pool=forks --maxWorkers=1
       - name: "15/43 authority: canonical engine"
         id: gate15
         if: ${{ always() && steps.install.outcome == 'success' }}
@@ -315,7 +315,7 @@ jobs:
             { id: 11, axis: "authority", title: "client socket protocol", file: "src/game/online/authoritative-socket-client.test.ts", outcome: process.env.RESULT_11 ?? "missing" },
             { id: 12, axis: "authority", title: "two socket integration", file: "src/game/online/authoritative-two-client.integration.test.ts", outcome: process.env.RESULT_12 ?? "missing" },
             { id: 13, axis: "authority", title: "secure socket bridge", file: "src/game/online/secure-socket-bridge.server.test.ts", outcome: process.env.RESULT_13 ?? "missing" },
-            { id: 14, axis: "authority", title: "cooperative command policy", file: "src/game/online/cooperative-command-policy.server.test.ts", outcome: process.env.RESULT_14 ?? "missing" },
+            { id: 14, axis: "authority", title: "cooperative command policy + four-seat signed tickets", file: "src/game/online/cooperative-command-policy.server.test.ts", outcome: process.env.RESULT_14 ?? "missing" },
             { id: 15, axis: "authority", title: "canonical engine", file: "src/game/online/canonical-authoritative-engine.server.test.ts", outcome: process.env.RESULT_15 ?? "missing" },
             { id: 16, axis: "authority", title: "signed receipts", file: "src/game/online/receipt-signing.server.test.ts", outcome: process.env.RESULT_16 ?? "missing" },
             { id: 17, axis: "authority", title: "authority latency metrics", file: "src/game/online/authority-latency-metrics.test.ts", outcome: process.env.RESULT_17 ?? "missing" },
