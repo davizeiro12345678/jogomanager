@@ -70,7 +70,10 @@ function normalizedPath(rawPath: string): string {
       break;
     }
   }
-  return path.replace(/\\/g, "/").replace(/\/{2,}/g, "/").toLowerCase();
+  return path
+    .replace(/\\/g, "/")
+    .replace(/\/{2,}/g, "/")
+    .toLowerCase();
 }
 
 /** Returns a response only for high-confidence abuse, otherwise null. */
