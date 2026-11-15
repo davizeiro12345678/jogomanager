@@ -28,3 +28,14 @@
 **Não realizado:** nova base de staging com custo, SQL de alteração em produção, publicação de API e homologação de usuários reais. Os resultados não autorizam merge do PR #132.
 
 Fonte de remediação do aviso INFO: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+
+## Verificação complementar das exposições GraphQL (15/11)
+
+Uma segunda consulta aos metadados cruzou os nomes sinalizados por ambos os advisors GraphQL com `pg_class`, `pg_policies`, ACL de SELECT e opções das views:
+
+- Todos os objetos sinalizados que são **tabelas** têm RLS habilitada e pelo menos uma política cadastrada; nenhuma dessas tabelas apareceu como RLS desabilitada nessa amostra.
+- As duas views sinalizadas, `public.official_events_catalog` e `public.players_catalog`, estão com `security_invoker=true`, não com bypass implícito por privilégio do proprietário.
+- As relações autenticadas de carreira, perfis, compras, carteira e chat podem ser consultáveis conforme os grants de `authenticated`; RLS precisa ser testada com **dois usuários sintéticos** para detectar eventuais regras BOLA/IDOR. A enumeração GraphQL não equivale a leitura indevida de linhas.
+- Não concedemos acesso ao catálogo de pagamentos, não desabilitamos GraphQL e não modificamos políticas de `public`; mudanças nessa superfície exigem verificar consumidores e smoke test de autenticação no staging.
+
+**Risco residual:** política excessivamente permissiva ou função privilegiada invocada sob identidade indevida não pode ser excluída por uma inspeção de metadados. Um checklist de concessões sem teste com personagens reais não serve como prova de isolamento horizontal.
