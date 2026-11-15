@@ -20,9 +20,17 @@ export const CooperativeSeatV2Schema = z.enum([
 export type CooperativeSeatV2 = z.infer<typeof CooperativeSeatV2Schema>;
 
 const UserId = z.string().uuid();
-const Clock = z.number().int().nonnegative().safe();
-const Nonce = z.string().min(16).max(256).regex(/^[A-Za-z0-9_-]+$/);
-const Signature = z.string().min(32).max(128).regex(/^[A-Za-z0-9_-]+$/);
+const Clock = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+const Nonce = z
+  .string()
+  .min(16)
+  .max(256)
+  .regex(/^[A-Za-z0-9_-]+$/);
+const Signature = z
+  .string()
+  .min(32)
+  .max(128)
+  .regex(/^[A-Za-z0-9_-]+$/);
 
 export const CooperativeRosterV2Schema = z
   .object({
@@ -138,7 +146,9 @@ function toBase64Url(bytes: Uint8Array): string {
 
 function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
   if (!/^[A-Za-z0-9_-]+$/.test(text)) throw new Error("invalid cooperative signature");
-  const binary = atob(text.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - text.length % 4) % 4));
+  const binary = atob(
+    text.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (text.length % 4)) % 4),
+  );
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
   return bytes;
