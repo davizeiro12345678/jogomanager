@@ -93,6 +93,10 @@ async function prepare() {
     config.routes = [
       { pattern: siteZone, custom_domain: true },
       { pattern: `www.${siteZone}/*`, zone_name: siteZone },
+      // Preserve the explicit SaaS fallback and legacy proxy paths. A wildcard
+      // route would capture unrelated subdomains and hide routing mistakes.
+      { pattern: `fallback.${siteZone}/*`, zone_name: siteZone },
+      { pattern: `legacy-origin.${siteZone}/*`, zone_name: siteZone },
     ];
   }
   // Keep Nitro's module rules/assets configuration. Never add secret values to vars.
