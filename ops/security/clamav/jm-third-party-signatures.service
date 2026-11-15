@@ -1,0 +1,21 @@
+[Unit]
+Description=JogoManager three-source ClamAV signature refresh
+After=network-online.target clamav-freshclam.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/sbin/clamav-unofficial-sigs.sh
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectSystem=full
+ReadWritePaths=/var/lib/clamav /var/log/clamav /var/lib/clamav-unofficial-sigs /var/log/clamav-unofficial-sigs /etc/clamav-unofficial-sigs
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=100%
+MemoryMax=2G
+TimeoutStartSec=15min
+UMask=0077
