@@ -1,5 +1,12 @@
 # Match authority: isolated Cloudflare staging, 12 November 2026
 
+> **Update, 14 November:** the full Worker is deployed to the existing staging
+> script with match and queue flags disabled, no public routes or cron, and
+> the existing Durable Object namespace preserved. The sections below record
+> earlier provisioning history. See
+> `verification/match-authority-staging/deployment-2026-11-14.md` for current
+> evidence and the outstanding database and real-device validation.
+
 ## Infrastructure actually provisioned
 
 The Cloudflare API authenticated to account `31b4ec9dfe5281c893ccfaaaefcfc88d` successfully uploaded the **disabled bootstrap** at `2026-11-12T22:42:26.800565Z`:

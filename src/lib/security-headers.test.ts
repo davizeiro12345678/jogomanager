@@ -26,6 +26,111 @@ describe("outer response protection", () => {
         expect(response.headers.get(header)).toBe("no-store");
     }
   });
+
+  it("removes only stale noindex, follow from the six verified indexable public pages", async () => {
+    const paths = [
+      "/jogo-de-manager-de-futebol",
+      "/tabelas",
+      "/mercado-de-transferencias",
+      "/melhores-formacoes",
+      "/guia-de-scouting",
+      "/dicas-de-gestao",
+    ];
+    for (const path of paths) {
+      for (const method of ["GET", "HEAD"]) {
+        const response = secureResponse(
+          new Response("<html><h1>Public content</h1></html>", {
+            status: 200,
+            headers: {
+              "content-type": "text/html; charset=utf-8",
+              "x-robots-tag": "noindex, follow",
+            },
+          }),
+          new Request(`https://jogomanager.com${path}?utm_source=test`, { method }),
+        );
+        expect(response.status, path).toBe(200);
+        expect(response.headers.get("x-robots-tag"), `${method} ${path}`).toBeNull();
+        expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+        if (method === "HEAD") expect(await response.text()).toBe("");
+      }
+    }
+  });
+
+  it("does not remove intentional indexing restrictions or index error/private responses", () => {
+    const cases = [
+      { path: "/auth", status: 200, incoming: "noindex, follow", expected: "noindex, nofollow" },
+      {
+        path: "/tabelas/brasileirao-serie-a",
+        status: 500,
+        incoming: "noindex, follow",
+        expected: "noindex, nofollow",
+      },
+      {
+        path: "/guia-de-scouting",
+        status: 503,
+        incoming: "noindex, follow",
+        expected: "noindex, nofollow",
+      },
+      {
+        path: "/guia-de-scouting",
+        status: 302,
+        incoming: "noindex, follow",
+        expected: "noindex, follow",
+      },
+      {
+        path: "/unknown-public-alias",
+        status: 200,
+        incoming: "noindex, follow",
+        expected: "noindex, follow",
+      },
+      {
+        path: "/melhores-formacoes",
+        status: 200,
+        incoming: "googlebot: noindex",
+        expected: "googlebot: noindex",
+      },
+      {
+        path: "/melhores-formacoes",
+        status: 200,
+        incoming: "nosnippet",
+        expected: "nosnippet",
+      },
+    ];
+    for (const entry of cases) {
+      const response = secureResponse(
+        new Response(null, {
+          status: entry.status,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "x-robots-tag": entry.incoming,
+          },
+        }),
+        new Request(`https://jogomanager.com${entry.path}`),
+      );
+      expect(response.headers.get("x-robots-tag"), entry.path).toBe(entry.expected);
+    }
+  });
+
+  it("keeps noindex on other methods, non-HTML and stronger directives", () => {
+    const cases = [
+      { method: "POST", contentType: "text/html", robots: "noindex, follow" },
+      { method: "GET", contentType: "application/json", robots: "noindex, follow" },
+      { method: "GET", contentType: "text/html", robots: "noindex, nofollow" },
+      { method: "HEAD", contentType: "text/html", robots: "noindex" },
+    ];
+    for (const { method, contentType, robots } of cases) {
+      const response = secureResponse(
+        new Response("public resource", {
+          status: 200,
+          headers: { "content-type": contentType, "x-robots-tag": robots },
+        }),
+        new Request("https://jogomanager.com/melhores-formacoes", { method }),
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-robots-tag"), `${method} ${contentType}`).toBe(robots);
+    }
+  });
+
   it("adds protections to recovered h3 failures and thrown failures", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     for (const fail of [false, true]) {

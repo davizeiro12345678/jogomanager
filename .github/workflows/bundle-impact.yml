@@ -44,21 +44,33 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - name: Preserve candidate analyzers for baseline build
+      - name: Preserve candidate analyzers and install one dependency graph
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
           cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"
           cp scripts/normalize-baseline-entities-alias.test.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.test.mjs"
+          cp scripts/prepare-bundle-baseline-compat.mjs "$RUNNER_TEMP/prepare-bundle-baseline-compat.mjs"
+          cp scripts/prepare-bundle-baseline-compat.test.mjs "$RUNNER_TEMP/prepare-bundle-baseline-compat.test.mjs"
           cp .github/workflows/bundle-impact.yml "$RUNNER_TEMP/bundle-impact.yml"
-      - name: Build baseline with its own locked dependency graph
+          cp package.json "$RUNNER_TEMP/bundle-package.json"
+          cp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
+          npm ci
+      - name: Build baseline using the candidate dependency graph
         env:
           BASE_SHA: ${{ inputs.baseline_ref }}
         run: |
           git checkout --detach "$BASE_SHA"
+          # The baseline still imports an auth package removed by the candidate.
+          # Install only its pinned, integrity-checked copy into the shared graph.
+          node --test "$RUNNER_TEMP/prepare-bundle-baseline-compat.test.mjs"
+          node "$RUNNER_TEMP/prepare-bundle-baseline-compat.mjs" package-lock.json "$RUNNER_TEMP/bundle-baseline-compat.json"
+          # Both builds use the same candidate graph and, when needed, the
+          # verified baseline-only compatibility package installed above.
+          cp "$RUNNER_TEMP/bundle-package.json" package.json
+          cp "$RUNNER_TEMP/bundle-package-lock.json" package-lock.json
           sha256sum package-lock.json > "$RUNNER_TEMP/baseline-dependency-lock.sha256"
-          npm ci
           # Execute the candidate resolver contract against baseline source with
-          # the baseline's own installed TypeScript dependency graph.
+          # the same installed TypeScript dependency graph used for the candidate.
           mkdir -p "$RUNNER_TEMP/baseline-contract/scripts" "$RUNNER_TEMP/baseline-contract/.github/workflows"
           cp "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" "$RUNNER_TEMP/baseline-contract/scripts/"
           cp "$RUNNER_TEMP/normalize-baseline-entities-alias.test.mjs" "$RUNNER_TEMP/baseline-contract/scripts/"
@@ -69,8 +81,7 @@ jobs:
           node "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs" vite.config.ts
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
-          # Run the candidate analyzer from inside the baseline checkout so ESM
-          # resolves dependencies from the baseline's own node_modules.
+          # Run the candidate analyzer with the shared node_modules.
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
@@ -78,18 +89,20 @@ jobs:
           # analyzer and historical Vite alias normalization are temporary only.
           git checkout -- .
           git clean -fd
-      - name: Build candidate with its own locked dependency graph
+      - name: Build candidate using the same dependency graph
         env:
           HEAD_SHA: ${{ inputs.candidate_ref }}
         run: |
           git checkout --detach "$HEAD_SHA"
+          cmp package.json "$RUNNER_TEMP/bundle-package.json"
+          cmp package-lock.json "$RUNNER_TEMP/bundle-package-lock.json"
           sha256sum package-lock.json > verification/bundle-2026-10-01/candidate-dependency-lock.sha256
-          npm ci
           rm -rf .output
           PFM_LOCAL_VERIFY=1 npm run build
           node scripts/bundle-report.mjs candidate .output/public/assets
           cp "$RUNNER_TEMP/baseline.json" verification/bundle-2026-10-01/baseline.json
           cp "$RUNNER_TEMP/baseline-dependency-lock.sha256" verification/bundle-2026-10-01/baseline-dependency-lock.sha256
+          cp "$RUNNER_TEMP/bundle-baseline-compat.json" verification/bundle-2026-10-01/bundle-baseline-compat.json
           node scripts/compare-bundle-reports.mjs \
             verification/bundle-2026-10-01/baseline.json \
             verification/bundle-2026-10-01/candidate.json --check
@@ -105,4 +118,5 @@ jobs:
             verification/bundle-2026-10-01/candidate.json
             verification/bundle-2026-10-01/baseline-dependency-lock.sha256
             verification/bundle-2026-10-01/candidate-dependency-lock.sha256
+            verification/bundle-2026-10-01/bundle-baseline-compat.json
           if-no-files-found: error

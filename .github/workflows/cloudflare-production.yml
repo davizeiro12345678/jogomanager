@@ -24,6 +24,8 @@ jobs:
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      EXPECTED_PRODUCTION_SUPABASE_REF: lguqnwvsfeefxamzeyos
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -36,6 +38,7 @@ jobs:
       - name: Verify production credentials are connected
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VITE_SUPABASE_PROJECT_ID: ${{ env.EXPECTED_PRODUCTION_SUPABASE_REF }}
           VITE_AUTH_PROVIDER_ALLOWLIST: ${{ vars.VITE_AUTH_PROVIDER_ALLOWLIST }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
@@ -43,6 +46,8 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN secret"; exit 1; }
           test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL secret"; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
+          node --test scripts/verify-production-supabase.test.mjs
+          node scripts/verify-production-supabase.mjs
       - run: npm ci
       - name: Refuse publication of a superseded main revision
         env:
@@ -58,6 +63,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
           CLOUDFLARE_SITE_ZONE: jogomanager.com
           SITE_URL: https://jogomanager.com
+          VITE_SUPABASE_PROJECT_ID: ${{ env.EXPECTED_PRODUCTION_SUPABASE_REF }}
           PAYMENTS_ENVIRONMENT: live
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_AUTH_PROVIDER_ALLOWLIST: ${{ vars.VITE_AUTH_PROVIDER_ALLOWLIST }}

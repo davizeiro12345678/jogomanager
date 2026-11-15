@@ -10,6 +10,7 @@ on:
       - .github/workflows/match-authority-staging.yml
       - services/match-authority/**
       - wrangler.match-authority.jsonc
+      - vitest.config.ts
       # The Worker imports these modules. Publishing only on changes under
       # services/ can leave live staging running stale ticket/physics code.
       - src/game/online/**
@@ -51,7 +52,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: "24"
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -83,6 +84,9 @@ jobs:
               config.workers_dev !== false ||
               config.routes?.length ||
               config.triggers?.crons?.length ||
+              config.migrations?.length ||
+              config.exports?.MatchRoomDO?.type !== 'durable-object' ||
+              config.exports?.MatchRoomDO?.storage !== 'sqlite' ||
               config.vars?.MATCH_AUTHORITY_ENV !== 'staging' ||
               config.vars?.ALLOWED_ORIGIN !== 'https://staging.jogomanager.com') {
             throw new Error('Staging config would expose an active match endpoint');
@@ -140,7 +144,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '24'
+          node-version: "24"
           cache: npm
       - run: npm ci
       - name: Check whether least-privilege staging deployment credentials are connected

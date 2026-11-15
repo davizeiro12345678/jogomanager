@@ -1,4 +1,4 @@
-import { responseIndexingPolicy } from "./public-indexing";
+import { PUBLIC_SEARCH_PAGES, responseIndexingPolicy } from "./public-indexing";
 import { isPublicContentPath } from "./public-content-routes";
 import { hasSensitiveCookie } from "./anonymous-cookie";
 
@@ -76,6 +76,18 @@ export function secureResponse(response: Response, request: Request, nonce?: str
       ? "noindex, nofollow"
       : responseIndexingPolicy(url.pathname, contentType);
   if (indexing) headers.set("x-robots-tag", indexing);
+  else if (
+    response.status === 200 &&
+    (request.method === "GET" || request.method === "HEAD") &&
+    contentType.includes("text/html") &&
+    PUBLIC_SEARCH_PAGES.includes(url.pathname.replace(/\/+$/, "") || "/") &&
+    /^noindex\s*,\s*follow$/i.test(headers.get("x-robots-tag")?.trim() ?? "")
+  ) {
+    // An older SSR response can still carry the obsolete blanket noindex.
+    // Clear only that exact stale directive on confirmed public 200 HTML.
+    // Preserve errors, private pages and intentionally restrictive directives.
+    headers.delete("x-robots-tag");
+  }
   if (
     response.status >= 400 ||
     PRIVATE_PATH.test(url.pathname) ||

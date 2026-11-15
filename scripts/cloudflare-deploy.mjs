@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { loadEnv } from "vite";
+import {
+  verifyBrowserSupabaseBundle,
+  verifyProductionSupabase,
+} from "./verify-production-supabase.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const configPath = path.join(root, ".cloudflare/production/server/wrangler.json");
@@ -113,6 +117,11 @@ try {
   await prepare();
   if (action === "check") await wrangler(["deploy", "--config", configPath, "--dry-run"]);
   else if (action === "deploy") {
+    const supabase = await verifyProductionSupabase(settings);
+    await verifyBrowserSupabaseBundle(
+      path.join(root, ".cloudflare/production/public/assets"),
+      supabase,
+    );
     await wrangler(["whoami"]);
     const raw = await wrangler(["secret", "list", "--config", configPath], true);
     const names = new Set(JSON.parse(raw).map((secret) => secret.name));
