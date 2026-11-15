@@ -26,9 +26,18 @@ const roster = {
   serverSeeded: true,
   seats: users,
 } as const;
+const unsignedTicket = {
+  version: 2,
+  roomId,
+  seat: "home_partner",
+  userId: users.home_partner,
+  issuedAt: now,
+  expiresAt: now + 90_000,
+  nonce: "test-cooperative-nonce-123456789",
+} as const;
 
-describe("four independent authenticated seats, protocol v2 (no production activation)", () => {
-  it("requires exactly four distinct UUID owners, strict fields and live server authority", () => {
+describe("four independent authenticated seats, protocol v2 (without deployment)", () => {
+  it("requires unique UUIDs, exact fields and authoritative live state", () => {
     expect(CooperativeRosterV2Schema.parse(roster).seats).toEqual(users);
     expect(() =>
       CooperativeRosterV2Schema.parse({
@@ -43,7 +52,7 @@ describe("four independent authenticated seats, protocol v2 (no production activ
     ).toThrow();
   });
 
-  it("keeps physical participants distinct while mapping their teams to the legacy engine", () => {
+  it("maps four identities to distinct seats without widening the v1 engine", () => {
     expect(cooperativeSeatForUser(roster, users.home_captain)).toBe("home_captain");
     expect(cooperativeSeatForUser(roster, users.home_partner)).toBe("home_partner");
     expect(cooperativeSeatForUser(roster, users.away_partner)).toBe("away_partner");
@@ -52,7 +61,7 @@ describe("four independent authenticated seats, protocol v2 (no production activ
     expect(cooperativeTeamForSeat("away_captain")).toBe("away");
   });
 
-  it("does not let a partner overwrite the captain's tactical orders", () => {
+  it("prevents partner tactical overrides and unauthorised forfeits", () => {
     expect(canExecuteCooperativeSeatCommand("home_partner", "ready")).toBe(true);
     expect(canExecuteCooperativeSeatCommand("away_partner", "ack_snapshot")).toBe(true);
     expect(canExecuteCooperativeSeatCommand("home_partner", "set_tactics")).toBe(false);
@@ -62,47 +71,41 @@ describe("four independent authenticated seats, protocol v2 (no production activ
     expect(canExecuteCooperativeSeatCommand("home_captain", "forfeit")).toBe(false);
   });
 
-  it("HMAC binds room, user, team role, nonce, issue time and expiry without v1 fallback", async () => {
-    const signed = await signCooperativeSeatTicketV2(
-      {
-        version: 2, roomId, seat: "home_partner", userId: users.home_partner,
-        issuedAt: now, expiresAt: now + 90_000, nonce: "test-cooperative-nonce-123456789",
-      },
-      signingKey,
-    );
-    expect(await verifyCooperativeSeatTicketV2(signed, roster, signingKey, now + 100)).toBe(true);
-    expect(await verifyCooperativeSeatTicketV2({ ...signed, seat: "home_captain" }, roster, signingKey, now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2({ ...signed, userId: users.home_captain }, roster, signingKey, now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2({ ...signed, roomId: "7e6d2b26-a479-4622-bf75-1f4713b2ae01" }, roster, signingKey, now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2({ ...signed, nonce: "modified-cooperative-nonce-123456789" }, roster, signingKey, now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2({ ...signed, version: 1 }, roster, signingKey, now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2({ ...signed, seed: "leaked" }, roster, signingKey, now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2(signed, roster, "wrong-independent-secret-at-least-thirty-two-characters", now + 100)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2(signed, roster, signingKey, now + 90_000)).toBe(false);
-    expect(await verifyCooperativeSeatTicketV2(signed, roster, signingKey, now - 1)).toBe(false);
+  it("HMAC binds every claim and refuses other keys, rooms and versions", async () => {
+    const signed = await signCooperativeSeatTicketV2(unsignedTicket, signingKey);
+    const verify = (input: unknown, clock = now + 100, key = signingKey) =>
+      verifyCooperativeSeatTicketV2(input, roster, key, clock);
+    expect(await verify(signed)).toBe(true);
+    const forged = [
+      { ...signed, seat: "home_captain" },
+      { ...signed, userId: users.home_captain },
+      { ...signed, roomId: "7e6d2b26-a479-4622-bf75-1f4713b2ae01" },
+      { ...signed, nonce: "modified-cooperative-nonce-123456789" },
+      { ...signed, version: 1 },
+      { ...signed, seed: "leaked" },
+    ];
+    for (const ticket of forged) expect(await verify(ticket)).toBe(false);
+    const otherKey = "wrong-independent-secret-at-least-thirty-two-characters";
+    expect(await verify(signed, now + 100, otherKey)).toBe(false);
+    expect(await verify(signed, now + 90_000)).toBe(false);
+    expect(await verify(signed, now - 1)).toBe(false);
   });
 
-  it("rejects forged and overlong lifetimes, weak HMAC keys and malformed signatures", async () => {
+  it("refuses overlong expiry, weak HMAC keys and malformed signatures", async () => {
     await expect(
       signCooperativeSeatTicketV2(
-        {
-          version: 2, roomId, seat: "home_partner", userId: users.home_partner,
-          issuedAt: now, expiresAt: now + 90_001, nonce: "test-cooperative-nonce-123456789",
-        }, signingKey,
+        { ...unsignedTicket, expiresAt: now + 90_001 },
+        signingKey,
       ),
     ).rejects.toThrow();
-    await expect(
-      signCooperativeSeatTicketV2(
-        {
-          version: 2, roomId, seat: "home_partner", userId: users.home_partner,
-          issuedAt: now, expiresAt: now + 1_000, nonce: "test-cooperative-nonce-123456789",
-        }, "weak",
-      ),
-    ).rejects.toThrow();
-    expect(await verifyCooperativeSeatTicketV2({ signature: "fake" }, roster, signingKey, now)).toBe(false);
+    await expect(signCooperativeSeatTicketV2(unsignedTicket, "weak")).rejects.toThrow();
+    const valid = await signCooperativeSeatTicketV2(unsignedTicket, signingKey);
+    const malformed = { ...valid, signature: "fake" };
+    const accepted = await verifyCooperativeSeatTicketV2(malformed, roster, signingKey, now);
+    expect(accepted).toBe(false);
   });
 
-  it("issues only to members using a trusted server lookup, never an asserted browser roster", async () => {
+  it("issues tickets only for members found in a trusted server roster", async () => {
     const loadTrustedRoster = async (id: string) => (id === roomId ? roster : null);
     const args = { loadTrustedRoster, signingSecret: signingKey, now: () => now };
     const accepted = await issueCooperativeSeatTicketV2(args, users.away_partner, roomId);
@@ -110,10 +113,36 @@ describe("four independent authenticated seats, protocol v2 (no production activ
     if (accepted.ok) {
       expect(accepted.ticket.seat).toBe("away_partner");
       expect(accepted.ticket.userId).toBe(users.away_partner);
-      expect(await verifyCooperativeSeatTicketV2(accepted.ticket, roster, signingKey, now)).toBe(true);
+      const valid = await verifyCooperativeSeatTicketV2(
+        accepted.ticket,
+        roster,
+        signingKey,
+        now,
+      );
+      expect(valid).toBe(true);
     }
-    expect(await issueCooperativeSeatTicketV2(args, "4bbd74d4-7359-48fb-ae7c-d31a9904d015", roomId)).toEqual({ ok: false, reason: "unauthorized" });
-    expect(await issueCooperativeSeatTicketV2({ ...args, loadTrustedRoster: async () => ({ ...roster, status: "waiting" }) }, users.home_captain, roomId)).toEqual({ ok: false, reason: "unavailable" });
-    expect(await issueCooperativeSeatTicketV2({ ...args, loadTrustedRoster: async () => { throw Error("db down"); } }, users.home_captain, roomId)).toEqual({ ok: false, reason: "unavailable" });
+    const stranger = "4bbd74d4-7359-48fb-ae7c-d31a9904d015";
+    expect(await issueCooperativeSeatTicketV2(args, stranger, roomId)).toEqual({
+      ok: false,
+      reason: "unauthorized",
+    });
+    const disabled = {
+      ...args,
+      loadTrustedRoster: async () => ({ ...roster, status: "waiting" }),
+    };
+    expect(await issueCooperativeSeatTicketV2(disabled, users.home_captain, roomId)).toEqual({
+      ok: false,
+      reason: "unavailable",
+    });
+    const offline = {
+      ...args,
+      loadTrustedRoster: async () => {
+        throw Error("database unavailable");
+      },
+    };
+    expect(await issueCooperativeSeatTicketV2(offline, users.home_captain, roomId)).toEqual({
+      ok: false,
+      reason: "unavailable",
+    });
   });
 });
