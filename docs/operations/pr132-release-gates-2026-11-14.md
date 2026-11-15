@@ -71,3 +71,14 @@
 - Read-only HTTP probe (no credentials): `curl -i -sS --max-time 15 https://jogomanager.com/robots.txt`; capture safe `CF-Ray`, status and timestamp. Do not paste cookies, JWTs, auth headers or Cloudflare secret tokens in issues.
 - On exact 403: check Cloudflare **Security > Events** filtered to the Ray ID/time; inspect Worker request logs and any VPS origin logs for the **same** request; do not guess an origin problem from `Server: cloudflare`.
 - Endpoints for authorization tests must be private, isolated and within documented owned infrastructure, never adversarial probes against live strangers.
+
+## 15/11/2026: nova barreira de 43 suítes regressivas (continuação da PR #132)
+
+- [x] Inspeção do ponto de retomada antes da mudança: PR #132 ainda Draft/mergeable, SHA `c05d6577d7a84bba84d68638ba6aa33435b9daac`, 673 commits e 993 arquivos alterados, **12/12 workflows do SHA aprovados**, zero reviews formais e zero threads. O último commit corrigia recuperação de cenas cinematográficas. CI verde **não** significa aceite de release.
+- [x] Novo workflow `.github/workflows/pr132-43-acceptance.yml` com **43 suítes Vitest distintas**, cada uma um passo nominal separado e com seu resultado independente, agrupando identidade, autoridade multiplayer, moderação/suporte, simulação, gráficos, edge/cache, migrações e salvamentos. As 43 suítes reutilizam testes reais da base existente; **não são 43 novos casos escritos**, nem 43 runners paralelos.
+- [x] Falha segura: execução ligada ao SHA exato, `npm ci`, cada teste executado sem ignorar falhas, consolidado obrigatório reprova suíte faltante/ignorada/falha, mesmo que os passos individuais usem `continue-on-error` para permitir a coleta completa; os resultados são registrados em artefato JSON/Markdown e resumo do job. Workflow não depende de alterações por caminho para não deixar checks obrigatórios presos em `pending` nas atualizações só de documentação.
+- [ ] Confirmar a primeira execução da nova barreira no SHA **final** e zerar erros reais sem relaxar orçamentos. A inclusão de configuração não prova que a barreira passou.
+- [ ] Administrador adicionar o nome literal do novo status crítico, `PR132 43 regression acceptance suites`, à política obrigatória de `main`, com as demais barreiras já existentes e revisão independente. **Ainda não há prova de branch protection efetiva.**
+- [ ] Testes físicos 1×1 e 2×2, banco/Worker staging isolados, credenciais distintas, Ray ID 403, HTTP 503 health, SEO 12×500 / 6×noindex, FPS/temperatura, contratos quatro-assentos e revisão humana permanecem fora do escopo da nova suíte e **continuam bloqueantes**. Não converter evidência headless em homologação física; não criar novo projeto Supabase de produção ou staging faturável automaticamente.
+
+Este checkpoint não altera os critérios de go/no-go nem autoriza merge/deploy.
