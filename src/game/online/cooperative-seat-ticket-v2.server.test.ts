@@ -93,10 +93,7 @@ describe("four independent authenticated seats, protocol v2 (without deployment)
 
   it("refuses overlong expiry, weak HMAC keys and malformed signatures", async () => {
     await expect(
-      signCooperativeSeatTicketV2(
-        { ...unsignedTicket, expiresAt: now + 90_001 },
-        signingKey,
-      ),
+      signCooperativeSeatTicketV2({ ...unsignedTicket, expiresAt: now + 90_001 }, signingKey),
     ).rejects.toThrow();
     await expect(signCooperativeSeatTicketV2(unsignedTicket, "weak")).rejects.toThrow();
     const valid = await signCooperativeSeatTicketV2(unsignedTicket, signingKey);
@@ -113,12 +110,7 @@ describe("four independent authenticated seats, protocol v2 (without deployment)
     if (accepted.ok) {
       expect(accepted.ticket.seat).toBe("away_partner");
       expect(accepted.ticket.userId).toBe(users.away_partner);
-      const valid = await verifyCooperativeSeatTicketV2(
-        accepted.ticket,
-        roster,
-        signingKey,
-        now,
-      );
+      const valid = await verifyCooperativeSeatTicketV2(accepted.ticket, roster, signingKey, now);
       expect(valid).toBe(true);
     }
     const stranger = "4bbd74d4-7359-48fb-ae7c-d31a9904d015";
