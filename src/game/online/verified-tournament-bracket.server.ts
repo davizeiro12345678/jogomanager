@@ -57,7 +57,7 @@ export class VerifiedTournamentBracket {
       entrants.length < 2 ||
       entrants.length > 32 ||
       entrants.some((id) => !UUID.test(id)) ||
-      new Set(entrants).size !== entrants.length
+      new Set(entrants.map((id) => id.toLowerCase())).size !== entrants.length
     )
       throw new Error("invalid tournament entrants");
     this.entrants = [...entrants];
