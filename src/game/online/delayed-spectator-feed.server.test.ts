@@ -119,9 +119,7 @@ describe("anti-stream-sniping spectator delay", () => {
 
     const foreignFrame = structuredClone(valid);
     foreignFrame.pending[0]!.snapshot.roomId = otherRoom;
-    expect(() =>
-      DelayedSpectatorFeed.restoreCheckpoint(roomId, foreignFrame, 30_000, 3),
-    ).toThrow();
+    expect(() => DelayedSpectatorFeed.restoreCheckpoint(roomId, foreignFrame, 30_000, 3)).toThrow();
   });
 
   it("requires meaningful delay and does not accept unsafe timestamps", () => {
