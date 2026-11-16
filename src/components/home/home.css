@@ -56,6 +56,10 @@
 .home-desktop-nav > a:hover {
   color: var(--home-lime);
 }
+/* Keep the Discord button readable despite the generic navigation link color. */
+.home-desktop-nav > a[href^="https://discord.gg/"] {
+  color: #fff;
+}
 .home-button {
   display: inline-flex;
   align-items: center;
