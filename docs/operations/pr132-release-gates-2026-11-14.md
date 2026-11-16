@@ -82,3 +82,22 @@
 - [ ] Testes físicos 1×1 e 2×2, banco/Worker staging isolados, credenciais distintas, Ray ID 403, HTTP 503 health, SEO 12×500 / 6×noindex, FPS/temperatura, contratos quatro-assentos e revisão humana permanecem fora do escopo da nova suíte e **continuam bloqueantes**. Não converter evidência headless em homologação física; não criar novo projeto Supabase de produção ou staging faturável automaticamente.
 
 Este checkpoint não altera os critérios de go/no-go nem autoriza merge/deploy.
+
+
+## 16/11/2026: diagnóstico de roteamento, SEO e acesso ao VPS
+
+**Observações de produção, não aprovação de release:** consultas anônimas em 16/11 retornaram HTTP 500 nas 12 tabelas listadas em `FEATURED_LEAGUES`; `/api/health` no domínio principal retornou 503 com commit ausente. Em consulta comparativa, `jogar.jogomanager.com` e `fallback.jogomanager.com` retornaram health 200 com commit `0856c2afc3c71c7d8317e49d8bde3f0634aa0e88`, e a tabela do Brasileirão respondeu 200 nesses hosts. Os arquivos JS do domínio principal diferiram dos outros hosts. Em HEAD, cinco de seis páginas públicas verificadas tinham `X-Robots-Tag: noindex, follow`; a inicial não tinha esse cabeçalho. Resultados dependem do horário e precisam de nova confirmação na publicação final.
+
+**Roteamento a investigar:** na conta Cloudflare consultada, o Request Trace reconheceu o Worker `jogomanager-web` para `jogar` e `fallback`, mas retornou 403 com “hostname does not belong to your account” para o domínio principal e `www`. A Lovable notificou em 01/11 que o domínio principal havia sido conectado ao projeto. Isso é compatível com precedência de um hostname de SaaS, **mas não identifica por si só o proprietário atual nem prova a causa**. Não desconectar domínio nem mudar DNS, WAF ou Worker sem confirmar o caminho ativo e a reversão.
+
+- [ ] Identificar a associação ativa do domínio principal e `www` junto ao provedor responsável e na Cloudflare; confirmar o serviço que responde a cada hostname e preservar evidências sem segredos.
+- [ ] Planejar e testar canário e rollback do roteamento; proteger login, cookies, CSP, APIs, pagamento e regras de segurança durante a transição.
+- [ ] Após a correção efetivamente publicada, verificar commit e readiness de `/api/health`, HTTP 200 e dados reais nas 12 tabelas, GET/HEAD, canonical, sitemap e ausência de `noindex` indevido nas páginas públicas. Manter `noindex` em páginas privadas e de erro.
+- [ ] Repetir crawl e monitorar 403/500/503, cache e logs; solicitar recrawl apenas após validação de respostas reais.
+- [ ] Gateway: verificar a identidade do host por fingerprint completo obtido por canal independente e estabelecer conexão autenticada; a consulta atual retornou `awaiting_host_trust` e chave gerenciada não verificada. A imagem de console recebida em 16/11 mostra UFW ativo e 22/tcp aberto em IPv4 e IPv6, mas os fingerprints estão cortados.
+- [ ] Antes de restringir SSH, verificar acesso alternativo e recuperação; fazer backup de configurações e testar restauração. Só depois revisar SSH, conta administrativa, firewall, Tetragon e contêineres, sem presumir que uma regra IPv4 proteja IPv6.
+- [ ] Manter staging isolado e dados fictícios; o pedido do proprietário proíbe criar outro projeto Supabase. Não reutilizar credenciais de produção em testes externos.
+- [ ] Concluir persistência e admissão dos quatro assentos no transporte autoritativo; homologar 1×1/2×2 em aparelhos físicos, recuperação e settlement. Medir FPS e temperatura em hardware real, com identidade do dispositivo e condições.
+- [ ] Obter revisão independente e proteção efetiva de `main` com os nomes reais dos checks; 43 suítes aprovadas em CI não equivalem a proteção ativa ou aprovação formal.
+
+**CI:** em `fbc334e704f1835d3fb18ae9b43652f1afd6f467`, 43/43 etapas do aceite e os 13 jobs de Quality Gates passaram. Qualquer commit posterior precisa de evidência própria; o PR permanece Draft.
