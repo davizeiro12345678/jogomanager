@@ -1,5 +1,6 @@
 # 43 named executable Vitest acceptance suites, mapped to existing regression tests.
 # The matrix is one runner to control CI cost; each step retains an independent outcome.
+# Run for every PR targeting main before this context is made a required check.
 # It does NOT certify physical devices, external staging or a human code review.
 name: PR 132 43-suite acceptance
 
@@ -18,7 +19,7 @@ concurrency:
 jobs:
   acceptance:
     name: PR132 43 regression acceptance suites
-    if: ${{ (github.event_name == 'pull_request' && github.event.pull_request.number == 132) || (github.event_name == 'workflow_dispatch' && github.ref_name == 'integration/release-2026-11-11') }}
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref_name == 'integration/release-2026-11-11') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
