@@ -36,221 +36,352 @@ jobs:
       - name: Install exact locked dependencies
         id: install
         run: npm ci
+      - name: Verify acceptance-report validation
+        run: node --test scripts/verify-pr132-suite.test.mjs
       - name: "01/43 identity: auth transport"
         id: gate01
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/auth-transport.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/auth-transport.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/auth-transport.test.ts
       - name: "02/43 identity: social OAuth"
         id: gate02
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/integrations/supabase/social-auth.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/integrations/supabase/social-auth.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/integrations/supabase/social-auth.test.ts
       - name: "03/43 identity: OAuth recovery"
         id: gate03
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/integrations/supabase/oauth-recovery.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/integrations/supabase/oauth-recovery.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/integrations/supabase/oauth-recovery.test.ts
       - name: "04/43 identity: Auth0 data boundary"
         id: gate04
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/integrations/supabase/auth0-data-client.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/integrations/supabase/auth0-data-client.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/integrations/supabase/auth0-data-client.test.ts
       - name: "05/43 identity: security headers"
         id: gate05
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/security-headers.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/security-headers.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/security-headers.test.ts
       - name: "06/43 authority: multiplayer security"
         id: gate06
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/multiplayer-security.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/multiplayer-security.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/multiplayer-security.test.ts
       - name: "07/43 authority: multiplayer input isolation"
         id: gate07
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/multiplayer-input-boundary.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/multiplayer-input-boundary.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/multiplayer-input-boundary.test.ts
       - name: "08/43 authority: atomic room creation"
         id: gate08
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/multiplayer-room-create.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/multiplayer-room-create.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/multiplayer-room-create.server.test.ts
       - name: "09/43 authority: signed seat tickets"
         id: gate09
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/seat-ticket-issuer.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/seat-ticket-issuer.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/seat-ticket-issuer.server.test.ts
       - name: "10/43 authority: authoritative session fencing"
         id: gate10
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/authoritative-match-session.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/authoritative-match-session.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/authoritative-match-session.test.ts
       - name: "11/43 authority: client socket protocol"
         id: gate11
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/authoritative-socket-client.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/authoritative-socket-client.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/authoritative-socket-client.test.ts
       - name: "12/43 authority: two socket integration"
         id: gate12
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/authoritative-two-client.integration.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/authoritative-two-client.integration.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/authoritative-two-client.integration.test.ts
       - name: "13/43 authority: secure socket bridge"
         id: gate13
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/secure-socket-bridge.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/secure-socket-bridge.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/secure-socket-bridge.server.test.ts
       - name: "14/43 authority: cooperative command policy"
         id: gate14
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/cooperative-command-policy.server.test.ts src/game/online/cooperative-seat-ticket-v2.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/cooperative-command-policy.server.test.ts src/game/online/cooperative-seat-ticket-v2.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/cooperative-command-policy.server.test.ts src/game/online/cooperative-seat-ticket-v2.server.test.ts
       - name: "15/43 authority: canonical engine"
         id: gate15
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/canonical-authoritative-engine.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/canonical-authoritative-engine.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/canonical-authoritative-engine.server.test.ts
       - name: "16/43 authority: signed receipts"
         id: gate16
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/receipt-signing.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/receipt-signing.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/receipt-signing.server.test.ts
       - name: "17/43 authority: authority latency metrics"
         id: gate17
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/authority-latency-metrics.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/authority-latency-metrics.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/authority-latency-metrics.test.ts
       - name: "18/43 authority: tournament verification"
         id: gate18
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/verified-tournament-bracket.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/verified-tournament-bracket.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/verified-tournament-bracket.server.test.ts
       - name: "19/43 authority: tournament persistence"
         id: gate19
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/private-tournament-store.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/private-tournament-store.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/private-tournament-store.server.test.ts
       - name: "20/43 authority: spectator delay"
         id: gate20
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/online/delayed-spectator-feed.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/online/delayed-spectator-feed.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/online/delayed-spectator-feed.server.test.ts
       - name: "21/43 trust: chat moderation rules"
         id: gate21
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/moderation.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/moderation.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/moderation.test.ts
       - name: "22/43 trust: moderation appeal input"
         id: gate22
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/moderation-review-input.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/moderation-review-input.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/moderation-review-input.test.ts
       - name: "23/43 trust: support server boundary"
         id: gate23
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/support.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/support.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/support.server.test.ts
       - name: "24/43 trust: room chat admission"
         id: gate24
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/room-chat.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/room-chat.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/room-chat.test.ts
       - name: "25/43 trust: chat fingerprint idempotency"
         id: gate25
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/room-chat-fingerprint.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/room-chat-fingerprint.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/room-chat-fingerprint.test.ts
       - name: "26/43 simulation: versioned contact physics"
         id: gate26
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/contact-physics-revision.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/contact-physics-revision.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/contact-physics-revision.test.ts
       - name: "27/43 simulation: physics integration"
         id: gate27
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/match-physics-extras.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/match-physics-extras.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/match-physics-extras.test.ts
       - name: "28/43 simulation: ball interception AI"
         id: gate28
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/ai-ball-interception.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/ai-ball-interception.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/ai-ball-interception.test.ts
       - name: "29/43 simulation: tactical AI"
         id: gate29
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/tactical-ai-v2.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/tactical-ai-v2.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/tactical-ai-v2.test.ts
       - name: "30/43 simulation: offside phase"
         id: gate30
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/offside-phase.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/offside-phase.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/offside-phase.test.ts
       - name: "31/43 simulation: match Web Worker"
         id: gate31
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/match.worker.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/match.worker.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/match.worker.test.ts
       - name: "32/43 graphics: frame campaign evidence"
         id: gate32
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/frame-campaign.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/frame-campaign.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/frame-campaign.test.ts
       - name: "33/43 graphics: shader warmup"
         id: gate33
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/graphics-warmup.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/graphics-warmup.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/graphics-warmup.test.ts
       - name: "34/43 graphics: shadow budget"
         id: gate34
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/graphics/shadow-map-budget.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/graphics/shadow-map-budget.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/graphics/shadow-map-budget.test.ts
       - name: "35/43 graphics: mobile stadium DPR"
         id: gate35
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/game/mobile-stadium-dpr.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/game/mobile-stadium-dpr.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/game/mobile-stadium-dpr.test.ts
       - name: "36/43 graphics: cinematic batch lifecycle"
         id: gate36
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/components/game/cinematic/CinematicSetBatch.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/components/game/cinematic/CinematicSetBatch.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/components/game/cinematic/CinematicSetBatch.test.ts
       - name: "37/43 graphics: cinematic commit lifecycle"
         id: gate37
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/components/game/cinematic/CinematicSetCommit.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/components/game/cinematic/CinematicSetCommit.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/components/game/cinematic/CinematicSetCommit.test.ts
       - name: "38/43 graphics: stadium environment"
         id: gate38
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/components/game/stadium/StadiumEnvironment.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/components/game/stadium/StadiumEnvironment.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/components/game/stadium/StadiumEnvironment.test.ts
       - name: "39/43 graphics: turf texture lifecycle"
         id: gate39
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/components/game/stadium/textures/turf-detail.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/components/game/stadium/textures/turf-detail.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/components/game/stadium/textures/turf-detail.test.ts
       - name: "40/43 edge: anonymous HTML cache isolation"
         id: gate40
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/public-html-edge-cache.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/public-html-edge-cache.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/public-html-edge-cache.test.ts
       - name: "41/43 edge: public read cache"
         id: gate41
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/public-read-cache.server.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/public-read-cache.server.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/public-read-cache.server.test.ts
       - name: "42/43 database: migration manifest integrity"
         id: gate42
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/migration-manifest.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/migration-manifest.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/migration-manifest.test.ts
       - name: "43/43 career: career save recovery"
         id: gate43
         if: ${{ always() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: npm exec -- vitest run src/lib/career-save-recovery.test.ts --pool=forks --maxWorkers=1
+        run: |
+          rm -f "$RUNNER_TEMP/pr132-suite.json"
+          npm exec -- vitest run src/lib/career-save-recovery.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile.json="$RUNNER_TEMP/pr132-suite.json"
+          node scripts/verify-pr132-suite.mjs "$RUNNER_TEMP/pr132-suite.json" src/lib/career-save-recovery.test.ts
       - name: Aggregate all 43 outcomes; fail closed on missing, failed or skipped suites
         if: always()
         env:
@@ -315,7 +446,7 @@ jobs:
             { id: 11, axis: "authority", title: "client socket protocol", file: "src/game/online/authoritative-socket-client.test.ts", outcome: process.env.RESULT_11 ?? "missing" },
             { id: 12, axis: "authority", title: "two socket integration", file: "src/game/online/authoritative-two-client.integration.test.ts", outcome: process.env.RESULT_12 ?? "missing" },
             { id: 13, axis: "authority", title: "secure socket bridge", file: "src/game/online/secure-socket-bridge.server.test.ts", outcome: process.env.RESULT_13 ?? "missing" },
-            { id: 14, axis: "authority", title: "cooperative command policy + four-seat signed tickets", file: "src/game/online/cooperative-command-policy.server.test.ts", outcome: process.env.RESULT_14 ?? "missing" },
+            { id: 14, axis: "authority", title: "cooperative command policy + four-seat signed tickets", file: "src/game/online/cooperative-command-policy.server.test.ts + src/game/online/cooperative-seat-ticket-v2.server.test.ts", outcome: process.env.RESULT_14 ?? "missing" },
             { id: 15, axis: "authority", title: "canonical engine", file: "src/game/online/canonical-authoritative-engine.server.test.ts", outcome: process.env.RESULT_15 ?? "missing" },
             { id: 16, axis: "authority", title: "signed receipts", file: "src/game/online/receipt-signing.server.test.ts", outcome: process.env.RESULT_16 ?? "missing" },
             { id: 17, axis: "authority", title: "authority latency metrics", file: "src/game/online/authority-latency-metrics.test.ts", outcome: process.env.RESULT_17 ?? "missing" },
