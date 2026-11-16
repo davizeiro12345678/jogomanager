@@ -45,6 +45,12 @@ describe("four independent authenticated seats, protocol v2 (without deployment)
         seats: { ...users, away_partner: users.home_partner },
       }),
     ).toThrow();
+    expect(() =>
+      CooperativeRosterV2Schema.parse({
+        ...roster,
+        seats: { ...users, away_partner: users.home_partner.toUpperCase() },
+      }),
+    ).toThrow();
     expect(() => CooperativeRosterV2Schema.parse({ ...roster, seed: "leak" })).toThrow();
     expect(() => CooperativeRosterV2Schema.parse({ ...roster, status: "waiting" })).toThrow();
     expect(() =>

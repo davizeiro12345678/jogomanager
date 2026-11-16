@@ -114,7 +114,7 @@ export class CooperativeCommandPolicy {
       roster.away.captainId,
       roster.away.partnerId,
     ];
-    if (ids.some((id) => !UUID.test(id)) || new Set(ids).size !== 4)
+    if (ids.some((id) => !UUID.test(id)) || new Set(ids.map((id) => id.toLowerCase())).size !== 4)
       throw new Error("cooperative teams require four distinct valid user IDs");
     this.roster = structuredClone(roster);
   }

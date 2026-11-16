@@ -26,6 +26,13 @@ describe("server-owned cooperative 2v2 authorization", () => {
       () =>
         new CooperativeCommandPolicy({
           ...players,
+          away: { ...players.away, partnerId: players.home.partnerId.toUpperCase() },
+        }),
+    ).toThrow();
+    expect(
+      () =>
+        new CooperativeCommandPolicy({
+          ...players,
           home: { ...players.home, captainId: "forged" },
         }),
     ).toThrow();

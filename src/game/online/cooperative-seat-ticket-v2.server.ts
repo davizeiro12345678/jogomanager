@@ -50,7 +50,7 @@ export const CooperativeRosterV2Schema = z
   })
   .strict()
   .superRefine((roster, ctx) => {
-    const participants = Object.values(roster.seats);
+    const participants = Object.values(roster.seats).map((id) => id.toLowerCase());
     if (new Set(participants).size !== 4) {
       ctx.addIssue({
         code: "custom",
