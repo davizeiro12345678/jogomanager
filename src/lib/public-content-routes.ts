@@ -44,11 +44,13 @@ export function isLightweightCssPath(pathname: string): boolean {
  */
 export function shouldPreloadArticleHeadingFont(pathname: string): boolean {
   const path = pathname.replace(/\/+$/, "") || "/";
-  return isPublicContentPath(path) &&
+  return (
+    isPublicContentPath(path) &&
     path !== "/" &&
     path !== "/produtos" &&
     path !== "/tabelas" &&
-    !path.startsWith("/tabelas/");
+    !path.startsWith("/tabelas/")
+  );
 }
 
 /** The creation wizard owns catalog loading at club selection. */
