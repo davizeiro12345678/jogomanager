@@ -71,6 +71,59 @@ describe("anti-stream-sniping spectator delay", () => {
     expect(feed.size()).toBe(0);
   });
 
+  it("restores exact anti-sniping deadlines after owner eviction and supports delayed replay", () => {
+    const original = new DelayedSpectatorFeed(roomId, 30_000, 3);
+    expect(original.push(snapshot(1), start)).toBe(true);
+    expect(original.push(snapshot(2, { home: 1, away: 0 }), start + 1_000)).toBe(true);
+
+    const stored = original.checkpoint();
+    const restored = DelayedSpectatorFeed.restoreCheckpoint(roomId, stored, 30_000, 3);
+    stored.pending[0]!.snapshot.publicState.score.home = 99;
+    expect(restored.poll(start + 29_999)).toBeNull();
+    expect(restored.poll(start + 30_000)?.revision).toBe(1);
+    expect(restored.replayLastReleased()?.publicState.score.home).toBe(0);
+    expect(restored.poll(start + 30_999)).toBeNull();
+
+    const secondOwner = DelayedSpectatorFeed.restoreCheckpoint(
+      roomId,
+      restored.checkpoint(),
+      30_000,
+      3,
+    );
+    expect(secondOwner.poll(start + 31_000)?.publicState.score.home).toBe(1);
+    expect(secondOwner.replayLastReleased()?.revision).toBe(2);
+    expect(secondOwner.poll(start + 90_000)).toBeNull();
+  });
+
+  it("rejects cross-room, invalid deadline, mismatched settings and forged recovery progress", () => {
+    const feed = new DelayedSpectatorFeed(roomId, 30_000, 3);
+    expect(feed.push(snapshot(1), start)).toBe(true);
+    expect(feed.push(snapshot(2), start + 1_000)).toBe(true);
+    const valid = feed.checkpoint();
+
+    expect(() => DelayedSpectatorFeed.restoreCheckpoint(otherRoom, valid, 30_000, 3)).toThrow();
+    expect(() => DelayedSpectatorFeed.restoreCheckpoint(roomId, valid, 10_000, 3)).toThrow();
+    expect(() => DelayedSpectatorFeed.restoreCheckpoint(roomId, valid, 30_000, 2)).toThrow();
+
+    const forgedDeadline = structuredClone(valid);
+    forgedDeadline.pending[1]!.releaseAt -= 15_000;
+    expect(() =>
+      DelayedSpectatorFeed.restoreCheckpoint(roomId, forgedDeadline, 30_000, 3),
+    ).toThrow();
+
+    const duplicateRevision = structuredClone(valid);
+    duplicateRevision.pending[1]!.snapshot.revision = 1;
+    expect(() =>
+      DelayedSpectatorFeed.restoreCheckpoint(roomId, duplicateRevision, 30_000, 3),
+    ).toThrow();
+
+    const foreignFrame = structuredClone(valid);
+    foreignFrame.pending[0]!.snapshot.roomId = otherRoom;
+    expect(() =>
+      DelayedSpectatorFeed.restoreCheckpoint(roomId, foreignFrame, 30_000, 3),
+    ).toThrow();
+  });
+
   it("requires meaningful delay and does not accept unsafe timestamps", () => {
     expect(() => new DelayedSpectatorFeed(roomId, 9_999)).toThrow();
     expect(() => new DelayedSpectatorFeed(roomId, 300_001)).toThrow();
