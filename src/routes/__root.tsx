@@ -8,7 +8,7 @@ import homeCss from "../public-home-styles.css?url";
 import storeCss from "../public-store-styles.css?url";
 import tablesCss from "../public-tables-styles.css?url";
 
-import { isLightweightCssPath } from "@/lib/public-content-routes";
+import { isLightweightCssPath, shouldPreloadArticleHeadingFont } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
 
 const RootComponent = lazyRouteComponent(() => import("@/components/RootLayout"), "RootComponent");
@@ -56,6 +56,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: stylesheetForPath(matches.at(-1)?.pathname ?? ""),
       },
+      // The editorial H1 is the measured LCP candidate. This single local
+      // font must not compete with the home hero image or gameplay resources.
+      ...(shouldPreloadArticleHeadingFont(matches.at(-1)?.pathname ?? "")
+        ? [
+            {
+              rel: "preload" as const,
+              as: "font" as const,
+              type: "font/woff2",
+              href: "/fonts/match3d/HTxqL289NzCGg4MzN6KJ7eW6CYyF_g.woff2",
+              crossOrigin: "anonymous" as const,
+            },
+          ]
+        : []),
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
