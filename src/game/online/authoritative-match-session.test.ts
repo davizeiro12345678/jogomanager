@@ -263,7 +263,7 @@ describe("AuthoritativeMatchSession", () => {
       (state) => state.rateWindows[0]![1].push(-1),
       (state) => state.reconnectDeadlines.push(["away", -1]),
       (state) => state.reconnectDeadlines.push(["home", issuedAt + 60_000]),
-      (state) => state.tactics.push(["away", { ...state.tactics[0]![1], formation: "4-3-3" }]),
+      (state) => state.tactics.push(["home", { ...state.tactics[0]![1], formation: "4-3-3" }]),
       (state) => Object.assign(state.tactics[0]![1], { formation: "11-0-0" }),
     ];
     for (const mutate of mutations) {
