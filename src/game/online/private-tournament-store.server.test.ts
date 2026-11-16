@@ -129,6 +129,23 @@ describe("private tournament repository", () => {
     ).toBeNull();
   });
 
+  it("rejects duplicate player identities differing only by UUID case on registration and replay", async () => {
+    expect(() => new VerifiedTournamentBracket([organizerId, organizerId.toUpperCase()])).toThrow(
+      "invalid tournament entrants",
+    );
+    await expect(
+      VerifiedTournamentBracket.restoreCheckpoint(
+        {
+          version: 1,
+          entrants: [organizerId, organizerId.toUpperCase()],
+          results: [],
+          pendingRooms: [],
+        },
+        verify,
+      ),
+    ).rejects.toThrow("invalid tournament entrants");
+  });
+
   it("rejects impossible CAS revisions before contacting the server", async () => {
     const storage = mockStorage();
     const bracket = new VerifiedTournamentBracket([organizerId, awayId]);
