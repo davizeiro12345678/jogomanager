@@ -37,6 +37,20 @@ export function isLightweightCssPath(pathname: string): boolean {
   return /^\/partida-rapida\/?$/.test(pathname) || isPublicContentPath(pathname);
 }
 
+/**
+ * The LCP on SSR editorial pages is usually the heading, not an image.
+ * Fetch its existing local font at high priority only on article routes:
+ * home has a hero image to prioritize, tables and gameplay have other LCPs.
+ */
+export function shouldPreloadArticleHeadingFont(pathname: string): boolean {
+  const path = pathname.replace(/\/+$/, "") || "/";
+  return isPublicContentPath(path) &&
+    path !== "/" &&
+    path !== "/produtos" &&
+    path !== "/tabelas" &&
+    !path.startsWith("/tabelas/");
+}
+
 /** The creation wizard owns catalog loading at club selection. */
 export function shouldInitializeWorldOnEntry(pathname: string): boolean {
   return !isLightweightCssPath(pathname) && pathname.replace(/\/$/, "") !== "/new";
