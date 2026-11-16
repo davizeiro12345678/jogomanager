@@ -12,6 +12,7 @@ import {
   type MatchSnapshotV1,
   type MatchTicketV1,
   type PresentationEventV1,
+  TacticalCommandPayloadV1Schema,
   type TacticalCommandPayloadV1,
 } from "./match-protocol";
 import { GENESIS_SESSION_HASH, appendCommandHash } from "./session-hash";
@@ -364,6 +365,66 @@ export class AuthoritativeMatchSession {
     } as AuthoritativeSessionCheckpointV1);
   }
 
+  /** Fail closed on private DO state corruption, including forged reconnect
+   * seats, replay buckets and tactics. Validation precedes any state mutation. */
+  private validCheckpointCollections(checkpoint: AuthoritativeSessionCheckpointV1): boolean {
+    const users = [this.tickets.home.userId, this.tickets.away.userId];
+    const seats: MatchSeat[] = ["home", "away"];
+    const kinds: MatchCommandKind[] = [
+      "ready",
+      "set_tactics",
+      "substitute",
+      "forfeit",
+      "ack_snapshot",
+    ];
+    const rateKeys = new Set(users.flatMap((user) => kinds.map((kind) => `${user}:${kind}`)));
+    const unique = (items: string[]): boolean => new Set(items).size === items.length;
+    if (
+      checkpoint.connected.length > 2 ||
+      !unique(checkpoint.connected) ||
+      checkpoint.connected.some((user) => !users.includes(user)) ||
+      checkpoint.readySeats.length > 2 ||
+      !unique(checkpoint.readySeats) ||
+      checkpoint.sequences.length > 2 ||
+      !unique(checkpoint.sequences.map((entry) => entry[0])) ||
+      checkpoint.rateWindows.length > rateKeys.size ||
+      !unique(checkpoint.rateWindows.map((entry) => entry[0])) ||
+      checkpoint.reconnectDeadlines.length > 2 ||
+      !unique(checkpoint.reconnectDeadlines.map((entry) => entry[0])) ||
+      checkpoint.tactics.length > 2 ||
+      !unique(checkpoint.tactics.map((entry) => entry[0]))
+    )
+      return false;
+
+    if (
+      checkpoint.rateWindows.some(
+        (entry) =>
+          !Array.isArray(entry) ||
+          entry.length !== 2 ||
+          !rateKeys.has(entry[0]) ||
+          !Array.isArray(entry[1]) ||
+          entry[1].some((timestamp) => !Number.isSafeInteger(timestamp) || timestamp < 0),
+      ) ||
+      checkpoint.reconnectDeadlines.some(
+        (entry) =>
+          !Array.isArray(entry) ||
+          entry.length !== 2 ||
+          !seats.includes(entry[0]) ||
+          !Number.isSafeInteger(entry[1]) ||
+          entry[1] < 0,
+      ) ||
+      checkpoint.tactics.some(
+        (entry) =>
+          !Array.isArray(entry) ||
+          entry.length !== 2 ||
+          !seats.includes(entry[0]) ||
+          !TacticalCommandPayloadV1Schema.safeParse(entry[1]).success,
+      )
+    )
+      return false;
+    return true;
+  }
+
   /** Reattach sockets only through fresh HMAC tickets after eviction. */
   restoreCheckpoint(checkpoint: AuthoritativeSessionCheckpointV1, now: number): void {
     if (
@@ -395,6 +456,7 @@ export class AuthoritativeMatchSession {
           sequence < 0,
       ) ||
       checkpoint.readySeats.some((seat) => seat !== "home" && seat !== "away") ||
+      !this.validCheckpointCollections(checkpoint) ||
       (checkpoint.receipt && checkpoint.receipt.roomId !== this.options.roomId)
     )
       throw new Error("invalid authoritative session checkpoint");
