@@ -80,8 +80,11 @@ export class CooperativeCommandPolicy {
     const checkpoint = CooperativeCheckpointSchema.parse(checkpointInput);
     const expected = new CooperativeCommandPolicy(trustedRoster);
     for (const seat of ["home", "away"] as const) {
-      const actual = checkpoint.roster[seat];
-      const verified = trustedRoster[seat];
+      const actual = {
+        captainId: checkpoint.roster[seat].captainId.toLowerCase(),
+        partnerId: checkpoint.roster[seat].partnerId.toLowerCase(),
+      };
+      const verified = expected.roster[seat];
       if (
         new Set([actual.captainId, actual.partnerId]).size !== 2 ||
         ![actual.captainId, actual.partnerId].every(
@@ -92,15 +95,20 @@ export class CooperativeCommandPolicy {
     }
     if (new Set(checkpoint.approved).size !== checkpoint.approved.length)
       throw new Error("duplicate approved team");
-    expected.roster.home = { ...checkpoint.roster.home };
-    expected.roster.away = { ...checkpoint.roster.away };
+    for (const seat of ["home", "away"] as const) {
+      expected.roster[seat] = {
+        captainId: checkpoint.roster[seat].captainId.toLowerCase(),
+        partnerId: checkpoint.roster[seat].partnerId.toLowerCase(),
+      };
+    }
     for (const seat of ["home", "away"] as const) {
       if (checkpoint.approved.includes(seat) && checkpoint.votes[seat].length)
         throw new Error("approved forfeit cannot also have pending votes");
       for (const [userId, time] of checkpoint.votes[seat]) {
         if (expected.seatForUser(userId) !== seat || time > now)
           throw new Error("forged cooperative forfeit vote");
-        if (now - time < FORFEIT_VOTE_WINDOW_MS) expected.forfeitVotes[seat].set(userId, time);
+        if (now - time < FORFEIT_VOTE_WINDOW_MS)
+          expected.forfeitVotes[seat].set(userId.toLowerCase(), time);
       }
     }
     for (const seat of checkpoint.approved) expected.approvedForfeit.add(seat);
@@ -116,10 +124,14 @@ export class CooperativeCommandPolicy {
     ];
     if (ids.some((id) => !UUID.test(id)) || new Set(ids.map((id) => id.toLowerCase())).size !== 4)
       throw new Error("cooperative teams require four distinct valid user IDs");
-    this.roster = structuredClone(roster);
+    this.roster = {
+      home: { captainId: ids[0]!.toLowerCase(), partnerId: ids[1]!.toLowerCase() },
+      away: { captainId: ids[2]!.toLowerCase(), partnerId: ids[3]!.toLowerCase() },
+    };
   }
 
   seatForUser(userId: string): MatchSeat | null {
+    userId = userId.toLowerCase();
     if (this.roster.home.captainId === userId || this.roster.home.partnerId === userId)
       return "home";
     if (this.roster.away.captainId === userId || this.roster.away.partnerId === userId)
@@ -131,15 +143,20 @@ export class CooperativeCommandPolicy {
     if (this.seatForUser(userId) !== seat) return false;
     const side = this.roster[seat];
     if (kind === "ready" || kind === "ack_snapshot") return true;
-    if (kind === "set_tactics" || kind === "substitute") return side.captainId === userId;
+    if (kind === "set_tactics" || kind === "substitute")
+      return side.captainId === userId.toLowerCase();
     // Forfeit must pass both members' server-recorded votes first.
     return false;
   }
 
   transferCaptain(seat: MatchSeat, requesterId: string, newCaptainId: string): boolean {
     const side = this.roster[seat];
-    if (side.captainId !== requesterId || side.partnerId !== newCaptainId) return false;
-    this.roster[seat] = { captainId: newCaptainId, partnerId: requesterId };
+    if (
+      side.captainId !== requesterId.toLowerCase() ||
+      side.partnerId !== newCaptainId.toLowerCase()
+    )
+      return false;
+    this.roster[seat] = { captainId: side.partnerId, partnerId: side.captainId };
     this.forfeitVotes[seat].clear();
     return true;
   }
@@ -156,7 +173,7 @@ export class CooperativeCommandPolicy {
     const votes = this.forfeitVotes[seat];
     for (const [voter, timestamp] of votes)
       if (now < timestamp || now - timestamp >= FORFEIT_VOTE_WINDOW_MS) votes.delete(voter);
-    votes.set(userId, now);
+    votes.set(userId.toLowerCase(), now);
     const side = this.roster[seat];
     if (!votes.has(side.captainId) || !votes.has(side.partnerId))
       return { status: "pending", votes: 1 };

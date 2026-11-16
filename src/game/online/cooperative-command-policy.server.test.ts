@@ -72,6 +72,44 @@ describe("server-owned cooperative 2v2 authorization", () => {
     });
   });
 
+  it("treats UUID case as the same player and does not count a duplicate vote twice", () => {
+    const policy = new CooperativeCommandPolicy(players);
+    const captain = players.home.captainId.toUpperCase();
+    const partner = players.home.partnerId.toUpperCase();
+    expect(policy.canExecute(captain, "home", "set_tactics")).toBe(true);
+    expect(policy.voteToForfeit(captain, "home", now)).toEqual({ status: "pending", votes: 1 });
+    expect(policy.voteToForfeit(players.home.captainId, "home", now + 1)).toEqual({
+      status: "pending",
+      votes: 1,
+    });
+    expect(policy.voteToForfeit(partner, "home", now + 2)).toEqual({
+      status: "approved",
+      votes: 2,
+    });
+  });
+
+  it("restores a checkpoint and transfers captaincy with equivalent UUID casing", () => {
+    const policy = new CooperativeCommandPolicy(players);
+    policy.voteToForfeit(players.home.captainId.toUpperCase(), "home", now);
+    const checkpoint = policy.checkpoint();
+    checkpoint.roster.home.captainId = checkpoint.roster.home.captainId.toUpperCase();
+    checkpoint.votes.home[0]![0] = checkpoint.votes.home[0]![0].toUpperCase();
+    const resumed = CooperativeCommandPolicy.restoreCheckpoint(players, checkpoint, now + 1);
+    expect(resumed.voteToForfeit(players.home.partnerId, "home", now + 2)).toEqual({
+      status: "approved",
+      votes: 2,
+    });
+    const transfer = new CooperativeCommandPolicy(players);
+    expect(
+      transfer.transferCaptain(
+        "home",
+        players.home.captainId.toUpperCase(),
+        players.home.partnerId.toUpperCase(),
+      ),
+    ).toBe(true);
+    expect(transfer.canExecute(players.home.partnerId, "home", "substitute")).toBe(true);
+  });
+
   it("expires abandoned votes and never accepts a reversed clock", () => {
     const policy = new CooperativeCommandPolicy(players);
     policy.voteToForfeit(players.away.captainId, "away", now);
