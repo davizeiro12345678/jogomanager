@@ -67,6 +67,31 @@ describe("four independent authenticated seats, protocol v2 (without deployment)
     expect(cooperativeTeamForSeat("away_captain")).toBe("away");
   });
 
+  it("recognizes equivalent UUID casing without weakening signed claims", async () => {
+    const args = {
+      loadTrustedRoster: async () => roster,
+      signingSecret: signingKey,
+      now: () => now,
+    };
+    const issued = await issueCooperativeSeatTicketV2(
+      args,
+      users.home_partner.toUpperCase(),
+      roomId.toUpperCase(),
+    );
+    expect(issued.ok).toBe(true);
+    if (!issued.ok) return;
+    expect(issued.ticket.seat).toBe("home_partner");
+    expect(await verifyCooperativeSeatTicketV2(issued.ticket, roster, signingKey, now)).toBe(true);
+    expect(
+      await verifyCooperativeSeatTicketV2(
+        { ...issued.ticket, userId: users.home_partner },
+        roster,
+        signingKey,
+        now,
+      ),
+    ).toBe(false);
+  });
+
   it("prevents partner tactical overrides and unauthorised forfeits", () => {
     expect(canExecuteCooperativeSeatCommand("home_partner", "ready")).toBe(true);
     expect(canExecuteCooperativeSeatCommand("away_partner", "ack_snapshot")).toBe(true);

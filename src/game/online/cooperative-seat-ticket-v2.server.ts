@@ -94,7 +94,7 @@ export function cooperativeSeatForUser(
   userId: string,
 ): CooperativeSeatV2 | null {
   for (const seat of CooperativeSeatV2Schema.options) {
-    if (roster.seats[seat] === userId) return seat;
+    if (roster.seats[seat].toLowerCase() === userId.toLowerCase()) return seat;
   }
   return null;
 }
@@ -179,7 +179,7 @@ export async function verifyCooperativeSeatTicketV2(
     const roster = CooperativeRosterV2Schema.parse(trustedRoster);
     const ticket = CooperativeSeatTicketV2Schema.parse(input);
     if (
-      ticket.roomId !== roster.roomId ||
+      ticket.roomId.toLowerCase() !== roster.roomId.toLowerCase() ||
       ticket.issuedAt > now ||
       ticket.expiresAt <= now ||
       cooperativeSeatForUser(roster, ticket.userId) !== ticket.seat
@@ -222,7 +222,8 @@ export async function issueCooperativeSeatTicketV2(
   } catch {
     return { ok: false, reason: "unavailable" };
   }
-  if (roster.roomId !== roomId) return { ok: false, reason: "unavailable" };
+  if (roster.roomId.toLowerCase() !== roomId.toLowerCase())
+    return { ok: false, reason: "unavailable" };
   const seat = cooperativeSeatForUser(roster, userId);
   if (!seat) return { ok: false, reason: "unauthorized" };
   const now = (deps.now ?? Date.now)();
