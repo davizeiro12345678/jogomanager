@@ -8,9 +8,7 @@ const SpectatorCheckpointSchema = z
     roomId: z.string().uuid(),
     delayMs: z.number().int().min(10_000).max(300_000),
     capacity: z.number().int().min(1).max(4096),
-    pending: z
-      .array(z.object({ releaseAt: SafeTime, snapshot: z.unknown() }).strict())
-      .max(4096),
+    pending: z.array(z.object({ releaseAt: SafeTime, snapshot: z.unknown() }).strict()).max(4096),
     lastAccepted: z.unknown().nullable(),
     lastAcceptedAt: z.number().int().min(-1).max(Number.MAX_SAFE_INTEGER),
     lastReleased: z.unknown().nullable(),
@@ -130,8 +128,7 @@ export class DelayedSpectatorFeed {
     if (saved.pending.length > capacity)
       throw new Error("spectator checkpoint exceeds configured capacity");
 
-    const released =
-      saved.lastReleased === null ? null : parseMatchSnapshotV1(saved.lastReleased);
+    const released = saved.lastReleased === null ? null : parseMatchSnapshotV1(saved.lastReleased);
     if (released && released.roomId !== roomId)
       throw new Error("spectator released frame belongs to another room");
     if (released?.phase === "finalized" && saved.pending.length)
@@ -154,8 +151,7 @@ export class DelayedSpectatorFeed {
       previousDeadline = item.releaseAt;
     }
 
-    const accepted =
-      saved.lastAccepted === null ? null : parseMatchSnapshotV1(saved.lastAccepted);
+    const accepted = saved.lastAccepted === null ? null : parseMatchSnapshotV1(saved.lastAccepted);
     if (accepted === null) {
       if (pending.length || released || saved.lastAcceptedAt !== -1)
         throw new Error("incomplete spectator checkpoint");
