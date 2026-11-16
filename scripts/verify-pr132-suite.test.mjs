@@ -50,3 +50,11 @@ test("rejects inconsistent totals and failures", () => {
   failed.success = false;
   assert.throws(() => verifySuiteReport(failed, [file]), /success/i);
 });
+
+test("rejects duplicate expected paths, including equivalent relative paths", () => {
+  assert.throws(() => verifySuiteReport(valid(), [file, file]), /duplicate expected/i);
+  assert.throws(
+    () => verifySuiteReport(valid(), [file, "src/../src/example.test.ts"]),
+    /duplicate expected/i,
+  );
+});

@@ -27,6 +27,7 @@ export function verifySuiteReport(report, expectedFiles) {
   }
   if (!Array.isArray(report.testResults)) throw new Error("Missing test file results");
   const expected = new Set(expectedFiles.map((file) => resolve(file)));
+  if (expected.size !== expectedFiles.length) throw new Error("Duplicate expected test files");
   const actual = new Map(report.testResults.map((result) => [resolve(result.name), result]));
   if (actual.size !== report.testResults.length || actual.size !== expected.size) {
     throw new Error("Missing, duplicate, or unexpected test file results");
