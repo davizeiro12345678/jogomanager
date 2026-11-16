@@ -247,6 +247,46 @@ describe("AuthoritativeMatchSession", () => {
     expect(engine.tacticalChanges).toHaveLength(1);
   });
 
+  it("rejects forged private recovery collections before mutating any resumed match state", async () => {
+    const { session } = createSession();
+    const home = ticket("home");
+    session.connect(home, issuedAt);
+    await session.receive(home, command(1, "ready"), issuedAt);
+    await session.receive(home, command(2, "set_tactics"), issuedAt + 1);
+    session.disconnect(home.userId, issuedAt + 2);
+    const valid = session.checkpoint();
+    const mutations: Array<(state: typeof valid) => void> = [
+      (state) => state.connected.push(roomId),
+      (state) => state.readySeats.push("home"),
+      (state) => state.sequences.push([homeUserId, 3]),
+      (state) => state.rateWindows.push([`${roomId}:ready`, [issuedAt]]),
+      (state) => state.rateWindows[0]![1].push(-1),
+      (state) => state.reconnectDeadlines.push(["away", -1]),
+      (state) => state.reconnectDeadlines.push(["home", issuedAt + 60_000]),
+      (state) => state.tactics.push(["away", { ...state.tactics[0]![1], formation: "4-3-3" }]),
+      (state) => Object.assign(state.tactics[0]![1], { formation: "11-0-0" }),
+    ];
+    for (const mutate of mutations) {
+      const corrupted = structuredClone(valid);
+      mutate(corrupted);
+      const recovered = createSession().session;
+      expect(() => recovered.restoreCheckpoint(corrupted, issuedAt + 1_000)).toThrow(
+        "invalid authoritative session checkpoint",
+      );
+      expect(recovered.checkpoint()).toMatchObject({
+        connected: [],
+        readySeats: [],
+        sequences: [],
+        tick: 0,
+        revision: 0,
+        phase: "waiting",
+      });
+    }
+    const validRecovery = createSession().session;
+    expect(() => validRecovery.restoreCheckpoint(valid, issuedAt + 1_000)).not.toThrow();
+    expect(validRecovery.checkpoint().sequences).toEqual(valid.sequences);
+  });
+
   it("recovers signed command sequences and forces socket reauthentication after a durable restart", async () => {
     const original = createSession();
     const home = ticket("home");
