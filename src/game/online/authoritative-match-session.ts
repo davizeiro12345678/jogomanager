@@ -138,7 +138,7 @@ export class AuthoritativeMatchSession {
     if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
       throw new Error("match tickets must be assigned to their matching seats");
     }
-    if (options.homeTicket.userId === options.awayTicket.userId) {
+    if (options.homeTicket.userId.toLowerCase() === options.awayTicket.userId.toLowerCase()) {
       throw new Error("match seats must belong to different users");
     }
     this.tickets = { home: { ...options.homeTicket }, away: { ...options.awayTicket } };

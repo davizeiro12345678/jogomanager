@@ -147,6 +147,21 @@ function deferred<T>() {
 }
 
 describe("AuthoritativeMatchSession", () => {
+  it("rejects the same UUID in both seats even with different letter casing", () => {
+    expect(
+      () =>
+        new AuthoritativeMatchSession({
+          roomId,
+          homeTicket: ticket("home"),
+          awayTicket: { ...ticket("away"), userId: homeUserId.toUpperCase() },
+          engine: new FakeEngine(),
+          signer: { sign: async () => "authoritative-server-receipt-signature" },
+          simulationVersion: "match-sim/1",
+          idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+        }),
+    ).toThrow("match seats must belong to different users");
+  });
+
   it("does not advance the server simulation until both authenticated seats explicitly confirm ready", async () => {
     const { session, engine } = createSession();
     const home = ticket("home");
