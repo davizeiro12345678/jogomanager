@@ -44,7 +44,15 @@ describe("public content isolation", () => {
     for (const route of ["/guias", "/guia-de-scouting", "/melhores-formacoes", "/sobre/"]) {
       expect(shouldPreloadArticleHeadingFont(route), route).toBe(true);
     }
-    for (const route of ["/", "/partida-rapida", "/produtos", "/tabelas", "/tabelas/brasileirao-serie-a", "/new", "/dashboard"]) {
+    for (const route of [
+      "/",
+      "/partida-rapida",
+      "/produtos",
+      "/tabelas",
+      "/tabelas/brasileirao-serie-a",
+      "/new",
+      "/dashboard",
+    ]) {
       expect(shouldPreloadArticleHeadingFont(route), route).toBe(false);
     }
   });
