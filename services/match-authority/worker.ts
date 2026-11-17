@@ -14,6 +14,7 @@ import {
 import type { MatchReceiptV1, MatchSeat } from "../../src/game/online/match-protocol";
 import { allocateQueuePair, loadPrivateLiveRoom, settleAuthorityReceipt } from "./supabase";
 import { validateMatchAuthorityActivation } from "./worker-activation";
+import { reserveTextFrame, SocketReservations } from "./socket-reservations";
 import type { AuthorityDatabaseEnv, PrivateMatchDescriptor } from "./supabase";
 
 interface Env extends AuthorityDatabaseEnv {
@@ -93,7 +94,8 @@ export class MatchRoomDO extends DurableObject<Env> {
   private serial: Promise<void> = Promise.resolve();
   private failed = false;
   private idempotencyKey: string | null = null;
-  private pendingSockets = 0;
+  private readonly socketReservations = new SocketReservations(MAX_PENDING_SOCKETS);
+  private readonly queuedRoomFrames = new SocketReservations(MAX_PENDING_SOCKETS * 16);
 
   private serialize<T>(work: () => Promise<T>): Promise<T> {
     const pending = this.serial.then(work, work);
@@ -242,53 +244,87 @@ export class MatchRoomDO extends DurableObject<Env> {
       !roomId ||
       !UUID.test(roomId) ||
       request.headers.get("upgrade")?.toLowerCase() !== "websocket" ||
-      request.headers.get("origin") !== this.env.ALLOWED_ORIGIN ||
-      this.pendingSockets >= MAX_PENDING_SOCKETS
+      request.headers.get("origin") !== this.env.ALLOWED_ORIGIN
     )
       return new Response("Connection rejected", { status: 403 });
+    const release = this.socketReservations.tryReserve();
+    if (!release) return new Response("Connection rejected", { status: 403 });
+    let handedOff = false;
+    let abortUpgrade: (() => void) | undefined;
     try {
-      await this.serialize(() => this.ensureLoaded(roomId));
-    } catch {
-      return new Response("Match unavailable", { status: 503 });
-    }
-    if (this.session?.phase === "finalized")
-      return new Response("Match finalized", { status: 409 });
-    const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair);
-    this.pendingSockets += 1;
-    server.accept();
-    const admission = new AuthoritativeSocketAdmission(this.bridge!, server);
-    let detached = false;
-    const finish = () => {
-      if (detached) return;
-      detached = true;
-      this.pendingSockets -= 1;
-      admission.detach();
-    };
-    server.addEventListener("message", (event: MessageEvent) => {
-      void this.serialize(async () => {
+      try {
+        await this.serialize(() => this.ensureLoaded(roomId));
+      } catch {
+        return new Response("Match unavailable", { status: 503 });
+      }
+      if (this.session?.phase === "finalized")
+        return new Response("Match finalized", { status: 409 });
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+      const pending = { admission: undefined as AuthoritativeSocketAdmission | undefined };
+      abortUpgrade = () => {
+        pending.admission?.detach();
         try {
-          await admission.onMessage(event.data);
-          // An authenticated client may have sent READY or forfeit.
-          await this.scheduleNext();
+          server.close(1011, "upgrade_failed");
         } catch {
-          server.close(1011, "match_processing_failed");
+          // The runtime may already have closed the socket.
         }
+      };
+      server.accept();
+      const admission = new AuthoritativeSocketAdmission(this.bridge!, server);
+      pending.admission = admission;
+      let detached = false;
+      const queuedFrames = new SocketReservations(16);
+      const finish = () => {
+        if (detached) return;
+        detached = true;
+        release();
+        admission.detach();
+      };
+      server.addEventListener("message", (event: MessageEvent) => {
+        if (detached) return;
+        const releaseFrame = reserveTextFrame(queuedFrames, event.data);
+        const releaseRoomFrame = releaseFrame ? this.queuedRoomFrames.tryReserve() : null;
+        if (!releaseFrame || !releaseRoomFrame) {
+          releaseFrame?.();
+          finish();
+          server.close(1008, "frame_limit_exceeded");
+          return;
+        }
+        void this.serialize(async () => {
+          try {
+            if (detached) return;
+            await admission.onMessage(event.data);
+            await this.scheduleNext();
+          } catch {
+            server.close(1011, "match_processing_failed");
+          } finally {
+            releaseFrame();
+            releaseRoomFrame();
+          }
+        });
       });
-    });
-    server.addEventListener("close", () => {
-      void this.serialize(async () => {
-        finish();
-        if (!this.failed) await this.persist();
+      server.addEventListener("close", () => {
+        void this.serialize(async () => {
+          finish();
+          if (!this.failed) await this.persist();
+        });
       });
-    });
-    server.addEventListener("error", () => {
-      void this.serialize(async () => {
-        finish();
-        if (!this.failed) await this.persist();
+      server.addEventListener("error", () => {
+        void this.serialize(async () => {
+          finish();
+          if (!this.failed) await this.persist();
+        });
       });
-    });
-    return new Response(null, { status: 101, webSocket: client });
+      const response = new Response(null, { status: 101, webSocket: client });
+      handedOff = true;
+      return response;
+    } finally {
+      if (!handedOff) {
+        abortUpgrade?.();
+        release();
+      }
+    }
   }
 
   /** Alarm-driven fixed tick loop. No browser can request a simulation tick. */
