@@ -93,7 +93,7 @@ const projectConfig = defineConfig({
           compatibility_date: "2026-10-02",
           workers_dev: true,
           keep_vars: true,
-          observability: { enabled: true },
+          observability: { enabled: true, redact_query_string: true },
           // Keep Worker Previews isolated from the production D1 database.
           previews: {
             // This flag is scoped to isolated Workers Previews. The top-level

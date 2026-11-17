@@ -87,7 +87,7 @@ async function prepare() {
   config.keep_vars = true;
   config.workers_dev = true;
   config.compatibility_date = "2026-10-02";
-  config.observability = { enabled: true };
+  config.observability = { ...config.observability, enabled: true, redact_query_string: true };
   const siteZone = settings["CLOUDFLARE_SITE_ZONE"];
   if (siteZone) {
     if (!/^[a-z0-9.-]+$/.test(siteZone) || siteZone.includes(".."))
