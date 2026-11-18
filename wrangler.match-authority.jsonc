@@ -10,11 +10,19 @@
       {
         "name": "MATCH_ROOMS",
         "class_name": "MatchRoomDO"
+      },
+      {
+        "name": "COOPERATIVE_ROOMS",
+        "class_name": "CooperativeRoomDO"
       }
     ]
   },
   "exports": {
     "MatchRoomDO": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "CooperativeRoomDO": {
       "type": "durable-object",
       "storage": "sqlite"
     }
@@ -25,6 +33,7 @@
   "vars": {
     "MATCH_AUTHORITY_ENABLED": "false",
     "MATCH_QUEUE_CRON_ENABLED": "false",
+    "MATCH_COOPERATIVE_AUTHORITY_ENABLED": "false",
     "ALLOWED_ORIGIN": "https://staging.jogomanager.com",
     "MATCH_AUTHORITY_ENV": "staging"
   },

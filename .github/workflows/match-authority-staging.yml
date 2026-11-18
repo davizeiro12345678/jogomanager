@@ -72,6 +72,7 @@ jobs:
           services/match-authority/supabase-env.test.ts
           services/match-authority/supabase-room-validation.test.ts
           services/match-authority/worker-activation.test.ts
+          services/match-authority/cooperative-lobby.test.ts
           --pool=forks --maxWorkers=1
       - name: Confirm Cloudflare target is staging and cannot serve active matches
         run: |
@@ -81,12 +82,15 @@ jobs:
           if (config.name !== 'jogomanager-match-authority-staging' ||
               config.vars?.MATCH_AUTHORITY_ENABLED !== 'false' ||
               config.vars?.MATCH_QUEUE_CRON_ENABLED !== 'false' ||
+              config.vars?.MATCH_COOPERATIVE_AUTHORITY_ENABLED !== 'false' ||
               config.workers_dev !== false ||
               config.routes?.length ||
               config.triggers?.crons?.length ||
               config.migrations?.length ||
               config.exports?.MatchRoomDO?.type !== 'durable-object' ||
               config.exports?.MatchRoomDO?.storage !== 'sqlite' ||
+              config.exports?.CooperativeRoomDO?.type !== 'durable-object' ||
+              config.exports?.CooperativeRoomDO?.storage !== 'sqlite' ||
               config.vars?.MATCH_AUTHORITY_ENV !== 'staging' ||
               config.vars?.ALLOWED_ORIGIN !== 'https://staging.jogomanager.com') {
             throw new Error('Staging config would expose an active match endpoint');

@@ -15,10 +15,15 @@ import type { MatchReceiptV1, MatchSeat } from "../../src/game/online/match-prot
 import { allocateQueuePair, loadPrivateLiveRoom, settleAuthorityReceipt } from "./supabase";
 import { validateMatchAuthorityActivation } from "./worker-activation";
 import { reserveTextFrame, SocketReservations } from "./socket-reservations";
+import { CooperativeLobby } from "./cooperative-lobby";
+import { loadStagingCooperativeRoster } from "./supabase";
 import type { AuthorityDatabaseEnv, PrivateMatchDescriptor } from "./supabase";
 
 interface Env extends AuthorityDatabaseEnv {
   MATCH_ROOMS: DurableObjectNamespace<MatchRoomDO>;
+  COOPERATIVE_ROOMS?: DurableObjectNamespace<CooperativeRoomDO>;
+  MATCH_COOPERATIVE_AUTHORITY_ENABLED?: string;
+  MATCH_COOPERATIVE_TICKET_SIGNING_SECRET?: string;
   MATCH_AUTHORITY_ENABLED: string;
   MATCH_QUEUE_CRON_ENABLED: string;
   MATCH_TICKET_SIGNING_SECRET: string;
@@ -36,9 +41,31 @@ interface PersistentRoom {
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const PATH = /^\/rooms\/([a-f0-9-]{36})\/socket$/i;
+const COOPERATIVE_PATH = /^\/cooperative\/rooms\/([a-f0-9-]{36})\/socket$/i;
 const FRAME_INTERVAL_MS = 1_000;
 const FIXED_STEPS_PER_ALARM = 30;
 const MAX_PENDING_SOCKETS = 8;
+
+function cooperativeSecret(env: Env): string | null {
+  if (
+    env.MATCH_AUTHORITY_ENV !== "staging" ||
+    env.MATCH_AUTHORITY_ENABLED !== "true" ||
+    env.MATCH_COOPERATIVE_AUTHORITY_ENABLED !== "true"
+  )
+    return null;
+  const secret = env.MATCH_COOPERATIVE_TICKET_SIGNING_SECRET?.trim();
+  return secret &&
+    secret.length >= 32 &&
+    secret !== env.MATCH_TICKET_SIGNING_SECRET.trim() &&
+    secret !== env.MATCH_RECEIPT_SIGNING_SECRET.trim()
+    ? secret
+    : null;
+}
+
+function cooperativeRoomId(url: URL): string | null {
+  const roomId = COOPERATIVE_PATH.exec(url.pathname)?.[1]?.toLowerCase();
+  return roomId && UUID.test(roomId) && !url.search && !url.hash ? roomId : null;
+}
 
 /**
  * Dedicated staging Worker: never expose this on the production domain before
@@ -54,6 +81,19 @@ export default {
       return new Response("Match unavailable", { status: 503 });
     }
     const url = new URL(request.url);
+    const cooperativeId = cooperativeRoomId(url);
+    if (cooperativeId) {
+      if (!cooperativeSecret(env) || !env.COOPERATIVE_ROOMS)
+        return new Response(null, { status: 404 });
+      if (
+        request.headers.get("origin") !== env.ALLOWED_ORIGIN ||
+        request.headers.get("upgrade")?.toLowerCase() !== "websocket"
+      )
+        return new Response(null, { status: 403 });
+      return env.COOPERATIVE_ROOMS.get(env.COOPERATIVE_ROOMS.idFromName(cooperativeId)).fetch(
+        request,
+      );
+    }
     const roomId = PATH.exec(url.pathname)?.[1]?.toLowerCase();
     if (
       !roomId ||
@@ -84,6 +124,104 @@ export default {
     }
   },
 };
+
+/** Four-seat admission and presence on a separate staging namespace. */
+export class CooperativeRoomDO extends DurableObject<Env> {
+  private readonly slots = new SocketReservations(MAX_PENDING_SOCKETS);
+  private readonly authenticationQueue = new SocketReservations(MAX_PENDING_SOCKETS);
+  private serial = Promise.resolve();
+  private lobby: CooperativeLobby | undefined;
+  private roomId: string | undefined;
+
+  fetch(request: Request): Response {
+    const roomId = cooperativeRoomId(new URL(request.url));
+    try {
+      validateMatchAuthorityActivation(this.env);
+    } catch {
+      return new Response(null, { status: 503 });
+    }
+    const secret = cooperativeSecret(this.env);
+    if (!secret || !roomId || (this.roomId && this.roomId !== roomId))
+      return new Response(null, { status: 404 });
+    if (
+      request.headers.get("origin") !== this.env.ALLOWED_ORIGIN ||
+      request.headers.get("upgrade")?.toLowerCase() !== "websocket"
+    )
+      return new Response(null, { status: 403 });
+    const release = this.slots.tryReserve();
+    if (!release) return new Response(null, { status: 429 });
+
+    this.roomId = roomId;
+    const lobby = (this.lobby ??= new CooperativeLobby({
+      roomId,
+      secret,
+      loadRoster: () => loadStagingCooperativeRoster(this.env, roomId),
+      claim: async (seat, issuedAt) => {
+        const key = `ticket:${seat}`;
+        const previous = await this.ctx.storage.get<number>(key);
+        if (previous !== undefined && issuedAt <= previous) return false;
+        await this.ctx.storage.put(key, issuedAt);
+        return true;
+      },
+    }));
+
+    let pair: WebSocketPair;
+    try {
+      pair = new WebSocketPair();
+      pair[1].accept();
+    } catch {
+      release();
+      return new Response(null, { status: 503 });
+    }
+    const { 0: client, 1: server } = pair;
+    const cleanup = () => {
+      clearTimeout(timeout);
+      release();
+      lobby.detach(server);
+    };
+    const reject = (code: number, reason: string) => {
+      try {
+        server.close(code, reason);
+      } finally {
+        cleanup();
+      }
+    };
+    let timeout = setTimeout(() => reject(1008, "auth_timeout"), 5_000);
+    server.addEventListener("close", cleanup);
+    server.addEventListener("error", cleanup);
+    let received = false;
+    server.addEventListener("message", ({ data }) => {
+      const releaseFrame =
+        !received && typeof data === "string"
+          ? reserveTextFrame(this.authenticationQueue, data)
+          : null;
+      if (!releaseFrame) {
+        reject(1008, "unexpected_frame");
+        return;
+      }
+      received = true;
+      const admit = async () => {
+        try {
+          if (server.readyState !== 1) return;
+          const expiresAt = await lobby.attach(server, data);
+          clearTimeout(timeout);
+          if (expiresAt === null) reject(1008, "ticket_rejected");
+          else
+            timeout = setTimeout(
+              () => reject(4001, "ticket_expired"),
+              Math.max(0, expiresAt - Date.now()),
+            );
+        } catch {
+          reject(1011, "lobby_unavailable");
+        } finally {
+          releaseFrame();
+        }
+      };
+      this.serial = this.serial.then(admit, admit);
+    });
+    return new Response(null, { status: 101, webSocket: client });
+  }
+}
 
 export class MatchRoomDO extends DurableObject<Env> {
   private room: PrivateMatchDescriptor | null = null;

@@ -185,11 +185,26 @@ export async function verifyCooperativeSeatTicketV2(
       cooperativeSeatForUser(roster, ticket.userId) !== ticket.seat
     )
       return false;
+    return await verifyCooperativeTicketSignature(ticket, secret, now);
+  } catch {
+    return false;
+  }
+}
+
+/** Authenticate a ticket before reading the roster from the database. */
+export async function verifyCooperativeTicketSignature(
+  input: unknown,
+  secret: string,
+  now: number,
+): Promise<boolean> {
+  try {
+    const ticket = CooperativeSeatTicketV2Schema.parse(input);
+    if (!Number.isSafeInteger(now) || now < ticket.issuedAt || ticket.expiresAt <= now)
+      return false;
     const { signature, ...unsigned } = ticket;
-    const key = await hmacKey(secret, "verify");
     return await globalThis.crypto.subtle.verify(
       "HMAC",
-      key,
+      await hmacKey(secret, "verify"),
       fromBase64Url(signature),
       canonicalTicket(unsigned),
     );
