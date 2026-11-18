@@ -98,7 +98,7 @@ export async function loadPrivateLiveRoom(
   if (!ROOM_ID.test(roomId)) return null;
   const params = new URLSearchParams({
     select:
-      "id,host_id,guest_id,host_club,guest_club,status,server_seeded,contact_physics_revision",
+      "id,host_id,guest_id,host_club,guest_club,status,server_seeded,settlement_authority,contact_physics_revision",
     id: `eq.${roomId}`,
     limit: "1",
   });
@@ -108,6 +108,7 @@ export async function loadPrivateLiveRoom(
     room["id"] !== roomId ||
     room["status"] !== "live" ||
     room["server_seeded"] !== true ||
+    room["settlement_authority"] !== "websocket" ||
     typeof room["host_id"] !== "string" ||
     typeof room["guest_id"] !== "string" ||
     !ROOM_ID.test(room["host_id"]) ||

@@ -112,8 +112,19 @@ describe("signed WebSocket bridge composition", () => {
     });
     const previousSocket = new TestSocket();
     expect(await bridge.attach(previousSocket, homeTicket)).toBe("home");
+    await bridge.onMessage(
+      previousSocket,
+      JSON.stringify({
+        type: "command",
+        command: { version: 1, roomId, sequence: 6, kind: "ready", payload: { ready: true } },
+      }),
+    );
     const freshSocket = new TestSocket();
     expect(await bridge.attach(freshSocket, renewed)).toBe("home");
+    expect(freshSocket.sent.map((message) => JSON.parse(message))).toMatchObject([
+      { type: "sequence_resume", version: 1, roomId, seat: "home", sequence: 6 },
+      { type: "ready", version: 1, seat: "home" },
+    ]);
     expect(previousSocket.code).toBe(4001);
     const stale = new TestSocket();
     expect(await bridge.attach(stale, homeTicket)).toBeNull();

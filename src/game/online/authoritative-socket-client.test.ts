@@ -105,6 +105,43 @@ afterEach(() => {
 });
 
 describe("staged authoritative WSS client", () => {
+  it("reports the sequence of the submitted forfeit so the UI can match its response", async () => {
+    const f = fixture();
+    const forfeit = { kind: "forfeit", payload: { confirmed: true } } as const;
+    expect(f.client.sendTrackedCommand(forfeit)).toBeNull();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    expect(f.client.sendTrackedCommand(forfeit)).toBe(2);
+    expect(JSON.parse(socket.sent.at(-1)!)).toMatchObject({
+      type: "command",
+      command: { kind: "forfeit", sequence: 2 },
+    });
+    socket.close(4001);
+    expect(f.client.sendTrackedCommand(forfeit)).toBeNull();
+    f.client.dispose();
+  });
+
+  it("resumes a fresh client's sequence before the first command after authentication", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "sequence_resume", roomId, seat: "away", sequence: 90 }));
+    socket.message(frame({ type: "sequence_resume", roomId: userId, seat: "home", sequence: 80 }));
+    socket.message(frame({ type: "sequence_resume", roomId, seat: "home", sequence: 6 }));
+    expect(f.events).toEqual([]);
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    socket.message(frame({ type: "sequence_resume", roomId, seat: "home", sequence: 60 }));
+    expect(f.client.sendTrackedCommand({ kind: "ready", payload: { ready: true } })).toBe(7);
+    expect(f.events).toEqual(["ready"]);
+    f.client.dispose();
+  });
+
   it("rejects an insecure or foreign-host gateway before sending a signed ticket", () => {
     const f = fixture();
     expect(

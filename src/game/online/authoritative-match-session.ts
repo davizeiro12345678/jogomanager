@@ -156,6 +156,10 @@ export class AuthoritativeMatchSession {
     return ticket.seat;
   }
 
+  lastAcceptedCommandSequence(seat: MatchSeat): number {
+    return this.lastSequence.get(this.tickets[seat].userId) ?? 0;
+  }
+
   /** Replace an expired or expiring seat ticket without resetting match state.
    * Issuance and user reauthentication belong to the transport owner. */
   async renewTicket(input: unknown): Promise<void> {

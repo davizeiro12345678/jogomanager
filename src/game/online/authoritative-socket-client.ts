@@ -125,10 +125,16 @@ export class AuthoritativeMatchSocketClient {
    * network send: the server may have accepted that frame.
    */
   sendCommand(input: Omit<MatchCommandV1, "version" | "roomId" | "sequence">): boolean {
+    return this.sendTrackedCommand(input) !== null;
+  }
+
+  /** Lets the UI associate an ACK or NACK with a particular pending action. */
+  sendTrackedCommand(
+    input: Omit<MatchCommandV1, "version" | "roomId" | "sequence">,
+  ): number | null {
     const socket = this.socket;
-    if (this.currentStatus !== "connected" || !socket || socket.readyState !== WS_OPEN)
-      return false;
-    if (this.sequence >= Number.MAX_SAFE_INTEGER) return false;
+    if (this.currentStatus !== "connected" || !socket || socket.readyState !== WS_OPEN) return null;
+    if (this.sequence >= Number.MAX_SAFE_INTEGER) return null;
     const command = parseMatchCommandV1({
       ...input,
       version: MATCH_PROTOCOL_VERSION,
@@ -139,10 +145,10 @@ export class AuthoritativeMatchSocketClient {
     try {
       socket.send(JSON.stringify({ type: "command", command }));
       this.ackLatency.recordSent(command.sequence, (this.options.now ?? Date.now)());
-      return true;
+      return command.sequence;
     } catch {
       socket.close(1011, "send_failed");
-      return false;
+      return null;
     }
   }
 
@@ -162,6 +168,7 @@ export class AuthoritativeMatchSocketClient {
         : new WebSocket(this.url);
       this.socket = socket;
       this.ticket = candidate;
+      let resumeFrom = 0;
       socket.onopen = () => {
         if (!this.isCurrent(socket, generation)) return;
         this.status("authenticating");
@@ -185,6 +192,11 @@ export class AuthoritativeMatchSocketClient {
       socket.onmessage = (message) => {
         if (!this.isCurrent(socket, generation)) return;
         const event = this.feed.accept(message.data);
+        if (event.kind === "sequence_resume") {
+          if (this.currentStatus === "authenticating" && event.seat === candidate.seat)
+            resumeFrom = Math.max(resumeFrom, event.sequence);
+          return;
+        }
         if (event.kind === "ack" || event.kind === "nack")
           this.ackLatency.recordAcknowledged(
             event.sequence,
@@ -199,6 +211,7 @@ export class AuthoritativeMatchSocketClient {
           }
           this.clearAuthTimer();
           this.retryCount = 0;
+          this.sequence = Math.max(this.sequence, resumeFrom);
           this.status("connected");
         }
         if (event.kind === "final") this.clearAuthTimer();

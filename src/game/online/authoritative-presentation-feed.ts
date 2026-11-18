@@ -19,6 +19,7 @@ export type AuthorityFeedEvent =
   | { kind: "ready"; seat: MatchSeat; snapshot: MatchSnapshotV1 }
   | { kind: "snapshot"; snapshot: MatchSnapshotV1 }
   | { kind: "final"; receipt: MatchReceiptV1 }
+  | { kind: "sequence_resume"; seat: MatchSeat; sequence: number }
   | { kind: "ack" | "nack"; sequence: number; reason?: string }
   | { kind: "pong" }
   | { kind: "ignored"; reason: "malformed" | "foreign_room" | "stale" | "conflict" };
@@ -83,6 +84,19 @@ export class AuthoritativePresentationFeed {
     }
     if (!object(input) || input["version"] !== MATCH_PROTOCOL_VERSION)
       return { kind: "ignored", reason: "malformed" };
+
+    if (input["type"] === "sequence_resume") {
+      const seat = parseSeat(input["seat"]);
+      const sequence = parseSequence(input["sequence"]);
+      if (
+        !exactKeys(input, ["type", "version", "roomId", "seat", "sequence"]) ||
+        seat === null ||
+        sequence === null
+      )
+        return { kind: "ignored", reason: "malformed" };
+      if (input["roomId"] !== this.roomId) return { kind: "ignored", reason: "foreign_room" };
+      return { kind: "sequence_resume", seat, sequence };
+    }
 
     if (input["type"] === "ready" || input["type"] === "snapshot") {
       const ready = input["type"] === "ready";

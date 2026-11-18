@@ -90,6 +90,16 @@ export class AuthoritativeSocketBridge {
       };
       this.peers.set(seat, peer);
       if (previous && previous.socket !== socket) previous.socket.close(4001, "session_replaced");
+      const sequence = this.options.session.lastAcceptedCommandSequence(seat);
+      if (sequence > 0) {
+        this.send(peer, {
+          type: "sequence_resume",
+          version: MATCH_PROTOCOL_VERSION,
+          roomId: ticket.roomId,
+          seat,
+          sequence,
+        });
+      }
       this.send(peer, {
         type: "ready",
         version: MATCH_PROTOCOL_VERSION,

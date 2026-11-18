@@ -51,7 +51,7 @@ export function LiveRoom({
   const [showChat, setShowChat] = useState(false);
   const [authorityStatus, setAuthorityStatus] = useState<AuthorityConnectionStatus>("disconnected");
   const socketClientRef = useRef<AuthoritativeMatchSocketClient | null>(null);
-  const [pendingForfeit, setPendingForfeit] = useState(false);
+  const [pendingForfeit, setPendingForfeit] = useState<number | null>(null);
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
   const published = useRef(false);
@@ -173,13 +173,17 @@ export function LiveRoom({
         onStatus: (status) => {
           if (disposed) return;
           setAuthorityStatus(status);
-          if (status === "connected")
+          if (status === "connected") {
             client.sendCommand({ kind: "ready", payload: { ready: true } });
+          } else {
+            setPendingForfeit(null);
+          }
         },
         onEvent: (event) => {
           if (disposed) return;
           if (event.kind === "ready" || event.kind === "snapshot") {
             authoritativeResult.current = true;
+            if (event.snapshot.phase === "finalized") setPendingForfeit(null);
             setSnap({
               minute: event.snapshot.publicState.minute,
               hg: event.snapshot.publicState.score.home,
@@ -189,13 +193,15 @@ export function LiveRoom({
           } else if (event.kind === "final") {
             authoritativeResult.current = true;
             controllerRef.current?.pause(true);
-            setPendingForfeit(false);
+            setPendingForfeit(null);
             setSnap((current) => ({
               minute: current.minute,
               hg: event.receipt.result.homeGoals,
               ag: event.receipt.result.awayGoals,
               finished: true,
             }));
+          } else if (event.kind === "nack") {
+            setPendingForfeit((pending) => (pending === event.sequence ? null : pending));
           }
         },
       });
@@ -220,6 +226,7 @@ export function LiveRoom({
   useEffect(() => {
     if (room.status !== "done") return;
     authoritativeResult.current = true;
+    setPendingForfeit(null);
     controllerRef.current?.pause(true);
 
     const state = room.state;
@@ -239,11 +246,13 @@ export function LiveRoom({
 
   const exitLiveRoom = () => {
     if (room.settlement_authority === "websocket" && !snap.finished) {
-      if (
-        !pendingForfeit &&
-        socketClientRef.current?.sendCommand({ kind: "forfeit", payload: { confirmed: true } })
-      )
-        setPendingForfeit(true);
+      if (pendingForfeit === null) {
+        const sequence = socketClientRef.current?.sendTrackedCommand({
+          kind: "forfeit",
+          payload: { confirmed: true },
+        });
+        setPendingForfeit(sequence ?? null);
+      }
       return;
     }
     onExit();
@@ -346,13 +355,13 @@ export function LiveRoom({
             !online ||
             (room.settlement_authority === "websocket" &&
               !snap.finished &&
-              (authorityStatus !== "connected" || pendingForfeit))
+              (authorityStatus !== "connected" || pendingForfeit !== null))
           }
           className="rounded-full bg-white/15 px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {!online
             ? copy.reconnecting
-            : pendingForfeit
+            : pendingForfeit !== null
               ? copy.authorityForfeitPending
               : snap.finished
                 ? copy.finish

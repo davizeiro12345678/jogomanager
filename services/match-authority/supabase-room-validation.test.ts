@@ -26,6 +26,7 @@ const liveRoom = {
   guest_club: "CHE",
   status: "live",
   server_seeded: true,
+  settlement_authority: "websocket",
   contact_physics_revision: 2,
 };
 
@@ -47,6 +48,7 @@ describe("staging authoritative room hydration from private Supabase REST", () =
       expect(headers.get("Authorization")).toBe(`Bearer ${secret}`);
       if (url.pathname === "/rest/v1/match_rooms") {
         expect(url.searchParams.get("id")).toBe(`eq.${roomId}`);
+        expect(url.searchParams.get("select")?.split(",")).toContain("settlement_authority");
         return reply([liveRoom]);
       }
       if (url.pathname === "/rest/v1/match_room_secrets") {
@@ -94,6 +96,20 @@ describe("staging authoritative room hydration from private Supabase REST", () =
     );
     expect(client).toHaveBeenCalledTimes(1);
   });
+
+  it.each(["legacy", null, undefined])(
+    "rejects rooms with settlement authority %s before fetching the private seed",
+    async (authority) => {
+      const client = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+        if (new URL(String(input)).pathname === "/rest/v1/match_room_secrets") {
+          return reply([{ seed: "isolated_room_seed_2026_11_13" }]);
+        }
+        return reply([{ ...liveRoom, settlement_authority: authority }]);
+      });
+      await expect(loadPrivateLiveRoom(env, roomId)).resolves.toBeNull();
+      expect(client).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("does not fetch a room from production even if the staging reference is supplied", async () => {
     const client = vi.spyOn(globalThis, "fetch");
