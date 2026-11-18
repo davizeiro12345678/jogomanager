@@ -147,6 +147,16 @@ export async function allocateQueuePair(env: AuthorityDatabaseEnv): Promise<unkn
   return request(env, "/rest/v1/rpc/match_queue_allocate", "POST", undefined, {});
 }
 
+export async function loadStagingCooperativeRoster(
+  env: AuthorityDatabaseEnv,
+  roomId: string,
+): Promise<unknown> {
+  if (env.MATCH_AUTHORITY_ENV !== "staging" || !ROOM_ID.test(roomId)) return null;
+  return request(env, "/rest/v1/rpc/load_live_cooperative_match_roster", "POST", undefined, {
+    p_room: roomId,
+  });
+}
+
 export interface SettlementInput {
   p_room: string;
   p_receipt_id: string;

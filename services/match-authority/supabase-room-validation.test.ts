@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadPrivateLiveRoom, type AuthorityDatabaseEnv } from "./supabase";
+import { issueCooperativeSeatTicketV2 } from "../../src/game/online/cooperative-seat-ticket-v2.server";
+import {
+  loadPrivateLiveRoom,
+  loadStagingCooperativeRoster,
+  type AuthorityDatabaseEnv,
+} from "./supabase";
 
 const projectRef = "abcdefghijklmnopqrst";
 const roomId = "12345678-1234-4123-8123-123456789012";
@@ -97,6 +102,62 @@ describe("staging authoritative room hydration from private Supabase REST", () =
         { ...env, SUPABASE_URL: "https://lguqnwvsfeefxamzeyos.supabase.co" },
         roomId,
       ),
+    ).rejects.toThrow(/environment/);
+    expect(client).not.toHaveBeenCalled();
+  });
+});
+
+describe("staging cooperative tickets from the private roster RPC", () => {
+  it("binds four tickets to the users and seats returned by the database", async () => {
+    const seats = {
+      home_captain: hostId,
+      home_partner: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      away_captain: guestId,
+      away_partner: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    };
+    const client = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      expect(String(input)).toBe(
+        `https://${projectRef}.supabase.co/rest/v1/rpc/load_live_cooperative_match_roster`,
+      );
+      expect(init?.method).toBe("POST");
+      expect(init?.body).toBe(JSON.stringify({ p_room: roomId }));
+      return reply({
+        version: 2,
+        roomId,
+        status: "live",
+        settlementAuthority: "websocket",
+        serverSeeded: true,
+        seats,
+      });
+    });
+    const deps = {
+      loadTrustedRoster: (id: string) => loadStagingCooperativeRoster(env, id),
+      signingSecret: "isolated-cooperative-test-signing-key-123",
+    };
+    for (const [seat, userId] of Object.entries(seats)) {
+      await expect(issueCooperativeSeatTicketV2(deps, userId, roomId)).resolves.toMatchObject({
+        ok: true,
+        ticket: { version: 2, roomId, seat, userId },
+      });
+    }
+    await expect(issueCooperativeSeatTicketV2(deps, roomId, roomId)).resolves.toEqual({
+      ok: false,
+      reason: "unauthorized",
+    });
+    expect(client).toHaveBeenCalledTimes(5);
+  });
+
+  it("refuses to read the cooperative roster from production", async () => {
+    const client = vi.spyOn(globalThis, "fetch");
+    const productionUrl = "https://lguqnwvsfeefxamzeyos.supabase.co";
+    await expect(
+      loadStagingCooperativeRoster(
+        { ...env, MATCH_AUTHORITY_ENV: "production", SUPABASE_URL: productionUrl },
+        roomId,
+      ),
+    ).resolves.toBeNull();
+    await expect(
+      loadStagingCooperativeRoster({ ...env, SUPABASE_URL: productionUrl }, roomId),
     ).rejects.toThrow(/environment/);
     expect(client).not.toHaveBeenCalled();
   });

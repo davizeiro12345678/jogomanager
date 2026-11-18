@@ -582,6 +582,13 @@
       "when": 1794524400000,
       "tag": "0082_fast_featured_injury_digest",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1795006800000,
+      "tag": "0083_private_cooperative_match_rosters",
+      "breakpoints": true
     }
   ]
 }
