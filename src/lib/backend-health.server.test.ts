@@ -24,7 +24,10 @@ describe("backend readiness", () => {
       vi.fn().mockResolvedValue(Response.json({ message: "Forbidden" }, { status: 403 })),
     );
     expect(rejected.failureStage).toBe("auth_upstream_http_error");
-    const network = await checkBackendHealth(env, vi.fn().mockRejectedValue(new Error("private-token")));
+    const network = await checkBackendHealth(
+      env,
+      vi.fn().mockRejectedValue(new Error("private-token")),
+    );
     expect(network.failureStage).toBe("auth_transport_error");
     expect(JSON.stringify(network)).not.toContain("private-token");
   });
