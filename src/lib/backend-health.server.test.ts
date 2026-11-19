@@ -90,6 +90,15 @@ describe("request-scoped Cloudflare health bindings", () => {
     expect(selectBackendHealthEnvironment({}, requestCloudflareBindings(request))).toEqual(env);
   });
 
+  it("accepts adapter-attached Cloudflare env when Nitro omits runtime.name", () => {
+    const request = new Request("https://jogomanager.com/api/health");
+    const binding = { SUPABASE_URL: "https://project.supabase.co" };
+    Object.defineProperty(request, "runtime", {
+      value: { cloudflare: { env: binding } },
+    });
+    expect(requestCloudflareBindings(request)).toBe(binding);
+  });
+
   it("does not trust headers or non-Cloudflare runtime state", () => {
     const request = new Request("https://jogomanager.com/api/health", {
       headers: { "x-worker-env": "forged", authorization: "Bearer fixture" },
