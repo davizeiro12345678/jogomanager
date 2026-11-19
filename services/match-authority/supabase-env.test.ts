@@ -96,6 +96,19 @@ describe("match authority database isolation", () => {
     expect(headers.get("Authorization")).toBe(`Bearer ${serviceKey}`);
   });
 
+  it("does not follow redirects on requests carrying a service credential", async () => {
+    const client = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(null, {
+        status: 307,
+        headers: { Location: `${stagingUrl}/rest/v1/other-resource` },
+      }),
+    );
+
+    await expect(allocateQueuePair(makeEnv(stagingUrl, "staging"))).rejects.toThrow(/307/);
+    expect(client).toHaveBeenCalledOnce();
+    expect(client.mock.calls[0]![1]?.redirect).toBe("manual");
+  });
+
   it("accepts a numeric UUID for staging room lookup and rejects malformed IDs before the network", async () => {
     const client = vi
       .spyOn(globalThis, "fetch")

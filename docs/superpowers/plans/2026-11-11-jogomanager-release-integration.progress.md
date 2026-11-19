@@ -1,5 +1,15 @@
 # SDD ledger — plan: docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md
 
+## Continuação 19/11/2026 — estabilidade e isolamento do 1×1
+
+- O cliente começa a enviar heartbeat após `READY` e reconecta antecipadamente com um ticket atualizado, preservando a sequência de comandos. O teste com dois clientes cobre inatividade de 50 segundos e comandos após o vencimento dos tickets iniciais.
+- No servidor, o vencimento do ticket fecha apenas a conexão afetada e permite renovar aquele assento. Se a persistência do checkpoint falhar, a sala continua bloqueando a confirmação do comando.
+- O cliente REST do Worker rejeita redirecionamentos em requisições que carregam credencial do Supabase. A validação do projeto de destino continua ativa.
+- Evidência local: `npm exec -- vitest run src/game/online services/match-authority`, 24 arquivos e 198 testes aprovados. A revisão direcionada do fluxo apontou riscos de estabilidade, liquidação e isolamento do banco. O aceite completo ainda depende de CI no novo commit, revisão formal e homologação privada.
+- Próximos gates do multiplayer: validar emissão de tickets e WSS no preview com credenciais de staging, dois aparelhos, reconexão, recuperação após reinício e liquidação idempotente. Confirmar a visibilidade do estado final após a confirmação no banco antes de expandir para a partida 2×2.
+- Em produção, o domínio principal retornou 503 no health e carregou um bundle diferente de `jogar`, que retornou 200. O bundle de `jogar` ainda omitia a URL e a chave publicável do Supabase. Confirmar a associação do domínio no painel Lovable e homologar um build com login funcional antes de mudar o roteamento.
+- No VPS, o Nginx, ClamAV e agente Wazuh estavam ativos. O túnel dedicado continuava sem conexões no provedor, e o canário atendia os hosts VPS com oito conexões. A troca de identidade do túnel depende de provisionamento autorizado da credencial, restauração testada e acesso administrativo de recuperação.
+
 ## Continuação 12/11/2026 — adendo visual/fluidez/física/IA/SEO
 
 O proprietário solicitou a ampliação do salto visual e a continuação desta PR. O plano complementar está em `docs/superpowers/plans/2026-11-12-match3d-major-upgrade.md`, spec homônima em `specs/`, execução/evidência em `verification/pr132-upgrade-20261112/progress.md`. O lote inicial corrige recuperação de chunk cinematográfico, batching inicial com cenário assíncrono, apoio indevido de atleta expulso na IA v2 e adiciona gate SEO para as falhas reais do sitemap; preserva revisões legadas e gates. O salto visual completo, homologação física, publicação/configuração e novo crawl Semrush continuam explicitamente pendentes. Os checkpoints históricos abaixo não aprovam automaticamente a revisão combinada atual.

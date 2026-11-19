@@ -56,6 +56,7 @@ async function request(
     throw new Error("match authority service role is not configured");
   const response = await fetch(endpoint(env, path, params), {
     method,
+    redirect: "manual",
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
       ...(env.SUPABASE_SERVICE_ROLE_KEY.startsWith("sb_secret_")

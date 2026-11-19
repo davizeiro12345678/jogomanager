@@ -54,7 +54,12 @@ class FakeSocket implements AuthorityClientSocket {
   message(raw: string): void {
     this.onmessage?.({ data: raw } as MessageEvent);
   }
-  close(code = 1000): void {
+  close(code = 1000, reason?: string): void {
+    // Calls with a reason come from the browser client. Calls without one in
+    // these tests simulate close frames arriving from the server/network.
+    if (reason !== undefined && code !== 1000 && (code < 3000 || code > 4999)) {
+      throw new DOMException("Invalid client WebSocket close code", "InvalidAccessError");
+    }
     this.closeCode = code;
     this.readyState = 3;
     this.onclose?.({ code } as CloseEvent);
@@ -217,6 +222,48 @@ describe("staged authoritative WSS client", () => {
     f.client.dispose();
   });
 
+  it("sends unsequenced heartbeats only after readiness and stops them after the final receipt", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      await vi.advanceTimersByTimeAsync(4_000);
+      expect(socket.sent).toHaveLength(1);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      f.advance(24_000);
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(JSON.parse(socket.sent[1]!)).toEqual({ type: "ping" });
+      expect(f.client.latencySummary().pending).toBe(0);
+
+      socket.message(
+        frame({
+          type: "final",
+          receipt: {
+            version: 1,
+            roomId,
+            simulationVersion: "contact-2",
+            commandHash: "a".repeat(64),
+            idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+            issuedAt: startAt + 24_000,
+            closureReason: "completed",
+            result: { homeGoals: 0, awayGoals: 0, winner: "draw" },
+            signature: "test-only-final-receipt-signature",
+          },
+        }),
+      );
+      expect(f.events.at(-1)).toBe("final");
+      await vi.advanceTimersByTimeAsync(90_000);
+      expect(socket.sent).toHaveLength(2);
+      expect(socket.closeCode).toBeNull();
+      expect(f.requests()).toBe(1);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("rejects forged seats and does not join a room from a different domain", async () => {
     const f = fixture();
     f.client.start();
@@ -224,7 +271,7 @@ describe("staged authoritative WSS client", () => {
     const socket = f.sockets[0]!;
     socket.open();
     socket.message(frame({ type: "ready", seat: "away", snapshot: state(1) }));
-    expect(socket.closeCode).toBe(1008);
+    expect(socket.closeCode).toBe(4003);
     expect(f.client.statusSnapshot()).toBe("unavailable");
     expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
     f.client.dispose();

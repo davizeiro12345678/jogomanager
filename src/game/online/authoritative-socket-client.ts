@@ -40,12 +40,20 @@ export interface AuthoritySocketClientOptions {
 
 const WS_OPEN = 1;
 const AUTH_DEADLINE_MS = 5_000;
+// The bridge drops an authenticated peer after 45 seconds of inactivity.
+const HEARTBEAT_INTERVAL_MS = 20_000;
+const TICKET_RENEWAL_LEAD_MS = 10_000;
+// WebSocket.close in a browser accepts 1000 or an application code (3000–4999).
+const TICKET_RENEWAL_CLOSE_CODE = 4002;
+const CLIENT_AUTH_REJECTED_CLOSE_CODE = 4003;
 
 /**
  * Client transport only. A valid WSS origin, the real server HMAC admission
  * gateway and durable room storage are deployment prerequisites. The client
  * never sends a seed, state, score or reward. Every reconnection requests a
  * new verified ticket; monotonic command sequence survives socket replacement.
+ * An authenticated socket stays active during passive play and renews its
+ * connection before the seat ticket expires.
  */
 export class AuthoritativeMatchSocketClient {
   private readonly feed: AuthoritativePresentationFeed;
@@ -60,6 +68,8 @@ export class AuthoritativeMatchSocketClient {
   private currentStatus: AuthorityConnectionStatus = "disconnected";
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private authTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private renewalTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly options: AuthoritySocketClientOptions) {
     const target = new URL(options.gatewayUrl);
@@ -134,6 +144,11 @@ export class AuthoritativeMatchSocketClient {
   ): number | null {
     const socket = this.socket;
     if (this.currentStatus !== "connected" || !socket || socket.readyState !== WS_OPEN) return null;
+    const now = (this.options.now ?? Date.now)();
+    if (!this.ticket || this.ticket.expiresAt <= now) {
+      socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
+      return null;
+    }
     if (this.sequence >= Number.MAX_SAFE_INTEGER) return null;
     const command = parseMatchCommandV1({
       ...input,
@@ -144,10 +159,10 @@ export class AuthoritativeMatchSocketClient {
     this.sequence += 1;
     try {
       socket.send(JSON.stringify({ type: "command", command }));
-      this.ackLatency.recordSent(command.sequence, (this.options.now ?? Date.now)());
+      this.ackLatency.recordSent(command.sequence, now);
       return command.sequence;
     } catch {
-      socket.close(1011, "send_failed");
+      socket.close(1000, "send_failed");
       return null;
     }
   }
@@ -181,12 +196,12 @@ export class AuthoritativeMatchSocketClient {
             }),
           );
         } catch {
-          socket.close(1011, "auth_send_failed");
+          socket.close(1000, "auth_send_failed");
           return;
         }
         this.authTimer = setTimeout(() => {
           if (this.isCurrent(socket, generation) && this.currentStatus === "authenticating")
-            socket.close(1008, "auth_timeout");
+            socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "auth_timeout");
         }, AUTH_DEADLINE_MS);
       };
       socket.onmessage = (message) => {
@@ -206,26 +221,37 @@ export class AuthoritativeMatchSocketClient {
         if (event.kind === "ready") {
           if (event.seat !== candidate.seat) {
             this.status("unavailable");
-            socket.close(1008, "seat_mismatch");
+            socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "seat_mismatch");
             return;
           }
           this.clearAuthTimer();
           this.retryCount = 0;
           this.sequence = Math.max(this.sequence, resumeFrom);
+          if (this.currentStatus !== "connected") {
+            this.startConnectionTimers(socket, generation, candidate);
+          }
           this.status("connected");
         }
-        if (event.kind === "final") this.clearAuthTimer();
+        if (event.kind === "final") {
+          this.clearAuthTimer();
+          this.clearConnectionTimers();
+        }
         if (event.kind !== "ignored") this.options.onEvent(event);
       };
       socket.onclose = (close) => {
         if (!this.isCurrent(socket, generation)) return;
         this.clearAuthTimer();
+        this.clearConnectionTimers();
         this.clearSocketListeners(socket);
         this.socket = null;
         this.ticket = null;
         // A rejected signature or a replaced session is not a reason to
         // repeatedly mint new tickets or fight another authorized device.
-        if (close.code === 1008 || close.code === 4001) {
+        if (
+          close.code === 1008 ||
+          close.code === 4001 ||
+          close.code === CLIENT_AUTH_REJECTED_CLOSE_CODE
+        ) {
           this.status("unavailable");
           return;
         }
@@ -262,8 +288,39 @@ export class AuthoritativeMatchSocketClient {
     this.authTimer = null;
   }
 
+  private startConnectionTimers(
+    socket: AuthorityClientSocket,
+    generation: number,
+    ticket: MatchTicketV1,
+  ): void {
+    this.heartbeatTimer = setInterval(() => {
+      if (!this.isCurrent(socket, generation) || socket.readyState !== WS_OPEN) return;
+      try {
+        socket.send(JSON.stringify({ type: "ping" }));
+      } catch {
+        socket.close(1000, "heartbeat_failed");
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    const remaining = ticket.expiresAt - (this.options.now ?? Date.now)();
+    const delay = Math.max(0, remaining - Math.min(TICKET_RENEWAL_LEAD_MS, remaining / 2));
+    this.renewalTimer = setTimeout(() => {
+      if (this.isCurrent(socket, generation) && socket.readyState === WS_OPEN) {
+        socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
+      }
+    }, delay);
+  }
+
+  private clearConnectionTimers(): void {
+    if (this.heartbeatTimer !== null) clearInterval(this.heartbeatTimer);
+    if (this.renewalTimer !== null) clearTimeout(this.renewalTimer);
+    this.heartbeatTimer = null;
+    this.renewalTimer = null;
+  }
+
   private clearTimers(): void {
     this.clearAuthTimer();
+    this.clearConnectionTimers();
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = null;
   }

@@ -59,7 +59,10 @@ class LoopbackSocket implements AuthorityClientSocket {
     });
   }
 
-  close(code = 1000): void {
+  close(code = 1000, reason?: string): void {
+    if (reason !== undefined && code !== 1000 && (code < 3000 || code > 4999)) {
+      throw new DOMException("Invalid client WebSocket close code", "InvalidAccessError");
+    }
     if (this.readyState === 3) return;
     this.closeCode = code;
     this.readyState = 3;
@@ -69,16 +72,16 @@ class LoopbackSocket implements AuthorityClientSocket {
   }
 }
 
-async function seatTicket(seat: MatchSeat): Promise<MatchTicketV1> {
+async function seatTicket(seat: MatchSeat, issuedAt = startedAt): Promise<MatchTicketV1> {
   return signMatchTicketV1(
     {
       version: 1,
       roomId,
       userId: people[seat],
       seat,
-      issuedAt: startedAt,
-      expiresAt: startedAt + 60_000,
-      nonce: "isolated-two-clients-" + seat + "-nonce-for-test",
+      issuedAt,
+      expiresAt: issuedAt + 90_000,
+      nonce: `isolated-two-clients-${seat}-${issuedAt}-nonce-for-test`,
     },
     signingKey,
   );
@@ -88,6 +91,8 @@ afterEach(() => vi.useRealTimers());
 
 describe("two independent authoritative client transports, without physical devices", () => {
   it("admits separate signed seats and broadcasts the same canonical clock and score", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(startedAt + 100);
     let steps = 0;
     const [homeTicket, awayTicket] = await Promise.all([seatTicket("home"), seatTicket("away")]);
     const session = new AuthoritativeMatchSession({
@@ -116,7 +121,6 @@ describe("two independent authoritative client transports, without physical devi
     const bridge = createSecureMatchSocketBridge({
       session,
       signingSecret: signingKey,
-      now: () => startedAt + 100,
     });
     const pairs: LoopbackSocket[] = [];
     const makeClient = (seat: MatchSeat) =>
@@ -124,7 +128,7 @@ describe("two independent authoritative client transports, without physical devi
         gatewayUrl: `wss://match.jogomanager.com/rooms/${roomId}/socket`,
         pageOrigin: "https://jogomanager.com",
         roomId,
-        issueTicket: () => seatTicket(seat),
+        issueTicket: () => seatTicket(seat, Date.now()),
         onEvent: () => undefined,
         onStatus: (status) => {
           if (status === "connected")
@@ -138,7 +142,6 @@ describe("two independent authoritative client transports, without physical devi
           pairs.push(socket);
           return socket;
         },
-        now: () => startedAt + 100,
       });
     const clients = {
       home: null as unknown as AuthoritativeMatchSocketClient,
@@ -166,6 +169,34 @@ describe("two independent authoritative client transports, without physical devi
       expect(clients.home.officialSnapshot()?.publicState.score.home).toBe(1);
       expect(clients.away.latencySummary().accepted).toBeGreaterThanOrEqual(1);
       expect(clients.home.latencySummary().accepted).toBeGreaterThanOrEqual(1);
+
+      // The server's 45-second inactivity window must not evict either player
+      // while both browsers watch the match without issuing more commands.
+      await vi.advanceTimersByTimeAsync(50_000);
+      await bridge.pulse();
+      await vi.waitFor(() => expect(clients.home.officialSnapshot()?.tick).toBe(3));
+      expect(clients.home.statusSnapshot()).toBe("connected");
+      expect(clients.away.statusSnapshot()).toBe("connected");
+      expect(pairs).toHaveLength(2);
+      expect(session.phase).toBe("live");
+
+      await vi.advanceTimersByTimeAsync(31_000);
+      await vi.waitFor(() => expect(pairs).toHaveLength(4));
+      expect(pairs.slice(0, 2).map((pair) => pair.closeCode)).toEqual([4002, 4002]);
+      for (const socket of pairs.slice(2)) socket.open();
+      await vi.waitFor(() => {
+        expect(clients.home.statusSnapshot()).toBe("connected");
+        expect(clients.away.statusSnapshot()).toBe("connected");
+        expect(session.phase).toBe("live");
+      });
+      await vi.advanceTimersByTimeAsync(10_000);
+      // These commands use renewed tickets after the initial tickets expired.
+      expect(clients.home.sendTrackedCommand({ kind: "ready", payload: { ready: true } })).toBe(3);
+      expect(clients.away.sendTrackedCommand({ kind: "ready", payload: { ready: true } })).toBe(3);
+      await vi.waitFor(() => {
+        expect(clients.home.latencySummary().accepted).toBe(3);
+        expect(clients.away.latencySummary().accepted).toBe(3);
+      });
     } finally {
       clients.home.dispose();
       clients.away.dispose();

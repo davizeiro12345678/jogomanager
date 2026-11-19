@@ -168,6 +168,91 @@ describe("signed WebSocket bridge composition", () => {
     expect(session.phase).toBe("waiting");
   });
 
+  it.each(["command", "ping"] as const)(
+    "closes only the expired socket when the seat sends a %s",
+    async (type) => {
+      const { homeTicket, awayTicket, session } = await setup();
+      let time = now;
+      const bridge = createSecureMatchSocketBridge({
+        session,
+        signingSecret: secret,
+        now: () => time,
+      });
+      const homeSocket = new TestSocket();
+      const awaySocket = new TestSocket();
+      expect(await bridge.attach(homeSocket, homeTicket)).toBe("home");
+
+      time += 30_000;
+      const newerAwayTicket = await signMatchTicketV1(
+        {
+          ...awayTicket,
+          issuedAt: time,
+          expiresAt: time + 60_000,
+          nonce: "later-away-ticket-nonce",
+        },
+        secret,
+      );
+      expect(await bridge.attach(awaySocket, newerAwayTicket)).toBe("away");
+
+      time = homeTicket.expiresAt;
+      const ready = JSON.stringify({
+        type: "command",
+        command: { version: 1, roomId, sequence: 1, kind: "ready", payload: { ready: true } },
+      });
+      await bridge.onMessage(homeSocket, type === "command" ? ready : JSON.stringify({ type }));
+      expect(homeSocket.code).toBe(1001);
+      expect(awaySocket.readyState).toBe(1);
+      await bridge.onMessage(awaySocket, ready);
+      expect(JSON.parse(awaySocket.sent.at(-1)!)).toMatchObject({ type: "ack", sequence: 1 });
+
+      const renewedHomeTicket = await signMatchTicketV1(
+        {
+          ...homeTicket,
+          issuedAt: time,
+          expiresAt: time + 60_000,
+          nonce: "later-home-ticket-nonce",
+        },
+        secret,
+      );
+      const freshHomeSocket = new TestSocket();
+      expect(await bridge.attach(freshHomeSocket, renewedHomeTicket)).toBe("home");
+      await bridge.onMessage(freshHomeSocket, ready);
+      expect(session.phase).toBe("live");
+      bridge.close();
+    },
+  );
+
+  it("still fences the room when saving an accepted command fails", async () => {
+    const { homeTicket, awayTicket, session } = await setup();
+    const persistAfterCommand = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => now,
+      persistAfterCommand,
+    });
+    const homeSocket = new TestSocket();
+    const awaySocket = new TestSocket();
+    expect(await bridge.attach(homeSocket, homeTicket)).toBe("home");
+    expect(await bridge.attach(awaySocket, awayTicket)).toBe("away");
+
+    persistAfterCommand.mockRejectedValueOnce(new Error("checkpoint write failed"));
+    await bridge.onMessage(
+      homeSocket,
+      JSON.stringify({
+        type: "command",
+        command: { version: 1, roomId, sequence: 1, kind: "ready", payload: { ready: true } },
+      }),
+    );
+
+    expect(homeSocket.sent.map((value) => JSON.parse(value).type)).toEqual(["ready"]);
+    expect(homeSocket.code).toBe(1001);
+    expect(awaySocket.code).toBe(1001);
+    const retry = new TestSocket();
+    expect(await bridge.attach(retry, homeTicket)).toBeNull();
+    expect(retry.code).toBe(1011);
+  });
+
   it("admits a WebSocket only after a signed first-frame authentication", async () => {
     const { homeTicket, session } = await setup();
     const bridge = createSecureMatchSocketBridge({

@@ -146,7 +146,9 @@ export class AuthoritativeSocketBridge {
     const envelope = input as Record<string, unknown>;
     const keys = Object.keys(envelope);
     if (envelope["type"] === "ping" && keys.length === 1) {
-      peer.lastActivityAt = this.now();
+      const now = this.now();
+      if (this.disconnectExpired(peer, now)) return;
+      peer.lastActivityAt = now;
       this.send(peer, { type: "pong", version: MATCH_PROTOCOL_VERSION });
       return;
     }
@@ -161,8 +163,10 @@ export class AuthoritativeSocketBridge {
       this.strike(peer, "invalid_command");
       return;
     }
+    const now = this.now();
+    if (this.disconnectExpired(peer, now)) return;
     try {
-      const outcome = await this.options.session.receive(peer.ticket, command, this.now());
+      const outcome = await this.options.session.receive(peer.ticket, command, now);
       // Crash consistency: never tell the browser an authoritative command was
       // accepted while only volatile DO memory has the new hash or result.
       await this.options.persistAfterCommand?.();
@@ -234,6 +238,13 @@ export class AuthoritativeSocketBridge {
   private find(socket: MatchSocket): Connection | undefined {
     for (const peer of this.peers.values()) if (peer.socket === socket) return peer;
     return undefined;
+  }
+
+  private disconnectExpired(peer: Connection, now: number): boolean {
+    if (now < peer.ticket.expiresAt) return false;
+    this.detach(peer.socket);
+    peer.socket.close(1001, "ticket_expired");
+    return true;
   }
 
   private strike(peer: Connection, reason: string): void {
