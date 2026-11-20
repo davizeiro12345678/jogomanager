@@ -10,8 +10,11 @@ describe("legacy coach career route", () => {
       thrown = error;
     }
     expect(thrown).toMatchObject({
-      to: "/carreira",
-      replace: true,
+      status: 307,
+      options: {
+        to: "/carreira",
+        replace: true,
+      },
     });
   });
 });
