@@ -1,4 +1,4 @@
-import { makeRng } from "./rng";
+import { hashSeed, makeRng } from "./rng";
 import type { Tactics } from "./types";
 
 export interface MatchConditions {
@@ -28,12 +28,19 @@ export function strengthEdge(home: number, away: number): number {
 }
 
 /** Independent seed stream: a good/bad day cannot alter identity or consume the event RNG. */
-export function teamDay(seed: string, side: "home" | "away"): number {
-  const rnd = makeRng(`match-day:${seed}:${side}`);
+function teamDayFromPrefix(prefixHash: number, side: "home" | "away"): number {
+  const rnd = makeRng(hashSeed(side, prefixHash));
   return (rnd() + rnd() + rnd() - 1.5) * 4;
 }
 
+/** Compatibility API: uses the same FNV seed and three draws as the historical path. */
+export function teamDay(seed: string, side: "home" | "away"): number {
+  return teamDayFromPrefix(hashSeed(`match-day:${seed}:`), side);
+}
+
 export function expectedGoals(home: number, away: number, seed: string, ctx: MatchConditions = {}) {
+  // Both sides share this long seed prefix; hash it only once per fixture.
+  const dayPrefix = hashSeed(`match-day:${seed}:`);
   const quality = strengthEdge(ctx.homeStrength ?? home, ctx.awayStrength ?? away);
   const form = (value?: number) => (bounded(value, 60, 0, 100) - 60) / 40;
   const fatigue = (value?: number) => -Math.max(0, bounded(value, 0, 0, 100) - 15) / 190;
@@ -55,7 +62,7 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
           fatigue(ctx.homeFatigue) +
           hr +
           ar * 0.5 +
-          teamDay(seed, "home") * 0.04,
+          teamDayFromPrefix(dayPrefix, "home") * 0.04,
       ),
     away:
       1.24 *
@@ -65,7 +72,7 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
           fatigue(ctx.awayFatigue) +
           ar +
           hr * 0.5 +
-          teamDay(seed, "away") * 0.04,
+          teamDayFromPrefix(dayPrefix, "away") * 0.04,
       ),
   };
 }
