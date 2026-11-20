@@ -9,7 +9,8 @@ import {
   MoreHorizontal,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MatchLoading } from "@/components/game/MatchLoading";
 import { MatchReport } from "@/components/game/MatchReport";
 import { MatchScoreLine } from "@/features/match/MatchScoreLine";
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
@@ -224,14 +225,18 @@ export default function QuickLive({
   const away = safeClub(oppId);
 
   return (
-    <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D
-        sim={sim}
-        mode={camera}
-        quality={quality}
-        paused={paused || done}
-        measurementKey={`quick:r${setups.rulesRevision ?? 1}:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
-      />
+    <div className="match-interface quick-match">
+      <div className="match-quick-stage">
+        <Suspense fallback={<MatchLoading />}>
+          <Stadium3D
+            sim={sim}
+            mode={camera}
+            quality={quality}
+            paused={paused || done}
+            measurementKey={`quick:r${setups.rulesRevision ?? 1}:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
+          />
+        </Suspense>
+      </div>
       <button
         type="button"
         onClick={() => {
@@ -239,7 +244,7 @@ export default function QuickLive({
           onExit();
         }}
         aria-label={t("match.back")}
-        className="match-quick-back absolute z-20 grid h-11 w-11 place-items-center"
+        className="match-quick-back"
       >
         <ArrowLeft size={18} />
       </button>
@@ -250,7 +255,7 @@ export default function QuickLive({
         Partida rápida: {home.name} x {away.name}
       </h1>
 
-      <div className="match-quick-score-wrap pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
+      <div className="match-quick-score-wrap">
         <div
           className="match-scoreboard match-scoreboard-quick"
           aria-label={`${home.short} ${snap.hg}, ${away.short} ${snap.ag}, ${t("match.minute")} ${snap.minute}`}
@@ -262,14 +267,14 @@ export default function QuickLive({
             awayGoals={snap.ag}
             clock={`${paused ? "Ⅱ " : ""}${snap.minute}'`}
           />
-          <div aria-hidden="true" className="match-quick-possession flex h-1 w-full">
+          <div aria-hidden="true" className="match-quick-possession">
             <div
               className="transition-[width] duration-500"
               style={{ width: `${snap.poss[0]}%`, backgroundColor: home.primary }}
             />
             <div className="flex-1" style={{ backgroundColor: away.primary }} />
           </div>
-          <div className="match-quick-statistics flex justify-between px-4 py-1 text-xs text-white/90">
+          <div className="match-quick-statistics">
             <span>
               {t("match.possession")} {snap.poss[0]}%
             </span>

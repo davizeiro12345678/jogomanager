@@ -56,8 +56,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: stylesheetForPath(matches.at(-1)?.pathname ?? ""),
       },
-      // The editorial H1 is the measured LCP candidate. This single local
-      // font must not compete with the home hero image or gameplay resources.
+      // Desktop editorial routes use the display font. The mobile editorial
+      // stylesheet uses resident fonts for the first paint.
       ...(shouldPreloadArticleHeadingFont(matches.at(-1)?.pathname ?? "")
         ? [
             {
@@ -66,6 +66,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
               type: "font/woff2",
               href: "/fonts/match3d/HTxqL289NzCGg4MzN6KJ7eW6CYyF_g.woff2",
               crossOrigin: "anonymous" as const,
+              media: "(min-width: 640px)",
             },
           ]
         : []),

@@ -278,15 +278,58 @@ html[data-reading-space="true"] .career-content :where(p, dd, td) {
 }
 .quick-match {
   --match-gap: 8px;
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #070b12;
   font-variant-numeric: tabular-nums;
 }
+.match-quick-stage {
+  position: absolute;
+  inset: 0;
+}
+.match-quick-stage > div {
+  width: 100%;
+  height: 100%;
+}
+.match-quick-score-wrap {
+  position: absolute;
+  z-index: 10;
+  inset: 12px 0 auto;
+  display: flex;
+  justify-content: center;
+  padding-inline: 12px;
+  pointer-events: none;
+}
 .match-quick-back {
+  position: absolute;
+  z-index: 20;
   inset-block-start: 12px;
   inset-inline-start: 12px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
   border: 1px solid var(--match-line);
   border-radius: 12px;
   background: var(--match-surface);
   color: var(--match-ink);
+}
+.match-quick-possession {
+  display: flex;
+  height: 4px;
+}
+.match-quick-possession > :last-child {
+  flex: 1;
+}
+.match-quick-statistics {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 12px;
+  color: var(--match-muted);
+  font-size: 0.75rem;
 }
 .match-quick-transport {
   position: absolute;
