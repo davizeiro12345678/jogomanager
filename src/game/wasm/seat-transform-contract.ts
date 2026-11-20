@@ -22,6 +22,7 @@ export function validSeatTransformRequest(value: unknown): value is SeatTransfor
     !(request.module instanceof WebAssembly.Module) ||
     !(request.memory instanceof WebAssembly.Memory) ||
     (request.lanes !== 2 && request.lanes !== 4) ||
+    typeof request.lane !== "number" ||
     !Number.isInteger(request.lane) ||
     request.lane < 0 ||
     request.lane >= request.lanes ||
