@@ -48,6 +48,7 @@ import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MelhoresFormacoesRouteImport } from './routes/melhores-formacoes'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
+import { Route as ModoCarreiraRouteImport } from './routes/modo-carreira'
 import { Route as ModoCarreiraDeJogadorRouteImport } from './routes/modo-carreira-de-jogador'
 import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as NewRouteImport } from './routes/new'
@@ -290,6 +291,11 @@ const MelhoresFormacoesRoute = MelhoresFormacoesRouteImport.update({
 const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
   id: '/mercado-de-transferencias',
   path: '/mercado-de-transferencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModoCarreiraRoute = ModoCarreiraRouteImport.update({
+  id: '/modo-carreira',
+  path: '/modo-carreira',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModoCarreiraDeJogadorRoute = ModoCarreiraDeJogadorRouteImport.update({
@@ -573,6 +579,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira': typeof ModoCarreiraRoute
   '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -661,6 +668,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira': typeof ModoCarreiraRoute
   '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -750,6 +758,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira': typeof ModoCarreiraRoute
   '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -840,6 +849,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira'
     | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
@@ -928,6 +938,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira'
     | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
@@ -1016,6 +1027,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira'
     | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
@@ -1105,6 +1117,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   MelhoresFormacoesRoute: typeof MelhoresFormacoesRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
+  ModoCarreiraRoute: typeof ModoCarreiraRoute
   ModoCarreiraDeJogadorRoute: typeof ModoCarreiraDeJogadorRoute
   MultiplayerRoute: typeof MultiplayerRoute
   NewRoute: typeof NewRoute
@@ -1427,6 +1440,13 @@ declare module '@tanstack/react-router' {
       path: '/mercado-de-transferencias'
       fullPath: '/mercado-de-transferencias'
       preLoaderRoute: typeof MercadoDeTransferenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modo-carreira': {
+      id: '/modo-carreira'
+      path: '/modo-carreira'
+      fullPath: '/modo-carreira'
+      preLoaderRoute: typeof ModoCarreiraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/modo-carreira-de-jogador': {
@@ -1801,6 +1821,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   MelhoresFormacoesRoute: MelhoresFormacoesRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
+  ModoCarreiraRoute: ModoCarreiraRoute,
   ModoCarreiraDeJogadorRoute: ModoCarreiraDeJogadorRoute,
   MultiplayerRoute: MultiplayerRoute,
   NewRoute: NewRoute,
