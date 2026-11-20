@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Shuffle } from "lucide-react";
+import { Play, Shuffle } from "lucide-react";
 import { lazy, memo, Suspense, useId, useRef, useState } from "react";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
@@ -115,7 +115,7 @@ export function QuickMatchPage() {
     QUICK_MATCH_LEAGUE_DIRECTORY.find((entry) => entry.id === leagueId) ?? league;
 
   return (
-    <main className="min-h-dvh bg-background px-4 py-8 sm:py-10">
+    <main className="min-h-dvh bg-background px-4 py-6 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-5xl">
         {/* Keep the reading control in its column when the detected language
             changes the title width; reserve the mobile title's two lines. */}
@@ -128,26 +128,28 @@ export function QuickMatchPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t("quick.description")}</p>
 
         {/* The small directory stays SSR-visible; club data loads after interaction. */}
-        <div className="mt-6 flex max-w-md items-center gap-3">
-          <Flag
-            league={selectedLeagueSummary.id}
-            country={selectedLeagueSummary.country}
-            size={24}
-          />
-          <label htmlFor="quick-league" className="sr-only">
+        <div className="mt-6 max-w-xl">
+          <label htmlFor="quick-league" className="mb-2 block text-sm font-semibold">
             {t("nav.league")}
           </label>
-          <select
-            id="quick-league"
-            value={leagueId}
-            onChange={(event) => void chooseLeague(event.target.value)}
-            onPointerEnter={() => void preloadQuickMatchCatalog().catch(() => undefined)}
-            onFocus={() => void preloadQuickMatchCatalog().catch(() => undefined)}
-            disabled={catalogLoading}
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <LeagueOptions groups={leagueGroups} />
-          </select>
+          <div className="flex items-center gap-3">
+            <Flag
+              league={selectedLeagueSummary.id}
+              country={selectedLeagueSummary.country}
+              size={24}
+            />
+            <select
+              id="quick-league"
+              value={leagueId}
+              onChange={(event) => void chooseLeague(event.target.value)}
+              onPointerEnter={() => void preloadQuickMatchCatalog().catch(() => undefined)}
+              onFocus={() => void preloadQuickMatchCatalog().catch(() => undefined)}
+              disabled={catalogLoading}
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <LeagueOptions groups={leagueGroups} />
+            </select>
+          </div>
         </div>
 
         {catalogLoading ? (
@@ -166,7 +168,7 @@ export function QuickMatchPage() {
                 {t("screen.error")}
               </p>
             )}
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 sm:gap-4">
               <TeamPicker
                 title={t("quick.home")}
                 clubs={league.clubs}
@@ -186,7 +188,7 @@ export function QuickMatchPage() {
         )}
 
         <p className="mt-3 text-xs text-muted-foreground">{t("quick.hint")}</p>
-        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
+        <div className="mt-5 grid gap-3 border-t border-border pt-4 sm:flex sm:flex-wrap sm:items-center">
           <div className="grid grid-cols-3 gap-2 sm:flex">
             {DIFFS.map((difficultyOption) => (
               <button
@@ -229,9 +231,9 @@ export function QuickMatchPage() {
             onPointerEnter={preloadQuickLive}
             onFocus={preloadQuickLive}
             disabled={catalogLoading || myClub === oppClub}
-            className="min-h-12 rounded-lg bg-primary px-6 py-2 font-display text-base uppercase tracking-wide text-primary-foreground shadow-lg disabled:opacity-40"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2 font-display text-base uppercase tracking-wide text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-40 sm:ms-auto"
           >
-            {t("quick.start")}
+            <Play size={17} aria-hidden="true" /> {t("quick.start")}
           </button>
           <Link
             to="/"
@@ -261,28 +263,33 @@ function TeamPicker({
   const pickerId = useId();
   const selected = clubs.find((club) => club.id === value) ?? clubs[0]!;
   return (
-    <section className="rounded-2xl border border-border/60 surface-card p-4">
-      <h2 className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
-        <label htmlFor={pickerId}>{title}</label>
-      </h2>
-      <div className="mt-3 flex items-center gap-3">
-        <Crest club={selected} size={44} detail="full" />
-        <span className="font-display text-lg">{selected.name}</span>
-        <span
-          className="ml-auto rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-xs tabular-nums text-primary"
-          aria-label={`Força de referência ${selected.strength}`}
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card">
+      <div aria-hidden="true" className="h-1" style={{ backgroundColor: selected.primary }} />
+      <div className="p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          <label htmlFor={pickerId}>{title}</label>
+        </h2>
+        <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+          <Crest club={selected} size={40} detail="full" />
+          <span className="min-w-0 break-words font-display text-lg leading-tight">
+            {selected.name}
+          </span>
+          <span
+            className="rounded-md border border-border px-2 py-1 text-xs tabular-nums"
+            aria-label={`Força de referência ${selected.strength}`}
+          >
+            Força {selected.strength}
+          </span>
+        </div>
+        <select
+          id={pickerId}
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          Força {selected.strength}
-        </span>
+          <ClubOptions clubs={clubs} disabled={disabled} />
+        </select>
       </div>
-      <select
-        id={pickerId}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >
-        <ClubOptions clubs={clubs} disabled={disabled} />
-      </select>
     </section>
   );
 }

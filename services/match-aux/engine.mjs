@@ -17,18 +17,20 @@ export async function simulateAuthoritativeRoom(homeClub, awayClub, seed) {
     throw new Error("invalid_seed");
   }
   const sim = new MatchSim(buildTeamSetup(homeClub), buildTeamSetup(awayClub), seed);
-  let steps = 0;
-  while (!sim.finished && steps < MATCH_SIMULATION_TICK_LIMIT) {
-    sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
-    steps += 1;
-    // Cooperative yielding avoids starving health checks on a tiny VM.
-    if (steps % 256 === 0) await new Promise((resolve) => setImmediate(resolve));
+  try {
+    let steps = 0;
+    while (!sim.finished && steps < MATCH_SIMULATION_TICK_LIMIT) {
+      sim.step(MATCH_SIMULATION_STEP, LIVE_MATCH_CLOCK_SCALE);
+      steps += 1;
+    }
+    if (!sim.finished) throw new Error("simulation_tick_limit");
+    return {
+      hg: sim.stats.home.goals,
+      ag: sim.stats.away.goals,
+      minute: sim.minute(),
+      steps,
+    };
+  } finally {
+    sim.dispose();
   }
-  if (!sim.finished) throw new Error("simulation_tick_limit");
-  return {
-    hg: sim.stats.home.goals,
-    ag: sim.stats.away.goals,
-    minute: sim.minute(),
-    steps,
-  };
 }

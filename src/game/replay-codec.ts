@@ -1,4 +1,4 @@
-import { actionCode, actionFromCode } from "./live-match-buffer";
+import { actionCode, actionFromByte } from "./live-match-buffer";
 import type { PlayerAction } from "./animation";
 import type { Replay, ReplayFrame, ReplayPlayerMeta } from "./replay";
 import type { TeamSetup } from "./sim";
@@ -41,10 +41,6 @@ export function quantizeReplayComponent(value: number): number {
   if (rounded < -32_768) return -32_768;
   if (rounded > 32_767) return 32_767;
   return rounded;
-}
-
-function numeric(values: Int16Array | Uint8Array | Uint16Array | Uint32Array, index: number) {
-  return values[index] ?? 0;
 }
 
 export function encodeReplay(replay: Replay): StoredReplayV3 {
@@ -108,45 +104,43 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
+  const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
   const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
-  const times = raw.frames.timesMs;
-  const ball = raw.frames.ball;
-  const positions = raw.frames.positions;
-  const actions = raw.frames.actions;
-  const score = raw.frames.score;
-  const possession = raw.frames.possession;
+  const positionCount = playerCount * 4;
   let timeMs = 0;
-  for (let frameIndex = 0; frameIndex < times.length; frameIndex += 1) {
-    timeMs += numeric(times, frameIndex);
-    // V3 buffers are length-validated before decoding. Preallocate the exact
-    // player arrays and read typed buffers directly: avoid repeated push growth,
-    // optional indexed lookups and four helper calls per athlete per frame.
-    const p = new Array<number>(playerCount * 4);
+  for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
+    timeMs += timesMs[frameIndex]!;
+    // Validation guarantees the packed channels have the exact frame lengths.
+    const p = new Array<number>(positionCount);
     const a = new Array<PlayerAction | null>(playerCount);
-    const frameBase = frameIndex * playerCount;
+    const positionBase = frameIndex * positionCount;
+    const actionBase = frameIndex * playerCount;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const source = (frameBase + playerIndex) * 4;
       const target = playerIndex * 4;
+      const source = positionBase + target;
       p[target] = positions[source]! / QUANTIZE;
       p[target + 1] = positions[source + 1]! / QUANTIZE;
       p[target + 2] = positions[source + 2]! / QUANTIZE;
       p[target + 3] = positions[source + 3]! / QUANTIZE;
-      a[playerIndex] = actionFromCode(actions[frameBase + playerIndex]!);
+      a[playerIndex] = actionFromByte(actions[actionBase + playerIndex]!);
     }
+    const ballBase = frameIndex * 3;
+    const scoreBase = frameIndex * 2;
+    const frameVisual = visual?.[frameIndex];
     frames.push({
       t: timeMs / 1_000,
       b: [
-        numeric(ball, frameIndex * 3) / QUANTIZE,
-        numeric(ball, frameIndex * 3 + 1) / QUANTIZE,
-        numeric(ball, frameIndex * 3 + 2) / QUANTIZE,
+        ball[ballBase]! / QUANTIZE,
+        ball[ballBase + 1]! / QUANTIZE,
+        ball[ballBase + 2]! / QUANTIZE,
       ],
       p,
       a,
-      hg: numeric(score, frameIndex * 2),
-      ag: numeric(score, frameIndex * 2 + 1),
-      poss: numeric(possession, frameIndex) === 1 ? "away" : "home",
-      ...(raw.frames.visual?.[frameIndex] ? { v: raw.frames.visual[frameIndex]! } : {}),
+      hg: score[scoreBase]!,
+      ag: score[scoreBase + 1]!,
+      poss: possession[frameIndex] === 1 ? "away" : "home",
+      ...(frameVisual ? { v: frameVisual } : {}),
     });
   }
   return {

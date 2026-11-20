@@ -409,6 +409,62 @@ try {
       );
   }
 
+  const quickMatchRoute = "/partida-rapida?q=baixa";
+  for (const viewport of [
+    { width: 1365, height: 900 },
+    { width: 375, height: 812 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const response = await page.goto(new URL(quickMatchRoute, origin).href, {
+      waitUntil: "domcontentloaded",
+    });
+    if (response?.status() !== 200) throw new Error("Quick match selection did not load");
+    await page.getByRole("heading", { level: 1 }).waitFor();
+    const pick = page.getByLabel(/seu time|your team/i);
+    const enabledOptions = await pick.locator("option:not([disabled])").all();
+    const nextClub = await enabledOptions[2]?.getAttribute("value");
+    if (!nextClub) throw new Error("Quick match roster options did not load");
+    await pick.selectOption(nextClub);
+    await png(page, `quick-match-selection-${viewport.width}`);
+    await page.getByRole("button", { name: /^(jogar|play)$/i }).click();
+    const scoreboard = page.locator(".match-scoreboard-quick");
+    await scoreboard.waitFor({ timeout: 45_000 });
+    await page.getByRole("button", { name: /pausar partida|pause match/i }).click();
+    await page.getByRole("button", { name: /retomar partida|resume match/i }).waitFor();
+    const trigger = page.getByRole("button", { name: /opções da partida|match options/i });
+    await trigger.click();
+    const options = page.locator("#match-quick-tools");
+    await options.waitFor();
+    await png(page, `quick-match-controls-${viewport.width}`);
+    await options.getByRole("button", { name: /lances recentes|recent moments/i }).click();
+    const events = page.getByRole("log", { name: /lances recentes|recent moments/i });
+    await events.waitFor();
+    const matchesViewport = await page.evaluate(() =>
+      [".match-scoreboard-quick", ".match-quick-transport", ".match-quick-feed"].every(
+        (selector) => {
+          const el = document.querySelector(selector);
+          if (!el) return false;
+          const box = el.getBoundingClientRect();
+          return (
+            box.left >= -1 &&
+            box.right <= innerWidth + 1 &&
+            box.bottom <= innerHeight + 1 &&
+            el.scrollWidth <= el.clientWidth + 1
+          );
+        },
+      ),
+    );
+    if (!matchesViewport) throw new Error(`Quick match controls overflowed at ${viewport.width}px`);
+    await events.getByRole("button", { name: /fechar|close/i }).click();
+    if (!(await trigger.evaluate((element) => element === document.activeElement)))
+      throw new Error("Closing the match feed did not restore keyboard focus");
+    await page
+      .getByRole("button", { name: /voltar à escolha de times|back to team selection/i })
+      .click();
+    await page.locator("#quick-league").waitFor();
+    report.axes.interaction.metrics[`quickMatch${viewport.width}`] = { passed: true };
+  }
+
   for (const item of pageErrors) {
     find(
       "runtime",

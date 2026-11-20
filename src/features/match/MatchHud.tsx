@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { Crest } from "@/components/game/Crest";
 import { eventIcon } from "./event-icon";
+import { MatchScoreLine } from "./MatchScoreLine";
 import { safeClub } from "@/game/squad";
 import type { Snap } from "./types";
 
@@ -116,19 +116,16 @@ export const Scoreboard = memo(function Scoreboard({
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {`${home.name} ${snap.hg}, ${away.name} ${snap.ag}. ${paused ? "Partida pausada" : `${snap.minute} minutos`}.`}
       </p>
-      <div
-        className={`match-scoreboard w-full max-w-[22rem] overflow-hidden rounded-lg border bg-black/75 shadow-xl backdrop-blur-md transition-all duration-500 sm:max-w-sm ${
-          flash ? "scale-[1.03] border-primary/70 shadow-primary/30" : "border-white/12"
-        }`}
-      >
+      <div className="match-scoreboard" data-goal={flash || undefined}>
         <div className="flex h-1 w-full">
           <div className="flex-1" style={{ background: home.primary }} />
           <div className="flex-1" style={{ background: away.primary }} />
         </div>
-        <div className="flex items-center justify-between px-3 pt-1.5 font-display text-[9px] uppercase tracking-[0.22em] text-white/55">
+        <div className="match-score-meta">
           <span className="flex items-center gap-1.5">
             <i
-              className={`h-1.5 w-1.5 rounded-full ${paused ? "bg-amber-300" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,.9)]"}`}
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 rounded-full ${paused ? "bg-amber-300" : "bg-red-400"}`}
             />
             {paused ? "Pausado" : "Ao vivo"}
           </span>
@@ -146,26 +143,13 @@ export const Scoreboard = memo(function Scoreboard({
                       : "Prorrogação"}
           </span>
         </div>
-        <div className="flex min-h-11 items-center gap-1.5 px-2 py-1.5 sm:gap-2 sm:px-3">
-          <Crest club={home} size={24} detail="simple" />
-          <span className="font-display text-sm tracking-wide text-white sm:text-base">
-            {home.short}
-          </span>
-          <span
-            className={`mx-auto font-display text-xl tabular-nums text-white transition-transform duration-300 sm:text-2xl ${
-              flash ? "scale-125" : ""
-            }`}
-          >
-            {snap.hg} <span className="text-white/35">:</span> {snap.ag}
-          </span>
-          <span className="font-display text-sm tracking-wide text-white sm:text-base">
-            {away.short}
-          </span>
-          <Crest club={away} size={24} detail="simple" />
-          <span className="ml-1 rounded-md bg-primary px-2 py-0.5 font-display text-xs tabular-nums text-primary-foreground sm:text-sm">
-            {paused ? "||" : snap.clock}
-          </span>
-        </div>
+        <MatchScoreLine
+          home={home}
+          away={away}
+          homeGoals={snap.hg}
+          awayGoals={snap.ag}
+          clock={snap.clock}
+        />
         <div className="flex h-1.5 w-full">
           <div
             className="transition-[width] duration-700"
@@ -215,7 +199,7 @@ export const Feed = memo(function Feed({ events }: { events: Snap["events"] }) {
       {events.slice(-4).map((e, i) => (
         <p
           key={`${e.minute}-${i}-${e.type}`}
-          className={`flex gap-2 rounded-lg bg-black/45 px-2.5 py-1.5 backdrop-blur-md ${e.type === "goal" ? "font-display text-sm text-primary" : ""}`}
+          className={`flex gap-2 rounded-lg bg-[#0c1924] px-2.5 py-1.5 ${e.type === "goal" ? "font-display text-sm text-primary" : ""}`}
         >
           <span className="w-8 shrink-0 tabular-nums text-white/45">{e.minute}'</span>
           <span className="shrink-0">{eventIcon(e.type)}</span>

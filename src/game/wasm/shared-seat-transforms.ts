@@ -91,43 +91,43 @@ function waitForKernel(signal: AbortSignal): Promise<WebAssembly.Module | null> 
 }
 export const sharedSeatStats = { workers: 0, completed: 0, arenaBytes: 0, failures: 0 };
 
-/** Two native WASM instances share a bounded arena and write disjoint ranges. */
+/** Native WASM instances share a bounded arena and write disjoint ranges. */
 export async function prepareSharedSeatBuffers(
   source: Source,
   signal: AbortSignal,
 ): Promise<SeatBuffers | null> {
   if (
-    !validSource(source) ||
+    signal.aborted ||
     !globalThis.crossOriginIsolated ||
     typeof SharedArrayBuffer === "undefined" ||
     typeof Worker === "undefined" ||
     typeof navigator === "undefined" ||
     !Number.isFinite(navigator.hardwareConcurrency) ||
     navigator.hardwareConcurrency < 8 ||
-    source.positions.length < 512
+    !Array.isArray(source?.positions) ||
+    source.positions.length < 512 ||
+    source.positions.length > MAX_SHARED_SEATS
   )
     return null;
-  if (signal.aborted) return null;
   const count = source.positions.length;
-  if (source.colors.length !== count || source.skins.length !== count) return null;
   // Preparing disjoint immutable seats is safe to parallelize: the canonical
   // match Worker never shares state or RNG with these presentation workers.
   // Four lanes are only useful with a large crowd and enough logical cores.
   const availableLanes = deviceGeometryPreparationWorkers();
   const lanes: 2 | 4 = availableLanes >= 4 && count >= 3_072 ? 4 : 2;
-  if (availableLanes < lanes) return null;
+  if (availableLanes < lanes || !validSource(source)) return null;
   const pages = Math.ceil((64 + count * 168) / 65536);
   if (pages > 512) return null;
   const module = await waitForKernel(signal);
-  if (!module || signal.aborted || !validSource(source)) return null;
+  if (!module || signal.aborted) return null;
   const workers: Worker[] = [];
   const cleanups: (() => void)[] = [];
   const release = await acquirePresentationLanes(lanes, signal);
   if (!release) return null;
   let arenaBytes = 0;
   try {
+    if (signal.aborted || source.positions.length !== count || !validSource(source)) return null;
     const memory = new WebAssembly.Memory({ initial: pages, maximum: 512, shared: true });
-    if (signal.aborted) return null;
     const inputs = new Float64Array(memory.buffer, 64, count * 9);
     for (let index = 0; index < count; index++) {
       const position = source.positions[index]!;

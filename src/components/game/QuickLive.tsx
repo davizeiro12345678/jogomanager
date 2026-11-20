@@ -10,8 +10,8 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crest } from "@/components/game/Crest";
 import { MatchReport } from "@/components/game/MatchReport";
+import { MatchScoreLine } from "@/features/match/MatchScoreLine";
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { detectQuality } from "@/game/device";
 import type { NarrationEvent } from "@/game/narrator";
@@ -239,47 +239,35 @@ export default function QuickLive({
           onExit();
         }}
         aria-label={t("match.back")}
-        className="match-quick-back absolute z-20 grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-black/65 text-white/90 backdrop-blur"
+        className="match-quick-back absolute z-20 grid h-11 w-11 place-items-center"
       >
         <ArrowLeft size={18} />
       </button>
-      {paused ? (
-        <div
-          role="status"
-          className="pointer-events-none absolute inset-x-0 top-24 z-10 flex justify-center"
-        >
-          <span className="rounded-full border border-primary/30 bg-black/75 px-4 py-1.5 text-xs text-primary">
-            {t("match.paused")}
-          </span>
-        </div>
-      ) : null}
+      <p role="status" className="sr-only">
+        {paused ? t("match.paused") : ""}
+      </p>
       <h1 className="sr-only">
         Partida rápida: {home.name} x {away.name}
       </h1>
 
       <div className="match-quick-score-wrap pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
         <div
-          className="match-quick-scoreboard w-full max-w-md overflow-hidden rounded-2xl border border-white/12 bg-black/80 shadow-2xl backdrop-blur-xl"
+          className="match-scoreboard match-scoreboard-quick"
           aria-label={`${home.short} ${snap.hg}, ${away.short} ${snap.ag}, ${t("match.minute")} ${snap.minute}`}
         >
-          <div className="match-quick-score-row flex items-center gap-2 px-3 py-2">
-            <Crest club={home} size={26} detail="simple" />
-            <span className="font-display text-base text-white">{home.short}</span>
-            <span className="match-quick-score mx-auto font-display text-2xl tabular-nums text-white">
-              {snap.hg} <span className="text-white/35">:</span> {snap.ag}
-            </span>
-            <span className="font-display text-base text-white">{away.short}</span>
-            <Crest club={away} size={26} detail="simple" />
-            <span className="match-quick-clock ml-1 rounded-md bg-primary px-2 py-0.5 font-display text-xs tabular-nums text-primary-foreground">
-              {paused ? "||" : `${snap.minute}'`}
-            </span>
-          </div>
-          <div className="match-quick-possession flex h-1.5 w-full">
+          <MatchScoreLine
+            home={home}
+            away={away}
+            homeGoals={snap.hg}
+            awayGoals={snap.ag}
+            clock={`${paused ? "Ⅱ " : ""}${snap.minute}'`}
+          />
+          <div aria-hidden="true" className="match-quick-possession flex h-1 w-full">
             <div
-              className="bg-primary transition-[width] duration-500"
-              style={{ width: `${snap.poss[0]}%` }}
+              className="transition-[width] duration-500"
+              style={{ width: `${snap.poss[0]}%`, backgroundColor: home.primary }}
             />
-            <div className="flex-1 bg-white/40" />
+            <div className="flex-1" style={{ backgroundColor: away.primary }} />
           </div>
           <div className="match-quick-statistics flex justify-between px-4 py-1 text-xs text-white/90">
             <span>
@@ -296,10 +284,20 @@ export default function QuickLive({
       </div>
 
       {showEvents ? (
-        <div
-          aria-label={t("match.events")}
-          className="match-quick-feed absolute z-10 overflow-y-auto rounded-2xl border border-white/20 bg-black/90 p-3 text-sm text-white backdrop-blur-xl"
-        >
+        <div aria-label={t("match.events")} role="log" className="match-quick-feed">
+          <div className="match-quick-tools-heading">
+            <strong>{t("match.events")}</strong>
+            <button
+              type="button"
+              aria-label={t("common.close")}
+              onClick={() => {
+                setShowEvents(false);
+                toolsTrigger.current?.focus();
+              }}
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
           {snap.events.length === 0 ? (
             <p className="p-2 text-white/80">{t("match.eventsEmpty")}</p>
           ) : null}
@@ -369,6 +367,7 @@ export default function QuickLive({
           className="match-quick-more"
           onClick={() => {
             setShowTools((open) => !open);
+            setShowEvents(false);
             setPaused(true);
           }}
         >
