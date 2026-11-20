@@ -16,13 +16,17 @@ export function presentationWorkerBudget(
   memoryGb: number | undefined,
 ): PresentationWorkerBudget {
   const logicalCores = Number.isFinite(cores) && (cores ?? 0) > 0 ? Math.floor(cores!) : 4;
-  let total = Math.min(4, Math.max(0, logicalCores - 3));
+  // Large devices can prepare disjoint crowd ranges on four cores, but
+  // always reserve at least six logical cores for rendering, simulation,
+  // browser work, and OS tasks. Small devices keep the original budget.
+  let total =
+    logicalCores >= 12 ? 6 : Math.min(4, Math.max(0, logicalCores - 3));
   if (total === 0) return { total, textures: 0, geometry: 0 };
 
-  // On memory-limited devices, spend at most one worker on a compressed
-  // texture currently used by the scene and leave geometry at its light LOD.
+  // Mobile and memory-limited devices never increase worker parallelism.
   if (memoryGb !== undefined && memoryGb <= 3) total = Math.min(total, 1);
-  const geometry = total >= 4 ? 2 : total > 1 ? 1 : 0;
+  else if (memoryGb !== undefined && memoryGb <= 4) total = Math.min(total, 4);
+  const geometry = total >= 6 ? 4 : total >= 4 ? 2 : total > 1 ? 1 : 0;
   const textures = total - geometry;
   return { total, textures, geometry };
 }
