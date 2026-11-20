@@ -1,5 +1,6 @@
-export function hashSeed(str: string): number {
-  let h = 2166136261;
+/** Continue a UTF-16 FNV-1a seed hash from a shared prefix, without rehashing it. */
+export function hashSeed(str: string, initialHash = 2166136261): number {
+  let h = initialHash;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
     h = Math.imul(h, 16777619);
