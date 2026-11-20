@@ -22,7 +22,6 @@ import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import brandLogo from "@/assets/brand/jogomanager-logo-header.webp";
 import brandLogoSources from "@/assets/brand/jogomanager-logo-header.webp?format=webp&w=224;320;420&quality=82&as=srcset";
-import "./home.css";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));

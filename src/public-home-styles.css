@@ -1,7 +1,16 @@
 @import "tailwindcss" source(none);
 @import "./public-style-sources.css";
 @import "./design-system.css";
+@import "./components/home/home.css";
 @source "./components/home/FootballHome.tsx";
 @source "./components/home/HomeDetails.tsx";
 @source "./components/home/HomeLeaguePulse.tsx";
 @source "./components/home/HomeSearchGuide.tsx";
+
+/* Keep the mobile headline typeface. Use resident text fonts for the rest of
+   the page so four Hind weights do not compete with the hero or interaction. */
+@media (max-width: 640px) {
+  :root {
+    --font-sans: system-ui, sans-serif;
+  }
+}
