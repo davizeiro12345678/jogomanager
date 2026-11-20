@@ -34,9 +34,9 @@ function readSupabaseConfiguration() {
   // Fall back to process.env for SSR (server-side rendering)
   const serverEnvironment = import.meta.env.SSR ? process.env : {};
   return {
-    url: import.meta.env["VITE_SUPABASE_URL"] || serverEnvironment["SUPABASE_URL"],
+    url: import.meta.env.VITE_SUPABASE_URL || serverEnvironment["SUPABASE_URL"],
     publishableKey:
-      import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
       serverEnvironment["SUPABASE_PUBLISHABLE_KEY"],
   };
 }
