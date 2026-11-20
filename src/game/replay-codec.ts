@@ -108,7 +108,7 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
-  const frames: ReplayFrame[] = [];
+  const frames = new Array<ReplayFrame>(raw.frames.timesMs.length);
   const playerCount = raw.meta.length;
   const times = raw.frames.timesMs;
   const ball = raw.frames.ball;
@@ -125,16 +125,14 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const p = new Array<number>(playerCount * 4);
     const a = new Array<PlayerAction | null>(playerCount);
     const frameBase = frameIndex * playerCount;
-    for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const source = (frameBase + playerIndex) * 4;
-      const target = playerIndex * 4;
-      p[target] = positions[source]! / QUANTIZE;
-      p[target + 1] = positions[source + 1]! / QUANTIZE;
-      p[target + 2] = positions[source + 2]! / QUANTIZE;
-      p[target + 3] = positions[source + 3]! / QUANTIZE;
+    const coordinateBase = frameBase * 4;
+    // Sequential typed-buffer reads reduce repeated index arithmetic and
+    // keep the player action decoding separate from the coordinate stream.
+    for (let coordinate = 0; coordinate < playerCount * 4; coordinate += 1)
+      p[coordinate] = positions[coordinateBase + coordinate]! / QUANTIZE;
+    for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1)
       a[playerIndex] = actionFromCode(actions[frameBase + playerIndex]!);
-    }
-    frames.push({
+    frames[frameIndex] = {
       t: timeMs / 1_000,
       b: [
         numeric(ball, frameIndex * 3) / QUANTIZE,
@@ -147,7 +145,7 @@ function decodeV3(raw: StoredReplayV3): Replay {
       ag: numeric(score, frameIndex * 2 + 1),
       poss: numeric(possession, frameIndex) === 1 ? "away" : "home",
       ...(raw.frames.visual?.[frameIndex] ? { v: raw.frames.visual[frameIndex]! } : {}),
-    });
+    };
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),
