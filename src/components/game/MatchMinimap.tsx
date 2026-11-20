@@ -10,13 +10,14 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Radar } from "lucide-react";
 
-import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
+import type { SimView } from "@/game/sim-contracts";
+import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
 
 const W = 232;
 const H = 152;
 const PAD = 10;
 
-function useMinimap(view: SimView, on: boolean) {
+function useMinimap(view: SimView, on: boolean, paused = false) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!on) return;
@@ -25,12 +26,12 @@ function useMinimap(view: SimView, on: boolean) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let raf = 0;
-    let last = 0;
+    let last = -Infinity;
     const px = (x: number) => PAD + ((x + FIELD_X) / (FIELD_X * 2)) * (W - PAD * 2);
     const pz = (z: number) => PAD + ((z + FIELD_Z) / (FIELD_Z * 2)) * (H - PAD * 2);
 
     const draw = (t: number) => {
-      raf = requestAnimationFrame(draw);
+      if (!paused) raf = requestAnimationFrame(draw);
       if (t - last < 84) return; // ~12 fps: radar não precisa de mais
       last = t;
       ctx.clearRect(0, 0, W, H);
@@ -86,8 +87,42 @@ function useMinimap(view: SimView, on: boolean) {
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [view, on]);
+  }, [view, on, paused]);
   return ref;
+}
+
+export function MatchPitchFallback({
+  view,
+  paused,
+  onRetry,
+}: {
+  view: SimView;
+  paused: boolean;
+  onRetry: () => void;
+}) {
+  const pitch = useMinimap(view, true, paused);
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#0a1420] px-4 text-center text-white">
+      <p role="status" className="text-sm text-white/85">
+        Estádio 3D indisponível. Acompanhe a partida em 2D.
+      </p>
+      <canvas
+        ref={pitch}
+        width={W}
+        height={H}
+        aria-label="Campo da partida em 2D"
+        role="img"
+        className="h-auto max-h-[43dvh] w-full max-w-[24rem] rounded-lg border border-white/15 object-contain"
+      />
+      <button
+        type="button"
+        className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+        onClick={onRetry}
+      >
+        Tentar novamente em 3D
+      </button>
+    </div>
+  );
 }
 
 export const MatchMinimap = memo(function MatchMinimap({ view }: { view: SimView }) {

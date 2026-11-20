@@ -12,6 +12,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "rea
 import * as THREE from "three";
 import { FirstMatchFrame } from "./FirstMatchFrame";
 import { GraphicsBoundary } from "./GraphicsBoundary";
+import { MatchPitchFallback } from "./MatchMinimap";
 import { CanvasLifecycle } from "./CanvasLifecycle";
 import { CompressedTextures, PausedCameraFrames } from "./stadium/StadiumDemandFrames";
 import { createWebGPURenderer, detectWebGPU, webgpuEnabled, type GpuBackend } from "./renderer";
@@ -201,7 +202,9 @@ function Stadium3DImpl({
       data-supporter-climate={supporters?.climate}
       data-supporter-occupancy={supporters?.occupancy.toFixed(3)}
     >
-      <GraphicsBoundary>
+      <GraphicsBoundary
+        fallback={(retry) => <MatchPitchFallback view={sim} paused={paused} onRetry={retry} />}
+      >
         <Canvas
           key={backend}
           shadows={shadowsOn ? SHADOW_SETTINGS : false}
