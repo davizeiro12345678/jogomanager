@@ -35,8 +35,12 @@ export type StoredReplayV3 = {
 export type StoredReplayV2 = Replay & { version: typeof REPLAY_FORMAT_V2 };
 export type StoredReplay = StoredReplayV2 | StoredReplayV3;
 
-function integer(value: number) {
-  return Math.max(-32_768, Math.min(32_767, Math.round(value * QUANTIZE)));
+/** Quantize once, then saturate the signed 16-bit replay coordinate. */
+export function quantizeReplayComponent(value: number): number {
+  const rounded = Math.round(value * QUANTIZE);
+  if (rounded < -32_768) return -32_768;
+  if (rounded > 32_767) return 32_767;
+  return rounded;
 }
 
 function numeric(values: Int16Array | Uint8Array | Uint16Array | Uint32Array, index: number) {
@@ -61,17 +65,17 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
     for (let axis = 0; axis < 3; axis += 1)
-      ball[frameIndex * 3 + axis] = integer(frame.b[axis]! / 1);
+      ball[frameIndex * 3 + axis] = quantizeReplayComponent(frame.b[axis]! / 1);
     score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
     score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const source = playerIndex * 4;
       const target = (frameIndex * playerCount + playerIndex) * 4;
-      positions[target] = integer(frame.p[source] ?? 0 / 1);
-      positions[target + 1] = integer(frame.p[source + 1] ?? 0 / 1);
-      positions[target + 2] = integer(frame.p[source + 2] ?? 0 / 1);
-      positions[target + 3] = integer(frame.p[source + 3] ?? 0 / 1);
+      positions[target] = quantizeReplayComponent(frame.p[source] ?? 0 / 1);
+      positions[target + 1] = quantizeReplayComponent(frame.p[source + 1] ?? 0 / 1);
+      positions[target + 2] = quantizeReplayComponent(frame.p[source + 2] ?? 0 / 1);
+      positions[target + 3] = quantizeReplayComponent(frame.p[source + 3] ?? 0 / 1);
       actions[frameIndex * playerCount + playerIndex] = actionCode(frame.a[playerIndex] ?? null);
     }
   });
