@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 import { Object3D } from "three";
 
 describe("native shared-memory WASM preparation", () => {
-  it("executes two disjoint worker ranges in one WASM memory and preserves Three transforms", async () => {
-    const count = 96;
+  it.each([2, 4] as const)(
+    "executes %i disjoint worker ranges in one WASM memory and preserves Three transforms",
+    async (lanes) => {
+    const count = 97;
     const memory = new WebAssembly.Memory({ initial: 1, maximum: 512, shared: true });
     const module = await WebAssembly.compile(
       readFileSync(new URL("./pkg/seat-transforms.wasm", import.meta.url)),
@@ -21,7 +23,7 @@ describe("native shared-memory WASM preparation", () => {
       try {const instance=await WebAssembly.instantiate(module,{env:{memory}});instance.exports.prepare_seats(...args);
       Atomics.store(new Int32Array(memory.buffer,0,16),2+lane,1);parentPort.postMessage('done');}
       catch(error){parentPort.postMessage(String(error));}});`;
-    const workers = [new Worker(source, { eval: true }), new Worker(source, { eval: true })];
+    const workers = Array.from({ length: lanes }, () => new Worker(source, { eval: true }));
     try {
       await Promise.all(
         workers.map(
@@ -36,8 +38,8 @@ describe("native shared-memory WASM preparation", () => {
                 memory,
                 lane,
                 args: [
-                  (count * lane) / 2,
-                  (count * (lane + 1)) / 2,
+                  Math.floor((count * lane) / lanes),
+                  Math.floor((count * (lane + 1)) / lanes),
                   64,
                   matrices,
                   colors,
@@ -63,8 +65,8 @@ describe("native shared-memory WASM preparation", () => {
           expect(output[seat * 16 + channel]).toBeCloseTo(value, 5),
         );
       }
-      expect(Atomics.load(new Int32Array(memory.buffer), 2)).toBe(1);
-      expect(Atomics.load(new Int32Array(memory.buffer), 3)).toBe(1);
+      for (let lane = 0; lane < lanes; lane++)
+        expect(Atomics.load(new Int32Array(memory.buffer), 2 + lane)).toBe(1);
       expect(Array.from(new Float32Array(memory.buffer, colors, 3))).toEqual([
         Math.fround(0.1),
         Math.fround(0.4),
@@ -73,5 +75,6 @@ describe("native shared-memory WASM preparation", () => {
     } finally {
       await Promise.all(workers.map((worker) => worker.terminate()));
     }
-  });
+    },
+  );
 });
