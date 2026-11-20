@@ -42,11 +42,19 @@ describe("versioned replay codec", () => {
     expect(decoded.frames).toHaveLength(original.frames.length);
     // Verify packed coordinate parity at the first, middle and final frame.
     // Replays store centimeters; fractional original coordinates are rounded.
-    for (const frameIndex of [0, Math.floor(original.frames.length / 2), original.frames.length - 1]) {
+    for (const frameIndex of [
+      0,
+      Math.floor(original.frames.length / 2),
+      original.frames.length - 1,
+    ]) {
       const originalFrame = original.frames[frameIndex]!;
       const unpacked = decoded.frames[frameIndex]!;
-      expect(unpacked.p).toEqual(originalFrame.p.map((coordinate) => quantizeReplayComponent(coordinate) / 100));
-      expect(unpacked.b).toEqual(originalFrame.b.map((coordinate) => quantizeReplayComponent(coordinate) / 100));
+      expect(unpacked.p).toEqual(
+        originalFrame.p.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
+      );
+      expect(unpacked.b).toEqual(
+        originalFrame.b.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
+      );
     }
     expect(decoded.score).toEqual(original.score);
     replay.seek(0);
