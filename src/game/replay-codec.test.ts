@@ -9,6 +9,7 @@ import {
   encodeStoredReplay,
   estimateReplayBytes,
   REPLAY_V3_MIN_REDUCTION,
+  quantizeReplayComponent,
 } from "./replay-codec";
 
 function makeReplay() {
@@ -22,6 +23,15 @@ function makeReplay() {
 }
 
 describe("versioned replay codec", () => {
+  it("quantizes replay positions to centimeters and clamps to signed int16", () => {
+    expect(quantizeReplayComponent(1.25)).toBe(125);
+    expect(quantizeReplayComponent(-1.25)).toBe(-125);
+    expect(quantizeReplayComponent(400)).toBe(32_767);
+    expect(quantizeReplayComponent(-400)).toBe(-32_768);
+    expect(quantizeReplayComponent(327.68)).toBe(32_767);
+    expect(quantizeReplayComponent(-327.69)).toBe(-32_768);
+  });
+
   it("round-trips legacy-shaped replays with score, seek and visual context", () => {
     const original = makeReplay();
     const stored = encodeReplay(original);
