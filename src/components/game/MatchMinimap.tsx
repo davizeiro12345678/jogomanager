@@ -12,6 +12,8 @@ import { Radar } from "lucide-react";
 
 import type { SimView } from "@/game/sim-contracts";
 import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
+import { useT } from "@/i18n/context";
+import { graphicsRecoveryMessages } from "@/i18n/graphics-recovery-messages";
 
 const W = 232;
 const H = 152;
@@ -100,17 +102,19 @@ export function MatchPitchFallback({
   paused: boolean;
   onRetry: () => void;
 }) {
+  const { lang } = useT();
+  const copy = graphicsRecoveryMessages(lang);
   const pitch = useMinimap(view, true, paused);
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-[#0a1420] px-4 text-center text-white">
       <p role="status" className="text-sm text-white/85">
-        Estádio 3D indisponível. Acompanhe a partida em 2D.
+        {copy.followIn2D}
       </p>
       <canvas
         ref={pitch}
         width={W}
         height={H}
-        aria-label="Campo da partida em 2D"
+        aria-label={copy.pitch}
         role="img"
         className="h-auto max-h-[43dvh] w-full max-w-[24rem] rounded-lg border border-white/15 object-contain"
       />
@@ -119,7 +123,7 @@ export function MatchPitchFallback({
         className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
         onClick={onRetry}
       >
-        Tentar novamente em 3D
+        {copy.retry3D}
       </button>
     </div>
   );
