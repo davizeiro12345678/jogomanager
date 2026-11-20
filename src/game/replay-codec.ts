@@ -60,7 +60,12 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
   const hasVisual = frames.some((frame) => frame.v !== undefined);
   const visual = hasVisual ? frames.map((frame) => frame.v ?? null) : undefined;
 
-  frames.forEach((frame, frameIndex) => {
+  for (let frameIndex = 0; frameIndex < frames.length; frameIndex += 1) {
+    const frame = frames[frameIndex]!;
+    const actionBase = frameIndex * playerCount;
+    const positionBase = actionBase * 4;
+    const framePositions = frame.p;
+    const frameActions = frame.a;
     const timeMs = Math.max(previousTimeMs, Math.round(frame.t * 1_000));
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
@@ -71,14 +76,14 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const source = playerIndex * 4;
-      const target = (frameIndex * playerCount + playerIndex) * 4;
-      positions[target] = quantizeReplayComponent(frame.p[source] ?? 0 / 1);
-      positions[target + 1] = quantizeReplayComponent(frame.p[source + 1] ?? 0 / 1);
-      positions[target + 2] = quantizeReplayComponent(frame.p[source + 2] ?? 0 / 1);
-      positions[target + 3] = quantizeReplayComponent(frame.p[source + 3] ?? 0 / 1);
-      actions[frameIndex * playerCount + playerIndex] = actionCode(frame.a[playerIndex] ?? null);
+      const target = positionBase + source;
+      positions[target] = quantizeReplayComponent(framePositions[source] ?? 0 / 1);
+      positions[target + 1] = quantizeReplayComponent(framePositions[source + 1] ?? 0 / 1);
+      positions[target + 2] = quantizeReplayComponent(framePositions[source + 2] ?? 0 / 1);
+      positions[target + 3] = quantizeReplayComponent(framePositions[source + 3] ?? 0 / 1);
+      actions[actionBase + playerIndex] = actionCode(frameActions[playerIndex] ?? null);
     }
-  });
+  }
 
   return {
     version: REPLAY_FORMAT_V3,
