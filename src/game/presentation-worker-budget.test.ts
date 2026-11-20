@@ -10,8 +10,15 @@ describe("presentation worker budget", () => {
 
   it("caps aggregate presentation work instead of saturating every logical core", () => {
     const budget = presentationWorkerBudget(64, 32);
-    expect(budget).toEqual({ total: 4, textures: 2, geometry: 2 });
+    expect(budget).toEqual({ total: 6, textures: 2, geometry: 4 });
     expect(budget.textures + budget.geometry).toBeLessThanOrEqual(budget.total);
+  });
+
+  it("enables four geometry workers only with at least 12 logical cores", () => {
+    expect(presentationWorkerBudget(8, 8)).toEqual({ total: 4, textures: 2, geometry: 2 });
+    expect(presentationWorkerBudget(11, 8)).toEqual({ total: 4, textures: 2, geometry: 2 });
+    expect(presentationWorkerBudget(12, 8)).toEqual({ total: 6, textures: 2, geometry: 4 });
+    expect(presentationWorkerBudget(12, 4)).toEqual({ total: 4, textures: 2, geometry: 2 });
   });
 
   it("limits memory-constrained devices to one background worker", () => {
