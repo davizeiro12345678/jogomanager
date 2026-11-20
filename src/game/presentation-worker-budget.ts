@@ -19,8 +19,7 @@ export function presentationWorkerBudget(
   // Large devices can prepare disjoint crowd ranges on four cores, but
   // always reserve at least six logical cores for rendering, simulation,
   // browser work, and OS tasks. Small devices keep the original budget.
-  let total =
-    logicalCores >= 12 ? 6 : Math.min(4, Math.max(0, logicalCores - 3));
+  let total = logicalCores >= 12 ? 6 : Math.min(4, Math.max(0, logicalCores - 3));
   if (total === 0) return { total, textures: 0, geometry: 0 };
 
   // Mobile and memory-limited devices never increase worker parallelism.
