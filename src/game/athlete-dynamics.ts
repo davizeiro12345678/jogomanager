@@ -66,9 +66,15 @@ export function advanceAthlete(
   const response = useFixedSlices ? FIXED_SLICE_RESPONSE : 1 - Math.exp(-6 * h);
   const maxDesired = Math.max(0, maxSpeed);
   const halfH = 0.5 * h;
+  // Integrate in scalar registers and commit the result once. The order of
+  // every floating-point operation is unchanged, preserving replay hashes.
+  let x = p.x;
+  let z = p.z;
+  let vx = p.vx;
+  let vz = p.vz;
   for (let i = 0; i < steps; i++) {
-    const dx = tx - p.x,
-      dz = tz - p.z,
+    const dx = tx - x,
+      dz = tz - z,
       distance = Math.hypot(dx, dz);
     const desiredSpeed = Math.min(
       maxDesired,
@@ -80,21 +86,25 @@ export function advanceAthlete(
       ux = (dx / distance) * desiredSpeed;
       uz = (dz / distance) * desiredSpeed;
     }
-    const dvx = ux - p.vx,
-      dvz = uz - p.vz,
+    const dvx = ux - vx,
+      dvz = uz - vz,
       change = Math.hypot(dvx, dvz);
     // Deceleration may use more force than launch, but never teleports velocity.
-    const slowing = dvx * p.vx + dvz * p.vz < 0;
+    const slowing = dvx * vx + dvz * vz < 0;
     const limit = (slowing ? braking : acceleration) * h;
     const factor = change > 0 ? Math.min(response, limit / change) : 0;
-    const oldX = p.vx,
-      oldZ = p.vz;
-    p.vx += dvx * factor;
-    p.vz += dvz * factor;
+    const oldX = vx,
+      oldZ = vz;
+    vx += dvx * factor;
+    vz += dvz * factor;
     // Halving is exact in binary floating point, so this equals `* 0.5 * h`.
-    p.x += (oldX + p.vx) * halfH;
-    p.z += (oldZ + p.vz) * halfH;
+    x += (oldX + vx) * halfH;
+    z += (oldZ + vz) * halfH;
   }
+  p.x = x;
+  p.z = z;
+  p.vx = vx;
+  p.vz = vz;
 }
 
 /** Inelastic shoulder contact with limited tangential friction. Equal and
