@@ -34,6 +34,7 @@ export const options = {
     },
   },
   thresholds: {
+    checks: [{ threshold: "rate>0.99", abortOnFail: true, delayAbortEval: "15s" }],
     http_req_failed: [{ threshold: "rate<0.01", abortOnFail: true, delayAbortEval: "12s" }],
     stage_http_5xx: [{ threshold: "rate<0.005", abortOnFail: true, delayAbortEval: "12s" }],
     stage_blocked_or_limited: [
