@@ -66,6 +66,10 @@ export function advanceAthlete(
   const response = useFixedSlices ? FIXED_SLICE_RESPONSE : 1 - Math.exp(-6 * h);
   const maxDesired = Math.max(0, maxSpeed);
   const halfH = 0.5 * h;
+  // These bounds are invariant over every deterministic physics substep.
+  const brakingTwice = 2 * braking;
+  const brakingStepLimit = braking * h;
+  const accelerationStepLimit = acceleration * h;
   // Integrate in scalar registers and commit the result once. The order of
   // every floating-point operation is unchanged, preserving replay hashes.
   let x = p.x;
@@ -78,7 +82,7 @@ export function advanceAthlete(
       distance = Math.hypot(dx, dz);
     const desiredSpeed = Math.min(
       maxDesired,
-      Math.sqrt(2 * braking * Math.max(0, distance - 0.08)),
+      Math.sqrt(brakingTwice * Math.max(0, distance - 0.08)),
     );
     let ux = 0,
       uz = 0;
@@ -91,7 +95,7 @@ export function advanceAthlete(
       change = Math.hypot(dvx, dvz);
     // Deceleration may use more force than launch, but never teleports velocity.
     const slowing = dvx * vx + dvz * vz < 0;
-    const limit = (slowing ? braking : acceleration) * h;
+    const limit = slowing ? brakingStepLimit : accelerationStepLimit;
     const factor = change > 0 ? Math.min(response, limit / change) : 0;
     const oldX = vx,
       oldZ = vz;
