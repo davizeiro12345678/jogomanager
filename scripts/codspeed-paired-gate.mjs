@@ -33,10 +33,7 @@ export function evaluatePairedReport(report) {
   assert.match(report.base ?? "", /^[0-9a-f]{40}$/);
   assert.match(report.head ?? "", /^[0-9a-f]{40}$/);
   assert.ok(report.base !== report.head, "Base and head must differ");
-  assert.ok(
-    typeof report.node === "string" && report.node.startsWith("v"),
-    "Missing Node version",
-  );
+  assert.ok(typeof report.node === "string" && report.node.startsWith("v"), "Missing Node version");
   assert.ok(typeof report.cpu === "string" && report.cpu.length > 4, "Missing runner CPU");
   assert.ok(
     Array.isArray(report.benchmarks) && report.benchmarks.length === EXPECTED_BENCHMARKS,
