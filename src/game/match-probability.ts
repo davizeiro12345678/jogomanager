@@ -79,9 +79,15 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
 
 function poissonBuckets(lambda: number): number[] {
   const p = [Math.exp(-lambda)];
-  for (let i = 1; i < 8; i++) p.push((p[i - 1]! * lambda) / i);
+  let cumulative = p[0]!;
+  for (let i = 1; i < 8; i++) {
+    const next = (p[i - 1]! * lambda) / i;
+    p.push(next);
+    cumulative += next;
+  }
+  // Sum in the original bucket order to preserve exact seeded score parity.
   // The final bucket owns the tail; no rejection loop or lost probability mass.
-  p.push(Math.max(0, 1 - p.reduce((sum, v) => sum + v, 0)));
+  p.push(Math.max(0, 1 - cumulative));
   return p;
 }
 
