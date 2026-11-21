@@ -45,6 +45,9 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     "permissions-policy",
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()',
   );
+  // CORP limits cross-site no-cors embedding of our resources without requiring
+  // cross-origin isolation (COEP), which can break Stripe, OAuth and media.
+  headers.set("cross-origin-resource-policy", "same-site");
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   if (url.protocol === "https:")
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
