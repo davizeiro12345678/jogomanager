@@ -232,7 +232,7 @@ Verifique **/llms.txt**, **/robots.txt**, **/sitemap.xml**, **/api/health** e o 
 6. **Multiplayer e comunidade:** autoridade de sala, antirreplay, rate limiting, prevenção de abuso, restrição de chat e auditoria com dados mínimos.
 7. **Operação e incidentes:** segredos em cofres, rotação quando necessário, monitoramento e capacidade testada de recuperação, sem divulgar topologia sensível.
 
-Consulte [SECURITY.md](SECURITY.md) para escopo de suporte, reporte confidencial, práticas de teste seguro e tratamento de incidentes. **Documentação de controle não comprova sua ativação no painel da Cloudflare, GitHub, Stripe, Supabase ou VPS.**
+Consulte [SECURITY.md](SECURITY.md) para escopo de suporte, reporte confidencial, práticas de teste seguro e tratamento de incidentes. **Documentação de controle não comprova sua ativação no painel da Cloudflare, GitHub, Stripe, Supabase ou VPS.** O inventário de proteções confirmadas e pendentes está em [auditoria de segurança do repositório (21/11/2026)](docs/security/repository-protections-2026-11-21.md).
 
 ## Estado de entrega e pendências
 
