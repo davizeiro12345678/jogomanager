@@ -105,13 +105,16 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 
 function decodeV3(raw: StoredReplayV3): Replay {
   const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
-  const frames: ReplayFrame[] = [];
+  const frames = new Array<ReplayFrame>(timesMs.length);
   const playerCount = raw.meta.length;
   const positionCount = playerCount * 4;
+  // Start each frame with storage for doubles. Replay coordinates are often
+  // fractional, and every slot in the copied array is overwritten below.
+  const positionTemplate = new Array<number>(positionCount).fill(0.5);
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
     timeMs += timesMs[frameIndex]!;
-    const p = new Array<number>(positionCount);
+    const p = positionTemplate.slice();
     const a = new Array<PlayerAction | null>(playerCount);
     const positionBase = frameIndex * positionCount;
     const actionBase = frameIndex * playerCount;
@@ -141,7 +144,7 @@ function decodeV3(raw: StoredReplayV3): Replay {
       poss: possession[frameIndex] === 1 ? "away" : "home",
     };
     if (frameVisual) frame.v = frameVisual;
-    frames.push(frame);
+    frames[frameIndex] = frame;
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),

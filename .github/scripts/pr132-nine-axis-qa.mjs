@@ -140,6 +140,15 @@ try {
       timeout: 30000,
     });
     await page.waitForTimeout(650);
+    if (route === "/new" && response?.ok()) {
+      // This route renders only after its lazy client bundle has loaded.
+      // Keep the existing missing-heading finding if it never appears.
+      try {
+        await page.locator("main.career-create h1").waitFor({ state: "visible", timeout: 8_000 });
+      } catch (error) {
+        if (error?.name !== "TimeoutError") throw error;
+      }
+    }
     const status = response?.status() ?? 0;
     const name = route === "/" ? "home" : route.slice(1);
     const baseMetrics = await page.evaluate(() => {
