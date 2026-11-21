@@ -35,6 +35,22 @@ test("refuses production, lookalikes and URL redirection tricks", () => {
   }
 });
 
+test("works in k6 JavaScript runtimes without a global URL constructor", () => {
+  const url = globalThis.URL;
+  try {
+    globalThis.URL = undefined;
+    assert.equal(
+      validateStagingTarget({
+        target: "https://staging.jogomanager.com/",
+        isolation: "ISOLATED-STAGING-VERIFIED",
+      }),
+      "https://staging.jogomanager.com",
+    );
+  } finally {
+    globalThis.URL = url;
+  }
+});
+
 test("refuses launch if the independent environment attestation is missing", () => {
   assert.throws(
     () =>
