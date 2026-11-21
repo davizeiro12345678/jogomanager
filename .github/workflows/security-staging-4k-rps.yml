@@ -1,0 +1,84 @@
+name: Security - 4k RPS isolated staging load test
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_isolation:
+        description: "I verified independent staging Worker, database, auth, payments and no production traffic"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-4k-load-test
+  cancel-in-progress: false
+
+jobs:
+  gated-load-test:
+    # Both human attestation and a protected CI variable are mandatory.
+    # STAGING_ISOLATED must be created in repository Settings > Variables.
+    if: ${{ inputs.confirm_isolation && vars.PFM_STAGING_ISOLATED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: security-staging
+    steps:
+      - name: Checkout immutable commit
+        uses: actions/checkout@v4
+      - name: Test strict non-production allowlist and only safe GET paths
+        run: node --test scripts/security/staging-load-policy.test.mjs
+      - name: Verify isolated staging response; no production fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://staging.jogomanager.com/'
+          curl --silent --show-error --fail --head --max-time 15 \
+            --output /dev/null --dump-header /tmp/pfm-stage-headers "$url"
+          # Require an explicit server-side attestation, not a client supplied header.
+          if ! grep -iEq '^x-pfm-isolated-stage:[[:space:]]*yes[[:space:]]*\r?$' /tmp/pfm-stage-headers; then
+            echo 'Staging origin missing X-PFM-Isolated-Stage: yes; refusing high-RPS test.' >&2
+            exit 2
+          fi
+      - name: Prepare temporary metrics directory
+        shell: bash
+        run: |
+          mkdir -p load-reports
+          chmod 0777 load-reports
+      - name: Run maximum 4000 requests/sec on public staging GET only
+        shell: bash
+        run: |
+          docker run --rm \
+            --cpus=2 --memory=5g --pids-limit=400 \
+            --cap-drop=ALL --security-opt=no-new-privileges \
+            -e STAGING_URL=https://staging.jogomanager.com/ \
+            -e STAGE_ISOLATION_ATTESTATION=ISOLATED-STAGING-VERIFIED \
+            --mount type=bind,src="$PWD/scripts/security",dst=/work,readonly \
+            --mount type=bind,src="$PWD/load-reports",dst=/reports \
+            grafana/k6:2.4.0 run \
+            --summary-export /reports/summary.json \
+            --out json=/reports/samples.ndjson \
+            /work/staging-load.k6.js
+      - name: Count actual throughput, never infer 4000 from requested rate
+        if: always()
+        shell: bash
+        run: |
+          if [ -f load-reports/samples.ndjson ]; then
+            python3 scripts/security/summarize-k6.py \
+              load-reports/samples.ndjson load-reports/observed-throughput.json
+          else
+            echo 'No k6 samples recorded. Test did not prove any RPS.' >&2
+            exit 2
+          fi
+      - name: Remove large raw telemetry after summarizing
+        if: always()
+        run: rm -f load-reports/samples.ndjson
+      - name: Retain bounded evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-4k-rps-${{ github.run_id }}
+          path: load-reports/*.json
+          retention-days: 7
+          if-no-files-found: warn
