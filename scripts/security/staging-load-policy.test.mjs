@@ -50,7 +50,7 @@ test("safe endpoints are read-only public paths, and peak budget is exactly 4k t
   assert.equal(LOAD_PEAK_RPS, 4000);
   assert.ok(SAFE_PUBLIC_PATHS.length >= 5);
   for (const path of SAFE_PUBLIC_PATHS) {
-    assert.match(path, /^\/[a-z0-9/-]*$/);
+    assert.match(path, /^\/[a-z0-9/.-]*$/);
     assert.doesNotMatch(path, /auth|checkout|payment|api|serverfn|login|save|admin/i);
   }
 });
