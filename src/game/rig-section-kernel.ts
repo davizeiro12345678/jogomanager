@@ -8,6 +8,31 @@ export interface RigSectionInput {
 }
 export const MAX_SECTION_RINGS = 256;
 export const MAX_SECTION_RADIAL = 128;
+
+const ANGULAR_PROFILE_LIMIT = 8;
+const angularProfiles: { radial: number; roundness: number; values: Float64Array }[] = [];
+let nextAngularProfile = 0;
+
+function rigSectionAngularProfile(radial: number, roundness: number): Float64Array {
+  for (const profile of angularProfiles) {
+    if (profile.radial === radial && profile.roundness === roundness) return profile.values;
+  }
+
+  const values = new Float64Array((radial + 1) * 3);
+  for (let side = 0; side <= radial; side++) {
+    const u = side / radial;
+    const angle = u * Math.PI * 2;
+    const sine = Math.sin(angle);
+    const cosine = Math.cos(angle);
+    values[side * 3] = Math.sign(sine) * Math.abs(sine) ** roundness;
+    values[side * 3 + 1] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
+    values[side * 3 + 2] = u;
+  }
+  angularProfiles[nextAngularProfile] = { radial, roundness, values };
+  nextAngularProfile = (nextAngularProfile + 1) % ANGULAR_PROFILE_LIMIT;
+  return values;
+}
+
 export function validRigSection(input: RigSectionInput): boolean {
   if (
     !(input.rings instanceof Float64Array) ||
@@ -42,29 +67,11 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   const output = new Float32Array(rigSectionVertexCount(input) * 5);
   const bottom = rings[0]!;
   const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
-  // Every ring has the same angular profile. Evaluate the transcendental
-  // functions once per radial direction, rather than once per vertex. Keep
-  // Float64 intermediates and an independently owned Float32 output.
-  const angular = new Float64Array((radial + 1) * 3);
-  for (let side = 0; side <= radial; side++) {
-    const u = side / radial;
-    const angle = u * Math.PI * 2;
-    const sine = Math.sin(angle);
-    const cosine = Math.cos(angle);
-    angular[side * 3] = Math.sign(sine) * Math.abs(sine) ** roundness;
-    angular[side * 3 + 1] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
-    angular[side * 3 + 2] = u;
-  }
+  // Sections with the same radial count and roundness share the angular
+  // profile. The caller still owns its independently allocated vertices.
+  const angular = rigSectionAngularProfile(radial, roundness);
   let cursor = 0;
-  // Write to the owned typed buffer directly. Allocating a temporary five-
-  // element array for every 3D vertex creates unnecessary GC pressure.
-  const write = (x: number, y: number, z: number, u: number, v: number) => {
-    output[cursor++] = x;
-    output[cursor++] = y;
-    output[cursor++] = z;
-    output[cursor++] = u;
-    output[cursor++] = v;
-  };
+  const rowStride = (radial + 1) * 5;
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;
     const y = rings[offset]!;
@@ -80,17 +87,23 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
       output[cursor++] = v;
     }
   }
-  for (const [row, mask] of [
-    [0, 1],
-    [rows - 1, 2],
-  ]) {
-    if (!(caps & mask!)) continue;
-    const offset = row! * 4;
-    const v = mask === 1 ? 0 : 1;
-    write(0, rings[offset]!, rings[offset + 3]!, 0.5, v);
-    for (let side = 0; side <= radial; side++) {
-      const source = (row! * (radial + 1) + side) * 5;
-      write(output[source]!, output[source + 1]!, output[source + 2]!, side / radial, v);
+  for (let v = 0; v < 2; v++) {
+    if (!(caps & (1 << v))) continue;
+    const row = v * (rows - 1);
+    const offset = row * 4;
+    output[cursor++] = 0;
+    output[cursor++] = rings[offset]!;
+    output[cursor++] = rings[offset + 3]!;
+    output[cursor++] = 0.5;
+    output[cursor++] = v;
+    const start = row * rowStride;
+    const end = start + rowStride;
+    for (let source = start; source < end; source += 5) {
+      output[cursor++] = output[source]!;
+      output[cursor++] = output[source + 1]!;
+      output[cursor++] = output[source + 2]!;
+      output[cursor++] = output[source + 3]!;
+      output[cursor++] = v;
     }
   }
   return output;
