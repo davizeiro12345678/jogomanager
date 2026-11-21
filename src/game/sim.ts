@@ -1322,8 +1322,7 @@ export class MatchSim {
         // New matches can opt into bounded depenetration instead of a
         // full-body position jump on one tick; legacy replay geometry is untouched.
         const penetration = R * 2 - d;
-        const overlap =
-          boundedContact ? Math.min(penetration, 0.14) : penetration;
+        const overlap = boundedContact ? Math.min(penetration, 0.14) : penetration;
         // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
         // resolve toda a sobreposição para não deixar atletas grudados.
         const share = bodyContactShare(a.physical, a.weightKg, b.physical, b.weightKg);
