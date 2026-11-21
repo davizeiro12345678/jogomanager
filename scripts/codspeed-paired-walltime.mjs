@@ -45,7 +45,10 @@ const results = new Map();
 for (const task of bench.tasks) {
   assert.ok(task.result && !task.result.error && !task.result.aborted, task.name);
   assert.ok(Number.isFinite(task.result.latency.p50) && task.result.latency.p50 > 0, task.name);
-  const [round, name] = task.name.split("/");
+  const separator = task.name.indexOf("/");
+  assert.ok(separator > 0, task.name);
+  const round = task.name.slice(0, separator);
+  const name = task.name.slice(separator + 1);
   const comparison = results.get(name) ?? {};
   comparison[round] = {
     medianMs: task.result.latency.p50,
