@@ -431,7 +431,9 @@ try {
     await page.getByRole("button", { name: /^(jogar|play)$/i }).click();
     const scoreboard = page.locator(".match-scoreboard-quick");
     await scoreboard.waitFor({ timeout: 45_000 });
-    await page.getByRole("button", { name: /pausar partida|pause match/i }).click();
+    const pause = page.getByRole("button", { name: /pausar partida|pause match/i });
+    await pause.focus();
+    await pause.press("Enter");
     await page.getByRole("button", { name: /retomar partida|resume match/i }).waitFor();
     const trigger = page.getByRole("button", { name: /opções da partida|match options/i });
     await trigger.click();

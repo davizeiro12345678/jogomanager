@@ -9,7 +9,15 @@ import {
   MoreHorizontal,
   X,
 } from "lucide-react";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import { MatchReport } from "@/components/game/MatchReport";
 import { MatchScoreLine } from "@/features/match/MatchScoreLine";
@@ -96,6 +104,11 @@ export default function QuickLive({
   const [showEvents, setShowEvents] = useState(false);
   const [showTools, setShowTools] = useState(false);
   const toolsTrigger = useRef<HTMLButtonElement>(null);
+  const matchHeading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    matchHeading.current?.focus({ preventScroll: true });
+  }, []);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const controllerRef = useRef<LiveMatchController | null>(null);
 
@@ -248,7 +261,7 @@ export default function QuickLive({
       <p role="status" className="sr-only">
         {paused ? t("match.paused") : ""}
       </p>
-      <h1 className="sr-only">
+      <h1 ref={matchHeading} tabIndex={-1} className="sr-only">
         Partida rápida: {home.name} x {away.name}
       </h1>
 
