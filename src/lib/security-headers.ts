@@ -15,6 +15,8 @@ const COMMON_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
+  "script-src-attr 'none'",
+  "manifest-src 'self'",
   "form-action 'self' https://*.stripe.com",
   "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev https://lovable.dev",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
