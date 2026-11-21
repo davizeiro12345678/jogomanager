@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { generate_rig_section, initSync } from "./wasm/pkg/crowd_visibility_wasm";
 import { rigSectionGeometry } from "./rig-geometry";
 
@@ -11,6 +11,32 @@ import {
 } from "./rig-section-kernel";
 
 describe("bounded rig-section presentation kernel", () => {
+  it("reuses an unchanged angular profile without sharing generated vertex buffers", () => {
+    const firstRings = new Float64Array([0, 0.2, 0.25, 0, 1, 0.3, 0.35, 0]);
+    const secondRings = new Float64Array([0, 0.4, 0.45, 0, 1.5, 0.3, 0.35, 0]);
+    const input = { rings: firstRings, radial: 31, roundness: 1.37, caps: 3 };
+    const sine = vi.spyOn(Math, "sin");
+    const cosine = vi.spyOn(Math, "cos");
+    try {
+      const first = generateRigSectionFallback(input);
+      const sineCalls = sine.mock.calls.length;
+      const cosineCalls = cosine.mock.calls.length;
+      expect(sineCalls).toBeGreaterThan(0);
+      expect(cosineCalls).toBeGreaterThan(0);
+
+      const second = generateRigSectionFallback({ ...input, rings: secondRings });
+      expect(sine.mock.calls.length).toBe(sineCalls);
+      expect(cosine.mock.calls.length).toBe(cosineCalls);
+      expect(second.buffer).not.toBe(first.buffer);
+      expect(second[1]).toBe(first[1]);
+      expect(second[6]).not.toBe(first[6]);
+      expect(first.every(Number.isFinite)).toBe(true);
+      expect(second.every(Number.isFinite)).toBe(true);
+    } finally {
+      sine.mockRestore();
+      cosine.mockRestore();
+    }
+  });
   it.each([3, 16, 64, 128])("preserves every Float32 vertex at %i radial segments", (radial) => {
     const rings = new Float64Array([
       0, 0.2, 0.22, 0, 0.35, 0.24, 0.25, 0.01, 0.8, 0.18, 0.19, 0, 1, 0.12, 0.13, -0.01,
