@@ -67,16 +67,17 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
   };
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;
-    const v = (rings[offset]! - bottom) / span;
-    for (let side = 0; side <= radial; side++) {
-      const direction = side * 3;
-      write(
-        angular[direction]! * rings[offset + 1]!,
-        rings[offset]!,
-        angular[direction + 1]! * rings[offset + 2]! + rings[offset + 3]!,
-        angular[direction + 2]!,
-        v,
-      );
+    const y = rings[offset]!;
+    const width = rings[offset + 1]!;
+    const depth = rings[offset + 2]!;
+    const center = rings[offset + 3]!;
+    const v = (y - bottom) / span;
+    for (let direction = 0; direction < angular.length; direction += 3) {
+      output[cursor++] = angular[direction]! * width;
+      output[cursor++] = y;
+      output[cursor++] = angular[direction + 1]! * depth + center;
+      output[cursor++] = angular[direction + 2]!;
+      output[cursor++] = v;
     }
   }
   for (const [row, mask] of [
