@@ -128,6 +128,22 @@ describe("staging cooperative presence", () => {
     expect(claim).toHaveBeenCalledTimes(1);
   });
 
+  it("rejects oversized authentication frames before touching the database", async () => {
+    const loadRoster = vi.fn(async () => roster);
+    const claim = vi.fn(async () => true);
+    const lobby = new CooperativeLobby({ roomId, secret, loadRoster, claim, now: () => now });
+    const frame = JSON.stringify({
+      type: "authenticate",
+      version: 2,
+      ticket: await ticket("home_captain"),
+    });
+    // Valid JSON with legal trailing whitespace must still respect the frame byte budget.
+    const oversizedFrame = frame.padEnd(4_097, " ");
+    expect(await lobby.attach(new Socket(), oversizedFrame)).toBeNull();
+    expect(loadRoster).not.toHaveBeenCalled();
+    expect(claim).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid signatures before calling the database", async () => {
     const loadRoster = vi.fn(async () => roster);
     const claim = vi.fn(async () => true);
