@@ -589,6 +589,13 @@
       "when": 1795006800000,
       "tag": "0083_private_cooperative_match_rosters",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1795269600000,
+      "tag": "0084_private_cooperative_match_fixtures",
+      "breakpoints": true
     }
   ]
 }

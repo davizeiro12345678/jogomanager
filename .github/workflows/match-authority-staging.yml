@@ -73,6 +73,7 @@ jobs:
           services/match-authority/supabase-room-validation.test.ts
           services/match-authority/worker-activation.test.ts
           services/match-authority/cooperative-lobby.test.ts
+          services/match-authority/cooperative-game.test.ts
           --pool=forks --maxWorkers=1
       - name: Confirm Cloudflare target is staging and cannot serve active matches
         run: |

@@ -14,6 +14,8 @@ BEGIN
     OR has_table_privilege('authenticated', 'matchmaking_private.cooperative_match_rosters', 'SELECT,INSERT,UPDATE')
     OR has_function_privilege('anon', 'public.load_live_cooperative_match_roster(uuid)', 'EXECUTE')
     OR has_function_privilege('authenticated', 'public.load_live_cooperative_match_roster(uuid)', 'EXECUTE')
+    OR has_function_privilege('authenticated', 'public.load_live_cooperative_match_fixture(uuid)', 'EXECUTE')
+    OR has_function_privilege('anon', 'public.load_live_cooperative_match_fixture(uuid)', 'EXECUTE')
     OR has_column_privilege('service_role', 'matchmaking_private.cooperative_match_rosters', 'home_captain', 'UPDATE')
   THEN RAISE EXCEPTION 'cooperative roster grants exceed their intended scope'; END IF;
 END;
@@ -67,6 +69,20 @@ BEGIN
   EXCEPTION WHEN check_violation THEN
     NULL;
   END;
+
+  INSERT INTO matchmaking_private.cooperative_match_rosters
+    (home_captain, home_partner, away_captain, away_partner, home_club, away_club)
+  VALUES (v_home_captain, v_home_partner, v_away_captain, v_away_partner, 'fla', 'pal')
+  RETURNING room_id INTO v_room;
+  IF public.load_live_cooperative_match_fixture(v_room) IS NOT NULL THEN
+    RAISE EXCEPTION 'pending fixture returned as live';
+  END IF;
+  UPDATE matchmaking_private.cooperative_match_rosters SET status = 'live' WHERE room_id = v_room;
+  v_roster := public.load_live_cooperative_match_fixture(v_room);
+  IF v_roster IS NULL OR v_roster ->> 'homeClub' IS DISTINCT FROM 'fla'
+    OR v_roster ->> 'awayClub' IS DISTINCT FROM 'pal' OR length(v_roster ->> 'seed') < 16
+    OR v_roster -> 'roster' IS DISTINCT FROM public.load_live_cooperative_match_roster(v_room)
+  THEN RAISE EXCEPTION 'unexpected private fixture payload'; END IF;
 END;
 $contract$;
 RESET ROLE;

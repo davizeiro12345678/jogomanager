@@ -1,6 +1,9 @@
 /** Server-only Supabase REST access for the isolated match authority Worker.
  * Never call from the browser and never put service credentials into a URL.
  */
+import { z } from "zod";
+import { CooperativeRosterV2Schema } from "../../src/game/online/cooperative-seat-ticket-v2.server";
+
 export interface AuthorityDatabaseEnv {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
@@ -157,6 +160,31 @@ export async function loadStagingCooperativeRoster(
   return request(env, "/rest/v1/rpc/load_live_cooperative_match_roster", "POST", undefined, {
     p_room: roomId,
   });
+}
+
+export const CooperativeFixtureSchema = z
+  .object({
+    roster: CooperativeRosterV2Schema,
+    homeClub: z.string().min(1).max(128),
+    awayClub: z.string().min(1).max(128),
+    seed: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
+  })
+  .strict()
+  .refine((fixture) => fixture.homeClub !== fixture.awayClub);
+export type CooperativeFixture = z.infer<typeof CooperativeFixtureSchema>;
+
+export async function loadStagingCooperativeFixture(env: AuthorityDatabaseEnv, roomId: string) {
+  if (env.MATCH_AUTHORITY_ENV !== "staging" || !ROOM_ID.test(roomId)) return null;
+  const value = await request(
+    env,
+    "/rest/v1/rpc/load_live_cooperative_match_fixture",
+    "POST",
+    undefined,
+    {
+      p_room: roomId,
+    },
+  );
+  return value === null ? null : CooperativeFixtureSchema.parse(value);
 }
 
 export interface SettlementInput {

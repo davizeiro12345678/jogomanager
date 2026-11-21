@@ -85,7 +85,20 @@ export class CooperativeLobby {
     }
   }
 
-  private send(socket: LobbySocket, frame: object): void {
+  seatFor(socket: LobbySocket): CooperativeSeatV2 | undefined {
+    for (const [seat, peer] of this.peers) if (peer === socket) return seat;
+    return undefined;
+  }
+
+  onlineSeats(): CooperativeSeatV2[] {
+    return CooperativeSeatV2Schema.options.filter((seat) => this.peers.get(seat)?.readyState === 1);
+  }
+
+  broadcast(frame: object): void {
+    for (const peer of this.peers.values()) this.send(peer, frame);
+  }
+
+  send(socket: LobbySocket, frame: object): void {
     if (socket.readyState !== 1) return;
     if (socket.bufferedAmount > 64 * 1024) {
       socket.close(1013, "slow_consumer");
@@ -99,10 +112,11 @@ export class CooperativeLobby {
   }
 
   private broadcastPresence(): void {
-    const seats = CooperativeSeatV2Schema.options.filter(
-      (seat) => this.peers.get(seat)?.readyState === 1,
-    );
-    for (const peer of this.peers.values())
-      this.send(peer, { type: "presence", version: 2, roomId: this.options.roomId, seats });
+    this.broadcast({
+      type: "presence",
+      version: 2,
+      roomId: this.options.roomId,
+      seats: this.onlineSeats(),
+    });
   }
 }

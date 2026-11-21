@@ -16,7 +16,13 @@ import { allocateQueuePair, loadPrivateLiveRoom, settleAuthorityReceipt } from "
 import { validateMatchAuthorityActivation } from "./worker-activation";
 import { reserveTextFrame, SocketReservations } from "./socket-reservations";
 import { CooperativeLobby } from "./cooperative-lobby";
-import { loadStagingCooperativeRoster } from "./supabase";
+import { CooperativeGame, type CooperativeGameCheckpoint } from "./cooperative-game";
+import { canonicalize } from "../../src/game/online/session-hash";
+import {
+  loadStagingCooperativeFixture,
+  loadStagingCooperativeRoster,
+  type CooperativeFixture,
+} from "./supabase";
 import type { AuthorityDatabaseEnv, PrivateMatchDescriptor } from "./supabase";
 
 interface Env extends AuthorityDatabaseEnv {
@@ -125,13 +131,147 @@ export default {
   },
 };
 
-/** Four-seat admission and presence on a separate staging namespace. */
+type PersistentCooperativeMatch = {
+  version: 1;
+  fixture: CooperativeFixture;
+  idempotencyKey: string;
+  engine: CanonicalMatchEngineCheckpointV1;
+  game: CooperativeGameCheckpoint;
+};
+
+/** Four-seat match owner on a separate staging namespace. */
 export class CooperativeRoomDO extends DurableObject<Env> {
   private readonly slots = new SocketReservations(MAX_PENDING_SOCKETS);
   private readonly authenticationQueue = new SocketReservations(MAX_PENDING_SOCKETS);
   private serial = Promise.resolve();
   private lobby: CooperativeLobby | undefined;
   private roomId: string | undefined;
+  private match:
+    | {
+        fixture: CooperativeFixture;
+        idempotencyKey: string;
+        engine: CanonicalAuthoritativeMatchEngine;
+        game: CooperativeGame;
+      }
+    | undefined;
+  private failed = false;
+
+  private serialize(work: () => Promise<void>): Promise<void> {
+    const result = this.serial.then(work);
+    this.serial = result.catch(() => undefined);
+    return result;
+  }
+
+  private async restore(fixture: CooperativeFixture, prior?: PersistentCooperativeMatch) {
+    const idempotencyKey = prior?.idempotencyKey ?? crypto.randomUUID();
+    const engine = new CanonicalAuthoritativeMatchEngine(
+      fixture.homeClub,
+      fixture.awayClub,
+      fixture.seed,
+    );
+    const game = new CooperativeGame(
+      fixture.roster.roomId,
+      engine,
+      createMatchReceiptSigner(this.env.MATCH_RECEIPT_SIGNING_SECRET),
+      idempotencyKey,
+    );
+    try {
+      if (prior) {
+        if (
+          prior.version !== 1 ||
+          prior.engine.tick !== prior.game.tick ||
+          canonicalize(prior.fixture) !== canonicalize(fixture) ||
+          (prior.game.receipt &&
+            !(await verifySignedMatchReceipt(
+              prior.game.receipt,
+              this.env.MATCH_RECEIPT_SIGNING_SECRET,
+            )))
+        )
+          throw new Error("cooperative fixture or checkpoint mismatch");
+        engine.restoreCheckpoint(prior.engine);
+        game.restore(prior.game);
+      }
+      this.match = { fixture, idempotencyKey, engine, game };
+      await this.persist();
+    } catch (error) {
+      engine.dispose();
+      this.match = undefined;
+      throw error;
+    }
+  }
+
+  private async persist() {
+    const match = this.match!;
+    const engine = match.engine.checkpoint();
+    const game = match.game.checkpoint();
+    if (engine.tick !== game.tick) throw new Error("cooperative clocks diverged");
+    await this.ctx.storage.put<PersistentCooperativeMatch>("cooperative-match", {
+      version: 1,
+      fixture: match.fixture,
+      idempotencyKey: match.idempotencyKey,
+      engine,
+      game,
+    });
+  }
+
+  private async bindGame(roomId: string) {
+    const fixture = await loadStagingCooperativeFixture(this.env, roomId);
+    if (!fixture && !this.match) {
+      if (await this.ctx.storage.get("cooperative-match"))
+        throw new Error("persisted cooperative fixture unavailable");
+      return;
+    }
+    if (
+      !fixture ||
+      fixture.roster.roomId !== roomId ||
+      (this.match && canonicalize(fixture) !== canonicalize(this.match.fixture))
+    )
+      throw new Error("cooperative fixture unavailable");
+    if (!this.match) {
+      const prior = await this.ctx.storage.get<PersistentCooperativeMatch>("cooperative-match");
+      await this.restore(fixture, prior);
+    }
+  }
+
+  private publish() {
+    if (this.failed || !this.lobby || !this.match) return;
+    this.lobby.broadcast(this.match.game.snapshot(this.lobby.onlineSeats()));
+  }
+
+  private async scheduleGame() {
+    if (
+      this.match?.game.canAdvance(this.lobby?.onlineSeats() ?? []) &&
+      (await this.ctx.storage.getAlarm()) === null
+    )
+      await this.ctx.storage.setAlarm(Date.now() + FRAME_INTERVAL_MS);
+  }
+
+  async alarm(): Promise<void> {
+    if (this.failed || !cooperativeSecret(this.env)) return;
+    await this.serialize(async () => {
+      if (!this.match) {
+        const prior = await this.ctx.storage.get<PersistentCooperativeMatch>("cooperative-match");
+        if (!prior || prior.game.receipt) return;
+        const fixture = await loadStagingCooperativeFixture(this.env, prior.fixture.roster.roomId);
+        if (!fixture) return;
+        this.roomId = fixture.roster.roomId;
+        await this.restore(fixture, prior);
+      }
+      const { game } = this.match!;
+      try {
+        const online = this.lobby?.onlineSeats() ?? [];
+        if (!game.canAdvance(online)) return;
+        const receipt = await game.advance(online, FIXED_STEPS_PER_ALARM, Date.now());
+        await this.persist();
+        this.publish();
+        if (receipt) this.lobby?.broadcast({ type: "receipt", version: 2, receipt });
+        else await this.ctx.storage.setAlarm(Date.now() + FRAME_INTERVAL_MS);
+      } catch (error) {
+        this.failed = true;
+        throw error;
+      }
+    });
+  }
 
   fetch(request: Request): Response {
     const roomId = cooperativeRoomId(new URL(request.url));
@@ -141,7 +281,7 @@ export class CooperativeRoomDO extends DurableObject<Env> {
       return new Response(null, { status: 503 });
     }
     const secret = cooperativeSecret(this.env);
-    if (!secret || !roomId || (this.roomId && this.roomId !== roomId))
+    if (!secret || !roomId || this.failed || (this.roomId && this.roomId !== roomId))
       return new Response(null, { status: 404 });
     if (
       request.headers.get("origin") !== this.env.ALLOWED_ORIGIN ||
@@ -174,10 +314,14 @@ export class CooperativeRoomDO extends DurableObject<Env> {
       return new Response(null, { status: 503 });
     }
     const { 0: client, 1: server } = pair;
+    let detached = false;
     const cleanup = () => {
+      if (detached) return;
+      detached = true;
       clearTimeout(timeout);
       release();
       lobby.detach(server);
+      void this.serialize(async () => this.publish());
     };
     const reject = (code: number, reason: string) => {
       try {
@@ -189,35 +333,74 @@ export class CooperativeRoomDO extends DurableObject<Env> {
     let timeout = setTimeout(() => reject(1008, "auth_timeout"), 5_000);
     server.addEventListener("close", cleanup);
     server.addEventListener("error", cleanup);
-    let received = false;
+    let authenticating = false;
+    let windowStart = 0;
+    let frames = 0;
     server.addEventListener("message", ({ data }) => {
-      const releaseFrame =
-        !received && typeof data === "string"
-          ? reserveTextFrame(this.authenticationQueue, data)
-          : null;
+      if (detached) return;
+      const now = Date.now();
+      if (now - windowStart >= 1000) {
+        windowStart = now;
+        frames = 0;
+      }
+      const releaseFrame = ++frames <= 24 && reserveTextFrame(this.authenticationQueue, data);
       if (!releaseFrame) {
         reject(1008, "unexpected_frame");
         return;
       }
-      received = true;
-      const admit = async () => {
+      void this.serialize(async () => {
         try {
-          if (server.readyState !== 1) return;
-          const expiresAt = await lobby.attach(server, data);
-          clearTimeout(timeout);
-          if (expiresAt === null) reject(1008, "ticket_rejected");
-          else
+          if (detached || server.readyState !== 1) return;
+          if (this.failed) return reject(1011, "match_unavailable");
+          const seat = lobby.seatFor(server);
+          if (!seat && !authenticating) {
+            authenticating = true;
+            const expiresAt = await lobby.attach(server, data);
+            clearTimeout(timeout);
+            if (expiresAt === null) return reject(1008, "ticket_rejected");
+            await this.bindGame(roomId);
+            const admittedSeat = lobby.seatFor(server);
+            if (!admittedSeat || detached || Date.now() >= expiresAt)
+              return reject(4001, "ticket_expired");
             timeout = setTimeout(
               () => reject(4001, "ticket_expired"),
               Math.max(0, expiresAt - Date.now()),
             );
+            const game = this.match?.game;
+            if (game) {
+              await this.scheduleGame();
+              lobby.send(server, {
+                type: "sequence",
+                version: 2,
+                sequence: game.lastSequence(admittedSeat),
+              });
+              const receipt = game.checkpoint().receipt;
+              if (receipt) lobby.send(server, { type: "receipt", version: 2, receipt });
+              this.publish();
+            }
+            return;
+          }
+          const game = this.match?.game;
+          if (!seat || !game) return reject(1008, "unexpected_frame");
+          const result = await game.receive(seat, data);
+          if (!result) return reject(1008, "invalid_command");
+          if (result.accepted) {
+            try {
+              await this.persist();
+              await this.scheduleGame();
+            } catch (error) {
+              this.failed = true;
+              throw error;
+            }
+          }
+          lobby.send(server, { type: "command_result", version: 2, ...result });
+          this.publish();
         } catch {
           reject(1011, "lobby_unavailable");
         } finally {
           releaseFrame();
         }
-      };
-      this.serial = this.serial.then(admit, admit);
+      });
     });
     return new Response(null, { status: 101, webSocket: client });
   }
