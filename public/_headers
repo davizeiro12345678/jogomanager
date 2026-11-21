@@ -1,0 +1,15 @@
+# Cloudflare Workers Static Assets: only responses served by the asset layer.
+# SSR and API responses are protected by src/lib/security-headers.ts.
+# Preserve COOP same-origin-allow-popups for Stripe/OAuth: do not force COEP globally.
+
+/assets/*
+  Cross-Origin-Resource-Policy: same-site
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()
+
+/_serverFn/assets/*
+  Cross-Origin-Resource-Policy: same-site
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()
+
+/__l5e/*
+  Cross-Origin-Resource-Policy: same-site
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()
