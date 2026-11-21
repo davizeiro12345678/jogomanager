@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
 import { WorkerMatchView, snapshotMatchPacket } from "./live-match";
+import type { PlayerAction } from "./animation";
 import {
   MATCH_PLAYER_COUNT,
   PLAYER_STATE_STRIDE,
   actionCode,
+  actionFromByte,
   applyLivePlayerBuffer,
   createLivePlayerBuffer,
   createLivePlayerMetadata,
@@ -33,6 +35,21 @@ describe("live match transferable buffers", () => {
     expect(encoded.states).toHaveLength(MATCH_PLAYER_COUNT * PLAYER_STATE_STRIDE);
     expect(encoded.states[10]).toBe(actionCode(players[0]!.action));
     expect(createLivePlayerMetadata(players)).toHaveLength(MATCH_PLAYER_COUNT);
+  });
+
+  it("preserves replay action bytes and ignores unknown actions", () => {
+    const actions = [
+      [0, null],
+      [1, "shot"],
+      [14, "pass"],
+      [42, "elastico"],
+    ] as const;
+    for (const [code, action] of actions) {
+      expect(actionCode(action)).toBe(code);
+      expect(actionFromByte(code)).toBe(action);
+    }
+    expect(actionCode("constructor" as PlayerAction)).toBe(0);
+    expect(actionFromByte(255)).toBeNull();
   });
 
   it("rejects inconsistent ownership buffers and preserves player identity on apply", () => {

@@ -36,7 +36,8 @@ const STATE = {
   xg: 27,
 } as const;
 
-const ACTION_NAMES: readonly PlayerAction[] = [
+const ACTION_BY_CODE: readonly (PlayerAction | null)[] = [
+  null,
   "shot",
   "shotPower",
   "shotPlaced",
@@ -80,6 +81,10 @@ const ACTION_NAMES: readonly PlayerAction[] = [
   "stepover",
   "elastico",
 ];
+const ACTION_CODES = Object.create(null) as Partial<Record<PlayerAction, number>>;
+for (let code = 1; code < ACTION_BY_CODE.length; code += 1) {
+  ACTION_CODES[ACTION_BY_CODE[code]!] = code;
+}
 
 export type LivePlayerMeta = Pick<
   SimPlayer,
@@ -117,7 +122,7 @@ export type RecycledSnapshotBuffers = LivePlayerBufferPacket;
 export type SnapshotBufferPool = ReturnType<typeof createSnapshotBufferPool>;
 
 export function actionCode(action: PlayerAction | null): number {
-  return action ? ACTION_NAMES.indexOf(action) + 1 : 0;
+  return typeof action === "string" ? (ACTION_CODES[action] ?? 0) : 0;
 }
 
 export function actionFromCode(code: number): PlayerAction | null {
@@ -126,7 +131,7 @@ export function actionFromCode(code: number): PlayerAction | null {
 
 /** Hot path for integral codes read from a replay's Uint8Array. */
 export function actionFromByte(code: number): PlayerAction | null {
-  return code === 0 ? null : (ACTION_NAMES[code - 1] ?? null);
+  return ACTION_BY_CODE[code] ?? null;
 }
 
 export function createLivePlayerMetadata(players: readonly SimPlayer[]): LivePlayerMeta[] {

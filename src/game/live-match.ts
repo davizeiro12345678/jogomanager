@@ -161,9 +161,9 @@ export function snapshotMatch(
 ): LiveSnapshot {
   // Most snapshots only move players and the ball. Do not clone the historical
   // feed merely to discard it on the way to the structured-clone boundary.
+  const eventId = sim.lastEventId;
   let events: MatchSim["events"] | undefined;
   if (includeEvents) {
-    const eventId = sim.lastEventId;
     const cached = eventCache.get(sim);
     if (cached?.seq === eventId) {
       events = cached.events;
@@ -189,7 +189,7 @@ export function snapshotMatch(
     possession: sim.possession,
     stats: { home: { ...sim.stats.home }, away: { ...sim.stats.away } },
     ...(events ? { events } : {}),
-    eventSeq: sim.lastEventId,
+    eventSeq: eventId,
     finished: sim.finished,
     subsUsed: { ...sim.subsUsed },
   };
