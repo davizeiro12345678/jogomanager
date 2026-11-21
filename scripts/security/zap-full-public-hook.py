@@ -5,7 +5,7 @@ scan still requires an independent staging environment with synthetic data.
 """
 import re
 
-ALLOW = r"(?:$|jogo-de-manager-de-futebol/?(?:\?.*)?$|modo-carreira-de-jogador/?(?:\?.*)?$|robots\.txt(?:\?.*)?$|sitemap\.xml(?:\?.*)?$)"
+ALLOW = r"(?:$|jogo-de-manager-de-futebol/?$|modo-carreira-de-jogador/?$|robots\.txt$|sitemap\.xml$)"
 EXCLUDE_LOCAL = r"^https?://jogomanager\.com/(?!" + ALLOW + r").+"
 EXCLUDE_EXTERNAL = r"^https?://(?!jogomanager\.com(?::443)?/).+"
 
