@@ -53,6 +53,15 @@
 - Image vulnerability report root-restricted: `/opt/jm-security/trivy/reports/postgres18-alpine-gosu-xsys044-20261121.json`. Keep private.
 - Tracking: https://github.com/davizeiro12345678/jogomanager/issues/145.
 
+## Actual staging PostgreSQL cutover, with rollback (verified later on 2026-11-21)
+- A second **Debian Trixie** image was built from the original pinned `postgres:18` base, applying **15 available Debian/PGDG package updates**, then replacing `gosu` with the Go 1.27.4 / `golang.org/x/sys 0.44.0` build.
+- Offline Trivy analysis of `jm-security/postgres:18.7-trixie-updated-gosu`: **433 vulnerability occurrences**, versus **552** for the old running image (improvement of ~21.6%); breakdown now **CRITICAL 1, HIGH 125, MEDIUM 122, LOW 169, UNKNOWN 16**, plus one likely test certificate private key finding. Do not claim all CVEs are fixed in the active Debian staging image.
+- Staging-only logical backup/restore and a test of the exact accent order in `en_US.utf8` passed for the updated Debian candidate; this order had **failed** in the Alpine variant.
+- The updated Debian image was **promoted to the staging-only PostgreSQL service** `jm-supabase-stage-pg` using a new volume `jm-supabase-stage-pgdata-debianpatch-20261121`, with no published DB ports and unchanged internal-only network. **Production managed Supabase was not modified.**
+- The original PostgreSQL image/container remains stopped as `jm-supabase-stage-pg-rollback-20261121`, with its original `jm-supabase-stage-pgdata` volume intact. A fresh `pg_dump -Fc` was saved privately before cutover, and the restored stage DB had 6 synthetic bots and 2 synthetic matches after promotion. Site checks: production HTTP200 and synthetic staging HTTP200.
+- **Separate** `jm-stage-postgres-secure` uses the 0-finding Alpine candidate on a different internal-only Docker network and its own data volume; it remains a security test DB, NOT the backend of the public dummy Worker or live game. This prevents conflating its zero-finding report with the updated Debian staging service.
+- Remainder: review outstanding Debian advisories and whether packages have fixes, and later replace/update the managed staging app only after independent Supabase/Stripe test environments exist. No claims that the original runtime is universally safe.
+
 ## Pending gates for a REAL full-game scan and rollout
 1. Create an independently billed/authorized Supabase staging Auth/Storage/Realtime project with test users and isolated RLS, or self-host a complete isolated stack (not just Postgres).
 2. Deploy the actual game bundle to a different staging Worker with only test bindings; keep cloud Access restricted to authorized testers, rather than the current public dummy worker policy.
