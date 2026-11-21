@@ -40,7 +40,7 @@
     "rolldown": "1.2.1",
     "@modelcontextprotocol/server": "2.3.0",
     "dompurify": "3.4.17",
-    "hono": "4.13.13",
+    "hono": "4.13.16",
     "ip-address": "10.7.4",
     "body-parser": "2.4.0",
     "fast-uri": "3.1.9",
