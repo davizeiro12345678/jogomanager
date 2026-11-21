@@ -27,6 +27,15 @@ export function strengthEdge(home: number, away: number): number {
   return Math.tanh((bounded(home, 70, 35, 99) - bounded(away, 70, 35, 99)) / 23) * 0.62;
 }
 
+// FNV-1a is incremental: avoid rehashing the fixed "match-day:" prefix and
+// building a temporary prefixed string for each simulated fixture. The colon
+// update is identical to hashSeed(seed + ":", PREFIX_HASH), including UTF-16.
+const MATCH_DAY_PREFIX_HASH = hashSeed("match-day:");
+function matchDayPrefixHash(seed: string): number {
+  const seeded = hashSeed(seed, MATCH_DAY_PREFIX_HASH);
+  return Math.imul(seeded ^ 58, 16777619) >>> 0;
+}
+
 /** Independent seed stream: a good/bad day cannot alter identity or consume the event RNG. */
 function teamDayFromPrefix(prefixHash: number, side: "home" | "away"): number {
   const rnd = makeRng(hashSeed(side, prefixHash));
@@ -35,12 +44,12 @@ function teamDayFromPrefix(prefixHash: number, side: "home" | "away"): number {
 
 /** Compatibility API: uses the same FNV seed and three draws as the historical path. */
 export function teamDay(seed: string, side: "home" | "away"): number {
-  return teamDayFromPrefix(hashSeed(`match-day:${seed}:`), side);
+  return teamDayFromPrefix(matchDayPrefixHash(seed), side);
 }
 
 export function expectedGoals(home: number, away: number, seed: string, ctx: MatchConditions = {}) {
   // Both sides share this long seed prefix; hash it only once per fixture.
-  const dayPrefix = hashSeed(`match-day:${seed}:`);
+  const dayPrefix = matchDayPrefixHash(seed);
   const quality = strengthEdge(ctx.homeStrength ?? home, ctx.awayStrength ?? away);
   const form = (value?: number) => (bounded(value, 60, 0, 100) - 60) / 40;
   const fatigue = (value?: number) => -Math.max(0, bounded(value, 0, 0, 100) - 15) / 190;
