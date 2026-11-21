@@ -130,6 +130,8 @@ A pasta **.github/** versiona workflows, automações de dependência e controle
 
 Registre a URL/ID do ruleset, seu estado de enforcement, as regras aplicadas, o nome exato dos status checks e a execução no HEAD. Para Dependabot, Secret scanning, push protection, Private vulnerability reporting e CodeQL, registre a página de configuração **e/ou** o evento/alerta efetivamente verificado. A presença do workflow ou de uma badge **não prova** que a funcionalidade administrativa foi ativada.
 
+O inventário factual das regras GitHub, do novo CodeQL e das configurações administrativas ainda não verificadas está em [Evidências e plano de proteção do repositório (21/11/2026)](docs/security/repository-protections-2026-11-21.md).
+
 ## 8. Resposta a segredo exposto e incidente
 
 Se um segredo for comprometido, **não basta excluir a linha e fechar o alerta**.
