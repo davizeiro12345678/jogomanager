@@ -26,7 +26,7 @@ const jsonHeaders = {
 const mock = (body, status=200, extra={}) =>
   new Response(JSON.stringify(body), { status, headers: { ...jsonHeaders, ...extra } });
 const page = (title, content, status=200) =>
-  new Response('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>'+title+' — PFM Staging</title></head><body><header><strong>SIMULAÇÃO ISOLADA — NÃO É O JOGO DE PRODUÇÃO</strong></header><nav><a href="/">Início</a> | <a href="/auth">Login</a> | <a href="/dashboard">Painel</a> | <a href="/checkout">Checkout</a> | <a href="/multiplayer">Multiplayer</a></nav><main><h1>'+title+'</h1>'+content+'</main></body></html>', { status, headers: htmlHeaders });
+  new Response('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>'+title+' — PFM Staging</title></head><body><header><strong>SIMULAÇÃO ISOLADA — NÃO É O JOGO DE PRODUÇÃO</strong></header><nav><a href="/">Início</a> | <a href="/auth">Login</a> | <a href="/dashboard">Painel</a> | <a href="/saves">Saves</a> | <a href="/checkout">Checkout</a> | <a href="/multiplayer">Multiplayer</a></nav><main><h1>'+title+'</h1>'+content+'</main></body></html>', { status, headers: htmlHeaders });
 const isSignedIn = req => /(?:^|;\s*)pfm_stage_session=synthetic-only(?:;|$)/.test(req.headers.get("Cookie") || "");
 export default {
   async fetch(request, env) {
@@ -59,7 +59,9 @@ export default {
     if (path === "/api/checkout" && method === "POST")
       return isSignedIn(request) ? mock({mock:true, charge_created:false, stripe_called:false, order_id:"synthetic"},200) : mock({error:"not_authenticated"},401);
     if (path === "/multiplayer" && method === "GET")
-      return page("Multiplayer fictício", "<p>Nenhuma partida real é iniciada.</p>");
+      return page("Multiplayer fictício", '<p>Nenhuma partida real é iniciada.</p><form action="/api/multiplayer/match" method="post"><button type="submit">Simular partida</button></form>');
+    if (path === "/saves" && method === "GET")
+      return page("Saves fictícios", '<p>Nenhum save real é gravado.</p><form action="/api/saves" method="post"><button type="submit">Simular salvamento</button></form>');
     if (path === "/api/multiplayer/match" && method === "POST")
       return isSignedIn(request) ? mock({ mock:true, room:"synthetic-room", persisted:false },202) : mock({error:"not_authenticated"},401);
     if (path === "/api/saves" && method === "GET")
