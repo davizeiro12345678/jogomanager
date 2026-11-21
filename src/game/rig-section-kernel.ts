@@ -35,16 +35,17 @@ export function rigSectionVertexCount(input: RigSectionInput): number {
   const caps = Number((input.caps & 1) !== 0) + Number((input.caps & 2) !== 0);
   return (input.rings.length / 4) * (input.radial + 1) + caps * (input.radial + 2);
 }
-export function generateRigSectionFallback(input: RigSectionInput): Float32Array {
-  if (!validRigSection(input)) throw new RangeError("Invalid rig section");
-  const { rings, radial, roundness, caps } = input;
-  const rows = rings.length / 4;
-  const output = new Float32Array(rigSectionVertexCount(input) * 5);
-  const bottom = rings[0]!;
-  const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
-  // Every ring has the same angular profile. Evaluate the transcendental
-  // functions once per radial direction, rather than once per vertex. Keep
-  // Float64 intermediates and an independently owned Float32 output.
+// Repeated player sections share only the immutable angular coefficients,
+// never their vertex buffers. The FIFO budget bounds retained scratch data
+// when untrusted or procedurally generated shapes vary their roundness.
+const ANGULAR_PROFILE_CACHE_LIMIT = 16;
+const rigSectionAngles = new Map<string, Float64Array>();
+
+function cachedRigSectionAngles(radial: number, roundness: number): Float64Array {
+  const key = `${radial}:${roundness}`;
+  const existing = rigSectionAngles.get(key);
+  if (existing) return existing;
+
   const angular = new Float64Array((radial + 1) * 3);
   for (let side = 0; side <= radial; side++) {
     const u = side / radial;
@@ -55,6 +56,25 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
     angular[side * 3 + 1] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
     angular[side * 3 + 2] = u;
   }
+
+  if (rigSectionAngles.size >= ANGULAR_PROFILE_CACHE_LIMIT) {
+    const oldest = rigSectionAngles.keys().next().value;
+    if (oldest !== undefined) rigSectionAngles.delete(oldest);
+  }
+  rigSectionAngles.set(key, angular);
+  return angular;
+}
+
+export function generateRigSectionFallback(input: RigSectionInput): Float32Array {
+  if (!validRigSection(input)) throw new RangeError("Invalid rig section");
+  const { rings, radial, roundness, caps } = input;
+  const rows = rings.length / 4;
+  const output = new Float32Array(rigSectionVertexCount(input) * 5);
+  const bottom = rings[0]!;
+  const span = Math.max(0.001, rings[(rows - 1) * 4]! - bottom);
+  // Reuse the immutable angular profile for repeated athlete rigs. The
+  // Float32 vertex buffer remains independently owned by every caller.
+  const angular = cachedRigSectionAngles(radial, roundness);
   let cursor = 0;
   // Write to the owned typed buffer directly. Allocating a temporary five-
   // element array for every 3D vertex creates unnecessary GC pressure.
