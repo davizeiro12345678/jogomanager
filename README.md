@@ -250,7 +250,7 @@ Prioridades de homologação antes da liberação: verificação de OAuth real, 
 
 ### Leituras complementares
 
-[Design](DESIGN.md) · [Arquitetura](docs/architecture/stack-status.md) · [Performance crítica](docs/critical-performance.md) · [Runbook Cloudflare/Supabase](docs/cloudflare-supabase-deployment.md) · [Pagamentos](docs/payments-configuration.md) · [Autenticação](docs/auth-methods.md) · [Plano e progresso](docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md) · [Política de segurança](SECURITY.md) · [Site oficial](https://jogomanager.com)
+[Design](DESIGN.md) · [Arquitetura](docs/architecture/stack-status.md) · [Performance crítica](docs/critical-performance.md) · [Runbook Cloudflare/Supabase](docs/cloudflare-supabase-deployment.md) · [Pagamentos](docs/payments-configuration.md) · [Autenticação](docs/auth-methods.md) · [Plano e progresso do release #132](https://github.com/davizeiro12345678/jogomanager/pull/132) · [Política de segurança](SECURITY.md) · [Site oficial](https://jogomanager.com)
 
 ---
 
