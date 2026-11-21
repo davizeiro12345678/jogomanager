@@ -66,17 +66,16 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
     timesMs[frameIndex] = timeMs - previousTimeMs;
     previousTimeMs = timeMs;
     for (let axis = 0; axis < 3; axis += 1)
-      ball[frameIndex * 3 + axis] = quantizeReplayComponent(frame.b[axis]! / 1);
+      ball[frameIndex * 3 + axis] = quantizeReplayComponent(frame.b[axis]!);
     score[frameIndex * 2] = Math.max(0, Math.min(65_535, frame.hg));
     score[frameIndex * 2 + 1] = Math.max(0, Math.min(65_535, frame.ag));
     possession[frameIndex] = frame.poss === "away" ? 1 : 0;
+    // Coordinate channel is contiguous, independent of action encoding.
+    // Preserve the exact Int16 rounding/saturation helper for every value.
+    for (let index = 0; index < playerCount * 4; index += 1) {
+      positions[positionBase + index] = quantizeReplayComponent(framePositions[index] ?? 0);
+    }
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const source = playerIndex * 4;
-      const target = positionBase + source;
-      positions[target] = quantizeReplayComponent(framePositions[source] ?? 0 / 1);
-      positions[target + 1] = quantizeReplayComponent(framePositions[source + 1] ?? 0 / 1);
-      positions[target + 2] = quantizeReplayComponent(framePositions[source + 2] ?? 0 / 1);
-      positions[target + 3] = quantizeReplayComponent(framePositions[source + 3] ?? 0 / 1);
       actions[actionBase + playerIndex] = actionCode(frameActions[playerIndex] ?? null);
     }
   }
