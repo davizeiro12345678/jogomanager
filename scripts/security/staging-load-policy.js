@@ -19,22 +19,12 @@ export function validateStagingTarget({ target, isolation }) {
   if (isolation !== "ISOLATED-STAGING-VERIFIED") {
     throw new Error("Missing independent staging isolation attestation");
   }
-  let url;
-  try {
-    url = new URL(target);
-  } catch {
-    throw new Error("Staging target must be a valid HTTPS origin");
-  }
-  const exact =
-    url.protocol === "https:" &&
-    url.hostname === "staging.jogomanager.com" &&
-    !url.port &&
-    !url.username &&
-    !url.password &&
-    (url.pathname === "/" || url.pathname === "") &&
-    !url.search &&
-    !url.hash;
-  if (!exact) {
+  // String allowlisting avoids URL globals missing in some k6 runtimes
+  // and blocks all redirects, query strings, lookalike hostnames and ports.
+  if (
+    target !== "https://staging.jogomanager.com" &&
+    target !== "https://staging.jogomanager.com/"
+  ) {
     throw new Error("Only exact https://staging.jogomanager.com/ target is permitted");
   }
   return "https://staging.jogomanager.com";
