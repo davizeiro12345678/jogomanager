@@ -29,7 +29,7 @@ describe("bounded rig-section presentation kernel", () => {
       expect(cosine.mock.calls.length).toBe(cosineCalls);
       expect(second.buffer).not.toBe(first.buffer);
       expect(second[1]).toBe(first[1]);
-      expect(second[6]).not.toBe(first[6]);
+      expect(second[5]).not.toBe(first[5]);
       expect(first.every(Number.isFinite)).toBe(true);
       expect(second.every(Number.isFinite)).toBe(true);
     } finally {
