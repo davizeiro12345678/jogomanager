@@ -30,15 +30,27 @@ export function careerMatchSelection(state: CareerState): CareerMatchSelection {
     current.length === 11 &&
     new Set(current.map((p) => p.id)).size === 11 &&
     current.some((p) => p.pos === "GK")
-  )
+  ) {
+    const selected = new Set(current.map((p) => p.id));
+    const bench = (Array.isArray(state.bench) ? state.bench : []).filter((id) => {
+      const p = state.players[id];
+      if (
+        !p ||
+        selected.has(p.id) ||
+        p.clubId !== state.clubId ||
+        p.suspended ||
+        p.injuryWeeks !== 0
+      )
+        return false;
+      selected.add(p.id);
+      return true;
+    });
     return {
       players: current,
       lineup: current.map((p) => p.id),
-      bench: (state.bench ?? []).filter((id) => {
-        const p = state.players[id];
-        return p !== undefined && p.clubId === state.clubId && !p.suspended && p.injuryWeeks === 0;
-      }),
+      bench,
     };
+  }
 
   const picked = pickLineup(squad, formation);
   const players = picked.lineup

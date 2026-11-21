@@ -1,0 +1,97 @@
+{
+  "kind": "isolated_source_contract_http_harness",
+  "startedAt": "2026-11-08T23:38:57.307Z",
+  "runtime": "v24.22.0",
+  "baseCommit": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "sourceDigest": "60a534ed4339f20dfa16814c38bd3744f687e4d52af17dfdad8cc55be292e544",
+  "sources": [
+    "src/lib/support-input.ts",
+    "src/lib/moderation.ts",
+    "src/game/online/authoritative-match-session.ts",
+    "src/lib/multiplayer-room-create.server.ts",
+    "src/lib/offline/store.ts"
+  ],
+  "scope": "Loopback-only synthetic authentication; actual input/moderation/session modules; no real users, database mutations, webhook delivery or production endpoints.",
+  "limits": {
+    "concurrency": 4,
+    "requests": 500,
+    "timeMs": 30000,
+    "harnessTransportCapBytes": 8192,
+    "stopEventLoopLagMs": 250,
+    "stopLatencyMs": 1000
+  },
+  "planned": 500,
+  "completed": 500,
+  "passed": 500,
+  "stopped": null,
+  "durationMs": 545.0107,
+  "latencyMs": {
+    "p50": 2.8424999999999727,
+    "p95": 6.841799999999921,
+    "p99": 13.311899999999923,
+    "max": 45.36110000000008,
+    "maxEventLoopLag": 5.324499999999944
+  },
+  "scenarios": [
+    {
+      "scenario": "missing_auth",
+      "count": 80,
+      "passed": 80,
+      "statuses": {
+        "401": 80
+      }
+    },
+    {
+      "scenario": "forged_authority_or_json",
+      "count": 80,
+      "passed": 80,
+      "statuses": {
+        "400": 80
+      }
+    },
+    {
+      "scenario": "oversized_support_message",
+      "count": 40,
+      "passed": 40,
+      "statuses": {
+        "400": 40
+      }
+    },
+    {
+      "scenario": "moderation_evasion",
+      "count": 100,
+      "passed": 100,
+      "statuses": {
+        "422": 100
+      }
+    },
+    {
+      "scenario": "forged_score_command",
+      "count": 80,
+      "passed": 80,
+      "statuses": {
+        "400": 80
+      }
+    },
+    {
+      "scenario": "valid_support_shape_no_write",
+      "count": 20,
+      "passed": 20,
+      "statuses": {
+        "202": 20
+      }
+    },
+    {
+      "scenario": "tactical_burst",
+      "count": 100,
+      "passed": 100,
+      "statuses": {
+        "202": 12,
+        "429": 88
+      }
+    }
+  ],
+  "tacticalMutations": 12,
+  "invalidAttemptHistorySize": 88,
+  "success": true
+}

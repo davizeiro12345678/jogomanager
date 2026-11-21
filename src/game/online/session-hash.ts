@@ -1,4 +1,5 @@
 import type { MatchCommandV1 } from "./match-protocol";
+import type { CooperativeSeatV2 } from "./cooperative-seat-ticket-v2.server";
 
 export const SESSION_HASH_ALGORITHM = "SHA-256";
 export const GENESIS_SESSION_HASH = "0".repeat(64);
@@ -76,4 +77,13 @@ export async function appendCommandHash(
     }),
   );
   return { previousHash, hash };
+}
+
+export async function appendCooperativeCommandHash(
+  previousHash: string,
+  seat: CooperativeSeatV2,
+  command: MatchCommandV1,
+): Promise<string> {
+  assertHash(previousHash, "previousHash");
+  return sha256Hex(canonicalize({ protocol: "match-command-v2", previousHash, seat, command }));
 }

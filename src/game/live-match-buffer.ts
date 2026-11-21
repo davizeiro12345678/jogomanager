@@ -121,7 +121,12 @@ export function actionCode(action: PlayerAction | null): number {
 }
 
 export function actionFromCode(code: number): PlayerAction | null {
-  return code > 0 && Number.isInteger(code) ? (ACTION_NAMES[code - 1] ?? null) : null;
+  return code > 0 && Number.isInteger(code) ? actionFromByte(code) : null;
+}
+
+/** Hot path for integral codes read from a replay's Uint8Array. */
+export function actionFromByte(code: number): PlayerAction | null {
+  return code === 0 ? null : (ACTION_NAMES[code - 1] ?? null);
 }
 
 export function createLivePlayerMetadata(players: readonly SimPlayer[]): LivePlayerMeta[] {

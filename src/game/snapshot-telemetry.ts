@@ -12,7 +12,7 @@ export interface SnapshotTelemetryTracker {
   sample(payload: unknown, receivedAt: number): SnapshotTransportMeasurement;
 }
 
-export const LIVE_MATCH_WORKER_TELEMETRY_NAME = "stadium-live-match-telemetry";
+export { LIVE_MATCH_WORKER_TELEMETRY_NAME, isLiveTelemetryWorker } from "./snapshot-telemetry-flag";
 export const LIVE_MATCH_WORKER_TELEMETRY_MARK = "stadium.live-match.worker.snapshot";
 
 function utf8ByteLength(value: string) {
@@ -98,11 +98,6 @@ export function isLiveSnapshotResponse(message: unknown): message is {
   if (!message || typeof message !== "object") return false;
   const candidate = message as { type?: unknown; snapshot?: unknown };
   return candidate.type === "snapshot" && candidate.snapshot !== undefined;
-}
-
-/** O nome do Worker é a chave opt-in; nenhuma propriedade é adicionada à mensagem. */
-export function isLiveTelemetryWorker(name: unknown) {
-  return name === LIVE_MATCH_WORKER_TELEMETRY_NAME;
 }
 
 /**

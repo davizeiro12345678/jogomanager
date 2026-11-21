@@ -30,3 +30,16 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 560px;
 }
+
+/* The editorial headline is typically the LCP. On narrow screens use
+   resident fonts so neither the first paint nor line wrapping waits on a font. */
+@media (width < 640px) {
+  :root[data-public-shell] {
+    --font-display: system-ui, sans-serif;
+    --font-sans: system-ui, sans-serif;
+  }
+  [data-public-shell] article > h1 {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+}

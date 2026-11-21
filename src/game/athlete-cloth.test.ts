@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { AthleteCloth, ClothDynamics, type ClothMotion } from "./athlete-cloth";
 import { lookFor, proportionsFor } from "./player-model";
@@ -17,6 +17,45 @@ const kit = {
 } as const;
 
 describe("bounded athlete garment mechanics", () => {
+  it("reuses retained morph buffers with fresh dynamics and exclusive bindings", () => {
+    const look = lookFor("cloth-retained", "MF"),
+      p = proportionsFor(look);
+    const mats = playerMaterials(look, kit, null, "alta");
+    const skin = buildRigSkin(
+      {
+        P: p,
+        look,
+        mats,
+        hi: true,
+        segs: { radial: 8, cap: 4 },
+        handR: p.handR,
+        handMat: mats.skin,
+        jerseyInk: "#fff",
+      },
+      [0, 0, 0],
+    );
+    const first = new AthleteCloth(skin, p);
+    const garment = skin.groups.find((group) => group.geometry.morphAttributes.position?.length)!;
+    const positions = garment.geometry.morphAttributes.position;
+    const normals = garment.geometry.morphAttributes.normal;
+    const oldMesh = new THREE.SkinnedMesh(garment.geometry, garment.material);
+    first.bind(oldMesh);
+    first.update(1 / 60, { ...still, z: 8, bend: 1 });
+    const priorInfluence = oldMesh.morphTargetInfluences!.slice();
+    const recompute = vi.spyOn(THREE.BufferGeometry.prototype, "computeVertexNormals");
+    const second = new AthleteCloth(skin, p);
+    expect(recompute).not.toHaveBeenCalled();
+    recompute.mockRestore();
+    expect(garment.geometry.morphAttributes.position).toBe(positions);
+    expect(garment.geometry.morphAttributes.normal).toBe(normals);
+    expect(second.dynamics.time).toBe(0);
+    const newMesh = new THREE.SkinnedMesh(garment.geometry, garment.material);
+    second.bind(newMesh);
+    second.update(1 / 60, { ...still, z: -5, bend: 0.3 });
+    expect(oldMesh.morphTargetInfluences).toEqual(priorInfluence);
+    expect(newMesh.morphTargetInfluences).not.toEqual(priorInfluence);
+    skin.dispose();
+  });
   it("reserves the impact fold for ground contact instead of airborne descent", () => {
     const cloth = new ClothDynamics();
     cloth.advance(1 / 60, { ...still, lift: 0.5 });

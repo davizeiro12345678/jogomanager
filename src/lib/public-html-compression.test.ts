@@ -64,6 +64,16 @@ describe("anonymous public HTML transport", () => {
       expect(result.headers.get("vary")).toContain("Accept-Encoding");
     }
   });
+  it("compresses anonymous HTML carrying only a Cloudflare bot cookie", async () => {
+    const result = compressPublicHtml(
+      response(),
+      request({ cookie: "__cf_bm=opaque-bot-token", "accept-encoding": "gzip" }),
+    );
+    expect(result.headers.get("content-encoding")).toBe("gzip");
+    expect(
+      await new Response(result.body!.pipeThrough(new DecompressionStream("gzip"))).text(),
+    ).toBe(html);
+  });
   it("leaves private, cookie, ranged, API and already encoded responses intact", () => {
     for (const req of [
       request({ cookie: "session=private" }),

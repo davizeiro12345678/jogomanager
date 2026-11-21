@@ -5,6 +5,14 @@
  */
 import type { MatchSim } from "./sim";
 import { halfTimePlan } from "./ai-halftime";
+import { predictLooseBallInterception } from "./ai-ball-interception";
+import {
+  coordinatedDefensiveCover,
+  coordinatedHalfTimePlan,
+  coordinatedOffsideTrap,
+  coordinatedPassingLaneCover,
+  coordinatedSupportRun,
+} from "./tactical-ai-v2";
 import { advanceAthlete } from "./athlete-dynamics";
 import { pitchTraction } from "./match-physics-extras";
 import { positionalOverall } from "./overall";
@@ -27,7 +35,7 @@ export function halfTimeRead(sim: MatchSim, side: Side) {
   const foe: Side = side === "home" ? "away" : "home";
   const [home, away] = sim.possessionPct();
   const own = side === "home" ? home : away;
-  const plan = halfTimePlan(
+  const plan = (setup.tacticalAiRevision === 2 ? coordinatedHalfTimePlan : halfTimePlan)(
     { goals: sim.stats[side].goals, shots: sim.stats[side].shots, possession: own },
     { goals: sim.stats[foe].goals, shots: sim.stats[foe].shots, possession: 100 - own },
     setup.tactics,
@@ -110,7 +118,21 @@ export function chasers(sim: MatchSim): Set<string> {
       if (player.side !== side || player.pos === "GK" || player.sentOff) continue;
       const dx = player.x - sim.ball.x;
       const dz = player.z - sim.ball.z;
-      const distance = dx * dx + dz * dz;
+      const distance =
+        sim.contactPhysicsRevision === 2
+          ? predictLooseBallInterception({
+              playerX: player.x,
+              playerZ: player.z,
+              playerVx: player.vx,
+              playerVz: player.vz,
+              pace: player.pace,
+              stamina: player.stamina,
+              ballX: sim.ball.x,
+              ballZ: sim.ball.z,
+              ballVx: sim.ball.vx,
+              ballVz: sim.ball.vz,
+            }).score
+          : dx * dx + dz * dz;
       if (distance < firstDistance) {
         second = first;
         secondDistance = firstDistance;
@@ -133,12 +155,16 @@ export function moveOffBall(sim: MatchSim, dt: number) {
   const chase = sim.chasers();
   // The holder is skipped below, so its position stays fixed throughout sim pass.
   const holder = sim.ball.holder ? sim.players.find((q) => q.id === sim.ball.holder) : undefined;
+  const passingTarget = sim.pass ? sim.players.find((q) => q.id === sim.pass?.to) : undefined;
 
   // Urgência pelo placar e pelo relógio: quem está perdendo no fim empurra a
   // equipe para a frente; quem está ganhando recua e segura o resultado.
   const remaining = Math.max(0, 90 - sim.time / 60);
   const lateGame = remaining < 15;
   const goalDiff = sim.stats.home.goals - sim.stats.away.goals;
+  const currentMinute = sim.minute();
+  const contactRevision2 = sim.contactPhysicsRevision === 2;
+  const motionPhase = sim.time * 0.4;
   const urgency = (side: Side) => {
     if (!lateGame) return 0;
     const diff = side === "home" ? goalDiff : -goalDiff;
@@ -177,6 +203,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0),
       shift: sim.mentalityShift(side),
       urgency: urgency(side),
+      scoreDifference: side === "home" ? goalDiff : -goalDiff,
     };
   };
   const contexts = { home: sideContext("home"), away: sideContext("away") };
@@ -193,6 +220,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       pressLine,
       shift,
       urgency: push,
+      scoreDifference,
     } = contexts[p.side];
 
     let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
@@ -233,8 +261,25 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
     } else if (chase.has(p.id)) {
       // interceptação: mira num ponto à frente da bola
-      tx = bx + sim.ball.vx * 0.22;
-      tz = bz + sim.ball.vz * 0.22;
+      if (contactRevision2) {
+        const intercept = predictLooseBallInterception({
+          playerX: p.x,
+          playerZ: p.z,
+          playerVx: p.vx,
+          playerVz: p.vz,
+          pace: p.pace,
+          stamina: p.stamina,
+          ballX: bx,
+          ballZ: bz,
+          ballVx: sim.ball.vx,
+          ballVz: sim.ball.vz,
+        });
+        tx = intercept.x;
+        tz = intercept.z;
+      } else {
+        tx = bx + sim.ball.vx * 0.22;
+        tz = bz + sim.ball.vz * 0.22;
+      }
       sprint = 1.35;
     } else if (!attacking) {
       // Linha defensiva conjunta: os defensores sobem/descem juntos em vez de
@@ -242,7 +287,21 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       // e permite a armadilha de impedimento.
       if (p.pos === "DF") {
         const line = lineX[p.side];
-        const trap = setup.tactics.pressing >= 3 && Math.abs(bx - line) > 14 ? dir * 3.5 : 0;
+        // Historical matches keep their exact legacy behavior (pressing is 0..2).
+        // The v2 opponent opts into a deterministic, bounded coordinated trap.
+        const trap =
+          setup.tacticalAiRevision === 2
+            ? coordinatedOffsideTrap({
+                pressing: setup.tactics.pressing,
+                ballX: bx,
+                defenderLineX: line,
+                attackDirection: dir > 0 ? 1 : -1,
+                minute: currentMinute,
+                scoreDifference,
+              })
+            : sim.rulesRevision === 2 && setup.tactics.pressing === 2 && Math.abs(bx - line) > 14
+              ? dir * 3.5
+              : 0;
         tx = tx * 0.35 + (line + trap) * 0.65;
         // marcação por zona: cobre o adversário mais perigoso da sua faixa
         let markZ: number | null = null;
@@ -265,6 +324,35 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
       // perdendo no fim: a equipe inteira sobe para pressionar
       tx += push * 7 * dir;
+      if (setup.tacticalAiRevision === 2) {
+        const cover = coordinatedDefensiveCover({
+          ballZ: bz,
+          targetZ: tz,
+          stamina: p.stamina,
+          pressing: setup.tactics.pressing,
+          minute: currentMinute,
+          scoreDifference,
+          attackDirection: dir > 0 ? 1 : -1,
+        });
+        tx += cover.forward;
+        tz += cover.lateral;
+        sprint = Math.max(sprint, cover.sprint);
+        if (passingTarget && sim.pass?.side !== p.side && p.pos !== "FW") {
+          const lane = coordinatedPassingLaneCover({
+            ballX: bx,
+            ballZ: bz,
+            receiverX: passingTarget.x,
+            receiverZ: passingTarget.z,
+            defenderX: p.x,
+            defenderZ: p.z,
+            pressing: setup.tactics.pressing,
+            stamina: p.stamina,
+          });
+          tx += lane.forward;
+          tz += lane.lateral;
+          sprint = Math.max(sprint, lane.sprint);
+        }
+      }
     } else {
       // Movimento sem bola de verdade, em vez de balanço aleatório:
       // atacante ataca as costas da linha, ponta corta para dentro,
@@ -287,8 +375,23 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         tz += Math.sign(p.slotZ) * 3.5;
         sprint = 1.2;
       }
-      tz += Math.sin(sim.time * 0.4 + p.number) * 0.9;
+      tz += Math.sin(motionPhase + p.number) * 0.9;
       tx += push * 5 * dir;
+      if (setup.tacticalAiRevision === 2 && holder && p.pos !== "GK") {
+        const run = coordinatedSupportRun({
+          holderX: holder.x,
+          holderZ: holder.z,
+          playerX: p.x,
+          playerZ: p.z,
+          opponentLineX: lineX[p.side === "home" ? "away" : "home"],
+          attackingDirection: dir > 0 ? 1 : -1,
+          stamina: p.stamina,
+          midfield: p.pos === "MF",
+        });
+        tx += run.forward;
+        tz += run.lateral;
+        sprint = Math.max(sprint, run.sprint);
+      }
     }
 
     tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));

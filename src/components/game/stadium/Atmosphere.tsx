@@ -95,7 +95,7 @@ function useBeamMaterial(
   haze: number,
   seed: number,
 ) {
-  return useMemo(() => {
+  return useDisposable(() => {
     const material = new THREE.ShaderMaterial({
       vertexShader: BEAM_VERT,
       fragmentShader: BEAM_FRAG,
@@ -269,7 +269,7 @@ function DustMotes({
     return { positions, speeds };
   }, [fixtureKey, seed]);
 
-  const geometry = useMemo(() => {
+  const geometry = useDisposable(() => {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     return g;

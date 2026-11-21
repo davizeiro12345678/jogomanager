@@ -21,7 +21,7 @@ import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import brandLogo from "@/assets/brand/jogomanager-logo-header.webp";
-import "./home.css";
+import brandLogoSources from "@/assets/brand/jogomanager-logo-header.webp?format=webp&w=224;320;420&quality=82&as=srcset";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
@@ -173,6 +173,19 @@ export function FootballHome() {
   } | null>(null);
   useEffect(() => {
     let active = true;
+    // First-time visitors do not have a guest career. Avoid importing the
+    // 30 KB+ offline persistence module and idb helpers during home hydration
+    // when readLocalCareer() could only return null. The blocked-storage case
+    // still falls back to the original validated reader.
+    try {
+      if (
+        window.localStorage.getItem("manager3d.career.v2.guest") === null &&
+        window.localStorage.getItem("manager3d.career.v1") === null
+      )
+        return;
+    } catch {
+      // Storage may be blocked or unavailable in private browsing.
+    }
     // Returning players alone need the catalogue to resolve their club name.
     void import("@/lib/careerStorage")
       .then(async ({ readLocalCareer }) => {
@@ -227,6 +240,8 @@ export function FootballHome() {
         <Link to="/" className="home-brand" aria-label="jogomanager — início">
           <img
             src={brandLogo}
+            srcSet={`${brandLogoSources}, ${brandLogo} 560w`}
+            sizes="(max-width: 640px) 106px, 141px"
             alt="jogomanager — Da várzea à final, cada decisão é sua"
             width={560}
             height={223}
@@ -288,7 +303,8 @@ export function FootballHome() {
             width={1600}
             height={912}
             fetchPriority="high"
-            decoding="sync"
+            // AVIF decode should not synchronously monopolize the mobile main thread.
+            decoding="async"
           />
         </picture>
         <div className="home-hero-shade" aria-hidden="true" />

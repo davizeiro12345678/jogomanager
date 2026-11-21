@@ -1,0 +1,136 @@
+{
+  "before": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\baseline-nvidia-broadcast-1.json",
+  "after": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108\\verification\\quality-update-20261108\\graphics\\final-nvidia-broadcast-1.json",
+  "generatedAt": "2026-11-09T00:28:51.013Z",
+  "comparable": true,
+  "mismatches": [],
+  "device": {
+    "kind": "webgl2",
+    "renderer": "fl",
+    "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "gpuRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028A0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "gpuVendor": "Google Inc. (NVIDIA)",
+    "rendererClass": "hardware"
+  },
+  "protocol": {
+    "warmupMs": 60000,
+    "measurementMs": 300000,
+    "interruptions": 0,
+    "coveredMs": 300000,
+    "contractChanged": false,
+    "adaptive": false,
+    "longTasksScope": "whole run including warmup"
+  },
+  "metrics": [
+    {
+      "name": "fps",
+      "baseline": 77.12,
+      "candidate": 81.74333333333334,
+      "changePercent": 5.9949861687413675
+    },
+    {
+      "name": "onePercentLow",
+      "baseline": 11.452774582691713,
+      "candidate": 14.90439376685056,
+      "changePercent": 30.137842661944923
+    },
+    {
+      "name": "p50",
+      "baseline": 11.299999997019768,
+      "candidate": 11.200000002980232,
+      "changePercent": -0.8849556996983088
+    },
+    {
+      "name": "p95",
+      "baseline": 16.900000005960464,
+      "candidate": 15.799999997019768,
+      "changePercent": -6.508875790252889
+    },
+    {
+      "name": "p99",
+      "baseline": 70,
+      "candidate": 25.399999991059303,
+      "changePercent": -63.71428572705814
+    },
+    {
+      "name": "maxMs",
+      "baseline": 600.9000000059605,
+      "candidate": 511.29999999701977,
+      "changePercent": -14.910966884348797
+    },
+    {
+      "name": "stalls",
+      "baseline": 412,
+      "candidate": 187,
+      "changePercent": -54.61165048543689
+    },
+    {
+      "name": "draws",
+      "baseline": 182.73789764868604,
+      "candidate": 182.77058271826448,
+      "changePercent": 0.01788631148711417
+    },
+    {
+      "name": "maxDraws",
+      "baseline": 272,
+      "candidate": 228,
+      "changePercent": -16.176470588235293
+    },
+    {
+      "name": "triangles",
+      "baseline": 249533.38416320886,
+      "candidate": 244188.9652978836,
+      "changePercent": -2.141765072135482
+    },
+    {
+      "name": "heapUsedBytes",
+      "baseline": 150808446,
+      "candidate": 142680155,
+      "changePercent": -5.389811522890431
+    },
+    {
+      "name": "geometries",
+      "baseline": 306,
+      "candidate": 390,
+      "changePercent": 27.450980392156854
+    },
+    {
+      "name": "textures",
+      "baseline": 167,
+      "candidate": 191,
+      "changePercent": 14.371257485029943
+    },
+    {
+      "name": "programs",
+      "baseline": 125,
+      "candidate": 125,
+      "changePercent": 0
+    },
+    {
+      "name": "firstFrameMs",
+      "baseline": 5056.70000000298,
+      "candidate": 5048.5999999940395,
+      "changePercent": -0.1601835190724321
+    },
+    {
+      "name": "longTasks",
+      "baseline": 461,
+      "candidate": 186,
+      "changePercent": -59.652928416485906
+    },
+    {
+      "name": "longTaskMs",
+      "baseline": 45681,
+      "candidate": 26552,
+      "changePercent": -41.87517786388214
+    }
+  ],
+  "requestedMean60ReachedInThisRun": true,
+  "peakDrawBudget": {
+    "limit": 260,
+    "observed": 228,
+    "passes": true
+  },
+  "acceptedExtendedCampaign": false,
+  "limitation": "One matched 300-second NVIDIA pair. Three equivalent runs on both GPUs have not been completed. Whole-run long tasks include warmup; first-frame and resource changes are observations, not isolated causal attribution."
+}

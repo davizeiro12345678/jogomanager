@@ -1,0 +1,464 @@
+{
+  "recordedAt": "2026-11-09T01:47:46.698Z",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "baseCommit": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "runId": 42543242306,
+  "jobId": 128922613834,
+  "artifactId": 13642596919,
+  "artifactSha256": "9280f123cd43ec580e1612801b443683185c9173b64b2eec78cd919ca4af1a8f",
+  "archiveBytes": 8242143,
+  "sourceScope": "PR virtual merge ea58b87 of source0a6a04e into basec20036f",
+  "primaryData": "Exact metric values extracted from the15 Lighthouse JSON report members. No media extracted, no ZIP member written to disk.",
+  "aggregation": "Derived pessimistic per-route values: minimum performance/accessibility scores and maximum TBT/LCP/CLS across all three runs; separate from physical-device FPS.",
+  "members": [
+    {
+      "name": "assertion-results.json",
+      "compressedBytes": 4,
+      "uncompressedBytes": 2
+    },
+    {
+      "name": "lhr-1794186117707.html",
+      "compressedBytes": 285882,
+      "uncompressedBytes": 925274
+    },
+    {
+      "name": "lhr-1794186117707.json",
+      "compressedBytes": 241838,
+      "uncompressedBytes": 866309
+    },
+    {
+      "name": "lhr-1794186130644.html",
+      "compressedBytes": 285819,
+      "uncompressedBytes": 925056
+    },
+    {
+      "name": "lhr-1794186130644.json",
+      "compressedBytes": 241776,
+      "uncompressedBytes": 865721
+    },
+    {
+      "name": "lhr-1794186143142.html",
+      "compressedBytes": 285903,
+      "uncompressedBytes": 925372
+    },
+    {
+      "name": "lhr-1794186143142.json",
+      "compressedBytes": 241830,
+      "uncompressedBytes": 866459
+    },
+    {
+      "name": "lhr-1794186154442.html",
+      "compressedBytes": 366400,
+      "uncompressedBytes": 980249
+    },
+    {
+      "name": "lhr-1794186154442.json",
+      "compressedBytes": 320514,
+      "uncompressedBytes": 899176
+    },
+    {
+      "name": "lhr-1794186165585.html",
+      "compressedBytes": 366442,
+      "uncompressedBytes": 980176
+    },
+    {
+      "name": "lhr-1794186165585.json",
+      "compressedBytes": 320591,
+      "uncompressedBytes": 899036
+    },
+    {
+      "name": "lhr-1794186176894.html",
+      "compressedBytes": 366478,
+      "uncompressedBytes": 980538
+    },
+    {
+      "name": "lhr-1794186176894.json",
+      "compressedBytes": 320662,
+      "uncompressedBytes": 899735
+    },
+    {
+      "name": "lhr-1794186188157.html",
+      "compressedBytes": 361009,
+      "uncompressedBytes": 985612
+    },
+    {
+      "name": "lhr-1794186188157.json",
+      "compressedBytes": 315384,
+      "uncompressedBytes": 904191
+    },
+    {
+      "name": "lhr-1794186199264.html",
+      "compressedBytes": 361090,
+      "uncompressedBytes": 986074
+    },
+    {
+      "name": "lhr-1794186199264.json",
+      "compressedBytes": 315509,
+      "uncompressedBytes": 905140
+    },
+    {
+      "name": "lhr-1794186210467.html",
+      "compressedBytes": 361032,
+      "uncompressedBytes": 985882
+    },
+    {
+      "name": "lhr-1794186210467.json",
+      "compressedBytes": 315431,
+      "uncompressedBytes": 904628
+    },
+    {
+      "name": "lhr-1794186221746.html",
+      "compressedBytes": 320592,
+      "uncompressedBytes": 909567
+    },
+    {
+      "name": "lhr-1794186221746.json",
+      "compressedBytes": 275148,
+      "uncompressedBytes": 828145
+    },
+    {
+      "name": "lhr-1794186232867.html",
+      "compressedBytes": 320628,
+      "uncompressedBytes": 909403
+    },
+    {
+      "name": "lhr-1794186232867.json",
+      "compressedBytes": 275191,
+      "uncompressedBytes": 827663
+    },
+    {
+      "name": "lhr-1794186243997.html",
+      "compressedBytes": 320479,
+      "uncompressedBytes": 908843
+    },
+    {
+      "name": "lhr-1794186243997.json",
+      "compressedBytes": 275003,
+      "uncompressedBytes": 826813
+    },
+    {
+      "name": "lhr-1794186298792.html",
+      "compressedBytes": 152039,
+      "uncompressedBytes": 691067
+    },
+    {
+      "name": "lhr-1794186298792.json",
+      "compressedBytes": 107000,
+      "uncompressedBytes": 614440
+    },
+    {
+      "name": "lhr-1794186353540.html",
+      "compressedBytes": 152015,
+      "uncompressedBytes": 691041
+    },
+    {
+      "name": "lhr-1794186353540.json",
+      "compressedBytes": 107006,
+      "uncompressedBytes": 614176
+    },
+    {
+      "name": "lhr-1794186408127.html",
+      "compressedBytes": 152127,
+      "uncompressedBytes": 691142
+    },
+    {
+      "name": "lhr-1794186408127.json",
+      "compressedBytes": 107083,
+      "uncompressedBytes": 614359
+    }
+  ],
+  "otherJsonMembers": [
+    {
+      "member": "assertion-results.json",
+      "type": "array",
+      "keys": []
+    }
+  ],
+  "groups": [
+    {
+      "route": "/",
+      "runs": [
+        {
+          "member": "lhr-1794186117707.json",
+          "requestedUrl": "http://127.0.0.1:4173/",
+          "route": "/",
+          "fetchTime": "2026-11-09T01:01:47.477Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 0.98,
+          "accessibilityScore": 0.97,
+          "totalBlockingTimeMs": 24,
+          "largestContentfulPaintMs": 2019.1776,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794186130644.json",
+          "requestedUrl": "http://127.0.0.1:4173/",
+          "route": "/",
+          "fetchTime": "2026-11-09T01:02:00.641Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 0.98,
+          "accessibilityScore": 0.97,
+          "totalBlockingTimeMs": 18.5,
+          "largestContentfulPaintMs": 2013.6711,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794186143142.json",
+          "requestedUrl": "http://127.0.0.1:4173/",
+          "route": "/",
+          "fetchTime": "2026-11-09T01:02:13.051Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 0.98,
+          "accessibilityScore": 0.97,
+          "totalBlockingTimeMs": 21.5,
+          "largestContentfulPaintMs": 2008.49325,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 0.98,
+        "accessibilityScore": 0.97,
+        "totalBlockingTimeMs": 24,
+        "largestContentfulPaintMs": 2019.1776,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/guia-de-scouting",
+      "runs": [
+        {
+          "member": "lhr-1794186188157.json",
+          "requestedUrl": "http://127.0.0.1:4173/guia-de-scouting",
+          "route": "/guia-de-scouting",
+          "fetchTime": "2026-11-09T01:02:59.427Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 6,
+          "largestContentfulPaintMs": 1417.6347,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794186199264.json",
+          "requestedUrl": "http://127.0.0.1:4173/guia-de-scouting",
+          "route": "/guia-de-scouting",
+          "fetchTime": "2026-11-09T01:03:10.530Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 8,
+          "largestContentfulPaintMs": 1409.3429999999998,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794186210467.json",
+          "requestedUrl": "http://127.0.0.1:4173/guia-de-scouting",
+          "route": "/guia-de-scouting",
+          "fetchTime": "2026-11-09T01:03:21.685Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 10.000000000000682,
+          "largestContentfulPaintMs": 1406.5849500000002,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 1,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 10.000000000000682,
+        "largestContentfulPaintMs": 1417.6347,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/guias",
+      "runs": [
+        {
+          "member": "lhr-1794186154442.json",
+          "requestedUrl": "http://127.0.0.1:4173/guias",
+          "route": "/guias",
+          "fetchTime": "2026-11-09T01:02:25.686Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 18.499999999999545,
+          "largestContentfulPaintMs": 1414.78485,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794186165585.json",
+          "requestedUrl": "http://127.0.0.1:4173/guias",
+          "route": "/guias",
+          "fetchTime": "2026-11-09T01:02:36.819Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 10.5,
+          "largestContentfulPaintMs": 1408.2321000000002,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794186176894.json",
+          "requestedUrl": "http://127.0.0.1:4173/guias",
+          "route": "/guias",
+          "fetchTime": "2026-11-09T01:02:48.067Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 38.99999999999977,
+          "largestContentfulPaintMs": 1418.25645,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 1,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 38.99999999999977,
+        "largestContentfulPaintMs": 1418.25645,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/melhores-formacoes",
+      "runs": [
+        {
+          "member": "lhr-1794186221746.json",
+          "requestedUrl": "http://127.0.0.1:4173/melhores-formacoes",
+          "route": "/melhores-formacoes",
+          "fetchTime": "2026-11-09T01:03:32.999Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 13,
+          "largestContentfulPaintMs": 1419.2042999999999,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794186232867.json",
+          "requestedUrl": "http://127.0.0.1:4173/melhores-formacoes",
+          "route": "/melhores-formacoes",
+          "fetchTime": "2026-11-09T01:03:44.139Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 0.99,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 18.000000000000455,
+          "largestContentfulPaintMs": 1704.123,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794186243997.json",
+          "requestedUrl": "http://127.0.0.1:4173/melhores-formacoes",
+          "route": "/melhores-formacoes",
+          "fetchTime": "2026-11-09T01:03:55.297Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 10.5,
+          "largestContentfulPaintMs": 1403.5726499999998,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 0.99,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 18.000000000000455,
+        "largestContentfulPaintMs": 1704.123,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/partida-rapida",
+      "runs": [
+        {
+          "member": "lhr-1794186298792.json",
+          "requestedUrl": "http://127.0.0.1:4173/partida-rapida",
+          "route": "/partida-rapida",
+          "fetchTime": "2026-11-09T01:04:06.540Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 28.5,
+          "largestContentfulPaintMs": 1406.77575,
+          "cumulativeLayoutShift": 0.004963949596819479,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794186353540.json",
+          "requestedUrl": "http://127.0.0.1:4173/partida-rapida",
+          "route": "/partida-rapida",
+          "fetchTime": "2026-11-09T01:05:01.231Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 21.000000000000455,
+          "largestContentfulPaintMs": 1401.1278,
+          "cumulativeLayoutShift": 0.004963949596819479,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794186408127.json",
+          "requestedUrl": "http://127.0.0.1:4173/partida-rapida",
+          "route": "/partida-rapida",
+          "fetchTime": "2026-11-09T01:05:55.915Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "throttlingMethod": "simulate",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 22.000000000000455,
+          "largestContentfulPaintMs": 1403.5452,
+          "cumulativeLayoutShift": 0.004963949596819479,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 1,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 28.5,
+        "largestContentfulPaintMs": 1406.77575,
+        "cumulativeLayoutShift": 0.004963949596819479
+      }
+    }
+  ]
+}

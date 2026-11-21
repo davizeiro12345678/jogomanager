@@ -1,19 +1,21 @@
 import { Link } from "@tanstack/react-router";
-import { Shuffle } from "lucide-react";
-import { lazy, Suspense, useId, useRef, useState } from "react";
+import { Play, Shuffle } from "lucide-react";
+import { lazy, memo, Suspense, useId, useRef, useState } from "react";
 
 import AccessibilitySettings from "@/components/accessibility/AccessibilitySettings";
 import { Crest } from "@/components/game/Crest";
 import { Flag } from "@/components/game/Flag";
 import { MatchLoading } from "@/components/game/MatchLoading";
 import type { Club, League } from "@/game/types";
+import { randomQuickMatchPair, selectableQuickMatchClubs } from "@/game/quick-match-selection";
 import type { Difficulty } from "@/game/quickMatch";
 import { loadQuickLive } from "@/game/quick-match-entry";
 import {
   DEFAULT_QUICK_MATCH_LEAGUE,
   preloadQuickMatchCatalog,
+  quickMatchLeagueGroups,
   QUICK_MATCH_LEAGUE_DIRECTORY,
-  type QuickMatchLeagueSummary,
+  type QuickMatchLeagueGroup,
 } from "@/game/quick-match-catalog";
 import { useT } from "@/i18n/provider";
 import { existingCareerAnalyticsId } from "@/lib/career-analytics-id";
@@ -39,31 +41,22 @@ export function QuickMatchPage() {
     const request = ++catalogRequest.current;
     setCatalogError(false);
     setLeagueId(id);
-
     if (id === league.id) {
       setCatalogLoading(false);
       return;
     }
-    if (id === DEFAULT_QUICK_MATCH_LEAGUE.id) {
-      setLeague(DEFAULT_QUICK_MATCH_LEAGUE);
-      setMyClub(DEFAULT_QUICK_MATCH_LEAGUE.clubs[0]!.id);
-      setOppClub(DEFAULT_QUICK_MATCH_LEAGUE.clubs[1]!.id);
-      setCatalogLoading(false);
-      return;
-    }
-
     setCatalogLoading(true);
     try {
-      const { getLeague } = await preloadQuickMatchCatalog();
+      const { getLeague, CLUBS } = await preloadQuickMatchCatalog();
       if (request !== catalogRequest.current) return;
-      const nextLeague = getLeague(id);
-      if (nextLeague.id !== id) throw new Error("Selected league was not found.");
-      const home = nextLeague.clubs[0];
-      const away = nextLeague.clubs.find((club) => club.id !== home?.id);
-      if (!home || !away) throw new Error("Selected league needs two clubs.");
-      setLeague(nextLeague);
-      setMyClub(home.id);
-      setOppClub(away.id);
+      const catalogLeague = getLeague(id);
+      if (catalogLeague.id !== id) throw new Error("Selected league was not found.");
+      const clubs = selectableQuickMatchClubs(catalogLeague.clubs, CLUBS);
+      const pair = randomQuickMatchPair(clubs);
+      if (!pair) throw new Error("Selected league needs two identified clubs.");
+      setLeague({ ...catalogLeague, clubs });
+      setMyClub(pair.home.id);
+      setOppClub(pair.away.id);
     } catch {
       if (request === catalogRequest.current) {
         setCatalogError(true);
@@ -79,19 +72,20 @@ export function QuickMatchPage() {
     setCatalogError(false);
     setCatalogLoading(true);
     try {
-      const { LEAGUES } = await preloadQuickMatchCatalog();
+      const { LEAGUES, CLUBS } = await preloadQuickMatchCatalog();
       if (request !== catalogRequest.current) return;
-      const candidates = LEAGUES.filter((candidate) => candidate.clubs.length >= 2);
-      const nextLeague = candidates[Math.floor(Math.random() * candidates.length)];
-      if (!nextLeague) throw new Error("No league with two clubs is available.");
-      const homeIndex = Math.floor(Math.random() * nextLeague.clubs.length);
-      const home = nextLeague.clubs[homeIndex]!;
-      let away = nextLeague.clubs[Math.floor(Math.random() * nextLeague.clubs.length)]!;
-      if (away.id === home.id) away = nextLeague.clubs[(homeIndex + 1) % nextLeague.clubs.length]!;
-      setLeague(nextLeague);
-      setLeagueId(nextLeague.id);
-      setMyClub(home.id);
-      setOppClub(away.id);
+      const candidates = LEAGUES.flatMap((candidate) => {
+        const clubs = selectableQuickMatchClubs(candidate.clubs, CLUBS);
+        return clubs.length >= 2 ? [{ league: candidate, clubs }] : [];
+      });
+      const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+      if (!candidate) throw new Error("No league with two identified clubs is available.");
+      const pair = randomQuickMatchPair(candidate.clubs);
+      if (!pair) throw new Error("No distinct club pair is available.");
+      setLeague({ ...candidate.league, clubs: candidate.clubs });
+      setLeagueId(candidate.league.id);
+      setMyClub(pair.home.id);
+      setOppClub(pair.away.id);
     } catch {
       if (request === catalogRequest.current) setCatalogError(true);
     } finally {
@@ -116,19 +110,12 @@ export function QuickMatchPage() {
     );
   }
 
-  // One collator per render avoids ICU setup for every comparison.
-  const countryCompare = new Intl.Collator(lang).compare;
-  const leagueGroups = QUICK_MATCH_LEAGUE_DIRECTORY.reduce<
-    Record<string, QuickMatchLeagueSummary[]>
-  >((groups, entry) => {
-    (groups[entry.country] ??= []).push(entry);
-    return groups;
-  }, {});
+  const leagueGroups = quickMatchLeagueGroups(lang);
   const selectedLeagueSummary =
     QUICK_MATCH_LEAGUE_DIRECTORY.find((entry) => entry.id === leagueId) ?? league;
 
   return (
-    <main className="min-h-dvh bg-background px-4 py-8 sm:py-10">
+    <main className="min-h-dvh bg-background px-4 py-6 sm:px-8 sm:py-10">
       <div className="mx-auto max-w-5xl">
         {/* Keep the reading control in its column when the detected language
             changes the title width; reserve the mobile title's two lines. */}
@@ -141,36 +128,28 @@ export function QuickMatchPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t("quick.description")}</p>
 
         {/* The small directory stays SSR-visible; club data loads after interaction. */}
-        <div className="mt-6 flex max-w-md items-center gap-3">
-          <Flag
-            league={selectedLeagueSummary.id}
-            country={selectedLeagueSummary.country}
-            size={24}
-          />
-          <label htmlFor="quick-league" className="sr-only">
+        <div className="mt-6 max-w-xl">
+          <label htmlFor="quick-league" className="mb-2 block text-sm font-semibold">
             {t("nav.league")}
           </label>
-          <select
-            id="quick-league"
-            value={leagueId}
-            onChange={(event) => void chooseLeague(event.target.value)}
-            onPointerEnter={() => void preloadQuickMatchCatalog().catch(() => undefined)}
-            onFocus={() => void preloadQuickMatchCatalog().catch(() => undefined)}
-            disabled={catalogLoading}
-            className="min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            {Object.entries(leagueGroups)
-              .sort(([a], [b]) => (a === "Brasil" ? -1 : b === "Brasil" ? 1 : countryCompare(a, b)))
-              .map(([country, leagues]) => (
-                <optgroup key={country} label={country}>
-                  {leagues.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-          </select>
+          <div className="flex items-center gap-3">
+            <Flag
+              league={selectedLeagueSummary.id}
+              country={selectedLeagueSummary.country}
+              size={24}
+            />
+            <select
+              id="quick-league"
+              value={leagueId}
+              onChange={(event) => void chooseLeague(event.target.value)}
+              onPointerEnter={() => void preloadQuickMatchCatalog().catch(() => undefined)}
+              onFocus={() => void preloadQuickMatchCatalog().catch(() => undefined)}
+              disabled={catalogLoading}
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              <LeagueOptions groups={leagueGroups} />
+            </select>
+          </div>
         </div>
 
         {catalogLoading ? (
@@ -189,7 +168,7 @@ export function QuickMatchPage() {
                 {t("screen.error")}
               </p>
             )}
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 sm:gap-4">
               <TeamPicker
                 title={t("quick.home")}
                 clubs={league.clubs}
@@ -209,7 +188,7 @@ export function QuickMatchPage() {
         )}
 
         <p className="mt-3 text-xs text-muted-foreground">{t("quick.hint")}</p>
-        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
+        <div className="mt-5 grid gap-3 border-t border-border pt-4 sm:flex sm:flex-wrap sm:items-center">
           <div className="grid grid-cols-3 gap-2 sm:flex">
             {DIFFS.map((difficultyOption) => (
               <button
@@ -252,9 +231,9 @@ export function QuickMatchPage() {
             onPointerEnter={preloadQuickLive}
             onFocus={preloadQuickLive}
             disabled={catalogLoading || myClub === oppClub}
-            className="min-h-12 rounded-lg bg-primary px-6 py-2 font-display text-base uppercase tracking-wide text-primary-foreground shadow-lg disabled:opacity-40"
+            className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2 font-display text-base uppercase tracking-wide text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-40 sm:ms-auto"
           >
-            {t("quick.start")}
+            <Play size={17} aria-hidden="true" /> {t("quick.start")}
           </button>
           <Link
             to="/"
@@ -284,32 +263,65 @@ function TeamPicker({
   const pickerId = useId();
   const selected = clubs.find((club) => club.id === value) ?? clubs[0]!;
   return (
-    <section className="rounded-2xl border border-border/60 surface-card p-4">
-      <h2 className="font-display text-xs uppercase tracking-[0.25em] text-muted-foreground">
-        <label htmlFor={pickerId}>{title}</label>
-      </h2>
-      <div className="mt-3 flex items-center gap-3">
-        <Crest club={selected} size={44} detail="full" />
-        <span className="font-display text-lg">{selected.name}</span>
-        <span
-          className="ml-auto rounded-md border border-primary/25 bg-primary/10 px-2 py-1 text-xs tabular-nums text-primary"
-          aria-label={`Força de referência ${selected.strength}`}
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card">
+      <div aria-hidden="true" className="h-1" style={{ backgroundColor: selected.primary }} />
+      <div className="p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          <label htmlFor={pickerId}>{title}</label>
+        </h2>
+        <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+          <Crest club={selected} size={40} detail="full" />
+          <span className="min-w-0 break-words font-display text-lg leading-tight">
+            {selected.name}
+          </span>
+          <span
+            className="rounded-md border border-border px-2 py-1 text-xs tabular-nums"
+            aria-label={`Força de referência ${selected.strength}`}
+          >
+            Força {selected.strength}
+          </span>
+        </div>
+        <select
+          id={pickerId}
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.value)}
+          className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          Força {selected.strength}
-        </span>
+          <ClubOptions clubs={clubs} disabled={disabled} />
+        </select>
       </div>
-      <select
-        id={pickerId}
-        value={value}
-        onChange={(event) => onChange(event.currentTarget.value)}
-        className="mt-3 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >
-        {clubs.map((club) => (
-          <option key={club.id} value={club.id} disabled={club.id === disabled}>
-            {club.name}
-          </option>
-        ))}
-      </select>
     </section>
   );
 }
+
+// The labels do not change with interface language. Reuse the native option
+// subtree while language detection or unrelated selection controls rerender.
+const LeagueOptions = memo(function LeagueOptions({
+  groups,
+}: {
+  groups: readonly QuickMatchLeagueGroup[];
+}) {
+  return groups.map(({ country, leagues }) => (
+    <optgroup key={country} label={country}>
+      {leagues.map((entry) => (
+        <option key={entry.id} value={entry.id}>
+          {entry.name}
+        </option>
+      ))}
+    </optgroup>
+  ));
+});
+
+const ClubOptions = memo(function ClubOptions({
+  clubs,
+  disabled,
+}: {
+  clubs: readonly Club[];
+  disabled: string;
+}) {
+  return clubs.map((club) => (
+    <option key={club.id} value={club.id} disabled={club.id === disabled}>
+      {club.name}
+    </option>
+  ));
+});

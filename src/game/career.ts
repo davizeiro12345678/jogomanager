@@ -22,6 +22,7 @@ import { valueFor } from "./economy";
 import { makeRng } from "./rng";
 import { withCareerWorld } from "./career-world";
 import { withDevelopmentBase } from "./attributes";
+import { MAX_PREMIUM_SCOUT_REPORTS, validWorkCount } from "./transfer-inputs";
 
 import { generateFixtures } from "./season";
 import { buildSquad } from "./squad";
@@ -62,6 +63,7 @@ export function initCareer(
 
   return withCareerWorld({
     version: 3,
+    matchRulesRevision: 2,
     catalogRevision: 1,
     simulationRatingRevision: 1,
     economyRulesVersion: 2,
@@ -123,6 +125,7 @@ export { advanceRound, type MatchPerformance } from "./career-round";
  * existentes, sem repetir jogador.
  */
 export function runPremiumScouting(state: CareerState, nonce: string, size = 5): CareerState {
+  if (!validWorkCount(size, MAX_PREMIUM_SCOUT_REPORTS) || size === 0) return state;
   const rnd = makeRng(`premium-scout-${state.clubId}-${state.season}-${nonce}`);
   const ids = Object.keys(CLUBS).filter((id) => id !== state.clubId);
   const known = new Set(state.scoutReports.map((r) => r.playerId));

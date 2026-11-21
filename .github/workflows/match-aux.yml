@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'services/match-aux/**'
+      - 'services/match-authority/**'
+      - 'src/game/online/**'
+      - 'wrangler.match-authority.jsonc'
+      - 'wrangler.match-authority.production.jsonc'
       - 'src/lib/match-aux-client.server.ts'
       - 'src/lib/multiplayer.functions.ts'
       - '.github/workflows/match-aux.yml'
@@ -28,3 +32,7 @@ jobs:
         run: npm exec -- tsc --noEmit --pretty false
       - name: Lint and formatting
         run: npm run lint
+      - name: Bundle Cloudflare match authority (dry-run, no credentials)
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.jsonc --dry-run
+      - name: Validate production worker bundle without deploying
+        run: npm exec -- wrangler deploy --config wrangler.match-authority.production.jsonc --dry-run

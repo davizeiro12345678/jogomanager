@@ -37,22 +37,27 @@ export function generateFixtures(leagueId: string, seed: string, clubIds?: strin
         awayGoals: null,
       });
     }
-    const fixed = rotation[0]!;
-    const rest = rotation.slice(1);
-    rest.unshift(rest.pop()!);
-    rotation.splice(0, rotation.length, fixed, ...rest);
+    // The first club remains fixed. Rotate the remaining slots in place,
+    // preserving the exact draw order without three arrays per round.
+    const last = rotation[n - 1]!;
+    for (let index = n - 1; index > 1; index--) rotation[index] = rotation[index - 1]!;
+    rotation[1] = last;
   }
 
-  const first = [...rounds];
-  const second = first.map((f) => ({
-    round: f.round + (n - 1),
-    home: f.away,
-    away: f.home,
-    homeGoals: null,
-    awayGoals: null,
-  }));
-
-  return leagueId === "x5686" ? first : [...first, ...second];
+  if (leagueId !== "x5686") {
+    const firstLegCount = rounds.length;
+    for (let index = 0; index < firstLegCount; index++) {
+      const first = rounds[index]!;
+      rounds.push({
+        round: first.round + (n - 1),
+        home: first.away,
+        away: first.home,
+        homeGoals: null,
+        awayGoals: null,
+      });
+    }
+  }
+  return rounds;
 }
 
 export function computeTable(state: CareerState): TableRow[] {

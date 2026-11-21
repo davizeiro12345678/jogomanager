@@ -63,6 +63,22 @@ describe("chat moderation", () => {
     expect(moderateMessage("GOL!")).toBeNull();
     expect(moderateMessage("bom jogo", ["Bom jogo!!"])).toBe("repeated");
   });
+
+  it("blocks mixed-script phishing links and addresses while preserving football talk", () => {
+    expect(moderateMessage("entra em d\u0456sc\u043erd.gg/amigos")).toBe("link");
+    expect(moderateMessage("visite \u0440\u0430y\u0440\u0430l.com")).toBe("link");
+    expect(moderateMessage("manda para jo\u0430o@exemplo.c\u043em")).toBe("contact");
+    expect(moderateMessage("O time da N\u0456ger\u0456a virou o jogo")).toBeNull();
+  });
+
+  it("blocks contact and scam links hidden by Unicode compatibility forms and invisibles", () => {
+    expect(moderateMessage("visita ｈｔｔｐｓ：／／golpe.dev")).toBe("link");
+    expect(moderateMessage("visita https\u200b://golpe.dev")).toBe("link");
+    expect(moderateMessage("visita golpe.store")).toBe("link");
+    expect(moderateMessage("joao\u200b＠exemplo．com")).toBe("contact");
+    expect(moderateMessage("１１ ９８７６５ ４３２１")).toBe("contact");
+    expect(moderateMessage("11   98765   4321")).toBe("contact");
+  });
 });
 
 describe("progressive chat mutes", () => {

@@ -44,9 +44,11 @@ export function preloadCinematicStage(set?: CinematicSet) {
   return stage;
 }
 
-export const LazyCinematicStage = lazy(() =>
-  preloadCinematicStage().then((module) => ({ default: module.CinematicStage3D })),
-);
+/** React.lazy remembers a rejection even after the download cache is cleared.
+ * Give each explicit retry its own lazy owner without reloading a healthy stage. */
+export function createCinematicStage(loader: typeof preloadCinematicStage = preloadCinematicStage) {
+  return lazy(() => loader().then((module) => ({ default: module.CinematicStage3D })));
+}
 
 /** Prepare likely cutscenes after the host screen has had time to paint. */
 export function useCinematicPreload(enabled = true) {

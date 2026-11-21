@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "realReactRoots": 1,
+  "actualScreenInstances": 2,
+  "realQueryClient": true,
+  "freshCacheSkippedQueryFn": true,
+  "deferredFirstIndexedDbWrite": true,
+  "failedCloudSaves": 2,
+  "acceptedLocalWrites": 2,
+  "staleMutationRejectedBeforeDurability": true,
+  "staleCallbackRejectedAfterDurability": true,
+  "retainedRound": 2,
+  "retainedResults": 1,
+  "finalTicketPrice": 77,
+  "browser": "157.0.4341.42",
+  "node": "v24.22.0"
+}

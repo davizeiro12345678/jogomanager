@@ -1,0 +1,45 @@
+{
+  "dateLocal": "2026-11-12",
+  "node": "24.22.0",
+  "initialSource": "b0ce05a3d3b0dc8bd673e1450fb73d789d4ab149",
+  "concurrentRemoteMerged": "aa5e1fbd9b0f31f8807c953ab56f93c82712c200",
+  "mergeCommit": "030685e5e50cfd3f5b4147e3cb9103dfbd476844",
+  "fullDefaultSuite": {
+    "files": 422,
+    "tests": 2620,
+    "failed": 0,
+    "exitCode": 0,
+    "seconds": 326.06
+  },
+  "seoNodeTests": { "passed": 38, "failed": 0 },
+  "performanceScriptTests": { "passed": 38, "failed": 0 },
+  "lint": { "exitCode": 0, "warnings": 0 },
+  "types": { "exitCode": 0 },
+  "graphicsBuild": { "exitCode": 0 },
+  "applicationBuild": { "exitCode": 0 },
+  "absoluteBundleCheck": {
+    "exitCode": 0,
+    "totalBytes": 7555393,
+    "totalGzipBytes": 2470146,
+    "totalBrotliBytes": 2333866
+  },
+  "independentReview": { "critical": 0, "important": 0, "deferredMinor": 2 },
+  "textureBrowser": {
+    "beforeGlInvalidValueWarnings": 2,
+    "afterGlInvalidValueWarnings": 0,
+    "seconds": 60,
+    "renderer": "Intel Iris Xe ANGLE/D3D11",
+    "observedFpsUnderConcurrentBuildTests": 30.616666666666667,
+    "physicalCampaignAccepted": false
+  },
+  "pending": [
+    "exact-final-SHA CI",
+    "200-seed stress and SQL gates",
+    "baseline/candidate bundle comparison",
+    "Lighthouse matrix",
+    "matched physical GPU/thermal campaign",
+    "production backend configuration and SEO recrawl",
+    "remaining major visual/physics/AI implementation packets"
+  ],
+  "productionChanged": false
+}

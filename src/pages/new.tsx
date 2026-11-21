@@ -34,12 +34,9 @@ import {
   DEFAULT_MANAGER_LOOK,
 } from "@/game/manager-profile";
 
-import {
-  discoverClubs,
-  searchKey,
-  type CareerChallenge,
-  type ClubDiscovery,
-} from "@/game/club-discovery";
+import { discoverClubs, type CareerChallenge, type ClubDiscovery } from "@/game/club-discovery";
+
+import { careerCountries, countrySearchKey } from "@/game/career-countries";
 
 import { Crest } from "@/components/game/Crest";
 
@@ -197,18 +194,13 @@ export function NewCareer() {
   }, [step, selected]);
   const spent = Object.values(attrs).reduce((a, b) => a + b, 0);
   const left = 30 - spent;
-  const countryOptions = useMemo(() => {
-    const unique = [...new Map(catalog.map((league) => [league.country, league])).values()];
-    return unique
-      .filter((league) => searchKey(league.country).includes(searchKey(countryQuery)))
-      .sort((a, b) =>
-        a.country === "Brasil"
-          ? -1
-          : b.country === "Brasil"
-            ? 1
-            : a.country.localeCompare(b.country, "pt-BR"),
-      );
-  }, [countryQuery, catalog]);
+  const countries = useMemo(() => careerCountries(catalog), [catalog]);
+  const countryFilter = countrySearchKey(countryQuery);
+  const countryOptions = countries.filter((option) =>
+    option.search.some((name) => name.includes(countryFilter)),
+  );
+  const countryLabel =
+    countries.find((option) => option.id === country)?.country ?? getLeague(country).country;
   const clubs = useMemo(
     () =>
       step !== 3
@@ -380,8 +372,8 @@ export function NewCareer() {
               <p className="career-kicker">SEU TREINADOR</p>
               <h2>{name.trim() || "Técnico"}</h2>
               <p>
-                <Flag league={country} country={getLeague(country).country} size={14} />
-                {getLeague(country).country} · {age} anos
+                <Flag league={country} country={countryLabel} size={14} />
+                {countryLabel} · {age} anos
               </p>
               <span className="career-personality">
                 {PERSONALITIES.find((p) => p.id === personality)?.label}
@@ -495,14 +487,14 @@ export function NewCareer() {
                     />
                   </div>
                   <div className="career-country-list">
-                    {countryOptions.map((league) => (
+                    {countryOptions.map((option) => (
                       <Chip
-                        key={league.id}
-                        active={getLeague(country).country === league.country}
-                        onClick={() => setCountry(league.id)}
+                        key={option.id}
+                        active={country === option.id}
+                        onClick={() => setCountry(option.id)}
                       >
-                        <Flag league={league.id} country={league.country} size={14} />
-                        {league.country}
+                        <Flag league={option.id} country={option.country} size={14} />
+                        {option.country}
                       </Chip>
                     ))}
                     {!countryOptions.length ? (

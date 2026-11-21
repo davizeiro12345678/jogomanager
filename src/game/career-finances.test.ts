@@ -26,6 +26,23 @@ function finalCup(clubId: string, opponentId: string): CupState {
 }
 
 describe("ledger financeiro da carreira", () => {
+  it("rejects event IDs that cannot survive the durable deduplication boundary", () => {
+    const state = initCareer("bra", "fla", "Bounded events");
+    const event = {
+      id: "x".repeat(181),
+      season: state.season,
+      round: state.round,
+      kind: "premio" as const,
+      label: "Prêmio",
+      income: 1,
+      expense: 0,
+    };
+    expect(applyFinanceEvent(state, event)).toBe(state);
+    const accepted = applyFinanceEvent(state, { ...event, id: "x".repeat(180) });
+    expect(accepted).not.toBe(state);
+    expect(applyFinanceEvent(accepted, { ...event, id: "x".repeat(180) })).toBe(accepted);
+  });
+
   it("registra cada prêmio de copa uma vez e mantém o resultado no replay", () => {
     const base = initCareer("bra", "fla", "Ledger");
     const opponentId = Object.keys(CLUBS).find((id) => id !== base.clubId)!;

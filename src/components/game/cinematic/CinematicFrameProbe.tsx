@@ -1,6 +1,7 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect, useRef, type RefObject } from "react";
 import { FrameMetrics, heapUsedBytes } from "@/game/frame-metrics";
+import { FrameCampaign } from "@/game/frame-campaign";
 import { rendererMetadata } from "@/game/graphics-renderer-metadata";
 import { censusScene } from "@/game/scene-census";
 import { gpuTextureStats } from "@/game/textures/ktx2";
@@ -31,16 +32,43 @@ export function CinematicFrameProbe({
   const runtime = useCinematicRuntime();
   const current = useRef({ runtime, stopped, onVisible, onReady, onSample });
   current.current = { runtime, stopped, onVisible, onReady, onSample };
+  const interruptSampling = useRef<(() => void) | null>(null);
   useEffect(() => {
     const metrics = new FrameMetrics(600);
+    const campaign = new FrameCampaign(90_000);
     const backend = rendererMetadata(gl);
     let visible = false;
-    let last = 0;
     let report = 0;
     let drawSum = 0;
     let triangleSum = 0;
     let frames = 0;
-    return subscribeRenderedFrames(gl, (frame) => {
+    const interrupt = () => {
+      campaign.interrupt();
+      metrics.reset();
+      drawSum = triangleSum = frames = 0;
+      report = 0;
+    };
+    interruptSampling.current = interrupt;
+    document.addEventListener("visibilitychange", interrupt);
+    const publishClosedCampaign = (
+      snapshot: ReturnType<FrameCampaign["snapshot"]>,
+      reason: "context-changed" | "probe-disposed" | "snapshot-request",
+    ) =>
+      window.dispatchEvent(
+        new CustomEvent("cinematic-campaign", {
+          detail: {
+            ...snapshot,
+            reason,
+            closed: reason !== "snapshot-request",
+            sceneCompletionVerified: false,
+            backend,
+          },
+        }),
+      );
+    const snapshotRequested = () =>
+      publishClosedCampaign(campaign.snapshot(true), "snapshot-request");
+    window.addEventListener("frame-campaign-snapshot-request", snapshotRequested);
+    const stop = subscribeRenderedFrames(gl, (frame) => {
       const element = host.current;
       if (!element) return;
       const state = current.current;
@@ -76,19 +104,42 @@ export function CinematicFrameProbe({
         state.onVisible?.();
         state.onReady?.();
       }
+      const observed = campaign.observeFrame(
+        frame.now,
+        {
+          phase: "cutscene",
+          quality: state.runtime.quality,
+          key: JSON.stringify({
+            openedAt,
+            scene: state.runtime.cue?.id.split(":")[0] ?? "unidentified",
+            set: element.dataset["cinematicSet"] ?? "unidentified",
+            quality: state.runtime.quality,
+            pressure: element.dataset["cinematicPressure"] ?? "unverified",
+            width: frame.width,
+            height: frame.height,
+            dpr: frame.dpr,
+          }),
+        },
+        state.stopped || document.hidden,
+      );
+      if (observed.previous) {
+        publishClosedCampaign(observed.previous, "context-changed");
+        metrics.reset();
+        drawSum = triangleSum = frames = 0;
+        report = 0;
+      }
       if (state.stopped || document.hidden) {
         metrics.reset();
         drawSum = triangleSum = frames = 0;
-        last = report = 0;
+        report = 0;
         return;
       }
-      if (last > 0) {
-        metrics.add(frame.now - last);
+      if (observed.intervalMs > 0) {
+        metrics.add(observed.intervalMs);
         drawSum += frame.draws;
         triangleSum += frame.triangles;
         frames += 1;
       }
-      last = frame.now;
       if (report === 0) report = frame.now;
       if (frame.now - report < 1000) return;
       const summary = metrics.summary();
@@ -109,6 +160,9 @@ export function CinematicFrameProbe({
           detail: {
             ...summary,
             ...frame,
+            phase: "cutscene",
+            quality: state.runtime.quality,
+            campaign: campaign.snapshot(),
             backend,
             elapsed: (frame.now - openedAt) / 1000,
             draws: frames ? drawSum / frames : frame.draws,
@@ -124,6 +178,18 @@ export function CinematicFrameProbe({
       drawSum = triangleSum = frames = 0;
       report = frame.now;
     });
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", interrupt);
+      window.removeEventListener("frame-campaign-snapshot-request", snapshotRequested);
+      if (interruptSampling.current === interrupt) interruptSampling.current = null;
+      publishClosedCampaign(campaign.snapshot(true), "probe-disposed");
+    };
   }, [gl, camera, scene, host, openedAt]);
+  useEffect(() => {
+    // A paused/demand scene may deliver no frame at all. Clear the baseline
+    // on both edges so resuming cannot turn stopped wall time into a stall.
+    interruptSampling.current?.();
+  }, [stopped]);
   return null;
 }

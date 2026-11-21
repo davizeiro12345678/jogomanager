@@ -1,22 +1,22 @@
 import type { Player, Tactics } from "./types";
-import {
+import { emptyStats } from "./sim-contracts";
+import type {
   MatchSim,
-  emptyStats,
-  type MatchStats,
-  type PlayerRating,
-  type Scorer,
-  type ShotRecord,
-  type Side,
-  type SimPlayer,
-  type SimView,
-  type TeamSetup,
-  type TeamTalkKind,
-  type MatchCheckpoint,
+  MatchStats,
+  PlayerRating,
+  Scorer,
+  ShotRecord,
+  Side,
+  SimPlayer,
+  SimView,
+  TeamSetup,
+  TeamTalkKind,
+  MatchCheckpoint,
 } from "./sim";
 import type { WindVector } from "./ball-climate";
 import type { VisualBallState } from "./visual-ball";
 import type { MatchPhase, ShootoutKick, WeatherKind } from "./sim-rules";
-import type { MatchExecutionContract } from "./match-execution-contract";
+import type { MatchExecutionContract, MatchRulesRevision } from "./match-execution-contract";
 import type { PackedLiveSnapshot } from "./live-transport";
 import {
   applyLivePlayerBuffer,
@@ -75,6 +75,8 @@ export type LiveWorkerRequest =
       home: TeamSetup;
       away: TeamSetup;
       seed: string;
+      rulesRevision?: MatchRulesRevision | undefined;
+      contactPhysicsRevision?: 2 | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
       compact?: boolean;
@@ -101,6 +103,8 @@ export type LiveWorkerRequest =
       home: TeamSetup;
       away: TeamSetup;
       seed: string;
+      rulesRevision?: MatchRulesRevision | undefined;
+      contactPhysicsRevision?: 2 | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
     }
@@ -157,18 +161,17 @@ export function snapshotMatch(
 ): LiveSnapshot {
   // Most snapshots only move players and the ball. Do not clone the historical
   // feed merely to discard it on the way to the structured-clone boundary.
-  const events = includeEvents
-    ? (() => {
-        const cachedEvents = eventCache.get(sim);
-        const copied =
-          cachedEvents?.seq === sim.lastEventId
-            ? cachedEvents.events
-            : sim.events.map((event) => ({ ...event }));
-        if (cachedEvents?.seq !== sim.lastEventId)
-          eventCache.set(sim, { seq: sim.lastEventId, events: copied });
-        return copied;
-      })()
-    : undefined;
+  let events: MatchSim["events"] | undefined;
+  if (includeEvents) {
+    const eventId = sim.lastEventId;
+    const cached = eventCache.get(sim);
+    if (cached?.seq === eventId) {
+      events = cached.events;
+    } else {
+      events = sim.events.map((event) => ({ ...event }));
+      eventCache.set(sim, { seq: eventId, events });
+    }
+  }
   return {
     seq,
     execution: sim.executionContract(),
@@ -309,41 +312,43 @@ export class WorkerMatchView implements MatchRuntime {
     const now = performance.now();
     if (this.receivedAt) this.intervalMs = Math.max(50, Math.min(250, now - this.receivedAt));
     this.receivedAt = now;
+    const previousPlayers = this.players;
+    const nextPlayers = next.players;
     const rosterChanged =
-      this.players.length !== next.players.length ||
-      this.players.some((player, index) => player.id !== next.players[index]?.id);
-    if (this.positions.length !== next.players.length * 4)
-      this.positions = new Float64Array(next.players.length * 4);
-    for (let index = 0; index < next.players.length; index += 1) {
-      const target = next.players[index]!;
-      // Identity lookup is needed only on substitution/reordering, not 10 times
-      // a second during ordinary play. New athletes begin at their target.
-      const current = rosterChanged
-        ? this.players.find((player) => player.id === target.id)
-        : this.players[index];
-      const offset = index * 4;
-      this.positions[offset] = current?.x ?? target.x;
-      this.positions[offset + 1] = current?.z ?? target.z;
-      this.positions[offset + 2] = target.x;
-      this.positions[offset + 3] = target.z;
-    }
-    this.previousBall.x = this.ball.x;
-    this.previousBall.z = this.ball.z;
-    this.previousBall.height = this.ball.height;
+      previousPlayers.length !== nextPlayers.length ||
+      previousPlayers.some((player, index) => player.id !== nextPlayers[index]?.id);
+    if (this.positions.length !== nextPlayers.length * 4)
+      this.positions = new Float64Array(nextPlayers.length * 4);
+    const positions = this.positions;
     if (rosterChanged) {
-      this.players = next.players.map((player) => ({ ...player }));
+      this.players = nextPlayers.map((target, index) => {
+        const previous = previousPlayers.find((player) => player.id === target.id);
+        const offset = index * 4;
+        positions[offset] = previous?.x ?? target.x;
+        positions[offset + 1] = previous?.z ?? target.z;
+        positions[offset + 2] = target.x;
+        positions[offset + 3] = target.z;
+        return { ...target };
+      });
     } else {
-      for (let index = 0; index < next.players.length; index += 1) {
-        const target = next.players[index];
-        const current = this.players[index];
-        if (!target || !current) continue;
+      for (let index = 0; index < nextPlayers.length; index += 1) {
+        const target = nextPlayers[index]!;
+        const current = previousPlayers[index]!;
         const x = current.x;
         const z = current.z;
+        const offset = index * 4;
+        positions[offset] = x;
+        positions[offset + 1] = z;
+        positions[offset + 2] = target.x;
+        positions[offset + 3] = target.z;
         Object.assign(current, target);
         current.x = x;
         current.z = z;
       }
     }
+    this.previousBall.x = this.ball.x;
+    this.previousBall.z = this.ball.z;
+    this.previousBall.height = this.ball.height;
     this.targetBall.x = next.ball.x;
     this.targetBall.z = next.ball.z;
     this.targetBall.height = next.ball.height;

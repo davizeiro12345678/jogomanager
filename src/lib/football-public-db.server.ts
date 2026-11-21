@@ -1,10 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import type { AppDb } from "./app-db";
+import { footballPublicEnvironment } from "./football-public-env.server";
 
 export function publicClient(): AppDb {
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
-  const url = process.env["SUPABASE_URL"];
+  const { SUPABASE_PUBLISHABLE_KEY: key, SUPABASE_URL: url } = footballPublicEnvironment();
   if (!key || !url) throw new Error("Os dados públicos de futebol estão indisponíveis.");
   return createClient<Database>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },

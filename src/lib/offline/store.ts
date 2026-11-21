@@ -243,15 +243,26 @@ export function readLocalCareer(owner: LocalOwnerId | undefined = null): CareerS
   if (!isBrowser()) return null;
   try {
     const raw = window.localStorage.getItem(localKey(owner));
-    if (raw) return JSON.parse(raw) as CareerState;
+    if (raw) {
+      const stored: unknown = JSON.parse(raw);
+      if (isCareerRecord(stored)) return stored;
+    }
     if (isGuest(owner)) {
       const legacy = window.localStorage.getItem(LEGACY_KEY);
-      return legacy ? (JSON.parse(legacy) as CareerState) : null;
+      const stored: unknown = legacy ? JSON.parse(legacy) : null;
+      return isCareerRecord(stored) ? stored : null;
     }
   } catch {
     /* Corrupt local data is ignored instead of blocking the game. */
   }
   return null;
+}
+
+/** Local persistence is untrusted; complete save validation remains server-side. */
+function isCareerRecord(value: unknown): value is CareerState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === null || prototype === Object.prototype;
 }
 
 function parseGeneration(value: unknown): number | null {
@@ -607,15 +618,15 @@ export async function loadLocalCareer(
   const migrationEpoch = readCareerEpoch(owner);
   try {
     const stored = await get<CareerState>(idbKey(owner, "career"));
-    if (stored) return stored;
+    if (isCareerRecord(stored)) return stored;
   } catch {
     /* IndexedDB indisponível — usa o espelho */
   }
 
-  if (!isGuest(owner)) return null;
+  if (!isGuest(owner)) return readLocalCareer(owner);
   try {
     const legacy = await get<CareerState>(LEGACY_IDB.career);
-    if (legacy) {
+    if (isCareerRecord(legacy)) {
       if (migrationEpoch !== null)
         await saveLocalCareer(legacy, "migração", null, { expectedEpoch: migrationEpoch });
       return legacy;
@@ -823,10 +834,26 @@ export function isVersionedOutboxEntry(
   entry: OutboxEntry | null,
 ): entry is OutboxEntry & { generation: number; revision: string } {
   return (
-    !!entry &&
+    isOutboxEntry(entry) &&
     parseGeneration(entry.generation) !== null &&
     typeof entry.revision === "string" &&
     entry.revision.length > 0
+  );
+}
+
+function isOutboxEntry(value: unknown): value is OutboxEntry {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const entry = value as Partial<OutboxEntry>;
+  return (
+    typeof entry.at === "number" &&
+    Number.isFinite(entry.at) &&
+    entry.at >= 0 &&
+    isCareerRecord(entry.state) &&
+    (entry.generation === undefined || parseGeneration(entry.generation) !== null) &&
+    (entry.revision === undefined ||
+      (typeof entry.revision === "string" &&
+        entry.revision.length > 0 &&
+        entry.revision.length <= 128))
   );
 }
 
@@ -883,7 +910,10 @@ export async function readOutbox(
 ): Promise<OutboxEntry | null> {
   if (!isBrowser()) return null;
   try {
-    return (await get<OutboxEntry>(idbKey(owner, "outbox"))) ?? null;
+    const stored: unknown = await get(idbKey(owner, "outbox"));
+    if (stored === undefined || stored === null) return null;
+    if (!isOutboxEntry(stored)) throw new TypeError("Invalid persisted career outbox");
+    return stored;
   } catch (cause) {
     // An unreadable durable queue is not equivalent to an empty queue: callers
     // performing destructive operations must fail closed.

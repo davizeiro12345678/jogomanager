@@ -1,0 +1,20 @@
+{
+  "recordedAt": "2026-11-09 01:09:37 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "baseCommit": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "runId": 42543242306,
+  "jobId": 128922613526,
+  "executionScope": "GitHub pull_request virtual merge of source0a6a04e into c20036f (checkout log records ea58b87); source branch alone is not a separate rerun.",
+  "summary": [
+    "2026-11-09T01:04:11.0312093Z  Test Files  371 passed (371)",
+    "2026-11-09T01:04:11.0319395Z       Tests  2203 passed (2203)",
+    "2026-11-09T01:04:11.0319660Z    Start at  01:01:51",
+    "2026-11-09T01:04:11.0324734Z    Duration  139.90s (tests 83%, import 13%, transform 3%, worker 1%)"
+  ],
+  "identity": [
+    "2026-11-09T01:00:52.0039705Z HEAD is now at ea58b87 Merge 0a6a04e581571a367cc1c742ead21f984abbbc1b into c20036f33a8f7d8eff15012d276606a3964e4a54",
+    "2026-11-09T01:00:55.6883584Z node: v24.22.0",
+    "2026-11-09T01:01:50.7675276Z ##[group]Run npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+    "2026-11-09T01:01:50.7675917Z npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1"
+  ]
+}

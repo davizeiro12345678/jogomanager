@@ -16,6 +16,22 @@ describe("backend readiness", () => {
     expect((await checkBackendHealth({}, fetcher)).status).toBe("degraded");
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it("distinguishes missing configuration from a failed Supabase Auth request without leaking keys", async () => {
+    const missing = await checkBackendHealth({}, vi.fn());
+    expect(missing.failureStage).toBe("missing_configuration");
+    const rejected = await checkBackendHealth(
+      env,
+      vi.fn().mockResolvedValue(Response.json({ message: "Forbidden" }, { status: 403 })),
+    );
+    expect(rejected.failureStage).toBe("auth_upstream_http_error");
+    const network = await checkBackendHealth(
+      env,
+      vi.fn().mockRejectedValue(new Error("private-token")),
+    );
+    expect(network.failureStage).toBe("auth_transport_error");
+    expect(JSON.stringify(network)).not.toContain("private-token");
+  });
+
   it("requires both reachable auth and server credentials", async () => {
     const fetcher = vi
       .fn()
@@ -88,6 +104,15 @@ describe("request-scoped Cloudflare health bindings", () => {
     });
     expect(requestCloudflareBindings(request)).toBe(env);
     expect(selectBackendHealthEnvironment({}, requestCloudflareBindings(request))).toEqual(env);
+  });
+
+  it("accepts adapter-attached Cloudflare env when Nitro omits runtime.name", () => {
+    const request = new Request("https://jogomanager.com/api/health");
+    const binding = { SUPABASE_URL: "https://project.supabase.co" };
+    Object.defineProperty(request, "runtime", {
+      value: { cloudflare: { env: binding } },
+    });
+    expect(requestCloudflareBindings(request)).toBe(binding);
   });
 
   it("does not trust headers or non-Cloudflare runtime state", () => {

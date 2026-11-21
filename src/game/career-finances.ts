@@ -19,6 +19,7 @@ export function applyFinanceEvent(state: CareerState, event: FinanceLedgerEntry)
     !validFinancialState(state) ||
     typeof event.id !== "string" ||
     event.id.trim().length === 0 ||
+    event.id.length > 180 ||
     !Number.isSafeInteger(event.season) ||
     event.season < 1 ||
     !Number.isSafeInteger(event.round) ||

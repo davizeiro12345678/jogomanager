@@ -1,0 +1,237 @@
+{
+  "note": "Separate CI campaigns; raw task/model differences are observations, not proof of source-only causality.",
+  "campaigns": [
+    {
+      "revision": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+      "reports": [
+        {
+          "run": 1,
+          "score": 1,
+          "TBT": 28.5,
+          "reactLongestTaskMs": 71,
+          "reactBootupTotalMs": 290.75200000000035,
+          "reactScriptingMs": 272.9000000000004,
+          "hydrateBootupMs": 97.08000000000004,
+          "scriptEvaluationMs": 421.34800000000087,
+          "gcMs": 30.30799999999997,
+          "dom": 574,
+          "diagnostics": [
+            {
+              "requests": 48,
+              "scripts": 39,
+              "totalByteWeight": 322315,
+              "totalTaskTime": 294.2609999999986
+            }
+          ],
+          "primaryChunks": [
+            {
+              "name": "http://127.0.0.1:4173/assets/hydrate-app-VC-L-jUm.js",
+              "bytes": 291407,
+              "unused": 122554
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+              "bytes": 38226,
+              "unused": 9639
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/partida-rapida-CHVHill1.js",
+              "bytes": 31016,
+              "unused": 5469
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "score": 1,
+          "TBT": 21.000000000000455,
+          "reactLongestTaskMs": 60,
+          "reactBootupTotalMs": 244.9640000000005,
+          "reactScriptingMs": 228.14000000000053,
+          "hydrateBootupMs": 102.07200000000005,
+          "scriptEvaluationMs": 351.06800000000027,
+          "gcMs": 23.54399999999997,
+          "dom": 574,
+          "diagnostics": [
+            {
+              "requests": 48,
+              "scripts": 39,
+              "totalByteWeight": 322314,
+              "totalTaskTime": 272.1239999999986
+            }
+          ],
+          "primaryChunks": [
+            {
+              "name": "http://127.0.0.1:4173/assets/hydrate-app-VC-L-jUm.js",
+              "bytes": 291407,
+              "unused": 122554
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+              "bytes": 38226,
+              "unused": 9639
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/partida-rapida-CHVHill1.js",
+              "bytes": 31016,
+              "unused": 5469
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "score": 1,
+          "TBT": 22.000000000000455,
+          "reactLongestTaskMs": 60,
+          "reactBootupTotalMs": 265.0480000000005,
+          "reactScriptingMs": 239.0640000000005,
+          "hydrateBootupMs": 114.78800000000001,
+          "scriptEvaluationMs": 366.78000000000054,
+          "gcMs": 18.17599999999999,
+          "dom": 574,
+          "diagnostics": [
+            {
+              "requests": 48,
+              "scripts": 39,
+              "totalByteWeight": 322246,
+              "totalTaskTime": 291.1469999999989
+            }
+          ],
+          "primaryChunks": [
+            {
+              "name": "http://127.0.0.1:4173/assets/hydrate-app-VC-L-jUm.js",
+              "bytes": 291407,
+              "unused": 122554
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+              "bytes": 38226,
+              "unused": 9639
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/partida-rapida-CHVHill1.js",
+              "bytes": 31016,
+              "unused": 5469
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "revision": "bc8982f32f53f5514cc8fdf6f3768df03729c2e0",
+      "reports": [
+        {
+          "run": 1,
+          "score": 0.96,
+          "TBT": 212.00000000000023,
+          "reactLongestTaskMs": 280,
+          "reactBootupTotalMs": 519.4520000000001,
+          "reactScriptingMs": 501.8200000000001,
+          "hydrateBootupMs": 91.00799999999998,
+          "scriptEvaluationMs": 633.9080000000012,
+          "gcMs": 98.21600000000014,
+          "dom": 574,
+          "diagnostics": [
+            {
+              "requests": 48,
+              "scripts": 39,
+              "totalByteWeight": 322267,
+              "totalTaskTime": 346.13299999999913
+            }
+          ],
+          "primaryChunks": [
+            {
+              "name": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+              "bytes": 291407,
+              "unused": 122554
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+              "bytes": 38226,
+              "unused": 9639
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/partida-rapida-CHVHill1.js",
+              "bytes": 31016,
+              "unused": 5469
+            }
+          ]
+        },
+        {
+          "run": 2,
+          "score": 0.99,
+          "TBT": 10,
+          "reactLongestTaskMs": 50,
+          "reactBootupTotalMs": 235.98000000000025,
+          "reactScriptingMs": 218.94000000000025,
+          "hydrateBootupMs": 97.84799999999993,
+          "scriptEvaluationMs": 406.1160000000004,
+          "gcMs": 10.98799999999999,
+          "dom": 574,
+          "diagnostics": [
+            {
+              "requests": 48,
+              "scripts": 39,
+              "totalByteWeight": 322303,
+              "totalTaskTime": 270.58999999999844
+            }
+          ],
+          "primaryChunks": [
+            {
+              "name": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+              "bytes": 291407,
+              "unused": 122554
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+              "bytes": 38226,
+              "unused": 9639
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/partida-rapida-CHVHill1.js",
+              "bytes": 31016,
+              "unused": 5469
+            }
+          ]
+        },
+        {
+          "run": 3,
+          "score": 1,
+          "TBT": 6,
+          "reactLongestTaskMs": 0,
+          "reactBootupTotalMs": 232.3640000000006,
+          "reactScriptingMs": 213.2920000000006,
+          "hydrateBootupMs": 90.65199999999992,
+          "scriptEvaluationMs": 352.0639999999996,
+          "gcMs": 26.09999999999997,
+          "dom": 574,
+          "diagnostics": [
+            {
+              "requests": 48,
+              "scripts": 39,
+              "totalByteWeight": 322240,
+              "totalTaskTime": 248.59599999999878
+            }
+          ],
+          "primaryChunks": [
+            {
+              "name": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+              "bytes": 291407,
+              "unused": 122554
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+              "bytes": 38226,
+              "unused": 9639
+            },
+            {
+              "name": "http://127.0.0.1:4173/assets/partida-rapida-CHVHill1.js",
+              "bytes": 31016,
+              "unused": 5469
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -514,3 +514,25 @@ html[data-text-size="xlarge"] .career-content {
     outline-offset: -2px;
   }
 }
+/* Paint budget: the sticky translucent header otherwise triggers expensive
+ * backdrop re-filtering during fast mobile career navigation. Keep the same
+ * opaque surface on small displays and on user requests for reduced effects. */
+@media (max-width: 47.99rem),
+  (prefers-reduced-transparency: reduce),
+  (prefers-reduced-data: reduce) {
+  .career-shell .career-header {
+    background: var(--background);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Preserve a visible, static state on phones and accessibility settings. */
+@media (hover: none) and (pointer: coarse) {
+  .career-shell .career-primary-button:hover {
+    transform: none;
+  }
+  .career-shell :where(.career-nav-item, .career-primary-button, .career-secondary-button) {
+    touch-action: manipulation;
+  }
+}

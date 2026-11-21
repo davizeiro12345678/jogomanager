@@ -26,7 +26,7 @@ import {
   type PlayerInstancePalette,
 } from "@/game/player-instance-batch";
 import { censusRef } from "@/game/scene-census";
-import { placeScaledInstancePart } from "@/game/instance-transform";
+import { placeRotatedInstanceJoint, placeScaledInstancePart } from "@/game/instance-transform";
 import type { SimView } from "@/game/sim";
 import { visualMotionFor } from "@/game/visual-motion";
 import { footballSupportFor, refineFootballAction } from "@/game/football-action";
@@ -154,7 +154,6 @@ export function LowPlayers({
       shin: new THREE.Matrix4(),
       ankle: new THREE.Matrix4(),
       part: new THREE.Matrix4(),
-      local: new THREE.Matrix4(),
       position: new THREE.Vector3(),
       scale: new THREE.Vector3(),
       quaternion: new THREE.Quaternion(),
@@ -259,28 +258,12 @@ export function LowPlayers({
       shin,
       ankle,
       part,
-      local,
       position,
       scale,
       quaternion,
       euler,
     } = tmp;
-    const joint = (
-      out: THREE.Matrix4,
-      parent: THREE.Matrix4,
-      x: number,
-      y: number,
-      z: number,
-      pitch = 0,
-      yaw = 0,
-      roll = 0,
-    ) => {
-      position.set(x, y, z);
-      scale.set(1, 1, 1);
-      quaternion.setFromEuler(euler.set(pitch, yaw, roll, "XYZ"));
-      local.compose(position, quaternion, scale);
-      out.multiplyMatrices(parent, local);
-    };
+    const joint = placeRotatedInstanceJoint;
     const draw = (
       batch: Batch,
       i: number,

@@ -38,6 +38,7 @@ import { LIVE_CONTROL_RESPONSE_TIMEOUT_MS, validMatchCommand } from "./match-com
 import { MAX_PENDING_SIMULATION_COMMANDS } from "./sequential-worker-queue";
 import { initializeMatchExecution } from "./match-execution";
 import { getMatchEligibilityFailure } from "./match-eligibility";
+import type { MatchRulesRevision } from "./match-execution-contract";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -192,6 +193,8 @@ interface LiveMatchOptions {
   home: TeamSetup;
   away: TeamSetup;
   seed: string;
+  rulesRevision?: MatchRulesRevision | undefined;
+  contactPhysicsRevision?: 2 | undefined;
   knockout?: boolean;
   weather?: WeatherKind;
   view?: WorkerMatchView;
@@ -216,6 +219,8 @@ function createLiveMatchWorker(telemetry: boolean) {
 
 function bootstrapView(view: WorkerMatchView, options: LiveMatchOptions): void {
   const sim = new MatchSim(options.home, options.away, options.seed, {
+    rulesRevision: options.rulesRevision,
+    contactPhysicsRevision: options.contactPhysicsRevision,
     knockout: options.knockout,
     weather: options.weather,
   });
@@ -470,6 +475,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         return;
       }
       const initial = new MatchSim(options.home, options.away, options.seed, {
+        rulesRevision: options.rulesRevision,
+        contactPhysicsRevision: options.contactPhysicsRevision,
         knockout: options.knockout,
         weather: options.weather,
       });
@@ -565,6 +572,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         home: options.home,
         away: options.away,
         seed: options.seed,
+        rulesRevision: options.rulesRevision,
+        contactPhysicsRevision: options.contactPhysicsRevision,
         knockout: options.knockout,
         weather: options.weather,
       });

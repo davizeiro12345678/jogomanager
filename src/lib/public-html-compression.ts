@@ -1,5 +1,6 @@
 import { Readable, pipeline } from "node:stream";
 import { createGzip, constants } from "node:zlib";
+import { hasSensitiveCookie } from "./anonymous-cookie";
 
 // Compress only anonymous public HTML. Private pages, API bodies and event
 // streams retain their own transport policy. Keep the SSR body streaming.
@@ -42,7 +43,7 @@ export function compressPublicHtml(response: Response, request: Request): Respon
     !response.body ||
     !PUBLIC_HTML_PATHS.has(new URL(request.url).pathname) ||
     request.headers.has("authorization") ||
-    request.headers.has("cookie") ||
+    hasSensitiveCookie(request.headers) ||
     request.headers.has("range") ||
     response.headers.has("content-encoding") ||
     response.headers.has("set-cookie") ||

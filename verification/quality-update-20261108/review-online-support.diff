@@ -1,0 +1,1460 @@
+diff --git a/.github/workflows/quality.yml b/.github/workflows/quality.yml
+index f271f173..32a1676f 100644
+--- a/.github/workflows/quality.yml
++++ b/.github/workflows/quality.yml
+@@ -150,20 +150,30 @@ jobs:
+       - name: Verify database startup failure handling
+         run: node --test scripts/start-replay-db.test.mjs
+       - name: Start local Supabase Postgres
+         run: bash scripts/start-replay-db.sh
+       - name: Replay the complete canonical migration history
+         run: supabase db reset --local --no-seed --yes
+       - name: Apply the forward growth-observability migration to the disposable database
+         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
+       - name: Apply the forward career tombstone and generation migration to the disposable database
+         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0061_career_tombstone_generation.sql
++      - name: Apply forward room chat, career repair and support migrations to the disposable database
++        run: |
++          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0062_room_chat_rate_limits.sql
++          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0063_repair_career_and_push_access.sql
++          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0064_support_ticket_outbox.sql
++          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0065_atomic_match_room_creation.sql
++      - name: Verify private support quota, idempotency, delivery leases and retry fencing
++        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/support-outbox-contract.sql
++      - name: Verify atomic private room creation, host quotas and bounded empty-lobby expiration
++        run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/atomic-match-room-contract.sql
+       - name: Verify career tombstone generation and server-only access
+         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/career-tombstone-generation-contract.sql
+       - name: Verify application schema, ownership, and grants
+         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/supabase-replay-contract.sql
+       - name: Verify private room chat Realtime authorization
+         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realtime-room-chat-policy-contract.sql
+       - name: Verify public catalog and bounded identity enrichment
+         run: |
+           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-catalog-readonly.sql
+           psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f tests/sql/realism-profile-fixtures.sql
+diff --git a/drizzle/migrations/meta/_journal.json b/drizzle/migrations/meta/_journal.json
+index d14f07f8..6fafe7d3 100644
+--- a/drizzle/migrations/meta/_journal.json
++++ b/drizzle/migrations/meta/_journal.json
+@@ -422,19 +422,47 @@
+       "tag": "0059_index_public_league_standings",
+       "breakpoints": true
+     },
+     {
+       "idx": 60,
+       "version": "7",
+       "when": 1794086489539,
+       "tag": "0060_database_growth_observability",
+       "breakpoints": true
+     },
++    {
++      "idx": 61,
++      "version": "7",
++      "when": 1794148522000,
++      "tag": "0061_career_tombstone_generation",
++      "breakpoints": true
++    },
+     {
+       "idx": 62,
+       "version": "7",
+       "when": 1794148523000,
+       "tag": "0062_room_chat_rate_limits",
+       "breakpoints": true
++    },
++    {
++      "idx": 63,
++      "version": "7",
++      "when": 1794179700000,
++      "tag": "0063_repair_career_and_push_access",
++      "breakpoints": true
++    },
++    {
++      "idx": 64,
++      "version": "7",
++      "when": 1794180000000,
++      "tag": "0064_support_ticket_outbox",
++      "breakpoints": true
++    },
++    {
++      "idx": 65,
++      "version": "7",
++      "when": 1794180300000,
++      "tag": "0065_atomic_match_room_creation",
++      "breakpoints": true
+     }
+   ]
+ }
+diff --git a/src/game/online/authoritative-match-session.ts b/src/game/online/authoritative-match-session.ts
+index c7ca7300..4bceba36 100644
+--- a/src/game/online/authoritative-match-session.ts
++++ b/src/game/online/authoritative-match-session.ts
+@@ -52,79 +52,90 @@ export interface AuthoritativeMatchSessionOptions {
+   homeTicket: MatchTicketV1;
+   awayTicket: MatchTicketV1;
+   engine: AuthoritativeMatchEngine;
+   signer: MatchReceiptSigner;
+   simulationVersion: string;
+   idempotencyKey: string;
+   commandLimits?: Partial<Record<MatchCommandKind, CommandRateLimit>> | undefined;
+ }
+ 
+ const RECONNECT_WINDOW_MS = 60_000;
++const MAX_RECORDED_INVALID_COMMANDS = 128;
++const DEFAULT_COMMAND_LIMITS: Record<MatchCommandKind, CommandRateLimit> = {
++  ready: { limit: 6, windowMs: 10_000 },
++  set_tactics: { limit: 12, windowMs: 10_000 },
++  substitute: { limit: 12, windowMs: 10_000 },
++  forfeit: { limit: 2, windowMs: 10_000 },
++  ack_snapshot: { limit: 120, windowMs: 10_000 },
++};
+ 
+ /**
+  * Server-only match coordinator. It accepts narrow, signed commands and
+  * publishes only presentation-safe state; the engine remains the sole owner
+  * of score, simulation and rewards.
+  */
+ export class AuthoritativeMatchSession {
+   readonly invalidAttempts: InvalidMatchCommand[] = [];
+ 
+   private readonly tickets: Record<MatchSeat, MatchTicketV1>;
+   private readonly connected = new Set<string>();
+   private readonly readySeats = new Set<MatchSeat>();
+   private readonly lastSequence = new Map<string, number>();
+   private readonly rateWindows = new Map<string, number[]>();
+   private readonly reconnectDeadlines = new Map<MatchSeat, number>();
+   private readonly tactics = new Map<MatchSeat, TacticalCommandPayloadV1>();
+-  private commandHash = GENESIS_SESSION_HASH;
++  private commandHash: Promise<string> | null = null;
+   private tick = 0;
+   private revision = 0;
+   private receipt: MatchReceiptV1 | null = null;
+   private finalizationPromise: Promise<MatchReceiptV1> | null = null;
++  private closing = false;
+   phase: MatchSessionPhase = "waiting";
+ 
+   constructor(private readonly options: AuthoritativeMatchSessionOptions) {
+     if (
+       options.homeTicket.roomId !== options.roomId ||
+       options.awayTicket.roomId !== options.roomId
+     ) {
+       throw new Error("match tickets must belong to the session room");
+     }
+     if (options.homeTicket.seat !== "home" || options.awayTicket.seat !== "away") {
+       throw new Error("match tickets must be assigned to their matching seats");
+     }
+-    this.tickets = { home: options.homeTicket, away: options.awayTicket };
++    this.tickets = { home: { ...options.homeTicket }, away: { ...options.awayTicket } };
+   }
+ 
+   connect(ticket: MatchTicketV1, now: number): MatchSeat {
+     this.assertBoundTicket(ticket, now);
+     this.connected.add(ticket.userId);
+     this.reconnectDeadlines.delete(ticket.seat);
+     this.refreshPhase();
+     return ticket.seat;
+   }
+ 
+   disconnect(userId: string, now: number): void {
+     const seat = this.seatForUser(userId);
+-    if (!seat || this.phase === "finalized") return;
++    if (!seat || this.closing || this.phase === "finalized") return;
+     this.connected.delete(userId);
+     this.reconnectDeadlines.set(seat, now + RECONNECT_WINDOW_MS);
+     this.phase = "reconnecting";
+   }
+ 
+   async receive(
+     ticket: MatchTicketV1,
+     command: MatchCommandV1,
+     now: number,
+   ): Promise<MatchCommandOutcome> {
++    this.assertBoundTicket(ticket, now);
++    if (this.closing || this.receipt)
++      return this.reject(ticket.userId, command.sequence, "command_rejected", now);
+     const seat = this.connect(ticket, now);
+-    if (this.receipt) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
+     if (command.roomId !== this.options.roomId) {
+       return this.reject(ticket.userId, command.sequence, "command_rejected", now);
+     }
+ 
+     const priorSequence = this.lastSequence.get(ticket.userId) ?? 0;
+     if (command.sequence <= priorSequence) {
+       return this.reject(ticket.userId, command.sequence, "sequence_not_monotonic", now);
+     }
+     if (!this.reserveRateWindow(ticket.userId, command.kind, now)) {
+       return this.reject(ticket.userId, command.sequence, "rate_limited", now);
+@@ -150,26 +161,34 @@ export class AuthoritativeMatchSession {
+       case "ready":
+         this.readySeats.add(seat);
+         this.refreshPhase();
+         break;
+       case "ack_snapshot":
+         break;
+     }
+ 
+     if (!applied) return this.reject(ticket.userId, command.sequence, "command_rejected", now);
+     this.lastSequence.set(ticket.userId, command.sequence);
+-    this.commandHash = (await appendCommandHash(this.commandHash, command)).hash;
++    // Reserve the next hash link synchronously. Web Crypto yields, so two
++    // commands must never hash independently from the same previous digest.
++    const nextHash = (this.commandHash ?? Promise.resolve(GENESIS_SESSION_HASH)).then(
++      async (previousHash) => (await appendCommandHash(previousHash, command)).hash,
++    );
++    this.commandHash = nextHash;
++    // A forfeit closes input immediately, before its asynchronous hash/signature.
+     if (closureReason) await this.finalize(closureReason, now, seat);
++    else await nextHash;
+     return { accepted: true };
+   }
+ 
+   advanceFixedTick(): void {
++    if (this.closing) return;
+     if (this.phase !== "live" && this.phase !== "reconnecting") return;
+     this.options.engine.advanceFixedStep();
+     this.tick += 1;
+     this.revision += 1;
+   }
+ 
+   snapshot(): MatchSnapshotV1 {
+     return {
+       version: MATCH_PROTOCOL_VERSION,
+       roomId: this.options.roomId,
+@@ -192,28 +211,29 @@ export class AuthoritativeMatchSession {
+     }
+     return null;
+   }
+ 
+   async finalize(
+     closureReason: MatchClosureReason,
+     now: number,
+     loser?: MatchSeat,
+   ): Promise<MatchReceiptV1> {
+     if (this.receipt) return this.receipt;
++    this.closing = true;
+     const finalizationPromise =
+       this.finalizationPromise ??
+       (this.finalizationPromise = (async () => {
+         const unsigned = {
+           version: MATCH_PROTOCOL_VERSION,
+           roomId: this.options.roomId,
+           simulationVersion: this.options.simulationVersion,
+-          commandHash: this.commandHash,
++          commandHash: this.commandHash ? await this.commandHash : GENESIS_SESSION_HASH,
+           result: this.options.engine.finalResult(loser),
+           closureReason,
+           idempotencyKey: this.options.idempotencyKey,
+           issuedAt: now,
+         } as const;
+         const signature = await this.options.signer.sign(unsigned);
+         const receipt = parseMatchReceiptV1({ ...unsigned, signature });
+         this.receipt = receipt;
+         this.phase = "finalized";
+         return receipt;
+@@ -228,55 +248,62 @@ export class AuthoritativeMatchSession {
+   }
+ 
+   private assertBoundTicket(ticket: MatchTicketV1, now: number): void {
+     assertCurrentTicket(ticket, now);
+     if (ticket.roomId !== this.options.roomId) {
+       throw new Error("ticket room does not match this authoritative match session");
+     }
+     const expected = this.tickets[ticket.seat];
+     if (
+       ticket.userId !== expected.userId ||
++      ticket.version !== expected.version ||
++      ticket.issuedAt !== expected.issuedAt ||
++      ticket.expiresAt !== expected.expiresAt ||
+       ticket.nonce !== expected.nonce ||
+       ticket.signature !== expected.signature
+     ) {
+       throw new Error("ticket does not belong to this authoritative match session");
+     }
+   }
+ 
+   private seatForUser(userId: string): MatchSeat | null {
+     if (this.tickets.home.userId === userId) return "home";
+     if (this.tickets.away.userId === userId) return "away";
+     return null;
+   }
+ 
+   private refreshPhase(): void {
+-    if (this.phase === "finalized") return;
++    if (this.closing || this.phase === "finalized") return;
+     if (this.connected.size === 2 && this.readySeats.size === 2) {
+       this.phase = "live";
+       return;
+     }
+     this.phase = this.reconnectDeadlines.size > 0 ? "reconnecting" : "waiting";
+   }
+ 
+   private reject(
+     userId: string,
+     sequence: number,
+     reason: InvalidMatchCommand["reason"],
+     at: number,
+   ): MatchCommandOutcome {
++    if (this.invalidAttempts.length >= MAX_RECORDED_INVALID_COMMANDS)
++      this.invalidAttempts.splice(
++        0,
++        this.invalidAttempts.length - MAX_RECORDED_INVALID_COMMANDS + 1,
++      );
+     this.invalidAttempts.push({ userId, sequence, reason, at });
+     return { accepted: false, reason };
+   }
+ 
+   private reserveRateWindow(userId: string, kind: MatchCommandKind, now: number): boolean {
+-    const limit = this.options.commandLimits?.[kind];
+-    if (!limit) return true;
++    const limit = this.options.commandLimits?.[kind] ?? DEFAULT_COMMAND_LIMITS[kind];
+     if (limit.limit < 1 || limit.windowMs < 1) return false;
+     const key = `${userId}:${kind}`;
+     const liveEntries = (this.rateWindows.get(key) ?? []).filter((at) => now - at < limit.windowMs);
+     if (liveEntries.length >= limit.limit) {
+       this.rateWindows.set(key, liveEntries);
+       return false;
+     }
+     liveEntries.push(now);
+     this.rateWindows.set(key, liveEntries);
+     return true;
+diff --git a/src/integrations/supabase/database.ts b/src/integrations/supabase/database.ts
+index 076b0920..3488d559 100644
+--- a/src/integrations/supabase/database.ts
++++ b/src/integrations/supabase/database.ts
+@@ -6,19 +6,61 @@ type CompleteImportPhase = Functions["complete_api_football_import_phase"];
+ 
+ /**
+  * PostgreSQL RPC arguments can accept NULL even when introspection generates a
+  * non-null TypeScript argument. This RPC explicitly uses a NULL next offset to
+  * finish a phase and a NULL error to mark success. Keep that SQL contract here
+  * so regenerating types never changes completion into another import batch.
+  */
+ export type Database = Omit<GeneratedDatabase, "public"> & {
+   public: Omit<PublicSchema, "Functions"> & {
+     Functions: Omit<Functions, "complete_api_football_import_phase"> & {
++      create_match_room_for: {
++        Args: { p_host_id: string; p_host_club: string; p_code: string; p_seed: string };
++        Returns: {
++          result: "created" | "room_active_limit" | "room_hourly_limit";
++          room: PublicSchema["Tables"]["match_rooms"]["Row"] | null;
++        }[];
++      };
++      create_support_ticket: {
++        Args: {
++          p_user_id: string;
++          p_email: string;
++          p_request_id: string;
++          p_category: string;
++          p_subject: string;
++          p_message: string;
++        };
++        Returns: { ticket_id: string; status: "queued" | "delivered" | "delivery_failed" }[];
++      };
++      claim_support_deliveries: {
++        Args: { p_limit?: number; p_ticket_id?: string | null };
++        Returns: {
++          ticket_id: string;
++          user_id: string;
++          email: string;
++          category: string;
++          subject: string;
++          message: string;
++          created_at: string;
++          lease_token: string;
++          attempts: number;
++        }[];
++      };
++      complete_support_delivery: {
++        Args: {
++          p_ticket_id: string;
++          p_lease_token: string;
++          p_delivered: boolean;
++          p_error_code?: string;
++          p_retryable?: boolean;
++        };
++        Returns: boolean;
++      };
+       complete_api_football_import_phase: Omit<CompleteImportPhase, "Args"> & {
+         Args: Omit<CompleteImportPhase["Args"], "p_next_offset" | "p_error"> & {
+           p_next_offset: CompleteImportPhase["Args"]["p_next_offset"] | null;
+           p_error?: CompleteImportPhase["Args"]["p_error"] | null;
+         };
+       };
+     };
+   };
+ };
+diff --git a/src/lib/moderation.ts b/src/lib/moderation.ts
+index 9b31ef23..7c0bfefd 100644
+--- a/src/lib/moderation.ts
++++ b/src/lib/moderation.ts
+@@ -163,39 +163,42 @@ export function containsProfanity(text: string): boolean {
+ }
+ 
+ /** Repeat comparison keeps letter runs, so "gol" and "goool" are not the same message. */
+ function repeatKey(text: string): string {
+   return normalizeForModeration(text).replace(/[^a-z]/g, "");
+ }
+ 
+ export type ModerationReason = "profanity" | "link" | "contact" | "shouting" | "repeated";
+ 
+ const LINK =
+-  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app)\b|discord\.gg)/i;
++  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app|dev|site|live|online|club|info|biz|co|ai|top|click|store|shop|fun)\b|discord\.gg)/i;
+ const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+ /** Eight or more digits, allowing spaces, dots, dashes and parentheses between them. */
+-const PHONE = /(?:\d[\s().-]?){8,}/;
++const PHONE = /(?:\d[\s().-]{0,4}){8,}/;
+ 
+ /** Minimum letters before the all-caps rule applies, so "GOL!" is allowed. */
+ const SHOUTING_MIN_LETTERS = 12;
+ 
+ /**
+  * Checks one message. Returns the first rule it breaks, or null when allowed.
+  * `previous` holds the sender's recent messages for the repeat rule.
+  */
+ export function moderateMessage(
+   text: string,
+   previous: readonly string[] = [],
+ ): ModerationReason | null {
+   if (containsProfanity(text)) return "profanity";
+-  if (EMAIL.test(text) || PHONE.test(text)) return "contact";
+-  if (LINK.test(text)) return "link";
++  // Normalize contacts separately from profanity: leetspeak substitutions would
++  // destroy digits and @, while compatibility forms and invisibles hide both.
++  const visible = text.normalize("NFKC").replace(INVISIBLE_FORMAT_CHARACTERS, "");
++  if (EMAIL.test(visible) || PHONE.test(visible)) return "contact";
++  if (LINK.test(visible)) return "link";
+   const letters = text.replace(/[^\p{L}]/gu, "");
+   if (
+     letters.length >= SHOUTING_MIN_LETTERS &&
+     letters === letters.toUpperCase() &&
+     letters !== letters.toLowerCase()
+   )
+     return "shouting";
+   const key = repeatKey(text);
+   if (key && previous.some((p) => repeatKey(p) === key)) return "repeated";
+   return null;
+diff --git a/src/lib/multiplayer.functions.ts b/src/lib/multiplayer.functions.ts
+index a9e7b615..4586675b 100644
+--- a/src/lib/multiplayer.functions.ts
++++ b/src/lib/multiplayer.functions.ts
+@@ -10,22 +10,20 @@ import {
+   MATCH_SIMULATION_STEP,
+   MATCH_SIMULATION_TICK_LIMIT,
+   MatchSim,
+ } from "@/game/sim";
+ import {
+   createSettlementLeaseGuard,
+   isSettlementLeaseExpired,
+   settlementLeaseCutoff,
+ } from "@/lib/multiplayer-settlement";
+ 
+-const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+-
+ export interface MultiplayerRoomRecord {
+   id: string;
+   code: string;
+   host_id: string;
+   guest_id: string | null;
+   host_club: string;
+   guest_club: string | null;
+   seed: string;
+   server_seeded: boolean;
+   status: string;
+@@ -33,70 +31,46 @@ export interface MultiplayerRoomRecord {
+   state: Json;
+   created_at: string;
+   updated_at: string;
+ }
+ 
+ export type RoomActionResult =
+   { ok: true; room: MultiplayerRoomRecord } | { ok: false; reason: string };
+ 
+ export type FinishRoomResult = { ok: true } | { ok: false; reason: string };
+ 
+-function secureRoomCode(): string {
+-  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
+-  return Array.from(bytes, (value) => ROOM_CODE_ALPHABET[value & 31]).join("");
+-}
+-
+ export const createMatchRoom = createServerFn({ method: "POST" })
+   .middleware([requireSupabaseAuth])
+-  .validator((input: unknown) => z.object({ hostClub: z.string().min(1).max(80) }).parse(input))
++  .validator((input: unknown) =>
++    z
++      .object({ hostClub: z.string().min(1).max(80) })
++      .strict()
++      .parse(input),
++  )
+   .handler(async ({ data, context }): Promise<RoomActionResult> => {
+-    if (!CLUBS[data.hostClub]) return { ok: false, reason: "invalid_club" };
++    if (!Object.hasOwn(CLUBS, data.hostClub)) return { ok: false, reason: "invalid_club" };
+     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+ 
+-    for (let attempt = 0; attempt < 3; attempt += 1) {
+-      const seed = globalThis.crypto.randomUUID();
+-      const { data: room, error } = await supabaseAdmin
+-        .from("match_rooms")
+-        .insert({
+-          code: secureRoomCode(),
+-          host_id: context.userId,
+-          host_club: data.hostClub,
+-          seed: "",
+-          server_seeded: true,
+-          status: "open",
+-          minute: 0,
+-          state: {},
+-        })
+-        .select("*")
+-        .single();
+-      if (!error && room) {
+-        const { error: secretError } = await supabaseAdmin
+-          .from("match_room_secrets")
+-          .insert({ room_id: room.id, seed });
+-        if (secretError) {
+-          await supabaseAdmin.from("match_rooms").delete().eq("id", room.id);
+-          return { ok: false, reason: "create_failed" };
+-        }
+-        return { ok: true, room: room as unknown as MultiplayerRoomRecord };
+-      }
+-      if (error?.code !== "23505") return { ok: false, reason: "create_failed" };
+-    }
+-    return { ok: false, reason: "create_failed" };
++    const { createPrivateMatchRoom } = await import("./multiplayer-room-create.server");
++    return createPrivateMatchRoom(supabaseAdmin, context.userId, data.hostClub);
+   });
+ 
+ export const joinMatchRoom = createServerFn({ method: "POST" })
+   .middleware([requireSupabaseAuth])
+   .validator((input: unknown) =>
+-    z.object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) }).parse(input),
++    z
++      .object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) })
++      .strict()
++      .parse(input),
+   )
+   .handler(async ({ data, context }): Promise<RoomActionResult> => {
+-    if (!CLUBS[data.guestClub]) return { ok: false, reason: "invalid_club" };
++    if (!Object.hasOwn(CLUBS, data.guestClub)) return { ok: false, reason: "invalid_club" };
+     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+     const { data: room, error } = await supabaseAdmin
+       .from("match_rooms")
+       .update({
+         guest_id: context.userId,
+         guest_club: data.guestClub,
+         status: "ready",
+         updated_at: new Date().toISOString(),
+       })
+       .eq("id", data.roomId)
+@@ -119,22 +93,22 @@ export const startMatchRoom = createServerFn({ method: "POST" })
+       .from("match_rooms")
+       .select("id, host_id, host_club, guest_club, server_seeded, status")
+       .eq("id", data.roomId)
+       .maybeSingle();
+     if (roomError || !currentRoom) return { ok: false, reason: "room_not_ready" };
+     if (currentRoom.host_id !== context.userId) return { ok: false, reason: "not_host" };
+     if (
+       currentRoom.status !== "ready" ||
+       !currentRoom.server_seeded ||
+       !currentRoom.guest_club ||
+-      !CLUBS[currentRoom.host_club] ||
+-      !CLUBS[currentRoom.guest_club]
++      !Object.hasOwn(CLUBS, currentRoom.host_club) ||
++      !Object.hasOwn(CLUBS, currentRoom.guest_club)
+     ) {
+       return { ok: false, reason: "room_not_ready" };
+     }
+ 
+     const { data: secret, error: secretError } = await supabaseAdmin
+       .from("match_room_secrets")
+       .select("seed")
+       .eq("room_id", data.roomId)
+       .maybeSingle();
+     if (secretError || !secret?.seed) return { ok: false, reason: "room_not_ready" };
+@@ -232,21 +206,21 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
+       room.status !== "live" &&
+       !(room.status === "settling" && isSettlementLeaseExpired(room.updated_at))
+     ) {
+       return room.status === "settling"
+         ? { ok: false, reason: "settling" }
+         : { ok: false, reason: "not_live" };
+     }
+     if (!room.server_seeded || !room.guest_club) {
+       return { ok: false, reason: "invalid_room" };
+     }
+-    if (!CLUBS[room.host_club] || !CLUBS[room.guest_club]) {
++    if (!Object.hasOwn(CLUBS, room.host_club) || !Object.hasOwn(CLUBS, room.guest_club)) {
+       return { ok: false, reason: "invalid_room" };
+     }
+ 
+     // Claim publication before the expensive full replay. The same CAS also
+     // reclaims a stale settling lease. Repeated finish clicks therefore either
+     // observe the active lease or atomically replace an expired one.
+     const settlementLeaseCutoffAt = settlementLeaseCutoff();
+     const { data: claim, error: claimError } = await supabaseAdmin
+       .from("match_rooms")
+       .update({ status: "settling", updated_at: new Date().toISOString() })
+diff --git a/src/lib/offline/store.ts b/src/lib/offline/store.ts
+index 68485fbf..98a9206b 100644
+--- a/src/lib/offline/store.ts
++++ b/src/lib/offline/store.ts
+@@ -236,31 +236,42 @@ function idbCareerKeys(owner: LocalOwnerId | undefined) {
+ }
+ 
+ /* ------------------------------------------------------------------ *
+  * Espelho síncrono (localStorage)
+  * ------------------------------------------------------------------ */
+ 
+ export function readLocalCareer(owner: LocalOwnerId | undefined = null): CareerState | null {
+   if (!isBrowser()) return null;
+   try {
+     const raw = window.localStorage.getItem(localKey(owner));
+-    if (raw) return JSON.parse(raw) as CareerState;
++    if (raw) {
++      const stored: unknown = JSON.parse(raw);
++      if (isCareerRecord(stored)) return stored;
++    }
+     if (isGuest(owner)) {
+       const legacy = window.localStorage.getItem(LEGACY_KEY);
+-      return legacy ? (JSON.parse(legacy) as CareerState) : null;
++      const stored: unknown = legacy ? JSON.parse(legacy) : null;
++      return isCareerRecord(stored) ? stored : null;
+     }
+   } catch {
+     /* Corrupt local data is ignored instead of blocking the game. */
+   }
+   return null;
+ }
+ 
++/** Local persistence is untrusted; complete save validation remains server-side. */
++function isCareerRecord(value: unknown): value is CareerState {
++  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
++  const prototype: unknown = Object.getPrototypeOf(value);
++  return prototype === null || prototype === Object.prototype;
++}
++
+ function parseGeneration(value: unknown): number | null {
+   return Number.isSafeInteger(value) && (value as number) > 0 ? (value as number) : null;
+ }
+ 
+ function parseLocalTombstone(value: unknown): LocalCareerTombstone | null {
+   if (!value || typeof value !== "object") return null;
+   const candidate = value as Partial<LocalCareerTombstone>;
+   const generation = parseGeneration(candidate.generation);
+   return generation !== null &&
+     typeof candidate.deletedAt === "string" &&
+@@ -600,29 +611,29 @@ function removeMirrorAndVerify(owner: LocalOwnerId | undefined) {
+  * Carreira
+  * ------------------------------------------------------------------ */
+ 
+ export async function loadLocalCareer(
+   owner: LocalOwnerId | undefined = null,
+ ): Promise<CareerState | null> {
+   if (!isBrowser()) return null;
+   const migrationEpoch = readCareerEpoch(owner);
+   try {
+     const stored = await get<CareerState>(idbKey(owner, "career"));
+-    if (stored) return stored;
++    if (isCareerRecord(stored)) return stored;
+   } catch {
+     /* IndexedDB indisponível — usa o espelho */
+   }
+ 
+-  if (!isGuest(owner)) return null;
++  if (!isGuest(owner)) return readLocalCareer(owner);
+   try {
+     const legacy = await get<CareerState>(LEGACY_IDB.career);
+-    if (legacy) {
++    if (isCareerRecord(legacy)) {
+       if (migrationEpoch !== null)
+         await saveLocalCareer(legacy, "migração", null, { expectedEpoch: migrationEpoch });
+       return legacy;
+     }
+   } catch {
+     /* fallback below */
+   }
+   const legacy = readLocalCareer(null);
+   if (legacy) {
+     if (migrationEpoch !== null)
+@@ -816,27 +827,43 @@ export async function wipeEverything() {
+ }
+ 
+ /* ------------------------------------------------------------------ *
+  * Fila de envio
+  * ------------------------------------------------------------------ */
+ 
+ export function isVersionedOutboxEntry(
+   entry: OutboxEntry | null,
+ ): entry is OutboxEntry & { generation: number; revision: string } {
+   return (
+-    !!entry &&
++    isOutboxEntry(entry) &&
+     parseGeneration(entry.generation) !== null &&
+     typeof entry.revision === "string" &&
+     entry.revision.length > 0
+   );
+ }
+ 
++function isOutboxEntry(value: unknown): value is OutboxEntry {
++  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
++  const entry = value as Partial<OutboxEntry>;
++  return (
++    typeof entry.at === "number" &&
++    Number.isFinite(entry.at) &&
++    entry.at >= 0 &&
++    isCareerRecord(entry.state) &&
++    (entry.generation === undefined || parseGeneration(entry.generation) !== null) &&
++    (entry.revision === undefined ||
++      (typeof entry.revision === "string" &&
++        entry.revision.length > 0 &&
++        entry.revision.length <= 128))
++  );
++}
++
+ async function queueSyncLocal(
+   state: CareerState,
+   owner: LocalOwnerId | undefined,
+   generation: number | undefined,
+   allowPendingBarrier = false,
+   expectedEpoch?: number,
+ ): Promise<OutboxEntry | null> {
+   if (expectedEpoch !== undefined && readCareerEpoch(owner) !== expectedEpoch) return null;
+   const safeGeneration = parseGeneration(generation);
+   if (!isBrowser() || safeGeneration === null) return null;
+@@ -876,21 +903,24 @@ export async function queueSync(
+     null,
+     options,
+   );
+ }
+ 
+ export async function readOutbox(
+   owner: LocalOwnerId | undefined = null,
+ ): Promise<OutboxEntry | null> {
+   if (!isBrowser()) return null;
+   try {
+-    return (await get<OutboxEntry>(idbKey(owner, "outbox"))) ?? null;
++    const stored: unknown = await get(idbKey(owner, "outbox"));
++    if (stored === undefined || stored === null) return null;
++    if (!isOutboxEntry(stored)) throw new TypeError("Invalid persisted career outbox");
++    return stored;
+   } catch (cause) {
+     // An unreadable durable queue is not equivalent to an empty queue: callers
+     // performing destructive operations must fail closed.
+     throw new Error("Career outbox is unreadable", { cause });
+   }
+ }
+ 
+ async function clearOutboxLocal(owner: LocalOwnerId | undefined) {
+   if (!isBrowser()) return;
+   try {
+
+NEW FILE: src/lib/multiplayer-room-create.server.ts
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/database";
+
+const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+type Room = Database["public"]["Tables"]["match_rooms"]["Row"];
+type CreationResult =
+  | { ok: true; room: Room }
+  | { ok: false; reason: "create_failed" | "rate_limited" | "too_many_rooms" };
+
+function secureRoomCode(): string {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (value) => ROOM_CODE_ALPHABET[value & 31]).join("");
+}
+
+/** One RPC owns the room, private seed and account quota in one transaction. */
+export async function createPrivateMatchRoom(
+  db: Pick<SupabaseClient<Database>, "rpc">,
+  userId: string,
+  hostClub: string,
+): Promise<CreationResult> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data, error } = await db.rpc("create_match_room_for", {
+      p_host_id: userId,
+      p_host_club: hostClub,
+      p_code: secureRoomCode(),
+      p_seed: globalThis.crypto.randomUUID(),
+    });
+    const created = data?.[0];
+    if (!error && created?.result === "created" && created.room)
+      return { ok: true, room: created.room };
+    if (!error && created?.result === "room_hourly_limit")
+      return { ok: false, reason: "rate_limited" };
+    if (!error && created?.result === "room_active_limit")
+      return { ok: false, reason: "too_many_rooms" };
+    if (error?.message.includes("room_hourly_limit")) return { ok: false, reason: "rate_limited" };
+    if (error?.message.includes("room_active_limit"))
+      return { ok: false, reason: "too_many_rooms" };
+    if (error?.code !== "23505") return { ok: false, reason: "create_failed" };
+  }
+  return { ok: false, reason: "create_failed" };
+}
+
+NEW FILE: src/lib/support-input.ts
+import { z } from "zod";
+import { hasVisibleText, normalizePublicText } from "./untrusted-json";
+
+export const SUPPORT_CATEGORIES = ["gameplay", "account", "purchase", "privacy", "report"] as const;
+export type SupportCategory = (typeof SUPPORT_CATEGORIES)[number];
+
+export const SupportTicketInput = z
+  .object({
+    requestId: z.string().uuid(),
+    category: z.enum(SUPPORT_CATEGORIES),
+    subject: z
+      .string()
+      .transform(normalizePublicText)
+      .pipe(z.string().min(5).max(120))
+      .refine(hasVisibleText),
+    message: z
+      .string()
+      .transform(normalizePublicText)
+      .pipe(z.string().min(20).max(4000))
+      .refine(hasVisibleText),
+  })
+  .strict();
+
+export type SupportTicketRequest = z.infer<typeof SupportTicketInput>;
+export type SubmitSupportTicketResult =
+  | { ok: true; ticketId: string; status: "queued" | "delivered" | "delivery_failed" }
+  | { ok: false; reason: "unavailable" | "rate_limited" | "verification_required" | "error" };
+
+NEW FILE: src/lib/support.functions.ts
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { SupportTicketInput, type SubmitSupportTicketResult } from "./support-input";
+
+export type { SubmitSupportTicketResult } from "./support-input";
+
+/** Identity and the reply address come only from the revalidated account. */
+export const submitSupportTicket = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => SupportTicketInput.parse(input))
+  .handler(async ({ data, context }): Promise<SubmitSupportTicketResult> => {
+    const { supportWebhookConfig, enqueueSupportTicket } = await import("./support.server");
+    const config = supportWebhookConfig(process.env);
+    if (!config) return { ok: false, reason: "unavailable" };
+    const { verifiedAccount } = await import("./verified-identity.server");
+    const account = await verifiedAccount(context.supabase, context.userId);
+    if (!account?.email) return { ok: false, reason: "verification_required" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return enqueueSupportTicket(supabaseAdmin, context.userId, account.email, data, config);
+  });
+
+NEW FILE: src/lib/support.server.ts
+import { createHmac } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/database";
+import type { SupportTicketRequest, SubmitSupportTicketResult } from "./support-input";
+
+type SupportDatabase = Pick<SupabaseClient<Database>, "rpc">;
+type SupportEnvironment = Record<string, string | undefined>;
+export interface SupportWebhookConfig {
+  url: string;
+  secret: string;
+}
+export interface SupportDispatchResult {
+  claimed: number;
+  delivered: number;
+  retryQueued: number;
+  failed: number;
+  acknowledgementFailed: number;
+}
+
+/** The endpoint is server-configured, never accepted from a ticket or request. */
+export function supportWebhookConfig(env: SupportEnvironment): SupportWebhookConfig | null {
+  const raw = env["SUPPORT_WEBHOOK_URL"];
+  const secret = env["SUPPORT_WEBHOOK_SECRET"];
+  if (
+    !raw ||
+    raw.length > 2048 ||
+    /[\r\n\0]/.test(raw) ||
+    !secret ||
+    secret.length < 32 ||
+    secret.length > 1024 ||
+    /[\r\n\0]/.test(secret)
+  )
+    return null;
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.toLowerCase();
+    // Permit public DNS names only; direct IPv4/IPv6, local suffixes and
+    // credentials are not valid destinations for the support queue.
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.hash ||
+      (url.port && url.port !== "443") ||
+      !/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(host) ||
+      /(?:^|\.)(?:localhost|local|internal|invalid|test|example)$/.test(host)
+    )
+      return null;
+    return { url: url.href, secret };
+  } catch {
+    return null;
+  }
+}
+
+export function signSupportPayload(body: string, timestamp: string, secret: string): string {
+  return `sha256=${createHmac("sha256", secret).update(`${timestamp}.${body}`, "utf8").digest("hex")}`;
+}
+
+/** A lease is acknowledged only after a 2xx; the body is never logged or read. */
+export async function dispatchSupportOutbox(
+  db: SupportDatabase,
+  config: SupportWebhookConfig,
+  options: { maxJobs?: number; ticketId?: string; fetch?: typeof fetch; now?: () => number } = {},
+): Promise<SupportDispatchResult> {
+  const limit = Math.max(1, Math.min(3, Math.floor(options.maxJobs ?? 3)));
+  const { data: jobs, error } = await db.rpc("claim_support_deliveries", {
+    p_limit: limit,
+    p_ticket_id: options.ticketId ?? null,
+  });
+  if (error) throw new Error("Support delivery claim failed");
+  const result: SupportDispatchResult = {
+    claimed: jobs?.length ?? 0,
+    delivered: 0,
+    retryQueued: 0,
+    failed: 0,
+    acknowledgementFailed: 0,
+  };
+  for (const job of jobs ?? []) {
+    const body = JSON.stringify({
+      version: 1,
+      event: "support.ticket.created",
+      ticket: {
+        id: job.ticket_id,
+        category: job.category,
+        subject: job.subject,
+        message: job.message,
+        createdAt: job.created_at,
+        replyTo: job.email,
+        userId: job.user_id,
+      },
+    });
+    const timestamp = String(Math.floor((options.now?.() ?? Date.now()) / 1000));
+    let delivered = false;
+    let retryable = true;
+    let errorCode = "network_or_timeout";
+    try {
+      const response = await (options.fetch ?? fetch)(config.url, {
+        method: "POST",
+        redirect: "error",
+        signal: AbortSignal.timeout(5_000),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": `support-${job.ticket_id}`,
+          "X-Support-Timestamp": timestamp,
+          "X-Support-Signature": signSupportPayload(body, timestamp, config.secret),
+        },
+        body,
+      });
+      delivered = response.ok;
+      errorCode = delivered ? "" : `http_${response.status}`;
+      retryable = [408, 425, 429].includes(response.status) || response.status >= 500;
+      await response.body?.cancel().catch(() => undefined);
+    } catch {
+      /* The durable lease and stable idempotency key cover ambiguous delivery. */
+    }
+    const acknowledged = await db.rpc("complete_support_delivery", {
+      p_ticket_id: job.ticket_id,
+      p_lease_token: job.lease_token,
+      p_delivered: delivered,
+      p_error_code: errorCode,
+      p_retryable: retryable,
+    });
+    if (acknowledged.error || acknowledged.data !== true) result.acknowledgementFailed += 1;
+    else if (delivered) result.delivered += 1;
+    else if (retryable && job.attempts < 5) result.retryQueued += 1;
+    else result.failed += 1;
+  }
+  return result;
+}
+
+export async function enqueueSupportTicket(
+  db: SupportDatabase,
+  userId: string,
+  email: string,
+  input: SupportTicketRequest,
+  config: SupportWebhookConfig,
+): Promise<SubmitSupportTicketResult> {
+  try {
+    const { data, error } = await db.rpc("create_support_ticket", {
+      p_user_id: userId,
+      p_email: email,
+      p_request_id: input.requestId,
+      p_category: input.category,
+      p_subject: input.subject,
+      p_message: input.message,
+    });
+    if (error)
+      return {
+        ok: false,
+        reason: error.message.includes("support_rate_limited") ? "rate_limited" : "error",
+      };
+    const ticket = data?.[0];
+    if (!ticket) return { ok: false, reason: "error" };
+    if (ticket.status === "delivered")
+      return { ok: true, ticketId: ticket.ticket_id, status: "delivered" };
+    if (ticket.status === "delivery_failed")
+      return { ok: true, ticketId: ticket.ticket_id, status: "delivery_failed" };
+    try {
+      const dispatch = await dispatchSupportOutbox(db, config, {
+        maxJobs: 1,
+        ticketId: ticket.ticket_id,
+      });
+      if (dispatch.delivered === 1)
+        return { ok: true, ticketId: ticket.ticket_id, status: "delivered" };
+      if (dispatch.failed === 1)
+        return { ok: true, ticketId: ticket.ticket_id, status: "delivery_failed" };
+    } catch {
+      /* A stored ticket survives a provider outage and is retried by cron. */
+    }
+    return { ok: true, ticketId: ticket.ticket_id, status: "queued" };
+  } catch {
+    return { ok: false, reason: "error" };
+  }
+}
+
+NEW FILE: src/routes/api/internal/support-dispatch.ts
+import { createFileRoute } from "@tanstack/react-router";
+import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
+
+export const Route = createFileRoute("/api/internal/support-dispatch")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const rejected = await authenticateCronRequest(request);
+        if (rejected) return rejected;
+        const headers = { "cache-control": "no-store", "x-content-type-options": "nosniff" };
+        const { supportWebhookConfig, dispatchSupportOutbox } =
+          await import("@/lib/support.server");
+        const config = supportWebhookConfig(process.env);
+        if (!config)
+          return Response.json({ ok: false, reason: "unavailable" }, { status: 503, headers });
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const result = await dispatchSupportOutbox(supabaseAdmin, config);
+          return Response.json({ ok: true, ...result }, { headers });
+        } catch {
+          return Response.json({ ok: false, reason: "unavailable" }, { status: 503, headers });
+        }
+      },
+    },
+  },
+});
+
+NEW FILE: drizzle/migrations/0063_repair_career_and_push_access.sql
+-- Forward repair for installations that advanced to 0062 while 0061 was
+-- absent from the Drizzle journal. Backfilling its older journal entry alone
+-- does not execute it on those databases. The original statements are
+-- idempotent; replay them here before restricting application-owned push rows.
+
+-- Career deletion is a durable tombstone, never a physical row delete.
+-- The service-role-only invoker RPCs serialize delete and explicit recreation.
+ALTER TABLE public.careers
+  ADD COLUMN IF NOT EXISTS generation bigint NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+ALTER TABLE public.careers
+  DROP CONSTRAINT IF EXISTS careers_generation_positive;
+ALTER TABLE public.careers
+  ADD CONSTRAINT careers_generation_positive CHECK (generation > 0);
+
+-- The browser can read an owner's head but all career mutations remain server-only.
+REVOKE INSERT, UPDATE, DELETE ON public.careers FROM PUBLIC, anon, authenticated;
+REVOKE SELECT ON public.careers FROM PUBLIC, anon;
+GRANT SELECT ON public.careers TO authenticated;
+GRANT ALL ON public.careers TO service_role;
+
+-- SECURITY INVOKER is intentional: this function is executable only by the
+-- trusted server role, so it does not bypass RLS for a client role.
+CREATE OR REPLACE FUNCTION public.create_manager_career(
+  p_user_id uuid,
+  p_state jsonb,
+  p_expected_generation bigint DEFAULT NULL,
+  p_verified_progress boolean DEFAULT false
+)
+RETURNS TABLE(status text, generation bigint, deleted_at timestamptz)
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_generation bigint;
+  v_deleted_at timestamptz;
+BEGIN
+  IF current_user <> 'service_role' THEN
+    RAISE EXCEPTION 'career mutation requires service role' USING ERRCODE = '28000';
+  END IF;
+  IF p_user_id IS NULL
+     OR p_state IS NULL
+     OR pg_catalog.jsonb_typeof(p_state) <> 'object'
+     OR pg_catalog.octet_length(p_state::text) > 400000
+     OR p_expected_generation IS NOT NULL AND p_expected_generation < 1
+  THEN
+    RAISE EXCEPTION 'invalid career creation';
+  END IF;
+
+  -- Lock an existing head. If the row is absent, only an initial create with
+  -- no expected generation may insert; recreation must name the tombstone head.
+  SELECT c.generation, c.deleted_at
+    INTO v_generation, v_deleted_at
+    FROM public.careers AS c
+   WHERE c.user_id = p_user_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    IF p_expected_generation IS NOT NULL THEN
+      RETURN QUERY SELECT 'conflict_active'::text, p_expected_generation, NULL::timestamptz;
+      RETURN;
+    END IF;
+    INSERT INTO public.careers (user_id, state, verified_progress, generation, deleted_at)
+    VALUES (p_user_id, p_state, p_verified_progress, 1, NULL)
+    ON CONFLICT (user_id) DO NOTHING
+    RETURNING careers.generation, careers.deleted_at
+      INTO v_generation, v_deleted_at;
+    IF FOUND THEN
+      RETURN QUERY SELECT 'applied'::text, v_generation, v_deleted_at;
+      RETURN;
+    END IF;
+
+    SELECT c.generation, c.deleted_at
+      INTO v_generation, v_deleted_at
+      FROM public.careers AS c
+     WHERE c.user_id = p_user_id
+     FOR UPDATE;
+  END IF;
+
+  IF v_deleted_at IS NULL THEN
+    RETURN QUERY SELECT 'conflict_active'::text, v_generation, v_deleted_at;
+    RETURN;
+  END IF;
+  IF p_expected_generation IS NULL OR p_expected_generation <> v_generation THEN
+    RETURN QUERY SELECT 'conflict_deleted'::text, v_generation, v_deleted_at;
+    RETURN;
+  END IF;
+
+  UPDATE public.careers AS c
+     SET state = p_state,
+         verified_progress = p_verified_progress,
+         generation = c.generation + 1,
+         deleted_at = NULL
+   WHERE c.user_id = p_user_id
+     AND c.generation = p_expected_generation
+     AND c.deleted_at IS NOT NULL
+  RETURNING c.generation, c.deleted_at INTO v_generation, v_deleted_at;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT 'conflict_deleted'::text, v_generation, v_deleted_at;
+    RETURN;
+  END IF;
+  RETURN QUERY SELECT 'applied'::text, v_generation, v_deleted_at;
+END;
+$$;
+
+-- A repeated delete returns the same generation and timestamp. It is safe to
+-- retry after an HTTP timeout and always leaves a row that blocks stale INSERTs.
+CREATE OR REPLACE FUNCTION public.delete_manager_career(p_user_id uuid)
+RETURNS TABLE(status text, generation bigint, deleted_at timestamptz)
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_generation bigint;
+  v_deleted_at timestamptz;
+BEGIN
+  IF current_user <> 'service_role' THEN
+    RAISE EXCEPTION 'career mutation requires service role' USING ERRCODE = '28000';
+  END IF;
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'invalid career owner';
+  END IF;
+
+  SELECT c.generation, c.deleted_at
+    INTO v_generation, v_deleted_at
+    FROM public.careers AS c
+   WHERE c.user_id = p_user_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN
+    INSERT INTO public.careers (user_id, state, verified_progress, generation, deleted_at)
+    VALUES (p_user_id, '{}'::jsonb, false, 1, pg_catalog.clock_timestamp())
+    ON CONFLICT (user_id) DO NOTHING
+    RETURNING careers.generation, careers.deleted_at
+      INTO v_generation, v_deleted_at;
+    IF FOUND THEN
+      RETURN QUERY SELECT 'applied'::text, v_generation, v_deleted_at;
+      RETURN;
+    END IF;
+    SELECT c.generation, c.deleted_at
+      INTO v_generation, v_deleted_at
+      FROM public.careers AS c
+     WHERE c.user_id = p_user_id
+     FOR UPDATE;
+  END IF;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'career head could not be locked';
+  END IF;
+
+  IF v_deleted_at IS NOT NULL THEN
+    RETURN QUERY SELECT 'already_deleted'::text, v_generation, v_deleted_at;
+    RETURN;
+  END IF;
+
+  UPDATE public.careers AS c
+     SET generation = c.generation + 1,
+         deleted_at = pg_catalog.clock_timestamp(),
+         verified_progress = false
+   WHERE c.user_id = p_user_id
+  RETURNING c.generation, c.deleted_at INTO v_generation, v_deleted_at;
+  RETURN QUERY SELECT 'applied'::text, v_generation, v_deleted_at;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_manager_career(uuid, jsonb, bigint, boolean)
+  FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.delete_manager_career(uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_manager_career(uuid, jsonb, bigint, boolean)
+  TO service_role;
+GRANT EXECUTE ON FUNCTION public.delete_manager_career(uuid)
+  TO service_role;
+
+COMMENT ON FUNCTION public.create_manager_career(uuid, jsonb, bigint, boolean)
+  IS 'Atomic explicit career creation/recreation. A tombstone requires its current generation.';
+COMMENT ON FUNCTION public.delete_manager_career(uuid)
+  IS 'Idempotent server-only logical delete. The careers row remains as a stale-save barrier.';
+
+-- Keep application table grants in the Drizzle migration path. The historical
+-- Supabase grant migration is retained unchanged for existing deployments.
+REVOKE ALL ON public.push_subscriptions FROM PUBLIC, anon, authenticated;
+GRANT ALL ON public.push_subscriptions TO service_role;
+NOTIFY pgrst, 'reload schema';
+
+NEW FILE: drizzle/migrations/0064_support_ticket_outbox.sql
+-- Personal support data is accessible only to authenticated application servers.
+-- Browsers never receive a grant to tickets, delivery leases or reply addresses.
+CREATE TABLE public.support_tickets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  request_id uuid NOT NULL,
+  email text NOT NULL CHECK (length(email) BETWEEN 3 AND 320),
+  category text NOT NULL CHECK (category IN ('gameplay', 'account', 'purchase', 'privacy', 'report')),
+  subject text NOT NULL CHECK (length(btrim(subject)) BETWEEN 5 AND 120),
+  message text NOT NULL CHECK (length(btrim(message)) BETWEEN 20 AND 4000),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  delivered_at timestamptz,
+  UNIQUE (user_id, request_id)
+);
+CREATE INDEX support_tickets_user_created_idx ON public.support_tickets(user_id, created_at DESC);
+
+CREATE TABLE public.support_delivery_outbox (
+  ticket_id uuid PRIMARY KEY REFERENCES public.support_tickets(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'delivered', 'failed')),
+  attempts integer NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5),
+  next_attempt_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  lease_token uuid,
+  lease_expires_at timestamptz,
+  last_error_code text CHECK (length(last_error_code) <= 80),
+  updated_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+CREATE INDEX support_outbox_due_idx ON public.support_delivery_outbox(next_attempt_at)
+  WHERE status IN ('pending', 'processing') AND attempts < 5;
+
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.support_delivery_outbox ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.support_tickets, public.support_delivery_outbox FROM PUBLIC, anon, authenticated;
+GRANT ALL ON public.support_tickets, public.support_delivery_outbox TO service_role;
+
+CREATE OR REPLACE FUNCTION public.create_support_ticket(
+  p_user_id uuid, p_email text, p_request_id uuid,
+  p_category text, p_subject text, p_message text
+)
+RETURNS TABLE(ticket_id uuid, status text)
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE
+  v_ticket public.support_tickets%ROWTYPE;
+BEGIN
+  IF current_user <> 'service_role' THEN
+    RAISE EXCEPTION 'support requires service role' USING ERRCODE = '28000';
+  END IF;
+  IF p_user_id IS NULL OR p_request_id IS NULL OR p_email IS NULL
+     OR length(p_email) NOT BETWEEN 3 AND 320 OR p_email !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+     OR p_category IS NULL OR p_category NOT IN ('gameplay', 'account', 'purchase', 'privacy', 'report')
+     OR p_subject IS NULL OR length(btrim(p_subject)) NOT BETWEEN 5 AND 120
+     OR p_message IS NULL OR length(btrim(p_message)) NOT BETWEEN 20 AND 4000 THEN
+    RAISE EXCEPTION 'invalid support request' USING ERRCODE = '23514';
+  END IF;
+  -- Serialize this account across servers before the idempotency and quota checks.
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('support:' || p_user_id::text, 0));
+  SELECT * INTO v_ticket FROM public.support_tickets AS t
+    WHERE t.user_id = p_user_id AND t.request_id = p_request_id;
+  IF FOUND THEN
+    IF v_ticket.email IS DISTINCT FROM lower(p_email) OR v_ticket.category IS DISTINCT FROM p_category
+       OR v_ticket.subject IS DISTINCT FROM btrim(p_subject) OR v_ticket.message IS DISTINCT FROM btrim(p_message) THEN
+      RAISE EXCEPTION 'support_request_mismatch' USING ERRCODE = '23514';
+    END IF;
+    RETURN QUERY SELECT v_ticket.id, CASE
+      WHEN v_ticket.delivered_at IS NOT NULL THEN 'delivered'
+      WHEN EXISTS (SELECT 1 FROM public.support_delivery_outbox AS o WHERE o.ticket_id = v_ticket.id
+        AND (o.status = 'failed' OR (o.status = 'processing' AND o.attempts >= 5
+          AND o.lease_expires_at <= pg_catalog.clock_timestamp()))) THEN 'delivery_failed'
+      ELSE 'queued' END::text;
+    RETURN;
+  END IF;
+  IF (SELECT count(*) FROM (SELECT 1 FROM public.support_tickets AS t WHERE t.user_id = p_user_id
+      AND t.created_at >= pg_catalog.clock_timestamp() - interval '1 hour' LIMIT 3) AS recent) >= 3 THEN
+    RAISE EXCEPTION 'support_rate_limited' USING ERRCODE = '23514';
+  END IF;
+  INSERT INTO public.support_tickets(user_id, request_id, email, category, subject, message)
+    VALUES (p_user_id, p_request_id, lower(p_email), p_category, btrim(p_subject), btrim(p_message))
+    RETURNING * INTO v_ticket;
+  INSERT INTO public.support_delivery_outbox(ticket_id) VALUES(v_ticket.id);
+  RETURN QUERY SELECT v_ticket.id, 'queued'::text;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.claim_support_deliveries(p_limit integer DEFAULT 3, p_ticket_id uuid DEFAULT NULL)
+RETURNS TABLE(ticket_id uuid, user_id uuid, email text, category text, subject text, message text,
+  created_at timestamptz, lease_token uuid, attempts integer)
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+BEGIN
+  IF current_user <> 'service_role' THEN
+    RAISE EXCEPTION 'support requires service role' USING ERRCODE = '28000';
+  END IF;
+  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 3 THEN
+    RAISE EXCEPTION 'invalid support dispatch limit' USING ERRCODE = '23514';
+  END IF;
+  WITH exhausted AS (
+    SELECT o.ticket_id FROM public.support_delivery_outbox AS o
+    WHERE o.status = 'processing' AND o.attempts >= 5 AND o.lease_expires_at <= pg_catalog.clock_timestamp()
+      AND (p_ticket_id IS NULL OR o.ticket_id = p_ticket_id)
+    ORDER BY o.lease_expires_at LIMIT p_limit FOR UPDATE SKIP LOCKED
+  )
+  UPDATE public.support_delivery_outbox AS o SET status = 'failed', lease_token = NULL,
+    lease_expires_at = NULL, last_error_code = 'lease_expired_after_max_attempts', updated_at = pg_catalog.clock_timestamp()
+    FROM exhausted WHERE o.ticket_id = exhausted.ticket_id;
+  RETURN QUERY
+    WITH due AS (
+      SELECT o.ticket_id FROM public.support_delivery_outbox AS o
+      WHERE o.attempts < 5 AND (p_ticket_id IS NULL OR o.ticket_id = p_ticket_id)
+        AND ((o.status = 'pending' AND o.next_attempt_at <= pg_catalog.clock_timestamp())
+          OR (o.status = 'processing' AND o.lease_expires_at <= pg_catalog.clock_timestamp()))
+      ORDER BY o.next_attempt_at, o.ticket_id
+      LIMIT p_limit FOR UPDATE SKIP LOCKED
+    ), claimed AS (
+      UPDATE public.support_delivery_outbox AS o SET status = 'processing', attempts = o.attempts + 1,
+        lease_token = pg_catalog.gen_random_uuid(), lease_expires_at = pg_catalog.clock_timestamp() + interval '30 seconds',
+        updated_at = pg_catalog.clock_timestamp()
+      FROM due WHERE o.ticket_id = due.ticket_id
+      RETURNING o.ticket_id, o.lease_token, o.attempts
+    )
+    SELECT t.id, t.user_id, t.email, t.category, t.subject, t.message, t.created_at, c.lease_token, c.attempts
+    FROM claimed AS c JOIN public.support_tickets AS t ON t.id = c.ticket_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.complete_support_delivery(
+  p_ticket_id uuid, p_lease_token uuid, p_delivered boolean,
+  p_error_code text DEFAULT '', p_retryable boolean DEFAULT true
+)
+RETURNS boolean LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE v_updated uuid;
+BEGIN
+  IF current_user <> 'service_role' THEN
+    RAISE EXCEPTION 'support requires service role' USING ERRCODE = '28000';
+  END IF;
+  IF p_delivered IS NULL OR p_retryable IS NULL OR p_error_code IS NULL
+    OR length(p_error_code) > 80 OR p_error_code !~ '^[a-z0-9_]*$' THEN
+    RAISE EXCEPTION 'invalid support acknowledgement' USING ERRCODE = '23514';
+  END IF;
+  UPDATE public.support_delivery_outbox AS o SET
+    status = CASE WHEN p_delivered THEN 'delivered' WHEN p_retryable AND o.attempts < 5 THEN 'pending' ELSE 'failed' END,
+    next_attempt_at = pg_catalog.clock_timestamp() + pg_catalog.make_interval(secs => least(3600, 30 * power(2, o.attempts - 1))::double precision),
+    lease_token = NULL, lease_expires_at = NULL,
+    last_error_code = CASE WHEN p_delivered THEN NULL ELSE p_error_code END,
+    updated_at = pg_catalog.clock_timestamp()
+    WHERE o.ticket_id = p_ticket_id AND o.lease_token = p_lease_token AND o.status = 'processing'
+      AND o.lease_expires_at > pg_catalog.clock_timestamp()
+    RETURNING o.ticket_id INTO v_updated;
+  IF v_updated IS NULL THEN RETURN false; END IF;
+  IF p_delivered THEN
+    UPDATE public.support_tickets AS t SET delivered_at = pg_catalog.clock_timestamp() WHERE t.id = v_updated;
+  END IF;
+  RETURN true;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_support_ticket(uuid, text, uuid, text, text, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.claim_support_deliveries(integer, uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.complete_support_delivery(uuid, uuid, boolean, text, boolean) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_support_ticket(uuid, text, uuid, text, text, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_support_deliveries(integer, uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.complete_support_delivery(uuid, uuid, boolean, text, boolean) TO service_role;
+
+COMMENT ON TABLE public.support_tickets IS 'Private verified-account support requests. Idempotent per account/request; at most three new requests per hour.';
+COMMENT ON TABLE public.support_delivery_outbox IS 'Server-only leased delivery with five attempts. Receivers deduplicate the stable ticket ID before side effects.';
+NOTIFY pgrst, 'reload schema';
+
+NEW FILE: drizzle/migrations/0065_atomic_match_room_creation.sql
+-- The host quota, public room and private seed commit atomically.
+CREATE INDEX IF NOT EXISTS match_rooms_host_created_idx ON public.match_rooms(host_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS match_rooms_host_active_idx ON public.match_rooms(host_id)
+  WHERE status IN ('open', 'ready', 'live', 'settling');
+
+CREATE OR REPLACE FUNCTION public.create_match_room_for(
+  p_host_id uuid, p_host_club text, p_code text, p_seed text
+)
+RETURNS TABLE(result text, room jsonb)
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE v_room public.match_rooms%ROWTYPE;
+BEGIN
+  IF current_user <> 'service_role' THEN
+    RAISE EXCEPTION 'room creation requires service role' USING ERRCODE = '28000';
+  END IF;
+  IF p_host_id IS NULL OR p_host_club IS NULL OR p_host_club !~ '^[A-Za-z0-9_:-]{1,80}$'
+    OR p_code IS NULL OR p_code !~ '^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$'
+    OR p_seed IS NULL OR p_seed !~ '^[A-Za-z0-9_-]{16,128}$' THEN
+    RAISE EXCEPTION 'invalid room creation request' USING ERRCODE = '23514';
+  END IF;
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('match-room:' || p_host_id::text, 0));
+  -- Only abandoned empty lobbies owned by this host expire here. Lock at most
+  -- twenty rows; joined, ready, live and settling matches are never expired.
+  WITH expired AS (
+    SELECT r.id FROM public.match_rooms AS r WHERE r.host_id = p_host_id
+      AND r.status = 'open' AND r.guest_id IS NULL
+      AND r.updated_at < pg_catalog.clock_timestamp() - interval '30 minutes'
+    ORDER BY r.updated_at, r.id LIMIT 20 FOR UPDATE SKIP LOCKED
+  ), closed AS (
+    UPDATE public.match_rooms AS r SET status = 'done', state = '{}'::jsonb, seed = '',
+      updated_at = pg_catalog.clock_timestamp()
+    FROM expired WHERE r.id = expired.id RETURNING r.id
+  )
+  DELETE FROM public.match_room_secrets AS secrets USING closed WHERE secrets.room_id = closed.id;
+  IF (SELECT count(*) FROM (SELECT 1 FROM public.match_rooms AS r WHERE r.host_id = p_host_id
+      AND r.created_at >= pg_catalog.clock_timestamp() - interval '1 hour' LIMIT 20) AS recent) >= 20 THEN
+    RETURN QUERY SELECT 'room_hourly_limit'::text, NULL::jsonb;
+    RETURN;
+  END IF;
+  IF (SELECT count(*) FROM (SELECT 1 FROM public.match_rooms AS r WHERE r.host_id = p_host_id
+      AND r.status IN ('open', 'ready', 'live', 'settling') LIMIT 3) AS active) >= 3 THEN
+    RETURN QUERY SELECT 'room_active_limit'::text, NULL::jsonb;
+    RETURN;
+  END IF;
+  INSERT INTO public.match_rooms(code, host_id, host_club, seed, server_seeded, status, minute, state)
+    VALUES(p_code, p_host_id, p_host_club, '', true, 'open', 0, '{}'::jsonb)
+    RETURNING * INTO v_room;
+  INSERT INTO public.match_room_secrets(room_id, seed) VALUES(v_room.id, p_seed);
+  RETURN QUERY SELECT 'created'::text, pg_catalog.to_jsonb(v_room);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.create_match_room_for(uuid, text, text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_match_room_for(uuid, text, text, text) TO service_role;
+COMMENT ON FUNCTION public.create_match_room_for(uuid, text, text, text)
+  IS 'Server-only atomic room and private seed creation; serialized host quotas: three active rooms and twenty new rooms per hour.';
+NOTIFY pgrst, 'reload schema';

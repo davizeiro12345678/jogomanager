@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { NewClubPage } from "@/pages/clube.novo";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/clube/novo")({
   ssr: false,
@@ -26,5 +24,8 @@ export const Route = createFileRoute("/clube/novo")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: NewClubPage,
+  // Browser-only page: keep its dependencies out of SSR Worker initialization.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/clube.novo"), "NewClubPage"),
 });

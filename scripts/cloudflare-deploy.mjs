@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { loadEnv } from "vite";
+import {
+  verifyBrowserSupabaseBundle,
+  verifyProductionSupabase,
+} from "./verify-production-supabase.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const configPath = path.join(root, ".cloudflare/production/server/wrangler.json");
@@ -83,7 +87,7 @@ async function prepare() {
   config.keep_vars = true;
   config.workers_dev = true;
   config.compatibility_date = "2026-10-02";
-  config.observability = { enabled: true };
+  config.observability = { ...config.observability, enabled: true, redact_query_string: true };
   const siteZone = settings["CLOUDFLARE_SITE_ZONE"];
   if (siteZone) {
     if (!/^[a-z0-9.-]+$/.test(siteZone) || siteZone.includes(".."))
@@ -106,7 +110,6 @@ try {
   await mkdir(path.join(root, ".wrangler/logs"), { recursive: true });
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
-      VITE_AUTH_MODE: settings["VITE_AUTH_MODE"] || "supabase",
       NITRO_PRESET: "cloudflare-module",
       PFM_CLOUDFLARE_BUILD: "1",
     });
@@ -114,6 +117,11 @@ try {
   await prepare();
   if (action === "check") await wrangler(["deploy", "--config", configPath, "--dry-run"]);
   else if (action === "deploy") {
+    const supabase = await verifyProductionSupabase(settings);
+    await verifyBrowserSupabaseBundle(
+      path.join(root, ".cloudflare/production/public/assets"),
+      supabase,
+    );
     await wrangler(["whoami"]);
     const raw = await wrangler(["secret", "list", "--config", configPath], true);
     const names = new Set(JSON.parse(raw).map((secret) => secret.name));

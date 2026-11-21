@@ -5,7 +5,7 @@ const content = readFileSync(
   new URL("../../public/.well-known/security.txt", import.meta.url),
   "utf8",
 );
-const lines = content.trim().split("\n");
+const lines = content.trim().split(/\r?\n/);
 
 describe("security.txt disclosure contact", () => {
   it("uses the existing project contact and canonical well-known HTTPS location", () => {

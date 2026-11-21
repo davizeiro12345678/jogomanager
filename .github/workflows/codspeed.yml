@@ -35,3 +35,41 @@ jobs:
         with:
           mode: simulation
           run: npm run bench
+
+  paired-walltime:
+    name: Compare all 16 benchmarks on one runner
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Prepare base with the same toolchain and dependencies
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/codspeed-base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/codspeed-base/node_modules"
+      - name: Measure base, candidate, candidate and base
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5
+        with:
+          mode: walltime
+          run: node --import tsx scripts/codspeed-paired-walltime.mjs "$RUNNER_TEMP/codspeed-base" "$GITHUB_WORKSPACE" "$RUNNER_TEMP/codspeed-paired.json"
+      - name: Reject same-runner regressions in all 16 benchmarks
+        run: |
+          node --test scripts/codspeed-paired-gate.test.mjs
+          node scripts/codspeed-paired-gate.mjs "$RUNNER_TEMP/codspeed-paired.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: codspeed-paired-walltime
+          path: ${{ runner.temp }}/codspeed-paired.json
+          if-no-files-found: error

@@ -1,12 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
-import { migrateCareer } from "@/game/career-migration";
 import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  retainCareerSave,
+  waitForCareerLocalWrites,
+  careerLocalWriteRevision,
+  careerLocalWriteSnapshot,
+  hasCareerLocalWrites,
+  subscribeCareerLocalWrites,
+  type RetainedCareerSave,
+} from "@/lib/career-save-lifecycle";
+import {
+  loadCareerMigration,
+  loadCareerRecovery,
+  loadCareerReset,
+} from "@/lib/career-maintenance-loader";
 import { createCareer, deleteCareer, loadCareer, saveCareer } from "@/lib/career.functions";
-import { resetCareerSafely, type CareerResetOutcome } from "@/lib/career-reset";
+import type { CareerResetOutcome } from "@/lib/career-reset";
 import {
   canMutateCareer,
   canResetCareer,
@@ -36,6 +50,7 @@ import {
   setLocalCareerGeneration,
   withCareerLock,
   type LocalOwnerId,
+  type OutboxEntry,
 } from "@/lib/offline/store";
 import type { CareerState } from "@/game/types";
 import type { CareerTombstone } from "@/lib/career-lifecycle.server";
@@ -54,6 +69,8 @@ type CareerQueryData = {
   generation: number | null;
   tombstone: CareerTombstone | null;
   epoch: number | null;
+  /** Missing on an old cached snapshot, whose initial revision is zero. */
+  localWriteRevision?: number;
 };
 
 export function captureCareerMutationEpoch(
@@ -149,6 +166,7 @@ type CareerMutationInput = {
   scope: string;
   identityGeneration: number;
   epoch: number | null;
+  retainedSave: RetainedCareerSave;
 };
 
 type CareerHydrationInput = {
@@ -268,7 +286,24 @@ export function useCareer() {
     };
   }, [identityTracker]);
 
-  const queryKey = careerQueryKey(scope, identityGeneration);
+  const queryKey = useMemo(
+    () => careerQueryKey(scope, identityGeneration),
+    [scope, identityGeneration],
+  );
+  const localWriteEpoch = readCareerEpoch(owner);
+  const subscribeLocalWrites = useCallback(
+    (onChange: () => void) => subscribeCareerLocalWrites(owner, localWriteEpoch, onChange),
+    [owner, localWriteEpoch],
+  );
+  const readLocalWriteSnapshot = useCallback(
+    () => careerLocalWriteSnapshot(owner, localWriteEpoch),
+    [owner, localWriteEpoch],
+  );
+  const localWriteSnapshot = useSyncExternalStore(
+    subscribeLocalWrites,
+    readLocalWriteSnapshot,
+    readLocalWriteSnapshot,
+  );
 
   const query = useQuery({
     queryKey,
@@ -276,10 +311,13 @@ export function useCareer() {
     queryFn: async ({ signal }): Promise<CareerQueryData> => {
       const queryGeneration = identityGeneration;
       const queryEpoch = readCareerEpoch(owner);
+      let queryWriteRevision = careerLocalWriteRevision(owner, queryEpoch);
       const isActive = () =>
         !signal.aborted &&
         queryEpoch !== null &&
         isCurrentOperation(owner, queryGeneration) &&
+        !hasCareerLocalWrites(owner, queryEpoch) &&
+        careerLocalWriteRevision(owner, queryEpoch) === queryWriteRevision &&
         readCareerEpoch(owner) === queryEpoch;
       const ensureActive = () => {
         if (!isActive()) throw new Error("stale career hydration operation");
@@ -293,37 +331,102 @@ export function useCareer() {
           generation?: number | null;
           tombstone?: CareerTombstone | null;
         } = {},
-      ): CareerQueryData => ({
-        career,
-        sync: nextSync,
-        generation: options.generation ?? null,
-        tombstone: options.tombstone ?? null,
-        epoch: queryEpoch,
-        status: resolveCareerHydrationStatus({
-          phase: "loaded",
-          hasCareer: career !== null,
-          signedIn: Boolean(userId),
-          online: options.online ?? isOnline(),
-          requestError: options.requestError ?? false,
-          tombstoned: !!options.tombstone,
-        }),
-      });
+      ): CareerQueryData => {
+        if (queryEpoch !== null) ensureActive();
+        return {
+          career,
+          sync: nextSync,
+          generation: options.generation ?? null,
+          tombstone: options.tombstone ?? null,
+          epoch: queryEpoch,
+          localWriteRevision: queryWriteRevision,
+          status: resolveCareerHydrationStatus({
+            phase: "loaded",
+            hasCareer: career !== null,
+            signedIn: Boolean(userId),
+            online: options.online ?? isOnline(),
+            requestError: options.requestError ?? false,
+            tombstoned: !!options.tombstone,
+          }),
+        };
+      };
       if (queryEpoch === null) return result(null, "pending", { requestError: true });
-      const local = await loadLocalCareer(owner);
+      await waitForCareerLocalWrites(owner, queryEpoch);
+      queryWriteRevision = careerLocalWriteRevision(owner, queryEpoch);
       ensureActive();
-      const localGeneration = await readLocalCareerGeneration(owner);
+      let local = await loadLocalCareer(owner);
+      ensureActive();
+      let localGeneration = await readLocalCareerGeneration(owner);
       ensureActive();
       const localTombstone = await readLocalCareerTombstone(owner);
       ensureActive();
-      const localBlock = await readLocalCareerSyncBlock(owner);
+      let localBlock = await readLocalCareerSyncBlock(owner);
       ensureActive();
+      if (userId && localBlock?.reason === "pending_save") {
+        let recovered = false;
+        try {
+          const { recoverPendingCareerWrite } = await loadCareerRecovery();
+          ensureActive();
+          recovered = await recoverPendingCareerWrite({
+            owner,
+            epoch: queryEpoch,
+            isCurrent: isActive,
+          });
+        } catch (error) {
+          if (!isActive()) throw error;
+          // A missing repair chunk is not evidence that the durable barrier
+          // can be cleared. Keep the snapshot blocked for an explicit retry.
+        }
+        if (recovered) {
+          ensureActive();
+          local = await loadLocalCareer(owner);
+          ensureActive();
+          localGeneration = await readLocalCareerGeneration(owner);
+          ensureActive();
+          localBlock = await readLocalCareerSyncBlock(owner);
+        }
+        ensureActive();
+      }
       // Migration is in memory only: rewriting the save here would bump its
       // timestamp and let a stale local copy beat newer cloud progress.
-      const repairLocal = (raw: CareerState) => migrateCareer(raw);
+      const repairLocal = async (raw: CareerState) => {
+        const { migrateCareer } = await loadCareerMigration();
+        ensureActive();
+        return migrateCareer(raw);
+      };
       if (!userId)
         return localTombstone
           ? result(null, "local", { tombstone: localTombstone })
-          : result(local ? repairLocal(local) : null, "local");
+          : result(local ? await repairLocal(local) : null, "local");
+      let pending: OutboxEntry | null = null;
+      try {
+        // A deletion barrier outranks an older queued write; do not replace
+        // that barrier with a generation-conflict marker from the old queue.
+        if (!localTombstone && localBlock?.reason !== "deleted") pending = await readOutbox(owner);
+      } catch {
+        ensureActive();
+        return result(local ? await repairLocal(local) : null, "pending", {
+          requestError: true,
+          generation: localGeneration,
+        });
+      }
+      ensureActive();
+      if (pending && (!isVersionedOutboxEntry(pending) || pending.generation !== localGeneration)) {
+        await markLocalCareerSyncBlock(
+          {
+            reason: isVersionedOutboxEntry(pending) ? "conflict" : "legacy_outbox",
+            generation: localGeneration,
+            blockedAt: new Date().toISOString(),
+          },
+          owner,
+          { expectedEpoch: queryEpoch },
+        );
+        ensureActive();
+        return result(local ? await repairLocal(local) : null, "pending", {
+          requestError: true,
+          generation: localGeneration,
+        });
+      }
       if (!isOnline()) {
         if (localTombstone) {
           ensureActive();
@@ -352,11 +455,15 @@ export function useCareer() {
             tombstone: blockedTombstone,
           });
         }
-        return result(local ? repairLocal(local) : null, "offline", {
-          online: false,
-          generation: localGeneration,
-          requestError: localBlock !== null,
-        });
+        return result(
+          pending ? await repairLocal(pending.state) : local ? await repairLocal(local) : null,
+          "offline",
+          {
+            online: false,
+            generation: localGeneration,
+            requestError: localBlock !== null,
+          },
+        );
       }
       ensureActive();
       const knownTombstone = localTombstone ?? tombstoneRef.current;
@@ -368,13 +475,14 @@ export function useCareer() {
       // merely because a remote career record exists.
       const hydrationBarrier = resolveCareerHydrationBarrier({
         localBlock,
-        localCareer: local ? repairLocal(local) : null,
+        localCareer: knownTombstone ? null : local ? await repairLocal(local) : null,
       });
       if (hydrationBarrier.blocked)
         return result(hydrationBarrier.career, hydrationBarrier.sync, {
           online: true,
           requestError: true,
           generation: localGeneration,
+          tombstone: knownTombstone,
         });
 
       let cloud: CareerState | null = null;
@@ -431,6 +539,22 @@ export function useCareer() {
               online: true,
               requestError: true,
             });
+          if (pending && raw.generation !== pending.generation) {
+            await markLocalCareerSyncBlock(
+              {
+                reason: "conflict",
+                generation: localGeneration,
+                blockedAt: new Date().toISOString(),
+              },
+              owner,
+              { expectedEpoch: queryEpoch },
+            );
+            ensureActive();
+            return result(local ? await repairLocal(local) : null, "pending", {
+              requestError: true,
+              generation: localGeneration,
+            });
+          }
           if (localTombstone) {
             ensureActive();
             if (
@@ -478,11 +602,15 @@ export function useCareer() {
             tombstone: knownTombstone,
           });
         }
-        return result(local ? repairLocal(local) : null, offline ? "offline" : "local", {
-          online: !offline,
-          requestError: !offline,
-          generation: localGeneration,
-        });
+        return result(
+          pending ? await repairLocal(pending.state) : local ? await repairLocal(local) : null,
+          offline ? "offline" : "local",
+          {
+            online: !offline,
+            requestError: !offline,
+            generation: localGeneration,
+          },
+        );
       }
 
       ensureActive();
@@ -496,11 +624,13 @@ export function useCareer() {
         });
       }
       if (cloud) {
-        const migrated = repairLocal(cloud);
+        // A queued same-generation save is the accepted local continuation,
+        // including same-round edits that a progress score cannot order.
+        const migrated = await repairLocal(pending?.state ?? cloud);
         if (isActive() && cloudGeneration !== null) {
           const locallySaved =
             queryEpoch !== null &&
-            (await saveLocalCareer(migrated, "nuvem", owner, {
+            (await saveLocalCareer(migrated, pending ? "recuperação" : "nuvem", owner, {
               generation: cloudGeneration,
               expectedEpoch: queryEpoch,
             }));
@@ -511,13 +641,17 @@ export function useCareer() {
             });
           ensureActive();
         }
-        return result(migrated, "synced", { generation: cloudGeneration });
+        return result(migrated, pending ? "pending" : "synced", { generation: cloudGeneration });
       }
-      if (localBlock || local)
-        return result(local ? repairLocal(local) : null, "local", {
-          requestError: Boolean(local),
-          generation: localGeneration,
-        });
+      if (localBlock || local || pending)
+        return result(
+          pending ? await repairLocal(pending.state) : local ? await repairLocal(local) : null,
+          "local",
+          {
+            requestError: Boolean(local || pending),
+            generation: localGeneration,
+          },
+        );
       return result(null, "local", { generation: localGeneration });
     },
     staleTime: 30_000,
@@ -545,14 +679,42 @@ export function useCareer() {
   }, [querySync, setSync]);
 
   const queryStatus = query.data?.status;
+  const pendingLocalWrite = hasCareerLocalWrites(owner, localWriteEpoch);
+  const cachedWriteRevision = query.data?.localWriteRevision ?? 0;
+  const localWriteRevision = careerLocalWriteRevision(owner, localWriteEpoch);
+  const awaitingLocalWrite = pendingLocalWrite || cachedWriteRevision !== localWriteRevision;
   const hasCareerSnapshot = query.data?.career !== null && query.data?.career !== undefined;
   const careerStatus: CareerHydrationStatus =
-    userId === undefined || query.isPending || (query.isFetching && queryStatus !== "ready")
+    userId === undefined ||
+    awaitingLocalWrite ||
+    query.isPending ||
+    (query.isFetching && queryStatus !== "ready")
       ? "loading"
       : query.isError
         ? "error"
         : (queryStatus ?? hydrationStatus);
   const refetch = query.refetch;
+  // A fresh React Query cache can skip queryFn on remount. Reconcile it when
+  // another instance completed a local write under a different identity key.
+  useEffect(() => {
+    if (
+      !pendingLocalWrite &&
+      cachedWriteRevision !== localWriteRevision &&
+      userId !== undefined &&
+      isCurrentOperation(owner, identityGeneration)
+    )
+      void refetch();
+  }, [
+    localWriteSnapshot,
+    pendingLocalWrite,
+    cachedWriteRevision,
+    localWriteRevision,
+    userId,
+    isCurrentOperation,
+    owner,
+    identityGeneration,
+    refetch,
+  ]);
   const retry = useCallback(() => {
     setSync("local");
     return refetch();
@@ -577,8 +739,11 @@ export function useCareer() {
       barrierGeneration: number,
       barrierEpoch?: number,
       lockHeld = false,
+      retainedIsCurrent?: () => boolean,
     ) => {
-      if (!isCurrentOperation(barrierOwner, barrierGeneration)) return;
+      const isActive =
+        retainedIsCurrent ?? (() => isCurrentOperation(barrierOwner, barrierGeneration));
+      if (!isActive()) return;
       if (!result || typeof result !== "object") return;
       const candidate = result as {
         deleted?: boolean;
@@ -596,7 +761,7 @@ export function useCareer() {
         generation > 0
       ) {
         const tombstone = { generation, deletedAt: candidate.deletedAt };
-        if (!isCurrentOperation(barrierOwner, barrierGeneration)) return;
+        if (!isActive()) return;
         tombstoneRef.current = tombstone;
         await markLocalCareerTombstone(tombstone, barrierOwner, {
           ...(lockHeld ? { lockHeld: true } : {}),
@@ -605,7 +770,7 @@ export function useCareer() {
         return;
       }
       if (candidate.conflict) {
-        if (!isCurrentOperation(barrierOwner, barrierGeneration)) return;
+        if (!isActive()) return;
         await markLocalCareerSyncBlock(
           {
             reason:
@@ -640,10 +805,11 @@ export function useCareer() {
       scope: mutationScope,
       identityGeneration: mutationGeneration,
       epoch: mutationEpoch,
+      retainedSave,
     }: CareerMutationInput) => {
       const mutationKey = careerQueryKey(mutationScope, mutationGeneration);
       const isActive = () =>
-        isCurrentOperation(mutationOwner, mutationGeneration) &&
+        retainedSave.isCurrent() &&
         mutationEpoch !== null &&
         readCareerEpoch(mutationOwner) === mutationEpoch;
       const ensureActive = () => {
@@ -672,6 +838,7 @@ export function useCareer() {
           generation: latest?.generation ?? observedGeneration,
           tombstone: null,
           epoch: mutationEpoch,
+          localWriteRevision: careerLocalWriteRevision(mutationOwner, mutationEpoch),
         }));
       };
       const setPending = () => setSyncForOwner(mutationOwner, "pending", mutationGeneration);
@@ -729,6 +896,10 @@ export function useCareer() {
         const locallySaved = await saveLocalCareer(state, "auto", mutationOwner, localOptions);
         if (!ensureActive()) return { ok: true, stale: true };
         if (!mutationUser) {
+          if (!locallySaved) {
+            setPending();
+            return { ok: false, blocked: true };
+          }
           setSyncForOwner(mutationOwner, "local", mutationGeneration);
           return { ok: true };
         }
@@ -801,7 +972,7 @@ export function useCareer() {
       };
 
       const upload = async (lockHeld: boolean) => {
-        const local = await persistLocally(lockHeld);
+        const local = await persistLocally(lockHeld).finally(retainedSave.localSettled);
         if (!ensureActive() || !local.ok || ("stale" in local && local.stale)) return local;
         if (!("pending" in local) || !local.pending) return { ok: false, blocked: true };
         const pending = local.pending;
@@ -822,6 +993,7 @@ export function useCareer() {
               mutationGeneration,
               mutationEpoch ?? undefined,
               lockHeld,
+              isActive,
             );
             if (!ensureActive()) return { ok: true, stale: true };
             setPending();
@@ -844,7 +1016,7 @@ export function useCareer() {
         return { ok: true };
       };
 
-      if (!mutationUser) return persistLocally();
+      if (!mutationUser) return persistLocally().finally(retainedSave.localSettled);
       const coordinated = await withCareerLock(
         mutationOwner,
         () => upload(true),
@@ -880,6 +1052,7 @@ export function useCareer() {
         flushOwner,
         async () => {
           if (!isActive()) return { kind: "stale" as const };
+          const flushWriteRevision = careerLocalWriteRevision(flushOwner, flushEpoch);
           const syncBlock = await readLocalCareerSyncBlock(flushOwner);
           if (!isActive()) return { kind: "stale" as const };
           if (syncBlock) {
@@ -929,6 +1102,15 @@ export function useCareer() {
           }
           setSyncForOwner(flushOwner, "syncing", flushGeneration);
           try {
+            const { migrateCareer } = await loadCareerMigration();
+            if (!isActive()) return { kind: "stale" as const };
+            if (
+              hasCareerLocalWrites(flushOwner, flushEpoch) ||
+              careerLocalWriteRevision(flushOwner, flushEpoch) !== flushWriteRevision
+            ) {
+              setSyncForOwner(flushOwner, "pending", flushGeneration);
+              return { kind: "blocked" as const };
+            }
             const res = await save({
               data: {
                 state: migrateCareer(entry.state),
@@ -1010,6 +1192,10 @@ export function useCareer() {
         resetting.current ||
         operationEpoch === null ||
         operationEpoch !== currentEpoch ||
+        hasCareerLocalWrites(operationOwner, operationEpoch) ||
+        (query.data?.localWriteRevision ?? 0) !==
+          careerLocalWriteRevision(operationOwner, operationEpoch) ||
+        old?.career !== query.data?.career ||
         !canMutateCareer(careerStatus) ||
         (careerStatus === "offline" && !hasCareerSnapshot) ||
         (userId !== null && (old?.generation === null || old?.generation === undefined)) ||
@@ -1018,6 +1204,23 @@ export function useCareer() {
       )
         return;
       if (!operationGate.tryAcquire(operationGeneration)) return;
+      let retainedSave: RetainedCareerSave;
+      try {
+        retainedSave = retainCareerSave({
+          owner: operationOwner,
+          epoch: operationEpoch,
+          readEpoch: () => readCareerEpoch(operationOwner),
+          observeOwner: (observe) => {
+            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+              observe(session?.user.id ?? null);
+            });
+            return () => data.subscription.unsubscribe();
+          },
+        });
+      } catch {
+        operationGate.release(operationGeneration);
+        return;
+      }
       // An older reconciliation must not replace this optimistic update or
       // enqueue its stale local snapshot after a slow cloud read finishes.
       void qc.cancelQueries({ queryKey, exact: true }, { revert: false });
@@ -1032,6 +1235,7 @@ export function useCareer() {
           generation: old?.generation ?? null,
           tombstone: null,
           epoch: operationEpoch,
+          localWriteRevision: careerLocalWriteRevision(operationOwner, operationEpoch),
         });
       else setSyncForOwner(operationOwner, "pending", operationGeneration);
       activeSaveCount.current += 1;
@@ -1051,6 +1255,7 @@ export function useCareer() {
           generation: input.previous?.generation ?? null,
           tombstone: input.previous?.tombstone ?? null,
           epoch: input.epoch,
+          localWriteRevision: careerLocalWriteRevision(input.owner, input.epoch),
         });
         setSyncForOwner(input.owner, "pending", input.identityGeneration);
       };
@@ -1062,6 +1267,7 @@ export function useCareer() {
         scope,
         identityGeneration: operationGeneration,
         epoch: operationEpoch,
+        retainedSave,
       };
       void mutateAsync(input)
         .then((outcome) => {
@@ -1077,6 +1283,7 @@ export function useCareer() {
           rollback(input);
         })
         .finally(() => {
+          retainedSave.release();
           operationGate.release(operationGeneration);
           if (isCurrentOperation(operationOwner, operationGeneration))
             activeSaveCount.current = Math.max(0, activeSaveCount.current - 1);
@@ -1092,6 +1299,7 @@ export function useCareer() {
       owner,
       qc,
       queryKey,
+      query.data,
       scope,
       setSyncForOwner,
       userId,
@@ -1107,7 +1315,14 @@ export function useCareer() {
       const createEpoch = readCareerEpoch(owner);
       const createGate = mutationGate.current;
       const isActive = () => isCurrentOperation(createOwner, createGeneration);
-      if (createUser === undefined || createEpoch === null || resetting.current || !isActive())
+      if (
+        createUser === undefined ||
+        createEpoch === null ||
+        resetting.current ||
+        !isActive() ||
+        hasCareerLocalWrites(createOwner, createEpoch) ||
+        awaitingLocalWrite
+      )
         return false;
       if (!createGate.tryAcquire(createGeneration)) return false;
       activeSaveCount.current += 1;
@@ -1125,6 +1340,7 @@ export function useCareer() {
             generation: null,
             tombstone: null,
             epoch: createEpoch,
+            localWriteRevision: careerLocalWriteRevision(createOwner, createEpoch),
           });
           setSyncForOwner(createOwner, "local", createGeneration);
           return true;
@@ -1231,6 +1447,7 @@ export function useCareer() {
               generation: result.generation,
               tombstone: null,
               epoch: createEpoch,
+              localWriteRevision: careerLocalWriteRevision(createOwner, createEpoch),
             });
             setSyncForOwner(createOwner, "synced", createGeneration);
             return true;
@@ -1246,6 +1463,7 @@ export function useCareer() {
     },
     [
       createRemote,
+      awaitingLocalWrite,
       handleSaveBarrier,
       identityGeneration,
       isCurrentOperation,
@@ -1258,28 +1476,54 @@ export function useCareer() {
   );
 
   const reset = useCallback(async (): Promise<CareerResetOutcome> => {
-    if (resetting.current || !canResetCareer(careerStatus) || userId === undefined)
+    if (
+      resetting.current ||
+      !canResetCareer(careerStatus) ||
+      userId === undefined ||
+      hasCareerLocalWrites(owner, readCareerEpoch(owner)) ||
+      (query.data?.localWriteRevision ?? 0) !==
+        careerLocalWriteRevision(owner, readCareerEpoch(owner))
+    )
       return { ok: false, reason: "preflight" };
     const resetOwner = owner;
     const resetUser = userId;
     const resetGeneration = identityGeneration;
     const resetKey = queryKey;
     const resetGate = mutationGate.current;
+    const initialResetEpoch = readCareerEpoch(resetOwner);
+    const initialResetRevision = careerLocalWriteRevision(resetOwner, initialResetEpoch);
     const isActive = () => isCurrentOperation(resetOwner, resetGeneration);
     let resetTombstone: CareerTombstone | null = null;
     if (!isActive()) return { ok: false, reason: "identity_changed" };
+    if (initialResetEpoch === null) return { ok: false, reason: "preflight" };
     if (!resetGate.tryAcquire(resetGeneration)) return { ok: false, reason: "preflight" };
     resetting.current = true;
     try {
+      let resetCareerSafely: (typeof import("@/lib/career-reset"))["resetCareerSafely"];
+      try {
+        ({ resetCareerSafely } = await loadCareerReset());
+      } catch {
+        return { ok: false, reason: "preflight" };
+      }
+      if (!isActive()) return { ok: false, reason: "identity_changed" };
+      const resetSnapshotIsCurrent = () =>
+        readCareerEpoch(resetOwner) === initialResetEpoch &&
+        !hasCareerLocalWrites(resetOwner, initialResetEpoch) &&
+        careerLocalWriteRevision(resetOwner, initialResetEpoch) === initialResetRevision;
+      if (!resetSnapshotIsCurrent()) return { ok: false, reason: "preflight" };
       await qc.cancelQueries({ queryKey: resetKey, exact: true }, { revert: false });
       if (!isActive()) return { ok: false, reason: "identity_changed" };
+      if (!resetSnapshotIsCurrent()) return { ok: false, reason: "preflight" };
       const outcome = await resetCareerSafely({
         status: careerStatus,
         owner: resetOwner,
         userId: resetUser,
         getSync: () => syncRef.current,
         isSaving: () =>
-          isActive() && (activeSaveCount.current > 0 || flushingScope.current?.scope === scope),
+          isActive() &&
+          (activeSaveCount.current > 0 ||
+            hasCareerLocalWrites(resetOwner, readCareerEpoch(resetOwner)) ||
+            flushingScope.current?.scope === scope),
         isOnline,
         isCurrentOwner: (candidate) => isActive() && isCurrentOwner(candidate, resetGeneration),
         readOutbox: async (candidate) => {
@@ -1355,6 +1599,7 @@ export function useCareer() {
     owner,
     qc,
     queryKey,
+    query.data,
     scope,
     setSyncForOwner,
     userId,
@@ -1362,7 +1607,7 @@ export function useCareer() {
   ]);
 
   return {
-    career: (query.data?.career ?? null) as CareerState | null,
+    career: (awaitingLocalWrite ? null : (query.data?.career ?? null)) as CareerState | null,
     isLoading: careerStatus === "loading",
     saving: mutation.isPending,
     signedIn,

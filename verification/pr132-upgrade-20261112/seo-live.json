@@ -1,0 +1,389 @@
+{
+  "observedAt": "2026-11-12T23:40:31.589Z",
+  "sourceHead": "b0ce05a3d3b0dc8bd673e1450fb73d789d4ab149",
+  "audit": {
+    "sitemapPages": 34,
+    "linkedPages": 13,
+    "skippedLinks": 3,
+    "records": [
+      {
+        "url": "https://jogomanager.com/",
+        "destination": "https://jogomanager.com/",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/analise-de-partida-de-futebol",
+        "destination": "https://jogomanager.com/analise-de-partida-de-futebol",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/carreiras",
+        "destination": "https://jogomanager.com/carreiras",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/chat",
+        "destination": "https://jogomanager.com/chat",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/clube/novo",
+        "destination": "https://jogomanager.com/clube/novo",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/comparativo-jogos-manager",
+        "destination": "https://jogomanager.com/comparativo-jogos-manager",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/compartilhar",
+        "destination": "https://jogomanager.com/compartilhar",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/compras",
+        "destination": "https://jogomanager.com/compras",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/contato",
+        "destination": "https://jogomanager.com/contato",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/criador",
+        "destination": "https://jogomanager.com/criador",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/dicas-de-gestao",
+        "destination": "https://jogomanager.com/dicas-de-gestao",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/editor",
+        "destination": "https://jogomanager.com/editor",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/glossario-do-futebol",
+        "destination": "https://jogomanager.com/glossario-do-futebol",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/guia-de-scouting",
+        "destination": "https://jogomanager.com/guia-de-scouting",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/guias",
+        "destination": "https://jogomanager.com/guias",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/jogador",
+        "destination": "https://jogomanager.com/jogador",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/jogar-offline",
+        "destination": "https://jogomanager.com/jogar-offline",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/jogo-de-manager-de-futebol",
+        "destination": "https://jogomanager.com/jogo-de-manager-de-futebol",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/loja",
+        "destination": "https://jogomanager.com/loja",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/melhores-formacoes",
+        "destination": "https://jogomanager.com/melhores-formacoes",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/mercado-de-transferencias",
+        "destination": "https://jogomanager.com/mercado-de-transferencias",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/modo-carreira-de-jogador",
+        "destination": "https://jogomanager.com/modo-carreira-de-jogador",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/multiplayer",
+        "destination": "https://jogomanager.com/multiplayer",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/new",
+        "destination": "https://jogomanager.com/new",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/partida-rapida",
+        "destination": "https://jogomanager.com/partida-rapida",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/perguntas-frequentes",
+        "destination": "https://jogomanager.com/perguntas-frequentes",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/planejamento-de-elenco",
+        "destination": "https://jogomanager.com/planejamento-de-elenco",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/privacidade",
+        "destination": "https://jogomanager.com/privacidade",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/produtos",
+        "destination": "https://jogomanager.com/produtos",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/regras",
+        "destination": "https://jogomanager.com/regras",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/sobre",
+        "destination": "https://jogomanager.com/sobre",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/tabelas",
+        "destination": "https://jogomanager.com/tabelas",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/brasileirao-serie-a",
+        "destination": "https://jogomanager.com/tabelas/brasileirao-serie-a",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/brasileirao-serie-b",
+        "destination": "https://jogomanager.com/tabelas/brasileirao-serie-b",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/bundesliga",
+        "destination": "https://jogomanager.com/tabelas/bundesliga",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/eredivisie",
+        "destination": "https://jogomanager.com/tabelas/eredivisie",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/la-liga",
+        "destination": "https://jogomanager.com/tabelas/la-liga",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/liga-argentina",
+        "destination": "https://jogomanager.com/tabelas/liga-argentina",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/liga-mx",
+        "destination": "https://jogomanager.com/tabelas/liga-mx",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/liga-portugal",
+        "destination": "https://jogomanager.com/tabelas/liga-portugal",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/ligue-1",
+        "destination": "https://jogomanager.com/tabelas/ligue-1",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/mls",
+        "destination": "https://jogomanager.com/tabelas/mls",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/premier-league",
+        "destination": "https://jogomanager.com/tabelas/premier-league",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/serie-a-italia",
+        "destination": "https://jogomanager.com/tabelas/serie-a-italia",
+        "status": 500,
+        "robots": "noindex, nofollow"
+      },
+      {
+        "url": "https://jogomanager.com/taticas-e-formacoes",
+        "destination": "https://jogomanager.com/melhores-formacoes",
+        "status": 200,
+        "robots": "noindex, follow"
+      },
+      {
+        "url": "https://jogomanager.com/termos",
+        "destination": "https://jogomanager.com/termos",
+        "status": 200,
+        "robots": null
+      },
+      {
+        "url": "https://jogomanager.com/visual",
+        "destination": "https://jogomanager.com/visual",
+        "status": 200,
+        "robots": "noindex, follow"
+      }
+    ],
+    "failures": [
+      {
+        "url": "https://jogomanager.com/dicas-de-gestao",
+        "message": "sitemap page is blocked by noindex"
+      },
+      {
+        "url": "https://jogomanager.com/guia-de-scouting",
+        "message": "sitemap page is blocked by noindex"
+      },
+      {
+        "url": "https://jogomanager.com/jogo-de-manager-de-futebol",
+        "message": "sitemap page is blocked by noindex"
+      },
+      {
+        "url": "https://jogomanager.com/melhores-formacoes",
+        "message": "sitemap page is blocked by noindex"
+      },
+      {
+        "url": "https://jogomanager.com/mercado-de-transferencias",
+        "message": "sitemap page is blocked by noindex"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas",
+        "message": "sitemap page is blocked by noindex"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/brasileirao-serie-a",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/brasileirao-serie-b",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/bundesliga",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/eredivisie",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/la-liga",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/liga-argentina",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/liga-mx",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/liga-portugal",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/ligue-1",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/mls",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/premier-league",
+        "message": "sitemap page returned HTTP 500"
+      },
+      {
+        "url": "https://jogomanager.com/tabelas/serie-a-italia",
+        "message": "sitemap page returned HTTP 500"
+      }
+    ]
+  },
+  "health": {
+    "httpStatus": 503,
+    "status": "degraded",
+    "release": {
+      "commit": null
+    },
+    "checks": {
+      "auth": false,
+      "serverCredentials": false,
+      "database": false
+    }
+  },
+  "robots": {
+    "status": 200,
+    "allowsAll": true,
+    "hasDisallow": false
+  },
+  "limitations": [
+    "Anonymous read-only requests from this host do not replace an authenticated Semrush recrawl.",
+    "Production changes were not performed. Missing server configuration is corroborated by degraded health; complete deployment identity is absent.",
+    "Only links discovered directly from sitemap pages are checked; private callbacks/API/checkout links and external destinations are not crawled."
+  ]
+}

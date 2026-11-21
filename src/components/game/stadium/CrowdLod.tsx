@@ -14,7 +14,7 @@ import {
 } from "@/game/wasm/crowd-visibility";
 import { CrowdWorkerClient } from "@/game/wasm/crowd-worker-client";
 import { presentationWorkerCount } from "@/game/device-workload";
-import { prepareSharedSeatBuffers } from "@/game/wasm/shared-seat-transforms";
+import { prepareCrowdSeatUpload } from "@/game/prepare-crowd-seat-upload";
 import { acquirePresentationLanes } from "@/game/presentation-lanes";
 
 type CrowdData = { positions: THREE.Vector3[]; colors: THREE.Color[]; skins: THREE.Color[] };
@@ -29,35 +29,6 @@ type CrowdSeatUpload = Readonly<{
 const TILE_SECTORS = 12;
 const TILE_RINGS = 3;
 const MAX_CROWD_INSTANCES = 5_120;
-
-function prepareSeatUpload(crowd: CrowdData): CrowdSeatUpload {
-  const matrices = new Float32Array(crowd.positions.length * 16);
-  const colors = new Float32Array(crowd.positions.length * 3);
-  const skins = new Float32Array(crowd.positions.length * 3);
-  const styles = new Float32Array(crowd.positions.length * 2);
-  const dummy = new THREE.Object3D();
-  for (let index = 0; index < crowd.positions.length; index += 1) {
-    const position = crowd.positions[index]!;
-    const height = 0.9 + (index % 7) * 0.025;
-    dummy.position.copy(position);
-    dummy.scale.set(height * (0.92 + (index % 3) * 0.06), height, height);
-    dummy.rotation.set(0, Math.atan2(-position.x, -position.z), 0);
-    dummy.updateMatrix();
-    matrices.set(dummy.matrix.elements, index * 16);
-    const color = crowd.colors[index]!;
-    const offset = index * 3;
-    colors[offset] = color.r;
-    colors[offset + 1] = color.g;
-    colors[offset + 2] = color.b;
-    const skin = crowd.skins[index]!;
-    skins[offset] = skin.r;
-    skins[offset + 1] = skin.g;
-    skins[offset + 2] = skin.b;
-    styles[index * 2] = (index % 13) / 12;
-    styles[index * 2 + 1] = (index % 11) / 10;
-  }
-  return { matrices, colors, skins, styles };
-}
 
 function copySeatAttribute(
   target: Float32Array,
@@ -220,9 +191,8 @@ export function CrowdLod({
   useEffect(() => {
     const controller = new AbortController();
     setSeatState(null);
-    void prepareSharedSeatBuffers(crowd, controller.signal).then((buffers) => {
-      if (!controller.signal.aborted)
-        setSeatState({ crowd, buffers: buffers ?? prepareSeatUpload(crowd) });
+    void prepareCrowdSeatUpload(crowd, controller.signal).then((buffers) => {
+      if (buffers && !controller.signal.aborted) setSeatState({ crowd, buffers });
     });
     return () => controller.abort();
   }, [crowd]);

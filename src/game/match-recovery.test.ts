@@ -58,6 +58,56 @@ describe("confirmed match recovery", () => {
         restored?.dispose();
       }
     });
+  it("replays contact-physics revision 2 with an unchanged continuation and RNG journal", async () => {
+    const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "contact-v2-recovery", {
+      rulesRevision: 2,
+      contactPhysicsRevision: 2,
+    });
+    let restored: MatchSim | undefined;
+    try {
+      for (let tick = 0; tick < 70; tick++) sim.step(1 / 30, 6);
+      const checkpoint = sim.checkpoint();
+      const ticks: Array<[number, number]> = [];
+      for (let tick = 0; tick < 45; tick++) {
+        ticks.push([1 / 30, 6]);
+        sim.step(1 / 30, 6);
+      }
+      const confirmed = { ...snapshotMatch(sim, 5), recovery: { checkpointSeq: 1, ticks } };
+      restored = await recoverMatch(checkpoint, confirmed, () => false);
+      expect(restored.contactPhysicsRevision).toBe(2);
+      expect(restored.executionContract()).toEqual(sim.executionContract());
+      expect(restored.checkpoint()).toEqual(sim.checkpoint());
+      for (let tick = 0; tick < 90; tick++) {
+        sim.step(1 / 30, 6);
+        restored.step(1 / 30, 6);
+      }
+      expect(restored.checkpoint()).toEqual(sim.checkpoint());
+    } finally {
+      sim.dispose();
+      restored?.dispose();
+    }
+  });
+
+  it("rejects a snapshot with unchanged positions but tampered velocity", async () => {
+    const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "recovery-velocity");
+    try {
+      for (let tick = 0; tick < 15; tick++) sim.step(1 / 30, 6);
+      const checkpoint = sim.checkpoint();
+      const snapshot = snapshotMatch(sim, 3);
+      snapshot.players[0]!.vx += 0.25;
+      await expect(
+        recoverMatch(
+          checkpoint,
+          { ...snapshot, recovery: { checkpointSeq: 1, ticks: [] } },
+          () => false,
+        ),
+      ).rejects.toThrow(/confirmed/);
+      expect(sim.checkpoint()).toEqual(checkpoint);
+    } finally {
+      sim.dispose();
+    }
+  });
+
   it("rejects divergence instead of restarting the score", async () => {
     const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "recovery-failure");
     try {

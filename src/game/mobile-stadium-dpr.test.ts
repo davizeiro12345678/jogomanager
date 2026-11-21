@@ -8,7 +8,10 @@ vi.mock("react", async (original) => {
     ...actual,
     useMemo: <T>(factory: () => T) => factory(),
     useRef: <T>(value: T) => ({ current: value }),
+    // The contract invokes the memo component directly rather than mounting
+    // React. Both effect variants must be inert in that isolated renderer.
     useEffect: () => undefined,
+    useLayoutEffect: () => undefined,
     useState: <T>(initial: T | (() => T)) => {
       const value = typeof initial === "function" ? (initial as () => T)() : initial;
       return [(value === null ? "webgl2" : value) as T, () => undefined];

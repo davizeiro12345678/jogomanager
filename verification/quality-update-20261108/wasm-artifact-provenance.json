@@ -1,0 +1,74 @@
+{
+  "capturedAt": "2026-11-09T00:53:20.325Z",
+  "artifacts": [
+    {
+      "root": "../quality-baseline-20261108",
+      "path": "../quality-baseline-20261108/src/game/wasm/pkg/crowd_visibility_wasm_bg.wasm",
+      "bytes": 90209,
+      "sha256": "9dbab27a1b0c1eec7ff82eba841314170b64ebe32ecdbede6b8afb1be7a1d77b",
+      "producers": [
+        {
+          "language": [
+            {
+              "name": "Rust",
+              "version": ""
+            }
+          ],
+          "processed-by": [
+            {
+              "name": "rustc",
+              "version": "1.99.0 (b940084d7 2026-09-28)"
+            },
+            {
+              "name": "walrus",
+              "version": "0.27.2"
+            },
+            {
+              "name": "wasm-bindgen",
+              "version": "0.2.129 (165586f85)"
+            }
+          ]
+        }
+      ],
+      "cargoLockSha256": "2f0fac427f4146220350447f06a2a5ecd31b827916e0a0ed1ce4a1c24a37fa36",
+      "cargoManifestSha256": "84a1c04a638d4309f091cefd4108179e27141444b89e26f05e5b0683c9ccadf8"
+    },
+    {
+      "root": ".",
+      "path": "./src/game/wasm/pkg/crowd_visibility_wasm_bg.wasm",
+      "bytes": 90412,
+      "sha256": "d4c500dee019c8bef8666c2560a0906ccba275f4019efaa70c1772182acc1cdf",
+      "producers": [
+        {
+          "language": [
+            {
+              "name": "Rust",
+              "version": ""
+            }
+          ],
+          "processed-by": [
+            {
+              "name": "rustc",
+              "version": "1.99.0 (b940084d7 2026-09-28)"
+            },
+            {
+              "name": "walrus",
+              "version": "0.27.2"
+            },
+            {
+              "name": "wasm-bindgen",
+              "version": "0.2.129 (165586f85)"
+            }
+          ]
+        }
+      ],
+      "cargoLockSha256": "2f0fac427f4146220350447f06a2a5ecd31b827916e0a0ed1ce4a1c24a37fa36",
+      "cargoManifestSha256": "84a1c04a638d4309f091cefd4108179e27141444b89e26f05e5b0683c9ccadf8"
+    }
+  ],
+  "producerVersionsEqual": true,
+  "cargoLockEqual": true,
+  "cargoManifestEqual": true,
+  "baselineRebuiltDuringThisCampaign": false,
+  "limitation": "Baseline was the committed binary, not rebuilt during this campaign. Embedded compiler and postprocessor versions plus checked-in Cargo lock/profile match, but historical build invocation/environment is not independently reconstructed."
+}

@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-11-09 02:02:14 UTC",
+  "head": "bc8982f32f53f5514cc8fdf6f3768df03729c2e0",
+  "base": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "runId": 42548308824,
+  "jobId": 128938027837,
+  "aggregation": "median; separate from CodSpeed simulation",
+  "identity": [
+    "  ref: bc8982f32f53f5514cc8fdf6f3768df03729c2e0",
+    "HEAD is now at bc8982f3 Add measured quality evidence and fix mobile career steps",
+    "HEAD is now at c20036f3 Merge pull request #125 from davizeiro12345678/codex/career-tutorial-css-20261107"
+  ],
+  "officialReport": {
+    "generatedAt": "2026-11-09T01:59:03.075Z",
+    "protocol": "same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass",
+    "baseline": "/home/runner/work/jogomanager/jogomanager/.benchmark-base",
+    "candidate": "/home/runner/work/jogomanager/jogomanager",
+    "environment": {
+      "node": "v24.22.0",
+      "platform": "linux",
+      "architecture": "x64",
+      "kernel": "7.0.0-1017-azure",
+      "cpu": "AMD EPYC 9V74 80-Core Processor"
+    },
+    "dependencyLockSha256": "d2e77ddc354ce3334ff169b37054744cbb0c5e42be294387bdd25c0fed027a61",
+    "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+    "samplesPerRevision": 62,
+    "deterministicCheckpoints": 21,
+    "budget": {
+      "baselineCpuMs": 0.1577365,
+      "candidateCpuMs": 0.15918149999999998,
+      "durationChangePercent": 0.9160847362531754,
+      "materialRegressionPercent": 10,
+      "confidence": 0.99,
+      "lowerRatio": 0.993679116701887,
+      "upperRatio": 1.0156679101515993,
+      "failed": false
+    },
+    "violations": []
+  }
+}

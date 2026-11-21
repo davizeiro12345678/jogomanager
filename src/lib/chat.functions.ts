@@ -122,6 +122,7 @@ export const sendChatMessage = createServerFn({ method: "POST" })
 const SendRoomMessageInput = z
   .object({
     roomId: z.string().uuid(),
+    clientMessageId: z.string().uuid().optional(),
     text: z
       .string()
       .transform(normalizePublicText)
@@ -145,85 +146,60 @@ export const sendRoomChatMessage = createServerFn({ method: "POST" })
   .validator((input: unknown) => SendRoomMessageInput.parse(input))
   .handler(async ({ data, context }): Promise<SendRoomMessageResult> => {
     if (!context.userId) return { ok: false, reason: "room_unavailable" };
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: room, error: roomError } = await supabaseAdmin
-      .from("match_rooms")
-      .select("id, host_id, guest_id, status")
-      .eq("id", data.roomId)
-      .maybeSingle();
-    if (
-      roomError ||
-      !room ||
-      (room.host_id !== context.userId && room.guest_id !== context.userId) ||
-      !["open", "ready", "live", "settling"].includes(room.status)
-    ) {
-      return { ok: false, reason: "room_unavailable" };
-    }
-
-    const now = Date.now();
-    const since = new Date(now - INFRACTION_WINDOW_MS).toISOString();
-    const [infractions, recent] = await Promise.all([
-      supabaseAdmin
-        .from("chat_infractions")
-        .select("created_at")
-        .eq("user_id", context.userId)
-        .gte("created_at", since),
-      supabaseAdmin
-        .from("chat_messages")
-        .select("body")
-        .eq("user_id", context.userId)
-        .order("created_at", { ascending: false })
-        .limit(REPEAT_LOOKBACK),
-    ]);
-    if (infractions.error || recent.error) return { ok: false, reason: "error" };
-    const until = muteUntil(
-      (infractions.data ?? []).map((r) => Date.parse(r.created_at)),
-      now,
-    );
-    if (until !== null)
-      return {
-        ok: false,
-        reason: "muted",
-        until: Number.isFinite(until) ? new Date(until).toISOString() : null,
-        message: mutedMessage(until),
-      };
-
-    const rule = moderateMessage(
-      data.text,
-      (recent.data ?? []).map((r) => r.body),
-    );
-    if (rule) {
-      const { error } = await supabaseAdmin
-        .from("chat_infractions")
-        .insert({ user_id: context.userId, reason: rule });
-      if (error) console.error("room chat infraction insert failed", error.message);
-      return { ok: false, reason: "blocked", message: MODERATION_MESSAGES[rule] };
-    }
-
-    const bucket = Math.floor(now / 1000);
-    const { error: cleanupError } = await supabaseAdmin
-      .from("room_chat_rate_limits")
-      .delete()
-      .eq("user_id", context.userId)
-      .lt("second_bucket", bucket);
-    if (cleanupError) return { ok: false, reason: "error" };
-    const { error: limitError } = await supabaseAdmin
-      .from("room_chat_rate_limits")
-      .insert({ user_id: context.userId, second_bucket: bucket });
-    if (limitError)
-      return limitError.code === "23505"
-        ? { ok: false, reason: "rate_limited" }
-        : { ok: false, reason: "error" };
-
-    const message = {
-      id: globalThis.crypto.randomUUID(),
-      text: data.text,
-      senderId: context.userId,
-      createdAt: new Date(now).toISOString(),
-    };
     const baseUrl = process.env["SUPABASE_URL"];
     const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
     if (!baseUrl || !serviceKey) return { ok: false, reason: "error" };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { roomChatFingerprints } = await import("./room-chat-fingerprint");
+    // New forward RPCs use a narrow adapter until generated database types are
+    // refreshed; the server role remains the only principal with EXECUTE.
+    const rpc = supabaseAdmin.rpc.bind(supabaseAdmin) as unknown as (
+      name: string,
+      args: Record<string, string | boolean | null>,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const id = data.clientMessageId ?? crypto.randomUUID();
+    const hashes = await roomChatFingerprints(data.roomId, data.text);
+    const { data: admission, error } = await rpc("admit_room_chat_message", {
+      p_user_id: context.userId,
+      p_room_id: data.roomId,
+      p_message_id: id,
+      p_payload_hash: hashes.payloadHash,
+      p_repeat_fingerprint: hashes.repeatFingerprint,
+      p_moderation_reason: moderateMessage(data.text),
+    });
+    if (error || !admission || typeof admission !== "object") return { ok: false, reason: "error" };
+    const receipt = admission as Record<string, unknown>;
+    if (receipt["status"] === "room_unavailable") return { ok: false, reason: "room_unavailable" };
+    if (receipt["status"] === "muted") {
+      const until = typeof receipt["until"] === "string" ? Date.parse(receipt["until"]) : NaN;
+      if (!Number.isFinite(until)) return { ok: false, reason: "error" };
+      return {
+        ok: false,
+        reason: "muted",
+        until: new Date(until).toISOString(),
+        message: mutedMessage(until),
+      };
+    }
+    if (receipt["status"] === "rate_limited" || receipt["status"] === "pending")
+      return { ok: false, reason: "rate_limited" };
+    if (receipt["status"] === "blocked") {
+      const rule = receipt["rule"];
+      if (typeof rule !== "string" || !Object.hasOwn(MODERATION_MESSAGES, rule))
+        return { ok: false, reason: "error" };
+      return {
+        ok: false,
+        reason: "blocked",
+        message: MODERATION_MESSAGES[rule as ModerationReason],
+      };
+    }
+    const createdAt = receipt["createdAt"];
+    if (typeof createdAt !== "string" || !Number.isFinite(Date.parse(createdAt)))
+      return { ok: false, reason: "error" };
+    const message = { id, text: data.text, senderId: context.userId, createdAt };
+    if (receipt["status"] === "sent") return { ok: true, ...message };
+    const leaseToken = receipt["leaseToken"];
+    if (receipt["status"] !== "leased" || !z.string().uuid().safeParse(leaseToken).success)
+      return { ok: false, reason: "error" };
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/realtime/v1/api/broadcast`, {
       method: "POST",
       headers: {
@@ -236,7 +212,17 @@ export const sendRoomChatMessage = createServerFn({ method: "POST" })
           { topic: `room-chat-${data.roomId}`, event: "msg", payload: message, private: true },
         ],
       }),
+      signal: AbortSignal.timeout(8_000),
     }).catch(() => null);
-    if (!response?.ok) return { ok: false, reason: "error" };
+    // Ambiguous network failures may have reached Realtime already. Retry uses
+    // this same opaque message id; receivers dedupe it before rendering.
+    const finished = await rpc("finish_room_chat_message", {
+      p_user_id: context.userId,
+      p_message_id: id,
+      p_lease_token: leaseToken as string,
+      p_delivered: response?.ok === true,
+    });
+    if (!response?.ok || finished.error || finished.data !== true)
+      return { ok: false, reason: "error" };
     return { ok: true, ...message };
   });

@@ -1,0 +1,247 @@
+{
+  "root": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-baseline-20261108",
+  "environment": {
+    "node": "v24.22.0",
+    "platform": "win32",
+    "architecture": "x64",
+    "kernel": "10.0.26300",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12500H"
+  },
+  "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+  "warmup": 3000,
+  "iterations": 1000,
+  "checksum": 6256000,
+  "checkpoints": [
+    {
+      "seed": "bench-setup",
+      "tick": 0,
+      "sha256": "0236b8c7688d253429183a55948527e765553777b3ba5594ea455c9496d17d37"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 300,
+      "sha256": "bfb675ec632825975841e8a3c2a6d4ebf3e137ff154db2b9451cf3f4896476ec"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 600,
+      "sha256": "606a8aaff8ee4e5885c56e7fbb9baedce15a4eeca0150a625b779eefdba8b5b8"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 900,
+      "sha256": "03e2d078ef64dfc35d38e01508415560ad682c0004c6af88b50747c49f6d2d73"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1200,
+      "sha256": "5a8c80ccc465b393f9e5252757fd093b25d1c6dcefa31b5619028689256b0e78"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1500,
+      "sha256": "4a872644589008bced1874fab31f8da08e1b8a55feaa908ccfece357bbcdd830"
+    },
+    {
+      "seed": "bench-setup",
+      "tick": 1800,
+      "sha256": "1428985a80793e1cd0c1213059928c99c34d6ecbede32f215fc72f3f79d0b2a7"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 0,
+      "sha256": "124bb748f674740a9d9fd61d45132d4ec0dde2041504a0e0540deea769f30702"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 300,
+      "sha256": "a27838532974083d8fd2254f6aba18ec18a9bfaafa5b97839a4f09b686346893"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 600,
+      "sha256": "69138f8e0cdb83deda5a6af0d8c2ea1e06bfba46c8f7dc08a5ddcb4a24235b2c"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 900,
+      "sha256": "c064adff5d217dc6ec0fd6d7fc1c7d310b65a7eefe6a31b163fb64794517d594"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1200,
+      "sha256": "b63181a2379c691a3b7d2a894c4a7ae1a7c6d4445331dd503bc7893be07e395c"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1500,
+      "sha256": "da3f8a79a6455f57511e18578be1a1fd36a844a44a6449f6ee914c0387acd464"
+    },
+    {
+      "seed": "setup-parity-1",
+      "tick": 1800,
+      "sha256": "873fdef590dff75076b9a3ef82c193d43bf83669f910e17cb6e562f9a0dcef0c"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 0,
+      "sha256": "e91c793926b22d0397eca129719135cc1391195ee34029bb2238b2529d63ab1b"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 300,
+      "sha256": "2d03c2fe37905e82e77b65dbc9d637a6fc25a3565a24285b20fd6e57d85fbf7c"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 600,
+      "sha256": "b77aaa4f2e226637e60ae662670cf2dd6cfaf1cf83c8fe391cf701e2c507ef7d"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 900,
+      "sha256": "902ca14adcc18cd460f77cfe8006378ce5bf159e0dba9e225c12f339459cc592"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1200,
+      "sha256": "4ea114c561df375dd56a3d9eff203cf34ef7e97754fa5157d5b0ae20ad516e46"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1500,
+      "sha256": "25c6652b6ca91d760c1d61f6fdb94ac176878364c93370729b23a5451c2368d3"
+    },
+    {
+      "seed": "setup-parity-2",
+      "tick": 1800,
+      "sha256": "5ca9a091342c9abdc028fca7083e7bb48ee44b7a70df4dfc5b8a7685c4e400ca"
+    }
+  ],
+  "samples": [
+    {
+      "wallMs": 0.25289229999999996,
+      "cpuMs": 0.188
+    },
+    {
+      "wallMs": 0.23766730000000008,
+      "cpuMs": 0.218
+    },
+    {
+      "wallMs": 0.23428189999999996,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.28865599999999997,
+      "cpuMs": 0.219
+    },
+    {
+      "wallMs": 0.2038823000000002,
+      "cpuMs": 0.203
+    },
+    {
+      "wallMs": 0.21669939999999996,
+      "cpuMs": 0.203
+    },
+    {
+      "wallMs": 0.2127482,
+      "cpuMs": 0.157
+    },
+    {
+      "wallMs": 0.22846570000000066,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.20352839999999925,
+      "cpuMs": 0.188
+    },
+    {
+      "wallMs": 0.20594980000000032,
+      "cpuMs": 0.203
+    },
+    {
+      "wallMs": 0.21270469999999933,
+      "cpuMs": 0.219
+    },
+    {
+      "wallMs": 0.20988940000000003,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.2020551999999998,
+      "cpuMs": 0.188
+    },
+    {
+      "wallMs": 0.1986974999999993,
+      "cpuMs": 0.203
+    },
+    {
+      "wallMs": 0.23417299999999977,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.2347525000000005,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.2058824000000004,
+      "cpuMs": 0.203
+    },
+    {
+      "wallMs": 0.2029376999999995,
+      "cpuMs": 0.204
+    },
+    {
+      "wallMs": 0.20554880000000048,
+      "cpuMs": 0.171
+    },
+    {
+      "wallMs": 0.200933,
+      "cpuMs": 0.188
+    },
+    {
+      "wallMs": 0.20545889999999964,
+      "cpuMs": 0.172
+    },
+    {
+      "wallMs": 0.19682340000000023,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.2036181999999999,
+      "cpuMs": 0.173
+    },
+    {
+      "wallMs": 0.20347630000000028,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.22679950000000007,
+      "cpuMs": 0.219
+    },
+    {
+      "wallMs": 0.20311999999999988,
+      "cpuMs": 0.187
+    },
+    {
+      "wallMs": 0.21395150000000013,
+      "cpuMs": 0.188
+    },
+    {
+      "wallMs": 0.26947120000000085,
+      "cpuMs": 0.265
+    },
+    {
+      "wallMs": 0.3008037000000004,
+      "cpuMs": 0.235
+    },
+    {
+      "wallMs": 0.22127940000000126,
+      "cpuMs": 0.203
+    },
+    {
+      "wallMs": 0.2026114000000016,
+      "cpuMs": 0.203
+    }
+  ]
+}

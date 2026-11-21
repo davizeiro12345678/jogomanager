@@ -36,8 +36,17 @@ export function retainTurfDetail() {
 /** Session-owned tile: shared by every mowing pattern and match, never per frame. */
 export function turfDetailTextures() {
   if (cached) return cached;
-  const texture = (rgba: number[]) => {
-    const map = new THREE.DataTexture(Uint8Array.from(rgba), 1, 1, THREE.RGBAFormat);
+  const texture = ([r, g, b, a]: readonly [number, number, number, number]) => {
+    // WebGL's immutable texture storage cannot grow after its first upload.
+    // Keep the async detail's final dimensions from the neutral first frame.
+    const data = new Uint8Array(SIZE * SIZE * 4);
+    for (let offset = 0; offset < data.length; offset += 4) {
+      data[offset] = r;
+      data[offset + 1] = g;
+      data[offset + 2] = b;
+      data[offset + 3] = a;
+    }
+    const map = new THREE.DataTexture(data, SIZE, SIZE, THREE.RGBAFormat);
     map.wrapS = map.wrapT = THREE.RepeatWrapping;
     map.repeat.set(48, 32);
     map.colorSpace = THREE.NoColorSpace;

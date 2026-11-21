@@ -43,10 +43,12 @@ export function quoteContract(
   const horizon = projectFinanceHorizon(state, 4);
   const rawReserve = addMoney(horizon.reserveRequired, eurosToMoney(wageToEuros(weeklyWage) * 4));
   const reserveRequired = safeMoney(rawReserve);
-  const cashAfterSigning = safeMoney(safeMoney(state.finances?.budget) - upfrontCost);
+  const rawCashAfterSigning = addMoney(safeMoney(state.finances?.budget), -upfrontCost);
+  const cashAfterSigning = safeMoney(rawCashAfterSigning);
   const reason =
     !valid ||
     !horizon.valid ||
+    !finiteAmount(rawCashAfterSigning, true) ||
     !finiteAmount(rawReserve) ||
     ![upfrontCost, reserveRequired].every((v) => finiteAmount(v)) ||
     !finiteAmount((state.finances?.spent ?? 0) + upfrontCost)

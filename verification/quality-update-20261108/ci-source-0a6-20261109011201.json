@@ -1,0 +1,66 @@
+{
+  "recordedAt": "2026-11-09 01:12:01 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "runs": [
+    {
+      "id": 42543242369,
+      "name": "Match 3D visual evidence",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 42543242371,
+      "name": "Public environment and MCP safety",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42543242246,
+      "name": "Auxiliary match worker",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42543242321,
+      "name": "Match 3D mobile draw inventory",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42543242291,
+      "name": "Match 3D lifecycle and context recovery",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42543242353,
+      "name": "CodSpeed",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42543242360,
+      "name": "Match 3D startup CPU diagnostic",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42543242306,
+      "name": "Quality gates",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "visualJobs": [
+    {
+      "id": 128922613683,
+      "name": "evidence",
+      "status": "in_progress",
+      "conclusion": null,
+      "current": [
+        "Build and capture baseline with the candidate evidence runner"
+      ],
+      "failed": []
+    }
+  ]
+}

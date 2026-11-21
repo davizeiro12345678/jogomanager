@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const screensCss = readFileSync(new URL("./career-screens.css", import.meta.url), "utf8");
-const createCss = readFileSync(new URL("./career-create.css", import.meta.url), "utf8");
+const createCss = readFileSync(new URL("./career-create.css", import.meta.url), "utf8").replace(
+  /\r\n/g,
+  "\n",
+);
 const shellCss = readFileSync(new URL("./career-shell.css", import.meta.url), "utf8");
 const contentCss = readFileSync(new URL("./career-content-shell.css", import.meta.url), "utf8");
 const interfaceCss = readFileSync(new URL("./career-interface.css", import.meta.url), "utf8");
@@ -83,6 +86,22 @@ describe("career CSS keyboard focus", () => {
     );
     expect(screensCss.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)/g) ?? []).toHaveLength(
       1,
+    );
+  });
+});
+describe("mobile career paint and accessibility budgets", () => {
+  it("disables expensive header backdrop filtering on constrained viewports", () => {
+    expect(screensCss).toMatch(
+      /@media\s*\(max-width:\s*47\.99rem\),\s*\(prefers-reduced-transparency:\s*reduce\),\s*\(prefers-reduced-data:\s*reduce\)/,
+    );
+    expect(screensCss).toMatch(
+      /\.career-shell \.career-header\s*\{[^}]*background:\s*var\(--background\);[^}]*backdrop-filter:\s*none;/s,
+    );
+  });
+  it("preserves readable mobile buttons without hover-only motion", () => {
+    expect(screensCss).toMatch(/@media\s*\(hover:\s*none\) and \(pointer:\s*coarse\)/);
+    expect(screensCss).toMatch(
+      /\.career-shell \.career-primary-button:hover\s*\{[^}]*transform:\s*none;/s,
     );
   });
 });

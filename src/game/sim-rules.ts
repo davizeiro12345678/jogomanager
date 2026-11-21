@@ -9,6 +9,7 @@
 // ============================================================================
 
 import type { Side } from "./sim";
+import type { MatchRulesRevision } from "./match-execution-contract";
 
 /* -------------------------------------------------------------------------- */
 /*  Medidas do campo (fonte única: `sim.ts` reexporta para compatibilidade)   */
@@ -103,7 +104,26 @@ export interface OffsideLineInput {
  * Linha do penúltimo adversário (goleiro conta). Devolve a coordenada x da
  * linha no sistema absoluto; quem ataca compara com o próprio `dir`.
  */
-export function defensiveLineX(players: OffsideLineInput[], attacking: Side): number {
+export function defensiveLineX(
+  players: readonly OffsideLineInput[],
+  attacking: Side,
+  rulesRevision: MatchRulesRevision = 1,
+): number {
+  if (rulesRevision === 2) {
+    const dir = attacking === "home" ? 1 : -1;
+    let first = -Infinity;
+    let second = -Infinity;
+    for (const player of players) {
+      if (player.side === attacking || player.sentOff) continue;
+      const projection = player.x * dir;
+      if (projection >= first) {
+        second = first;
+        first = projection;
+      } else if (projection > second) second = projection;
+    }
+    return second === -Infinity ? -FIELD_X * dir : second * dir;
+  }
+  if (rulesRevision !== 1) throw new RangeError("Unknown match rules revision");
   const foes = players
     .filter((p) => p.side !== attacking && !p.sentOff)
     .map((p) => p.x)

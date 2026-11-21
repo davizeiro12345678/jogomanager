@@ -1,0 +1,162 @@
+{
+  "tag": "final-mobile",
+  "startedAt": "2026-11-09T01:31:34.113Z",
+  "origin": "http://127.0.0.1:4283/",
+  "viewport": {
+    "width": 1365,
+    "height": 900,
+    "dpr": 1
+  },
+  "scope": "Local public UI captures; video overhead is present. No FPS certification, sign-in, account creation, ticket submission or production mutation.",
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "screenshot": "home.png",
+      "title": "Jogo de Técnico de Futebol Grátis em 3D | jogomanager",
+      "heading": "Pro Football Manager 3D: jogo de gestão de futebol. SEU CLUBE.SUA HISTÓRIA.",
+      "horizontalOverflow": false,
+      "headingFont": "88.725px",
+      "navigation": [
+        {
+          "responseStart": 2559.4000000059605,
+          "domContentLoaded": 2837.7000000029802,
+          "duration": 3114.2000000029802
+        }
+      ]
+    },
+    {
+      "route": "/contato",
+      "status": 200,
+      "screenshot": "contato.png",
+      "title": "Suporte e Contato | Pro Football Manager 3D",
+      "heading": "Contato e suporte",
+      "horizontalOverflow": false,
+      "headingFont": "36px",
+      "navigation": [
+        {
+          "responseStart": 35.900000005960464,
+          "domContentLoaded": 86.29999999701977,
+          "duration": 198.20000000298023
+        }
+      ],
+      "mobileHorizontalOverflow": false
+    },
+    {
+      "route": "/sobre",
+      "status": 200,
+      "screenshot": "sobre.png",
+      "title": "Sobre o jogo | Pro Football Manager 3D",
+      "heading": "Sobre o Pro Football Manager 3D",
+      "horizontalOverflow": false,
+      "headingFont": "48px",
+      "navigation": [
+        {
+          "responseStart": 22.900000005960464,
+          "domContentLoaded": 44.1000000089407,
+          "duration": 96.70000000298023
+        }
+      ]
+    },
+    {
+      "route": "/criador",
+      "status": 200,
+      "screenshot": "criador.png",
+      "title": "Quem cria o jogomanager: história, tecnologia e atualizações",
+      "heading": "Sobre o criador",
+      "horizontalOverflow": false,
+      "headingFont": "36px",
+      "navigation": [
+        {
+          "responseStart": 71.70000000298023,
+          "domContentLoaded": 139.70000000298023,
+          "duration": 220.20000000298023
+        }
+      ]
+    },
+    {
+      "route": "/auth",
+      "status": 200,
+      "screenshot": "auth.png",
+      "title": "Entrar ou criar conta · Pro Football Manager 3D",
+      "heading": "Entrar e continuar",
+      "horizontalOverflow": false,
+      "headingFont": "30px",
+      "navigation": [
+        {
+          "responseStart": 43.70000000298023,
+          "domContentLoaded": 134.20000000298023,
+          "duration": 173.29999999701977
+        }
+      ],
+      "mobileHorizontalOverflow": false
+    },
+    {
+      "route": "/new",
+      "status": 200,
+      "screenshot": "new.png",
+      "title": "Crie seu treinador e escolha seu clube · Pro Football Manager 3D",
+      "heading": "Novo treinador",
+      "horizontalOverflow": false,
+      "headingFont": "38px",
+      "navigation": [
+        {
+          "responseStart": 131.6000000089407,
+          "domContentLoaded": 178.6000000089407,
+          "duration": 220.80000001192093
+        }
+      ],
+      "mobileHorizontalOverflow": false,
+      "mobileWizardStep": {
+        "label": "Identidade",
+        "textFragments": 1,
+        "hitTargets": [
+          {
+            "width": 135.609375,
+            "height": 50
+          },
+          {
+            "width": 67.796875,
+            "height": 50
+          },
+          {
+            "width": 67.796875,
+            "height": 50
+          },
+          {
+            "width": 67.796875,
+            "height": 50
+          }
+        ]
+      },
+      "narrowWizardStep": {
+        "label": "Identidade",
+        "textFragments": 1,
+        "hitTargets": [
+          {
+            "width": 107.609375,
+            "height": 50
+          },
+          {
+            "width": 53.796875,
+            "height": 50
+          },
+          {
+            "width": 53.796875,
+            "height": 50
+          },
+          {
+            "width": 53.796875,
+            "height": 50
+          }
+        ]
+      },
+      "narrowHorizontalOverflow": false
+    }
+  ],
+  "errors": [],
+  "failedAssets": [],
+  "success": true,
+  "completedAt": "2026-11-09T01:31:59.580Z",
+  "video": "video\\page@834197ad9a69528cd7bc8aee2ded1f6e.webm"
+}

@@ -39,8 +39,11 @@ jobs:
       - name: Prepare baseline
         run: |
           git worktree add --detach "$RUNNER_TEMP/startup-base" "$BASE_SHA"
-          # The benchmark contract requires identical dependencies for both revisions.
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/startup-base/node_modules"
+          # Install the baseline's own lockfile. The candidate deliberately removes
+          # the Lovable OAuth SDK, while this historical baseline still imports it;
+          # sharing candidate node_modules makes the baseline unbuildable and biases
+          # the comparison. Browser/profile tooling remains isolated in RUNNER_TEMP.
+          (cd "$RUNNER_TEMP/startup-base" && npm ci)
           # Normalize only the old resolver alias incompatible with this audited
           # dependency graph; no baseline application behavior is changed.
           python3 - <<'PY'

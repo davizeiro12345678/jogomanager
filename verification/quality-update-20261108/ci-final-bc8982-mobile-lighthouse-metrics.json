@@ -1,0 +1,1452 @@
+{
+  "recordedAt": "2026-11-09T02:06:38.684Z",
+  "head": "bc8982f32f53f5514cc8fdf6f3768df03729c2e0",
+  "base": "c20036f33a8f7d8eff15012d276606a3964e4a54",
+  "runId": 42548308824,
+  "jobId": 128938027933,
+  "artifactId": 13644467178,
+  "artifactSha256": "080ef2de3ca7d23e001394c3ce41edb1a93f883f94d763c9d42b82d74df55489",
+  "conclusion": "failure",
+  "aggregation": "Derived minimum category scores and maximum numeric metrics across each route's three reports; raw values retained.",
+  "groups": [
+    {
+      "route": "/",
+      "runs": [
+        {
+          "member": "lhr-1794189560241.json",
+          "route": "/",
+          "fetchTime": "2026-11-09T01:59:09.755Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 0.98,
+          "accessibilityScore": 0.97,
+          "totalBlockingTimeMs": 54,
+          "largestContentfulPaintMs": 2059.3635,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794189572681.json",
+          "route": "/",
+          "fetchTime": "2026-11-09T01:59:22.850Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 0.99,
+          "accessibilityScore": 0.97,
+          "totalBlockingTimeMs": 11.5,
+          "largestContentfulPaintMs": 2158.09665,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794189584630.json",
+          "route": "/",
+          "fetchTime": "2026-11-09T01:59:34.844Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 0.98,
+          "accessibilityScore": 0.97,
+          "totalBlockingTimeMs": 24,
+          "largestContentfulPaintMs": 2153.91975,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 0.98,
+        "accessibilityScore": 0.97,
+        "totalBlockingTimeMs": 54,
+        "largestContentfulPaintMs": 2158.09665,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/guia-de-scouting",
+      "runs": [
+        {
+          "member": "lhr-1794189628351.json",
+          "route": "/guia-de-scouting",
+          "fetchTime": "2026-11-09T02:00:19.666Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 8,
+          "largestContentfulPaintMs": 989.5116,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794189639155.json",
+          "route": "/guia-de-scouting",
+          "fetchTime": "2026-11-09T02:00:30.514Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 12.499999999999545,
+          "largestContentfulPaintMs": 1401.0435,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794189649959.json",
+          "route": "/guia-de-scouting",
+          "fetchTime": "2026-11-09T02:00:41.325Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 13.999999999999773,
+          "largestContentfulPaintMs": 1398.48435,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 1,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 13.999999999999773,
+        "largestContentfulPaintMs": 1401.0435,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/guias",
+      "runs": [
+        {
+          "member": "lhr-1794189595555.json",
+          "route": "/guias",
+          "fetchTime": "2026-11-09T01:59:46.915Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 7,
+          "largestContentfulPaintMs": 1406.34345,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794189606415.json",
+          "route": "/guias",
+          "fetchTime": "2026-11-09T01:59:57.725Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 6.5,
+          "largestContentfulPaintMs": 1401.6171,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794189617328.json",
+          "route": "/guias",
+          "fetchTime": "2026-11-09T02:00:08.656Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 10.999999999999545,
+          "largestContentfulPaintMs": 1399.3112999999998,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 1,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 10.999999999999545,
+        "largestContentfulPaintMs": 1406.34345,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/melhores-formacoes",
+      "runs": [
+        {
+          "member": "lhr-1794189660939.json",
+          "route": "/melhores-formacoes",
+          "fetchTime": "2026-11-09T02:00:52.288Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 7.5,
+          "largestContentfulPaintMs": 1401.52515,
+          "cumulativeLayoutShift": 0,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794189671787.json",
+          "route": "/melhores-formacoes",
+          "fetchTime": "2026-11-09T02:01:03.128Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 7.5,
+          "largestContentfulPaintMs": 1403.799,
+          "cumulativeLayoutShift": 0,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794189682589.json",
+          "route": "/melhores-formacoes",
+          "fetchTime": "2026-11-09T02:01:13.946Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 10.500000000000227,
+          "largestContentfulPaintMs": 1408.11105,
+          "cumulativeLayoutShift": 0,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 1,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 10.500000000000227,
+        "largestContentfulPaintMs": 1408.11105,
+        "cumulativeLayoutShift": 0
+      }
+    },
+    {
+      "route": "/partida-rapida",
+      "runs": [
+        {
+          "member": "lhr-1794189737145.json",
+          "route": "/partida-rapida",
+          "fetchTime": "2026-11-09T02:01:24.952Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 0.96,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 212.00000000000023,
+          "largestContentfulPaintMs": 1400.7562500000001,
+          "cumulativeLayoutShift": 0.004963949596819479,
+          "run": 1
+        },
+        {
+          "member": "lhr-1794189791433.json",
+          "route": "/partida-rapida",
+          "fetchTime": "2026-11-09T02:02:19.332Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 0.99,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 10,
+          "largestContentfulPaintMs": 1550.5037750000001,
+          "cumulativeLayoutShift": 0.004963949596819479,
+          "run": 2
+        },
+        {
+          "member": "lhr-1794189845725.json",
+          "route": "/partida-rapida",
+          "fetchTime": "2026-11-09T02:03:13.607Z",
+          "lighthouseVersion": "12.6.1",
+          "formFactor": "mobile",
+          "performanceScore": 1,
+          "accessibilityScore": 1,
+          "totalBlockingTimeMs": 6,
+          "largestContentfulPaintMs": 1401.7257,
+          "cumulativeLayoutShift": 0.004963949596819479,
+          "run": 3
+        }
+      ],
+      "pessimisticDerivedFromAllRuns": {
+        "performanceScore": 0.96,
+        "accessibilityScore": 1,
+        "totalBlockingTimeMs": 212.00000000000023,
+        "largestContentfulPaintMs": 1550.5037750000001,
+        "cumulativeLayoutShift": 0.004963949596819479
+      }
+    }
+  ],
+  "quickRouteDetails": [
+    {
+      "member": "lhr-1794189737145.json",
+      "route": "/partida-rapida",
+      "fetchTime": "2026-11-09T02:01:24.952Z",
+      "lighthouseVersion": "12.6.1",
+      "formFactor": "mobile",
+      "performanceScore": 0.96,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 212.00000000000023,
+      "largestContentfulPaintMs": 1400.7562500000001,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "audits": {
+        "long-tasks": {
+          "score": 1,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "startTime",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Start Time"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Duration"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+                "duration": 280,
+                "startTime": 3267.675
+              },
+              {
+                "url": "Unattributable",
+                "duration": 77,
+                "startTime": 736.91875
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "duration": 64,
+                "startTime": 3155.675
+              },
+              {
+                "url": "Unattributable",
+                "duration": 51,
+                "startTime": 616.91875
+              }
+            ],
+            "sortedBy": [
+              "duration"
+            ],
+            "skipSumming": [
+              "startTime"
+            ],
+            "debugData": {
+              "type": "debugdata",
+              "urls": [
+                "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+                "Unattributable",
+                "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js"
+              ],
+              "tasks": [
+                {
+                  "urlIndex": 0,
+                  "startTime": 3267.7,
+                  "duration": 280,
+                  "other": 280
+                },
+                {
+                  "urlIndex": 1,
+                  "startTime": 736.9,
+                  "duration": 77,
+                  "garbageCollection": 0,
+                  "other": 77
+                },
+                {
+                  "urlIndex": 2,
+                  "startTime": 3155.7,
+                  "duration": 64,
+                  "other": 64,
+                  "scriptEvaluation": 0
+                },
+                {
+                  "urlIndex": 1,
+                  "startTime": 616.9,
+                  "duration": 51,
+                  "other": 51,
+                  "scriptEvaluation": 0
+                }
+              ]
+            }
+          }
+        },
+        "bootup-time": {
+          "score": 1,
+          "numericValue": 632.9359999999999,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "total",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Total CPU Time"
+              },
+              {
+                "key": "scripting",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Script Evaluation"
+              },
+              {
+                "key": "scriptParseCompile",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Script Parse"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+                "total": 519.4520000000001,
+                "scripting": 501.8200000000001,
+                "scriptParseCompile": 0.804
+              },
+              {
+                "url": "Unattributable",
+                "total": 366.3400000000009,
+                "scripting": 74.99600000000001,
+                "scriptParseCompile": 0
+              },
+              {
+                "url": "http://127.0.0.1:4173/partida-rapida",
+                "total": 304.1879999999999,
+                "scripting": 11.31599999999988,
+                "scriptParseCompile": 3.1640000000000006
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "total": 91.00799999999998,
+                "scripting": 38.956,
+                "scriptParseCompile": 1.88
+              }
+            ],
+            "summary": {
+              "wastedMs": 632.9359999999999
+            },
+            "sortedBy": [
+              "total"
+            ]
+          }
+        },
+        "mainthread-work-breakdown": {
+          "score": 1,
+          "numericValue": 1384.5320000000022,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "groupLabel",
+                "valueType": "text",
+                "label": "Category"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "group": "scriptEvaluation",
+                "groupLabel": "Script Evaluation",
+                "duration": 633.9080000000012
+              },
+              {
+                "group": "other",
+                "groupLabel": "Other",
+                "duration": 417.8160000000007
+              },
+              {
+                "group": "styleLayout",
+                "groupLabel": "Style & Layout",
+                "duration": 163.844
+              },
+              {
+                "group": "garbageCollection",
+                "groupLabel": "Garbage Collection",
+                "duration": 98.21600000000014
+              },
+              {
+                "group": "paintCompositeRender",
+                "groupLabel": "Rendering",
+                "duration": 35.85199999999998
+              },
+              {
+                "group": "parseHTML",
+                "groupLabel": "Parse HTML & CSS",
+                "duration": 25.432
+              },
+              {
+                "group": "scriptParseCompile",
+                "groupLabel": "Script Parsing & Compilation",
+                "duration": 9.463999999999995
+              }
+            ],
+            "sortedBy": [
+              "duration"
+            ]
+          }
+        },
+        "diagnostics": {
+          "score": 1,
+          "details": {
+            "type": "debugdata",
+            "items": [
+              {
+                "numRequests": 48,
+                "numScripts": 39,
+                "numStylesheets": 1,
+                "numFonts": 3,
+                "numTasks": 949,
+                "numTasksOver10ms": 7,
+                "numTasksOver25ms": 1,
+                "numTasksOver50ms": 1,
+                "numTasksOver100ms": 0,
+                "numTasksOver500ms": 0,
+                "rtt": 0.030749999999999996,
+                "throughput": 26984327.079641707,
+                "maxRtt": 0.030749999999999996,
+                "maxServerLatency": 16.918749999999996,
+                "totalByteWeight": 322267,
+                "totalTaskTime": 346.13299999999913,
+                "mainDocumentTransferSize": 12058
+              }
+            ]
+          }
+        },
+        "unused-javascript": {
+          "score": 0.5,
+          "numericValue": 0,
+          "details": {
+            "type": "opportunity",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "subItemsHeading": {
+                  "key": "source",
+                  "valueType": "code"
+                },
+                "label": "URL"
+              },
+              {
+                "key": "totalBytes",
+                "valueType": "bytes",
+                "subItemsHeading": {
+                  "key": "sourceBytes"
+                },
+                "label": "Transfer Size"
+              },
+              {
+                "key": "wastedBytes",
+                "valueType": "bytes",
+                "subItemsHeading": {
+                  "key": "sourceWastedBytes"
+                },
+                "label": "Est Savings"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "totalBytes": 88717,
+                "wastedBytes": 37311,
+                "wastedPercent": 42.05595610263308
+              }
+            ],
+            "overallSavingsMs": 0,
+            "overallSavingsBytes": 37311,
+            "sortedBy": [
+              "wastedBytes"
+            ],
+            "debugData": {
+              "type": "debugdata",
+              "metricSavings": {
+                "FCP": 0,
+                "LCP": 0
+              }
+            }
+          }
+        },
+        "render-blocking-resources": {
+          "score": 0.5,
+          "numericValue": 0,
+          "details": {
+            "type": "opportunity",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "totalBytes",
+                "valueType": "bytes",
+                "label": "Transfer Size"
+              },
+              {
+                "key": "wastedMs",
+                "valueType": "timespanMs",
+                "label": "Est Savings"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/public-quick-styles-jLMrQnNc.css",
+                "totalBytes": 12345,
+                "wastedMs": 167
+              }
+            ],
+            "overallSavingsMs": 0
+          }
+        },
+        "network-rtt": {
+          "score": 1,
+          "numericValue": 0.030749999999999996,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "origin",
+                "valueType": "text",
+                "label": "URL"
+              },
+              {
+                "key": "rtt",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "origin": "http://127.0.0.1:4173",
+                "rtt": 0.030749999999999996
+              }
+            ],
+            "sortedBy": [
+              "rtt"
+            ]
+          }
+        },
+        "network-server-latency": {
+          "score": 1,
+          "numericValue": 16.918749999999996,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "origin",
+                "valueType": "text",
+                "label": "URL"
+              },
+              {
+                "key": "serverResponseTime",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "origin": "http://127.0.0.1:4173",
+                "serverResponseTime": 16.918749999999996
+              }
+            ],
+            "sortedBy": [
+              "serverResponseTime"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "member": "lhr-1794189791433.json",
+      "route": "/partida-rapida",
+      "fetchTime": "2026-11-09T02:02:19.332Z",
+      "lighthouseVersion": "12.6.1",
+      "formFactor": "mobile",
+      "performanceScore": 0.99,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 10,
+      "largestContentfulPaintMs": 1550.5037750000001,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "audits": {
+        "long-tasks": {
+          "score": 1,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "startTime",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Start Time"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Duration"
+              }
+            ],
+            "items": [
+              {
+                "url": "Unattributable",
+                "duration": 94,
+                "startTime": 1141.28895
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "duration": 70,
+                "startTime": 3201.7186
+              },
+              {
+                "url": "http://127.0.0.1:4173/partida-rapida",
+                "duration": 53,
+                "startTime": 703.42965
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+                "duration": 50,
+                "startTime": 3271.7186
+              }
+            ],
+            "sortedBy": [
+              "duration"
+            ],
+            "skipSumming": [
+              "startTime"
+            ],
+            "debugData": {
+              "type": "debugdata",
+              "urls": [
+                "Unattributable",
+                "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "http://127.0.0.1:4173/partida-rapida",
+                "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js"
+              ],
+              "tasks": [
+                {
+                  "urlIndex": 0,
+                  "startTime": 1141.3,
+                  "duration": 94,
+                  "other": 94,
+                  "scriptEvaluation": 0
+                },
+                {
+                  "urlIndex": 1,
+                  "startTime": 3201.7,
+                  "duration": 70,
+                  "other": 70,
+                  "scriptEvaluation": 0
+                },
+                {
+                  "urlIndex": 2,
+                  "startTime": 703.4,
+                  "duration": 53,
+                  "other": 53,
+                  "parseHTML": 0,
+                  "scriptEvaluation": 0,
+                  "styleLayout": 0
+                },
+                {
+                  "urlIndex": 3,
+                  "startTime": 3271.7,
+                  "duration": 50,
+                  "other": 50
+                }
+              ]
+            }
+          }
+        },
+        "bootup-time": {
+          "score": 1,
+          "numericValue": 407.72000000000025,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "total",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Total CPU Time"
+              },
+              {
+                "key": "scripting",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Script Evaluation"
+              },
+              {
+                "key": "scriptParseCompile",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Script Parse"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/partida-rapida",
+                "total": 349.33200000000005,
+                "scripting": 37.74800000000002,
+                "scriptParseCompile": 3.5080000000000005
+              },
+              {
+                "url": "Unattributable",
+                "total": 265.74400000000037,
+                "scripting": 101.94800000000002,
+                "scriptParseCompile": 0
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+                "total": 235.98000000000025,
+                "scripting": 218.94000000000025,
+                "scriptParseCompile": 0.78
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "total": 97.84799999999993,
+                "scripting": 41.71599999999998,
+                "scriptParseCompile": 1.812
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/index-BRaJn8_P.js",
+                "total": 55.355999999999995,
+                "scripting": 1.1520000000000001,
+                "scriptParseCompile": 0.116
+              }
+            ],
+            "summary": {
+              "wastedMs": 407.72000000000025
+            },
+            "sortedBy": [
+              "total"
+            ]
+          }
+        },
+        "mainthread-work-breakdown": {
+          "score": 1,
+          "numericValue": 1082.3600000000015,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "groupLabel",
+                "valueType": "text",
+                "label": "Category"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "group": "other",
+                "groupLabel": "Other",
+                "duration": 406.50800000000095
+              },
+              {
+                "group": "scriptEvaluation",
+                "groupLabel": "Script Evaluation",
+                "duration": 406.1160000000004
+              },
+              {
+                "group": "styleLayout",
+                "groupLabel": "Style & Layout",
+                "duration": 196.216
+              },
+              {
+                "group": "paintCompositeRender",
+                "groupLabel": "Rendering",
+                "duration": 32.488
+              },
+              {
+                "group": "parseHTML",
+                "groupLabel": "Parse HTML & CSS",
+                "duration": 20.144
+              },
+              {
+                "group": "garbageCollection",
+                "groupLabel": "Garbage Collection",
+                "duration": 10.98799999999999
+              },
+              {
+                "group": "scriptParseCompile",
+                "groupLabel": "Script Parsing & Compilation",
+                "duration": 9.899999999999993
+              }
+            ],
+            "sortedBy": [
+              "duration"
+            ]
+          }
+        },
+        "diagnostics": {
+          "score": 1,
+          "details": {
+            "type": "debugdata",
+            "items": [
+              {
+                "numRequests": 48,
+                "numScripts": 39,
+                "numStylesheets": 1,
+                "numFonts": 3,
+                "numTasks": 748,
+                "numTasksOver10ms": 10,
+                "numTasksOver25ms": 1,
+                "numTasksOver50ms": 0,
+                "numTasksOver100ms": 0,
+                "numTasksOver500ms": 0,
+                "rtt": 0.03285,
+                "throughput": 20922799.422851402,
+                "maxRtt": 0.03285,
+                "maxServerLatency": 16.429650000000002,
+                "totalByteWeight": 322303,
+                "totalTaskTime": 270.58999999999844,
+                "mainDocumentTransferSize": 12061
+              }
+            ]
+          }
+        },
+        "unused-javascript": {
+          "score": 0.5,
+          "numericValue": 0,
+          "details": {
+            "type": "opportunity",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "subItemsHeading": {
+                  "key": "source",
+                  "valueType": "code"
+                },
+                "label": "URL"
+              },
+              {
+                "key": "totalBytes",
+                "valueType": "bytes",
+                "subItemsHeading": {
+                  "key": "sourceBytes"
+                },
+                "label": "Transfer Size"
+              },
+              {
+                "key": "wastedBytes",
+                "valueType": "bytes",
+                "subItemsHeading": {
+                  "key": "sourceWastedBytes"
+                },
+                "label": "Est Savings"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "totalBytes": 88735,
+                "wastedBytes": 37318,
+                "wastedPercent": 42.05595610263308
+              }
+            ],
+            "overallSavingsMs": 0,
+            "overallSavingsBytes": 37318,
+            "sortedBy": [
+              "wastedBytes"
+            ],
+            "debugData": {
+              "type": "debugdata",
+              "metricSavings": {
+                "FCP": 0,
+                "LCP": 0
+              }
+            }
+          }
+        },
+        "render-blocking-resources": {
+          "score": 0.5,
+          "numericValue": 0,
+          "details": {
+            "type": "opportunity",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "totalBytes",
+                "valueType": "bytes",
+                "label": "Transfer Size"
+              },
+              {
+                "key": "wastedMs",
+                "valueType": "timespanMs",
+                "label": "Est Savings"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/public-quick-styles-jLMrQnNc.css",
+                "totalBytes": 12340,
+                "wastedMs": 166
+              }
+            ],
+            "overallSavingsMs": 0
+          }
+        },
+        "network-rtt": {
+          "score": 1,
+          "numericValue": 0.03285,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "origin",
+                "valueType": "text",
+                "label": "URL"
+              },
+              {
+                "key": "rtt",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "origin": "http://127.0.0.1:4173",
+                "rtt": 0.03285
+              }
+            ],
+            "sortedBy": [
+              "rtt"
+            ]
+          }
+        },
+        "network-server-latency": {
+          "score": 1,
+          "numericValue": 16.429650000000002,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "origin",
+                "valueType": "text",
+                "label": "URL"
+              },
+              {
+                "key": "serverResponseTime",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "origin": "http://127.0.0.1:4173",
+                "serverResponseTime": 16.429650000000002
+              }
+            ],
+            "sortedBy": [
+              "serverResponseTime"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "member": "lhr-1794189845725.json",
+      "route": "/partida-rapida",
+      "fetchTime": "2026-11-09T02:03:13.607Z",
+      "lighthouseVersion": "12.6.1",
+      "formFactor": "mobile",
+      "performanceScore": 1,
+      "accessibilityScore": 1,
+      "totalBlockingTimeMs": 6,
+      "largestContentfulPaintMs": 1401.7257,
+      "cumulativeLayoutShift": 0.004963949596819479,
+      "audits": {
+        "long-tasks": {
+          "score": 1,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "startTime",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Start Time"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Duration"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "duration": 62,
+                "startTime": 3165.9676
+              },
+              {
+                "url": "Unattributable",
+                "duration": 54,
+                "startTime": 1144.7257
+              }
+            ],
+            "sortedBy": [
+              "duration"
+            ],
+            "skipSumming": [
+              "startTime"
+            ],
+            "debugData": {
+              "type": "debugdata",
+              "urls": [
+                "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "Unattributable"
+              ],
+              "tasks": [
+                {
+                  "urlIndex": 0,
+                  "startTime": 3166,
+                  "duration": 62,
+                  "other": 62,
+                  "scriptEvaluation": 0
+                },
+                {
+                  "urlIndex": 1,
+                  "startTime": 1144.7,
+                  "duration": 54,
+                  "other": 54,
+                  "scriptEvaluation": 0
+                }
+              ]
+            }
+          }
+        },
+        "bootup-time": {
+          "score": 1,
+          "numericValue": 370.0040000000004,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "total",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Total CPU Time"
+              },
+              {
+                "key": "scripting",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Script Evaluation"
+              },
+              {
+                "key": "scriptParseCompile",
+                "granularity": 1,
+                "valueType": "ms",
+                "label": "Script Parse"
+              }
+            ],
+            "items": [
+              {
+                "url": "Unattributable",
+                "total": 295.89600000000064,
+                "scripting": 70.72,
+                "scriptParseCompile": 0
+              },
+              {
+                "url": "http://127.0.0.1:4173/partida-rapida",
+                "total": 271.0399999999998,
+                "scripting": 19.055999999999813,
+                "scriptParseCompile": 22.139999999999997
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/browser-react-CTpf0q--.js",
+                "total": 232.3640000000006,
+                "scripting": 213.2920000000006,
+                "scriptParseCompile": 0.6920000000000001
+              },
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "total": 90.65199999999992,
+                "scripting": 42.31999999999997,
+                "scriptParseCompile": 1.784
+              }
+            ],
+            "summary": {
+              "wastedMs": 370.0040000000004
+            },
+            "sortedBy": [
+              "total"
+            ]
+          }
+        },
+        "mainthread-work-breakdown": {
+          "score": 1,
+          "numericValue": 994.3840000000013,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "groupLabel",
+                "valueType": "text",
+                "label": "Category"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "group": "other",
+                "groupLabel": "Other",
+                "duration": 387.2400000000016
+              },
+              {
+                "group": "scriptEvaluation",
+                "groupLabel": "Script Evaluation",
+                "duration": 352.0639999999996
+              },
+              {
+                "group": "styleLayout",
+                "groupLabel": "Style & Layout",
+                "duration": 150.56400000000002
+              },
+              {
+                "group": "scriptParseCompile",
+                "groupLabel": "Script Parsing & Compilation",
+                "duration": 28.423999999999992
+              },
+              {
+                "group": "parseHTML",
+                "groupLabel": "Parse HTML & CSS",
+                "duration": 27.36
+              },
+              {
+                "group": "garbageCollection",
+                "groupLabel": "Garbage Collection",
+                "duration": 26.09999999999997
+              },
+              {
+                "group": "paintCompositeRender",
+                "groupLabel": "Rendering",
+                "duration": 22.631999999999984
+              }
+            ],
+            "sortedBy": [
+              "duration"
+            ]
+          }
+        },
+        "diagnostics": {
+          "score": 1,
+          "details": {
+            "type": "debugdata",
+            "items": [
+              {
+                "numRequests": 48,
+                "numScripts": 39,
+                "numStylesheets": 1,
+                "numFonts": 3,
+                "numTasks": 918,
+                "numTasksOver10ms": 5,
+                "numTasksOver25ms": 0,
+                "numTasksOver50ms": 0,
+                "numTasksOver100ms": 0,
+                "numTasksOver500ms": 0,
+                "rtt": 0.0336,
+                "throughput": 20299535.357416395,
+                "maxRtt": 0.0336,
+                "maxServerLatency": 17.2419,
+                "totalByteWeight": 322240,
+                "totalTaskTime": 248.59599999999878,
+                "mainDocumentTransferSize": 12056
+              }
+            ]
+          }
+        },
+        "unused-javascript": {
+          "score": 0.5,
+          "numericValue": 0,
+          "details": {
+            "type": "opportunity",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "subItemsHeading": {
+                  "key": "source",
+                  "valueType": "code"
+                },
+                "label": "URL"
+              },
+              {
+                "key": "totalBytes",
+                "valueType": "bytes",
+                "subItemsHeading": {
+                  "key": "sourceBytes"
+                },
+                "label": "Transfer Size"
+              },
+              {
+                "key": "wastedBytes",
+                "valueType": "bytes",
+                "subItemsHeading": {
+                  "key": "sourceWastedBytes"
+                },
+                "label": "Est Savings"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/hydrate-app-zJKMvw15.js",
+                "totalBytes": 88732,
+                "wastedBytes": 37317,
+                "wastedPercent": 42.05595610263308
+              }
+            ],
+            "overallSavingsMs": 0,
+            "overallSavingsBytes": 37317,
+            "sortedBy": [
+              "wastedBytes"
+            ],
+            "debugData": {
+              "type": "debugdata",
+              "metricSavings": {
+                "FCP": 0,
+                "LCP": 0
+              }
+            }
+          }
+        },
+        "render-blocking-resources": {
+          "score": 0.5,
+          "numericValue": 0,
+          "details": {
+            "type": "opportunity",
+            "headings": [
+              {
+                "key": "url",
+                "valueType": "url",
+                "label": "URL"
+              },
+              {
+                "key": "totalBytes",
+                "valueType": "bytes",
+                "label": "Transfer Size"
+              },
+              {
+                "key": "wastedMs",
+                "valueType": "timespanMs",
+                "label": "Est Savings"
+              }
+            ],
+            "items": [
+              {
+                "url": "http://127.0.0.1:4173/assets/public-quick-styles-jLMrQnNc.css",
+                "totalBytes": 12345,
+                "wastedMs": 167
+              }
+            ],
+            "overallSavingsMs": 0
+          }
+        },
+        "network-rtt": {
+          "score": 1,
+          "numericValue": 0.0336,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "origin",
+                "valueType": "text",
+                "label": "URL"
+              },
+              {
+                "key": "rtt",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "origin": "http://127.0.0.1:4173",
+                "rtt": 0.0336
+              }
+            ],
+            "sortedBy": [
+              "rtt"
+            ]
+          }
+        },
+        "network-server-latency": {
+          "score": 1,
+          "numericValue": 17.2419,
+          "details": {
+            "type": "table",
+            "headings": [
+              {
+                "key": "origin",
+                "valueType": "text",
+                "label": "URL"
+              },
+              {
+                "key": "serverResponseTime",
+                "valueType": "ms",
+                "granularity": 1,
+                "label": "Time Spent"
+              }
+            ],
+            "items": [
+              {
+                "origin": "http://127.0.0.1:4173",
+                "serverResponseTime": 17.2419
+              }
+            ],
+            "sortedBy": [
+              "serverResponseTime"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

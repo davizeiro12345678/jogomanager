@@ -1,6 +1,6 @@
 import { MatchSim } from "../src/game/sim";
 import { snapshotMatch } from "../src/game/live-match";
-import { benchmarkTeam } from "./graphics-fixture";
+import { benchmarkTeam, graphicsFixtureRulesRevision } from "./graphics-fixture";
 
 let sim: MatchSim | null = null;
 let seq = 0;
@@ -25,10 +25,13 @@ function startAuto() {
   auto = setInterval(() => advance(100), 100);
 }
 
-function initialize(seed: string, manual: boolean) {
+function initialize(seed: string, manual: boolean, requestedRevision: unknown) {
+  const rulesRevision = graphicsFixtureRulesRevision(requestedRevision);
+  const next = new MatchSim(benchmarkTeam("fla"), benchmarkTeam("pal"), seed, { rulesRevision });
   stopAuto();
   seq = 0;
-  sim = new MatchSim(benchmarkTeam("fla"), benchmarkTeam("pal"), seed);
+  sim?.dispose();
+  sim = next;
   postMessage(snapshotMatch(sim, ++seq));
   if (!manual) startAuto();
 }
@@ -37,9 +40,19 @@ function initialize(seed: string, manual: boolean) {
 // message bridge for deterministic Playwright input bursts.
 onmessage = ({
   data,
-}: MessageEvent<{ type?: string; ms?: number; manual?: boolean; seed?: string }>) => {
+}: MessageEvent<{
+  type?: string;
+  ms?: number;
+  manual?: boolean;
+  seed?: string;
+  rulesRevision?: unknown;
+}>) => {
   if (data.type === "init") {
-    initialize(data.seed?.trim().slice(0, 96) || "graphics-high-v1", data.manual === true);
+    initialize(
+      data.seed?.trim().slice(0, 96) || "graphics-high-v1",
+      data.manual === true,
+      data.rulesRevision,
+    );
     return;
   }
   if (data.type === "manual") {

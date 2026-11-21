@@ -1,3 +1,7 @@
+import { FpsWindow } from "./fps-window";
+import { fpsCopy } from "@/i18n/fps-copy";
+import type { Lang } from "@/i18n/locale-catalog";
+
 /**
  * Medidor de quadros do aparelho real do jogador.
  *
@@ -18,85 +22,143 @@ export interface FpsSample {
   low1: number;
   /** segundos já medidos */
   seconds: number;
+  /** Additional diagnostics are optional for callers holding legacy samples. */
+  frames?: number;
+  windowMs?: number;
+  low01?: number;
+  p50FrameMs?: number;
+  p95FrameMs?: number;
+  p99FrameMs?: number;
+  maxFrameMs?: number;
+  framesOver33Ms?: number;
+  framesOver50Ms?: number;
+  framesOver100Ms?: number;
+  framesOver250Ms?: number;
+  source?: "raf" | "rendered";
+  measurementKey?: string;
+  phase?: string;
+  quality?: string;
+  camera?: string;
+}
+
+export interface FpsMeasurementContext {
+  key: string;
+  phase: string;
+  quality: string;
+  camera?: string;
 }
 
 type Listener = (s: FpsSample) => void;
 
-const WINDOW_SECONDS = 30;
-
-class FpsMeter {
-  private frames: number[] = []; // duração de cada quadro (ms), janela deslizante
-  private perSecond: number[] = []; // fps fechado de cada segundo
+export class FpsMeter {
+  private readonly window = new FpsWindow();
   private listeners = new Set<Listener>();
   private raf = 0;
   private last = 0;
-  private acc = 0;
-  private countInSecond = 0;
   private running = false;
   private warmupMs = 2000;
+  private resumePending = false;
+  private source: "raf" | "rendered" = "raf";
+  private context: FpsMeasurementContext | undefined;
+  private renderedLast: number | null = null;
 
-  start() {
-    if (this.running || typeof requestAnimationFrame === "undefined") return;
+  private visibilityChanged = () => {
+    // RAF may stop completely in a hidden tab. Remember the transition instead
+    // of classifying a large, otherwise visible delta as a background pause.
+    this.resumePending = true;
+    this.window.resetPartialSecond();
+    this.warmupMs = 2000;
+  };
+
+  start(source: "raf" | "rendered" = "raf", context?: FpsMeasurementContext) {
+    if (
+      this.running ||
+      typeof document === "undefined" ||
+      (source === "raf" && typeof requestAnimationFrame === "undefined")
+    )
+      return;
+    if (source !== this.source || context?.key !== this.context?.key) this.window.reset();
     this.running = true;
+    this.source = source;
+    this.context = context;
+    this.renderedLast = null;
     this.last = performance.now();
+    this.resumePending = false;
+    this.warmupMs = 2000;
+    this.window.resetPartialSecond();
+    document.addEventListener("visibilitychange", this.visibilityChanged);
+    if (source === "rendered") return;
     const loop = (t: number) => {
+      if (!this.running) return;
       const dt = t - this.last;
       this.last = t;
       // Aba em segundo plano, retomada e aquecimento não contaminam a medição.
-      if (document.hidden || dt <= 0 || dt > 250) {
-        this.acc = 0;
-        this.countInSecond = 0;
+      if (document.hidden || this.resumePending || !Number.isFinite(dt) || dt <= 0) {
+        this.window.resetPartialSecond();
+        this.resumePending = document.hidden;
       } else if (this.warmupMs > 0) {
         this.warmupMs = Math.max(0, this.warmupMs - dt);
-      } else {
-        this.frames.push(dt);
-        if (this.frames.length > 60 * WINDOW_SECONDS) {
-          this.frames.splice(0, this.frames.length - 60 * WINDOW_SECONDS);
-        }
-        this.acc += dt;
-        this.countInSecond++;
-        if (this.acc >= 1000) {
-          this.perSecond.push((this.countInSecond * 1000) / this.acc);
-          if (this.perSecond.length > WINDOW_SECONDS) this.perSecond.shift();
-          this.acc = 0;
-          this.countInSecond = 0;
-          this.emit();
-        }
-      }
-      this.raf = requestAnimationFrame(loop);
+      } else if (this.window.add(dt)) this.emit();
+      if (this.running) this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
+  }
+
+  /** Only an opted-in renderer can advance this measurement, never a RAF or
+   * another Canvas. The first completed render establishes the time origin. */
+  recordRenderedFrame(t: number, context?: FpsMeasurementContext) {
+    if (!this.running || this.source !== "rendered" || !Number.isFinite(t)) return;
+    if (context && context.key !== this.context?.key) {
+      this.reset();
+      this.context = context;
+      this.emit();
+    }
+    if (this.renderedLast === null) {
+      this.renderedLast = t;
+      return;
+    }
+    const dt = t - this.renderedLast;
+    this.renderedLast = t;
+    if (document.hidden || this.resumePending || !Number.isFinite(dt) || dt <= 0) {
+      this.window.resetPartialSecond();
+      this.resumePending = document.hidden;
+    } else if (this.warmupMs > 0) {
+      this.warmupMs = Math.max(0, this.warmupMs - dt);
+    } else if (this.window.add(dt)) this.emit();
   }
 
   stop() {
     if (!this.running) return;
     this.running = false;
-    cancelAnimationFrame(this.raf);
+    if (this.source === "raf") cancelAnimationFrame(this.raf);
+    document.removeEventListener("visibilitychange", this.visibilityChanged);
   }
 
   reset() {
-    this.frames = [];
-    this.perSecond = [];
-    this.acc = 0;
-    this.countInSecond = 0;
+    this.window.reset();
     this.warmupMs = 2000;
+    this.resumePending = this.running;
+    this.renderedLast = null;
   }
 
   sample(): FpsSample {
-    const secs = this.perSecond;
-    const now = secs.length ? secs[secs.length - 1]! : 0;
-    const avg = secs.length ? secs.reduce((a, b) => a + b, 0) / secs.length : 0;
-    const worst = secs.length ? Math.min(...secs) : 0;
-    // 1% low: média dos piores 1% de quadros da janela, convertida em fps
-    const sorted = [...this.frames].sort((a, b) => b - a);
-    const slice = sorted.slice(0, Math.max(1, Math.round(sorted.length * 0.01)));
-    const worstMs = slice.length ? slice.reduce((a, b) => a + b, 0) / slice.length : 0;
+    const metrics = this.window.summary();
     return {
-      now: Math.round(now),
-      avg: Math.round(avg),
-      worst: Math.round(worst),
-      low1: worstMs > 0 ? Math.round(1000 / worstMs) : 0,
-      seconds: secs.length,
+      ...metrics,
+      now: Math.round(metrics.now),
+      avg: Math.round(metrics.fps),
+      worst: Math.round(metrics.worst),
+      low1: Math.round(metrics.low1),
+      seconds: Math.round(metrics.windowMs / 1000),
+      source: this.source,
+      ...(this.context
+        ? {
+            measurementKey: this.context.key,
+            phase: this.context.phase,
+            quality: this.context.quality,
+            ...(this.context.camera === undefined ? {} : { camera: this.context.camera }),
+          }
+        : {}),
     };
   }
 
@@ -116,22 +178,53 @@ class FpsMeter {
 export const fpsMeter = new FpsMeter();
 
 /** Texto pronto para o jogador copiar e enviar. */
-export function fpsReport(s: FpsSample, extra: Record<string, string | number>): string {
+export function fpsReport(
+  s: FpsSample,
+  extra: Record<string, string | number>,
+  lang: Lang = "pt-BR",
+): string {
+  const copy = fpsCopy(lang);
   const lines = [
-    `FPS médio: ${s.avg}`,
-    `FPS agora: ${s.now}`,
-    `Pior segundo: ${s.worst}`,
-    `1% piores quadros: ${s.low1}`,
-    `Tempo medido: ${s.seconds}s`,
+    `${copy.average}: ${s.avg}`,
+    `${copy.current}: ${s.now}`,
+    `${copy.worstSecond}: ${s.worst}`,
+    `${copy.onePercentLow}: ${s.low1}`,
+    `${copy.measuredTime}: ${s.seconds}s`,
   ];
+  if (s.source) lines.push(s.source === "rendered" ? copy.renderedSource : copy.rafSource);
+  if (s.phase) lines.push(`${copy.measuredPhase}: ${s.phase}`);
+  if (s.quality) lines.push(`${copy.measuredPreset}: ${s.quality}`);
+  if (s.camera) lines.push(`${copy.measuredCamera}: ${s.camera}`);
+  if (s.measurementKey) lines.push(`${copy.measuredScenario}: ${s.measurementKey}`);
+  if (s.frames !== undefined && s.windowMs !== undefined) {
+    lines.push(`${copy.framesAndTime}: ${s.frames} / ${s.windowMs.toFixed(3)} ms`);
+    lines.push(
+      `${copy.preciseAverage}: ${s.windowMs > 0 ? ((s.frames * 1000) / s.windowMs).toFixed(3) : "0"}`,
+    );
+  }
+  const diagnosticLines: [string, number | undefined, string][] = [
+    [copy.pointOnePercentLow, s.low01, " FPS"],
+    [copy.p50, s.p50FrameMs, " ms"],
+    [copy.p95, s.p95FrameMs, " ms"],
+    [copy.p99, s.p99FrameMs, " ms"],
+    [copy.maxFrame, s.maxFrameMs, " ms"],
+    [copy.over33, s.framesOver33Ms, ""],
+    [copy.over50, s.framesOver50Ms, ""],
+    [copy.over100, s.framesOver100Ms, ""],
+    [copy.over250, s.framesOver250Ms, ""],
+  ];
+  for (const [label, value, unit] of diagnosticLines)
+    if (value !== undefined) lines.push(`${label}: ${Number(value.toFixed(3))}${unit}`);
   for (const [k, v] of Object.entries(extra)) lines.push(`${k}: ${v}`);
   if (typeof navigator !== "undefined") {
-    lines.push(`Navegador: ${navigator.userAgent}`);
+    lines.push(`${copy.browser}: ${navigator.userAgent}`);
     const cores = navigator.hardwareConcurrency;
-    if (cores) lines.push(`Núcleos: ${cores}`);
+    if (cores) lines.push(`${copy.cores}: ${cores}`);
   }
   if (typeof window !== "undefined") {
-    lines.push(`Tela: ${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}`);
+    lines.push(
+      `${copy.screen}: ${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}`,
+    );
   }
   return lines.join("\n");
 }

@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { StatsPage } from "@/pages/stats";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/stats")({
   ssr: false,
@@ -26,5 +24,8 @@ export const Route = createFileRoute("/stats")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: StatsPage,
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/stats"), "StatsPage"),
 });

@@ -80,9 +80,11 @@ export function canCreateCareer({
 }
 
 export function canMutateCareer(status: CareerHydrationStatus): boolean {
-  return status === "empty" || status === "ready";
+  // The hook additionally requires a local snapshot and known generation for
+  // an authenticated offline edit. Creation and reset use stricter gates.
+  return status === "empty" || status === "ready" || status === "offline";
 }
 
 export function canResetCareer(status: CareerHydrationStatus): boolean {
-  return canMutateCareer(status);
+  return status === "empty" || status === "ready";
 }

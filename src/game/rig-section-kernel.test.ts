@@ -11,6 +11,37 @@ import {
 } from "./rig-section-kernel";
 
 describe("bounded rig-section presentation kernel", () => {
+  it.each([3, 16, 64, 128])("preserves every Float32 vertex at %i radial segments", (radial) => {
+    const rings = new Float64Array([
+      0, 0.2, 0.22, 0, 0.35, 0.24, 0.25, 0.01, 0.8, 0.18, 0.19, 0, 1, 0.12, 0.13, -0.01,
+    ]);
+    for (const roundness of [0.25, 1, 1.2, 4]) {
+      const input = { rings, radial, roundness, caps: 3 };
+      const actual = generateRigSectionFallback(input);
+      const independent = generateRigSectionFallback(input);
+      expect(actual.buffer).not.toBe(independent.buffer);
+      for (let row = 0; row < rings.length / 4; row++) {
+        for (let side = 0; side <= radial; side++) {
+          const u = side / radial,
+            angle = u * Math.PI * 2;
+          const s = Math.sin(angle),
+            c = Math.cos(angle);
+          const offset = row * 4;
+          const expected = new Float32Array([
+            Math.sign(s) * Math.abs(s) ** roundness * rings[offset + 1]!,
+            rings[offset]!,
+            Math.sign(c) * Math.abs(c) ** roundness * rings[offset + 2]! + rings[offset + 3]!,
+            u,
+            (rings[offset]! - rings[0]!) / Math.max(0.001, rings[rings.length - 4]! - rings[0]!),
+          ]);
+          const vertex = (row * (radial + 1) + side) * 5;
+          expect(actual.slice(vertex, vertex + 5)).toEqual(expected);
+        }
+      }
+      actual[0] = 99;
+      expect(independent[0]).not.toBe(99);
+    }
+  });
   it.each([16, 64])("matches bounded Rust/WASM output at %i radial segments", (radial) => {
     initSync({
       module: readFileSync(new URL("./wasm/pkg/crowd_visibility_wasm_bg.wasm", import.meta.url)),

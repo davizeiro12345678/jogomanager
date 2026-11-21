@@ -39,6 +39,17 @@ export function batchRigidActors(root: THREE.Group): RigidActorBatch {
     )
       sources.push(mesh);
   });
+  // Only source ancestors are needed to copy animated poses. Visiting the
+  // generated skins, skeleton and unrelated scenery here repeats the full
+  // renderer world update on every frame.
+  const needed = new Set<THREE.Object3D>();
+  for (const source of sources)
+    for (let node: THREE.Object3D | null = source; node && node !== root; node = node.parent)
+      needed.add(node);
+  const sourceNodes: { node: THREE.Object3D; parent: THREE.Object3D | null }[] = [];
+  root.traverse((node) => {
+    if (needed.has(node)) sourceNodes.push({ node, parent: node.parent });
+  });
   const boneRoot = new THREE.Bone();
   const bones = sources.map((source) => {
     const bone = new THREE.Bone();
@@ -124,7 +135,20 @@ export function batchRigidActors(root: THREE.Group): RigidActorBatch {
     sources,
     sync() {
       if (disposed) return;
-      root.updateWorldMatrix(true, true);
+      if (sourceNodes.some(({ node, parent }) => node.parent !== parent)) {
+        // A rare hierarchy edit retains the original complete update until
+        // the owner rebuilds its batch; cached ancestry must never freeze it.
+        root.updateWorldMatrix(true, true);
+      } else {
+        root.updateWorldMatrix(true, false);
+        for (const { node } of sourceNodes) {
+          if (node.matrixAutoUpdate) node.updateMatrix();
+          if (node.matrixWorldAutoUpdate) {
+            if (node.parent === null) node.matrixWorld.copy(node.matrix);
+            else node.matrixWorld.multiplyMatrices(node.parent.matrixWorld, node.matrix);
+          }
+        }
+      }
       inverse.copy(root.matrixWorld).invert();
       for (let index = 0; index < sources.length; index++) {
         const source = sources[index]!;

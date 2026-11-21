@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-11-09 01:31:00 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "runId": 42543242369,
+  "jobs": [
+    {
+      "id": 128922613683,
+      "status": "in_progress",
+      "conclusion": null,
+      "current": [
+        "Build and capture candidate"
+      ],
+      "failed": []
+    }
+  ]
+}

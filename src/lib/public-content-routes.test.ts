@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isLightweightCssPath,
   isPublicContentPath,
+  shouldPreloadArticleHeadingFont,
   shouldInitializeWorldOnEntry,
 } from "./public-content-routes";
 
@@ -39,6 +40,23 @@ describe("public content isolation", () => {
       expect(isPublicContentPath(path), path).toBe(false);
     }
   });
+  it("preloads the locally hosted article heading font only on editorial content", () => {
+    for (const route of ["/guias", "/guia-de-scouting", "/melhores-formacoes", "/sobre/"]) {
+      expect(shouldPreloadArticleHeadingFont(route), route).toBe(true);
+    }
+    for (const route of [
+      "/",
+      "/partida-rapida",
+      "/produtos",
+      "/tabelas",
+      "/tabelas/brasileirao-serie-a",
+      "/new",
+      "/dashboard",
+    ]) {
+      expect(shouldPreloadArticleHeadingFont(route), route).toBe(false);
+    }
+  });
+
   it("uses light CSS for quick match without skipping world startup", () => {
     expect(isLightweightCssPath("/partida-rapida")).toBe(true);
     expect(isPublicContentPath("/partida-rapida")).toBe(false);

@@ -80,7 +80,9 @@ export function applyWeeklyDevelopment(
         });
       }
     }
-    if (q.suspended) q.suspended = false;
+    // A suspension is served by a fixture, not by an empty calendar week.
+    // Live performances already include any ban earned in that very match.
+    if (matchPlayed && !livePids.has(id) && q.suspended) q.suspended = false;
 
     // condição e moral
     q.condition = Math.max(
@@ -159,7 +161,7 @@ export function applyWeeklyDevelopment(
       }
     }
     // desgaste físico vale para todo mundo que jogou, inclusive ao vivo
-    if (played) {
+    if (matchPlayed && played) {
       q.condition = Math.max(40, q.condition - 8 - Math.floor(rnd() * 8));
     }
 

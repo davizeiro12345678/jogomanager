@@ -1,0 +1,102 @@
+{
+  "recordedAt": "2026-11-09 01:05:12 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "repository": "davizeiro12345678/jogomanager",
+  "runId": 42543242353,
+  "jobId": 128922613659,
+  "jobConclusion": "success",
+  "mode": "simulation",
+  "benchmarksMeasured": [
+    {
+      "recordedAt": "2026-11-09T01:02:41.0773343Z",
+      "benchmark": "src/game/benchmarks/match.ts::match setup: buildTeamSetup"
+    },
+    {
+      "recordedAt": "2026-11-09T01:02:43.3499172Z",
+      "benchmark": "src/game/benchmarks/match.ts::match setup: new MatchSim"
+    },
+    {
+      "recordedAt": "2026-11-09T01:02:50.0590367Z",
+      "benchmark": "src/game/benchmarks/match.ts::match simulation: 300 live ticks"
+    },
+    {
+      "recordedAt": "2026-11-09T01:02:55.3274207Z",
+      "benchmark": "src/game/benchmarks/match.ts::match simulation: 120 coarse steps"
+    },
+    {
+      "recordedAt": "2026-11-09T01:02:57.0747897Z",
+      "benchmark": "src/game/benchmarks/match.ts::live match: snapshotMatch"
+    },
+    {
+      "recordedAt": "2026-11-09T01:02:58.5849357Z",
+      "benchmark": "src/game/benchmarks/match.ts::live match: WorkerMatchView.apply"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:22.0844498Z",
+      "benchmark": "src/game/benchmarks/match.ts::replay codec: encodeReplay"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:31.9418505Z",
+      "benchmark": "src/game/benchmarks/match.ts::replay codec: decodeReplay"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:34.5404721Z",
+      "benchmark": "src/game/benchmarks/season.ts::season: generateFixtures"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:36.1868804Z",
+      "benchmark": "src/game/benchmarks/season.ts::season: tableFromFixtures"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:40.7166951Z",
+      "benchmark": "src/game/benchmarks/season.ts::season: simulateDivisionTable"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:42.5019626Z",
+      "benchmark": "src/game/benchmarks/season.ts::rng: makeRng 10k draws"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:44.6621864Z",
+      "benchmark": "src/game/benchmarks/rig.ts::rig geometry: fallback 64 radial"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:46.4106590Z",
+      "benchmark": "src/game/benchmarks/rig.ts::rig geometry: fallback 16 radial"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:47.9874385Z",
+      "benchmark": "src/game/benchmarks/rig.ts::rig geometry: Rust/WASM 64 radial"
+    },
+    {
+      "recordedAt": "2026-11-09T01:03:49.4197517Z",
+      "benchmark": "src/game/benchmarks/rig.ts::rig geometry: Rust/WASM 16 radial"
+    }
+  ],
+  "logFacts": [
+    "2026-11-09T01:02:38.7098105Z [CodSpeed] running with @codspeed/tinybench v5.7.1 (simulation mode)",
+    "2026-11-09T01:02:41.0773343Z [CodSpeed] Measured src/game/benchmarks/match.ts::match setup: buildTeamSetup",
+    "2026-11-09T01:02:43.3499172Z [CodSpeed] Measured src/game/benchmarks/match.ts::match setup: new MatchSim",
+    "2026-11-09T01:02:50.0590367Z [CodSpeed] Measured src/game/benchmarks/match.ts::match simulation: 300 live ticks",
+    "2026-11-09T01:02:55.3274207Z [CodSpeed] Measured src/game/benchmarks/match.ts::match simulation: 120 coarse steps",
+    "2026-11-09T01:02:57.0747897Z [CodSpeed] Measured src/game/benchmarks/match.ts::live match: snapshotMatch",
+    "2026-11-09T01:02:58.5849357Z [CodSpeed] Measured src/game/benchmarks/match.ts::live match: WorkerMatchView.apply",
+    "2026-11-09T01:03:22.0844498Z [CodSpeed] Measured src/game/benchmarks/match.ts::replay codec: encodeReplay",
+    "2026-11-09T01:03:31.9418505Z [CodSpeed] Measured src/game/benchmarks/match.ts::replay codec: decodeReplay",
+    "2026-11-09T01:03:34.5404721Z [CodSpeed] Measured src/game/benchmarks/season.ts::season: generateFixtures",
+    "2026-11-09T01:03:36.1868804Z [CodSpeed] Measured src/game/benchmarks/season.ts::season: tableFromFixtures",
+    "2026-11-09T01:03:40.7166951Z [CodSpeed] Measured src/game/benchmarks/season.ts::season: simulateDivisionTable",
+    "2026-11-09T01:03:42.5019626Z [CodSpeed] Measured src/game/benchmarks/season.ts::rng: makeRng 10k draws",
+    "2026-11-09T01:03:44.6621864Z [CodSpeed] Measured src/game/benchmarks/rig.ts::rig geometry: fallback 64 radial",
+    "2026-11-09T01:03:46.4106590Z [CodSpeed] Measured src/game/benchmarks/rig.ts::rig geometry: fallback 16 radial",
+    "2026-11-09T01:03:47.9874385Z [CodSpeed] Measured src/game/benchmarks/rig.ts::rig geometry: Rust/WASM 64 radial",
+    "2026-11-09T01:03:49.4197517Z [CodSpeed] Measured src/game/benchmarks/rig.ts::rig geometry: Rust/WASM 16 radial",
+    "2026-11-09T01:03:49.6689884Z [CodSpeed] Done running 16 benches.",
+    "2026-11-09T01:03:53.5533822Z Performance data uploaded",
+    "2026-11-09T01:03:53.5534715Z Linked repository: davizeiro12345678/jogomanager"
+  ],
+  "limitations": [
+    "The job log confirms16 measured benchmarks and data upload but prints a table of16 null entries, not numeric benchmark times.",
+    "No GitHubActions artifacts are returned for the CodSpeed workflow.",
+    "A successful workflow is not evidence of the requested89percent improvement."
+  ]
+}

@@ -4,6 +4,37 @@ import { batchRigidActors } from "./rigid-actor-batch";
 import { censusScene } from "./scene-census";
 
 describe("animated sideline batching", () => {
+  it("updates source ancestors without traversing unrelated scenery and survives reparenting", () => {
+    const parent = new THREE.Group();
+    parent.scale.set(-1.1, 0.8, 1.3);
+    const root = new THREE.Group();
+    parent.add(root);
+    const pivot = new THREE.Group();
+    const source = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    pivot.add(source);
+    const unrelated = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    root.add(pivot, unrelated);
+    const batch = batchRigidActors(root);
+    const updateUnrelated = vi.spyOn(unrelated, "updateMatrix");
+    pivot.position.set(2, 3, -1);
+    root.rotation.y = 0.7;
+    batch.sync();
+    expect(updateUnrelated).not.toHaveBeenCalled();
+    const actual = source.matrixWorld.clone();
+    root.updateWorldMatrix(true, true);
+    expect(actual.elements).toEqual(source.matrixWorld.elements);
+    const other = new THREE.Group();
+    other.position.set(4, -2, 1);
+    root.add(other);
+    other.add(source);
+    batch.sync();
+    const bone = batch.meshes[0]!.skeleton.bones[0]!;
+    const expected = root.matrixWorld.clone().invert().multiply(source.matrixWorld);
+    bone.matrix.elements.forEach((value, index) =>
+      expect(value).toBeCloseTo(expected.elements[index]!, 11),
+    );
+    batch.dispose();
+  });
   it("preserves independent joint movement, parent transforms, colors and triangle counts", () => {
     const root = new THREE.Group();
     root.position.set(7, 0, -11);

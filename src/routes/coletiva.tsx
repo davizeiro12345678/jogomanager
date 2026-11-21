@@ -3,9 +3,7 @@
  * tons de resposta. Cada resposta mexe com moral, diretoria, torcida e
  * pressão — e a manchete do dia seguinte nasce do seu tom.
  */
-import { createFileRoute } from "@tanstack/react-router";
-
-import { PressPage } from "@/pages/coletiva";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/coletiva")({
   ssr: false,
@@ -22,5 +20,8 @@ export const Route = createFileRoute("/coletiva")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: PressPage,
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/coletiva"), "PressPage"),
 });

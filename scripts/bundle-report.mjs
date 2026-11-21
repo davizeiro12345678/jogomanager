@@ -111,7 +111,7 @@ const cinematicSetChunks = cinematicSetChunkPrefixes.map(({ set, prefix }) => {
 const entries = chunks
   .filter(
     (c) =>
-      /^(?:client-|index-|new-|dashboard-|editor-|jogador\.painel-|jogador\.index-|match-|partida-rapida-|match\.worker-|CinematicStage3D-)/.test(
+      /^(?:client-|index-|new-|dashboard-|editor-|jogador\.painel-|jogador\.index-|match-|partida-rapida-|multiplayer-|match\.worker-|CinematicStage3D-)/.test(
         c.name,
       ) || c.surface === "home",
   )

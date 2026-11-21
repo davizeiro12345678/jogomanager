@@ -1,0 +1,32 @@
+[Unit]
+Description=JogoManager public club catalog (anonymous read-only cache)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=jmapi
+Group=jmapi
+WorkingDirectory=/opt/jogomanager-catalog
+EnvironmentFile=/etc/jogomanager-catalog/catalog.env
+ExecStart=/usr/bin/python3 -I /opt/jogomanager-catalog/gateway.py
+Restart=on-failure
+RestartSec=4
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+MemoryMax=160M
+CPUQuota=125%
+TasksMax=64
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX
+RestrictSUIDSGID=true
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

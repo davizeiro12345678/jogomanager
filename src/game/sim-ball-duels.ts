@@ -9,8 +9,10 @@ import {
   blockRestitution,
   fatigueStrikeFactor,
   firstTouchSpill,
+  goalkeeperCanReach,
   parryReboundSpeed,
   shotProfile,
+  sweptBallPlayerContact,
 } from "./match-physics-extras";
 import { type Side, type SimPlayer } from "./sim-contracts";
 import {
@@ -40,28 +42,37 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
     p.interceptions++;
     sim.stats[p.side].interceptions++;
   }
-  // impedimento: recebe à frente da linha num passe para frente (sem isenção)
-  if (sim.pass && isReceiver && sim.time > sim.exemptUntil) {
-    const forward = (p.x - sim.pass.fromX) * sim.pass.dir > 1;
-    if (forward && isOffside(p.x, defensiveLineX(sim.players, p.side), sim.pass.dir)) {
-      p.offsides++;
-      sim.stats[p.side].offsides++;
-      sim.pass = null;
-      sim.ball.vx = 0;
-      sim.ball.vz = 0;
-      sim.ballVy = 0;
-      sim.ball.height = 0.12;
-      sim.trigger(p, "protest", 1.2);
-      sim.pushEvent({
-        minute: sim.minute(),
-        type: "offside",
-        side: p.side,
-        text: `Impedimento de ${p.name}.`,
-      });
-      // infração: a defesa fica com a bola no local
-      sim.restartFor(p.side === "home" ? "away" : "home", "throwIn");
-      return;
-    }
+  // Revision 2 uses the teammate's touch, including another receiver or rebound.
+  // Existing matches retain their exact reception-time rule and RNG order.
+  const offside =
+    sim.rulesRevision === 2
+      ? sim.offsideAtContact(p)
+      : !!sim.pass &&
+        isReceiver &&
+        sim.time > sim.exemptUntil &&
+        (p.x - sim.pass.fromX) * sim.pass.dir > 1 &&
+        isOffside(p.x, defensiveLineX(sim.players, p.side), sim.pass.dir);
+  if (offside) {
+    p.offsides++;
+    sim.stats[p.side].offsides++;
+    sim.pass = null;
+    sim.ball.vx = 0;
+    sim.ball.vz = 0;
+    sim.ballVy = 0;
+    sim.ball.height = 0.12;
+    sim.trigger(p, "protest", 1.2);
+    sim.pushEvent({
+      minute: sim.minute(),
+      type: "offside",
+      side: p.side,
+      text: `Impedimento de ${p.name}.`,
+    });
+    // infração: a defesa fica com a bola no local
+    sim.restartFor(
+      p.side === "home" ? "away" : "home",
+      sim.rulesRevision === 2 ? "indirectFK" : "throwIn",
+    );
+    return;
   }
   const skill = (p.passing * 0.5 + p.physical * 0.3 + p.defending * 0.2) / 100;
   const difficulty = ballSpeed / 34 + (h > 0.9 ? 0.28 : 0) + controlFailAdd(sim.weather);
@@ -76,6 +87,7 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
   sim.ballSpin = 0;
 
   if (ok) {
+    sim.noteOffsideControl(p);
     sim.ball.holder = p.id;
     sim.possession = p.side;
     sim.ball.vx = 0;
@@ -88,6 +100,7 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
   }
 
   // toque mal dado: a bola sobra à frente, ainda em disputa
+  sim.noteOffsideDeflection(p);
   const dirx = sim.attackDir(p.side);
   const spill = firstTouchSpill(2.6 + sim.rnd() * 3.4, ballSpeed, sim.weather);
   const ang = (sim.rnd() - 0.5) * 1.4;
@@ -106,22 +119,43 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
  * Defesa ativa: um adversário no caminho pode bloquear o chute/passe.
  * Devolve verdadeiro quando a jogada foi encerrada aqui.
  */
-export function tryBlock(sim: MatchSim, dt: number): boolean {
+export function tryBlock(
+  sim: MatchSim,
+  dt: number,
+  previous?: { x: number; z: number; height: number },
+): boolean {
   const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
-  if (speed < 8 || sim.ball.height > 1.9) return false;
+  if (speed < 8 || (sim.contactPhysicsRevision !== 2 && sim.ball.height > 1.9)) return false;
   const attacking = sim.pendingShot?.side ?? (sim.pass ? sim.lastTouch : null);
   if (!attacking) return false;
 
   for (const p of sim.players) {
     if (p.side === attacking || p.pos === "GK" || p.sentOff) continue;
-    const d = Math.hypot(p.x - sim.ball.x, p.z - sim.ball.z);
-    if (d > 1.25) continue;
+    const swept =
+      sim.contactPhysicsRevision === 2 && previous
+        ? sweptBallPlayerContact(previous.x, previous.z, sim.ball.x, sim.ball.z, p.x, p.z, 1.25)
+        : null;
+    if (sim.contactPhysicsRevision === 2 && previous) {
+      if (!swept) continue;
+      const height = previous.height + (sim.ball.height - previous.height) * swept.fraction;
+      if (height > 1.9 || height < 0) continue;
+    } else if (Math.hypot(p.x - sim.ball.x, p.z - sim.ball.z) > 1.25 || sim.ball.height > 1.9)
+      continue;
     const chance = (0.35 + (p.defending / 100) * 0.5) * Math.min(1, dt * 30);
     if (sim.rnd() > chance) continue;
 
+    // Move the v2 collision to the actual swept contact point before the
+    // rebound. A fast ball cannot jump the defender and then rebound metres
+    // ahead of the athlete. Historical revision-1 games stay unchanged.
+    if (swept && previous) {
+      sim.ball.x = previous.x + (sim.ball.x - previous.x) * swept.fraction;
+      sim.ball.z = previous.z + (sim.ball.z - previous.z) * swept.fraction;
+      sim.ball.height = previous.height + (sim.ball.height - previous.height) * swept.fraction;
+    }
     const slide = sim.rnd() < 0.45;
     sim.trigger(p, slide ? "slide" : "block", 0.7);
     p.tackles++;
+    sim.noteOffsideDeflection(p);
     sim.lastTouch = p.side;
     const wasShot = !!sim.pendingShot;
     sim.pendingShot = null;
@@ -158,7 +192,7 @@ export function resolveShot(
   const s = sim.pendingShot!;
   const dir = sim.attackDir(s.side);
   const goalX = dir * FIELD_X;
-  const gk = sim.players.find((p) => p.side !== s.side && p.pos === "GK") ?? null;
+  const gk = sim.goalkeeper(s.side === "home" ? "away" : "home");
   const shooter = sim.players.find((p) => p.id === s.shooter) ?? null;
   const planeX = goalX - dir * 1.6;
   const crossed =
@@ -177,6 +211,23 @@ export function resolveShot(
   const crossingZ = previous.z + (sim.ball.z - previous.z) * ratio;
   const crossingHeight = previous.height + (sim.ball.height - previous.height) * ratio;
 
+  // The legacy saved-outcome rule remains frozen for historical replays.
+  // Revised physics checks whether the keeper really arrived at the contact
+  // point; a distant dive cannot magically prevent an on-target goal.
+  if (
+    sim.contactPhysicsRevision === 2 &&
+    s.outcome === "saved" &&
+    gk &&
+    !goalkeeperCanReach(gk.x, gk.z, planeX, crossingZ, crossingHeight, gk.defending, gk.stamina)
+  ) {
+    if (Math.abs(crossingZ) < GOAL_Z && crossingHeight < 2.44) {
+      sim.pendingShot = null;
+      sim.scoreGoal(s.side, shooter, s.fromX, s.fromZ, s.xg, s.bigChance, s.bodyPart);
+      return true;
+    }
+    return sim.woodworkOrRelease(s, shooter, crossingZ, crossingHeight, dir);
+  }
+
   // defesa do goleiro
   if (s.outcome === "saved" && gk) {
     const dive = crossingZ - gk.z;
@@ -192,6 +243,7 @@ export function resolveShot(
       1.1,
     );
     gk.saves++;
+    sim.noteOffsideDeflection(gk);
     sim.stats[s.side].onTarget++;
     sim.recordShot({
       x: s.fromX,
@@ -213,8 +265,12 @@ export function resolveShot(
     sim.pendingShot = null;
     // metade das defesas dá rebote; a outra o goleiro segura
     if (sim.rnd() < 0.45) {
-      gk.x = sim.ball.x - dir * 0.4;
-      gk.z = sim.ball.z * 0.6;
+      // Historical replays preserve the old keeper positioning. The revised
+      // model keeps the actual dive location: a save cannot teleport a keeper.
+      if (sim.contactPhysicsRevision !== 2) {
+        gk.x = sim.ball.x - dir * 0.4;
+        gk.z = sim.ball.z * 0.6;
+      }
       const ang = Math.atan2(sim.ball.z, -dir) + (sim.rnd() - 0.5) * 1.2;
       const back = parryReboundSpeed(
         6 + sim.rnd() * 7,
@@ -228,7 +284,7 @@ export function resolveShot(
       sim.lastTouch = gk.side;
       sim.looseTime = 0;
     } else {
-      sim.scheduleRestart(gk.side);
+      sim.scheduleRestart(gk.side, "keeperControl");
     }
     return true;
   }
@@ -305,7 +361,7 @@ export function woodworkOrRelease(
 }
 
 export function dribble(sim: MatchSim, holder: SimPlayer, dt: number) {
-  if (sim.restartTimer > 0) {
+  if (sim.restartTimer > 0 || sim.holdsExemptRestart(holder)) {
     const k = Math.exp(-7 * dt);
     holder.vx *= k;
     holder.vz *= k;
@@ -330,11 +386,24 @@ export function dribble(sim: MatchSim, holder: SimPlayer, dt: number) {
 
 export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
   const { opp, dist } = sim.nearestOpponent(holder);
-  if (!opp || dist > 2.2 || sim.restartTimer > 0) return;
+  // v2 requires body/foot reach before stealing possession; a successful
+  // random tackle must not transfer the ball across two metres of open field.
+  const contactReach = sim.contactPhysicsRevision === 2 ? 1.08 : 2.2;
+  if (!opp || dist > contactReach || sim.restartTimer > 0) return;
+  // Body proximity alone is not enough: the defender must reach the actual
+  // ball, otherwise a tackle on the carrier's back teleports possession.
+  if (
+    sim.contactPhysicsRevision === 2 &&
+    Math.hypot(opp.x - sim.ball.x, opp.z - sim.ball.z) > contactReach
+  )
+    return;
   const press = 0.55 + sim.setup(opp.side).tactics.pressing * 0.22;
   let support = 0;
   for (const defender of sim.players) {
     if (defender.side !== opp.side || defender.id === opp.id) continue;
+    // V2 counts only teammates still playing; omitted revisions keep historical
+    // duel outcomes and their exact random draw order for saved replays.
+    if (defender.sentOff && sim.setup(opp.side).tacticalAiRevision === 2) continue;
     if (Math.hypot(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
   }
   const overload = 1 + Math.min(2, support) * 0.28;
@@ -401,18 +470,21 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
     sim.ball.holder = opp.id;
     sim.possession = opp.side;
     sim.lastTouch = opp.side;
+    sim.noteOffsideControl(opp);
     sim.decisionTimer = 0.4;
     sim.trigger(opp, "intercept", 0.5);
+    if (sim.contactPhysicsRevision === 2) sim.synchronizeBallPhysics();
     if (sim.rnd() < 0.008) sim.injure(holder, "na dividida");
   }
 }
 
 export function shoot(sim: MatchSim, holder: SimPlayer, distGoal: number) {
+  sim.noteOffsideKick(holder, sim.ball.x);
   const side = holder.side;
   const dir = sim.attackDir(side);
   sim.stats[side].shots++;
   holder.shots++;
-  const gk = sim.players.find((p) => p.side !== side && p.pos === "GK");
+  const gk = sim.goalkeeper(side === "home" ? "away" : "home");
   const gkSkill = gk ? gk.defending * 0.7 + gk.physical * 0.3 : 60;
   const { dist: pressD } = sim.nearestOpponent(holder);
   const xg = xgForShot({

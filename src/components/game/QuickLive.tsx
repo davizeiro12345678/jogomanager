@@ -9,9 +9,18 @@ import {
   MoreHorizontal,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Crest } from "@/components/game/Crest";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { MatchLoading } from "@/components/game/MatchLoading";
 import { MatchReport } from "@/components/game/MatchReport";
+import { MatchScoreLine } from "@/features/match/MatchScoreLine";
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
 import { detectQuality } from "@/game/device";
 import type { NarrationEvent } from "@/game/narrator";
@@ -69,8 +78,11 @@ export default function QuickLive({
     const ai = aiTactics(difficulty);
     return {
       home: buildTeamSetup(myId),
-      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing),
+      // Activate v2 only for newly started CPU quick-match opponents.
+      // Old replay/career simulations remain on the historical ruleset.
+      away: buildTeamSetup(oppId, "4-4-2", ai.mentality, ai.pressing, { tacticalAiRevision: 2 }),
       seed,
+      rulesRevision: 2 as const,
     };
   }, [myId, oppId, difficulty, seed]);
   const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
@@ -92,6 +104,11 @@ export default function QuickLive({
   const [showEvents, setShowEvents] = useState(false);
   const [showTools, setShowTools] = useState(false);
   const toolsTrigger = useRef<HTMLButtonElement>(null);
+  const matchHeading = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    matchHeading.current?.focus({ preventScroll: true });
+  }, []);
   const [snap, setSnap] = useState<Snap>(() => snapshot(sim));
   const controllerRef = useRef<LiveMatchController | null>(null);
 
@@ -177,7 +194,8 @@ export default function QuickLive({
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (event.key === "Escape" && !target?.closest('[role="dialog"]')) {
+      if (event.defaultPrevented || target?.closest('[role="dialog"]')) return;
+      if (event.key === "Escape") {
         setShowEvents(false);
         setShowTools(false);
         setPaused(true);
@@ -204,10 +222,6 @@ export default function QuickLive({
         );
       if (event.key.toLowerCase() === "n") setNarrating((v) => !v);
       if (["1", "2", "3", "4"].includes(event.key)) setSpeed([1, 2, 4, 8][Number(event.key) - 1]!);
-      if (event.key === "Escape") {
-        setShowEvents(false);
-        setPaused(true);
-      }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -221,8 +235,18 @@ export default function QuickLive({
   const away = safeClub(oppId);
 
   return (
-    <div className="match-interface quick-match relative h-[100dvh] w-full overflow-hidden bg-[#070b12]">
-      <Stadium3D sim={sim} mode={camera} quality={quality} paused={paused || done} />
+    <div className="match-interface quick-match">
+      <div className="match-quick-stage">
+        <Suspense fallback={<MatchLoading />}>
+          <Stadium3D
+            sim={sim}
+            mode={camera}
+            quality={quality}
+            paused={paused || done}
+            measurementKey={`quick:r${setups.rulesRevision ?? 1}:${setups.seed}:${setups.home.clubId}:${setups.away.clubId}`}
+          />
+        </Suspense>
+      </div>
       <button
         type="button"
         onClick={() => {
@@ -230,49 +254,37 @@ export default function QuickLive({
           onExit();
         }}
         aria-label={t("match.back")}
-        className="match-quick-back absolute z-20 grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-black/65 text-white/90 backdrop-blur"
+        className="match-quick-back"
       >
         <ArrowLeft size={18} />
       </button>
-      {paused ? (
-        <div
-          role="status"
-          className="pointer-events-none absolute inset-x-0 top-24 z-10 flex justify-center"
-        >
-          <span className="rounded-full border border-primary/30 bg-black/75 px-4 py-1.5 text-xs text-primary">
-            {t("match.paused")}
-          </span>
-        </div>
-      ) : null}
-      <h1 className="sr-only">
+      <p role="status" className="sr-only">
+        {paused ? t("match.paused") : ""}
+      </p>
+      <h1 ref={matchHeading} tabIndex={-1} className="sr-only">
         Partida rápida: {home.name} x {away.name}
       </h1>
 
-      <div className="match-quick-score-wrap pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
+      <div className="match-quick-score-wrap">
         <div
-          className="match-quick-scoreboard w-full max-w-md overflow-hidden rounded-2xl border border-white/12 bg-black/80 shadow-2xl backdrop-blur-xl"
+          className="match-scoreboard match-scoreboard-quick"
           aria-label={`${home.short} ${snap.hg}, ${away.short} ${snap.ag}, ${t("match.minute")} ${snap.minute}`}
         >
-          <div className="match-quick-score-row flex items-center gap-2 px-3 py-2">
-            <Crest club={home} size={26} detail="simple" />
-            <span className="font-display text-base text-white">{home.short}</span>
-            <span className="match-quick-score mx-auto font-display text-2xl tabular-nums text-white">
-              {snap.hg} <span className="text-white/35">:</span> {snap.ag}
-            </span>
-            <span className="font-display text-base text-white">{away.short}</span>
-            <Crest club={away} size={26} detail="simple" />
-            <span className="match-quick-clock ml-1 rounded-md bg-primary px-2 py-0.5 font-display text-xs tabular-nums text-primary-foreground">
-              {paused ? "||" : `${snap.minute}'`}
-            </span>
-          </div>
-          <div className="match-quick-possession flex h-1.5 w-full">
+          <MatchScoreLine
+            home={home}
+            away={away}
+            homeGoals={snap.hg}
+            awayGoals={snap.ag}
+            clock={`${paused ? "Ⅱ " : ""}${snap.minute}'`}
+          />
+          <div aria-hidden="true" className="match-quick-possession">
             <div
-              className="bg-primary transition-[width] duration-500"
-              style={{ width: `${snap.poss[0]}%` }}
+              className="transition-[width] duration-500"
+              style={{ width: `${snap.poss[0]}%`, backgroundColor: home.primary }}
             />
-            <div className="flex-1 bg-white/40" />
+            <div className="flex-1" style={{ backgroundColor: away.primary }} />
           </div>
-          <div className="match-quick-statistics flex justify-between px-4 py-1 text-xs text-white/90">
+          <div className="match-quick-statistics">
             <span>
               {t("match.possession")} {snap.poss[0]}%
             </span>
@@ -287,10 +299,20 @@ export default function QuickLive({
       </div>
 
       {showEvents ? (
-        <div
-          aria-label={t("match.events")}
-          className="match-quick-feed absolute z-10 overflow-y-auto rounded-2xl border border-white/20 bg-black/90 p-3 text-sm text-white backdrop-blur-xl"
-        >
+        <div aria-label={t("match.events")} role="log" className="match-quick-feed">
+          <div className="match-quick-tools-heading">
+            <strong>{t("match.events")}</strong>
+            <button
+              type="button"
+              aria-label={t("common.close")}
+              onClick={() => {
+                setShowEvents(false);
+                toolsTrigger.current?.focus();
+              }}
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          </div>
           {snap.events.length === 0 ? (
             <p className="p-2 text-white/80">{t("match.eventsEmpty")}</p>
           ) : null}
@@ -360,6 +382,7 @@ export default function QuickLive({
           className="match-quick-more"
           onClick={() => {
             setShowTools((open) => !open);
+            setShowEvents(false);
             setPaused(true);
           }}
         >

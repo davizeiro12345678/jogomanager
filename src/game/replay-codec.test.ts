@@ -9,6 +9,7 @@ import {
   encodeStoredReplay,
   estimateReplayBytes,
   REPLAY_V3_MIN_REDUCTION,
+  quantizeReplayComponent,
 } from "./replay-codec";
 
 function makeReplay() {
@@ -22,6 +23,15 @@ function makeReplay() {
 }
 
 describe("versioned replay codec", () => {
+  it("quantizes replay positions to centimeters and clamps to signed int16", () => {
+    expect(quantizeReplayComponent(1.25)).toBe(125);
+    expect(quantizeReplayComponent(-1.25)).toBe(-125);
+    expect(quantizeReplayComponent(400)).toBe(32_767);
+    expect(quantizeReplayComponent(-400)).toBe(-32_768);
+    expect(quantizeReplayComponent(327.68)).toBe(32_767);
+    expect(quantizeReplayComponent(-327.69)).toBe(-32_768);
+  });
+
   it("round-trips legacy-shaped replays with score, seek and visual context", () => {
     const original = makeReplay();
     const stored = encodeReplay(original);
@@ -30,6 +40,22 @@ describe("versioned replay codec", () => {
 
     expect(stored.version).toBe(3);
     expect(decoded.frames).toHaveLength(original.frames.length);
+    // Verify packed coordinate parity at the first, middle and final frame.
+    // Replays store centimeters; fractional original coordinates are rounded.
+    for (const frameIndex of [
+      0,
+      Math.floor(original.frames.length / 2),
+      original.frames.length - 1,
+    ]) {
+      const originalFrame = original.frames[frameIndex]!;
+      const unpacked = decoded.frames[frameIndex]!;
+      expect(unpacked.p).toEqual(
+        originalFrame.p.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
+      );
+      expect(unpacked.b).toEqual(
+        originalFrame.b.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
+      );
+    }
     expect(decoded.score).toEqual(original.score);
     replay.seek(0);
     const start = replay.players.map((player) => [player.x, player.z]);
@@ -37,6 +63,24 @@ describe("versioned replay codec", () => {
     const middle = replay.players.map((player) => [player.x, player.z]);
     expect(start).not.toEqual(middle);
     expect(decoded.frames.at(-1)?.t).toBeCloseTo(original.frames.at(-1)?.t ?? 0, 2);
+  });
+
+  it("saturates packed positions without wrapping Int16 boundaries or sharing decode arrays", () => {
+    const replay = makeReplay();
+    const frame = replay.frames[0]!;
+    const input = frame.p.slice();
+    input.splice(0, 8, 327.675, -327.685, 0, -0, Number.NaN, Infinity, -Infinity, 2.345);
+    const stored = encodeReplay({ ...replay, frames: [{ ...frame, p: input }] });
+    expect(Array.from(stored.frames.positions.slice(0, 8))).toEqual([
+      32_767, -32_768, 0, 0, 0, 32_767, -32_768, 235,
+    ]);
+    const first = decodeReplay(stored);
+    const second = decodeReplay(stored);
+    expect(first.frames[0]!.p.slice(0, 8)).toEqual([
+      327.67, -327.68, 0, 0, 0, 327.67, -327.68, 2.35,
+    ]);
+    first.frames[0]!.p[0] = 10;
+    expect(second.frames[0]!.p[0]).toBe(327.67);
   });
 
   it("accepts unversioned and v2-shaped stored data", () => {

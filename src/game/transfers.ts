@@ -7,6 +7,12 @@ import { quoteContract, roundMoney } from "./economy-contracts";
 import { developedPlayer, withDevelopmentBase } from "./attributes";
 import { validPlayerSkills } from "./player-rating-inputs";
 import {
+  MAX_GENERATED_MARKET_ENTRIES,
+  MAX_TRANSFER_KEY_LENGTH,
+  validTransferText,
+  validWorkCount,
+} from "./transfer-inputs";
+import {
   finiteAmount,
   financeLedgerFor,
   financialChange,
@@ -42,6 +48,7 @@ export function generateMarket(
   count = 12,
   economyRulesVersion?: 1 | 2,
 ): MarketEntry[] {
+  if (!validWorkCount(count, MAX_GENERATED_MARKET_ENTRIES)) return [];
   const rnd = makeRng(`market-${seed}`);
   const entries: MarketEntry[] = [];
   const used = new Set<string>();
@@ -97,7 +104,13 @@ export function quoteSigning(state: CareerState, entry: MarketEntry) {
 }
 
 export function signPlayer(state: CareerState, entry: MarketEntry): CareerState {
-  if (!validPlayerSkills(entry) || !entry.key || !entry.name.trim()) return state;
+  if (
+    !entry ||
+    !validPlayerSkills(entry) ||
+    !validTransferText(entry.key, MAX_TRANSFER_KEY_LENGTH) ||
+    !validTransferText(entry.name, 240)
+  )
+    return state;
   if (
     !Number.isFinite(entry.price) ||
     entry.price < 0 ||

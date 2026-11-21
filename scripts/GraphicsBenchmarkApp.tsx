@@ -3,7 +3,7 @@ import { readDrawInventory } from "./graphics-draw-inventory";
 
 import { Stadium3D, type Quality } from "../src/components/game/Stadium3D";
 
-import { benchmarkTeam } from "./graphics-fixture";
+import { benchmarkTeam, type GraphicsFixtureInit } from "./graphics-fixture";
 
 import { CAMERA_OPTIONS, type CameraMode } from "../src/game/camera-modes";
 
@@ -15,6 +15,7 @@ import { nativeMeasurementTiming } from "../src/game/native-performance-contract
 
 import {
   resolveGraphicsBenchmark,
+  graphicsBenchmarkSceneMetadata,
   type GraphicsBenchmarkMetadata,
 } from "./graphics-benchmark-contract";
 
@@ -72,9 +73,19 @@ export function Benchmark() {
       type: "module",
     });
     workerRef.current = worker;
-    worker.postMessage({ type: "init", manual, seed: benchmark.seed });
+    const request: GraphicsFixtureInit = {
+      type: "init",
+      manual,
+      seed: benchmark.seed,
+      rulesRevision: benchmark.rulesRevision,
+    };
+    worker.postMessage(request);
     let started = false;
     worker.onmessage = (event) => {
+      if ((event.data.execution?.rulesRevision ?? 1) !== benchmark.rulesRevision) {
+        worker.terminate();
+        throw new Error("Graphics fixture rules revision differs from the requested campaign");
+      }
       view.apply(event.data);
       if (!started) {
         started = true;
@@ -114,11 +125,14 @@ export function Benchmark() {
     };
     bridge.render_game_to_text = () =>
       JSON.stringify({
-        scenario: { ...benchmark, camera: mode },
+        scenario: graphicsBenchmarkSceneMetadata(benchmark, mode),
         mode,
         worker: Boolean(controller?.isWorker),
         simulation: controller
           ? {
+              ...(benchmark.rulesRevision === 2
+                ? { execution: controller.view.executionContract() }
+                : {}),
               minute: controller.view.minute(),
               ball: {
                 x: Number(controller.view.ball.x.toFixed(2)),

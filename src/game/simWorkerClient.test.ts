@@ -77,6 +77,32 @@ afterEach(() => {
 });
 
 describe("live match worker lifecycle", () => {
+  it.each([true, false])(
+    "keeps selected rules in bootstrap and worker=%s execution",
+    async (useWorker) => {
+      if (!useWorker) vi.stubGlobal("Worker", undefined);
+      const controller = createLiveMatchController({
+        home: buildTeamSetup("fla"),
+        away: buildTeamSetup("pal"),
+        seed: "rules-propagation",
+        rulesRevision: 2,
+        onSnapshot: () => undefined,
+        onFinished: () => undefined,
+      });
+      controllers.push(controller);
+      expect(controller.view.executionContract()?.rulesRevision).toBe(2);
+      if (useWorker) {
+        expect(TestWorker.instances.at(-1)?.messages[0]).toMatchObject({
+          type: "startLive",
+          rulesRevision: 2,
+        });
+      } else {
+        await vi.advanceTimersByTimeAsync(200);
+        expect(controller.view.time).toBeGreaterThan(0);
+        expect(controller.view.executionContract()?.rulesRevision).toBe(2);
+      }
+    },
+  );
   it("does not start a local fallback for invalid initial teams", () => {
     vi.stubGlobal("Worker", undefined);
     expect(() =>

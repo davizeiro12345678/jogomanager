@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { HistoryPage } from "@/pages/history";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/history")({
   ssr: false,
@@ -26,5 +24,8 @@ export const Route = createFileRoute("/history")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: HistoryPage,
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/history"), "HistoryPage"),
 });

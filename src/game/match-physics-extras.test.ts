@@ -4,12 +4,14 @@ import {
   bodyContactShare,
   fatigueStrikeFactor,
   firstTouchSpill,
+  goalkeeperCanReach,
   headerPower,
   parryReboundSpeed,
   pitchTraction,
   quadraticDragDeceleration,
   settlesOnTurf,
   shotProfile,
+  sweptBallPlayerContact,
 } from "./match-physics-extras";
 
 describe("match physics extras", () => {
@@ -48,6 +50,32 @@ describe("match physics extras", () => {
   it("header uses cross pace and jump", () => {
     expect(headerPower(15, 20, 80)).toBeGreaterThan(headerPower(15, 5, 40));
   });
+  it("revised goalkeepers only save physically reachable trajectories", () => {
+    expect(goalkeeperCanReach(49, 0, 50, 0.5, 1, 85, 90)).toBe(true);
+    expect(goalkeeperCanReach(30, 0, 50, 0.5, 1, 85, 90)).toBe(false);
+    expect(goalkeeperCanReach(49, -4, 50, 3, 1, 85, 90)).toBe(false);
+    expect(goalkeeperCanReach(49, 0, 50, 0, Number.NaN, 85, 90)).toBe(false);
+  });
+
+  it("prevents fast ball tunneling past a standing defender", () => {
+    const hit = sweptBallPlayerContact(-10, 0, 10, 0, 0, 0.5, 1.25);
+    expect(hit).not.toBeNull();
+    expect(hit?.fraction).toBeCloseTo(0.5);
+    expect(hit?.distance).toBeCloseTo(0.5);
+    expect(sweptBallPlayerContact(-10, 0, 10, 0, 0, 3, 1.25)).toBeNull();
+  });
+
+  it("rejects impossible contact inputs and retains stationary-ball contact", () => {
+    expect(sweptBallPlayerContact(0, 0, 0, 0, 0.5, 0, 1.25)).toEqual({
+      fraction: 1,
+      distance: 0.5,
+    });
+    expect(sweptBallPlayerContact(0, 0, 0, 0, 2, 0, 1.25)).toBeNull();
+    expect(sweptBallPlayerContact(0, 0, 10, 0, 1, 0, -1)).toBeNull();
+    expect(sweptBallPlayerContact(0, 0, Number.NaN, 0, 1, 0, 1)).toBeNull();
+    expect(sweptBallPlayerContact(0, 0, Number.MAX_VALUE, 1, 1, 0, 1)).toBeNull();
+  });
+
   it("hard or wet ball spills further", () => {
     expect(firstTouchSpill(4, 30, "rain")).toBeGreaterThan(firstTouchSpill(4, 10, "clear"));
   });
