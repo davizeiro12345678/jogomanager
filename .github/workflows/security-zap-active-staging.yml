@@ -36,10 +36,13 @@ jobs:
           assert url.path in ("", "/") and not url.query and not url.fragment
           print("Staging target allowlist matched.")
           PY
-      - name: Verify staging is reachable (never scan production as fallback)
+      - name: Checkout full-game staging readiness contract
+        uses: actions/checkout@v4
+      - name: Refuse synthetic harness or production-linked backend
         shell: bash
         run: |
-          curl --fail --show-error --silent --head --connect-timeout 10 --max-time 20 "$SCAN_TARGET" > /dev/null
+          python3 -m unittest discover -s scripts/security -p test_verify_zap_full_real_staging.py -v
+          python3 scripts/security/verify_zap_full_real_staging.py "$SCAN_TARGET"
       - name: Prepare report directory
         shell: bash
         run: |
