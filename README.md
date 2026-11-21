@@ -7,6 +7,8 @@
 [![Segurança](https://img.shields.io/badge/seguran%C3%A7a-divulga%C3%A7%C3%A3o%20respons%C3%A1vel-26705a)](SECURITY.md)
 [![Plataforma](https://img.shields.io/badge/plataforma-navegador%20%7C%20PWA-226a90)](https://jogomanager.com)
 
+**Site oficial e endereço canônico:** https://jogomanager.com
+
 O **Pro Football Manager 3D (jogomanager)** é um jogo brasileiro independente de gestão de futebol para navegador: você escolhe um clube, organiza o elenco, monta estratégias, acompanha a evolução de uma carreira e vê suas decisões se transformarem em partidas com apresentação tridimensional. Também há caminhos próprios para carreira de jogador, partida rápida e experiências online, conforme a versão e a disponibilidade do ambiente.
 
 **[Jogar](https://jogomanager.com)** · **[Começar uma carreira](https://jogomanager.com/carreiras)** · **[Partida rápida](https://jogomanager.com/partida-rapida)** · **[Carreira de jogador](https://jogomanager.com/carreira-jogador)** · **[Guia do jogo](https://jogomanager.com/guias)** · **[Política de segurança](SECURITY.md)**
