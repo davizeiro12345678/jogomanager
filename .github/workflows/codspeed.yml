@@ -63,6 +63,10 @@ jobs:
         with:
           mode: walltime
           run: node --import tsx scripts/codspeed-paired-walltime.mjs "$RUNNER_TEMP/codspeed-base" "$GITHUB_WORKSPACE" "$RUNNER_TEMP/codspeed-paired.json"
+      - name: Reject same-runner regressions in all 16 benchmarks
+        run: |
+          node --test scripts/codspeed-paired-gate.test.mjs
+          node scripts/codspeed-paired-gate.mjs "$RUNNER_TEMP/codspeed-paired.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
