@@ -10,17 +10,6 @@ export const REPLAY_FORMAT_V2 = 2;
 export const REPLAY_FORMAT_V3 = 3;
 export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
-const SIGNED_COORDINATE_OFFSET = 32_768;
-const MIN_COORDINATES_FOR_LOOKUP = 262_144;
-let decodedCoordinates: Float64Array | undefined;
-
-function createDecodedCoordinates(): Float64Array {
-  const table = new Float64Array(SIGNED_COORDINATE_OFFSET * 2);
-  for (let index = 0; index < table.length; index += 1) {
-    table[index] = (index - SIGNED_COORDINATE_OFFSET) / QUANTIZE;
-  }
-  return table;
-}
 
 export type StoredReplayV3 = {
   execution?: MatchExecutionContract;
@@ -119,12 +108,6 @@ function decodeV3(raw: StoredReplayV3): Replay {
   const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
   const positionCount = playerCount * 4;
-  // Long replays can reuse the exact division results for all Int16 values.
-  // Short clips avoid the one-time 512 KiB allocation and keep direct division.
-  const coordinates =
-    positions.length >= MIN_COORDINATES_FOR_LOOKUP
-      ? (decodedCoordinates ??= createDecodedCoordinates())
-      : undefined;
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
     timeMs += timesMs[frameIndex]!;
@@ -132,16 +115,13 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const a = new Array<PlayerAction | null>(playerCount);
     const positionBase = frameIndex * positionCount;
     const actionBase = frameIndex * playerCount;
-    if (coordinates) {
-      for (let index = 0; index < positionCount; index += 1) {
-        p[index] = coordinates[positions[positionBase + index]! + SIGNED_COORDINATE_OFFSET]!;
-      }
-    } else {
-      for (let index = 0; index < positionCount; index += 1) {
-        p[index] = positions[positionBase + index]! / QUANTIZE;
-      }
-    }
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
+      const target = playerIndex * 4;
+      const source = positionBase + target;
+      p[target] = positions[source]! / QUANTIZE;
+      p[target + 1] = positions[source + 1]! / QUANTIZE;
+      p[target + 2] = positions[source + 2]! / QUANTIZE;
+      p[target + 3] = positions[source + 3]! / QUANTIZE;
       a[playerIndex] = actionFromByte(actions[actionBase + playerIndex]!);
     }
     const ballBase = frameIndex * 3;
