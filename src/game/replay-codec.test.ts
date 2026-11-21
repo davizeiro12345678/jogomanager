@@ -65,6 +65,24 @@ describe("versioned replay codec", () => {
     expect(decoded.frames.at(-1)?.t).toBeCloseTo(original.frames.at(-1)?.t ?? 0, 2);
   });
 
+  it("saturates packed positions without wrapping Int16 boundaries or sharing decode arrays", () => {
+    const replay = makeReplay();
+    const frame = replay.frames[0]!;
+    const input = frame.p.slice();
+    input.splice(0, 8, 327.675, -327.685, 0, -0, Number.NaN, Infinity, -Infinity, 2.345);
+    const stored = encodeReplay({ ...replay, frames: [{ ...frame, p: input }] });
+    expect(Array.from(stored.frames.positions.slice(0, 8))).toEqual([
+      32_767, -32_768, 0, 0, 0, 32_767, -32_768, 235,
+    ]);
+    const first = decodeReplay(stored);
+    const second = decodeReplay(stored);
+    expect(first.frames[0]!.p.slice(0, 8)).toEqual([
+      327.67, -327.68, 0, 0, 0, 327.67, -327.68, 2.35,
+    ]);
+    first.frames[0]!.p[0] = 10;
+    expect(second.frames[0]!.p[0]).toBe(327.67);
+  });
+
   it("accepts unversioned and v2-shaped stored data", () => {
     const replay = makeReplay();
     expect(decodeReplay(replay)).toEqual(replay);
