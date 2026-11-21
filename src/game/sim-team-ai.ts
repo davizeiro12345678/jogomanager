@@ -162,6 +162,9 @@ export function moveOffBall(sim: MatchSim, dt: number) {
   const remaining = Math.max(0, 90 - sim.time / 60);
   const lateGame = remaining < 15;
   const goalDiff = sim.stats.home.goals - sim.stats.away.goals;
+  const currentMinute = sim.minute();
+  const contactRevision2 = sim.contactPhysicsRevision === 2;
+  const motionPhase = sim.time * 0.4;
   const urgency = (side: Side) => {
     if (!lateGame) return 0;
     const diff = side === "home" ? goalDiff : -goalDiff;
@@ -200,6 +203,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         : -6 + setup.tactics.pressing * 7 + (surge ? 7 : 0),
       shift: sim.mentalityShift(side),
       urgency: urgency(side),
+      scoreDifference: side === "home" ? goalDiff : -goalDiff,
     };
   };
   const contexts = { home: sideContext("home"), away: sideContext("away") };
@@ -216,6 +220,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       pressLine,
       shift,
       urgency: push,
+      scoreDifference,
     } = contexts[p.side];
 
     let tx = p.slotX * FIELD_X * 0.9 + shift + bx * 0.22 + pressLine * dir;
@@ -256,7 +261,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
     } else if (chase.has(p.id)) {
       // interceptação: mira num ponto à frente da bola
-      if (sim.contactPhysicsRevision === 2) {
+      if (contactRevision2) {
         const intercept = predictLooseBallInterception({
           playerX: p.x,
           playerZ: p.z,
@@ -291,9 +296,8 @@ export function moveOffBall(sim: MatchSim, dt: number) {
                 ballX: bx,
                 defenderLineX: line,
                 attackDirection: dir > 0 ? 1 : -1,
-                minute: sim.minute(),
-                scoreDifference:
-                  sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
+                minute: currentMinute,
+                scoreDifference,
               })
             : sim.rulesRevision === 2 && setup.tactics.pressing === 2 && Math.abs(bx - line) > 14
               ? dir * 3.5
@@ -326,9 +330,8 @@ export function moveOffBall(sim: MatchSim, dt: number) {
           targetZ: tz,
           stamina: p.stamina,
           pressing: setup.tactics.pressing,
-          minute: sim.minute(),
-          scoreDifference:
-            sim.stats[p.side].goals - sim.stats[p.side === "home" ? "away" : "home"].goals,
+          minute: currentMinute,
+          scoreDifference,
           attackDirection: dir > 0 ? 1 : -1,
         });
         tx += cover.forward;
@@ -372,7 +375,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         tz += Math.sign(p.slotZ) * 3.5;
         sprint = 1.2;
       }
-      tz += Math.sin(sim.time * 0.4 + p.number) * 0.9;
+      tz += Math.sin(motionPhase + p.number) * 0.9;
       tx += push * 5 * dir;
       if (setup.tacticalAiRevision === 2 && holder && p.pos !== "GK") {
         const run = coordinatedSupportRun({
