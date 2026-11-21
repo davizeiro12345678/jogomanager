@@ -33,6 +33,9 @@ export class CooperativeLobby {
 
   /** The owning Durable Object serializes admissions and persists the ticket watermark. */
   async attach(socket: LobbySocket, raw: string): Promise<number | null> {
+    // Bound JSON parsing and HMAC verification before consulting the room roster.
+    // The byte-length check covers multibyte input without allocating unbounded buffers.
+    if (raw.length > 4_096 || new TextEncoder().encode(raw).byteLength > 4_096) return null;
     let input: unknown;
     try {
       input = JSON.parse(raw);
