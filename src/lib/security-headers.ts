@@ -16,6 +16,8 @@ const COMMON_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
+  "script-src-attr 'none'",
+  "manifest-src 'self'",
   "form-action 'self' https://*.stripe.com",
   "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev https://lovable.dev",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -44,6 +46,8 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     "permissions-policy",
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()',
   );
+  // Restrict cross-site no-cors embedding without enforcing COEP across OAuth or Stripe.
+  headers.set("cross-origin-resource-policy", "same-site");
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   if (url.protocol === "https:")
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");

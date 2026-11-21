@@ -8,6 +8,34 @@ import server, { resolveWorkerRuntimeContext } from "../server";
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer response protection", () => {
+  it("blocks inline HTML event handlers and external manifests in enforcement and report-only CSP", () => {
+    for (const path of ["/", "/auth", "/checkout/return"]) {
+      const response = secureResponse(
+        new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+        new Request(`https://jogomanager.com${path}`),
+        createCspNonce(),
+      );
+      for (const name of ["content-security-policy", "content-security-policy-report-only"]) {
+        const policy = response.headers.get(name)!;
+        expect(policy).toContain("script-src-attr 'none'");
+        expect(policy).toContain("manifest-src 'self'");
+        expect(policy).toContain("object-src 'none'");
+      }
+    }
+  });
+
+  it("sets same-site resource policy and preserves popup-based OAuth/Stripe without COEP", () => {
+    for (const path of ["/", "/auth", "/checkout/return", "/api/health", "/sitemap.xml"]) {
+      const response = secureResponse(
+        new Response("fixture", { headers: { "content-type": "text/html" } }),
+        new Request(`https://jogomanager.com${path}`),
+      );
+      expect(response.headers.get("cross-origin-resource-policy")).toBe("same-site");
+      expect(response.headers.get("cross-origin-opener-policy")).toBe("same-origin-allow-popups");
+      expect(response.headers.get("cross-origin-embedder-policy")).toBeNull();
+    }
+  });
+
   it("overrides higher-priority CDN cache headers on private and authenticated responses", () => {
     for (const path of ["/api/private/profile", "/auth", "/assets/public.js"]) {
       const response = secureResponse(
