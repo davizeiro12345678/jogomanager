@@ -52,11 +52,11 @@ jobs:
           docker run --rm \
             --cpus=2 --memory=5g --pids-limit=400 \
             --cap-drop=ALL --security-opt=no-new-privileges \
-            -e STAGING_URL=https://staging.jogomanager.com/ \
-            -e STAGE_ISOLATION_ATTESTATION=ISOLATED-STAGING-VERIFIED \
             --mount type=bind,src="$PWD/scripts/security",dst=/work,readonly \
             --mount type=bind,src="$PWD/load-reports",dst=/reports \
             grafana/k6:2.4.0 run \
+            -e STAGING_URL=https://staging.jogomanager.com/ \
+            -e STAGE_ISOLATION_ATTESTATION=ISOLATED-STAGING-VERIFIED \
             --summary-export /reports/summary.json \
             --out json=/reports/samples.ndjson \
             /work/staging-load.k6.js
