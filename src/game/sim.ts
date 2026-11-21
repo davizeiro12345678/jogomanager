@@ -1295,6 +1295,9 @@ export class MatchSim {
   private separate() {
     const R = 0.85; // raio do corpo
     const list = this.players;
+    // Fixed during a step: read once instead of on every potential contact.
+    const boundedContact = this.#contactPhysicsRevision === 2;
+    const holderId = this.ball.holder;
     for (let i = 0; i < list.length; i++) {
       const a = list[i]!;
       for (let j = i + 1; j < list.length; j++) {
@@ -1304,8 +1307,9 @@ export class MatchSim {
         // Reject only provably separated axes before multiplication/square root.
         // Preserve the original NaN propagation and deterministic RNG/solver order:
         // non-finite corrupt pairs must still reach the existing sanitize path.
-        if ((dx > 1.7 || dx < -1.7) && !Number.isNaN(dz)) continue;
-        if ((dz > 1.7 || dz < -1.7) && !Number.isNaN(dx)) continue;
+        // All arithmetic deltas are numbers: n === n rejects only NaN, as before.
+        if ((dx > 1.7 || dx < -1.7) && dz === dz) continue;
+        if ((dz > 1.7 || dz < -1.7) && dx === dx) continue;
         const d2 = dx * dx + dz * dz;
         if (d2 > 2.89) continue; // (0.85 * 2)^2
         let d = Math.sqrt(d2);
@@ -1319,12 +1323,12 @@ export class MatchSim {
         // full-body position jump on one tick; legacy replay geometry is untouched.
         const penetration = R * 2 - d;
         const overlap =
-          this.#contactPhysicsRevision === 2 ? Math.min(penetration, 0.14) : penetration;
+          boundedContact ? Math.min(penetration, 0.14) : penetration;
         // Quem conduz a bola cede menos, mas a soma dos deslocamentos sempre
         // resolve toda a sobreposição para não deixar atletas grudados.
         const share = bodyContactShare(a.physical, a.weightKg, b.physical, b.weightKg);
-        const aWeight = share * (a.id === this.ball.holder ? 0.25 : 1);
-        const bWeight = (1 - share) * (b.id === this.ball.holder ? 0.25 : 1);
+        const aWeight = share * (a.id === holderId ? 0.25 : 1);
+        const bWeight = (1 - share) * (b.id === holderId ? 0.25 : 1);
         const totalWeight = aWeight + bWeight;
         const nx = dx / d;
         const nz = dz / d;
