@@ -13,7 +13,7 @@
 
 ## Varreduras ampliadas
 - Baseline anterior: 60 PASS, 11 famílias WARN, 0 FAIL, relatório em `/opt/jm-security/zap/20261121/` — job `job_01M7ZWCVX40037HK61FA41V5T0`.
-- Segundo baseline com spider tradicional + moderno Ajax, regras alpha, iniciado no job `job_01M7ZXPMNX00Y7S6REZ4NG2AMC`. Registrar resultado final após terminar.
+- Segundo baseline ampliado com spider tradicional + Ajax e regras alpha: **concluído com sucesso**, job `job_01M7ZXPMNX00Y7S6REZ4NG2AMC`, em 2026-11-21 20:47 UTC. ZAP: `PASS: 60`, `WARN-NEW: 11`, `FAIL-NEW: 0`, exit code 0 com -I. JSON contém 22 subtipos de alertas em 11 famílias, **77 instâncias**; baseline anterior com as mesmas 11 famílias tinha 72 instâncias. Artefatos `/opt/jm-security/zap/20261121-passive-deep/passive-deep.{html,json,md}`. A diferença de instâncias não prova agravamento — cobertura e respostas variam.
 - Workflow `.github/workflows/security-zap-active-staging.yml` admite **somente** `https://staging.jogomanager.com/`, mediante acionamento manual e existência do ambiente isolado, com scanner completo e relatórios. No momento do registro o hostname não resolve; logo esse trabalho não está homologado.
 - A varredura ativa completa somente é apropriada depois de staging separado, banco, dados e serviços de teste, sem tocar checkout real, OAuth real nem dados de produção.
 
