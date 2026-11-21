@@ -278,12 +278,25 @@ html[data-reading-space="true"] .career-content :where(p, dd, td) {
 }
 .quick-match {
   --match-gap: 8px;
+  --match-safe-top: max(12px, env(safe-area-inset-top));
+  --match-safe-edge: max(var(--match-gap), env(safe-area-inset-left), env(safe-area-inset-right));
   position: relative;
   width: 100%;
   height: 100dvh;
   overflow: hidden;
   background: #070b12;
   font-variant-numeric: tabular-nums;
+}
+/* In a live match the privacy choice follows the full-height field in
+   document flow, so it can never cover the transport controls. */
+#conteudo:has(> .quick-match) > [data-pfm-consent-banner] {
+  position: static;
+  margin-block: 12px;
+  margin-inline: auto;
+  width: calc(100% - 24px);
+}
+body:has(#conteudo > .quick-match) {
+  padding-bottom: env(safe-area-inset-bottom) !important;
 }
 .match-quick-stage {
   position: absolute;
@@ -296,17 +309,17 @@ html[data-reading-space="true"] .career-content :where(p, dd, td) {
 .match-quick-score-wrap {
   position: absolute;
   z-index: 10;
-  inset: 12px 0 auto;
+  inset: var(--match-safe-top) 0 auto;
   display: flex;
   justify-content: center;
-  padding-inline: 12px;
+  padding-inline: max(12px, var(--match-safe-edge));
   pointer-events: none;
 }
 .match-quick-back {
   position: absolute;
   z-index: 20;
-  inset-block-start: 12px;
-  inset-inline-start: 12px;
+  inset-block-start: var(--match-safe-top);
+  inset-inline-start: max(12px, var(--match-safe-edge));
   display: grid;
   width: 44px;
   height: 44px;
@@ -342,7 +355,7 @@ html[data-reading-space="true"] .career-content :where(p, dd, td) {
   justify-content: center;
   gap: 6px;
   width: max-content;
-  max-width: calc(100% - 16px);
+  max-width: calc(100% - 2 * var(--match-safe-edge));
   padding: 4px;
   border: 1px solid var(--match-line);
   border-radius: 14px;
@@ -384,9 +397,9 @@ html[dir="rtl"] .match-quick-transport {
 .match-quick-feed {
   position: absolute;
   z-index: var(--career-z-match-tools, 25);
-  inset-inline-end: var(--match-gap);
+  inset-inline-end: var(--match-safe-edge);
   inset-block-end: calc(72px + env(safe-area-inset-bottom));
-  width: min(21rem, calc(100% - 16px));
+  width: min(21rem, calc(100% - 2 * var(--match-safe-edge)));
   max-height: min(32rem, calc(100dvh - 138px - env(safe-area-inset-bottom)));
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -447,8 +460,8 @@ html[dir="rtl"] .match-quick-transport {
 }
 @media (max-width: 640px) {
   .match-quick-score-wrap {
-    padding-inline-start: 64px;
-    padding-inline-end: 8px;
+    padding-inline-start: max(64px, calc(var(--match-safe-edge) + 52px));
+    padding-inline-end: var(--match-safe-edge);
   }
   .match-quick-statistics {
     padding-inline: 8px;
@@ -457,9 +470,8 @@ html[dir="rtl"] .match-quick-transport {
   }
 }
 @media (max-height: 420px) {
-  .match-quick-score-wrap,
-  .match-quick-back {
-    top: 6px;
+  .quick-match {
+    --match-safe-top: max(6px, env(safe-area-inset-top));
   }
   .match-quick-statistics {
     display: none;

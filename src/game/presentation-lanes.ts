@@ -53,9 +53,11 @@ let pool: PresentationLanePool | null = null;
 export function acquirePresentationLanes(
   count: number,
   signal: AbortSignal,
+  timeoutMs?: number,
 ): Promise<Release | null> {
   return (pool ??= new PresentationLanePool(deviceGeometryPreparationWorkers())).acquire(
     count,
     signal,
+    timeoutMs,
   );
 }

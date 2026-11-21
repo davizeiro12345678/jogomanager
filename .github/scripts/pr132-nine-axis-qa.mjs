@@ -413,6 +413,8 @@ try {
   for (const viewport of [
     { width: 1365, height: 900 },
     { width: 375, height: 812 },
+    { width: 320, height: 700 },
+    { width: 844, height: 390 },
   ]) {
     await page.setViewportSize(viewport);
     const response = await page.goto(new URL(quickMatchRoute, origin).href, {
@@ -434,6 +436,31 @@ try {
     const trigger = page.getByRole("button", { name: /opções da partida|match options/i });
     await trigger.click();
     const options = page.locator("#match-quick-tools");
+    await options.waitFor();
+    const speed = page.getByRole("combobox", { name: /velocidade|speed/i });
+    await speed.selectOption("4");
+    const camera = page.getByRole("combobox", { name: /câmera da partida|match camera/i });
+    const beforeCamera = await camera.inputValue();
+    const secondCamera = await camera.locator("option").nth(1).getAttribute("value");
+    if (!secondCamera || beforeCamera === secondCamera)
+      throw new Error("Camera preset unavailable");
+    await camera.selectOption(secondCamera);
+    const shortcuts = options.getByRole("button", {
+      name: /atalhos de teclado|keyboard shortcuts/i,
+    });
+    await shortcuts.click();
+    const shortcutDialog = page.getByRole("dialog", {
+      name: /atalhos de teclado|keyboard shortcuts/i,
+    });
+    await shortcutDialog.waitFor();
+    await page.keyboard.press("1");
+    if (
+      (await page.locator(".match-quick-speed").inputValue()) !== "4" ||
+      (await page.locator(".match-quick-camera").inputValue()) !== secondCamera
+    )
+      throw new Error("Match shortcuts changed state while the keyboard guide was open");
+    await page.keyboard.press("Escape");
+    await shortcutDialog.waitFor({ state: "hidden" });
     await options.waitFor();
     await png(page, `quick-match-controls-${viewport.width}`);
     await options.getByRole("button", { name: /lances recentes|recent moments/i }).click();

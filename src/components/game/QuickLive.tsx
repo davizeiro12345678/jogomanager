@@ -181,7 +181,8 @@ export default function QuickLive({
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (event.key === "Escape" && !target?.closest('[role="dialog"]')) {
+      if (event.defaultPrevented || target?.closest('[role="dialog"]')) return;
+      if (event.key === "Escape") {
         setShowEvents(false);
         setShowTools(false);
         setPaused(true);
@@ -208,10 +209,6 @@ export default function QuickLive({
         );
       if (event.key.toLowerCase() === "n") setNarrating((v) => !v);
       if (["1", "2", "3", "4"].includes(event.key)) setSpeed([1, 2, 4, 8][Number(event.key) - 1]!);
-      if (event.key === "Escape") {
-        setShowEvents(false);
-        setPaused(true);
-      }
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
