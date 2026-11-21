@@ -1,0 +1,66 @@
+name: Security - OWASP ZAP active full scan (isolated staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_url:
+        description: "Isolated staging origin; must be exactly https://staging.jogomanager.com/"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zap-active-staging-only
+  cancel-in-progress: false
+
+jobs:
+  active-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: security-staging
+    env:
+      SCAN_TARGET: ${{ inputs.staging_url }}
+    steps:
+      - name: Refuse production and non-isolated destinations
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlsplit
+          url = urlsplit(os.environ["SCAN_TARGET"])
+          assert url.scheme == "https", "HTTPS staging required"
+          assert url.hostname == "staging.jogomanager.com", "Only isolated staging is permitted"
+          assert url.port is None and url.username is None and url.password is None
+          assert url.path in ("", "/") and not url.query and not url.fragment
+          print("Staging target allowlist matched.")
+          PY
+      - name: Verify staging is reachable (never scan production as fallback)
+        shell: bash
+        run: |
+          curl --fail --show-error --silent --head --connect-timeout 10 --max-time 20 "$SCAN_TARGET" > /dev/null
+      - name: Prepare report directory
+        shell: bash
+        run: |
+          mkdir -p zap-reports
+          chmod 0777 zap-reports
+      - name: Run active and passive ZAP scanners on isolated staging
+        shell: bash
+        run: |
+          docker run --rm \
+            --network bridge --cpus=2 --memory=3g --pids-limit=300 \
+            --cap-drop=ALL --security-opt=no-new-privileges \
+            -v "$PWD/zap-reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-full-scan.py -t "$SCAN_TARGET" -m 3 -T 12 -I -s \
+            -z "-config ascan.threadPerHost=1 -config ascan.maxScanDurationInMins=6 -config ascan.delayInMs=500" \
+            -J active.json -r active.html -w active.md
+      - name: Upload active scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-active-staging-${{ github.run_id }}
+          path: zap-reports/
+          retention-days: 14
+          if-no-files-found: warn
