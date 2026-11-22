@@ -48,3 +48,24 @@ export function deferHomeHydration(run: () => void, hooks: HomeHydrationHooks): 
   // Remain interactive even if the responsive image never finishes loading.
   disposers.push(hooks.onDeadline(start, 3500));
 }
+
+/** Preserve the first mobile-menu tap while React is still hydrating the SSR shell. */
+export function createDeferredClickReplay(replay: () => void) {
+  let hydrated = false;
+  let pending = false;
+  return {
+    queue(): boolean {
+      if (hydrated) return false;
+      pending = true;
+      return true;
+    },
+    markHydrated(): void {
+      if (hydrated) return;
+      hydrated = true;
+      if (pending) {
+        pending = false;
+        replay();
+      }
+    },
+  };
+}
