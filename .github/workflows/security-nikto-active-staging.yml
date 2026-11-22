@@ -1,0 +1,69 @@
+name: Security - Nikto active scan (isolated full-game staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_url:
+        description: "Exact HTTPS full-game staging origin (never production or synthetic mock)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nikto-active-staging-only
+  cancel-in-progress: false
+
+jobs:
+  nikto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: security-staging
+    env:
+      SCAN_TARGET: ${{ inputs.staging_url }}
+    steps:
+      - name: Validate exact staging origin before any active scan
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from urllib.parse import urlsplit
+          target = os.environ["SCAN_TARGET"]
+          url = urlsplit(target)
+          assert target == "https://staging.jogomanager.com/", "Only the exact HTTPS staging URL is allowed"
+          assert url.username is None and url.password is None and url.port is None
+          print("Target scope validated (isolated staging only).")
+          PY
+      - name: Checkout pinned project isolation policy
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Verify tests and real-game isolated deployment contract
+        shell: bash
+        run: |
+          python3 -m unittest discover -s scripts/security -p test_verify_zap_full_real_staging.py -v
+          python3 -m unittest discover -s scripts/security -p test_nikto_staging_guard.py -v
+          python3 scripts/security/verify_zap_full_real_staging.py "$SCAN_TARGET"
+      - name: Allocate private report directory
+        shell: bash
+        run: |
+          mkdir -p nikto-reports
+          chmod 0777 nikto-reports
+      - name: Nikto 2.6.1 bounded active assessment of isolated staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=20s 14m docker run --rm \
+            --platform linux/amd64 --network bridge --cpus=1 --memory=1g \
+            --pids-limit=120 --cap-drop=ALL --security-opt=no-new-privileges \
+            -v "$PWD/nikto-reports:/tmp:rw" \
+            ghcr.io/sullo/nikto@sha256:2ea1d2107af52638445807059f8ae2877b9fb8aed7792771dd1dc1d31c5016dd \
+            -host "$SCAN_TARGET" -maxtime 10m -timeout 5 \
+            -output /tmp/nikto-report.json -Format json
+      - name: Upload scanner evidence even on scanner failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nikto-staging-${{ github.run_id }}
+          path: nikto-reports/
+          retention-days: 14
+          if-no-files-found: warn
