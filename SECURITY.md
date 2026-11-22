@@ -10,13 +10,13 @@
 
 O projeto não usa atualmente um catálogo público de releases SemVer com manutenção paralela confirmada. As versões **5.1.x, 5.0.x e 4.0.x** que constavam no template padrão **não eram uma declaração válida de suporte** e não devem ser reutilizadas.
 
-| Artefato/ambiente | Política de manutenção | Limite de confiança |
-| --- | --- | --- |
+| Artefato/ambiente                                       | Política de manutenção                                                                           | Limite de confiança                                                                      |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | **Aplicação efetivamente publicada no domínio oficial** | Falhas críticas e de alto impacto são priorizadas conforme exposição e possibilidade de correção | Somente a revisão e configuração comprovadamente implantadas refletem risco dos usuários |
-| **Branch main** | Código de integração estável sujeito a testes e correções | Pode divergir da versão pública por falta de deploy, cache ou configuração |
-| **PRs e branches de integração** | Correções e regressões durante desenvolvimento | Não são automaticamente versões suportadas ou publicadas |
-| **Staging/homologação** | Ambientes efêmeros ou isolados, quando provisionados | Nunca devem compartilhar credenciais ou dados pessoais de produção |
-| **Versões antigas e cópias externas** | Sem garantia de patches ou suporte continuado | Não inferir cobertura a partir da presença de tags, pacotes ou arquivos |
+| **Branch main**                                         | Código de integração estável sujeito a testes e correções                                        | Pode divergir da versão pública por falta de deploy, cache ou configuração               |
+| **PRs e branches de integração**                        | Correções e regressões durante desenvolvimento                                                   | Não são automaticamente versões suportadas ou publicadas                                 |
+| **Staging/homologação**                                 | Ambientes efêmeros ou isolados, quando provisionados                                             | Nunca devem compartilhar credenciais ou dados pessoais de produção                       |
+| **Versões antigas e cópias externas**                   | Sem garantia de patches ou suporte continuado                                                    | Não inferir cobertura a partir da presença de tags, pacotes ou arquivos                  |
 
 A manutenção do código é independente. O processo deve preservar capacidade de resposta do responsável sem sacrificar verificação de CI, controle de publicação e histórico auditável.
 
@@ -55,14 +55,14 @@ Para testar falhas com efeitos de escrita, autenticação, checkout, webhooks, S
 
 ## 4. Como os relatos são tratados
 
-| Etapa | Critério |
-| --- | --- |
-| **Recebimento** | Confirmar canal privado, classificar o componente e evitar cópias não necessárias de evidências sensíveis |
-| **Triagem** | Avaliar impacto, pré-condições, versão exposta, possibilidade de exploração e mitigação imediata |
-| **Contenção** | Se necessário, reduzir exposição por configuração, desabilitar fluxo comprometido ou rotacionar credenciais |
-| **Correção** | Corrigir causa raiz, adicionar regressão e revisar operações adjacentes |
-| **Validação** | Executar testes, segurança, comparação de estado, homologação e verificar SHA efetivamente publicado |
-| **Divulgação** | Coordenar descrição pública e orientações após correção/mitigação, evitando detalhes desnecessários de exploração |
+| Etapa           | Critério                                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Recebimento** | Confirmar canal privado, classificar o componente e evitar cópias não necessárias de evidências sensíveis         |
+| **Triagem**     | Avaliar impacto, pré-condições, versão exposta, possibilidade de exploração e mitigação imediata                  |
+| **Contenção**   | Se necessário, reduzir exposição por configuração, desabilitar fluxo comprometido ou rotacionar credenciais       |
+| **Correção**    | Corrigir causa raiz, adicionar regressão e revisar operações adjacentes                                           |
+| **Validação**   | Executar testes, segurança, comparação de estado, homologação e verificar SHA efetivamente publicado              |
+| **Divulgação**  | Coordenar descrição pública e orientações após correção/mitigação, evitando detalhes desnecessários de exploração |
 
 Não existe SLA contratual público ou tempo de resposta garantido. A ordem de atendimento depende da gravidade, do alcance e da capacidade operacional. Se possível, comunicações de atualização são realizadas no canal privado original.
 
@@ -77,18 +77,18 @@ A classificação final considera alcance real, propriedades do ambiente e evid�
 
 ## 5. Modelo de ameaças por componente
 
-| Superfície | Riscos a verificar | Controles/validações esperados |
-| --- | --- | --- |
-| **Frontend, SSR e rotas públicas** | XSS, injeção de HTML, vazamento por cache, CSP permissiva, origem indevida, dados internos em SSR | Sanitização e encoding, CSP compatível com provedores, headers testados, SSR sem secrets, cache privado correto |
-| **Autenticação e OAuth** | Redirect indevido, state/nonce inválidos, sessão/cookie exposto, recuperação insegura, MFA contornado | Callback allowlist, validação de estado, cookies seguros, revogação, testes E2E de logout/recuperação/MFA |
-| **Supabase PostgreSQL e Realtime** | Falha de RLS, acesso cruzado entre usuários, RPC com privilégios amplos, migração destrutiva | Least privilege, RLS e ACL explícitas, replay SQL descartável, teste de usuários cruzados e migrações forward-only |
-| **Stripe, loja e concessões** | Webhook forjado, replay, divergência live/sandbox, concessão dupla, manipulação de valor pelo browser | Assinatura e idempotência, validação do evento, conta/ambiente, consistência transacional e reconciliação |
-| **MatchSim, saves e economia** | Manipulação de save, moeda ou conquista por cliente, replays falsos, alteração de seed | Autoridade server-side para recompensas, checkpoints, validação de progressão e testes de determinismo |
-| **Multiplayer e chat** | Cross-room, impersonação, replay, abuso de fila, flood, fraude no placar, links maliciosos | Tickets expiráveis, sala e escopo, seq/ack, autorização de mensagens, rate limits, auditoria e moderação proporcional |
-| **Importadores e APIs externas** | Credenciais vazadas, SSRF, dados não confiáveis, explosão de concorrência, corrupção de tabelas | Allowlist de origem, validação Zod, retries limitados, quotas e transações com reconciliação |
-| **Cloudflare, DNS e CDN** | Origem exposta, configuração incorreta, WAF que bloqueia login, cache de dados pessoais, 403/503 | TLS/HTTPS, WAF calibrado, rate limiting por rota, headers, regras de cache e canários públicos |
-| **GitHub Actions e supply chain** | PR malicioso, ação não fixada, token com escrita excessiva, dependência comprometida, segredo em artefato | SHA pinning, permissions mínimas, revisão de dependências, análise estática, lockfiles e ausência de secrets em PRs |
-| **VPS e recuperação** | SSH administrativo público, root comprometido, kernel defasado, segredos em process args, restore inoperante | Acesso restrito, patches, telemetria, isolamento, segredos não expostos, backup externo e restauração ensaiada |
+| Superfície                         | Riscos a verificar                                                                                           | Controles/validações esperados                                                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| **Frontend, SSR e rotas públicas** | XSS, injeção de HTML, vazamento por cache, CSP permissiva, origem indevida, dados internos em SSR            | Sanitização e encoding, CSP compatível com provedores, headers testados, SSR sem secrets, cache privado correto       |
+| **Autenticação e OAuth**           | Redirect indevido, state/nonce inválidos, sessão/cookie exposto, recuperação insegura, MFA contornado        | Callback allowlist, validação de estado, cookies seguros, revogação, testes E2E de logout/recuperação/MFA             |
+| **Supabase PostgreSQL e Realtime** | Falha de RLS, acesso cruzado entre usuários, RPC com privilégios amplos, migração destrutiva                 | Least privilege, RLS e ACL explícitas, replay SQL descartável, teste de usuários cruzados e migrações forward-only    |
+| **Stripe, loja e concessões**      | Webhook forjado, replay, divergência live/sandbox, concessão dupla, manipulação de valor pelo browser        | Assinatura e idempotência, validação do evento, conta/ambiente, consistência transacional e reconciliação             |
+| **MatchSim, saves e economia**     | Manipulação de save, moeda ou conquista por cliente, replays falsos, alteração de seed                       | Autoridade server-side para recompensas, checkpoints, validação de progressão e testes de determinismo                |
+| **Multiplayer e chat**             | Cross-room, impersonação, replay, abuso de fila, flood, fraude no placar, links maliciosos                   | Tickets expiráveis, sala e escopo, seq/ack, autorização de mensagens, rate limits, auditoria e moderação proporcional |
+| **Importadores e APIs externas**   | Credenciais vazadas, SSRF, dados não confiáveis, explosão de concorrência, corrupção de tabelas              | Allowlist de origem, validação Zod, retries limitados, quotas e transações com reconciliação                          |
+| **Cloudflare, DNS e CDN**          | Origem exposta, configuração incorreta, WAF que bloqueia login, cache de dados pessoais, 403/503             | TLS/HTTPS, WAF calibrado, rate limiting por rota, headers, regras de cache e canários públicos                        |
+| **GitHub Actions e supply chain**  | PR malicioso, ação não fixada, token com escrita excessiva, dependência comprometida, segredo em artefato    | SHA pinning, permissions mínimas, revisão de dependências, análise estática, lockfiles e ausência de secrets em PRs   |
+| **VPS e recuperação**              | SSH administrativo público, root comprometido, kernel defasado, segredos em process args, restore inoperante | Acesso restrito, patches, telemetria, isolamento, segredos não expostos, backup externo e restauração ensaiada        |
 
 Esses itens são **controles exigidos ou a verificar**, não atestações de que todos estejam ativos. A análise de segurança deve registrar ambiente, data, comando/procedimento e evidência sem segredos.
 
@@ -112,17 +112,17 @@ A pasta **.github/** versiona workflows, automações de dependência e controle
 
 ### Configurações recomendadas
 
-| Configuração | Objetivo e requisito de validação |
-| --- | --- |
-| **Ruleset da main** | Exigir PR, bloquear exclusão e force push, exigir check crítico no HEAD e resolução das conversas; preservar merge pelo mantenedor único com zero aprovações obrigatórias até haver revisor independente disponível |
-| **Dependabot alerts e security updates** | Detectar CVEs de dependências e propor correções, sem auto-merge nem alteração silenciosa de versões |
-| **Dependency graph / Dependabot version updates** | Manter dependências npm e GitHub Actions inventariadas e atualizadas por PR, com CI |
-| **Secret scanning / push protection** | Alertar sobre tokens já presentes e tentar bloquear novos segredos antes do push; conferir disponibilidade da funcionalidade no plano/repositório |
-| **Code scanning / CodeQL** | Analisar JS/TS e publicar achados na aba Security; conferir execução real e permissões |
-| **Private vulnerability reporting** | Permitir que pesquisadores enviem relatórios confidenciais de forma verificável |
-| **Permissões do GITHUB_TOKEN** | Usar read-only por padrão; elevar apenas por job que realmente precise e nunca fornecer secrets a código de PR não confiável |
-| **Actions/OIDC** | Restringir actions a fornecedores confiáveis, fixar SHAs, permitir apenas audiências/roles necessárias e proteger ambientes de deploy conforme capacidade da conta |
-| **Branch release** | Garantir checks no SHA exato e impedir bypass de admins/bots sem autorização formal e rastreável |
+| Configuração                                      | Objetivo e requisito de validação                                                                                                                                                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ruleset da main**                               | Exigir PR, bloquear exclusão e force push, exigir check crítico no HEAD e resolução das conversas; preservar merge pelo mantenedor único com zero aprovações obrigatórias até haver revisor independente disponível |
+| **Dependabot alerts e security updates**          | Detectar CVEs de dependências e propor correções, sem auto-merge nem alteração silenciosa de versões                                                                                                                |
+| **Dependency graph / Dependabot version updates** | Manter dependências npm e GitHub Actions inventariadas e atualizadas por PR, com CI                                                                                                                                 |
+| **Secret scanning / push protection**             | Alertar sobre tokens já presentes e tentar bloquear novos segredos antes do push; conferir disponibilidade da funcionalidade no plano/repositório                                                                   |
+| **Code scanning / CodeQL**                        | Analisar JS/TS e publicar achados na aba Security; conferir execução real e permissões                                                                                                                              |
+| **Private vulnerability reporting**               | Permitir que pesquisadores enviem relatórios confidenciais de forma verificável                                                                                                                                     |
+| **Permissões do GITHUB_TOKEN**                    | Usar read-only por padrão; elevar apenas por job que realmente precise e nunca fornecer secrets a código de PR não confiável                                                                                        |
+| **Actions/OIDC**                                  | Restringir actions a fornecedores confiáveis, fixar SHAs, permitir apenas audiências/roles necessárias e proteger ambientes de deploy conforme capacidade da conta                                                  |
+| **Branch release**                                | Garantir checks no SHA exato e impedir bypass de admins/bots sem autorização formal e rastreável                                                                                                                    |
 
 **Não ativar uma exigência de uma aprovação alheia quando o único mantenedor não puder aprovar seu próprio PR.** Uma revisão independente pode ser estabelecida como procedimento adicional sem tornar a main permanentemente imergeável. Não desabilitar o gate crítico para contornar o bloqueio.
 
@@ -154,28 +154,28 @@ Um ajuste é considerado pronto somente quando houver evidência proporcional ao
 
 A gravidade é determinada por **impacto**, **explorabilidade**, **exposição do ambiente** e **facilidade de mitigação**, não apenas pelo nome de uma CVE. A política de atendimento abaixo orienta a triagem; **não constitui SLA contratual nem prazo de resposta garantido**.
 
-| Prioridade indicativa | Exemplos de impacto | Resposta esperada |
-| --- | --- | --- |
+| Prioridade indicativa            | Exemplos de impacto                                                                                                  | Resposta esperada                                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **P0 — incidente crítico ativo** | Chave privilegiada comprometida, fraude financeira em curso, tomada de contas em escala ou exfiltração significativa | Contenção imediata proporcional, revogação/rotação, preservação de evidências e suspensão seletiva de operações de risco |
-| **P1 — risco alto confirmado** | Bypass de autenticação/RLS, replay de webhook com concessão indevida, XSS com roubo de sessão ou escrita cross-room | Bloquear release, limitar superfície exposta e preparar correção testada com prioridade |
-| **P2 — impacto moderado** | Falha explorável com condições restritas, vazamento limitado, concorrência insegura ou abuso de recursos | Confirmar cenário, reduzir permissões, criar regressão e planejar implantação |
-| **P3 — baixo impacto/hardening** | Controles preventivos incompletos, achados de scanner sem rota explorável demonstrada ou cabeçalho melhorável | Validar achado, priorizar conforme risco e documentar justificativa |
-| **P4 — informativo** | Hipótese sem reprodução, recomendação geral ou falso positivo documentado | Registrar contexto e reclassificar se surgirem evidências |
+| **P1 — risco alto confirmado**   | Bypass de autenticação/RLS, replay de webhook com concessão indevida, XSS com roubo de sessão ou escrita cross-room  | Bloquear release, limitar superfície exposta e preparar correção testada com prioridade                                  |
+| **P2 — impacto moderado**        | Falha explorável com condições restritas, vazamento limitado, concorrência insegura ou abuso de recursos             | Confirmar cenário, reduzir permissões, criar regressão e planejar implantação                                            |
+| **P3 — baixo impacto/hardening** | Controles preventivos incompletos, achados de scanner sem rota explorável demonstrada ou cabeçalho melhorável        | Validar achado, priorizar conforme risco e documentar justificativa                                                      |
+| **P4 — informativo**             | Hipótese sem reprodução, recomendação geral ou falso positivo documentado                                            | Registrar contexto e reclassificar se surgirem evidências                                                                |
 
 **Fatores que elevam prioridade:** dados ou recursos de vários jogadores, dinheiro/entitlements, credenciais administrativas, acesso não autenticado, exploração ativa, ausência de mitigação e dependências expostas. Evidência contraditória deve constar da análise; não atribuir severidade máxima automaticamente.
 
 ### Ficha interna de triagem (sem segredos)
 
-| Campo | O que registrar |
-| --- | --- |
-| Identificação | ID interno, data UTC, canal confidencial e analista responsável |
-| Recurso | Serviço/rota, ambiente, dependência, SHA publicado e owner |
-| Impacto | Confidencialidade, integridade, disponibilidade, alcance e pré-condições |
-| Reprodução | Teste autorizado mínimo, dados sintéticos e resultado observado |
-| Exploração | Evidências de exploração, limitações, CVSS/EPSS/KEV se pertinentes |
-| Contenção | Mudança realizada, autorização, confirmação e possível efeito colateral |
-| Correção | PR, testes de regressão, scanners, homologação, canário e rollback |
-| Conclusão | Estado final, evidência revisada, comunicação e ações preventivas |
+| Campo         | O que registrar                                                          |
+| ------------- | ------------------------------------------------------------------------ |
+| Identificação | ID interno, data UTC, canal confidencial e analista responsável          |
+| Recurso       | Serviço/rota, ambiente, dependência, SHA publicado e owner               |
+| Impacto       | Confidencialidade, integridade, disponibilidade, alcance e pré-condições |
+| Reprodução    | Teste autorizado mínimo, dados sintéticos e resultado observado          |
+| Exploração    | Evidências de exploração, limitações, CVSS/EPSS/KEV se pertinentes       |
+| Contenção     | Mudança realizada, autorização, confirmação e possível efeito colateral  |
+| Correção      | PR, testes de regressão, scanners, homologação, canário e rollback       |
+| Conclusão     | Estado final, evidência revisada, comunicação e ações preventivas        |
 
 ## 11. Fronteiras de confiança: operações que exigem autorização
 
@@ -201,16 +201,16 @@ O navegador, o armazenamento local e os dados fornecidos pelo cliente devem ser 
 
 O evento da Stripe só pode produzir consequência **depois** de assinatura validada, seleção explícita de ambiente, checagem de objeto/estado/conta e autorização de compra. A operação de banco deve ser durável e idempotente; o navegador é um cliente observador da concessão, nunca a autoridade.
 
-| Prova | Resultado obrigatório |
-| --- | --- |
-| Assinatura inválida/ausente | Rejeição sem escrita nem concessão |
-| Evento de outro ambiente | Rejeição; nenhuma mistura de sandbox/live |
-| Sessão pendente, vencida ou falha | Sem entrega indevida |
-| Evento legítimo pago | Benefício entregue ao titular correto após confirmação servidor |
-| Reenvio do mesmo evento | Sem nova moeda, item, assinatura ou benefício |
-| Falha transitória de banco | Registro de retry, sem “ack” falso e sem perda silenciosa |
-| Estorno/cancelamento | Política de reconciliação explícita, auditável e sem alteração arbitrária |
-| Operação cruzada de contas | Rejeição independentemente do que o frontend exibe |
+| Prova                             | Resultado obrigatório                                                     |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| Assinatura inválida/ausente       | Rejeição sem escrita nem concessão                                        |
+| Evento de outro ambiente          | Rejeição; nenhuma mistura de sandbox/live                                 |
+| Sessão pendente, vencida ou falha | Sem entrega indevida                                                      |
+| Evento legítimo pago              | Benefício entregue ao titular correto após confirmação servidor           |
+| Reenvio do mesmo evento           | Sem nova moeda, item, assinatura ou benefício                             |
+| Falha transitória de banco        | Registro de retry, sem “ack” falso e sem perda silenciosa                 |
+| Estorno/cancelamento              | Política de reconciliação explícita, auditável e sem alteração arbitrária |
+| Operação cruzada de contas        | Rejeição independentemente do que o frontend exibe                        |
 
 **Importante:** um teste que envia um webhook com assinatura falsa é um **teste negativo**. Não prova pagamento realizado, endpoint inscrito na Stripe, assinatura válida nem entrega fim a fim. Em homologação, usar contas, usuários, preços e chaves **de teste**; não confirmar compras live.
 
@@ -244,17 +244,17 @@ Se um artefato de build ou log contiver credencial, **não** publicar o artefato
 
 Os passos abaixo são guias operacionais, **não** autorização para executar ações destrutivas ou acessar sistemas sem escopo. Em todos os casos, preservar evidência, reduzir impacto e registrar quem aprovou a mudança.
 
-| Incidente | Primeira contenção | Verificação antes de encerrar |
-| --- | --- | --- |
-| **Token/segredo exposto** | Revogar/rotacionar no provedor e limitar integrações afetadas | Consumidores atualizados, logs revisados, ausência de uso indevido, novos secrets fora de artefatos |
-| **Conta tomada/OAuth indevido** | Revogar sessões/credenciais comprometidas e reduzir o fluxo afetado | Callback, PKCE, RLS, recuperação e MFA testados com usuários próprios |
-| **Webhook/benefício fraudulento** | Suspender concessões inseguras, não necessariamente toda a loja | Assinatura, ambiente, ledger, replay, reembolso e usuário titular reconciliados |
-| **RLS/IDOR confirmado** | Restringir política/rota vulnerável e investigar leituras históricas | Negativos cross-user e testes de migração em ambiente isolado |
-| **Malware ou suspeita de root comprometido no VPS** | Isolar o host sem perder a trilha forense e o acesso de recuperação autorizado | Reinstalação/reconstituição confiável quando necessária, rotação de chaves e restore comprovado |
-| **CSP quebrada ou regressão de segurança no frontend** | Revisar mudança de origem e voltar política conhecida, se necessário | Login, Stripe, 3D, analytics consentido e testes de injeção legítimos |
-| **DNS/Cloudflare/Load Balancer** | Suspender mudanças concorrentes e confirmar ownership do hostname | Worker e origem corretos, HTTPS, resposta real das rotas, cache e health |
-| **Abuso multiplayer** | Revogar tickets e limitar salas/usuários afetados | Replay determinístico, reconexão, permissões, ranking e antirreplay |
-| **Indisponibilidade/restauração** | Preservar estado, identificar janela e impedir writes conflitantes | Backup externo **restaurado em ambiente isolado**, integridade, consistência e dados dos jogadores |
+| Incidente                                              | Primeira contenção                                                             | Verificação antes de encerrar                                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| **Token/segredo exposto**                              | Revogar/rotacionar no provedor e limitar integrações afetadas                  | Consumidores atualizados, logs revisados, ausência de uso indevido, novos secrets fora de artefatos |
+| **Conta tomada/OAuth indevido**                        | Revogar sessões/credenciais comprometidas e reduzir o fluxo afetado            | Callback, PKCE, RLS, recuperação e MFA testados com usuários próprios                               |
+| **Webhook/benefício fraudulento**                      | Suspender concessões inseguras, não necessariamente toda a loja                | Assinatura, ambiente, ledger, replay, reembolso e usuário titular reconciliados                     |
+| **RLS/IDOR confirmado**                                | Restringir política/rota vulnerável e investigar leituras históricas           | Negativos cross-user e testes de migração em ambiente isolado                                       |
+| **Malware ou suspeita de root comprometido no VPS**    | Isolar o host sem perder a trilha forense e o acesso de recuperação autorizado | Reinstalação/reconstituição confiável quando necessária, rotação de chaves e restore comprovado     |
+| **CSP quebrada ou regressão de segurança no frontend** | Revisar mudança de origem e voltar política conhecida, se necessário           | Login, Stripe, 3D, analytics consentido e testes de injeção legítimos                               |
+| **DNS/Cloudflare/Load Balancer**                       | Suspender mudanças concorrentes e confirmar ownership do hostname              | Worker e origem corretos, HTTPS, resposta real das rotas, cache e health                            |
+| **Abuso multiplayer**                                  | Revogar tickets e limitar salas/usuários afetados                              | Replay determinístico, reconexão, permissões, ranking e antirreplay                                 |
+| **Indisponibilidade/restauração**                      | Preservar estado, identificar janela e impedir writes conflitantes             | Backup externo **restaurado em ambiente isolado**, integridade, consistência e dados dos jogadores  |
 
 ### Sequência operacional comum
 
@@ -284,16 +284,16 @@ O jogo pode envolver dados de jogadores, incluindo perfis de pessoas menores de 
 
 ## 15. Critérios de encerramento e evidências
 
-| Situação | Evidência mínima para marcar como concluída |
-| --- | --- |
-| Correção em código | Diff auditado, teste de regressão, revisão e CI no SHA exato |
-| Autenticação | Conta de teste própria autenticada, retorno correto, sessão persistente, logout e permissões cross-user |
-| Stripe | Pagamento **sandbox real**, webhook assinado e entregue, reconciliação e uma concessão idempotente |
-| Multiplayer | 1×1 e 2×2 reais com usuários independentes, desconexão/reconexão, resultado autoritativo e logs |
-| Cloudflare/edge | Regras e hostname verificados, origem saudável, HTTP real, TLS, sem exposição de cache privado |
-| Banco/RLS | Migração isolada, negativos por papel/usuário, ausência de acesso elevado no cliente |
-| Host/VPS | Patches ativados, acesso administrativo confiável, backup restaurado e monitoramento confirmado |
-| Release | Gate obrigatório aprovado, SHA servido, rollback ensaiado e observabilidade sem incidentes críticos conhecidos |
+| Situação           | Evidência mínima para marcar como concluída                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Correção em código | Diff auditado, teste de regressão, revisão e CI no SHA exato                                                   |
+| Autenticação       | Conta de teste própria autenticada, retorno correto, sessão persistente, logout e permissões cross-user        |
+| Stripe             | Pagamento **sandbox real**, webhook assinado e entregue, reconciliação e uma concessão idempotente             |
+| Multiplayer        | 1×1 e 2×2 reais com usuários independentes, desconexão/reconexão, resultado autoritativo e logs                |
+| Cloudflare/edge    | Regras e hostname verificados, origem saudável, HTTP real, TLS, sem exposição de cache privado                 |
+| Banco/RLS          | Migração isolada, negativos por papel/usuário, ausência de acesso elevado no cliente                           |
+| Host/VPS           | Patches ativados, acesso administrativo confiável, backup restaurado e monitoramento confirmado                |
+| Release            | Gate obrigatório aprovado, SHA servido, rollback ensaiado e observabilidade sem incidentes críticos conhecidos |
 
 **Estados válidos em relatórios:** confirmado com evidência; implementado, mas não homologado; parcialmente validado; bloqueado; não verificado; não aplicável. Nunca converter “planejado”, “configurado no código”, “scan sem achado” ou “teste de mock passou” em “seguro em produção”.
 
