@@ -24,6 +24,43 @@ describe("outer response protection", () => {
     }
   });
 
+  it("enforces nonce-only script execution when the staging strict-CSP flag is enabled", () => {
+    vi.stubEnv("CSP_ENFORCE_STRICT", "1");
+    try {
+      const nonce = createCspNonce();
+      const response = secureResponse(
+        new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+        new Request("https://jogomanager.com/auth"),
+        nonce,
+      );
+      const policy = response.headers.get("content-security-policy")!;
+      expect(policy).toContain(`'nonce-${nonce}'`);
+      expect(policy).toContain("'wasm-unsafe-eval'");
+      expect(policy).toContain("script-src-attr 'none'");
+      expect(policy).not.toContain("'unsafe-inline' 'unsafe-eval'");
+      expect(policy).not.toContain("https://*.lovable.app");
+      expect(policy).not.toContain("https://cdn.gpteng.co");
+      expect(response.headers.get("cache-control")).toBe("no-store");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("keeps the legacy script policy when strict rollout has no server-issued nonce", () => {
+    vi.stubEnv("CSP_ENFORCE_STRICT", "1");
+    try {
+      const response = secureResponse(
+        new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+        new Request("https://jogomanager.com/"),
+      );
+      const policy = response.headers.get("content-security-policy")!;
+      expect(policy).toContain("'unsafe-inline' 'unsafe-eval'");
+      expect(policy).not.toContain("'nonce-");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("sets same-site resource policy and preserves popup-based OAuth/Stripe without COEP", () => {
     for (const path of ["/", "/auth", "/checkout/return", "/api/health", "/sitemap.xml"]) {
       const response = secureResponse(
