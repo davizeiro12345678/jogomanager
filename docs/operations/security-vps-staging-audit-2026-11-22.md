@@ -30,6 +30,19 @@
 3. PR #132: suíte atual de contratos estáticos: **4 passam, 3 pulados** porque os três workflows DAST vivem em uma branch/main diferente do head do PR.
 4. PR #151 (draft): troca dos cinco usos `actions/checkout@v4` e `actions/upload-artifact@v4` por commits imutáveis em três workflows DAST e carga de staging; **3/3 testes locais passaram**. Ainda não integrado à `main`.
 
+## Verificação ampliada da dependência undici (22/11)
+
+- A varredura Trivy com `--include-dev-deps` na cópia anterior do repositório (`security/csp-zap-aikido-20261121`) encontrou **8 ocorrências no Bun lockfile** relativas ao `undici@7.29.1` (4 HIGH, 4 MEDIUM). O exame padrão as ocultava por suprimir dependências de desenvolvimento.
+- **O head atual do PR #132 já tem** `overrides.undici=7.30.2` no `package.json`, com `undici@7.30.2` resolvido em `bun.lock` e `package-lock.json`.
+- Foi executado **outro Trivy com `--include-dev-deps`** especificamente sobre os lockfiles extraídos do head atual do PR #132, com **zero ocorrências reportadas nesses alvos**. Artefato privado `/opt/jm-security/fullscan-20261122/trivy-pr132-report/lockfiles.json`. Isso não certifica outras dependências nem todas as imagens da VPS.
+
+## Diagnóstico mais específico da base isolada
+
+- A imagem Supabase self-hosted de staging disponibiliza GoTrue `/auth/v1/settings` e `/auth/v1/admin/users` (HTTP 200 em testes internos com credenciais do próprio contêiner). Os valores não foram impressos.
+- O PostgreSQL `supabase-db` autônomo tinha **somente uma tabela em `public`: `pfm_stage_probe`**; a tabela esperada pelo health check do jogo, `public.competitions`, não foi encontrada (REST HTTP 404).
+- Ao chamar a função de diagnóstico diretamente com o ambiente do contêiner, `auth=true`, `serverCredentials=true`, `database=false`. A rota publicada pelo Worker local continuou devolvendo 503 e todos os checks falsos. É necessário aplicar e validar o schema completo de staging e conferir o encaminhamento de bindings Worker, não maquiar o health check.
+- O Gateway possui dois registros de valores do token Aikido VM; o arquivo local de token do scanner continua vazio no momento da inspeção. A operação de matrícula via segredo protegido foi bloqueada pelo controle de segurança da ferramenta; **Aikido não foi autenticado ou executado** nesta sessão.
+
 ## Supabase security advisors
 
 - Produção: 37 avisos informativos `rls_enabled_no_policy` (maioria de schemas privados), 26 de visibilidade GraphQL para `anon`, 48 para `authenticated` e uma função `SECURITY DEFINER` acessível ao papel autenticado.
