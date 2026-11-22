@@ -73,13 +73,7 @@ export function secureResponse(response: Response, request: Request, nonce?: str
         ...(url.protocol === "https:" ? ["upgrade-insecure-requests"] : []),
       ].join("; "),
     );
-    headers.set(
-      "content-security-policy-report-only",
-      [
-        ...COMMON_CSP,
-        strictScript,
-      ].join("; "),
-    );
+    headers.set("content-security-policy-report-only", [...COMMON_CSP, strictScript].join("; "));
     // HTML contains a request-unique CSP nonce. Do not let Cloudflare's
     // response cache serve it before this Worker can rotate the nonce.
     // A separate, opt-in internal Cache API stores a private sanitized copy.
