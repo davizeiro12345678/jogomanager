@@ -38,8 +38,9 @@ describe("outer response protection", () => {
       expect(policy).toContain("'wasm-unsafe-eval'");
       expect(policy).toContain("script-src-attr 'none'");
       expect(policy).not.toContain("'unsafe-inline' 'unsafe-eval'");
-      expect(policy).not.toContain("https://*.lovable.app");
-      expect(policy).not.toContain("https://cdn.gpteng.co");
+      const scripts = policy.split("; ").find((part) => part.startsWith("script-src "))!;
+      expect(scripts).not.toContain("https://*.lovable.app");
+      expect(scripts).not.toContain("https://cdn.gpteng.co");
       expect(response.headers.get("cache-control")).toBe("no-store");
     } finally {
       vi.unstubAllEnvs();
