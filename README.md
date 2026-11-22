@@ -400,14 +400,14 @@ O contrato em [docs/critical-performance.md](docs/critical-performance.md) é a 
 
 O [plano detalhado de segurança e garantias](docs/security/cloudflare-supabase-assurance-2026.md) contém o **inventário verificado em 22/11/2026**, a matriz de controles, os avisos do Supabase, a ordem de correções e os critérios para publicar evidências de conformidade. Ele distingue configuração habilitada, teste técnico, homologação E2E e avaliação por terceira parte.
 
-| Componente | Confirmação técnica | Lacuna relevante |
-| --- | --- | --- |
-| **Cloudflare** | TLS Full (strict), HTTPS obrigatório, WAF gerenciado, regras personalizadas, rate limiting de Auth, Bot Fight Mode e headers configurados | DNSSEC ainda `pending`; verificar comportamento real e não reativar LB do apex sem origem independente |
-| **Supabase** | Auth/Postgres e segurança por RLS disponíveis; ferramenta de advisors consultada | Revisar privilégios de GraphQL e função `SECURITY DEFINER`; validar usuários A/B e staging isolado |
-| **Pagamentos** | Stripe integrado em código, contratos para webhook assinado e idempotência | Checkout e entrega real em sandbox ainda exigem prova E2E |
-| **Multiplayer** | Estruturas de tickets/partidas e testes automatizados | Partidas reais 1×1 e 2×2, reconexão e ranking ainda exigem prova |
-| **Performance** | Orçamentos móveis e CodeSpeed com gates no CI | Pico de primeira carga da home deve ser corrigido, sem mascarar a primeira amostra |
-| **Certificação** | Trilha de evidências definida (ASVS, TLS, acessibilidade, PCI conforme escopo, privacidade) | **Não há certificado independente do site declarado ou comprovado neste documento** |
+| Componente       | Confirmação técnica                                                                                                                       | Lacuna relevante                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Cloudflare**   | TLS Full (strict), HTTPS obrigatório, WAF gerenciado, regras personalizadas, rate limiting de Auth, Bot Fight Mode e headers configurados | DNSSEC ainda `pending`; verificar comportamento real e não reativar LB do apex sem origem independente |
+| **Supabase**     | Auth/Postgres e segurança por RLS disponíveis; ferramenta de advisors consultada                                                          | Revisar privilégios de GraphQL e função `SECURITY DEFINER`; validar usuários A/B e staging isolado     |
+| **Pagamentos**   | Stripe integrado em código, contratos para webhook assinado e idempotência                                                                | Checkout e entrega real em sandbox ainda exigem prova E2E                                              |
+| **Multiplayer**  | Estruturas de tickets/partidas e testes automatizados                                                                                     | Partidas reais 1×1 e 2×2, reconexão e ranking ainda exigem prova                                       |
+| **Performance**  | Orçamentos móveis e CodeSpeed com gates no CI                                                                                             | Pico de primeira carga da home deve ser corrigido, sem mascarar a primeira amostra                     |
+| **Certificação** | Trilha de evidências definida (ASVS, TLS, acessibilidade, PCI conforme escopo, privacidade)                                               | **Não há certificado independente do site declarado ou comprovado neste documento**                    |
 
 O plano também explica por que **ISO/IEC 27001, SOC 2 e PCI DSS** não podem ser reivindicados apenas por usar fornecedores com certificações próprias. Os badges deste README representam estado de automações ou políticas declaradas, **não** selos emitidos por terceiros.
 
