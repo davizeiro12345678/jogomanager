@@ -1,5 +1,7 @@
 # Pro Football Manager 3D
 
+**Site oficial e endereço canônico:** https://jogomanager.com
+
 **Futebol. Decisões. Histórias. Seu clube, sua trajetória.**
 
 [![Quality gates](https://github.com/davizeiro12345678/jogomanager/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/davizeiro12345678/jogomanager/actions/workflows/quality.yml)
