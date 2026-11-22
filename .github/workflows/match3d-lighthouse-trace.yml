@@ -4,6 +4,13 @@ on:
     paths:
       - ".github/scripts/trace-mobile-startup.mjs"
       - ".github/workflows/match3d-lighthouse-trace.yml"
+      # Record Chrome DevTools traces whenever the public hero, its styles,
+      # loading priorities, or runtime dependencies can change first paint.
+      - ".lighthouserc.mobile.cjs"
+      - "src/components/home/**"
+      - "src/routes/index.tsx"
+      - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
 permissions:
   contents: read
