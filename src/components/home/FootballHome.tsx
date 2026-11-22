@@ -161,11 +161,6 @@ function TacticalPreview() {
 }
 
 export function FootballHome() {
-  // Sent after React has committed the SSR home so a first, early menu tap
-  // can be replayed safely without toggling a non-hydrated button.
-  useEffect(() => {
-    window.dispatchEvent(new Event("pfm:home-hydrated"));
-  }, []);
   const { leagues } = getRouteApi("/").useLoaderData();
   const [menu, setMenu] = useState(false);
   const [system, setSystem] = useState(0);
@@ -293,7 +288,7 @@ export function FootballHome() {
             width={1600}
             height={912}
             fetchPriority="high"
-            decoding="sync"
+            decoding="async"
           />
         </picture>
         <div className="home-hero-shade" aria-hidden="true" />
