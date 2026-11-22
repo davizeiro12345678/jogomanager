@@ -341,3 +341,25 @@ describe("Stripe payment webhook lifecycle", () => {
     expect(deps.fulfill).not.toHaveBeenCalled();
   });
 });
+
+it("returns HTTP 405 to GET /api/public/payments/webhook without rendering the app shell", async () => {
+  const get = (
+    Route as unknown as {
+      options: {
+        server: {
+          handlers: {
+            GET(args: { request: Request }): Response;
+          };
+        };
+      };
+    }
+  ).options.server.handlers.GET;
+  const response = get({
+    request: new Request("https://game-staging.jogomanager.com/api/public/payments/webhook?env=sandbox"),
+  });
+  expect(response.status).toBe(405);
+  expect(response.headers.get("allow")).toBe("POST");
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(await response.text()).toBe("Method Not Allowed");
+  expect(deps.verify).not.toHaveBeenCalled();
+});
