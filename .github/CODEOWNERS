@@ -1,0 +1,13 @@
+# Ownership routing only. Do NOT enable mandatory CODEOWNERS approval
+# for a sole-maintainer repository; GitHub cannot self-approve pull requests.
+* @davizeiro12345678
+
+# High-risk areas receive explicit ownership and manual review attention.
+/.github/ @davizeiro12345678
+/SECURITY.md @davizeiro12345678
+/src/routes/api/ @davizeiro12345678
+/src/lib/ @davizeiro12345678
+/supabase/ @davizeiro12345678
+/drizzle/ @davizeiro12345678
+/cloudflare/ @davizeiro12345678
+/infra/ @davizeiro12345678
