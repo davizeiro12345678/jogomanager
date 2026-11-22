@@ -1,4 +1,4 @@
-import { responseIndexingPolicy } from "./public-indexing";
+import { PUBLIC_SEARCH_PAGES, responseIndexingPolicy } from "./public-indexing";
 import { isPublicContentPath } from "./public-content-routes";
 
 /** Supplied only by the outer server entry, never copied from an incoming header. */
@@ -15,6 +15,8 @@ const COMMON_CSP = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
+  "script-src-attr 'none'",
+  "manifest-src 'self'",
   "form-action 'self' https://*.stripe.com",
   "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev https://lovable.dev",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -43,6 +45,9 @@ export function secureResponse(response: Response, request: Request, nonce?: str
     "permissions-policy",
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()',
   );
+  // CORP limits cross-site no-cors embedding of our resources without requiring
+  // cross-origin isolation (COEP), which can break Stripe, OAuth and media.
+  headers.set("cross-origin-resource-policy", "same-site");
   headers.set("cross-origin-opener-policy", "same-origin-allow-popups");
   if (url.protocol === "https:")
     headers.set("strict-transport-security", "max-age=63072000; includeSubDomains; preload");
@@ -70,6 +75,18 @@ export function secureResponse(response: Response, request: Request, nonce?: str
       ? "noindex, nofollow"
       : responseIndexingPolicy(url.pathname, contentType);
   if (indexing) headers.set("x-robots-tag", indexing);
+  else if (
+    response.status === 200 &&
+    (request.method === "GET" || request.method === "HEAD") &&
+    contentType.includes("text/html") &&
+    PUBLIC_SEARCH_PAGES.includes(url.pathname.replace(/\/+$/, "") || "/") &&
+    /^noindex\s*,\s*follow$/i.test(headers.get("x-robots-tag")?.trim() ?? "")
+  ) {
+    // An older SSR response can still carry the obsolete blanket noindex.
+    // Clear only that exact stale directive on confirmed public 200 HTML.
+    // Preserve errors, private pages and intentionally restrictive directives.
+    headers.delete("x-robots-tag");
+  }
   if (
     response.status >= 400 ||
     PRIVATE_PATH.test(url.pathname) ||
