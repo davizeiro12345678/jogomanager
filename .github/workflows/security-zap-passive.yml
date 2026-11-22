@@ -1,0 +1,44 @@
+name: Security - OWASP ZAP passive baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-zap-baseline-production
+  cancel-in-progress: false
+
+jobs:
+  passive-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Prepare isolated ZAP report directory
+        shell: bash
+        run: |
+          mkdir -p zap-reports
+          chmod 0777 zap-reports
+
+      - name: Passive ZAP scan of public homepage only
+        shell: bash
+        run: |
+          docker run --rm \
+            --network bridge \
+            --cpus=1 --memory=2200m --pids-limit=256 \
+            --cap-drop=ALL --security-opt=no-new-privileges \
+            -v "$PWD/zap-reports:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t https://jogomanager.com/ -m 1 -T 8 -a -I -s \
+            -J baseline.json -r baseline.html -w baseline.md
+
+      - name: Upload ZAP evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-passive-baseline-${{ github.run_id }}
+          path: zap-reports/
+          if-no-files-found: warn
+          retention-days: 14
