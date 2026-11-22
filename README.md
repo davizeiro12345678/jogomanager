@@ -33,20 +33,20 @@ O **Pro Football Manager 3D (jogomanager)** é um jogo brasileiro independente d
 
 ## Experiência do jogador
 
-| Caminho | O que entrega | Entrada |
-| --- | --- | --- |
-| **Carreira de treinador** | Administração do clube, contratações, elenco, finanças, treino, calendário, táticas e progressão de temporadas | [Carreiras](https://jogomanager.com/carreiras) |
-| **Carreira de jogador** | Construção de um atleta, posição, treinos, oportunidades e evolução individual | [Carreira de jogador](https://jogomanager.com/carreira-jogador) |
-| **Partida rápida** | Preparação de um confronto para conhecer o motor, as câmeras e a apresentação 3D | [Partida rápida](https://jogomanager.com/partida-rapida) |
-| **Multiplayer** | Salas, desafio entre treinadores e fluxos autoritativos conforme o ambiente homologado | [Multiplayer](https://jogomanager.com/multiplayer) |
-| **Conteúdo e consulta** | Tabelas, guias, scouting, formações e explicações de regras | [Guias](https://jogomanager.com/guias) |
-| **Criação e personalização** | Criação de clube, atleta e ajustes visuais, dentro das opções expostas pela versão | [Criador](https://jogomanager.com/criador) |
+| Caminho                      | O que entrega                                                                                                  | Entrada                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Carreira de treinador**    | Administração do clube, contratações, elenco, finanças, treino, calendário, táticas e progressão de temporadas | [Carreiras](https://jogomanager.com/carreiras)                  |
+| **Carreira de jogador**      | Construção de um atleta, posição, treinos, oportunidades e evolução individual                                 | [Carreira de jogador](https://jogomanager.com/carreira-jogador) |
+| **Partida rápida**           | Preparação de um confronto para conhecer o motor, as câmeras e a apresentação 3D                               | [Partida rápida](https://jogomanager.com/partida-rapida)        |
+| **Multiplayer**              | Salas, desafio entre treinadores e fluxos autoritativos conforme o ambiente homologado                         | [Multiplayer](https://jogomanager.com/multiplayer)              |
+| **Conteúdo e consulta**      | Tabelas, guias, scouting, formações e explicações de regras                                                    | [Guias](https://jogomanager.com/guias)                          |
+| **Criação e personalização** | Criação de clube, atleta e ajustes visuais, dentro das opções expostas pela versão                             | [Criador](https://jogomanager.com/criador)                      |
 
 A base do produto é **tomada de decisão**, não controle arcade do atleta. Em partidas, o objetivo é conectar formação, instruções, condição física, comportamento dos jogadores e desfechos simulados. Os dados de clubes e ligas podem ter escopos diferentes entre catálogo informativo, competições publicadas e clubes selecionáveis; não presuma que todo registro importado seja jogável.
 
 ### Percurso do jogador — do primeiro acesso à partida
 
-~~~mermaid
+```mermaid
 flowchart TD
   A["jogomanager.com — entrada pública"] --> B{"Como jogar?"}
   B --> C["Carreira de treinador"]
@@ -66,7 +66,7 @@ flowchart TD
   M --> N{"Persistência"}
   N --> O["Save local / offline"]
   N --> P["Sincronização na nuvem, quando autenticado"]
-~~~
+```
 
 O primeiro acesso pode ocorrer sem conta. O progresso local pertence ao navegador/dispositivo; a sincronização com a nuvem depende de autenticação e disponibilidade do serviço. Antes de trocar de aparelho, limpar dados ou migrar saves, exporte uma cópia e confira a sincronização. A operação offline não significa que login, pagamentos, importação de dados ou multiplayer também funcionem offline.
 
@@ -74,34 +74,34 @@ O primeiro acesso pode ocorrer sem conta. O progresso local pertence ao navegado
 
 Este é o percurso técnico documentado, não uma lista inventada de datas de lançamento. Os marcos refletem arquivos, commits e relatórios presentes no repositório e devem ser interpretados junto ao SHA e ao ambiente de execução.
 
-| Fase/marco | Evolução e evidência | Observação |
-| --- | --- | --- |
-| **Base do jogo** | Editor de carreiras, partidas, táticas, calendários e persistência local; módulos em **src/game**, **src/routes** e **src/components** | O histórico do Git registra a evolução detalhada. |
-| **Motor e apresentação 3D** | Three.js/R3F, física Rapier, workers de simulação, LOD e controle de qualidade gráfica | Certificação em aparelhos físicos exige medições próprias. |
-| **Outubro de 2026** | Trabalhos documentados sobre Core Web Vitals, segurança de cache e integrações, SSR/SEO, RLS e distribuição | Consultar relatórios de outubro em **docs/**. |
-| **03/11/2026** | Estudos de alternativas WASM e pilotos de performance | [Relatório técnico](docs/report-2026-11-03-speed-and-wasm-pilots.md). |
-| **06–08/11/2026** | Evolução de UX de carreira, escritório do técnico, cenas, tutoriais, push/chat e ajustes de CI | Evidências e ressalvas em **docs/report-2026-11-06-*.md** e **roadmap.md**. |
-| **13–14/11/2026** | Otimizações incrementais de contadores de lesões e fusão do PR #138 para rotas públicas, SSR e indexação | Ver [PR #138](https://github.com/davizeiro12345678/jogomanager/pull/138) e notas do [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132); medições de SQL não equivalem a ganhos de tempo de página. |
-| **19–21/11/2026** | Homologação de migrações, contratos de multiplayer, segurança, desempenho móvel e publicação concentradas no PR #132 | **Ainda não é release aprovado**. Validar o último SHA, os gates e os ambientes reais antes do merge. |
+| Fase/marco                  | Evolução e evidência                                                                                                                   | Observação                                                                                                                                                                                                           |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Base do jogo**            | Editor de carreiras, partidas, táticas, calendários e persistência local; módulos em **src/game**, **src/routes** e **src/components** | O histórico do Git registra a evolução detalhada.                                                                                                                                                                    |
+| **Motor e apresentação 3D** | Three.js/R3F, física Rapier, workers de simulação, LOD e controle de qualidade gráfica                                                 | Certificação em aparelhos físicos exige medições próprias.                                                                                                                                                           |
+| **Outubro de 2026**         | Trabalhos documentados sobre Core Web Vitals, segurança de cache e integrações, SSR/SEO, RLS e distribuição                            | Consultar relatórios de outubro em **docs/**.                                                                                                                                                                        |
+| **03/11/2026**              | Estudos de alternativas WASM e pilotos de performance                                                                                  | [Relatório técnico](docs/report-2026-11-03-speed-and-wasm-pilots.md).                                                                                                                                                |
+| **06–08/11/2026**           | Evolução de UX de carreira, escritório do técnico, cenas, tutoriais, push/chat e ajustes de CI                                         | Evidências e ressalvas em **docs/report-2026-11-06-\*.md** e **roadmap.md**.                                                                                                                                         |
+| **13–14/11/2026**           | Otimizações incrementais de contadores de lesões e fusão do PR #138 para rotas públicas, SSR e indexação                               | Ver [PR #138](https://github.com/davizeiro12345678/jogomanager/pull/138) e notas do [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132); medições de SQL não equivalem a ganhos de tempo de página. |
+| **19–21/11/2026**           | Homologação de migrações, contratos de multiplayer, segurança, desempenho móvel e publicação concentradas no PR #132                   | **Ainda não é release aprovado**. Validar o último SHA, os gates e os ambientes reais antes do merge.                                                                                                                |
 
 O desenvolvimento é independente. [Acesse as ferramentas de criação do jogo](https://jogomanager.com/criador). Ferramentas de assistência, como Lovable, podem participar da edição, mas **GitHub, testes e autorização de release** são as referências para rastrear alterações. O histórico de commits e PRs é a trilha auditável: [commits](https://github.com/davizeiro12345678/jogomanager/commits/main), [pull requests](https://github.com/davizeiro12345678/jogomanager/pulls) e [Actions](https://github.com/davizeiro12345678/jogomanager/actions).
 
 ## Arquitetura técnica e fluxo de dados
 
-| Camada | Implementação / finalidade |
-| --- | --- |
-| **UI e roteamento** | React 19, TypeScript, TanStack Start/Router/Query/Store, Vite, Zod, CSS e design responsivo. |
-| **Simulação de futebol** | Motor TypeScript determinístico, ticks, seeds, contratos de replay e Web Workers; partes auxiliares em Rust/WASM quando comprovadas. |
-| **Apresentação de partida** | Three.js, React Three Fiber, Drei, postprocessing, Rapier, BVH, detecção de GPU, LOD e resolução dinâmica. |
-| **Dados e autenticação** | Supabase PostgreSQL, RLS, Auth, Realtime e migrações versionadas com Drizzle. |
-| **Infraestrutura e rede** | Cloudflare/Workers, endpoints SSR e serviços auxiliares; VPS e integrações externas conforme configuração efetiva. |
-| **Comércio** | Stripe com separação de sandbox/produção, validação de webhook e concessão durável no servidor. |
-| **Catálogo futebolístico** | Rotinas de ingestão e reconciliação com provedores externos, cotas e validação antes da publicação. |
-| **Observabilidade/QA** | GitHub Actions, Vitest, Lighthouse, CodSpeed, métricas de runtime e relatórios reproduzíveis. |
+| Camada                      | Implementação / finalidade                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **UI e roteamento**         | React 19, TypeScript, TanStack Start/Router/Query/Store, Vite, Zod, CSS e design responsivo.                                         |
+| **Simulação de futebol**    | Motor TypeScript determinístico, ticks, seeds, contratos de replay e Web Workers; partes auxiliares em Rust/WASM quando comprovadas. |
+| **Apresentação de partida** | Three.js, React Three Fiber, Drei, postprocessing, Rapier, BVH, detecção de GPU, LOD e resolução dinâmica.                           |
+| **Dados e autenticação**    | Supabase PostgreSQL, RLS, Auth, Realtime e migrações versionadas com Drizzle.                                                        |
+| **Infraestrutura e rede**   | Cloudflare/Workers, endpoints SSR e serviços auxiliares; VPS e integrações externas conforme configuração efetiva.                   |
+| **Comércio**                | Stripe com separação de sandbox/produção, validação de webhook e concessão durável no servidor.                                      |
+| **Catálogo futebolístico**  | Rotinas de ingestão e reconciliação com provedores externos, cotas e validação antes da publicação.                                  |
+| **Observabilidade/QA**      | GitHub Actions, Vitest, Lighthouse, CodSpeed, métricas de runtime e relatórios reproduzíveis.                                        |
 
 ### Do clique ao resultado: fronteiras de confiança
 
-~~~mermaid
+```mermaid
 flowchart LR
   U["Navegador / PWA"] --> C["Cloudflare: CDN e entrada HTTP"]
   C --> S["Aplicação TanStack / SSR / APIs"]
@@ -115,7 +115,7 @@ flowchart LR
   P --> D
   F --> D
   W --> U
-~~~
+```
 
 **Observações de segurança:** o navegador não é autoridade sobre pagamentos, moedas, conquistas persistentes, RLS ou resultado competitivo. Credenciais privilegiadas devem existir apenas em serviços de servidor. Replay local, multiplayer autoritativo e compras têm contratos distintos. Nenhuma tecnologia ou política listada aqui deve ser tratada como efetivamente ativada em produção sem verificação de configuração e tráfego.
 
@@ -130,19 +130,19 @@ flowchart LR
 
 ## Mapa do repositório
 
-| Caminho | Responsabilidade |
-| --- | --- |
-| **src/routes/** | Rotas do site, SSR, APIs, autenticação, modos do jogo e páginas editoriais. |
-| **src/game/** | Regras, simulação, IA, física, determinismo, testes e benchmarks. |
-| **src/components/** | Componentes React, telas, estádios, atletas e apresentação 3D. |
-| **src/lib/** | Bibliotecas de aplicação e lógica compartilhada/servidor. |
-| **cloudflare/** | Workers e serviços ligados ao edge. |
-| **supabase/** e **drizzle/** | Configuração, migrations, contratos de banco e histórico versionado. |
-| **wasm/** | Componentes Rust/WASM e suas validações. |
-| **scripts/** | Build, segurança, qualidade, performance, verificação de publicação e manutenção. |
-| **tests/** | Contratos e testes complementares, incluindo SQL. |
-| **.github/workflows/** | Gates de CI, comparação de performance, segurança e publicação. |
-| **docs/**, **verification/** | Arquitetura, runbooks, planos, auditorias e evidências. |
+| Caminho                      | Responsabilidade                                                                  |
+| ---------------------------- | --------------------------------------------------------------------------------- |
+| **src/routes/**              | Rotas do site, SSR, APIs, autenticação, modos do jogo e páginas editoriais.       |
+| **src/game/**                | Regras, simulação, IA, física, determinismo, testes e benchmarks.                 |
+| **src/components/**          | Componentes React, telas, estádios, atletas e apresentação 3D.                    |
+| **src/lib/**                 | Bibliotecas de aplicação e lógica compartilhada/servidor.                         |
+| **cloudflare/**              | Workers e serviços ligados ao edge.                                               |
+| **supabase/** e **drizzle/** | Configuração, migrations, contratos de banco e histórico versionado.              |
+| **wasm/**                    | Componentes Rust/WASM e suas validações.                                          |
+| **scripts/**                 | Build, segurança, qualidade, performance, verificação de publicação e manutenção. |
+| **tests/**                   | Contratos e testes complementares, incluindo SQL.                                 |
+| **.github/workflows/**       | Gates de CI, comparação de performance, segurança e publicação.                   |
+| **docs/**, **verification/** | Arquitetura, runbooks, planos, auditorias e evidências.                           |
 
 A documentação de arquitetura mais específica está em [docs/architecture/stack-status.md](docs/architecture/stack-status.md) e o contrato de desempenho em [docs/critical-performance.md](docs/critical-performance.md).
 
@@ -150,18 +150,18 @@ A documentação de arquitetura mais específica está em [docs/architecture/sta
 
 **Pré-requisitos:** Node.js conforme **.nvmrc** (o pacote exige Node **>=24.22 <25**), npm, Git e, somente para suítes que precisarem, Rust/Cargo e Docker/Supabase CLI. O projeto usa **package-lock.json** para instalação npm reprodutível; a presença de **bun.lock** não autoriza misturar resoluções de dependência na mesma medição.
 
-~~~bash
+```bash
 git clone https://github.com/davizeiro12345678/jogomanager.git
 cd jogomanager
 nvm use
 npm ci
 cp .env.example .env
 npm run dev
-~~~
+```
 
 Preencha **.env** apenas com chaves locais ou de staging. **.env.example** lista nomes e valores públicos ilustrativos: não é um conjunto de credenciais para produção. Se um serviço exigir credenciais privadas, use um cofre/secret store do ambiente e o mecanismo de secrets de sua plataforma. Não commit **.env**, tokens, cookies nem dumps de usuários.
 
-~~~bash
+```bash
 npm run lint
 npm exec -- tsc --noEmit --pretty false
 npm test
@@ -170,14 +170,14 @@ npm run test:performance-gates
 npm run wasm:test
 npm run graphics:build
 npm audit --omit=dev --audit-level=high
-~~~
+```
 
 Alguns comandos exigem ferramentas, redes ou dependências opcionais não presentes em uma instalação básica. **Não rotule uma etapa pulada como aprovada**. Para visualizar o estúdio gráfico após gerar os assets:
 
-~~~bash
+```bash
 npm run graphics:preview
 # Abrir http://127.0.0.1:4193/player-studio.html
-~~~
+```
 
 O proxy de prévia deve buscar somente recursos públicos: nunca encaminhe cookies ou cabeçalhos de autorização a um host de assets. O desenvolvimento, a homologação e a produção devem usar bancos, contas, webhooks, domínios e segredos separados.
 
@@ -185,22 +185,22 @@ O proxy de prévia deve buscar somente recursos públicos: nunca encaminhe cooki
 
 A fonte de verdade para os gates é [Quality gates](.github/workflows/quality.yml), junto aos workflows de [CodSpeed](.github/workflows/codspeed.yml), [testes de carreira](.github/workflows/career-regression-tests.yml), [publicação](.github/workflows/cloudflare-production.yml) e segurança.
 
-| Dimensão | Evidência exigida |
-| --- | --- |
-| **Qualidade de código** | Lint sem avisos, typecheck, testes e build. |
-| **Simulação** | Seeds e checkpoints reproduzíveis, replays determinísticos e stress de partidas. |
-| **Performance** | Comparar base e candidato no mesmo runner, mesmas fixtures, runtime e ordem controlada; registrar p50/p95/p99 e regressões. |
-| **Bundle** | Comparação do custo de startup e contrato de assets, sem esconder trabalho deslocando código para outro caminho. |
-| **Gráficos** | Contratos 3D, medições de frame time/tempo de bloqueio e verificação visual; aparelhos reais são evidência separada. |
-| **Mobile** | Lighthouse com amostras múltiplas e critérios do [documento de performance](docs/critical-performance.md), não apenas um score isolado. |
-| **Banco e segurança** | Replay de migrações em banco descartável, RLS e permissões mínimas, contratos de Edge e verificação de dependências. |
-| **Operação** | Homologar OAuth, checkout sandbox/webhook idempotente, multiplayer em vários aparelhos, reversão e restauração. |
+| Dimensão                | Evidência exigida                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Qualidade de código** | Lint sem avisos, typecheck, testes e build.                                                                                             |
+| **Simulação**           | Seeds e checkpoints reproduzíveis, replays determinísticos e stress de partidas.                                                        |
+| **Performance**         | Comparar base e candidato no mesmo runner, mesmas fixtures, runtime e ordem controlada; registrar p50/p95/p99 e regressões.             |
+| **Bundle**              | Comparação do custo de startup e contrato de assets, sem esconder trabalho deslocando código para outro caminho.                        |
+| **Gráficos**            | Contratos 3D, medições de frame time/tempo de bloqueio e verificação visual; aparelhos reais são evidência separada.                    |
+| **Mobile**              | Lighthouse com amostras múltiplas e critérios do [documento de performance](docs/critical-performance.md), não apenas um score isolado. |
+| **Banco e segurança**   | Replay de migrações em banco descartável, RLS e permissões mínimas, contratos de Edge e verificação de dependências.                    |
+| **Operação**            | Homologar OAuth, checkout sandbox/webhook idempotente, multiplayer em vários aparelhos, reversão e restauração.                         |
 
 Metas como **89% de melhoria no CodSpeed**, **97+ em todas as rotas** ou **60 FPS** são metas, **não resultados automáticos**. Um teste passando em CI não substitui uma compra Stripe de teste ponta a ponta, uma partida real com múltiplos participantes, a restauração de um backup nem a comparação na mesma configuração de hardware.
 
 ## Caminho de uma alteração até o site
 
-~~~mermaid
+```mermaid
 flowchart TD
   A["Issue / hipótese / plano"] --> B["Branch + código + testes"]
   B --> C["Pull request e revisão"]
@@ -215,15 +215,15 @@ flowchart TD
   I -->|Sim| K["Workflow de Cloudflare"]
   K --> L["Verificar health / commit / rotas públicas"]
   L --> M["Monitorar, comparar e reverter se necessário"]
-~~~
+```
 
 O [workflow de publicação](.github/workflows/cloudflare-production.yml) escuta o sucesso de **Quality gates** em um **push** da **main**, confirma a revisão atual e executa a rotina de deploy quando há credenciais. **Mudar a main pode disparar publicação automática:** nunca fazer merge sem considerar impacto operacional. O deploy, o estado do Worker, a propagação de CDN, o DNS e o conteúdo servido são verificações distintas.
 
 Depois de uma publicação autorizada:
 
-~~~bash
+```bash
 node scripts/verify-public-discovery.mjs --live
-~~~
+```
 
 Verifique **/llms.txt**, **/robots.txt**, **/sitemap.xml**, **/api/health** e o SHA efetivamente servido. Quando houver divergência, investigue o estado do deploy antes de invalidar o cache. Não use purga de CDN como substituto de correção de origem.
 
@@ -251,30 +251,30 @@ Este manual complementa [AGENTS.md](AGENTS.md), que contém contratos de impleme
 
 ### Onde encontrar cada responsabilidade
 
-| Área | Código de referência | Contratos essenciais |
-| --- | --- | --- |
-| Interface, SSR, acessibilidade e i18n | `src/components/`, `src/routes/`, `src/i18n/` | Renderização inicial, navegação, foco, tradução e CSS crítico |
-| Carreira e saves | `src/game/`, `src/lib/` | Integridade do progresso, armazenamento local e autorização na nuvem |
-| IA, motor de partidas e física | `src/game/`, `wasm/` | Seeds, replay determinístico, ordem das operações e perfil de hardware |
-| Estádios, atletas e gráficos 3D | `src/components/game/` | Canvas, LOD, GPU, frame time e fallback |
-| Login, MFA, OAuth e passkeys | `src/integrations/supabase/`, `src/routes/` | PKCE, callback, sessão, RLS e origem permitida |
-| Loja e assinaturas | `src/routes/api/`, `src/lib/` | Verificação de assinatura, conta Stripe, preço e concessão idempotente |
-| Multiplayer | `src/game/online/`, `services/` | Tickets, salas, estado autoritativo, reconexão e antirreplay |
-| Migrações e ingestão | `drizzle/migrations/`, `supabase/`, `cloudflare/` | Histórico canônico, quotas e testes em banco descartável |
-| CI/CD, segurança e operação | `.github/workflows/`, `scripts/`, `infra/` | SHA, gates, rollback, health e evidências |
+| Área                                  | Código de referência                              | Contratos essenciais                                                   |
+| ------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| Interface, SSR, acessibilidade e i18n | `src/components/`, `src/routes/`, `src/i18n/`     | Renderização inicial, navegação, foco, tradução e CSS crítico          |
+| Carreira e saves                      | `src/game/`, `src/lib/`                           | Integridade do progresso, armazenamento local e autorização na nuvem   |
+| IA, motor de partidas e física        | `src/game/`, `wasm/`                              | Seeds, replay determinístico, ordem das operações e perfil de hardware |
+| Estádios, atletas e gráficos 3D       | `src/components/game/`                            | Canvas, LOD, GPU, frame time e fallback                                |
+| Login, MFA, OAuth e passkeys          | `src/integrations/supabase/`, `src/routes/`       | PKCE, callback, sessão, RLS e origem permitida                         |
+| Loja e assinaturas                    | `src/routes/api/`, `src/lib/`                     | Verificação de assinatura, conta Stripe, preço e concessão idempotente |
+| Multiplayer                           | `src/game/online/`, `services/`                   | Tickets, salas, estado autoritativo, reconexão e antirreplay           |
+| Migrações e ingestão                  | `drizzle/migrations/`, `supabase/`, `cloudflare/` | Histórico canônico, quotas e testes em banco descartável               |
+| CI/CD, segurança e operação           | `.github/workflows/`, `scripts/`, `infra/`        | SHA, gates, rollback, health e evidências                              |
 
 ### Matriz de configuração: público versus confidencial
 
-| Variável ou família | Papel | Exposição permitida |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` | Cliente e autenticação Supabase | **Públicas**; devem apontar para o mesmo projeto do ambiente |
-| `SUPABASE_URL` | URL da API acessada pelo servidor | Identificação de projeto; não é um segredo |
-| `SUPABASE_SERVICE_ROLE_KEY` | Operações administrativas autorizadas | **Somente servidor**, nunca bundle ou logs |
-| `PAYMENTS_ENVIRONMENT` | Seleciona `sandbox` ou `live` | Configuração do deployment; confirmar conta correspondente |
-| `STRIPE_LIVE_API_KEY` e credencial de teste correspondente | Checkout e consulta Stripe | **Somente servidor**, com menor privilégio |
-| `PAYMENTS_LIVE_WEBHOOK_SECRET` e `PAYMENTS_SANDBOX_WEBHOOK_SECRET` | Validação dos webhooks | **Somente servidor**, diferentes por endpoint |
-| `CLOUDFLARE_API_TOKEN` | Entrega/autorização no Cloudflare | **Segredo de CI**, nunca disponibilizar no navegador |
-| `PFM_BUILD_SHA` e `EXPECTED_COMMIT_SHA` | Identidade da versão implantada | Identificadores, não senhas |
+| Variável ou família                                                | Papel                                 | Exposição permitida                                          |
+| ------------------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------ |
+| `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`              | Cliente e autenticação Supabase       | **Públicas**; devem apontar para o mesmo projeto do ambiente |
+| `SUPABASE_URL`                                                     | URL da API acessada pelo servidor     | Identificação de projeto; não é um segredo                   |
+| `SUPABASE_SERVICE_ROLE_KEY`                                        | Operações administrativas autorizadas | **Somente servidor**, nunca bundle ou logs                   |
+| `PAYMENTS_ENVIRONMENT`                                             | Seleciona `sandbox` ou `live`         | Configuração do deployment; confirmar conta correspondente   |
+| `STRIPE_LIVE_API_KEY` e credencial de teste correspondente         | Checkout e consulta Stripe            | **Somente servidor**, com menor privilégio                   |
+| `PAYMENTS_LIVE_WEBHOOK_SECRET` e `PAYMENTS_SANDBOX_WEBHOOK_SECRET` | Validação dos webhooks                | **Somente servidor**, diferentes por endpoint                |
+| `CLOUDFLARE_API_TOKEN`                                             | Entrega/autorização no Cloudflare     | **Segredo de CI**, nunca disponibilizar no navegador         |
+| `PFM_BUILD_SHA` e `EXPECTED_COMMIT_SHA`                            | Identidade da versão implantada       | Identificadores, não senhas                                  |
 
 O Vite incorpora variáveis `VITE_*` ao **bundle do navegador**. Um health check saudável com o backend pode coexistir com um frontend incapaz de iniciar o Auth se faltar a URL/chave pública no build. A chave publicável não dispensa RLS nem autorização por usuário.
 
@@ -282,7 +282,7 @@ O Vite incorpora variáveis `VITE_*` ao **bundle do navegador**. Um health check
 
 ### Primeiros comandos e verificações
 
-~~~bash
+```bash
 node --version
 npm ci
 npm run lint
@@ -292,7 +292,7 @@ npm run test:stress
 PFM_LOCAL_VERIFY=1 npm run build
 npm run bundle:check
 npm run test:performance-gates
-~~~
+```
 
 Use o Node definido por `.nvmrc` e o lockfile correspondente. Os testes e builds de referência não devem modificar a resolução de pacotes. Se o Vite dev falhar ao resolver módulos exclusivos de Cloudflare, teste o **alvo de runtime correto** com build e `npm run preview:worker`, em vez de remover imports do servidor. Relate qualquer ferramenta ou credencial ausente como **não testado**, nunca como aprovado.
 
@@ -313,7 +313,7 @@ Consulte [métodos de Auth](docs/auth-methods.md) e [política de segurança](SE
 
 ### Stripe: checkout → webhook → benefício
 
-~~~mermaid
+```mermaid
 sequenceDiagram
   participant U as Jogador autenticado
   participant B as Backend de homologação
@@ -329,20 +329,20 @@ sequenceDiagram
   B-->>S: Resposta de processamento
   U->>B: Consulta benefício pela sessão
   B-->>U: Concessão persistida
-~~~
+```
 
 Verifique assinatura inválida, pagamento pendente, falha assíncrona, pagamento pago, replay do mesmo `event_id`, retry após falha de banco, titularidade da sessão, assinatura criada/renovada/cancelada e reconciliação de estornos. Um `GET` ao endpoint de webhook não comprova processamento de eventos; o fluxo financeiro depende do `POST` **assinado** e da persistência. Nunca conceder benefício por redirecionamento do navegador. Consulte [pagamentos](docs/payments-configuration.md).
 
 ### Multiplayer 1×1 e 2×2
 
-| Cenário | Evidência para aprovação |
-| --- | --- |
-| **1×1** | Dois usuários e clientes independentes entram, jogam, encerram e recebem o mesmo placar do servidor |
-| **2×2** | Quatro usuários ocupam assentos únicos, equipes corretas e tickets vinculados à sala |
-| **Reconexão** | Cliente desconectado retoma sessão válida sem ações duplicadas nem perda de estado confirmado |
-| **Antirreplay** | Ticket expirado, mensagem fora de ordem, operação cruzada entre salas e usuário anônimo são rejeitados |
-| **Determinismo** | Replay, checkpoints, hashes, ranking e resultado persistido concordam |
-| **Recuperação** | Falha de transporte e encerramento do Worker deixam estado reconciliável |
+| Cenário          | Evidência para aprovação                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| **1×1**          | Dois usuários e clientes independentes entram, jogam, encerram e recebem o mesmo placar do servidor    |
+| **2×2**          | Quatro usuários ocupam assentos únicos, equipes corretas e tickets vinculados à sala                   |
+| **Reconexão**    | Cliente desconectado retoma sessão válida sem ações duplicadas nem perda de estado confirmado          |
+| **Antirreplay**  | Ticket expirado, mensagem fora de ordem, operação cruzada entre salas e usuário anônimo são rejeitados |
+| **Determinismo** | Replay, checkpoints, hashes, ranking e resultado persistido concordam                                  |
+| **Recuperação**  | Falha de transporte e encerramento do Worker deixam estado reconciliável                               |
 
 Health `ready`, tabelas SQL presentes e testes de funções são evidências necessárias, mas **não provam** partidas completas com vários aparelhos.
 
@@ -350,28 +350,28 @@ Health `ready`, tabelas SQL presentes e testes de funções são evidências nec
 
 ### Diagnóstico por sintoma
 
-| Sinal | Primeira investigação | Armadilha a evitar |
-| --- | --- | --- |
-| `/api/health` retorna **503** | Bindings runtime, dependências, deployment e banco | Concluir sem prova que o banco caiu |
-| Health **200**, `/auth` quebra | Bundle Vite, chaves públicas, console, Auth e CSP | Declarar OAuth pronto só pelo health |
-| Rotas do domínio principal falham, subdomínio responde | Custom Domain, Load Balancer, regras, DNS e origem | Alterar nameservers ou registro por tentativa |
-| Checkout abre, mas item não chega | Ambiente Stripe, webhook, assinatura, idempotência e RLS | Conceder por `success_url` do navegador |
-| Multiplayer pronto na saúde, jogo indisponível | Rotas públicas, tickets, transporte, sessões e persistência | Confundir health com partida homologada |
-| Lighthouse móvel intermitente | Pior das três medições, long tasks, LCP/TBT, runner e bundle | Apagar a primeira amostra ou baixar limites |
-| Frame time anormal | GPU real, temperatura, resolução, qualidade, draw calls e p95/p99 | Tomar benchmark CPU como FPS físico |
+| Sinal                                                  | Primeira investigação                                             | Armadilha a evitar                            |
+| ------------------------------------------------------ | ----------------------------------------------------------------- | --------------------------------------------- |
+| `/api/health` retorna **503**                          | Bindings runtime, dependências, deployment e banco                | Concluir sem prova que o banco caiu           |
+| Health **200**, `/auth` quebra                         | Bundle Vite, chaves públicas, console, Auth e CSP                 | Declarar OAuth pronto só pelo health          |
+| Rotas do domínio principal falham, subdomínio responde | Custom Domain, Load Balancer, regras, DNS e origem                | Alterar nameservers ou registro por tentativa |
+| Checkout abre, mas item não chega                      | Ambiente Stripe, webhook, assinatura, idempotência e RLS          | Conceder por `success_url` do navegador       |
+| Multiplayer pronto na saúde, jogo indisponível         | Rotas públicas, tickets, transporte, sessões e persistência       | Confundir health com partida homologada       |
+| Lighthouse móvel intermitente                          | Pior das três medições, long tasks, LCP/TBT, runner e bundle      | Apagar a primeira amostra ou baixar limites   |
+| Frame time anormal                                     | GPU real, temperatura, resolução, qualidade, draw calls e p95/p99 | Tomar benchmark CPU como FPS físico           |
 
 ### Canário de release com identidade
 
 A rotina de publicação exige a revisão **efetivamente servida**, não apenas sucesso do comando de deploy:
 
-~~~bash
+```bash
 # Executar somente depois da aprovação do SHA exato da release.
 EXPECTED_COMMIT_SHA="<SHA_DE_40_CARACTERES_APROVADO>" \
   node scripts/verify-public-deployment.mjs
 
 # Diagnóstico sem alterar dados:
 curl --fail --silent --show-error https://jogomanager.com/api/health
-~~~
+```
 
 O SHA entre sinais de menor/maior no exemplo é **um marcador a substituir**, não um valor válido. Depois da publicação, conferir login, página inicial, tabelas, CSS, headers, assets e versão em navegadores reais; testar fluxos de escrita **somente** no staging autorizado. Os logs e relatórios devem conter SHA, ambiente, horário, request ID e resultado, sem tokens, cookies ou dados pessoais.
 
@@ -385,13 +385,13 @@ O SHA entre sinais de menor/maior no exemplo é **um marcador a substituir**, n�
 
 ### Comparações de performance sem regressão
 
-| Dimensão | Protocolo mínimo |
-| --- | --- |
-| **CodSpeed / CPU** | Baseline e candidato no mesmo runner, mesmo lockfile, fixtures e amostras; informar variância e regressões por benchmark |
-| **MatchSim** | Mesmas seeds, checkpoints e hashes de replay; ganho de tempo com resultado diferente **não** é otimização aprovada |
-| **Lighthouse móvel** | Cinco rotas, três execuções, agregação pessimista; performance ≥97, LCP ≤2.500 ms e TBT ≤200 ms |
-| **3D/GPU** | Mesma resolução, dispositivo, qualidade, temperatura, carga e p95/p99 de frame time |
-| **Bundles** | Comparar bytecode/JS executado e custo de inicialização, além de bytes gzip/Brotli |
+| Dimensão             | Protocolo mínimo                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **CodSpeed / CPU**   | Baseline e candidato no mesmo runner, mesmo lockfile, fixtures e amostras; informar variância e regressões por benchmark |
+| **MatchSim**         | Mesmas seeds, checkpoints e hashes de replay; ganho de tempo com resultado diferente **não** é otimização aprovada       |
+| **Lighthouse móvel** | Cinco rotas, três execuções, agregação pessimista; performance ≥97, LCP ≤2.500 ms e TBT ≤200 ms                          |
+| **3D/GPU**           | Mesma resolução, dispositivo, qualidade, temperatura, carga e p95/p99 de frame time                                      |
+| **Bundles**          | Comparar bytecode/JS executado e custo de inicialização, além de bytes gzip/Brotli                                       |
 
 O contrato em [docs/critical-performance.md](docs/critical-performance.md) é a referência normativa. Um rerun verde de um teste anteriormente intermitente recupera um check, mas não demonstra que a causa foi removida.
 
