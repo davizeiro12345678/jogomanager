@@ -1,0 +1,36 @@
+# Updates are proposed as pull requests, never merged or deployed automatically.
+# Actual security-alert and security-update features also require verification
+# in repository Settings > Code security and analysis.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 8
+    target-branch: "main"
+    rebase-strategy: "auto"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      npm-development:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    # Do not disable security fixes or silently merge any PR.
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "10:30"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    target-branch: "main"
+    commit-message:
+      prefix: "chore(actions)"
