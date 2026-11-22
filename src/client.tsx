@@ -106,7 +106,7 @@ if (publicHome) {
           else afterPaint();
         })
       : Promise.resolve();
-  void painted.then(() => {
-    void hydrate();
-  });
+  // Preserve the original eager module download for every other public
+  // route; only the homepage should delay JavaScript until its LCP image.
+  void Promise.all([import("./hydrate-app"), painted]).then(([{ hydrateApp }]) => hydrateApp());
 }
