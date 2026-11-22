@@ -40,6 +40,8 @@ jobs:
       - run: node --test scripts/database-growth-snapshot.test.mjs
       - name: Verify production Supabase deployment guard
         run: node --test scripts/verify-production-supabase.test.mjs scripts/prepare-bundle-baseline-compat.test.mjs
+      - name: Verify protected deployment provenance and dependency release age
+        run: node --test scripts/verify-cloudflare-deploy-provenance.test.mjs scripts/verify-security-scan-ci-pins.test.mjs
       - name: Compile read-only VPS catalog gateway
         run: python3 -m py_compile infra/vps/catalog/gateway.py infra/vps/catalog/smoke_test.py
       - run: node --test scripts/verify-public-deployment.test.mjs
