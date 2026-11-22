@@ -30,7 +30,7 @@ const page = (title, content, status = 200) =>
   new Response(
     '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>' +
       title +
-      " — PFM Staging</title></head><body><header><strong>SIMULAÇÃO ISOLADA — NÃO É O JOGO DE PRODUÇÃO</strong></header><nav><a href=\"/\">Início</a> | <a href=\"/auth\">Login</a> | <a href=\"/dashboard\">Painel</a> | <a href=\"/saves\">Saves</a> | <a href=\"/checkout\">Checkout</a> | <a href=\"/multiplayer\">Multiplayer</a></nav><main><h1>" +
+      ' — PFM Staging</title></head><body><header><strong>SIMULAÇÃO ISOLADA — NÃO É O JOGO DE PRODUÇÃO</strong></header><nav><a href="/">Início</a> | <a href="/auth">Login</a> | <a href="/dashboard">Painel</a> | <a href="/saves">Saves</a> | <a href="/checkout">Checkout</a> | <a href="/multiplayer">Multiplayer</a></nav><main><h1>' +
       title +
       "</h1>" +
       content +
@@ -72,7 +72,11 @@ export default {
       );
     if (path === "/api/auth/login" && method === "POST") {
       const f = await request.formData().catch(() => null);
-      if (!f || f.get("username") !== "zap-synthetic" || f.get("password") !== "synthetic-not-a-secret")
+      if (
+        !f ||
+        f.get("username") !== "zap-synthetic" ||
+        f.get("password") !== "synthetic-not-a-secret"
+      )
         return mock({ error: "synthetic_invalid_credentials" }, 401);
       return new Response(null, {
         status: 303,
@@ -85,14 +89,15 @@ export default {
       });
     }
     if (path === "/api/auth/logout" && method === "POST")
-      return mock(
-        { logout: true, mock: true },
-        200,
-        { "Set-Cookie": "pfm_stage_session=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax" },
-      );
+      return mock({ logout: true, mock: true }, 200, {
+        "Set-Cookie": "pfm_stage_session=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax",
+      });
     if (path === "/dashboard" && method === "GET")
       return isSignedIn(request)
-        ? page("Painel fictício", "<p>Conta de teste autenticada. Dados exclusivamente sintéticos.</p>")
+        ? page(
+            "Painel fictício",
+            "<p>Conta de teste autenticada. Dados exclusivamente sintéticos.</p>",
+          )
         : mock({ error: "not_authenticated" }, 401);
     if (path === "/checkout" && method === "GET")
       return page(
@@ -101,7 +106,10 @@ export default {
       );
     if (path === "/api/checkout" && method === "POST")
       return isSignedIn(request)
-        ? mock({ mock: true, charge_created: false, stripe_called: false, order_id: "synthetic" }, 200)
+        ? mock(
+            { mock: true, charge_created: false, stripe_called: false, order_id: "synthetic" },
+            200,
+          )
         : mock({ error: "not_authenticated" }, 401);
     if (path === "/multiplayer" && method === "GET")
       return page(
