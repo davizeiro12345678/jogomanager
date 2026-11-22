@@ -355,7 +355,9 @@ it("returns HTTP 405 to GET /api/public/payments/webhook without rendering the a
     }
   ).options.server.handlers.GET;
   const response = get({
-    request: new Request("https://game-staging.jogomanager.com/api/public/payments/webhook?env=sandbox"),
+    request: new Request(
+      "https://game-staging.jogomanager.com/api/public/payments/webhook?env=sandbox",
+    ),
   });
   expect(response.status).toBe(405);
   expect(response.headers.get("allow")).toBe("POST");
