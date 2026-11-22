@@ -1,0 +1,42 @@
+<group name="jm_security,antivirus_policy_coordination,">
+  <rule id="100790" level="12">
+    <decoded_as>json</decoded_as>
+    <field name="integration" type="pcre2">^jm_elastic_defend$</field>
+    <field name="jm_state" type="pcre2">^degraded$</field>
+    <description>Elastic Defend Linux malware policy drift: verify Prevent, on-write scanning and blocklist.</description>
+    <group>malware,policy_violation,</group>
+  </rule>
+  <rule id="100791" level="7">
+    <decoded_as>json</decoded_as>
+    <field name="integration" type="pcre2">^jm_elastic_defend$</field>
+    <field name="jm_state" type="pcre2">^unverified$</field>
+    <description>Elastic Defend policy could not be verified; inspect endpoint and Fleet health.</description>
+    <group>availability,</group>
+  </rule>
+  <rule id="100792" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="integration" type="pcre2">^jm_elastic_defend$</field>
+    <field name="jm_state" type="pcre2">^(ok|recovered)$</field>
+    <description>Elastic Defend Linux policy matches required malware prevention controls.</description>
+  </rule>
+  <rule id="100793" level="11">
+    <decoded_as>json</decoded_as>
+    <field name="integration" type="pcre2">^jm_clamav_posture$</field>
+    <field name="jm_state" type="pcre2">^degraded$</field>
+    <description>ClamAV core scanning or on-access ingest prevention is no longer enabled.</description>
+    <group>malware,policy_violation,</group>
+  </rule>
+  <rule id="100794" level="7">
+    <decoded_as>json</decoded_as>
+    <field name="integration" type="pcre2">^jm_clamav_posture$</field>
+    <field name="jm_state" type="pcre2">^unverified$</field>
+    <description>ClamAV scanner policy could not be verified.</description>
+    <group>availability,</group>
+  </rule>
+  <rule id="100795" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="integration" type="pcre2">^jm_clamav_posture$</field>
+    <field name="jm_state" type="pcre2">^(ok|recovered)$</field>
+    <description>ClamAV daemon and on-access ingest prevention conform to baseline.</description>
+  </rule>
+</group>
