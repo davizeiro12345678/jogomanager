@@ -40,9 +40,7 @@ export const options = {
     stage_blocked_or_limited: [
       { threshold: "rate<0.01", abortOnFail: true, delayAbortEval: "12s" },
     ],
-    http_req_duration: [
-      { threshold: "p(95)<2000", abortOnFail: true, delayAbortEval: "20s" },
-    ],
+    http_req_duration: [{ threshold: "p(95)<2000", abortOnFail: true, delayAbortEval: "20s" }],
     dropped_iterations: ["count<1"],
   },
 };

@@ -157,7 +157,9 @@ describe("outer response protection", () => {
         new Request(`https://jogomanager.com${path}`),
       );
       expect(response.headers.get("cross-origin-resource-policy"), path).toBe("same-site");
-      expect(response.headers.get("cross-origin-opener-policy"), path).toBe("same-origin-allow-popups");
+      expect(response.headers.get("cross-origin-opener-policy"), path).toBe(
+        "same-origin-allow-popups",
+      );
       expect(response.headers.get("cross-origin-embedder-policy"), path).toBeNull();
     }
   });
