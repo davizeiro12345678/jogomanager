@@ -91,6 +91,7 @@ import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.
 import { Route as ApiInternalSupportDispatchRouteImport } from './routes/api/internal/support-dispatch'
 import { Route as ApiPublicFootballAssetsRouteImport } from './routes/api/public/football-assets'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiInternalEmailAutomationsDispatchRouteImport } from './routes/api/internal/email-automations/dispatch'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -510,6 +511,11 @@ const ApiPublicSyncFootballRoute = ApiPublicSyncFootballRouteImport.update({
   path: '/api/public/sync-football',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiInternalEmailAutomationsDispatchRoute =
   ApiInternalEmailAutomationsDispatchRouteImport.update({
     id: '/api/internal/email-automations/dispatch',
@@ -622,6 +628,7 @@ export interface FileRoutesByFullPath {
   '/api/internal/support-dispatch': typeof ApiInternalSupportDispatchRoute
   '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/internal/email-automations/dispatch': typeof ApiInternalEmailAutomationsDispatchRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   '/api/internal/support-dispatch': typeof ApiInternalSupportDispatchRoute
   '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/internal/email-automations/dispatch': typeof ApiInternalEmailAutomationsDispatchRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -801,6 +809,7 @@ export interface FileRoutesById {
   '/api/internal/support-dispatch': typeof ApiInternalSupportDispatchRoute
   '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/internal/email-automations/dispatch': typeof ApiInternalEmailAutomationsDispatchRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -892,6 +901,7 @@ export interface FileRouteTypes {
     | '/api/internal/support-dispatch'
     | '/api/public/football-assets'
     | '/api/public/sync-football'
+    | '/api/stripe/webhook'
     | '/api/internal/email-automations/dispatch'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -981,6 +991,7 @@ export interface FileRouteTypes {
     | '/api/internal/support-dispatch'
     | '/api/public/football-assets'
     | '/api/public/sync-football'
+    | '/api/stripe/webhook'
     | '/api/internal/email-automations/dispatch'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -1070,6 +1081,7 @@ export interface FileRouteTypes {
     | '/api/internal/support-dispatch'
     | '/api/public/football-assets'
     | '/api/public/sync-football'
+    | '/api/stripe/webhook'
     | '/api/internal/email-automations/dispatch'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
@@ -1160,6 +1172,7 @@ export interface RootRouteChildren {
   ApiInternalSupportDispatchRoute: typeof ApiInternalSupportDispatchRoute
   ApiPublicFootballAssetsRoute: typeof ApiPublicFootballAssetsRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiInternalEmailAutomationsDispatchRoute: typeof ApiInternalEmailAutomationsDispatchRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -1743,6 +1756,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSyncFootballRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/email-automations/dispatch': {
       id: '/api/internal/email-automations/dispatch'
       path: '/api/internal/email-automations/dispatch'
@@ -1865,7 +1885,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInternalSupportDispatchRoute: ApiInternalSupportDispatchRoute,
   ApiPublicFootballAssetsRoute: ApiPublicFootballAssetsRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
-  ApiInternalEmailAutomationsDispatchRoute: ApiInternalEmailAutomationsDispatchRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiInternalEmailAutomationsDispatchRoute:
+    ApiInternalEmailAutomationsDispatchRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
