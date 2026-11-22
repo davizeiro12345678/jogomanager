@@ -299,6 +299,18 @@ O jogo pode envolver dados de jogadores, incluindo perfis de pessoas menores de 
 
 A [auditoria de proteções do repositório](docs/security/repository-protections-2026-11-21.md), o [contrato de desempenho](docs/critical-performance.md) e a [documentação de autenticação](docs/auth-methods.md) são referências complementares. Em caso de conflito, confirmar configuração atual e resultado do último SHA, registrando a divergência antes de mudar a política.
 
+## 16. Programa verificável de proteção e preparação para auditoria
+
+O [plano de segurança Cloudflare, Supabase e garantias do site](docs/security/cloudflare-supabase-assurance-2026.md) é a matriz operacional de **controles verificados versus pendências**, com escopo, prioridade, critérios de aprovação, dependências, responsabilidades e fontes oficiais.
+
+Na conferência de **22/11/2026**, o plano registra TLS Cloudflare Full (strict), HTTPS obrigatório, WAF, rate limiting e Bot Fight Mode habilitados. **DNSSEC continuava pendente de validação no registrador**, e o Load Balancer legado do domínio principal permanecia desativado intencionalmente para evitar conflito com o Worker. Tais configurações não substituem testes de fluxo, análise de logs ou revisão de políticas.
+
+No Supabase, os avisos de auditoria devem ser **classificados antes de qualquer mutação**: tabelas com RLS ativo sem política podem estar corretamente bloqueadas por padrão; grants GraphQL precisam ser verificados por papel e usuário; funções `SECURITY DEFINER` exigem inspeção de privilégios e superfícies expostas. Não conceder acesso ampliado apenas para eliminar um aviso do linter.
+
+**Certificações e selos:** esta política **não** declara ISO 27001, SOC 2, PCI DSS, WCAG AA, conformidade LGPD certificada ou uma chancela OWASP. Qualquer alegação pública deve informar organização emissora, versão da norma, escopo, validade e evidência verificável. Os testes internos e o uso de plataformas certificadas são apenas **insumos** para auditoria; consulte a trilha de avaliação no documento vinculado.
+
+**Gate de segurança de release:** bloquear a publicação se houver bypass de autenticação/RLS, segredo exposto, concessão de compra não autenticada ou perda de isolamento entre produção/staging. Exigir evidência de testes negativos, revisões, scripts idempotentes e rollback, com correções auditáveis e sem falsificar os gates de performance.
+
 **Contato e escopo:** [Security Advisories](https://github.com/davizeiro12345678/jogomanager/security/advisories) · [Contato inicial](https://jogomanager.com/contato) · [Repositório](https://github.com/davizeiro12345678/jogomanager).
 
 Obrigado a quem contribui com relatos responsáveis, reproduzíveis e cuidadosos com a segurança e a privacidade dos jogadores.
