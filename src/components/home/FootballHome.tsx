@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DiscordLink } from "@/components/DiscordLink";
+import { shouldLoadHomeCareer } from "@/lib/home-career-presence";
 import heroMobileAvif from "@/assets/hero-stadium.jpg?format=avif&w=390;450&aspect=1:2&fit=cover&position=centre&quality=44&as=srcset";
 import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600&quality=52&as=srcset";
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
@@ -172,6 +173,9 @@ export function FootballHome() {
     next: { opponent: string; home: boolean } | null;
   } | null>(null);
   useEffect(() => {
+    // No guest save means there is no reason to download the offline/IndexedDB
+    // bundle during a first visit. Denied storage access preserves fallback.
+    if (!shouldLoadHomeCareer(() => window.localStorage)) return;
     let active = true;
     // Returning players alone need the catalogue to resolve their club name.
     void import("@/lib/careerStorage")
