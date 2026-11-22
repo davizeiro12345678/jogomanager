@@ -183,17 +183,17 @@ A gravidade é determinada por **impacto**, **explorabilidade**, **exposição d
 
 O navegador, o armazenamento local e os dados fornecidos pelo cliente devem ser considerados **não confiáveis**. O SSR deve serializar somente dados permitidos; toda rota que escreve requer autenticação, autorização do recurso e validação de entrada. A Cloudflare adiciona proteção e roteamento, mas **não transforma** um endpoint sem autorização em seguro.
 
-- **Cache:** dados de conta, sessão, checkout, inventário, save ou resposta com identificadores pessoais não devem ser compartilhados entre usuários por CDN. Revisar ¤Cache-Control¤, ¤Vary¤, cookies, URLs e chaves de cache por rota.
-- **CSP e cabeçalhos:** minimizar origens, separar recursos de script, pagamento, mídia e OAuth; revisar ¤frame-ancestors¤, ¤connect-src¤, ¤script-src¤, políticas de referrer e ¤nosniff¤. Um relaxamento exige justificativa, teste de exploração e teste dos fluxos legítimos.
-- **CORS/CSRF:** CORS não substitui autorização; rotas com cookie precisam de proteção adequada contra requisições cross-site. Não adicionar ¤Access-Control-Allow-Origin: *¤ a uma API autenticada como “correção” de erro do frontend.
+- **Cache:** dados de conta, sessão, checkout, inventário, save ou resposta com identificadores pessoais não devem ser compartilhados entre usuários por CDN. Revisar `Cache-Control`, `Vary`, cookies, URLs e chaves de cache por rota.
+- **CSP e cabeçalhos:** minimizar origens, separar recursos de script, pagamento, mídia e OAuth; revisar `frame-ancestors`, `connect-src`, `script-src`, políticas de referrer e `nosniff`. Um relaxamento exige justificativa, teste de exploração e teste dos fluxos legítimos.
+- **CORS/CSRF:** CORS não substitui autorização; rotas com cookie precisam de proteção adequada contra requisições cross-site. Não adicionar `Access-Control-Allow-Origin: *` a uma API autenticada como “correção” de erro do frontend.
 - **Roteamento:** Custom Domain de Worker, Load Balancer, DNS e hospedagem legada podem disputar o mesmo hostname. Confirmar domínio servido, origem, certificado, health e aplicação correta após cada alteração. Registrar e remover regras temporárias de diagnóstico.
 - **Disponibilidade:** WAF e rate limiting por rota devem permitir login legítimo, callbacks, webhooks assinados e acessibilidade, sem liberar indiscriminadamente as operações administrativas.
 
 ### Supabase, banco e identidade
 
-- **RLS/ACL:** testar usuário A, usuário B, anônimo e papel de serviço separadamente; exigir ¤WITH CHECK¤ apropriado em escritas, além de ¤USING¤ para leitura.
-- **Privilégios:** usar a chave publicável somente com políticas apropriadas; service role e acesso SQL privilegiado ficam no servidor. Revisar funções ¤SECURITY DEFINER¤, ¤search_path¤, permissões de execução e ownership.
-- **Histórico SQL:** migrações canônicas avançam em ordem; o acervo em ¤supabase/migration-archive/¤ **não** deve ser reaplicado como um segundo baseline. Testes destrutivos pertencem a instâncias descartáveis.
+- **RLS/ACL:** testar usuário A, usuário B, anônimo e papel de serviço separadamente; exigir `WITH CHECK` apropriado em escritas, além de `USING` para leitura.
+- **Privilégios:** usar a chave publicável somente com políticas apropriadas; service role e acesso SQL privilegiado ficam no servidor. Revisar funções `SECURITY DEFINER`, `search_path`, permissões de execução e ownership.
+- **Histórico SQL:** migrações canônicas avançam em ordem; o acervo em `supabase/migration-archive/` **não** deve ser reaplicado como um segundo baseline. Testes destrutivos pertencem a instâncias descartáveis.
 - **OAuth:** validar state/PKCE, redirect URI estrita, allowlist de retorno e identidade após callback. Passkeys exigem RP ID/origens coerentes e autenticação servidor. Erros HTTP 200/302 não provam sessão.
 - **Privacidade:** logs e relatórios não devem incorporar tokens de sessão, senhas, códigos OTP, dados completos de identidade ou conteúdo privado dos jogadores.
 
