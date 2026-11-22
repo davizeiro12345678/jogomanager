@@ -253,30 +253,30 @@ Este manual complementa [AGENTS.md](AGENTS.md), que contém contratos de impleme
 
 | Área | Código de referência | Contratos essenciais |
 | --- | --- | --- |
-| Interface, SSR, acessibilidade e i18n | ¤src/components/¤, ¤src/routes/¤, ¤src/i18n/¤ | Renderização inicial, navegação, foco, tradução e CSS crítico |
-| Carreira e saves | ¤src/game/¤, ¤src/lib/¤ | Integridade do progresso, armazenamento local e autorização na nuvem |
-| IA, motor de partidas e física | ¤src/game/¤, ¤wasm/¤ | Seeds, replay determinístico, ordem das operações e perfil de hardware |
-| Estádios, atletas e gráficos 3D | ¤src/components/game/¤ | Canvas, LOD, GPU, frame time e fallback |
-| Login, MFA, OAuth e passkeys | ¤src/integrations/supabase/¤, ¤src/routes/¤ | PKCE, callback, sessão, RLS e origem permitida |
-| Loja e assinaturas | ¤src/routes/api/¤, ¤src/lib/¤ | Verificação de assinatura, conta Stripe, preço e concessão idempotente |
-| Multiplayer | ¤src/game/online/¤, ¤services/¤ | Tickets, salas, estado autoritativo, reconexão e antirreplay |
-| Migrações e ingestão | ¤drizzle/migrations/¤, ¤supabase/¤, ¤cloudflare/¤ | Histórico canônico, quotas e testes em banco descartável |
-| CI/CD, segurança e operação | ¤.github/workflows/¤, ¤scripts/¤, ¤infra/¤ | SHA, gates, rollback, health e evidências |
+| Interface, SSR, acessibilidade e i18n | `src/components/`, `src/routes/`, `src/i18n/` | Renderização inicial, navegação, foco, tradução e CSS crítico |
+| Carreira e saves | `src/game/`, `src/lib/` | Integridade do progresso, armazenamento local e autorização na nuvem |
+| IA, motor de partidas e física | `src/game/`, `wasm/` | Seeds, replay determinístico, ordem das operações e perfil de hardware |
+| Estádios, atletas e gráficos 3D | `src/components/game/` | Canvas, LOD, GPU, frame time e fallback |
+| Login, MFA, OAuth e passkeys | `src/integrations/supabase/`, `src/routes/` | PKCE, callback, sessão, RLS e origem permitida |
+| Loja e assinaturas | `src/routes/api/`, `src/lib/` | Verificação de assinatura, conta Stripe, preço e concessão idempotente |
+| Multiplayer | `src/game/online/`, `services/` | Tickets, salas, estado autoritativo, reconexão e antirreplay |
+| Migrações e ingestão | `drizzle/migrations/`, `supabase/`, `cloudflare/` | Histórico canônico, quotas e testes em banco descartável |
+| CI/CD, segurança e operação | `.github/workflows/`, `scripts/`, `infra/` | SHA, gates, rollback, health e evidências |
 
 ### Matriz de configuração: público versus confidencial
 
 | Variável ou família | Papel | Exposição permitida |
 | --- | --- | --- |
-| ¤VITE_SUPABASE_URL¤ e ¤VITE_SUPABASE_PUBLISHABLE_KEY¤ | Cliente e autenticação Supabase | **Públicas**; devem apontar para o mesmo projeto do ambiente |
-| ¤SUPABASE_URL¤ | URL da API acessada pelo servidor | Identificação de projeto; não é um segredo |
-| ¤SUPABASE_SERVICE_ROLE_KEY¤ | Operações administrativas autorizadas | **Somente servidor**, nunca bundle ou logs |
-| ¤PAYMENTS_ENVIRONMENT¤ | Seleciona ¤sandbox¤ ou ¤live¤ | Configuração do deployment; confirmar conta correspondente |
-| ¤STRIPE_LIVE_API_KEY¤ e credencial de teste correspondente | Checkout e consulta Stripe | **Somente servidor**, com menor privilégio |
-| ¤PAYMENTS_LIVE_WEBHOOK_SECRET¤ e ¤PAYMENTS_SANDBOX_WEBHOOK_SECRET¤ | Validação dos webhooks | **Somente servidor**, diferentes por endpoint |
-| ¤CLOUDFLARE_API_TOKEN¤ | Entrega/autorização no Cloudflare | **Segredo de CI**, nunca disponibilizar no navegador |
-| ¤PFM_BUILD_SHA¤ e ¤EXPECTED_COMMIT_SHA¤ | Identidade da versão implantada | Identificadores, não senhas |
+| `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` | Cliente e autenticação Supabase | **Públicas**; devem apontar para o mesmo projeto do ambiente |
+| `SUPABASE_URL` | URL da API acessada pelo servidor | Identificação de projeto; não é um segredo |
+| `SUPABASE_SERVICE_ROLE_KEY` | Operações administrativas autorizadas | **Somente servidor**, nunca bundle ou logs |
+| `PAYMENTS_ENVIRONMENT` | Seleciona `sandbox` ou `live` | Configuração do deployment; confirmar conta correspondente |
+| `STRIPE_LIVE_API_KEY` e credencial de teste correspondente | Checkout e consulta Stripe | **Somente servidor**, com menor privilégio |
+| `PAYMENTS_LIVE_WEBHOOK_SECRET` e `PAYMENTS_SANDBOX_WEBHOOK_SECRET` | Validação dos webhooks | **Somente servidor**, diferentes por endpoint |
+| `CLOUDFLARE_API_TOKEN` | Entrega/autorização no Cloudflare | **Segredo de CI**, nunca disponibilizar no navegador |
+| `PFM_BUILD_SHA` e `EXPECTED_COMMIT_SHA` | Identidade da versão implantada | Identificadores, não senhas |
 
-O Vite incorpora variáveis ¤VITE_*¤ ao **bundle do navegador**. Um health check saudável com o backend pode coexistir com um frontend incapaz de iniciar o Auth se faltar a URL/chave pública no build. A chave publicável não dispensa RLS nem autorização por usuário.
+O Vite incorpora variáveis `VITE_*` ao **bundle do navegador**. Um health check saudável com o backend pode coexistir com um frontend incapaz de iniciar o Auth se faltar a URL/chave pública no build. A chave publicável não dispensa RLS nem autorização por usuário.
 
 **Staging de verdade** exige projeto Supabase e banco próprios, chaves próprias, callbacks OAuth próprios, Stripe exclusivamente de testes, endpoint e segredo de webhook próprios e serviço multiplayer sem acesso à base produtiva. Um subdomínio de staging que utiliza service role de produção **não está isolado**.
 
@@ -294,7 +294,7 @@ npm run bundle:check
 npm run test:performance-gates
 ~~~
 
-Use o Node definido por ¤.nvmrc¤ e o lockfile correspondente. Os testes e builds de referência não devem modificar a resolução de pacotes. Se o Vite dev falhar ao resolver módulos exclusivos de Cloudflare, teste o **alvo de runtime correto** com build e ¤npm run preview:worker¤, em vez de remover imports do servidor. Relate qualquer ferramenta ou credencial ausente como **não testado**, nunca como aprovado.
+Use o Node definido por `.nvmrc` e o lockfile correspondente. Os testes e builds de referência não devem modificar a resolução de pacotes. Se o Vite dev falhar ao resolver módulos exclusivos de Cloudflare, teste o **alvo de runtime correto** com build e `npm run preview:worker`, em vez de remover imports do servidor. Relate qualquer ferramenta ou credencial ausente como **não testado**, nunca como aprovado.
 
 ## Homologação de fluxos completos
 
@@ -302,9 +302,9 @@ O projeto separa três níveis de prova: **unitário** (funções e mocks), **in
 
 ### OAuth e gerenciamento de sessão
 
-1. Abrir ¤/auth¤ em navegador limpo e examinar erros JavaScript, CSP, cookies e URL do projeto Supabase.
-2. Confirmar somente os provedores realmente habilitados em ¤/auth/v1/settings¤.
-3. Iniciar OAuth com PKCE e verificar que a URL de callback no **provedor externo** corresponde exatamente ao callback do **Supabase**, enquanto ¤redirectTo¤ retorna a caminho interno permitido do aplicativo.
+1. Abrir `/auth` em navegador limpo e examinar erros JavaScript, CSP, cookies e URL do projeto Supabase.
+2. Confirmar somente os provedores realmente habilitados em `/auth/v1/settings`.
+3. Iniciar OAuth com PKCE e verificar que a URL de callback no **provedor externo** corresponde exatamente ao callback do **Supabase**, enquanto `redirectTo` retorna a caminho interno permitido do aplicativo.
 4. Autenticar uma **conta própria de homologação** e validar retorno, identidade, renovação, reload, logout, expiração e revogação.
 5. Executar com duas contas distintas para rejeitar leitura e escrita cruzadas.
 6. Homologar e-mail, recuperação, MFA e passkeys apenas quando configurados; a chegada à página de login do Google/GitHub **não** é login concluído.
@@ -331,7 +331,7 @@ sequenceDiagram
   B-->>U: Concessão persistida
 ~~~
 
-Verifique assinatura inválida, pagamento pendente, falha assíncrona, pagamento pago, replay do mesmo ¤event_id¤, retry após falha de banco, titularidade da sessão, assinatura criada/renovada/cancelada e reconciliação de estornos. Um ¤GET¤ ao endpoint de webhook não comprova processamento de eventos; o fluxo financeiro depende do ¤POST¤ **assinado** e da persistência. Nunca conceder benefício por redirecionamento do navegador. Consulte [pagamentos](docs/payments-configuration.md).
+Verifique assinatura inválida, pagamento pendente, falha assíncrona, pagamento pago, replay do mesmo `event_id`, retry após falha de banco, titularidade da sessão, assinatura criada/renovada/cancelada e reconciliação de estornos. Um `GET` ao endpoint de webhook não comprova processamento de eventos; o fluxo financeiro depende do `POST` **assinado** e da persistência. Nunca conceder benefício por redirecionamento do navegador. Consulte [pagamentos](docs/payments-configuration.md).
 
 ### Multiplayer 1×1 e 2×2
 
@@ -344,7 +344,7 @@ Verifique assinatura inválida, pagamento pendente, falha assíncrona, pagamento
 | **Determinismo** | Replay, checkpoints, hashes, ranking e resultado persistido concordam |
 | **Recuperação** | Falha de transporte e encerramento do Worker deixam estado reconciliável |
 
-Health ¤ready¤, tabelas SQL presentes e testes de funções são evidências necessárias, mas **não provam** partidas completas com vários aparelhos.
+Health `ready`, tabelas SQL presentes e testes de funções são evidências necessárias, mas **não provam** partidas completas com vários aparelhos.
 
 ## Operação, observabilidade e recuperação
 
@@ -352,10 +352,10 @@ Health ¤ready¤, tabelas SQL presentes e testes de funções são evidências n
 
 | Sinal | Primeira investigação | Armadilha a evitar |
 | --- | --- | --- |
-| ¤/api/health¤ retorna **503** | Bindings runtime, dependências, deployment e banco | Concluir sem prova que o banco caiu |
-| Health **200**, ¤/auth¤ quebra | Bundle Vite, chaves públicas, console, Auth e CSP | Declarar OAuth pronto só pelo health |
+| `/api/health` retorna **503** | Bindings runtime, dependências, deployment e banco | Concluir sem prova que o banco caiu |
+| Health **200**, `/auth` quebra | Bundle Vite, chaves públicas, console, Auth e CSP | Declarar OAuth pronto só pelo health |
 | Rotas do domínio principal falham, subdomínio responde | Custom Domain, Load Balancer, regras, DNS e origem | Alterar nameservers ou registro por tentativa |
-| Checkout abre, mas item não chega | Ambiente Stripe, webhook, assinatura, idempotência e RLS | Conceder por ¤success_url¤ do navegador |
+| Checkout abre, mas item não chega | Ambiente Stripe, webhook, assinatura, idempotência e RLS | Conceder por `success_url` do navegador |
 | Multiplayer pronto na saúde, jogo indisponível | Rotas públicas, tickets, transporte, sessões e persistência | Confundir health com partida homologada |
 | Lighthouse móvel intermitente | Pior das três medições, long tasks, LCP/TBT, runner e bundle | Apagar a primeira amostra ou baixar limites |
 | Frame time anormal | GPU real, temperatura, resolução, qualidade, draw calls e p95/p99 | Tomar benchmark CPU como FPS físico |
