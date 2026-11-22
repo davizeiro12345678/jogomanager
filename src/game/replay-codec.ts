@@ -127,21 +127,20 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const ballBase = frameIndex * 3;
     const scoreBase = frameIndex * 2;
     const frameVisual = visual?.[frameIndex];
-    const frame: ReplayFrame = {
-      t: timeMs / 1_000,
-      b: [
-        ball[ballBase]! / QUANTIZE,
-        ball[ballBase + 1]! / QUANTIZE,
-        ball[ballBase + 2]! / QUANTIZE,
-      ],
-      p,
-      a,
-      hg: score[scoreBase]!,
-      ag: score[scoreBase + 1]!,
-      poss: possession[frameIndex] === 1 ? "away" : "home",
-    };
-    if (frameVisual) frame.v = frameVisual;
-    frames.push(frame);
+    const t = timeMs / 1_000;
+    const b: ReplayFrame["b"] = [
+      ball[ballBase]! / QUANTIZE,
+      ball[ballBase + 1]! / QUANTIZE,
+      ball[ballBase + 2]! / QUANTIZE,
+    ];
+    const hg = score[scoreBase]!;
+    const ag = score[scoreBase + 1]!;
+    const poss = possession[frameIndex] === 1 ? "away" : "home";
+    // Initialize both frame shapes in place. Adding visual data afterward can
+    // allocate a separate property store for every frame with visual context.
+    frames.push(
+      frameVisual ? { t, b, p, a, hg, ag, poss, v: frameVisual } : { t, b, p, a, hg, ag, poss },
+    );
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),
