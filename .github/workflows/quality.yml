@@ -25,6 +25,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Verify immutable scanner GitHub Action references
+        run: node --test scripts/verify-security-dast-action-pins.test.mjs
       - name: Verify i18n parity and hardcoded audit
         run: |
           node scripts/i18n-parity.mjs --check
