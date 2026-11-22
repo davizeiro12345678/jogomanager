@@ -238,46 +238,59 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   }
 }
 
+/** Keep both public webhook URLs on exactly the same signed, idempotent handler. */
+export async function processStripeWebhook(request: Request): Promise<Response> {
+  const rawEnv = new URL(request.url).searchParams.get("env");
+  let event: Stripe.Event;
+  let env: StripeEnv;
+  try {
+    env = getConfiguredStripeEnvironment();
+    // Lovable configures Stripe endpoints with ?env=sandbox or ?env=live.
+    // Keep that URL contract, but bind it to the trusted deployment
+    // setting before choosing a Stripe key or webhook secret.
+    if (rawEnv !== env) {
+      console.error("Webhook environment does not match this deployment:", rawEnv);
+      return new Response("Webhook environment mismatch", { status: 400 });
+    }
+    event = await verifyWebhook(request, env);
+  } catch (e) {
+    console.error("Webhook verification failed:", e);
+    return new Response("Webhook error", { status: 400 });
+  }
+  try {
+    if (await beginPaymentEvent(event.id, event.type)) {
+      await handleWebhook(event, env);
+      await finishPaymentEvent(event.id, true);
+    }
+    return Response.json({ received: true });
+  } catch (e) {
+    console.error("Verified webhook processing failed:", e);
+    try {
+      await finishPaymentEvent(event.id, false);
+    } catch (journalError) {
+      console.error("Webhook retry journal failed:", journalError);
+    }
+    return new Response("Payment processing will be retried", {
+      status: 503,
+      headers: { "Retry-After": "30" },
+    });
+  }
+}
+
+/** A webhook is an authenticated POST endpoint, never a public HTML page. */
+export function rejectNonPostStripeWebhook(): Response {
+  return new Response(null, {
+    status: 405,
+    headers: { Allow: "POST", "Cache-Control": "no-store" },
+  });
+}
+
 export const Route = createFileRoute("/api/public/payments/webhook")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        const rawEnv = new URL(request.url).searchParams.get("env");
-        let event: Stripe.Event;
-        let env: StripeEnv;
-        try {
-          env = getConfiguredStripeEnvironment();
-          // Lovable configures Stripe endpoints with ?env=sandbox or ?env=live.
-          // Keep that URL contract, but bind it to the trusted deployment
-          // setting before choosing a Stripe key or webhook secret.
-          if (rawEnv !== env) {
-            console.error("Webhook environment does not match this deployment:", rawEnv);
-            return new Response("Webhook environment mismatch", { status: 400 });
-          }
-          event = await verifyWebhook(request, env);
-        } catch (e) {
-          console.error("Webhook verification failed:", e);
-          return new Response("Webhook error", { status: 400 });
-        }
-        try {
-          if (await beginPaymentEvent(event.id, event.type)) {
-            await handleWebhook(event, env);
-            await finishPaymentEvent(event.id, true);
-          }
-          return Response.json({ received: true });
-        } catch (e) {
-          console.error("Verified webhook processing failed:", e);
-          try {
-            await finishPaymentEvent(event.id, false);
-          } catch (journalError) {
-            console.error("Webhook retry journal failed:", journalError);
-          }
-          return new Response("Payment processing will be retried", {
-            status: 503,
-            headers: { "Retry-After": "30" },
-          });
-        }
-      },
+      POST: ({ request }) => processStripeWebhook(request),
+      GET: rejectNonPostStripeWebhook,
+      HEAD: rejectNonPostStripeWebhook,
     },
   },
 });
