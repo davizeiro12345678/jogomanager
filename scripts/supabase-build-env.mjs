@@ -10,10 +10,7 @@ export function publicSupabaseBuildEnv(settings) {
   const url = browserUrl || serverUrl;
   const key = browserKey || serverKey;
 
-  if (!url)
-    throw new Error(
-      "SUPABASE_URL or VITE_SUPABASE_URL is required for browser build.",
-    );
+  if (!url) throw new Error("SUPABASE_URL or VITE_SUPABASE_URL is required for browser build.");
   if (!key)
     throw new Error(
       "SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_PUBLISHABLE_KEY is required for browser build.",
@@ -34,14 +31,10 @@ export function publicSupabaseBuildEnv(settings) {
     throw new Error("A secret key cannot be injected into the public bundle.");
   if (key.startsWith("eyJ")) {
     try {
-      const payload = JSON.parse(
-        Buffer.from(key.split(".")[1], "base64url").toString(),
-      );
+      const payload = JSON.parse(Buffer.from(key.split(".")[1], "base64url").toString());
       if (payload.role !== "anon") throw new Error("not-anon");
     } catch {
-      throw new Error(
-        "Only an anon legacy key may be used in the public bundle.",
-      );
+      throw new Error("Only an anon legacy key may be used in the public bundle.");
     }
   }
   return { VITE_SUPABASE_URL: url, VITE_SUPABASE_PUBLISHABLE_KEY: key };
