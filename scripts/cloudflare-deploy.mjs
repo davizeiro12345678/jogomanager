@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { loadEnv } from "vite";
+import { publicSupabaseBuildEnv } from "./supabase-build-env.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const configPath = path.join(root, ".cloudflare/production/server/wrangler.json");
@@ -106,6 +107,7 @@ try {
   await mkdir(path.join(root, ".wrangler/logs"), { recursive: true });
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
+      ...publicSupabaseBuildEnv(settings),
       VITE_AUTH_MODE: settings["VITE_AUTH_MODE"] || "supabase",
       NITRO_PRESET: "cloudflare-module",
       PFM_CLOUDFLARE_BUILD: "1",

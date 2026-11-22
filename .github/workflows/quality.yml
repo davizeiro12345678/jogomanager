@@ -38,6 +38,8 @@ jobs:
       - run: node --test scripts/database-growth-snapshot.test.mjs
       - run: node --test scripts/verify-public-deployment.test.mjs
       - run: node --test scripts/font-loading.test.mjs
+      - name: Verify Cloudflare browser Supabase configuration contract
+        run: node --test scripts/supabase-build-env.test.mjs
       - name: Verify Edge Function authentication and import contracts
         run: node --test scripts/edge-production-parity.test.mjs scripts/sportsdb-bridge.test.mjs scripts/football-materialize-realism.test.mjs
       - run: npm run test:performance-gates

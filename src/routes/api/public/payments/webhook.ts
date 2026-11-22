@@ -241,6 +241,11 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
 export const Route = createFileRoute("/api/public/payments/webhook")({
   server: {
     handlers: {
+      GET: () =>
+        new Response("Method Not Allowed", {
+          status: 405,
+          headers: { Allow: "POST", "Cache-Control": "no-store" },
+        }),
       POST: async ({ request }) => {
         const rawEnv = new URL(request.url).searchParams.get("env");
         let event: Stripe.Event;
