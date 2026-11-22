@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { deferHomeHydration, shouldDeferHomeHydration } from "./home-hydration";
+import {
+  createDeferredClickReplay,
+  deferHomeHydration,
+  shouldDeferHomeHydration,
+} from "./home-hydration";
 
 function hooks() {
   const callbacks: Record<string, () => void> = {};
@@ -84,5 +88,25 @@ describe("public homepage hydration scheduling", () => {
     h.callbacks["idle"]!();
     expect(hydrate).toHaveBeenCalledTimes(1);
     expect(h.cancelled).toContain("idle");
+  });
+});
+
+describe("early menu click replay", () => {
+  it("holds the first click until the home component has committed hydration", () => {
+    const replay = vi.fn();
+    const menu = createDeferredClickReplay(replay);
+    expect(menu.queue()).toBe(true);
+    expect(replay).not.toHaveBeenCalled();
+    menu.markHydrated();
+    expect(replay).toHaveBeenCalledTimes(1);
+    menu.markHydrated();
+    expect(replay).toHaveBeenCalledTimes(1);
+    expect(menu.queue()).toBe(false);
+  });
+  it("does not replay when no user clicked before hydration", () => {
+    const replay = vi.fn();
+    const menu = createDeferredClickReplay(replay);
+    menu.markHydrated();
+    expect(replay).not.toHaveBeenCalled();
   });
 });
