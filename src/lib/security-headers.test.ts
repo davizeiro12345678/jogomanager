@@ -150,6 +150,41 @@ describe("outer response protection", () => {
     expect(report).not.toContain("'unsafe-inline' https://js.stripe.com");
     expect(createCspNonce()).not.toBe(nonce);
   });
+  it("adds a same-site resource isolation policy to app responses without imposing COEP on OAuth or Stripe", () => {
+    for (const path of ["/", "/auth", "/checkout/return", "/api/health", "/sitemap.xml"]) {
+      const response = secureResponse(
+        new Response("fixture", { headers: { "content-type": "text/html" } }),
+        new Request(`https://jogomanager.com${path}`),
+      );
+      expect(response.headers.get("cross-origin-resource-policy"), path).toBe("same-site");
+      expect(response.headers.get("cross-origin-opener-policy"), path).toBe(
+        "same-origin-allow-popups",
+      );
+      expect(response.headers.get("cross-origin-embedder-policy"), path).toBeNull();
+    }
+  });
+
+  it("disallows HTML event-handler scripts and limits web app manifests in both CSP modes", () => {
+    for (const path of ["/", "/auth", "/checkout/return"]) {
+      const response = secureResponse(
+        new Response("<html></html>", {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+        new Request(`https://jogomanager.com${path}`),
+        createCspNonce(),
+      );
+      for (const name of ["content-security-policy", "content-security-policy-report-only"]) {
+        const csp = response.headers.get(name);
+        expect(csp, `${path} ${name}`).toContain("script-src-attr 'none'");
+        expect(csp, `${path} ${name}`).toContain("manifest-src 'self'");
+        expect(csp, `${path} ${name}`).toContain("object-src 'none'");
+      }
+      // Existing SSR injects inline script blocks: migration to nonce enforcement
+      // must be staged and browser-tested rather than silently breaking auth/Stripe.
+      expect(response.headers.get("content-security-policy")).toContain("'unsafe-inline'");
+    }
+  });
+
   it("exposes initial SSR duration without weakening private cache protection", async () => {
     deps.fetch.mockResolvedValue(
       new Response("<html></html>", {
