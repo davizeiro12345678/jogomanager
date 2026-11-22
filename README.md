@@ -27,6 +27,9 @@ O **Pro Football Manager 3D (jogomanager)** é um jogo brasileiro independente d
 8. [Entrega e operação](#caminho-de-uma-alteração-até-o-site)
 9. [Segurança](#segurança-por-camada)
 10. [Estado atual, contribuições e documentação](#estado-de-entrega-e-pendências)
+11. [Manual para colaboradores](#manual-para-novos-colaboradores)
+12. [Homologação completa](#homologação-de-fluxos-completos)
+13. [Operação e recuperação](#operação-observabilidade-e-recuperação)
 
 ## Experiência do jogador
 
@@ -241,6 +244,156 @@ Consulte [SECURITY.md](SECURITY.md) para escopo de suporte, reporte confidencial
 O [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132) (integração separada das melhorias documentais deste PR) consolida trabalho de arquitetura, autenticação, performance, multiplayer e segurança, mas **não deve ser considerado publicado** enquanto houver homologações operacionais pendentes. Não antecipar disponibilidade de funcionalidades somente porque existem branches ou testes automatizados aprovados.
 
 Prioridades de homologação antes da liberação: verificação de OAuth real, Stripe em sandbox com webhook, multiplayer 1×1 e 2×2 em dispositivos físicos, conectividade/recuperação de infraestrutura, inventário de riscos e verificação de publicação em domínio canônico. O estado mais recente e a lista de bloqueios devem ser conferidos no PR e nos artefatos do **último SHA**, não em screenshots antigos.
+
+## Manual para novos colaboradores
+
+Este manual complementa [AGENTS.md](AGENTS.md), que contém contratos de implementação obrigatórios. Antes de alterar o projeto, defina **qual ambiente**, **qual camada é autoridade sobre o estado** e **qual evidência prova a mudança**. A documentação pública não concede acesso a sistemas nem a credenciais.
+
+### Onde encontrar cada responsabilidade
+
+| Área | Código de referência | Contratos essenciais |
+| --- | --- | --- |
+| Interface, SSR, acessibilidade e i18n | ¤src/components/¤, ¤src/routes/¤, ¤src/i18n/¤ | Renderização inicial, navegação, foco, tradução e CSS crítico |
+| Carreira e saves | ¤src/game/¤, ¤src/lib/¤ | Integridade do progresso, armazenamento local e autorização na nuvem |
+| IA, motor de partidas e física | ¤src/game/¤, ¤wasm/¤ | Seeds, replay determinístico, ordem das operações e perfil de hardware |
+| Estádios, atletas e gráficos 3D | ¤src/components/game/¤ | Canvas, LOD, GPU, frame time e fallback |
+| Login, MFA, OAuth e passkeys | ¤src/integrations/supabase/¤, ¤src/routes/¤ | PKCE, callback, sessão, RLS e origem permitida |
+| Loja e assinaturas | ¤src/routes/api/¤, ¤src/lib/¤ | Verificação de assinatura, conta Stripe, preço e concessão idempotente |
+| Multiplayer | ¤src/game/online/¤, ¤services/¤ | Tickets, salas, estado autoritativo, reconexão e antirreplay |
+| Migrações e ingestão | ¤drizzle/migrations/¤, ¤supabase/¤, ¤cloudflare/¤ | Histórico canônico, quotas e testes em banco descartável |
+| CI/CD, segurança e operação | ¤.github/workflows/¤, ¤scripts/¤, ¤infra/¤ | SHA, gates, rollback, health e evidências |
+
+### Matriz de configuração: público versus confidencial
+
+| Variável ou família | Papel | Exposição permitida |
+| --- | --- | --- |
+| ¤VITE_SUPABASE_URL¤ e ¤VITE_SUPABASE_PUBLISHABLE_KEY¤ | Cliente e autenticação Supabase | **Públicas**; devem apontar para o mesmo projeto do ambiente |
+| ¤SUPABASE_URL¤ | URL da API acessada pelo servidor | Identificação de projeto; não é um segredo |
+| ¤SUPABASE_SERVICE_ROLE_KEY¤ | Operações administrativas autorizadas | **Somente servidor**, nunca bundle ou logs |
+| ¤PAYMENTS_ENVIRONMENT¤ | Seleciona ¤sandbox¤ ou ¤live¤ | Configuração do deployment; confirmar conta correspondente |
+| ¤STRIPE_LIVE_API_KEY¤ e credencial de teste correspondente | Checkout e consulta Stripe | **Somente servidor**, com menor privilégio |
+| ¤PAYMENTS_LIVE_WEBHOOK_SECRET¤ e ¤PAYMENTS_SANDBOX_WEBHOOK_SECRET¤ | Validação dos webhooks | **Somente servidor**, diferentes por endpoint |
+| ¤CLOUDFLARE_API_TOKEN¤ | Entrega/autorização no Cloudflare | **Segredo de CI**, nunca disponibilizar no navegador |
+| ¤PFM_BUILD_SHA¤ e ¤EXPECTED_COMMIT_SHA¤ | Identidade da versão implantada | Identificadores, não senhas |
+
+O Vite incorpora variáveis ¤VITE_*¤ ao **bundle do navegador**. Um health check saudável com o backend pode coexistir com um frontend incapaz de iniciar o Auth se faltar a URL/chave pública no build. A chave publicável não dispensa RLS nem autorização por usuário.
+
+**Staging de verdade** exige projeto Supabase e banco próprios, chaves próprias, callbacks OAuth próprios, Stripe exclusivamente de testes, endpoint e segredo de webhook próprios e serviço multiplayer sem acesso à base produtiva. Um subdomínio de staging que utiliza service role de produção **não está isolado**.
+
+### Primeiros comandos e verificações
+
+~~~bash
+node --version
+npm ci
+npm run lint
+npm exec -- tsc --noEmit --pretty false
+npm test
+npm run test:stress
+PFM_LOCAL_VERIFY=1 npm run build
+npm run bundle:check
+npm run test:performance-gates
+~~~
+
+Use o Node definido por ¤.nvmrc¤ e o lockfile correspondente. Os testes e builds de referência não devem modificar a resolução de pacotes. Se o Vite dev falhar ao resolver módulos exclusivos de Cloudflare, teste o **alvo de runtime correto** com build e ¤npm run preview:worker¤, em vez de remover imports do servidor. Relate qualquer ferramenta ou credencial ausente como **não testado**, nunca como aprovado.
+
+## Homologação de fluxos completos
+
+O projeto separa três níveis de prova: **unitário** (funções e mocks), **integração** (serviços isolados e contratos de API) e **E2E** (navegador, provedor real em test mode e persistência). Um nível não substitui os outros.
+
+### OAuth e gerenciamento de sessão
+
+1. Abrir ¤/auth¤ em navegador limpo e examinar erros JavaScript, CSP, cookies e URL do projeto Supabase.
+2. Confirmar somente os provedores realmente habilitados em ¤/auth/v1/settings¤.
+3. Iniciar OAuth com PKCE e verificar que a URL de callback no **provedor externo** corresponde exatamente ao callback do **Supabase**, enquanto ¤redirectTo¤ retorna a caminho interno permitido do aplicativo.
+4. Autenticar uma **conta própria de homologação** e validar retorno, identidade, renovação, reload, logout, expiração e revogação.
+5. Executar com duas contas distintas para rejeitar leitura e escrita cruzadas.
+6. Homologar e-mail, recuperação, MFA e passkeys apenas quando configurados; a chegada à página de login do Google/GitHub **não** é login concluído.
+
+Consulte [métodos de Auth](docs/auth-methods.md) e [política de segurança](SECURITY.md).
+
+### Stripe: checkout → webhook → benefício
+
+~~~mermaid
+sequenceDiagram
+  participant U as Jogador autenticado
+  participant B as Backend de homologação
+  participant S as Stripe Test
+  participant D as Banco isolado
+  U->>B: Solicita checkout de oferta
+  B->>D: Persiste proprietário e oferta
+  B->>S: Cria sessão em test mode
+  S-->>U: Checkout de teste
+  S->>B: POST do evento assinado
+  B->>B: Verifica assinatura e ambiente
+  B->>D: Registra evento e concede uma vez
+  B-->>S: Resposta de processamento
+  U->>B: Consulta benefício pela sessão
+  B-->>U: Concessão persistida
+~~~
+
+Verifique assinatura inválida, pagamento pendente, falha assíncrona, pagamento pago, replay do mesmo ¤event_id¤, retry após falha de banco, titularidade da sessão, assinatura criada/renovada/cancelada e reconciliação de estornos. Um ¤GET¤ ao endpoint de webhook não comprova processamento de eventos; o fluxo financeiro depende do ¤POST¤ **assinado** e da persistência. Nunca conceder benefício por redirecionamento do navegador. Consulte [pagamentos](docs/payments-configuration.md).
+
+### Multiplayer 1×1 e 2×2
+
+| Cenário | Evidência para aprovação |
+| --- | --- |
+| **1×1** | Dois usuários e clientes independentes entram, jogam, encerram e recebem o mesmo placar do servidor |
+| **2×2** | Quatro usuários ocupam assentos únicos, equipes corretas e tickets vinculados à sala |
+| **Reconexão** | Cliente desconectado retoma sessão válida sem ações duplicadas nem perda de estado confirmado |
+| **Antirreplay** | Ticket expirado, mensagem fora de ordem, operação cruzada entre salas e usuário anônimo são rejeitados |
+| **Determinismo** | Replay, checkpoints, hashes, ranking e resultado persistido concordam |
+| **Recuperação** | Falha de transporte e encerramento do Worker deixam estado reconciliável |
+
+Health ¤ready¤, tabelas SQL presentes e testes de funções são evidências necessárias, mas **não provam** partidas completas com vários aparelhos.
+
+## Operação, observabilidade e recuperação
+
+### Diagnóstico por sintoma
+
+| Sinal | Primeira investigação | Armadilha a evitar |
+| --- | --- | --- |
+| ¤/api/health¤ retorna **503** | Bindings runtime, dependências, deployment e banco | Concluir sem prova que o banco caiu |
+| Health **200**, ¤/auth¤ quebra | Bundle Vite, chaves públicas, console, Auth e CSP | Declarar OAuth pronto só pelo health |
+| Rotas do domínio principal falham, subdomínio responde | Custom Domain, Load Balancer, regras, DNS e origem | Alterar nameservers ou registro por tentativa |
+| Checkout abre, mas item não chega | Ambiente Stripe, webhook, assinatura, idempotência e RLS | Conceder por ¤success_url¤ do navegador |
+| Multiplayer pronto na saúde, jogo indisponível | Rotas públicas, tickets, transporte, sessões e persistência | Confundir health com partida homologada |
+| Lighthouse móvel intermitente | Pior das três medições, long tasks, LCP/TBT, runner e bundle | Apagar a primeira amostra ou baixar limites |
+| Frame time anormal | GPU real, temperatura, resolução, qualidade, draw calls e p95/p99 | Tomar benchmark CPU como FPS físico |
+
+### Canário de release com identidade
+
+A rotina de publicação exige a revisão **efetivamente servida**, não apenas sucesso do comando de deploy:
+
+~~~bash
+# Executar somente depois da aprovação do SHA exato da release.
+EXPECTED_COMMIT_SHA="<SHA_DE_40_CARACTERES_APROVADO>" \
+  node scripts/verify-public-deployment.mjs
+
+# Diagnóstico sem alterar dados:
+curl --fail --silent --show-error https://jogomanager.com/api/health
+~~~
+
+O SHA entre sinais de menor/maior no exemplo é **um marcador a substituir**, não um valor válido. Depois da publicação, conferir login, página inicial, tabelas, CSS, headers, assets e versão em navegadores reais; testar fluxos de escrita **somente** no staging autorizado. Os logs e relatórios devem conter SHA, ambiente, horário, request ID e resultado, sem tokens, cookies ou dados pessoais.
+
+### Procedimento mínimo de rollback
+
+1. Registrar versão aprovada e versão realmente servida; bloquear promoções concorrentes.
+2. Reverter para uma versão de Worker anteriormente **testada**, nunca para uma origem legada desconhecida.
+3. Não aplicar rollback de banco apagando progresso real ou reexecutando migrações históricas sobrepostas.
+4. Conferir DNS/Custom Domain, TLS, rotas, health, SSR, Auth, webhooks e filas depois da mudança.
+5. Guardar evidência sanitizada, causa raiz e teste de regressão no PR/issue.
+
+### Comparações de performance sem regressão
+
+| Dimensão | Protocolo mínimo |
+| --- | --- |
+| **CodSpeed / CPU** | Baseline e candidato no mesmo runner, mesmo lockfile, fixtures e amostras; informar variância e regressões por benchmark |
+| **MatchSim** | Mesmas seeds, checkpoints e hashes de replay; ganho de tempo com resultado diferente **não** é otimização aprovada |
+| **Lighthouse móvel** | Cinco rotas, três execuções, agregação pessimista; performance ≥97, LCP ≤2.500 ms e TBT ≤200 ms |
+| **3D/GPU** | Mesma resolução, dispositivo, qualidade, temperatura, carga e p95/p99 de frame time |
+| **Bundles** | Comparar bytecode/JS executado e custo de inicialização, além de bytes gzip/Brotli |
+
+O contrato em [docs/critical-performance.md](docs/critical-performance.md) é a referência normativa. Um rerun verde de um teste anteriormente intermitente recupera um check, mas não demonstra que a causa foi removida.
 
 ## Participação, manutenção e uso
 
