@@ -88,9 +88,15 @@ export function expectedGoals(home: number, away: number, seed: string, ctx: Mat
 
 function poissonBuckets(lambda: number): number[] {
   const p = [Math.exp(-lambda)];
-  for (let i = 1; i < 8; i++) p.push((p[i - 1]! * lambda) / i);
-  // The final bucket owns the tail; no rejection loop or lost probability mass.
-  p.push(Math.max(0, 1 - p.reduce((sum, v) => sum + v, 0)));
+  let sum = p[0]!;
+  for (let i = 1; i < 8; i++) {
+    const next = (p[i - 1]! * lambda) / i;
+    p.push(next);
+    // Accumulate in the original left-to-right order, avoiding a second pass.
+    sum += next;
+  }
+  // The final bucket owns the tail; preserve exactly the legacy FP addition order.
+  p.push(Math.max(0, 1 - sum));
   return p;
 }
 
