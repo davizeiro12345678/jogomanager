@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   assertStripePublicBuildKey,
@@ -71,4 +72,15 @@ test("manual Wrangler deployment rejects missing or wrong-environment public key
   assert.throws(() => assertStripePublicBuildKey("", "live"));
   assert.throws(() => assertStripePublicBuildKey("pk_test_1234567890", "live"));
   assert.throws(() => assertStripePublicBuildKey("sk_live_secret999", "live"));
+});
+
+test("production GitHub deploy keeps the proven direct Google OAuth mode", () => {
+  const workflow = readFileSync(
+    new URL("../.github/workflows/cloudflare-production.yml", import.meta.url),
+    "utf8",
+  );
+  const deploy = readFileSync(new URL("./cloudflare-deploy.mjs", import.meta.url), "utf8");
+  assert.match(workflow, /VITE_AUTH_MODE: supabase-direct/);
+  assert.match(workflow, /stripe-public-build-env\.mjs/);
+  assert.match(deploy, /VITE_AUTH_MODE.*supabase-direct/);
 });
