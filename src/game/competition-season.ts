@@ -505,7 +505,7 @@ export function seasonCompetitionRecord(
   move: PyramidMove | null,
   regionalPlayoffs: NonNullable<CompetitionSeasonRecord["playoffs"]>,
 ): CompetitionSeasonRecord {
-  const continentalPoints: Record<string, number> = {};
+  const continentalPoints: Record<string, number> = Object.create(null);
   for (const cup of cups.filter((c) => c.id === "continental")) {
     for (const g of cup.groups ?? [])
       for (const m of g.matches) {
