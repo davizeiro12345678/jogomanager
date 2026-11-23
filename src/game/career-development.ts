@@ -55,7 +55,10 @@ export function applyWeeklyDevelopment(
   const injuryMult = (0.7 + intensity * 0.4) * (1 - operatingPlan.medical * 0.055);
 
   const next: Record<string, Player> = Object.create(null);
-  const attrDeltas: AttrDeltas = Object.assign(Object.create(null), state.attrDeltas ?? {});
+  const attrDeltas: AttrDeltas = Object.assign(
+    Object.create(null),
+    state.attrDeltas ?? {},
+  );
   for (const [id, p] of Object.entries(players)) {
     if (p.clubId !== state.clubId) {
       next[id] = p;
