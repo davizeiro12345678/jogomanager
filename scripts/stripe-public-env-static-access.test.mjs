@@ -27,9 +27,14 @@ test("GitHub production build loads Stripe public token before compiling", () =>
     new URL("../.github/workflows/cloudflare-production.yml", import.meta.url),
     "utf8",
   );
-  const keyLoading = workflow.indexOf("Load and validate existing public Stripe key before the Vite build");
+  const keyLoading = workflow.indexOf(
+    "Load and validate existing public Stripe key before the Vite build",
+  );
   const build = workflow.indexOf("Build and publish Worker with Wrangler");
-  assert.ok(keyLoading > 0 && keyLoading < build, "Worker public key must be provided before the build");
+  assert.ok(
+    keyLoading > 0 && keyLoading < build,
+    "Worker public key must be provided before the build",
+  );
   assert.match(workflow, /VITE_PAYMENTS_CLIENT_TOKEN=\$\{public_key\}/);
   assert.match(workflow, /VITE_AUTH_MODE: supabase-direct/);
 });
