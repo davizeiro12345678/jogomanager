@@ -6,6 +6,19 @@ import { pathToFileURL } from "node:url";
  * only that known plain-text binding into the GitHub Vite *build* environment.
  * Private Stripe API and webhook secrets must never be returned by this tool.
  */
+export function assertStripePublicBuildKey(value, environment = "live") {
+  if (!["live", "sandbox"].includes(environment))
+    throw new Error("Unsupported payment environment");
+  const prefix = environment === "live" ? "pk_live_" : "pk_test_";
+  if (
+    typeof value !== "string" ||
+    !value.startsWith(prefix) ||
+    !/^pk_(?:live|test)_[A-Za-z0-9]{8,220}$/.test(value)
+  )
+    throw new Error("The Stripe publishable key is missing or does not match the build environment");
+  return value;
+}
+
 export async function resolveStripePublicBuildKey({
   token,
   accountId,
@@ -25,11 +38,7 @@ export async function resolveStripePublicBuildKey({
   const binding = data.result.bindings.find((item) => item.name === "VITE_PAYMENTS_CLIENT_TOKEN");
   if (binding?.type !== "plain_text")
     throw new Error("The public Stripe binding must be present as a plain-text Worker variable");
-  const value = binding.text;
-  const prefix = environment === "live" ? "pk_live_" : "pk_test_";
-  if (typeof value !== "string" || !value.startsWith(prefix) || !/^pk_(?:live|test)_[A-Za-z0-9]{8,220}$/.test(value))
-    throw new Error("The Worker Stripe publishable key is missing or does not match the build environment");
-  return value;
+  return assertStripePublicBuildKey(binding.text, environment);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
