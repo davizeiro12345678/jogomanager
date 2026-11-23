@@ -43,6 +43,8 @@ jobs:
           test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL secret"; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
       - run: npm ci
+      - name: Verify browser Supabase build-time env references
+        run: node --test scripts/supabase-public-env-static-access.test.mjs
       - name: Refuse publication of a superseded main revision
         env:
           GH_TOKEN: ${{ github.token }}
