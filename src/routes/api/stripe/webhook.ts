@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleStripeWebhookPost } from "../public/payments/webhook";
+import { handleStripeWebhookPost, rejectNonPostStripeWebhook } from "../public/payments/webhook";
 
 /**
  * Public compatibility endpoint. GET is a non-sensitive liveness/contract
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
             },
           },
         ),
+      HEAD: rejectNonPostStripeWebhook,
       POST: handleStripeWebhookPost,
     },
   },

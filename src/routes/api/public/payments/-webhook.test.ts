@@ -350,7 +350,7 @@ describe("public Stripe route contracts", () => {
         server: {
           handlers: {
             POST(args: { request: Request }): Promise<Response>;
-            GET(args: { request: Request }): Response;
+            GET(args: { request: Request }): Promise<Response>;
             HEAD(args: { request: Request }): Response;
           };
         };
@@ -365,13 +365,23 @@ describe("public Stripe route contracts", () => {
     });
     expect(response.status).toBe(400);
     expect(deps.beginEvent).not.toHaveBeenCalled();
-    for (const method of ["GET", "HEAD"] as const) {
-      const result = alias.options.server.handlers[method]({
-        request: new Request("https://jogomanager.com/api/stripe/webhook", { method }),
-      });
-      expect(result.status).toBe(405);
-      expect(result.headers.get("allow")).toBe("POST");
-    }
+    const getResult = await alias.options.server.handlers.GET({
+      request: new Request("https://jogomanager.com/api/stripe/webhook"),
+    });
+    expect(getResult.status).toBe(200);
+    expect(getResult.headers.get("cache-control")).toBe("no-store");
+    expect(getResult.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(await getResult.json()).toEqual({
+      service: "stripe-webhook",
+      method: "POST",
+      signatureRequired: true,
+    });
+
+    const headResult = alias.options.server.handlers.HEAD({
+      request: new Request("https://jogomanager.com/api/stripe/webhook", { method: "HEAD" }),
+    });
+    expect(headResult.status).toBe(405);
+    expect(headResult.headers.get("allow")).toBe("POST");
   });
 
   it("returns 405 instead of SSR HTML on GET/HEAD of the canonical webhook", () => {
