@@ -12,3 +12,12 @@ for (const path of ["../src/lib/stripe.ts", "../src/components/PaymentTestModeBa
     assert.doesNotMatch(source, /import\.meta\.env\[['"]VITE_PAYMENTS_CLIENT_TOKEN['"]\]/);
   });
 }
+
+test("the Stripe publishable key is explicitly typed for strict TypeScript", () => {
+  const definition = readFileSync(
+    new URL("../src/types/stripe-public-env.d.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(definition, /readonly\s+VITE_PAYMENTS_CLIENT_TOKEN\s*:/);
+  assert.doesNotMatch(definition, /(?:STRIPE_LIVE_API_KEY|STRIPE_SECRET_KEY|sk_live_|rk_live_)/);
+});
