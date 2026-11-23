@@ -644,6 +644,7 @@ function LiveMatch({
                   onClick={() => {
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
+                    setPaused(false);
                   }}
                   className="cutscene-control px-3 text-xs"
                 >
@@ -655,6 +656,7 @@ function LiveMatch({
                     storePrematchIntro(false);
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
+                    setPaused(false);
                   }}
                   className="cutscene-control px-3 text-xs"
                 >
@@ -672,7 +674,10 @@ function LiveMatch({
           <PrematchCeremony
             home={setups.home}
             away={setups.away}
-            onDone={() => setCeremony(false)}
+            onDone={() => {
+              setCeremony(false);
+              setPaused(false);
+            }}
           />
         </Suspense>
       ) : null}
