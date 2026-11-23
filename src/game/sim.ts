@@ -679,7 +679,8 @@ export class MatchSim {
       this.#rulesState.indirect.takerId = fresh.id;
     this.players[idx] = fresh;
     this.synchronizeBallPhysics();
-    this.subsUsed[side]++;
+    if (side === "home") this.subsUsed.home += 1;
+    else this.subsUsed.away += 1;
     this.stoppageDebt += 0.5;
     const why = reason === "lesão" ? " (lesão)" : reason === "fadiga" ? " (cansado)" : "";
     this.pushEvent({
@@ -955,8 +956,12 @@ export class MatchSim {
    * lado e por partida. Chamado pelo Worker (talkLive) ou direto no fallback.
    */
   applyTeamTalk(side: Side, kind: TeamTalkKind): boolean {
+    // Worker and recovery input still require runtime validation after TS erasure.
+    if (side !== "home" && side !== "away") return false;
+    if (kind !== "motivar" && kind !== "cobrar" && kind !== "poupar") return false;
     if (this.talkUsed[side] || this.finished) return false;
-    this.talkUsed[side] = true;
+    if (side === "home") this.talkUsed.home = true;
+    else this.talkUsed.away = true;
     const setup = this.setup(side);
     const effects: Record<TeamTalkKind, { morale: number; stamina: number; text: string }> = {
       motivar: {
