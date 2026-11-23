@@ -185,6 +185,22 @@ describe("outer response protection", () => {
     }
   });
 
+  it("allows only the existing Turnstile origin for the login challenge in both CSP modes", () => {
+    const response = secureResponse(
+      new Response("<html></html>", { headers: { "content-type": "text/html" } }),
+      new Request("https://jogomanager.com/auth"),
+      createCspNonce(),
+    );
+    for (const header of ["content-security-policy", "content-security-policy-report-only"]) {
+      const policy = response.headers.get(header)!;
+      const scripts = policy.split("; ").find((part) => part.startsWith("script-src "));
+      const frames = policy.split("; ").find((part) => part.startsWith("frame-src "));
+      expect(scripts).toContain("https://challenges.cloudflare.com");
+      expect(frames).toContain("https://challenges.cloudflare.com");
+      expect(policy).toContain("script-src-attr 'none'");
+    }
+  });
+
   it("exposes initial SSR duration without weakening private cache protection", async () => {
     deps.fetch.mockResolvedValue(
       new Response("<html></html>", {
