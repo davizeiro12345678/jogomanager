@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { resolveStripePublicBuildKey } from "./stripe-public-build-env.mjs";
+import { assertStripePublicBuildKey, resolveStripePublicBuildKey } from "./stripe-public-build-env.mjs";
 
 const key = "pk_live_validPublicKey12345";
 const configured = (text = key, type = "plain_text") => ({
@@ -60,4 +60,12 @@ test("fails closed on Cloudflare errors or missing credentials", async () => {
       fetchImpl: async () => ({ ok: false, status: 403 }),
     }),
   );
+});
+
+test("manual Wrangler deployment rejects missing or wrong-environment public keys", () => {
+  assert.equal(assertStripePublicBuildKey("pk_live_1234567890", "live"), "pk_live_1234567890");
+  assert.equal(assertStripePublicBuildKey("pk_test_1234567890", "sandbox"), "pk_test_1234567890");
+  assert.throws(() => assertStripePublicBuildKey("", "live"));
+  assert.throws(() => assertStripePublicBuildKey("pk_test_1234567890", "live"));
+  assert.throws(() => assertStripePublicBuildKey("sk_live_secret999", "live"));
 });
