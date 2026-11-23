@@ -6,4 +6,5 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_PUBLISHABLE_KEY: string | undefined;
   readonly VITE_AUTH_MODE: string | undefined;
   readonly VITE_AUTH_PROVIDER_ALLOWLIST: string | undefined;
+  readonly VITE_PAYMENTS_CLIENT_TOKEN: string | undefined;
 }
