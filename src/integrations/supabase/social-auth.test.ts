@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   availableAuthMethods,
+  canonicalAuthOriginUrl,
   lovableOAuthProvider,
   oauthBrokerForHost,
   parseAuthMethods,
@@ -115,6 +116,22 @@ describe("configured authentication methods", () => {
     expect(oauthBrokerForHost("google", "preview.lovable.app")).toBe("google");
     expect(oauthBrokerForHost("azure", "jogomanager.com")).toBe("microsoft");
     expect(oauthBrokerForHost("google", "preview.lovable.app", "supabase-direct")).toBeUndefined();
+  });
+
+  it("canonicalizes in-app www auth navigation before OAuth, preserving callback state", () => {
+    expect(
+      canonicalAuthOriginUrl("https://www.jogomanager.com/auth?next=%2Fclub#oauth"),
+    ).toBe("https://jogomanager.com/auth?next=%2Fclub#oauth");
+    for (const url of [
+      "https://jogomanager.com/auth",
+      "https://preview.lovable.app/auth",
+      "https://www.jogomanager.com.evil.test/auth",
+      "http://www.jogomanager.com/auth",
+      "https://www.jogomanager.com/api/stripe/webhook",
+      "https://www.jogomanager.com:444/auth",
+    ]) {
+      expect(canonicalAuthOriginUrl(url)).toBeUndefined();
+    }
   });
 
   it("preserves the callback destination for every configured direct provider", () => {

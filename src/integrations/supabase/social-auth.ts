@@ -116,6 +116,15 @@ export function oauthBrokerForHost(provider: SocialProvider, hostname: string, a
   return lovableOAuthProvider(provider);
 }
 
+/** Keep client-side navigation and PKCE initiation on the canonical auth origin. */
+export function canonicalAuthOriginUrl(href: string): string | undefined {
+  const url = new URL(href);
+  if (url.protocol !== "https:" || url.hostname !== "www.jogomanager.com") return;
+  if (url.port || !/^\/auth(?:\/|$)/.test(url.pathname)) return;
+  url.hostname = "jogomanager.com";
+  return url.href;
+}
+
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {
   return { redirectTo, ...(provider === "azure" ? { scopes: "email" } : {}) };
 }

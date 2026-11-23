@@ -21,6 +21,7 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
+  canonicalAuthOriginUrl,
   oauthBrokerForHost,
   socialOAuthOptions,
   socialProviderLabel,
@@ -81,6 +82,13 @@ export function AuthPage() {
   // Cloudflare-hosted Google login uses GoTrue's configured provider. The
   // Lovable /~oauth/initiate broker is not hosted on jogomanager.com.
   const passkeysSupported = supportsPasskeys();
+
+  // Also runs when TanStack Router changes routes without requesting the
+  // server: a www OAuth callback must never start in another browser origin.
+  useEffect(() => {
+    const canonical = canonicalAuthOriginUrl(window.location.href);
+    if (canonical) window.location.replace(canonical);
+  }, []);
 
   const checkMfa = useCallback(async () => {
     const { data, error: assuranceError } =
@@ -283,6 +291,12 @@ export function AuthPage() {
 
   async function signInWith(provider: SocialProvider) {
     if (busy || !methods?.socialProviders.includes(provider)) return;
+    // Defend even against a click before the mount effect redirects.
+    const canonical = canonicalAuthOriginUrl(window.location.href);
+    if (canonical) {
+      window.location.replace(canonical);
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotice(null);
