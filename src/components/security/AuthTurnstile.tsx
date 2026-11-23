@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/provider";
 
 type TurnstileClient = {
   render: (
@@ -20,6 +21,7 @@ const TURNSTILE_SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?
 const SITE_KEY = import.meta.env.VITE_AUTH_TURNSTILE_SITE_KEY || "0x4AAAAAAFtXRJproFio6FVc";
 
 export function AuthTurnstile({ onToken }: { onToken: (token: string | null) => void }) {
+  const { t } = useT();
   const elementRef = useRef<HTMLDivElement>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -78,11 +80,11 @@ export function AuthTurnstile({ onToken }: { onToken: (token: string | null) => 
   }, [onToken]);
 
   return (
-    <div className="mt-4 space-y-2" role="group" aria-label="Verificação de segurança">
+    <div className="mt-4 space-y-2" role="group" aria-label={t("auth.securityCheck")}>
       <div ref={elementRef} className="min-h-16" />
       {loadFailed && (
         <p role="alert" className="text-sm text-destructive">
-          A verificação de segurança não carregou. Atualize a página e tente novamente.
+          {t("auth.securityLoadError")}
         </p>
       )}
     </div>
