@@ -655,6 +655,7 @@ function LiveMatch({
           <Cutscene
             key={PREMATCH_SCENE_IDS[introStep]}
             scene={PREMATCH_SCENE_IDS[introStep]!}
+            autoPlay
             look={career.manager?.look ?? FALLBACK_LOOK}
             club={myClub}
             managerName={career.managerName}
