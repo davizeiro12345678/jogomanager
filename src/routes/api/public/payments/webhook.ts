@@ -238,11 +238,8 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   }
 }
 
-export async function handleStripeWebhookPost({
-  request,
-}: {
-  request: Request;
-}): Promise<Response> {
+/** Keep both public webhook URLs on exactly the same signed, idempotent handler. */
+export async function processStripeWebhook(request: Request): Promise<Response> {
   const rawEnv = new URL(request.url).searchParams.get("env");
   let event: Stripe.Event;
   let env: StripeEnv;
@@ -280,8 +277,20 @@ export async function handleStripeWebhookPost({
   }
 }
 
+/** A webhook is an authenticated POST endpoint, never a public HTML page. */
+export function rejectNonPostStripeWebhook(): Response {
+  return new Response(null, {
+    status: 405,
+    headers: { Allow: "POST", "Cache-Control": "no-store" },
+  });
+}
+
 export const Route = createFileRoute("/api/public/payments/webhook")({
   server: {
-    handlers: { POST: handleStripeWebhookPost },
+    handlers: {
+      POST: ({ request }) => processStripeWebhook(request),
+      GET: rejectNonPostStripeWebhook,
+      HEAD: rejectNonPostStripeWebhook,
+    },
   },
 });

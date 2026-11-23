@@ -42,7 +42,6 @@ O **Pro Football Manager 3D (jogomanager)** é um jogo brasileiro independente d
 A base do produto é **tomada de decisão**, não controle arcade do atleta. Em partidas, o objetivo é conectar formação, instruções, condição física, comportamento dos jogadores e desfechos simulados. Os dados de clubes e ligas podem ter escopos diferentes entre catálogo informativo, competições publicadas e clubes selecionáveis; não presuma que todo registro importado seja jogável.
 
 ### Percurso do jogador — do primeiro acesso à partida
-
 ~~~mermaid
 flowchart TD
   A["jogomanager.com — entrada pública"] --> B{"Como jogar?"}
@@ -238,7 +237,7 @@ Consulte [SECURITY.md](SECURITY.md) para escopo de suporte, reporte confidencial
 
 ## Estado de entrega e pendências
 
-O [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132) consolida trabalho de arquitetura, autenticação, performance, multiplayer e segurança, mas **permanece em rascunho** enquanto houver homologações operacionais pendentes. Não antecipar disponibilidade de funcionalidades somente porque existem branches ou testes automatizados aprovados.
+O [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132) consolida trabalho de arquitetura, autenticação, performance, multiplayer e segurança, mas **permanece aberto, ainda não integrado** enquanto houver homologações operacionais pendentes. Não antecipar disponibilidade de funcionalidades somente porque existem branches ou testes automatizados aprovados.
 
 Prioridades de homologação antes da liberação: verificação de OAuth real, Stripe em sandbox com webhook, multiplayer 1×1 e 2×2 em dispositivos físicos, conectividade/recuperação de infraestrutura, inventário de riscos e verificação de publicação em domínio canônico. O estado mais recente e a lista de bloqueios devem ser conferidos no PR e nos artefatos do **último SHA**, não em screenshots antigos.
 
