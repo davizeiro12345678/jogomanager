@@ -27,15 +27,14 @@ describe("automatic match graphics quality", () => {
       expect(result.quality).toBe("baixa");
       state = result.trend;
     }
-    expect(evaluateMatchQuality("baixa", { now: 60, avg: 58 }, state, true).quality).toBe(
-      "media",
-    );
+    expect(evaluateMatchQuality("baixa", { now: 60, avg: 58 }, state, true).quality).toBe("media");
   });
 
   it("ignores cinematics and pause time and resets the streak", () => {
     const state = { slow: 3, healthy: 7 };
-    expect(
-      evaluateMatchQuality("media", { now: 12, avg: 28 }, state, false),
-    ).toEqual({ quality: "media", trend: fresh() });
+    expect(evaluateMatchQuality("media", { now: 12, avg: 28 }, state, false)).toEqual({
+      quality: "media",
+      trend: fresh(),
+    });
   });
 });
