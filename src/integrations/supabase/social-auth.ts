@@ -112,7 +112,7 @@ export function oauthBrokerForHost(provider: SocialProvider, hostname: string, a
   if (authMode === "supabase-direct") return undefined;
   if (
     provider === "google" &&
-    (hostname === "jogomanager.com" || hostname === "www.jogomanager.com")
+    hostname === "jogomanager.com"
   ) {
     return undefined;
   }

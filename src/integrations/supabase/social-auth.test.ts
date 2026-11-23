@@ -108,7 +108,8 @@ describe("configured authentication methods", () => {
 
   it("uses Supabase Google OAuth directly on the published domains without affecting other providers", () => {
     expect(oauthBrokerForHost("google", "jogomanager.com")).toBeUndefined();
-    expect(oauthBrokerForHost("google", "www.jogomanager.com")).toBeUndefined();
+    // www/auth is canonically redirected server-side before the browser runs.
+    expect(oauthBrokerForHost("google", "www.jogomanager.com")).toBe("google");
     expect(oauthBrokerForHost("google", "game-staging.jogomanager.com")).toBe("google");
     expect(oauthBrokerForHost("google", "jogomanager.com.attacker.test")).toBe("google");
     expect(oauthBrokerForHost("google", "preview.lovable.app")).toBe("google");

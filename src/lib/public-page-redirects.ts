@@ -13,6 +13,15 @@ export const PUBLIC_PAGE_REDIRECTS = {
 export function publicPageRedirect(request: Request): Response | undefined {
   if (request.method !== "GET" && request.method !== "HEAD") return;
   const url = new URL(request.url);
+  // Canonicalize the browser origin before OAuth begins. Keeping the
+  // sign-in and callback on the same origin preserves PKCE code verifiers.
+  if (url.hostname === "www.jogomanager.com" && /^\/auth(?:\/|$)/.test(url.pathname)) {
+    url.hostname = "jogomanager.com";
+    return new Response(null, {
+      status: 302,
+      headers: { Location: url.href, "Cache-Control": "no-store" },
+    });
+  }
   const pathname = url.pathname.replace(/\/+$/, "") || "/";
   const target = PUBLIC_PAGE_REDIRECTS[pathname as keyof typeof PUBLIC_PAGE_REDIRECTS];
   if (!target) return;
