@@ -1,5 +1,6 @@
 /** Retired editorial URLs. Targets remain distinct, canonical resources. */
 export const PUBLIC_PAGE_REDIRECTS = {
+  "/modo-carreira": "/jogo-de-manager-de-futebol",
   "/como-ser-tecnico-de-futebol": "/guias",
   "/gestao-financeira": "/dicas-de-gestao",
   "/taticas-e-formacoes": "/melhores-formacoes",

@@ -46,6 +46,7 @@ vi.mock("@/lib/guest-checkout.functions", () => ({
 }));
 
 import { Route } from "./webhook";
+import { Route as PublicStripeAlias } from "../../stripe/webhook";
 
 const post = (
   Route as unknown as {
@@ -339,5 +340,49 @@ describe("Stripe payment webhook lifecycle", () => {
     expect((await post({ request: request() })).status).toBe(503);
     expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", false);
     expect(deps.fulfill).not.toHaveBeenCalled();
+  });
+});
+
+describe("public Stripe route contracts", () => {
+  it("has a public POST-only alias that shares the strict verified handler", async () => {
+    const alias = PublicStripeAlias as unknown as {
+      options: {
+        server: {
+          handlers: {
+            POST(args: { request: Request }): Promise<Response>;
+            GET(args: { request: Request }): Response;
+            HEAD(args: { request: Request }): Response;
+          };
+        };
+      };
+    };
+    deps.verify.mockRejectedValueOnce(new Error("invalid signature"));
+    const response = await alias.options.server.handlers.POST({
+      request: new Request("https://jogomanager.com/api/stripe/webhook?env=sandbox", {
+        method: "POST",
+        body: "unsigned",
+      }),
+    });
+    expect(response.status).toBe(400);
+    expect(deps.beginEvent).not.toHaveBeenCalled();
+    for (const method of ["GET", "HEAD"] as const) {
+      const result = alias.options.server.handlers[method]({
+        request: new Request("https://jogomanager.com/api/stripe/webhook", { method }),
+      });
+      expect(result.status).toBe(405);
+      expect(result.headers.get("allow")).toBe("POST");
+    }
+  });
+
+  it("returns 405 instead of SSR HTML on GET/HEAD of the canonical webhook", () => {
+    const handlers = (
+      Route as unknown as { options: { server: { handlers: Record<string, () => Response> } } }
+    ).options.server.handlers;
+    for (const method of ["GET", "HEAD"]) {
+      const result = handlers[method]!();
+      expect(result.status).toBe(405);
+      expect(result.headers.get("allow")).toBe("POST");
+      expect(result.headers.get("cache-control")).toBe("no-store");
+    }
   });
 });

@@ -55,6 +55,14 @@ describe("retired public pages", () => {
     });
   }
 
+  it("redirects the retired /modo-carreira URL to the canonical career guide without redirecting POST", () => {
+    const url = "https://jogomanager.com/modo-carreira?from=bookmark";
+    const result = publicPageRedirect(new Request(url));
+    expect(result?.status).toBe(301);
+    expect(result?.headers.get("location")).toBe("/jogo-de-manager-de-futebol?from=bookmark");
+    expect(publicPageRedirect(new Request(url, { method: "POST" }))).toBeUndefined();
+  });
+
   it("keeps canonical discovery resources free of retired URLs", () => {
     const navigation = readFileSync(new URL("./public-pages.ts", import.meta.url), "utf8");
     const llms = readFileSync(new URL("../../public/llms.txt", import.meta.url), "utf8");
