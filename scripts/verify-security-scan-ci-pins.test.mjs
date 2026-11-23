@@ -15,9 +15,7 @@ for (const name of [
   test(
     "security workflow " + name + " pins GitHub actions to vetted immutable commits",
     {
-      skip:
-        !existsSync(filename) &&
-        "This workflow belongs to a separate pending security branch",
+      skip: !existsSync(filename) && "This workflow belongs to a separate pending security branch",
     },
     () => {
       const source = readFileSync(filename, "utf8");
