@@ -11,7 +11,7 @@ describe("automatic match graphics quality", () => {
 
   it("only lowers one quality tier after sustained poor gameplay FPS", () => {
     let state = fresh();
-    let quality = "alta" as const;
+    const quality = "alta" as const;
     for (let i = 0; i < 3; i++) {
       const result = evaluateMatchQuality(quality, { now: 32, avg: 35 }, state, true);
       expect(result.quality).toBe("alta");
