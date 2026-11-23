@@ -27,9 +27,7 @@ describe("retired public pages", () => {
         {},
       );
       expect(response.status).toBe(302);
-      expect(response.headers.get("location")).toBe(
-        "https://jogomanager.com/auth?next=%2Fclub",
-      );
+      expect(response.headers.get("location")).toBe("https://jogomanager.com/auth?next=%2Fclub");
       expect(response.headers.get("cache-control")).toContain("no-store");
       expect(ssrFetch).not.toHaveBeenCalled();
     }
@@ -41,9 +39,7 @@ describe("retired public pages", () => {
       expect(publicPageRedirect(new Request(url))).toBeUndefined();
     }
     expect(
-      publicPageRedirect(
-        new Request("https://www.jogomanager.com/auth", { method: "POST" }),
-      ),
+      publicPageRedirect(new Request("https://www.jogomanager.com/auth", { method: "POST" })),
     ).toBeUndefined();
   });
 
