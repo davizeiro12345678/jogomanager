@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { assertStripePublicBuildKey, resolveStripePublicBuildKey } from "./stripe-public-build-env.mjs";
+import {
+  assertStripePublicBuildKey,
+  resolveStripePublicBuildKey,
+} from "./stripe-public-build-env.mjs";
 
 const key = "pk_live_validPublicKey12345";
 const configured = (text = key, type = "plain_text") => ({
