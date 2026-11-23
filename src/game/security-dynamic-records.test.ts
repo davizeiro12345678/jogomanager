@@ -13,11 +13,7 @@ describe("game input boundary prototype and enum guards", () => {
   });
 
   it("ignores invalid post-serialization team and talk values", () => {
-    const sim = new MatchSim(
-      buildTeamSetup("fla"),
-      buildTeamSetup("pal"),
-      "team-talk-enum-guard",
-    );
+    const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "team-talk-enum-guard");
     try {
       expect(sim.applyTeamTalk("__proto__" as never, "motivar")).toBe(false);
       expect(sim.applyTeamTalk("home", "__proto__" as never)).toBe(false);
