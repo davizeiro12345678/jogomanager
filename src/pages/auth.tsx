@@ -88,17 +88,21 @@ export function AuthPage() {
   // unauthenticated www visitors; Supabase sessions are origin-scoped.
   useEffect(() => {
     const href = window.location.href;
-    if (!canonicalAuthOriginUrl(href)) return;
+    const fallback = canonicalAuthOriginUrl(href);
+    if (!fallback) return;
     let active = true;
     void supabase.auth
       .getSession()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!active) return;
-        const canonical = canonicalAuthRedirectForSession(href, Boolean(data.session));
+        // A failed session lookup must not strand the login on a broken origin.
+        const canonical = error
+          ? fallback
+          : canonicalAuthRedirectForSession(href, Boolean(data.session));
         if (canonical) window.location.replace(canonical);
       })
       .catch(() => {
-        // On session lookup failure, retain the current origin and session data.
+        if (active) window.location.replace(fallback);
       });
     return () => {
       active = false;
@@ -120,10 +124,14 @@ export function AuthPage() {
   /** Every browser OAuth entry point must preserve an existing www session. */
   const guardWwwOAuthStart = async (): Promise<boolean> => {
     const href = window.location.href;
-    if (!canonicalAuthOriginUrl(href)) return false;
-    const { data, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-    const canonical = canonicalAuthRedirectForSession(href, Boolean(data.session));
+    const fallback = canonicalAuthOriginUrl(href);
+    if (!fallback) return false;
+    const session = await supabase.auth.getSession().catch(() => null);
+    if (!session || session.error) {
+      window.location.replace(fallback);
+      return true;
+    }
+    const canonical = canonicalAuthRedirectForSession(href, Boolean(session.data.session));
     if (canonical) window.location.replace(canonical);
     else await continueSession();
     return true;
