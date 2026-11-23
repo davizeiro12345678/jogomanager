@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { loadEnv } from "vite";
+import { assertStripePublicBuildKey } from "./stripe-public-build-env.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const configPath = path.join(root, ".cloudflare/production/server/wrangler.json");
@@ -104,6 +105,10 @@ async function prepare() {
 
 try {
   await mkdir(path.join(root, ".wrangler/logs"), { recursive: true });
+  if (action === "deploy") {
+    const configured = settings["VITE_PAYMENTS_CLIENT_TOKEN"];
+    assertStripePublicBuildKey(configured, settings["PAYMENTS_ENVIRONMENT"] || "live");
+  }
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
       VITE_AUTH_MODE: settings["VITE_AUTH_MODE"] || "supabase",
