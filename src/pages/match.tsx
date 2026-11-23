@@ -47,6 +47,7 @@ import { nextCameraMode } from "@/game/camera-modes";
 import { FpsPanel } from "@/components/game/FpsPanel";
 
 import { fpsMeter } from "@/game/fps-meter";
+import { evaluateMatchQuality, type MatchQualityTrend } from "@/game/match-quality-autotune";
 
 import { Cutscene } from "@/components/game/Cutscene";
 
@@ -282,6 +283,10 @@ function LiveMatch({
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const controllerRef = useRef<LiveMatchController | null>(null);
   const qualityTouched = useRef(false);
+  const qualityTrendRef = useRef<MatchQualityTrend>({ slow: 0, healthy: 0 });
+  const activeGameplayRef = useRef(false);
+  const currentQualityRef = useRef(quality);
+  currentQualityRef.current = quality;
 
   const chooseCamera = useCallback((next: CameraMode) => {
     setCamera(next);
@@ -313,32 +318,31 @@ function LiveMatch({
   }, []);
 
   /**
-   * Equilíbrio automático: mede os quadros reais do aparelho e desce (ou sobe)
-   * um degrau de qualidade. Só age enquanto o jogador não escolher manualmente,
-   * e espera alguns segundos entre trocas para não ficar oscilando.
+   * Auto graphics must respond to sustained *gameplay* performance, not one
+   * cutscene/shader warmup frame left in the rolling 1%-low FPS window.
+   * Explicitly selected quality remains authoritative.
    */
   useEffect(() => {
     let lastChange = 0;
-    const off = fpsMeter.subscribe((s) => {
-      if (qualityTouched.current) return;
-      if (s.seconds < 6) return;
+    const off = fpsMeter.subscribe((sample) => {
+      if (qualityTouched.current || sample.seconds < 10) {
+        qualityTrendRef.current = { slow: 0, healthy: 0 };
+        return;
+      }
+      const outcome = evaluateMatchQuality(
+        currentQualityRef.current,
+        sample,
+        qualityTrendRef.current,
+        activeGameplayRef.current,
+      );
+      qualityTrendRef.current = outcome.trend;
+      if (outcome.quality === currentQualityRef.current) return;
       const now = Date.now();
       if (now - lastChange < 12_000) return;
-      setQuality((q) => {
-        if ((s.avg < 34 || s.low1 < 22) && q !== "baixa") {
-          lastChange = now;
-          const next = q === "alta" ? "media" : "baixa";
-          toast.info(`Gráficos em "${next}" para manter a partida fluida.`);
-          return next;
-        }
-        if (s.avg > 58 && s.worst > 48 && q !== "alta") {
-          lastChange = now;
-          const next = q === "baixa" ? "media" : "alta";
-          toast.info(`Sobra desempenho: gráficos em "${next}".`);
-          return next;
-        }
-        return q;
-      });
+      lastChange = now;
+      currentQualityRef.current = outcome.quality;
+      setQuality(outcome.quality);
+      toast.info(`Gráficos em "${outcome.quality}" após desempenho sustentado.`);
     });
     return off;
   }, []);
@@ -350,6 +354,7 @@ function LiveMatch({
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
   pausedRef.current = paused || introActive || ceremonyActive || halfHeld || overlayActive;
+  activeGameplayRef.current = !paused && !introActive && !ceremonyActive && !halfHeld && !overlayActive && !done && !document.hidden;
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
     sim,
     pausedRef.current,
