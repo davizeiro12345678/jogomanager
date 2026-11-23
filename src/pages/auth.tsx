@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import {
   canonicalAuthOriginUrl,
+  canonicalAuthRedirectForSession,
   oauthBrokerForHost,
   socialOAuthOptions,
   socialProviderLabel,
@@ -83,11 +84,25 @@ export function AuthPage() {
   // Lovable /~oauth/initiate broker is not hosted on jogomanager.com.
   const passkeysSupported = supportsPasskeys();
 
-  // Also runs when TanStack Router changes routes without requesting the
-  // server: a www OAuth callback must never start in another browser origin.
+  // TanStack Router may navigate without a server request. Redirect only
+  // unauthenticated www visitors; Supabase sessions are origin-scoped.
   useEffect(() => {
-    const canonical = canonicalAuthOriginUrl(window.location.href);
-    if (canonical) window.location.replace(canonical);
+    const href = window.location.href;
+    if (!canonicalAuthOriginUrl(href)) return;
+    let active = true;
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        const canonical = canonicalAuthRedirectForSession(href, Boolean(data.session));
+        if (canonical) window.location.replace(canonical);
+      })
+      .catch(() => {
+        // On session lookup failure, retain the current origin and session data.
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const checkMfa = useCallback(async () => {
@@ -291,16 +306,21 @@ export function AuthPage() {
 
   async function signInWith(provider: SocialProvider) {
     if (busy || !methods?.socialProviders.includes(provider)) return;
-    // Defend even against a click before the mount effect redirects.
-    const canonical = canonicalAuthOriginUrl(window.location.href);
-    if (canonical) {
-      window.location.replace(canonical);
-      return;
-    }
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
+      // Guard clicks that occur before the mount effect completes. Never
+      // discard an existing www session while switching browser origins.
+      const href = window.location.href;
+      if (canonicalAuthOriginUrl(href)) {
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const canonical = canonicalAuthRedirectForSession(href, Boolean(data.session));
+        if (canonical) window.location.replace(canonical);
+        else await continueSession();
+        return;
+      }
       const brokerProvider = oauthBrokerForHost(
         provider,
         window.location.hostname,

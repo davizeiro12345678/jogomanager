@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   availableAuthMethods,
   canonicalAuthOriginUrl,
+  canonicalAuthRedirectForSession,
   lovableOAuthProvider,
   oauthBrokerForHost,
   parseAuthMethods,
@@ -132,6 +133,15 @@ describe("configured authentication methods", () => {
     ]) {
       expect(canonicalAuthOriginUrl(url)).toBeUndefined();
     }
+  });
+
+  it("keeps an existing www Supabase session on its origin without copying credentials", () => {
+    const url = "https://www.jogomanager.com/auth?next=%2Fclub";
+    expect(canonicalAuthRedirectForSession(url, true)).toBeUndefined();
+    expect(canonicalAuthRedirectForSession(url, false)).toBe(
+      "https://jogomanager.com/auth?next=%2Fclub",
+    );
+    expect(canonicalAuthRedirectForSession("https://jogomanager.com/auth", false)).toBeUndefined();
   });
 
   it("preserves the callback destination for every configured direct provider", () => {

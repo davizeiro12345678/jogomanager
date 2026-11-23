@@ -125,6 +125,14 @@ export function canonicalAuthOriginUrl(href: string): string | undefined {
   return url.href;
 }
 
+/** Origin-scoped browser sessions must not be discarded by www canonicalization. */
+export function canonicalAuthRedirectForSession(
+  href: string,
+  hasSession: boolean,
+): string | undefined {
+  return hasSession ? undefined : canonicalAuthOriginUrl(href);
+}
+
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {
   return { redirectTo, ...(provider === "azure" ? { scopes: "email" } : {}) };
 }
