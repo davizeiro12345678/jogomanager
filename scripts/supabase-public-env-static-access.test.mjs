@@ -25,3 +25,14 @@ test("browser Supabase bootstrap never receives server secret-role key", () => {
   assert.ok(!source.includes("import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY"));
   assert.ok(!source.includes("import.meta.env.VITE_SUPABASE_SECRET_KEY"));
 });
+
+test("Supabase public Vite properties are declared for strict TypeScript", () => {
+  const declaration = readFileSync(
+    new URL("../src/types/supabase-public-env.d.ts", import.meta.url),
+    "utf8",
+  );
+  for (const key of ["VITE_SUPABASE_URL", "VITE_SUPABASE_PUBLISHABLE_KEY"]) {
+    assert.match(declaration, new RegExp(`readonly\\s+${key}\\s*:\\s*string`));
+  }
+  assert.doesNotMatch(declaration, /(?:SERVICE_ROLE|sb_secret_|STRIPE_SECRET)/i);
+});
