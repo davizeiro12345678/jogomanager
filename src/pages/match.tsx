@@ -456,7 +456,14 @@ function LiveMatch({
   useEffect(
     () =>
       controllerRef.current?.pause(
-        shouldPauseMatch(paused, introActive, ceremonyActive, halfHeld, document.hidden, overlayActive),
+        shouldPauseMatch(
+          paused,
+          introActive,
+          ceremonyActive,
+          halfHeld,
+          document.hidden,
+          overlayActive,
+        ),
       ),
     [paused, introActive, ceremonyActive, halfHeld, overlayActive],
   );
@@ -693,7 +700,12 @@ function LiveMatch({
         {safeClub(fixture.home).name} x {safeClub(fixture.away).name} — partida ao vivo em 3D
       </h1>
 
-      <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused || introActive || ceremonyActive || halfHeld || overlayActive} />
+      <Scoreboard
+        homeId={fixture.home}
+        awayId={fixture.away}
+        snap={snap}
+        paused={paused || introActive || ceremonyActive || halfHeld || overlayActive}
+      />
       <Feed events={snap.events} />
       <MatchMinimap view={sim} />
 
