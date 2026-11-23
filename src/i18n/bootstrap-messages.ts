@@ -49,6 +49,8 @@ export const ptBR: Record<string, string> = {
   "shell.language": "Idioma",
   "shell.more": "Mais",
   "common.loading": "Carregando…",
+  "auth.securityCheck": "Verificação de segurança",
+  "auth.securityLoadError": "A verificação de segurança não carregou. Atualize a página e tente novamente.",
 };
 export const en: Record<string, string> = {
   "nav.panel": "Dashboard",
@@ -97,6 +99,8 @@ export const en: Record<string, string> = {
   "shell.language": "Language",
   "shell.more": "More",
   "common.loading": "Loading…",
+  "auth.securityCheck": "Security verification",
+  "auth.securityLoadError": "Security verification could not load. Refresh the page and try again.",
 };
 /** Default Portuguese and English work offline without fetching 96 other packs. */
 export function translateBootstrap(lang: Lang, key: string): string {
