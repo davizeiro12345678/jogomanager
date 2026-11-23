@@ -43,9 +43,13 @@ export function AuthTurnstile({ onToken }: { onToken: (token: string | null) => 
               onToken(token);
             }
           },
-          "expired-callback": () => onToken(null),
+          "expired-callback": () => {
+            if (!disposed) onToken(null);
+          },
           "error-callback": fail,
-          "timeout-callback": () => onToken(null),
+          "timeout-callback": () => {
+            if (!disposed) onToken(null);
+          },
         });
       } catch {
         fail();
