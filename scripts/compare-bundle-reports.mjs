@@ -71,10 +71,7 @@ add(
   totalGrowthBudgetBytes,
 );
 for (const [name, predicate, includeRaw] of keys) {
-  const pick =
-    name === "Match 3D"
-      ? selectMatchRouteEntry
-      : (entries) => entries.find(predicate);
+  const pick = name === "Match 3D" ? selectMatchRouteEntry : (entries) => entries.find(predicate);
   const b = pick(before.entries ?? []);
   const a = pick(after.entries ?? []);
   if (!b || !a) {
