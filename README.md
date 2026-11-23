@@ -1,13 +1,13 @@
 # Pro Football Manager 3D
 
-**Site oficial e endereço canônico:** https://jogomanager.com
-
 **Futebol. Decisões. Histórias. Seu clube, sua trajetória.**
 
 [![Quality gates](https://github.com/davizeiro12345678/jogomanager/actions/workflows/quality.yml/badge.svg?branch=main)](https://github.com/davizeiro12345678/jogomanager/actions/workflows/quality.yml)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/davizeiro12345678/jogomanager)
 [![Segurança](https://img.shields.io/badge/seguran%C3%A7a-divulga%C3%A7%C3%A3o%20respons%C3%A1vel-26705a)](SECURITY.md)
 [![Plataforma](https://img.shields.io/badge/plataforma-navegador%20%7C%20PWA-226a90)](https://jogomanager.com)
+
+**Site oficial e endereço canônico:** https://jogomanager.com
 
 O **Pro Football Manager 3D (jogomanager)** é um jogo brasileiro independente de gestão de futebol para navegador: você escolhe um clube, organiza o elenco, monta estratégias, acompanha a evolução de uma carreira e vê suas decisões se transformarem em partidas com apresentação tridimensional. Também há caminhos próprios para carreira de jogador, partida rápida e experiências online, conforme a versão e a disponibilidade do ambiente.
 
@@ -81,7 +81,7 @@ Este é o percurso técnico documentado, não uma lista inventada de datas de la
 | **13–14/11/2026** | Otimizações incrementais de contadores de lesões e fusão do PR #138 para rotas públicas, SSR e indexação | Ver [PR #138](https://github.com/davizeiro12345678/jogomanager/pull/138) e notas do [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132); medições de SQL não equivalem a ganhos de tempo de página. |
 | **19–21/11/2026** | Homologação de migrações, contratos de multiplayer, segurança, desempenho móvel e publicação concentradas no PR #132 | **Ainda não é release aprovado**. Validar o último SHA, os gates e os ambientes reais antes do merge. |
 
-O desenvolvimento é independente. [Conheça a história e o criador](https://jogomanager.com/criador). Ferramentas de assistência, como Lovable, podem participar da edição, mas **GitHub, testes e autorização de release** são as referências para rastrear alterações. O histórico de commits e PRs é a trilha auditável: [commits](https://github.com/davizeiro12345678/jogomanager/commits/main), [pull requests](https://github.com/davizeiro12345678/jogomanager/pulls) e [Actions](https://github.com/davizeiro12345678/jogomanager/actions).
+O desenvolvimento é independente. [Acesse as ferramentas de criação do jogo](https://jogomanager.com/criador). Ferramentas de assistência, como Lovable, podem participar da edição, mas **GitHub, testes e autorização de release** são as referências para rastrear alterações. O histórico de commits e PRs é a trilha auditável: [commits](https://github.com/davizeiro12345678/jogomanager/commits/main), [pull requests](https://github.com/davizeiro12345678/jogomanager/pulls) e [Actions](https://github.com/davizeiro12345678/jogomanager/actions).
 
 ## Arquitetura técnica e fluxo de dados
 
@@ -238,7 +238,7 @@ Consulte [SECURITY.md](SECURITY.md) para escopo de suporte, reporte confidencial
 
 ## Estado de entrega e pendências
 
-O [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132) consolida trabalho de arquitetura, autenticação, performance, multiplayer e segurança, mas **permanece em rascunho** enquanto houver homologações operacionais pendentes. Não antecipar disponibilidade de funcionalidades somente porque existem branches ou testes automatizados aprovados.
+O [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132) (integração separada das melhorias documentais deste PR) consolida trabalho de arquitetura, autenticação, performance, multiplayer e segurança, mas **não deve ser considerado publicado** enquanto houver homologações operacionais pendentes. Não antecipar disponibilidade de funcionalidades somente porque existem branches ou testes automatizados aprovados.
 
 Prioridades de homologação antes da liberação: verificação de OAuth real, Stripe em sandbox com webhook, multiplayer 1×1 e 2×2 em dispositivos físicos, conectividade/recuperação de infraestrutura, inventário de riscos e verificação de publicação em domínio canônico. O estado mais recente e a lista de bloqueios devem ser conferidos no PR e nos artefatos do **último SHA**, não em screenshots antigos.
 
@@ -252,7 +252,7 @@ Prioridades de homologação antes da liberação: verificação de OAuth real, 
 
 ### Leituras complementares
 
-[Design](DESIGN.md) · [Arquitetura](docs/architecture/stack-status.md) · [Performance crítica](docs/critical-performance.md) · [Runbook Cloudflare/Supabase](docs/cloudflare-supabase-deployment.md) · [Pagamentos](docs/payments-configuration.md) · [Autenticação](docs/auth-methods.md) · [Plano e progresso](docs/superpowers/plans/2026-11-11-jogomanager-release-integration.md) · [Política de segurança](SECURITY.md) · [Site oficial](https://jogomanager.com)
+[Design](DESIGN.md) · [Arquitetura](docs/architecture/stack-status.md) · [Performance crítica](docs/critical-performance.md) · [Runbook Cloudflare/Supabase](docs/cloudflare-supabase-deployment.md) · [Pagamentos](docs/payments-configuration.md) · [Autenticação](docs/auth-methods.md) · [Plano e progresso do release #132](https://github.com/davizeiro12345678/jogomanager/pull/132) · [Política de segurança](SECURITY.md) · [Site oficial](https://jogomanager.com)
 
 ---
 

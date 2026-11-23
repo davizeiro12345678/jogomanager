@@ -238,6 +238,7 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   }
 }
 
+/** Canonical raw-body Stripe signature handler; the alias delegates here. */
 export async function handleStripeWebhookPost({
   request,
 }: {
@@ -280,8 +281,25 @@ export async function handleStripeWebhookPost({
   }
 }
 
+/** Stable alias entry point; both URLs share raw body signature validation. */
+export async function processStripeWebhook(request: Request): Promise<Response> {
+  return handleStripeWebhookPost({ request });
+}
+
+/** A webhook is an authenticated POST endpoint, never a public HTML page. */
+export function rejectNonPostStripeWebhook(): Response {
+  return new Response(null, {
+    status: 405,
+    headers: { Allow: "POST", "Cache-Control": "no-store" },
+  });
+}
+
 export const Route = createFileRoute("/api/public/payments/webhook")({
   server: {
-    handlers: { POST: handleStripeWebhookPost },
+    handlers: {
+      POST: ({ request }) => processStripeWebhook(request),
+      GET: rejectNonPostStripeWebhook,
+      HEAD: rejectNonPostStripeWebhook,
+    },
   },
 });

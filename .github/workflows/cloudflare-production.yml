@@ -61,6 +61,8 @@ jobs:
           node --test scripts/verify-production-supabase.test.mjs
           node scripts/verify-production-supabase.mjs
       - run: npm ci
+      - name: Verify browser Supabase build-time env references
+        run: node --test scripts/supabase-public-env-static-access.test.mjs
       - name: Refuse publication of a superseded main revision
         env:
           GH_TOKEN: ${{ github.token }}
