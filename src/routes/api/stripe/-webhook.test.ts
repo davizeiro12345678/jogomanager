@@ -2,6 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../public/payments/webhook", () => ({
   handleStripeWebhookPost: vi.fn(async () => new Response("signed POST delegated")),
+  rejectNonPostStripeWebhook: vi.fn(
+    () =>
+      new Response(null, {
+        status: 405,
+        headers: { Allow: "POST", "Cache-Control": "no-store" },
+      }),
+  ),
 }));
 
 import { Route } from "./webhook";
@@ -13,6 +20,7 @@ const handlers = (
       server: {
         handlers: {
           GET(): Promise<Response>;
+          HEAD(): Response;
           POST: typeof handleStripeWebhookPost;
         };
       };
@@ -31,6 +39,14 @@ describe("public Stripe webhook compatibility route", () => {
       method: "POST",
       signatureRequired: true,
     });
+    expect(handleStripeWebhookPost).not.toHaveBeenCalled();
+  });
+
+  it("HEAD returns 405 without invoking the payment handler", () => {
+    const response = handlers.HEAD();
+    expect(response.status).toBe(405);
+    expect(response.headers.get("allow")).toBe("POST");
+    expect(response.headers.get("cache-control")).toBe("no-store");
     expect(handleStripeWebhookPost).not.toHaveBeenCalled();
   });
 
