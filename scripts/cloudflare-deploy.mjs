@@ -111,7 +111,7 @@ try {
   }
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
-      VITE_AUTH_MODE: settings["VITE_AUTH_MODE"] || "supabase",
+      VITE_AUTH_MODE: settings["VITE_AUTH_MODE"] || "supabase-direct",
       NITRO_PRESET: "cloudflare-module",
       PFM_CLOUDFLARE_BUILD: "1",
     });
