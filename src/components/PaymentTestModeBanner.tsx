@@ -1,4 +1,4 @@
-const clientToken = import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"];
+const clientToken = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN;
 
 export function PaymentTestModeBanner() {
   if (!clientToken) {
@@ -14,7 +14,7 @@ export function PaymentTestModeBanner() {
       <div className="w-full bg-amber-100 border-b border-amber-300 px-4 py-2 text-center text-sm text-amber-800">
         Todos os pagamentos nesta prévia são em modo de teste.{" "}
         <a
-          href="https://docs.lovable.dev/features/payments#test-and-live-environments"
+          href="https://docs.stripe.com/testing"
           target="_blank"
           rel="noopener noreferrer"
           className="underline font-medium"
