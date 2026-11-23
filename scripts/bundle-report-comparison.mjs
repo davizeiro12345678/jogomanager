@@ -10,7 +10,6 @@ export function isMatchRouteEntry(entry) {
   );
 }
 
-
 // Two separate build chunks may both be called match-<hash>.js: a tiny lazy
 // route wrapper and the full Match 3D client. Hashes can reorder them between
 // builds, so selecting the first match would compare unrelated startup costs.
