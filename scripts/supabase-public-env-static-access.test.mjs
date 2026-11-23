@@ -56,10 +56,7 @@ test("auth method discovery and auth mode use build-time public variables", () =
   ]) {
     assert.ok(discovery.includes(`import.meta.env.${key}`), key);
   }
-  const authPage = readFileSync(
-    new URL("../src/pages/auth.tsx", import.meta.url),
-    "utf8",
-  );
+  const authPage = readFileSync(new URL("../src/pages/auth.tsx", import.meta.url), "utf8");
   assert.ok(authPage.includes("import.meta.env.VITE_AUTH_MODE"));
 });
 
@@ -77,7 +74,7 @@ test("all browser modules avoid computed access to mandatory public auth variabl
         scan(path);
         continue;
       }
-      if (!entry.isFile() || !/\\.tsx?$/.test(entry.name)) continue;
+      if (!entry.isFile() || !/\.tsx?$/.test(entry.name)) continue;
       const source = readFileSync(path, "utf8");
       for (const key of keys) {
         assert.ok(!source.includes(`import.meta.env["${key}"]`), path);
