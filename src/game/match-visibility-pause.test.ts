@@ -19,5 +19,4 @@ describe("match visibility pause", () => {
     expect(shouldPauseMatch(false, false, false, false, false, false)).toBe(false);
     expect(shouldPauseMatch(true, false, false, false, false, false)).toBe(true);
   });
-
 });
