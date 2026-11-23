@@ -65,7 +65,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
           CLOUDFLARE_SITE_ZONE: jogomanager.com
           SITE_URL: https://jogomanager.com
-          VITE_AUTH_MODE: supabase
+          VITE_AUTH_MODE: supabase-direct
           PAYMENTS_ENVIRONMENT: live
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
