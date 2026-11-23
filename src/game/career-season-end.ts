@@ -68,7 +68,7 @@ export function endSeason(state: CareerState): CareerState {
 
   // envelhecimento e reset de estatísticas
   const rnd = makeRng(`age-${state.clubId}-${state.season}`);
-  const aged: Record<string, Player> = {};
+  const aged: Record<string, Player> = Object.create(null);
   for (const [id, p] of Object.entries(state.players)) {
     aged[id] = {
       ...p,
