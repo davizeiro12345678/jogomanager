@@ -119,9 +119,9 @@ describe("configured authentication methods", () => {
   });
 
   it("canonicalizes in-app www auth navigation before OAuth, preserving callback state", () => {
-    expect(
-      canonicalAuthOriginUrl("https://www.jogomanager.com/auth?next=%2Fclub#oauth"),
-    ).toBe("https://jogomanager.com/auth?next=%2Fclub#oauth");
+    expect(canonicalAuthOriginUrl("https://www.jogomanager.com/auth?next=%2Fclub#oauth")).toBe(
+      "https://jogomanager.com/auth?next=%2Fclub#oauth",
+    );
     for (const url of [
       "https://jogomanager.com/auth",
       "https://preview.lovable.app/auth",
