@@ -11,6 +11,20 @@ function fixture() {
   return { sim: new MatchSim(home, away, "transport-v1"), view: new WorkerMatchView(home, away) };
 }
 describe("live transport ownership", () => {
+  it("rejects network-supplied slot strings without consuming a recyclable buffer", () => {
+    const { sim } = fixture();
+    const encoder = new LiveSnapshotEncoder(3);
+    try {
+      const packet = encoder.encode(snapshotMatch(sim, 1))!;
+      expect(
+        encoder.recycle(3, String(packet.slot) as unknown as number, packet.frame.buffer),
+      ).toBe(false);
+      expect(encoder.recycle(3, packet.slot, packet.frame.buffer)).toBe(true);
+    } finally {
+      sim.dispose();
+    }
+  });
+
   it("invalidates in-place identity and body metadata changes without retaining old optional values", () => {
     const { sim } = fixture();
     const encoder = new LiveSnapshotEncoder(8),
