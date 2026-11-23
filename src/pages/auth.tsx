@@ -117,6 +117,18 @@ export function AuthPage() {
     if (!(await checkMfa())) await navigate({ href: destination });
   };
 
+  /** Every browser OAuth entry point must preserve an existing www session. */
+  const guardWwwOAuthStart = async (): Promise<boolean> => {
+    const href = window.location.href;
+    if (!canonicalAuthOriginUrl(href)) return false;
+    const { data, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    const canonical = canonicalAuthRedirectForSession(href, Boolean(data.session));
+    if (canonical) window.location.replace(canonical);
+    else await continueSession();
+    return true;
+  };
+
   useEffect(() => {
     let alive = true;
     const recovery =
@@ -310,17 +322,8 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
-      // Guard clicks that occur before the mount effect completes. Never
-      // discard an existing www session while switching browser origins.
-      const href = window.location.href;
-      if (canonicalAuthOriginUrl(href)) {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const canonical = canonicalAuthRedirectForSession(href, Boolean(data.session));
-        if (canonical) window.location.replace(canonical);
-        else await continueSession();
-        return;
-      }
+      // Also catches clicks before the mount-effect session lookup completes.
+      if (await guardWwwOAuthStart()) return;
       const brokerProvider = oauthBrokerForHost(
         provider,
         window.location.hostname,
@@ -359,6 +362,8 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
+      // Keep the Lovable callback and its verifier on the same browser origin.
+      if (await guardWwwOAuthStart()) return;
       const { lovable } = await import("@/integrations/lovable/index");
       const result = await lovable.auth.signInWithOAuth("lovable", { redirect_uri: callback() });
       if (result.error) throw result.error;
