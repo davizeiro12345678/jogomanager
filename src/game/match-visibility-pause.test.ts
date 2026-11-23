@@ -14,4 +14,10 @@ describe("match visibility pause", () => {
     expect(shouldPauseMatch(true, false, false, false, false)).toBe(true);
     expect(shouldPauseMatch(false, false, false, true, false)).toBe(true);
   });
+  it("pauses only while a modal is open, then resumes without changing manual pause", () => {
+    expect(shouldPauseMatch(false, false, false, false, false, true)).toBe(true);
+    expect(shouldPauseMatch(false, false, false, false, false, false)).toBe(false);
+    expect(shouldPauseMatch(true, false, false, false, false, false)).toBe(true);
+  });
+
 });
