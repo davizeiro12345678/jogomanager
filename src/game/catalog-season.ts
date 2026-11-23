@@ -24,7 +24,7 @@ export function updatedSeasonComposition(
     ]),
   );
   const assigned: string[] = [];
-  const next = { ...proposed };
+  const next: Record<string, string[]> = Object.assign(Object.create(null), proposed);
   const spill: string[] = [];
   // Handle the manager's destination first so an old catalog alias cannot remove them.
   const order = [nextLeagueId, ...ids.filter((id) => id !== nextLeagueId)];
