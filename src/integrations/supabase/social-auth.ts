@@ -107,7 +107,7 @@ export async function availableAuthMethods(signal?: AbortSignal): Promise<AuthMe
  * No provider is guessed from client credentials or from a hard-coded default.
  */
 export function fallbackAuthMethods(): AuthMethods {
-  const raw = import.meta.env["VITE_AUTH_PROVIDER_ALLOWLIST"];
+  const raw = import.meta.env.VITE_AUTH_PROVIDER_ALLOWLIST;
   const configured = typeof raw === "string" ? raw.trim() : "";
   const allowlist =
     configured && configured.toLowerCase() !== "none"
