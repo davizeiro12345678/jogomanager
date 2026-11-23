@@ -17,12 +17,7 @@ export function evaluateMatchQuality(
   trend: MatchQualityTrend,
   active: boolean,
 ): { quality: MatchGraphicsQuality; trend: MatchQualityTrend } {
-  if (
-    !active ||
-    !Number.isFinite(sample.now) ||
-    !Number.isFinite(sample.avg) ||
-    sample.now <= 0
-  ) {
+  if (!active || !Number.isFinite(sample.now) || !Number.isFinite(sample.avg) || sample.now <= 0) {
     return { quality: current, trend: { ...RESET } };
   }
 
