@@ -26,7 +26,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify browser Supabase build-time env references
-        run: node --test scripts/supabase-public-env-static-access.test.mjs
+        run: node --test scripts/supabase-public-env-static-access.test.mjs scripts/home-hero-async-decoding.test.mjs
       - name: Verify i18n parity and hardcoded audit
         run: |
           node scripts/i18n-parity.mjs --check
