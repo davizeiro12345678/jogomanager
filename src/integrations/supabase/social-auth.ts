@@ -76,8 +76,8 @@ export function parseAuthMethods(
 
 /** Supabase publishes these flags; use only the browser's publishable key. */
 export async function availableAuthMethods(signal?: AbortSignal): Promise<AuthMethods> {
-  const url = import.meta.env["VITE_SUPABASE_URL"];
-  const key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) throw new Error("Missing public authentication configuration");
   const timeout = AbortSignal.timeout(8_000);
   const response = await fetch(`${url.replace(/\/$/, "")}/auth/v1/settings`, {
@@ -86,7 +86,7 @@ export async function availableAuthMethods(signal?: AbortSignal): Promise<AuthMe
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Authentication settings unavailable");
-  const rawAllowlist = import.meta.env["VITE_AUTH_PROVIDER_ALLOWLIST"];
+  const rawAllowlist = import.meta.env.VITE_AUTH_PROVIDER_ALLOWLIST;
   const configured = typeof rawAllowlist === "string" ? rawAllowlist.trim() : "";
   const allowlist: string[] | undefined = configured
     ? [
