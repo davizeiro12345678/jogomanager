@@ -432,8 +432,11 @@ try {
     if (response?.status() !== 200) throw new Error("Quick match selection did not load");
     await page.getByRole("heading", { level: 1 }).waitFor();
     const pick = page.getByLabel(/seu time|your team/i);
-    const enabledOptions = await pick.locator("option:not([disabled])").all();
-    const nextClub = await enabledOptions[2]?.getAttribute("value");
+    // The club list is populated asynchronously after the page heading appears.
+    // Wait for the third enabled option rather than sampling the list too early.
+    const thirdEnabledClub = pick.locator("option:not([disabled])").nth(2);
+    await thirdEnabledClub.waitFor({ state: "attached", timeout: 15_000 });
+    const nextClub = await thirdEnabledClub.getAttribute("value");
     if (!nextClub) throw new Error("Quick match roster options did not load");
     await pick.selectOption(nextClub);
     await png(page, `quick-match-selection-${viewport.width}`);
