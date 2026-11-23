@@ -354,7 +354,14 @@ function LiveMatch({
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
   pausedRef.current = paused || introActive || ceremonyActive || halfHeld || overlayActive;
-  activeGameplayRef.current = !paused && !introActive && !ceremonyActive && !halfHeld && !overlayActive && !done && (typeof document === "undefined" || !document.hidden);
+  activeGameplayRef.current =
+    !paused &&
+    !introActive &&
+    !ceremonyActive &&
+    !halfHeld &&
+    !overlayActive &&
+    !done &&
+    (typeof document === "undefined" || !document.hidden);
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
     sim,
     pausedRef.current,
