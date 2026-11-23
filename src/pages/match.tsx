@@ -267,6 +267,7 @@ function LiveMatch({
   }, [panelOpen]);
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
+  const [narrationSettingsOpen, setNarrationSettingsOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [postMatchStep, setPostMatchStep] = useState<number | null>(null);
   const [advancing, setAdvancing] = useState(false);
@@ -344,10 +345,11 @@ function LiveMatch({
 
   const speedRef = useRef(speed);
   speedRef.current = speed;
+  const overlayActive = drawer !== "none" || narrationSettingsOpen;
   const pausedRef = useRef(paused);
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
-  pausedRef.current = paused || introActive || ceremonyActive || halfHeld;
+  pausedRef.current = paused || introActive || ceremonyActive || halfHeld || overlayActive;
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
     sim,
     pausedRef.current,
@@ -454,9 +456,9 @@ function LiveMatch({
   useEffect(
     () =>
       controllerRef.current?.pause(
-        shouldPauseMatch(paused, introActive, ceremonyActive, halfHeld, document.hidden),
+        shouldPauseMatch(paused, introActive, ceremonyActive, halfHeld, document.hidden, overlayActive),
       ),
-    [paused, introActive, ceremonyActive, halfHeld],
+    [paused, introActive, ceremonyActive, halfHeld, overlayActive],
   );
 
   // Intervalo: segura o jogo e abre o papo de vestiário (uma escolha por jogo).
@@ -599,7 +601,7 @@ function LiveMatch({
           mode={camera}
           quality={quality}
           supporters={supporters}
-          paused={paused || halfHeld || done}
+          paused={paused || halfHeld || done || introActive || ceremonyActive || overlayActive}
         />
       )}
       <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
@@ -691,7 +693,7 @@ function LiveMatch({
         {safeClub(fixture.home).name} x {safeClub(fixture.away).name} — partida ao vivo em 3D
       </h1>
 
-      <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused} />
+      <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused || introActive || ceremonyActive || halfHeld || overlayActive} />
       <Feed events={snap.events} />
       <MatchMinimap view={sim} />
 
@@ -762,13 +764,10 @@ function LiveMatch({
           </button>
           <NarrationSettings
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/90"
-            onOpenChange={(open) => {
-              if (open) setPaused(true);
-            }}
+            onOpenChange={setNarrationSettingsOpen}
           />
           <button
             onClick={() => {
-              setPaused(true);
               setDrawer("store");
             }}
             aria-label="Abrir loja"
@@ -778,7 +777,6 @@ function LiveMatch({
           </button>
           <button
             onClick={() => {
-              setPaused(true);
               setDrawer("chat");
             }}
             aria-label="Abrir chat"
@@ -929,7 +927,6 @@ function LiveMatch({
           <button
             type="button"
             onClick={() => {
-              setPaused(true);
               setDrawer("store");
             }}
           >
@@ -938,7 +935,6 @@ function LiveMatch({
           <button
             type="button"
             onClick={() => {
-              setPaused(true);
               setDrawer("chat");
             }}
           >
