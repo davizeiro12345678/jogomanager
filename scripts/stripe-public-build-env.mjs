@@ -15,7 +15,9 @@ export function assertStripePublicBuildKey(value, environment = "live") {
     !value.startsWith(prefix) ||
     !/^pk_(?:live|test)_[A-Za-z0-9]{8,220}$/.test(value)
   )
-    throw new Error("The Stripe publishable key is missing or does not match the build environment");
+    throw new Error(
+      "The Stripe publishable key is missing or does not match the build environment",
+    );
   return value;
 }
 
@@ -26,12 +28,14 @@ export async function resolveStripePublicBuildKey({
   fetchImpl = fetch,
 }) {
   if (!token || !accountId) throw new Error("Cloudflare token and account ID are required");
-  if (!["live", "sandbox"].includes(environment)) throw new Error("Unsupported payment environment");
+  if (!["live", "sandbox"].includes(environment))
+    throw new Error("Unsupported payment environment");
   const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/workers/scripts/jogomanager-web/settings`;
   const response = await fetchImpl(url, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
-  if (!response.ok) throw new Error(`Could not read Cloudflare Worker public bindings (HTTP ${response.status})`);
+  if (!response.ok)
+    throw new Error(`Could not read Cloudflare Worker public bindings (HTTP ${response.status})`);
   const data = await response.json();
   if (data?.success !== true || !Array.isArray(data?.result?.bindings))
     throw new Error("Unrecognized Cloudflare Worker settings response");
@@ -53,7 +57,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     appendFileSync(file, `VITE_PAYMENTS_CLIENT_TOKEN=${value}\n`, { mode: 0o600 });
     console.log("Validated Stripe public build key for the production Worker.");
   } catch (error) {
-    console.error(error instanceof Error ? error.message : "Stripe public build-key validation failed");
+    console.error(
+      error instanceof Error ? error.message : "Stripe public build-key validation failed",
+    );
     process.exitCode = 1;
   }
 }
