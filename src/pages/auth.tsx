@@ -15,6 +15,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { needsMfaChallenge } from "@/lib/mfa-session";
 
 import { Button } from "@/components/ui/button";
+import { AuthTurnstile } from "@/components/security/AuthTurnstile";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 
@@ -63,6 +64,12 @@ export function AuthPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaRevision, setCaptchaRevision] = useState(0);
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    setCaptchaRevision((revision) => revision + 1);
+  };
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -180,6 +187,7 @@ export function AuthPage() {
     setOtpSent(false);
     setEmailOtp("");
     setMagicEmail("");
+    resetCaptcha();
   }
 
   async function submit(event: React.FormEvent) {
@@ -189,6 +197,11 @@ export function AuthPage() {
     setNotice(null);
     if ((mode === "up" || mode === "update") && password !== confirmPassword) {
       setError("As senhas precisam ser iguais.");
+      return;
+    }
+    const needsCaptcha = mode !== "update" && !(mode === "magic" && otpSent);
+    if (needsCaptcha && !captchaToken) {
+      setError("Conclua a verificação de segurança antes de continuar.");
       return;
     }
     setBusy(true);
@@ -214,6 +227,7 @@ export function AuthPage() {
             options: {
               emailRedirectTo: callback(),
               shouldCreateUser: false,
+              captchaToken: captchaToken ?? undefined,
             },
           });
           if (result.error) throw result.error;
@@ -226,6 +240,7 @@ export function AuthPage() {
       } else if (mode === "reset") {
         const result = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: callback(true),
+          captchaToken: captchaToken ?? undefined,
         });
         if (result.error) throw result.error;
         setNotice(
@@ -245,6 +260,7 @@ export function AuthPage() {
             ? await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password,
+                options: { captchaToken: captchaToken ?? undefined },
               })
             : await supabase.auth.signUp({
                 email: email.trim(),
@@ -252,6 +268,7 @@ export function AuthPage() {
                 options: {
                   emailRedirectTo: callback(),
                   data: { display_name: name.trim() },
+                  captchaToken: captchaToken ?? undefined,
                 },
               });
         if (result.error) throw result.error;
@@ -278,6 +295,7 @@ export function AuthPage() {
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
     } finally {
+      if (needsCaptcha) resetCaptcha();
       setBusy(false);
     }
   }
@@ -341,11 +359,17 @@ export function AuthPage() {
 
   async function signInWithPasskey() {
     if (busy || !methods?.passkeys || !passkeysSupported) return;
+    if (!captchaToken) {
+      setError("Conclua a verificação de segurança antes de usar sua chave de acesso.");
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const result = await supabase.auth.signInWithPasskey();
+      const result = await supabase.auth.signInWithPasskey({
+        options: { captchaToken },
+      });
       if (result.error) throw result.error;
       if (!result.data?.session) throw new Error("No passkey session");
       window.__lovableEvents?.track?.("project.account_signed_in", {
@@ -356,12 +380,17 @@ export function AuthPage() {
     } catch (cause) {
       setError(passkeyErrorMessage(cause));
     } finally {
+      resetCaptcha();
       setBusy(false);
     }
   }
 
   async function resend() {
     if (busy) return;
+    if (!captchaToken) {
+      setError("Conclua a verificação de segurança antes de reenviar.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -370,6 +399,7 @@ export function AuthPage() {
         email: email.trim(),
         options: {
           emailRedirectTo: callback(),
+          captchaToken: captchaToken ?? undefined,
         },
       });
       if (result.error) throw result.error;
@@ -379,6 +409,7 @@ export function AuthPage() {
     } catch (cause) {
       setError(authErrorMessage(cause, mode));
     } finally {
+      resetCaptcha();
       setBusy(false);
     }
   }
@@ -586,6 +617,10 @@ export function AuthPage() {
               </p>
             </div>
           )}
+          {(mode === "in" || mode === "up" || mode === "magic" || mode === "reset") &&
+            (methods?.passkeys || methods?.email) && (
+              <AuthTurnstile key={`${mode}-${captchaRevision}`} onToken={setCaptchaToken} />
+            )}
           {notice && (
             <p
               role="status"
