@@ -52,6 +52,12 @@ jobs:
         run: |
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)"
           test "$current_main" = "$EXPECTED_COMMIT_SHA" || { echo "Main advanced; this release is superseded."; exit 1; }
+      - name: Verify public Stripe key is present before building Vite
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
+          PAYMENTS_ENVIRONMENT: live
+        run: node scripts/stripe-public-build-env.mjs
       - name: Build and publish Worker with Wrangler
         env:
           PFM_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
