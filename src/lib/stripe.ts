@@ -3,7 +3,7 @@ import { loadStripe } from "@stripe/stripe-js/pure";
 
 export type StripeEnv = "sandbox" | "live";
 
-const clientToken = import.meta.env["VITE_PAYMENTS_CLIENT_TOKEN"]?.trim();
+const clientToken = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN?.trim();
 
 function paymentsEnvironment(): StripeEnv {
   if (clientToken?.startsWith("pk_test_")) return "sandbox";
