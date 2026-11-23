@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   availableAuthMethods,
   lovableOAuthProvider,
+  oauthBrokerForHost,
   parseAuthMethods,
   socialOAuthOptions,
   socialProviderLabel,
@@ -103,6 +104,16 @@ describe("configured authentication methods", () => {
     )) {
       expect(lovableOAuthProvider(provider)).toBeUndefined();
     }
+  });
+
+  it("uses Supabase Google OAuth directly on the published domains without affecting other providers", () => {
+    expect(oauthBrokerForHost("google", "jogomanager.com")).toBeUndefined();
+    expect(oauthBrokerForHost("google", "www.jogomanager.com")).toBeUndefined();
+    expect(oauthBrokerForHost("google", "game-staging.jogomanager.com")).toBe("google");
+    expect(oauthBrokerForHost("google", "jogomanager.com.attacker.test")).toBe("google");
+    expect(oauthBrokerForHost("google", "preview.lovable.app")).toBe("google");
+    expect(oauthBrokerForHost("azure", "jogomanager.com")).toBe("microsoft");
+    expect(oauthBrokerForHost("google", "preview.lovable.app", "supabase-direct")).toBeUndefined();
   });
 
   it("preserves the callback destination for every configured direct provider", () => {

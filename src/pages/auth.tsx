@@ -21,7 +21,7 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  lovableOAuthProvider,
+  oauthBrokerForHost,
   socialOAuthOptions,
   socialProviderLabel,
   type SocialProvider,
@@ -78,9 +78,8 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
-  const brokeredOAuth = import.meta.env.VITE_AUTH_MODE !== "supabase-direct";
+  // Cloudflare-hosted Google login uses GoTrue's configured provider. The
+  // Lovable /~oauth/initiate broker is not hosted on jogomanager.com.
   const passkeysSupported = supportsPasskeys();
 
   const checkMfa = useCallback(async () => {
@@ -288,7 +287,11 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
-      const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
+      const brokerProvider = oauthBrokerForHost(
+        provider,
+        window.location.hostname,
+        import.meta.env.VITE_AUTH_MODE,
+      );
       if (brokerProvider) {
         const { lovable } = await import("@/integrations/lovable/index");
         const result = await lovable.auth.signInWithOAuth(brokerProvider, {

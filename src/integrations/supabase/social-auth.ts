@@ -107,6 +107,22 @@ export function lovableOAuthProvider(provider: SocialProvider) {
   return undefined;
 }
 
+/** Use GoTrue Google OAuth on Cloudflare: this origin has no /~oauth/initiate broker. */
+export function oauthBrokerForHost(
+  provider: SocialProvider,
+  hostname: string,
+  authMode?: string,
+) {
+  if (authMode === "supabase-direct") return undefined;
+  if (
+    provider === "google" &&
+    (hostname === "jogomanager.com" || hostname === "www.jogomanager.com")
+  ) {
+    return undefined;
+  }
+  return lovableOAuthProvider(provider);
+}
+
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {
   return { redirectTo, ...(provider === "azure" ? { scopes: "email" } : {}) };
 }
