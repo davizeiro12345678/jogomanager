@@ -20,6 +20,7 @@ import * as THREE from "three";
 import { useT } from "@/i18n/provider";
 import { prefersReducedMotion } from "@/game/device";
 import { storeCeremony } from "@/game/ceremony-prefs";
+import { createCeremonyCompletion } from "@/game/ceremony-completion";
 import { ClubFlag, TifoBanner, type ClubColors } from "@/components/game/stadium/ClubIdentity";
 import { StadiumExterior } from "@/components/game/stadium/StadiumExterior";
 
@@ -463,6 +464,22 @@ export function PrematchCeremony({
   doneRef.current = onDone;
   const [fading, setFading] = useState(false);
 
+  // A Safari/WebGL context loss must not leave the match forever at 0-0.
+  // The watchdog is wall-clock based and independent of Canvas useFrame.
+  const completionRef = useRef<ReturnType<typeof createCeremonyCompletion> | null>(null);
+  useEffect(() => {
+    const completion = createCeremonyCompletion(
+      () => doneRef.current(),
+      Math.ceil(TOTAL * 1000) + 6_000,
+    );
+    completionRef.current = completion;
+    return () => {
+      completionRef.current = null;
+      completion.cancel();
+    };
+  }, []);
+  const finishCeremony = () => completionRef.current?.complete();
+
   // Enter/Espaço pula a cerimônia; a saída tem um fade rápido
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -498,7 +515,7 @@ export function PrematchCeremony({
         <hemisphereLight args={["#8fb4ff", "#0a0f0a", 0.65]} />
         <directionalLight position={[18, 30, 14]} intensity={1.6} color="#fff2d9" />
         <directionalLight position={[-14, 22, -10]} intensity={0.5} color="#9fc0ff" />
-        <Director onBeat={setBeat} onDone={onDone} />
+        <Director onBeat={setBeat} onDone={finishCeremony} />
         {beat === 0 ? <StadiumExterior club={home} /> : null}
         {beat === 1 ? <Walkout home={home} away={away} /> : null}
         {beat === 2 ? <Lineup home={home} away={away} /> : null}
@@ -547,7 +564,7 @@ export function PrematchCeremony({
         </div>
         <div className="mt-3 flex justify-center gap-2">
           <button
-            onClick={onDone}
+            onClick={finishCeremony}
             className="rounded-full border border-white/20 bg-black/70 px-4 py-2 text-xs uppercase tracking-widest text-white/85 backdrop-blur"
           >
             {t("ceremony.skip")}
@@ -555,7 +572,7 @@ export function PrematchCeremony({
           <button
             onClick={() => {
               storeCeremony(false);
-              onDone();
+              finishCeremony();
             }}
             className="rounded-full border border-white/10 bg-black/60 px-4 py-2 text-xs uppercase tracking-widest text-white/60 backdrop-blur"
           >
