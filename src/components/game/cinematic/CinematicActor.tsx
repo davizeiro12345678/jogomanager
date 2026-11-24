@@ -149,6 +149,7 @@ export function CinematicActor({
         mats,
         hi: detail.portrait,
         portrait: detail.portrait,
+        headSampling: detail.headSampling,
         segs: { radial: detail.radial, cap: 4 },
         jerseyInk: color,
         handR: p.handR,
@@ -160,7 +161,7 @@ export function CinematicActor({
       { mergeLods: true },
     );
     return detail.portrait ? built : compactCinematicSkin(built);
-  }, [p, look, mats, detail.portrait, detail.radial, color, staff, formal]);
+  }, [p, look, mats, detail.portrait, detail.headSampling, detail.radial, color, staff, formal]);
   const cloth = useMemo(
     () => new AthleteCloth(skin, p, detail.portrait),
     [skin, p, detail.portrait],

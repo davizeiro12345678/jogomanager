@@ -919,12 +919,11 @@ export function buildSculptedFace(
   mats: PlayerMaterials,
   hi: boolean,
   portrait = true,
+  sampling?: { columns: number; rows: number },
 ) {
-  const headSampling = hi
-    ? portrait
-      ? { columns: 136, rows: 102 }
-      : { columns: 80, rows: 68 }
-    : undefined;
+  const headSampling =
+    sampling ??
+    (hi ? (portrait ? { columns: 136, rows: 102 } : { columns: 80, rows: 68 }) : undefined);
   const head: RigPart[] = [
     rigPart(sculptedHead(P, look.seed, hi, portrait, headSampling), mats.skin, undefined, true),
   ];

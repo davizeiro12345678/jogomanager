@@ -14,11 +14,14 @@ export function cinematicDelta(raw: number, stopped: boolean): number {
  * one or two narrative subjects a portrait mesh and articulated hands from
  * `media` upward. Extras retain the compact mesh at every tier.
  */
+const LOW_NARRATIVE_HEAD = Object.freeze({ columns: 32, rows: 36 });
+
 export function cinematicDetail(quality: string, hero: boolean) {
   const portrait = hero && quality !== "baixa";
   return {
     high: quality === "alta" && hero,
     portrait,
+    headSampling: hero && quality === "baixa" ? LOW_NARRATIVE_HEAD : undefined,
     radial: hero ? (quality === "alta" ? 16 : quality === "media" ? 12 : 8) : 8,
   };
 }
