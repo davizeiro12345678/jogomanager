@@ -18,7 +18,7 @@ type TurnstileClient = {
 const TURNSTILE_SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 // This is the public site key for the existing JogoManager Auth widget,
 // not its secret. A different hostname must configure its own public key.
-const SITE_KEY = import.meta.env.VITE_AUTH_TURNSTILE_SITE_KEY || "0x4AAAAAAFtXRJproFio6FVc";
+const SITE_KEY = import.meta.env["VITE_AUTH_TURNSTILE_SITE_KEY"] || "0x4AAAAAAFtXRJproFio6FVc";
 
 export function AuthTurnstile({ onToken }: { onToken: (token: string | null) => void }) {
   const { t } = useT();
@@ -61,7 +61,7 @@ export function AuthTurnstile({ onToken }: { onToken: (token: string | null) => 
     let script = document.querySelector<HTMLScriptElement>("script[data-manager-auth-turnstile]");
     if (!script) {
       script = document.createElement("script");
-      script.dataset.managerAuthTurnstile = "true";
+      script.dataset["managerAuthTurnstile"] = "true";
       script.src = TURNSTILE_SCRIPT;
       script.async = true;
       script.defer = true;

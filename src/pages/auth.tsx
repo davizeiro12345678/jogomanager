@@ -227,7 +227,7 @@ export function AuthPage() {
             options: {
               emailRedirectTo: callback(),
               shouldCreateUser: false,
-              captchaToken: captchaToken ?? undefined,
+              ...(captchaToken ? { captchaToken } : {}),
             },
           });
           if (result.error) throw result.error;
@@ -240,7 +240,7 @@ export function AuthPage() {
       } else if (mode === "reset") {
         const result = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: callback(true),
-          captchaToken: captchaToken ?? undefined,
+          ...(captchaToken ? { captchaToken } : {}),
         });
         if (result.error) throw result.error;
         setNotice(
@@ -260,7 +260,7 @@ export function AuthPage() {
             ? await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password,
-                options: { captchaToken: captchaToken ?? undefined },
+                options: { ...(captchaToken ? { captchaToken } : {}) },
               })
             : await supabase.auth.signUp({
                 email: email.trim(),
@@ -268,7 +268,7 @@ export function AuthPage() {
                 options: {
                   emailRedirectTo: callback(),
                   data: { display_name: name.trim() },
-                  captchaToken: captchaToken ?? undefined,
+                  ...(captchaToken ? { captchaToken } : {}),
                 },
               });
         if (result.error) throw result.error;
@@ -399,7 +399,7 @@ export function AuthPage() {
         email: email.trim(),
         options: {
           emailRedirectTo: callback(),
-          captchaToken: captchaToken ?? undefined,
+          ...(captchaToken ? { captchaToken } : {}),
         },
       });
       if (result.error) throw result.error;
