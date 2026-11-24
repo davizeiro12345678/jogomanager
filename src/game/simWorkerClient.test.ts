@@ -51,7 +51,7 @@ class TestWorker {
 
 const controllers: Array<ReturnType<typeof createLiveMatchController>> = [];
 
-function createController() {
+function createController(ready = true) {
   const controller = createLiveMatchController({
     home: buildTeamSetup("fla"),
     away: buildTeamSetup("pal"),
@@ -60,7 +60,9 @@ function createController() {
     onFinished: () => undefined,
   });
   controllers.push(controller);
-  return { controller, worker: TestWorker.instances.at(-1)! };
+  const worker = TestWorker.instances.at(-1)!;
+  if (ready) worker.emitMessage({ id: 1, ok: true, type: "ready" });
+  return { controller, worker };
 }
 
 beforeEach(() => {
@@ -420,4 +422,38 @@ describe("live match worker lifecycle", () => {
     expect(samples[1]?.intervalMs).not.toBeNull();
     expect(controller.view.time).toBe(sim.time);
   });
+});
+
+describe("live startup recovery", () => {
+  it("recovers when the start command is rejected instead of leaving the match at zero", async () => {
+    const { controller, worker } = createController(false);
+    worker.emitMessage({
+      id: 1,
+      ok: false,
+      code: "command-failed",
+      error: "Falha de inicialização",
+    });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(worker.terminate).toHaveBeenCalledTimes(1);
+    expect(controller.isWorker).toBe(false);
+    expect(controller.view.time).toBeGreaterThan(0);
+  });
+});
+
+it("bounds silent startup and preserves the selected speed during recovery", async () => {
+  const { controller, worker } = createController(false);
+  controller.setSpeed(8);
+  await vi.advanceTimersByTimeAsync(14999);
+  expect(controller.isWorker).toBe(true);
+  await vi.advanceTimersByTimeAsync(501);
+  expect(worker.terminate).toHaveBeenCalledTimes(1);
+  expect(controller.isWorker).toBe(false);
+  expect(controller.view.time).toBeGreaterThan(0);
+});
+
+it("clears the startup deadline on disposal", () => {
+  const { controller, worker } = createController(false);
+  controller.dispose();
+  expect(vi.getTimerCount()).toBe(0);
+  expect(worker.terminate).toHaveBeenCalledTimes(1);
 });
