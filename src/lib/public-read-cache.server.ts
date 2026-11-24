@@ -1,3 +1,6 @@
+import { isFootballWorkerRuntime } from "./football-public-env.server";
+import { createWorkerPublicCache } from "./worker-public-cache.server";
+
 type CacheOptions = {
   ttlMs: number;
   maxEntries: number;
@@ -138,10 +141,18 @@ const publicCaches = {
   digest: createPublicReadCache<unknown>({ ttlMs: 5 * 60_000, maxEntries: 1 }),
 };
 
+const workerAssets = createWorkerPublicCache<unknown>({
+  ttlMs: 60 * 60_000,
+  maxEntries: 1,
+  staleIfErrorMs: 24 * 60 * 60_000,
+});
+
 export function cachedPublicRead<T>(
   namespace: keyof typeof publicCaches,
   key: string,
   load: () => Promise<T>,
 ): Promise<T> {
+  if (namespace === "assets" && isFootballWorkerRuntime())
+    return workerAssets.get(key, load) as Promise<T>;
   return publicCaches[namespace].get(key, load) as Promise<T>;
 }
