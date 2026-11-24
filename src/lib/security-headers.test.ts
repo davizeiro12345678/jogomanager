@@ -300,3 +300,22 @@ describe("outer response protection", () => {
     expect(renderErrorPage()).not.toContain("onclick=");
   });
 });
+
+it("prevents retired Lovable sites from framing the production application", () => {
+  for (const path of ["/", "/auth", "/checkout/return"]) {
+    const response = secureResponse(
+      new Response("<html></html>", {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      }),
+      new Request("https://jogomanager.com" + path),
+      createCspNonce(),
+    );
+    for (const policyName of ["content-security-policy", "content-security-policy-report-only"]) {
+      const policy = response.headers.get(policyName) ?? "";
+      const frame = policy
+        .split("; ")
+        .find((directive) => directive.startsWith("frame-ancestors "));
+      expect(frame).toBe("frame-ancestors 'self'");
+    }
+  }
+});
