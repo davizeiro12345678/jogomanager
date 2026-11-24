@@ -5,6 +5,8 @@ import { reportSilent } from "./silent-errors";
 
 const CACHE_KEY = "manager3d.official.v3";
 const TTL = 1000 * 60 * 60 * 24;
+const MAX_STALE_AGE = 7 * TTL;
+type CatalogEntry = { at: number; data: OfficialAssets };
 
 function stringRecord(value: unknown): value is Record<string, string> {
   return (
@@ -24,7 +26,7 @@ function reportCacheError(error: unknown, phase: "read" | "write") {
   });
 }
 
-async function readCache(): Promise<OfficialAssets | null> {
+async function readCache(): Promise<CatalogEntry | null> {
   let parsed: { at: number; data: OfficialAssets } | null | undefined;
   try {
     parsed = await get(CACHE_KEY);
@@ -38,11 +40,11 @@ async function readCache(): Promise<OfficialAssets | null> {
     return parsed &&
       Number.isFinite(parsed.at) &&
       age >= 0 &&
-      age <= TTL &&
+      age <= MAX_STALE_AGE &&
       parsed.data &&
       stringRecord(parsed.data.crests) &&
       stringRecord(parsed.data.kits)
-      ? parsed.data
+      ? parsed
       : null;
   } catch (error) {
     reportCacheError(error, "read");
@@ -52,15 +54,31 @@ async function readCache(): Promise<OfficialAssets | null> {
 
 export async function readOrFetchOfficialAssets(): Promise<OfficialAssets> {
   const cached = await readCache();
-  if (cached) return cached;
+  if (cached && Date.now() - cached.at <= TTL) return cached.data;
 
   // These URLs are public. Never send a career/auth cookie with this projection.
-  const response = await fetch("/api/public/football-assets", { credentials: "omit" });
-  if (!response.ok) throw new Error("Catálogo de escudos indisponível.");
-  const data: Partial<OfficialAssets> | null = await response.json();
-  if (!data || !stringRecord(data.crests) || !stringRecord(data.kits))
-    throw new Error("Catálogo de escudos inválido.");
-  const assets: OfficialAssets = { crests: data.crests, kits: data.kits };
+  let assets: OfficialAssets;
+  try {
+    const response = await fetch("/api/public/football-assets", { credentials: "omit" });
+    if (!response.ok) throw new Error("Catálogo de escudos indisponível.");
+    const data: Partial<OfficialAssets> | null = await response.json();
+    if (!data || !stringRecord(data.crests) || !stringRecord(data.kits))
+      throw new Error("Catálogo de escudos inválido.");
+    assets = { crests: data.crests, kits: data.kits };
+  } catch (error) {
+    // Keep last known public assets available during short outages. Never
+    // extend the saved timestamp or use an expired/private catalogue.
+    if (cached && Date.now() - cached.at <= MAX_STALE_AGE) {
+      reportSilent("assets.cache", error, {
+        classification: "degradation",
+        feature: "official-assets",
+        phase: "read",
+        dedupeKey: "official-assets-stale",
+      });
+      return cached.data;
+    }
+    throw error;
+  }
   if (Object.keys(assets.crests).length || Object.keys(assets.kits).length) {
     // Publishing images never waits on persistence or performs a synchronous
     // JSON/localStorage write of the full catalogue.
