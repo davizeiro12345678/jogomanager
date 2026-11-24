@@ -14,6 +14,7 @@ import {
 } from "@/lib/store-products.server";
 import { assertPaymentsConfigured, PAYMENTS_UNAVAILABLE } from "@/lib/payments-config.server";
 import type { StripeEnv } from "@/lib/stripe.server";
+import { recoverStarterCheckout } from "@/lib/starter-checkout.server";
 
 export type CheckoutSessionResult =
   | { clientSecret: string; productKey: string; priceCents: number; currency: string }
@@ -99,19 +100,17 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       // `store_products` selects the current active SKU first; Stripe only
       // confirms that its server-side amount and currency still match it.
       const product = await getServerStoreProduct(getStoreServiceSupabase(), data.productKey);
-      // The starter pack is a one-time offer per account.
-      if (product.key === "starter_bundle") {
-        const { count } = await getStoreServiceSupabase()
-          .from("user_purchases")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", context.userId)
-          .eq("product_key", "starter_bundle")
-          .in("status", ["completed", "pending"]);
-        if ((count ?? 0) > 0)
-          throw new Error("O Pacote de estreia só pode ser comprado uma vez por conta.");
-      }
       const stripe = createStripeClient(environment);
       const stripePrice = await resolveValidatedStripePrice(stripe, product);
+      if (product.key === "starter_bundle") {
+        const previous = await recoverStarterCheckout(
+          getStoreServiceSupabase(),
+          stripe,
+          context.userId,
+          environment,
+        );
+        if (previous) return previous;
+      }
       const isRecurring = stripePrice.type === "recurring";
 
       const email = typeof context.claims?.email === "string" ? context.claims.email : undefined;
@@ -159,7 +158,14 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
           contents_snapshot:
             product.contents as unknown as import("@/integrations/supabase/types").Json,
         });
-      if (ownerError) throw new Error("Não foi possível registrar a compra.");
+      if (ownerError) {
+        // A concurrent starter checkout can lose the unique slot. Its secret
+        // is never returned to the browser; expire that unused session.
+        if (product.key === "starter_bundle") {
+          await stripe.checkout.sessions.expire(session.id).catch(() => undefined);
+        }
+        throw new Error("Não foi possível registrar a compra.");
+      }
 
       return {
         clientSecret: session.client_secret ?? "",
