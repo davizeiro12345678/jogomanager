@@ -38,7 +38,12 @@ class LoopbackSocket implements AuthorityClientSocket {
       bufferedAmount: 0,
       send: (raw: string) => {
         queueMicrotask(() => {
-          if (this.readyState === 1) this.onmessage?.({ data: raw } as MessageEvent);
+          if (this.readyState === 1)
+            this.onmessage?.({
+              data: raw,
+              isTrusted: true,
+              origin: "wss://match.jogomanager.com",
+            } as MessageEvent);
         });
       },
       close: (code: number) => this.close(code),
