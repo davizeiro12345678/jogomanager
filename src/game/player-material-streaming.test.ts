@@ -212,3 +212,26 @@ it("streams the validated replacement hair normal without requesting the legacy 
   expect(stream.requested.has("hairNormal")).toBe(false);
   release();
 });
+
+it("shares the new pore map across skin tones without replacing materials or changing pigmentation", () => {
+  const a = lookFor("new-pore-map-a", "MF");
+  const b = lookFor("new-pore-map-b", "DF");
+  const first = playerMaterials(a, kit, new THREE.Texture(), "alta");
+  const second = playerMaterials(b, kit, new THREE.Texture(), "alta");
+  const releaseA = retainPlayerMaterials(first);
+  const releaseB = retainPlayerMaterials(second);
+  const skinA = first.skin as THREE.MeshStandardMaterial;
+  const skinB = second.skin as THREE.MeshStandardMaterial;
+  const colors = [skinA.color.getHexString(), skinB.color.getHexString()];
+  const version = skinA.version;
+  const pores = new THREE.Texture();
+  arrive("skinDetailNormal", pores);
+  expect(skinA.normalMap).toBe(pores);
+  expect(skinB.normalMap).toBe(pores);
+  expect(skinA.version).toBe(version);
+  expect([skinA.color.getHexString(), skinB.color.getHexString()]).toEqual(colors);
+  arrive(detailTextureNames(a, kit)[5], new THREE.Texture());
+  expect(skinA.normalMap).toBe(pores);
+  releaseA();
+  releaseB();
+});

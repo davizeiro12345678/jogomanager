@@ -35,6 +35,7 @@ function useConcrete(color = "#6d747b", repeat = 6, high = false) {
     void textureRevision;
     const compressedMap = high ? ktx2("concreteAlbedo") : null;
     const compressedRough = high ? ktx2("concreteRough") : null;
+    const compressedNormal = high ? ktx2("concreteDetailNormal") : null;
     const map =
       compressedMap ??
       (!high || needsKtx2ProceduralFallback("concreteAlbedo") ? concreteAlbedo() : null);
@@ -60,12 +61,20 @@ function useConcrete(color = "#6d747b", repeat = 6, high = false) {
       t.repeat.set(repeat, repeat * 0.4);
       m.roughnessMap = t;
     }
+    if (compressedNormal) {
+      const t = compressedNormal.clone();
+      t.repeat.set(repeat, repeat * 0.4);
+      t.needsUpdate = true;
+      m.normalMap = t;
+      m.normalScale.set(0.24, 0.24);
+    }
     return m;
   }, [color, repeat, high, textureRevision]);
   useEffect(
     () => () => {
       material.map?.dispose();
       material.roughnessMap?.dispose();
+      material.normalMap?.dispose();
       material.dispose();
     },
     [material],

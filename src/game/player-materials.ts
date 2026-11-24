@@ -238,7 +238,10 @@ function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNa
   return {
     weave,
     rib: hi ? compressedOrFallback(socksNormal, FLAT_NORMAL, sockRibNormal, "sockNormal") : null,
-    pores: hi ? compressedOrFallback(skinNormal, FLAT_NORMAL, skinPoreNormal, "skinNormal") : null,
+    pores: hi
+      ? (ktx2("skinDetailNormal") ??
+        compressedOrFallback(skinNormal, FLAT_NORMAL, skinPoreNormal, "skinNormal"))
+      : null,
     grain,
     shorts: hi ? compressedOrFallback(shortsNormal, FLAT_NORMAL, shortsPanelNormal) : null,
     shortsRough: hi ? garmentRoughness("shorts") : null,

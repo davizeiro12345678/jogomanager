@@ -7,12 +7,8 @@ import { createPitchSurfaceMaterial } from "@/game/pitch-material";
 import { resolveRuntimeSceneBudget } from "@/game/runtime-scene-budget";
 import type { SimView } from "@/game/sim-contracts";
 import { FIELD_X, FIELD_Z } from "@/game/sim-rules";
-import {
-  ktx2,
-  needsKtx2ProceduralFallback,
-  requestKtx2,
-  useKtx2Revision,
-} from "@/game/textures/ktx2";
+import { ktx2, needsKtx2ProceduralFallback, useKtx2Revision } from "@/game/textures/ktx2";
+import { pitchTextureSelection } from "@/game/textures/pitch-texture-selection";
 import { useResolvedVisual, useVisual } from "@/game/visual-settings";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
@@ -157,38 +153,20 @@ export function Pitch({
   webgl2: boolean;
 }) {
   const textureRevision = useKtx2Revision();
-  // The precompiled albedo is the default checker cut; retain procedural maps
-  // for custom mowing patterns and all low-end/offline devices.
   const compressed = quality === "alta";
-  const grassVariant =
-    mow === "stripes" || mow === "diagonal" || mow === "wide"
-      ? (`grass_${mow}_albedo` as const)
-      : "grassAlbedo";
-  useEffect(() => {
-    if (compressed && grassVariant !== "grassAlbedo") requestKtx2([grassVariant]);
-  }, [compressed, grassVariant]);
+  const { albedo: albedoName, roughness: roughnessName } = pitchTextureSelection(mow, compressed);
   const tex = useMemo(() => {
-    // A newly decoded map invalidates the procedural fallback.
     void textureRevision;
-    const compressedMap =
-      compressed && (mow === "checker" || mow === "stripes" || mow === "diagonal" || mow === "wide")
-        ? ktx2(grassVariant)
-        : null;
-    // The 1024px procedural pitch is a main-thread startup spike. The solid
-    // material remains readable while an immutable KTX2 request is live.
-    return (
-      compressedMap ??
-      (!compressed || needsKtx2ProceduralFallback(grassVariant) ? grassAlbedo(mow) : null)
-    );
-  }, [mow, compressed, grassVariant, textureRevision]);
+    if (!albedoName) return grassAlbedo(mow);
+    const map = ktx2(albedoName);
+    return map ?? (needsKtx2ProceduralFallback(albedoName) ? grassAlbedo(mow) : null);
+  }, [mow, albedoName, textureRevision]);
   const rough = useMemo(() => {
     void textureRevision;
-    const compressedMap = compressed ? ktx2("grassRough") : null;
-    return (
-      compressedMap ??
-      (!compressed || needsKtx2ProceduralFallback("grassRough") ? grassRoughness(mow) : null)
-    );
-  }, [mow, compressed, textureRevision]);
+    if (!roughnessName) return grassRoughness(mow);
+    const map = ktx2(roughnessName);
+    return map ?? (needsKtx2ProceduralFallback(roughnessName) ? grassRoughness(mow) : null);
+  }, [mow, roughnessName, textureRevision]);
   useEffect(() => retainGrassMaps(tex, rough), [tex, rough]);
   // Fine periodic detail, not broad height fields that become blue blotches.
   const norm = useMemo(() => {

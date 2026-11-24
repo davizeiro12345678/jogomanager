@@ -18,3 +18,8 @@
   Content-Type: image/ktx2
   Cache-Control: public, max-age=31536000, immutable
   Cross-Origin-Resource-Policy: same-site
+
+/textures/surface-v1/*
+  Content-Type: image/ktx2
+  Cache-Control: public, max-age=31536000, immutable
+  Cross-Origin-Resource-Policy: same-site

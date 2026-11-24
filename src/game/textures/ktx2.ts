@@ -41,11 +41,9 @@ import skinNormalAsset from "@/assets/textures/skin_normal.ktx2.asset.json";
 import sockNormalAsset from "@/assets/textures/sock_normal.ktx2.asset.json";
 import sweatMaskAsset from "@/assets/textures/sweat_mask.ktx2.asset.json";
 import sweatNormalAsset from "@/assets/textures/sweat_normal.ktx2.asset.json";
-import grassAlbedoAsset from "@/assets/textures/grass_albedo.ktx2.asset.json";
 import grassNormalAsset from "@/assets/textures/grass_normal.ktx2.asset.json";
 import grassRoughAsset from "@/assets/textures/grass_rough.ktx2.asset.json";
 import concreteAlbedoAsset from "@/assets/textures/concrete_albedo.ktx2.asset.json";
-import concreteRoughAsset from "@/assets/textures/concrete_rough.ktx2.asset.json";
 import netMaskAsset from "@/assets/textures/net_mask.ktx2.asset.json";
 
 import asset2 from "@/assets/textures/jersey_stripes_normal.ktx2.asset.json";
@@ -80,6 +78,7 @@ export type Ktx2Name =
   | "fiberNormal"
   | "fiberRough"
   | "skinNormal"
+  | "skinDetailNormal"
   | "sweatNormal"
   | "sweatMask"
   | "hairNormal"
@@ -97,6 +96,7 @@ export type StadiumKtx2Name =
   | "grassDetailNormal"
   | "grassDetailRough"
   | "concreteAlbedo"
+  | "concreteDetailNormal"
   | "concreteRough"
   | "netMask";
 export type DetailKtx2Name =
@@ -139,6 +139,11 @@ const SOURCES: Record<
   fiberNormal: { url: fiberNormalAsset.url, repeat: 6 },
   fiberRough: { url: fiberRoughAsset.url, repeat: 6 },
   skinNormal: { url: skinNormalAsset.url, repeat: 4 },
+  skinDetailNormal: {
+    url: "/textures/surface-v1/skin-pore-normal.ktx2",
+    repeat: 3,
+    fineDetail: true,
+  },
   sweatNormal: { url: sweatNormalAsset.url, repeat: 3 },
   sweatMask: { url: sweatMaskAsset.url, repeat: 3 },
   hairNormal: { url: hairNormalAsset.url, repeat: 3 },
@@ -149,7 +154,7 @@ const SOURCES: Record<
   shinNormal: { url: shinNormalAsset.url, repeat: 2 },
   shinRough: { url: shinRoughAsset.url, repeat: 2 },
   sockNormal: { url: sockNormalAsset.url, repeat: 4 },
-  grassAlbedo: { url: grassAlbedoAsset.url, repeat: 1, color: true },
+  grassAlbedo: { url: "/textures/surface-v1/grass-checker-albedo.ktx2", repeat: 1, color: true },
   grassNormal: { url: grassNormalAsset.url, repeat: 6 },
   grassDetailNormal: {
     url: "/textures/detail-v1/turf-normal.ktx2",
@@ -163,7 +168,8 @@ const SOURCES: Record<
   },
   grassRough: { url: grassRoughAsset.url, repeat: 6 },
   concreteAlbedo: { url: concreteAlbedoAsset.url, repeat: 1, color: true },
-  concreteRough: { url: concreteRoughAsset.url, repeat: 1 },
+  concreteRough: { url: "/textures/surface-v1/concrete-rough.ktx2", repeat: 1 },
+  concreteDetailNormal: { url: "/textures/surface-v1/concrete-normal.ktx2", repeat: 1 },
   netMask: { url: netMaskAsset.url, repeat: 1 },
   jersey_solid_normal: {
     url: "/textures/detail-v1/fabric-normal.ktx2",
