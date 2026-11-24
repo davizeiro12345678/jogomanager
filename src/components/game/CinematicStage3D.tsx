@@ -40,6 +40,7 @@ import {
   type CinematicSet,
 } from "@/game/cinematic-blocking";
 import { hashSeed } from "@/game/rng";
+import { cinematicArrivalLighting } from "@/game/cinematic-arrival-lighting";
 
 import type { CinematicCue } from "@/game/cinematic-cue";
 import { CinematicAtmosphere } from "./cinematic/CinematicAtmosphere";
@@ -179,7 +180,8 @@ function Stage({
   const tint = LINE_TINT[light];
   const warm = light === "neutra" ? base : tint.sky;
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
-  const amb = (indoor ? 0.34 : 0.5) * tint.amb;
+  const arrivalLight = cinematicArrivalLighting(kind, art);
+  const amb = (arrivalLight?.ambient ?? (indoor ? 0.34 : 0.5)) * tint.amb;
   // Existing fixtures retain their own detailed rigs. Every other authored
   // speaker receives one semantic overlay, shared by the camera resolver.
   const stagedActor = cinematicStageActorFor(art, speaker, festive);
@@ -212,18 +214,24 @@ function Stage({
     <>
       <color
         attach="background"
-        args={[art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#101b29"]}
+        args={[
+          arrivalLight?.sky ?? (art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#101b29"),
+        ]}
       />
       <fog
         attach="fog"
         args={[
-          art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#0a1310",
+          arrivalLight?.fog ?? (art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#0a1310"),
           indoor ? 8 : 22,
           indoor ? 34 : 70,
         ]}
       />
       <ambientLight intensity={amb} color={warm} />
-      <hemisphereLight intensity={indoor ? 0.4 : 0.45} color="#dce8f4" groundColor="#30333a" />
+      <hemisphereLight
+        intensity={arrivalLight?.hemisphere ?? (indoor ? 0.4 : 0.45)}
+        color="#dce8f4"
+        groundColor={arrivalLight?.hemisphereGround ?? "#30333a"}
+      />
       {indoor ? (
         <>
           <directionalLight position={[0, 2.5, 6]} intensity={0.38} color="#e8f0f7" />
@@ -237,8 +245,8 @@ function Stage({
       <directionalLight
         castShadow
         position={[5, 11, 6]}
-        intensity={indoor ? 1.55 : 2.6}
-        color={light === "neutra" ? "#fff8f2" : warm}
+        intensity={arrivalLight?.keyIntensity ?? (indoor ? 1.55 : 2.6)}
+        color={arrivalLight?.keyColor ?? (light === "neutra" ? "#fff8f2" : warm)}
         shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
