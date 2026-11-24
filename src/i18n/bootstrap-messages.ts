@@ -101,8 +101,7 @@ export const en: Record<string, string> = {
   "shell.more": "More",
   "common.loading": "Loading…",
   "auth.securityCheck": "Security verification",
-  "auth.securityLoadError":
-    "Security verification could not load. Refresh the page and try again.",
+  "auth.securityLoadError": "Security verification could not load. Refresh the page and try again.",
 };
 /** Default Portuguese and English work offline without fetching 96 other packs. */
 export function translateBootstrap(lang: Lang, key: string): string {
