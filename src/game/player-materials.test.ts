@@ -101,3 +101,26 @@ it("pairs seeded leather, synthetic and knit detail maps with their physical fin
     (set.jersey as THREE.MeshPhysicalMaterial).sheen,
   );
 });
+
+it("uses stronger fibre relief than skin pores and keeps hair highlights restrained", () => {
+  const look = { ...lookFor("material-detail", "MF"), sweat: 0 };
+  const kit: Kit = {
+    base: "#cc2028",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const set = playerMaterials(look, kit, null, "alta");
+  const skin = set.skin as THREE.MeshPhysicalMaterial;
+  const shirt = set.jersey as THREE.MeshPhysicalMaterial;
+  const sleeve = set.jerseyPlain as THREE.MeshPhysicalMaterial;
+  const hair = set.hair as THREE.MeshPhysicalMaterial;
+  expect(shirt.normalScale.x).toBeGreaterThanOrEqual(0.3);
+  expect(sleeve.normalScale.equals(shirt.normalScale)).toBe(true);
+  expect(skin.normalScale.x).toBeGreaterThanOrEqual(0.14);
+  expect(skin.normalScale.x).toBeLessThan(shirt.normalScale.x);
+  expect(hair.normalScale.y).toBeGreaterThanOrEqual(0.23);
+  expect(hair.specularIntensity).toBeLessThanOrEqual(0.1);
+  expect(shirt.sheen).toBeLessThan(0.35);
+});

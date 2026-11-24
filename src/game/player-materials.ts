@@ -388,7 +388,7 @@ export function playerMaterials(
           roughness: 0.82 - sweat * 0.12,
           normalMap: pores,
           roughnessMap: skinRough,
-          normalScale: new THREE.Vector2(0.11, 0.11),
+          normalScale: new THREE.Vector2(0.15, 0.15),
           clearcoat: 0.025 + sweat * 0.09,
           clearcoatRoughness: 0.62 - sweat * 0.17,
           // gotas de suor: só o verniz recebe o relevo, a pele continua macia
@@ -421,7 +421,7 @@ export function playerMaterials(
           map: tex,
           normalMap: weave,
           roughnessMap: jerseyRough,
-          normalScale: new THREE.Vector2(0.22, 0.22),
+          normalScale: new THREE.Vector2(0.31, 0.31),
           roughness: 0.94 - sweat * 0.14,
           envMapIntensity: 0.55,
           clearcoat: sweat * 0.16,
@@ -444,7 +444,7 @@ export function playerMaterials(
       roughness: 0.98 - sweat * 0.1,
       normalMap: weave,
       roughnessMap: jerseyRough,
-      normalScale: new THREE.Vector2(0.22, 0.22),
+      normalScale: new THREE.Vector2(hi ? 0.31 : 0.22, hi ? 0.31 : 0.22),
       envMapIntensity: 0.55,
       ...(hi
         ? {
@@ -509,7 +509,7 @@ export function playerMaterials(
           // plastic reflection, with no extra material or geometry.
           normalMap: hairNormal,
           roughnessMap: hairRough,
-          normalScale: new THREE.Vector2(0.11, 0.18),
+          normalScale: new THREE.Vector2(0.14, 0.24),
           metalness: 0,
           clearcoat: 0,
           clearcoatRoughness: 0.85,
