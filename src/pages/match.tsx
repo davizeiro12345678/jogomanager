@@ -53,6 +53,7 @@ import { Cutscene } from "@/components/game/Cutscene";
 import { useCinematicPreload } from "@/components/game/cinematic/cinematic-loading";
 
 import { ceremonyEnabled } from "@/game/ceremony-prefs";
+import { shouldPauseMatch } from "@/game/match-visibility-pause";
 
 import { POSTMATCH_SCENE_IDS, PREMATCH_SCENE_IDS } from "@/content/cutscenes";
 
@@ -440,7 +441,8 @@ function LiveMatch({
       onError: (message) => toast.warning(message),
     });
     controllerRef.current = controller;
-    const onVisibility = () => controller.pause(document.hidden || pausedRef.current);
+    const onVisibility = () =>
+      controller.pause(shouldPauseMatch(pausedRef.current, false, false, false, document.hidden));
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
@@ -450,7 +452,10 @@ function LiveMatch({
   }, [lineupError, setups, sim]);
 
   useEffect(
-    () => controllerRef.current?.pause(paused || introActive || ceremonyActive || halfHeld),
+    () =>
+      controllerRef.current?.pause(
+        shouldPauseMatch(paused, introActive, ceremonyActive, halfHeld, document.hidden),
+      ),
     [paused, introActive, ceremonyActive, halfHeld],
   );
 
@@ -644,6 +649,7 @@ function LiveMatch({
                   onClick={() => {
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
+                    setPaused(false);
                   }}
                   className="cutscene-control px-3 text-xs"
                 >
@@ -655,6 +661,7 @@ function LiveMatch({
                     storePrematchIntro(false);
                     setIntroStep(PREMATCH_SCENE_IDS.length);
                     setCeremony(false);
+                    setPaused(false);
                   }}
                   className="cutscene-control px-3 text-xs"
                 >
@@ -672,7 +679,10 @@ function LiveMatch({
           <PrematchCeremony
             home={setups.home}
             away={setups.away}
-            onDone={() => setCeremony(false)}
+            onDone={() => {
+              setCeremony(false);
+              setPaused(false);
+            }}
           />
         </Suspense>
       ) : null}
