@@ -190,13 +190,16 @@ export function Pitch({
     );
   }, [mow, compressed, textureRevision]);
   useEffect(() => retainGrassMaps(tex, rough), [tex, rough]);
-  // Keep broad relief out of the field normals; it reads as cool blue blotches
-  // from the high broadcast camera. The fine procedural blade detail remains.
-  const norm = useMemo(() => (quality === "baixa" ? null : grassNormal(mow)), [quality, mow]);
-  const microRoughness = useMemo(
-    () => (quality === "alta" ? grassMicroRoughness() : null),
-    [quality],
-  );
+  // Fine periodic detail, not broad height fields that become blue blotches.
+  const norm = useMemo(() => {
+    void textureRevision;
+    if (quality === "baixa") return null;
+    return (compressed ? ktx2("grassDetailNormal") : null) ?? grassNormal(mow);
+  }, [quality, compressed, mow, textureRevision]);
+  const microRoughness = useMemo(() => {
+    void textureRevision;
+    return compressed ? (ktx2("grassDetailRough") ?? grassMicroRoughness()) : null;
+  }, [compressed, textureRevision]);
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 0.42 : 0.28, quality === "alta" ? 0.42 : 0.28),
     [quality],

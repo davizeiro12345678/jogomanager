@@ -13,3 +13,8 @@
 /__l5e/*
   Cross-Origin-Resource-Policy: same-site
   Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(self "https://js.stripe.com"), usb=()
+
+/textures/detail-v1/*
+  Content-Type: image/ktx2
+  Cache-Control: public, max-age=31536000, immutable
+  Cross-Origin-Resource-Policy: same-site

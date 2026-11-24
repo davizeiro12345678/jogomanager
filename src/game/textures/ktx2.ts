@@ -48,8 +48,6 @@ import concreteAlbedoAsset from "@/assets/textures/concrete_albedo.ktx2.asset.js
 import concreteRoughAsset from "@/assets/textures/concrete_rough.ktx2.asset.json";
 import netMaskAsset from "@/assets/textures/net_mask.ktx2.asset.json";
 
-import asset0 from "@/assets/textures/jersey_solid_normal.ktx2.asset.json";
-import asset1 from "@/assets/textures/jersey_solid_rough.ktx2.asset.json";
 import asset2 from "@/assets/textures/jersey_stripes_normal.ktx2.asset.json";
 import asset3 from "@/assets/textures/jersey_stripes_rough.ktx2.asset.json";
 import asset4 from "@/assets/textures/jersey_pin_normal.ktx2.asset.json";
@@ -85,6 +83,7 @@ export type Ktx2Name =
   | "sweatNormal"
   | "sweatMask"
   | "hairNormal"
+  | "hairDetailNormal"
   | "hairRough"
   | "bootNormal"
   | "bootRough"
@@ -92,7 +91,14 @@ export type Ktx2Name =
   | "shinRough"
   | "sockNormal";
 export type StadiumKtx2Name =
-  "grassAlbedo" | "grassNormal" | "grassRough" | "concreteAlbedo" | "concreteRough" | "netMask";
+  | "grassAlbedo"
+  | "grassNormal"
+  | "grassRough"
+  | "grassDetailNormal"
+  | "grassDetailRough"
+  | "concreteAlbedo"
+  | "concreteRough"
+  | "netMask";
 export type DetailKtx2Name =
   | "jersey_solid_normal"
   | "jersey_solid_rough"
@@ -126,13 +132,17 @@ export type DetailKtx2Name =
 export type TextureName = Ktx2Name | StadiumKtx2Name | DetailKtx2Name;
 
 /** repetição de cada mapa sobre a malha do jogador */
-const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolean }> = {
+const SOURCES: Record<
+  TextureName,
+  { url: string; repeat: number | readonly [number, number]; color?: boolean; fineDetail?: boolean }
+> = {
   fiberNormal: { url: fiberNormalAsset.url, repeat: 6 },
   fiberRough: { url: fiberRoughAsset.url, repeat: 6 },
   skinNormal: { url: skinNormalAsset.url, repeat: 4 },
   sweatNormal: { url: sweatNormalAsset.url, repeat: 3 },
   sweatMask: { url: sweatMaskAsset.url, repeat: 3 },
   hairNormal: { url: hairNormalAsset.url, repeat: 3 },
+  hairDetailNormal: { url: "/textures/detail-v1/hair-normal.ktx2", repeat: 2, fineDetail: true },
   hairRough: { url: hairRoughAsset.url, repeat: 3 },
   bootNormal: { url: bootNormalAsset.url, repeat: 3 },
   bootRough: { url: bootRoughAsset.url, repeat: 3 },
@@ -141,12 +151,26 @@ const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolea
   sockNormal: { url: sockNormalAsset.url, repeat: 4 },
   grassAlbedo: { url: grassAlbedoAsset.url, repeat: 1, color: true },
   grassNormal: { url: grassNormalAsset.url, repeat: 6 },
+  grassDetailNormal: {
+    url: "/textures/detail-v1/turf-normal.ktx2",
+    repeat: [48, 32],
+    fineDetail: true,
+  },
+  grassDetailRough: {
+    url: "/textures/detail-v1/turf-rough.ktx2",
+    repeat: [48, 32],
+    fineDetail: true,
+  },
   grassRough: { url: grassRoughAsset.url, repeat: 6 },
   concreteAlbedo: { url: concreteAlbedoAsset.url, repeat: 1, color: true },
   concreteRough: { url: concreteRoughAsset.url, repeat: 1 },
   netMask: { url: netMaskAsset.url, repeat: 1 },
-  jersey_solid_normal: { url: asset0.url, repeat: 6 },
-  jersey_solid_rough: { url: asset1.url, repeat: 6 },
+  jersey_solid_normal: {
+    url: "/textures/detail-v1/fabric-normal.ktx2",
+    repeat: 6,
+    fineDetail: true,
+  },
+  jersey_solid_rough: { url: "/textures/detail-v1/fabric-rough.ktx2", repeat: 6, fineDetail: true },
   jersey_stripes_normal: { url: asset2.url, repeat: 6 },
   jersey_stripes_rough: { url: asset3.url, repeat: 6 },
   jersey_pin_normal: { url: asset4.url, repeat: 6 },
@@ -274,7 +298,7 @@ export function requestKtx2(names: readonly TextureName[]): void {
               }
               retryTimers.get(name)?.();
               retryTimers.delete(name);
-              const prepared = prepareGpuTexture(tex, Boolean(src.color), policy);
+              const prepared = prepareGpuTexture(tex, Boolean(src.color), policy, src.fineDetail);
               if (
                 !prepared.compressed ||
                 gpuTextureStats.residentBytes + prepared.bytes > policy.residentBudget
@@ -292,7 +316,8 @@ export function requestKtx2(names: readonly TextureName[]): void {
                 return;
               }
               tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-              tex.repeat.set(src.repeat, src.repeat);
+              if (typeof src.repeat === "number") tex.repeat.set(src.repeat, src.repeat);
+              else tex.repeat.set(...src.repeat);
               tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
               tex.needsUpdate = true;
               loaded.set(name, tex);

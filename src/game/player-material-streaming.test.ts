@@ -198,3 +198,17 @@ it("keeps compressed microdetail out of medium and low-quality shader features",
     expect(Object.values(set).map((material) => material.version)).toEqual(versions);
   }
 });
+
+it("streams the validated replacement hair normal without requesting the legacy height field", () => {
+  const look = lookFor("replacement-hair-normal", "MF");
+  const set = playerMaterials(look, kit, new THREE.Texture(), "alta");
+  const release = retainPlayerMaterials(set);
+  const material = set.hair as THREE.MeshStandardMaterial;
+  const version = material.version;
+  const compressed = new THREE.Texture();
+  arrive("hairDetailNormal", compressed);
+  expect(material.normalMap).toBe(compressed);
+  expect(material.version).toBe(version);
+  expect(stream.requested.has("hairNormal")).toBe(false);
+  release();
+});
