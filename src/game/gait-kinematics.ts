@@ -34,11 +34,14 @@ export function solveLegTarget(
   shin: number,
   lateral = 0,
 ) {
-  const length = clamp(
-    Math.hypot(forward, down, lateral),
-    Math.abs(thigh - shin) + 0.001,
-    thigh + shin - 0.001,
-  );
+  const requestedLength = Math.hypot(forward, down, lateral);
+  const length = clamp(requestedLength, Math.abs(thigh - shin) + 0.001, thigh + shin - 0.001);
+  // Preserve the direction of an unreachable target instead of clipping
+  // only the knee extension: that otherwise shifts the planted foot sideways.
+  const projection = requestedLength > 0.001 ? length / requestedLength : 1;
+  forward *= projection;
+  down *= projection;
+  lateral *= projection;
   const cosine = clamp((length * length - thigh * thigh - shin * shin) / (2 * thigh * shin), -1, 1);
   const bend = Math.acos(cosine);
   const verticalReach = thigh + shin * Math.cos(bend);

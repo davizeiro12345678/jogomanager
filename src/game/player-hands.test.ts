@@ -301,3 +301,15 @@ describe("continuous three dimensional strides", () => {
     },
   );
 });
+
+it("projects an unreachable diagonal foot target onto the reachable leg sphere", () => {
+  const thigh = 0.45,
+    shin = 0.43;
+  const target = new THREE.Vector3(0.35, -0.85, 0.6);
+  const expected = target.clone().setLength(thigh + shin - 0.001);
+  const leg = solveLegTarget(target.z, -target.y, thigh, shin, target.x);
+  const end = new THREE.Vector3(0, -shin, 0).applyEuler(new THREE.Euler(-leg.knee, 0, 0));
+  end.y -= thigh;
+  end.applyEuler(new THREE.Euler(leg.pitch, 0, leg.roll));
+  expect(end.distanceTo(expected)).toBeLessThan(0.000001);
+});

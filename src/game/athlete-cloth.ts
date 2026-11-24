@@ -33,6 +33,7 @@ export class ClothDynamics {
   private executed = 0;
   private ready = false;
   time = 0;
+  breathPhase = 0;
   impact = 0;
   turnRate = 0;
   rollRate = 0;
@@ -91,6 +92,10 @@ export class ClothDynamics {
       0.018,
     );
     this.time += elapsed;
+    // Integrate instantaneous frequency instead of multiplying elapsed time
+    // by effort; that caused an abrupt fold-phase jump during exertion changes.
+    const effort = Number.isFinite(motion.effort) ? clamp(motion.effort, 0, 1) : 0;
+    this.breathPhase = (this.breathPhase + elapsed * (1.9 + effort * 1.6)) % (Math.PI * 2);
     // Fixed slices avoid coupling cloth motion to browser refresh rate: a
     // 30, 60, 120 or 144 Hz renderer all integrates the same 139 Hz fabric.
     // dt is already capped at 250ms; 36 slices cover the full cap plus the
@@ -262,14 +267,13 @@ export class AthleteCloth {
     this.dynamics.advance(dt, motion);
     const x = this.dynamics.offset[0]! / 0.018,
       z = this.dynamics.offset[1]! / 0.018;
-    const effort = Number.isFinite(motion.effort) ? clamp(motion.effort, 0, 1) : 0;
     const bend = Number.isFinite(motion.bend) ? clamp(Math.abs(motion.bend), 0, 1.5) : 0;
     const roll = Number.isFinite(motion.roll) ? Math.abs(motion.roll!) : 0;
     const legL = Number.isFinite(motion.legL) ? clamp(Math.abs(motion.legL!), 0, 1) : 0;
     const legR = Number.isFinite(motion.legR) ? clamp(Math.abs(motion.legR!), 0, 1) : 0;
     const angularLoad = clamp(Math.abs(this.dynamics.turnRate) / 5 + roll * 0.55, 0, 1);
     for (const garment of this.garments.values()) {
-      const breath = 0.22 + Math.sin(this.dynamics.time * (1.9 + effort * 1.6)) * 0.09;
+      const breath = 0.22 + Math.sin(this.dynamics.breathPhase) * 0.09;
       const folds = clamp(breath + bend * 0.32 + this.dynamics.impact + angularLoad * 0.075, 0, 1);
       for (const weights of garment.bindings) {
         weights[0] = clamp(x, 0, 1);
