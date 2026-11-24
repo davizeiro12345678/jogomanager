@@ -238,6 +238,24 @@ test("fails closed instead of truncating an oversized sitemap or link inventory"
   await assert.rejects(verifyPublicSeo({ ...seoSite(), maxPages: 2, report() {} }), /page limit/);
 });
 
+test("does not turn markup separated by comments into a canonical tag", async () => {
+  const site = seoSite({
+    "/": response('<li<!-- ignored -->nk rel="canonical" href="https://jogomanager.com/">'),
+  });
+  await assert.rejects(verifyPublicSeo({ ...site, report() {} }), /canonical/);
+});
+
+test("ignores apparent links inside quoted attributes and unclosed comments", async () => {
+  const site = seoSite({
+    "/": response(
+      `<link rel="canonical" href="https://jogomanager.com/"><div data-example='<a href="/fake">'>Text</div><a href="/guia">Guia</a><!-- <a href="/fake2">`,
+    ),
+  });
+  await verifyPublicSeo({ ...site, report() {} });
+  assert.ok(site.calls.some(({ url }) => url === "https://jogomanager.com/guia"));
+  assert.ok(site.calls.every(({ url }) => !url.includes("/fake")));
+});
+
 test("ignores script text that resembles links and decodes HTML link attributes", async () => {
   const site = seoSite({
     "/": response(

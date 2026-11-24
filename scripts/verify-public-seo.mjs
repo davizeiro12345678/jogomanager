@@ -26,10 +26,16 @@ function attributes(tag) {
 }
 
 function tags(body, name) {
-  const markup = body.replace(/<!--[\s\S]*?-->|<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
-  return [...markup.matchAll(new RegExp(`<${name}\\b[^>]*>`, "gi"))].map(([tag]) =>
-    attributes(tag),
-  );
+  // Lexically consume original markup; never concatenate text around a
+  // removed comment or raw-text element. Quoted attributes are opaque.
+  // This is a read-only SEO extractor, not an HTML sanitizer.
+  const tokens =
+    /<!--[\s\S]*?(?:-->|$)|<(script|style|textarea|title)\b(?:[^<>"']|"[^"]*"|'[^']*')*>[\s\S]*?(?:<\/\1\s*>|$)|<([a-z][\w:-]*)(?=[\s/>])(?:[^<>"']|"[^"]*"|'[^']*')*>/gi;
+  const result = [];
+  for (const match of body.matchAll(tokens)) {
+    if (match[2]?.toLowerCase() === name) result.push(attributes(match[0]));
+  }
+  return result;
 }
 
 function blockedRobots(value = "") {
