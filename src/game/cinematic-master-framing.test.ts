@@ -98,3 +98,10 @@ describe("cinematic master framing", () => {
     }
   });
 });
+
+it("uses a finite landscape fallback for invalid dialogue viewport measurements", () => {
+  const baseline = cinematicShotFor("office", "manager", "close", 16 / 9);
+  for (const aspect of [NaN, Infinity, -1, 0]) {
+    expect(cinematicShotFor("office", "manager", "close", aspect)).toEqual(baseline);
+  }
+});
