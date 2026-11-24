@@ -23,3 +23,13 @@ describe("weather motivated match lighting", () => {
     );
   });
 });
+
+it("preserves floodlight strength at night while separating storm fill and wet reflection", () => {
+  const dry = matchLighting("noite", "seco", false);
+  const rain = matchLighting("noite", "chuva", false);
+  expect(rain.keyIntensity).toBe(dry.keyIntensity);
+  expect(rain.fillIntensity).toBeGreaterThan(dry.fillIntensity);
+  expect(rain.hemiIntensity).toBeGreaterThan(dry.hemiIntensity);
+  expect(rain.environmentKey).toBeGreaterThan(dry.environmentKey);
+  expect(rain.fogFar).toBeLessThan(dry.fogFar);
+});
