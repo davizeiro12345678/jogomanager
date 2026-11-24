@@ -110,7 +110,9 @@ export function gaitPoseAt(
     const down = length - drop + bob - lift;
     const leg = solveLegTarget(z * forward, down, p.thigh, p.shin, z * lateral);
     // Toe-off and heel strike roll only at the edges of support.
-    const roll = stance ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5 : 0.08;
+    const roll = stance
+      ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5
+      : 0.14 - 0.21 * smooth(u);
     return {
       ...leg,
       travel: z,
