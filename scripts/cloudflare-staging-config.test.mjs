@@ -34,17 +34,30 @@ test("rejects production project and mismatching server project", () => {
 });
 
 test("rejects live Stripe and private Supabase browser keys", () => {
-  assert.throws(() => stagingWorkerConfig(base, { ...env, VITE_PAYMENTS_CLIENT_TOKEN: "pk_live_fixture" }));
-  assert.throws(() => stagingWorkerConfig(base, { ...env, VITE_SUPABASE_PUBLISHABLE_KEY: "sb_secret_fixture" }));
+  assert.throws(() =>
+    stagingWorkerConfig(base, { ...env, VITE_PAYMENTS_CLIENT_TOKEN: "pk_live_fixture" }),
+  );
+  assert.throws(() =>
+    stagingWorkerConfig(base, { ...env, VITE_SUPABASE_PUBLISHABLE_KEY: "sb_secret_fixture" }),
+  );
 });
 
 test("rejects unknown resource bindings instead of copying production resources", () => {
-  assert.throws(() => stagingWorkerConfig({ ...base, d1_databases: [{ binding: "DB", database_id: "production" }] }, env));
-  assert.throws(() => stagingWorkerConfig({ ...base, services: [{ binding: "MATCH", service: "production" }] }, env));
+  assert.throws(() =>
+    stagingWorkerConfig(
+      { ...base, d1_databases: [{ binding: "DB", database_id: "production" }] },
+      env,
+    ),
+  );
+  assert.throws(() =>
+    stagingWorkerConfig({ ...base, services: [{ binding: "MATCH", service: "production" }] }, env),
+  );
 });
 
 test("rejects attempts to use production settings or route", () => {
   assert.throws(() => stagingWorkerConfig(base, { ...env, PAYMENTS_ENVIRONMENT: "live" }));
   assert.throws(() => stagingWorkerConfig(base, { ...env, SITE_URL: "https://jogomanager.com" }));
-  assert.throws(() => stagingWorkerConfig(base, { ...env, CLOUDFLARE_SITE_ZONE: "jogomanager.com" }));
+  assert.throws(() =>
+    stagingWorkerConfig(base, { ...env, CLOUDFLARE_SITE_ZONE: "jogomanager.com" }),
+  );
 });

@@ -7,12 +7,28 @@ const SUPABASE_URL = "https://skycnsjbcqmsaejaairl.supabase.co";
 const SITE_URL = "https://app-staging.jogomanager.com";
 const ACCOUNT_ID = "31b4ec9dfe5281c893ccfaaaefcfc88d";
 const BUILD_KEYS = [
-  "main", "assets", "compatibility_date", "compatibility_flags", "rules",
-  "no_bundle", "find_additional_modules", "upload_source_maps", "minify", "observability",
+  "main",
+  "assets",
+  "compatibility_date",
+  "compatibility_flags",
+  "rules",
+  "no_bundle",
+  "find_additional_modules",
+  "upload_source_maps",
+  "minify",
+  "observability",
 ];
 const REPLACED_KEYS = [
-  "$schema", "name", "vars", "routes", "route", "workers_dev", "preview_urls",
-  "keep_vars", "account_id", "send_metrics",
+  "$schema",
+  "name",
+  "vars",
+  "routes",
+  "route",
+  "workers_dev",
+  "preview_urls",
+  "keep_vars",
+  "account_id",
+  "send_metrics",
 ];
 
 // Derive a private staging configuration from a generated Nitro Worker package.
