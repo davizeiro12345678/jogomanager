@@ -2348,6 +2348,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      read_official_asset_catalog: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {
