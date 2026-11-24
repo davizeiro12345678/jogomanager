@@ -1,6 +1,12 @@
+import { isFootballWorkerRuntime } from "./football-public-env.server";
+import { createWorkerPublicCache } from "./worker-public-cache.server";
+
 type CacheOptions = {
   ttlMs: number;
   maxEntries: number;
+  loadTimeoutMs?: number;
+  staleIfErrorMs?: number;
+  maxConcurrentLoads?: number;
   now?: () => number;
 };
 
@@ -15,10 +21,30 @@ type Entry<T> = {
  * permissions, balances and provider credentials must never enter this cache.
  * Both settled values and pending requests count towards its fixed capacity.
  */
-export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: CacheOptions) {
-  if (!Number.isFinite(ttlMs) || ttlMs <= 0 || !Number.isInteger(maxEntries) || maxEntries < 1)
+export function createPublicReadCache<T>({
+  ttlMs,
+  maxEntries,
+  loadTimeoutMs = 15_000,
+  staleIfErrorMs = 0,
+  maxConcurrentLoads = 16,
+  now = Date.now,
+}: CacheOptions) {
+  if (
+    !Number.isFinite(ttlMs) ||
+    ttlMs <= 0 ||
+    !Number.isInteger(maxEntries) ||
+    maxEntries < 1 ||
+    !Number.isFinite(loadTimeoutMs) ||
+    loadTimeoutMs < 1 ||
+    loadTimeoutMs > 2_147_483_647 ||
+    !Number.isFinite(staleIfErrorMs) ||
+    staleIfErrorMs < 0 ||
+    !Number.isInteger(maxConcurrentLoads) ||
+    maxConcurrentLoads < 1
+  )
     throw new Error("Invalid public cache capacity or freshness.");
   const entries = new Map<string, Entry<T>>();
+  let pendingLoads = 0;
 
   return {
     get size() {
@@ -31,16 +57,48 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
         entries.set(key, previous);
         return previous.promise;
       }
+      // Evicting an entry does not cancel its database request. Track physical
+      // loads separately so distinct-key bursts cannot bypass the capacity.
+      const usableStale = () =>
+        previous !== undefined &&
+        !previous.pending &&
+        staleIfErrorMs > 0 &&
+        now() < previous.expiresAt + staleIfErrorMs;
+      if (pendingLoads >= maxConcurrentLoads)
+        return previous && usableStale()
+          ? previous.promise
+          : Promise.reject(new Error("Public data capacity temporarily unavailable."));
       entries.delete(key);
       while (entries.size >= maxEntries) entries.delete(entries.keys().next().value!);
 
+      let timeout: ReturnType<typeof setTimeout>;
+      const deadline = new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Public data request timed out.")),
+          loadTimeoutMs,
+        );
+      });
+      pendingLoads++;
+      const upstream = Promise.resolve()
+        .then(load)
+        .then(
+          (value) => {
+            pendingLoads--;
+            return value;
+          },
+          (error: unknown) => {
+            pendingLoads--;
+            throw error;
+          },
+        );
       const entry: Entry<T> = {
         pending: true,
         expiresAt: 0,
-        promise: Promise.resolve().then(load),
+        promise: Promise.race([upstream, deadline]),
       };
       entry.promise = entry.promise.then(
         (value) => {
+          clearTimeout(timeout);
           // A late request must not resurrect an evicted key or replace a
           // newer request for the same key after capacity eviction.
           if (entries.get(key) === entry) {
@@ -50,6 +108,13 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
           return value;
         },
         (error: unknown) => {
+          clearTimeout(timeout);
+          // Preserve only a complete previously successful projection, with
+          // the original freshness deadline. Never cache a partial response.
+          if (previous && usableStale()) {
+            if (entries.get(key) === entry) entries.set(key, previous);
+            return previous.promise;
+          }
           if (entries.get(key) === entry) entries.delete(key);
           throw error;
         },
@@ -64,7 +129,11 @@ export function createPublicReadCache<T>({ ttlMs, maxEntries, now = Date.now }: 
 // Freshness is deliberately short for sports data; the browser's existing
 // private server-function responses continue to use Cache-Control: no-store.
 const publicCaches = {
-  assets: createPublicReadCache<unknown>({ ttlMs: 60 * 60_000, maxEntries: 1 }),
+  assets: createPublicReadCache<unknown>({
+    ttlMs: 60 * 60_000,
+    maxEntries: 1,
+    staleIfErrorMs: 24 * 60 * 60_000,
+  }),
   squad: createPublicReadCache<unknown>({ ttlMs: 10 * 60_000, maxEntries: 64 }),
   market: createPublicReadCache<unknown>({ ttlMs: 30_000, maxEntries: 256 }),
   league: createPublicReadCache<unknown>({ ttlMs: 5 * 60_000, maxEntries: 16 }),
@@ -72,10 +141,18 @@ const publicCaches = {
   digest: createPublicReadCache<unknown>({ ttlMs: 5 * 60_000, maxEntries: 1 }),
 };
 
+const workerAssets = createWorkerPublicCache<unknown>({
+  ttlMs: 60 * 60_000,
+  maxEntries: 1,
+  staleIfErrorMs: 24 * 60 * 60_000,
+});
+
 export function cachedPublicRead<T>(
   namespace: keyof typeof publicCaches,
   key: string,
   load: () => Promise<T>,
 ): Promise<T> {
+  if (namespace === "assets" && isFootballWorkerRuntime())
+    return workerAssets.get(key, load) as Promise<T>;
   return publicCaches[namespace].get(key, load) as Promise<T>;
 }
