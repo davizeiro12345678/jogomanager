@@ -206,6 +206,10 @@ export class AuthoritativeMatchSocketClient {
       };
       socket.onmessage = (message) => {
         if (!this.isCurrent(socket, generation)) return;
+        // Native WebSocket events carry the authenticated transport's origin.
+        // A synthetic DOM event or a frame attributed to a foreign origin
+        // must never mutate the presentation feed or its connection state.
+        if (!message.isTrusted || message.origin !== new URL(this.url).origin) return;
         const event = this.feed.accept(message.data);
         if (event.kind === "sequence_resume") {
           if (this.currentStatus === "authenticating" && event.seat === candidate.seat)

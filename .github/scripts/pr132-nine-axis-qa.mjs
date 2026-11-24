@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { appendFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { readQaInventoryFile } from "./read-qa-inventory-file.mjs";
 import path from "node:path";
 
 const [originText, outputText, sha] = process.argv.slice(2);
@@ -691,14 +692,12 @@ try {
     let lineCount = null;
     let state = "present";
     try {
-      const info = await stat(file);
-      sizeBytes = info.size;
-      if (
-        info.isFile() &&
-        info.size <= 2_000_000 &&
-        /\.(?:ts|tsx|mjs|js|json|yaml|yml|css|md|sql|html)$/i.test(file)
-      )
-        lineCount = (await readFile(file, "utf8")).split(/\r?\n/).length;
+      const info = await readQaInventoryFile(
+        file,
+        /\.(?:ts|tsx|mjs|js|json|yaml|yml|css|md|sql|html)$/i.test(file),
+      );
+      sizeBytes = info.sizeBytes;
+      if (info.text !== null) lineCount = info.text.split(/\r?\n/).length;
     } catch {
       state = "deleted-or-unavailable";
     }

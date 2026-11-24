@@ -52,7 +52,11 @@ class FakeSocket implements AuthorityClientSocket {
     this.onopen?.(new Event("open"));
   }
   message(raw: string): void {
-    this.onmessage?.({ data: raw } as MessageEvent);
+    this.onmessage?.({
+      data: raw,
+      isTrusted: true,
+      origin: "wss://match.jogomanager.com",
+    } as MessageEvent);
   }
   close(code = 1000, reason?: string): void {
     // Calls with a reason come from the browser client. Calls without one in
@@ -259,6 +263,35 @@ describe("staged authoritative WSS client", () => {
       expect(socket.sent).toHaveLength(2);
       expect(socket.closeCode).toBeNull();
       expect(f.requests()).toBe(1);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("rejects synthetic or foreign-origin readiness before granting the transport state", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      const data = frame({ type: "ready", seat: "home", snapshot: state(1) });
+      socket.onmessage?.({
+        data,
+        isTrusted: false,
+        origin: "wss://match.jogomanager.com",
+      } as MessageEvent);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      socket.onmessage?.({
+        data,
+        isTrusted: true,
+        origin: "wss://foreign.example",
+      } as MessageEvent);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+      socket.message(data);
+      expect(f.client.statusSnapshot()).toBe("connected");
     } finally {
       f.client.dispose();
     }
