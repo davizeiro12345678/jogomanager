@@ -43,8 +43,25 @@ jobs:
           test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL secret"; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
       - run: npm ci
-      - name: Verify browser Supabase build-time env references
-        run: node --test scripts/supabase-public-env-static-access.test.mjs
+      - name: Verify browser Supabase and Stripe build-time env references
+        run: |
+          node --test scripts/supabase-public-env-static-access.test.mjs
+          node --test scripts/stripe-public-env-static-access.test.mjs
+      - name: Load and validate existing public Stripe key before the Vite build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
+        run: |
+          set -euo pipefail
+          worker_settings="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/jogomanager-web/settings")"
+          public_key="$(jq -er '[.result.bindings[] | select(.name == "VITE_PAYMENTS_CLIENT_TOKEN" and .type == "plain_text") | .text][0]' <<< "$worker_settings")"
+          if [[ "${public_key}" != pk_live_* ]]; then
+            echo "Missing or invalid live Stripe publishable key in Worker settings"
+            exit 1
+          fi
+          echo "VITE_PAYMENTS_CLIENT_TOKEN=${public_key}" >> "${GITHUB_ENV}"
       - name: Refuse publication of a superseded main revision
         env:
           GH_TOKEN: ${{ github.token }}
@@ -59,7 +76,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
           CLOUDFLARE_SITE_ZONE: jogomanager.com
           SITE_URL: https://jogomanager.com
-          VITE_AUTH_MODE: supabase
+          VITE_AUTH_MODE: supabase-direct
           PAYMENTS_ENVIRONMENT: live
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
