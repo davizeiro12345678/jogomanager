@@ -35,6 +35,7 @@ beforeEach(async () => {
   vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_public-fixture");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "sb_secret_server-fixture");
   vi.stubEnv("LOGO_DEV_API_KEY", "");
+  vi.stubEnv("VPS_CATALOG_ENABLED", "");
   functions = await import("./football.functions");
 });
 
@@ -44,6 +45,17 @@ afterEach(() => {
 });
 
 describe("public football queries", () => {
+  it("loads the complete public asset projection in a single database round trip", async () => {
+    const catalog = { crests: { club: "https://images.example/crest.png" }, kits: {} };
+    request.mockImplementation(async (input) => {
+      const url = requestUrl(input);
+      if (url.pathname.endsWith("/rpc/read_official_asset_catalog")) return ok(catalog);
+      return ok([]);
+    });
+    expect(await functions.getOfficialAssets()).toEqual(catalog);
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
   it("walks every club and kit page when the API cap is below the requested limit", async () => {
     const clubs = Array.from({ length: 7 }, (_, i) => ({
       id: `club-${i}`,
@@ -57,6 +69,8 @@ describe("public football queries", () => {
     }));
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
+      if (url.pathname.endsWith("/rpc/read_official_asset_catalog"))
+        return Response.json({ code: "PGRST202" }, { status: 404 });
       if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
       const cursor = url.searchParams.get("id")?.replace(/^gt\./, "") ?? "";
       const rows = url.pathname.endsWith("/clubs") ? clubs : kits;
@@ -70,7 +84,7 @@ describe("public football queries", () => {
     expect(result.crests["club-6"]).toBe("https://images.example/crest-6.png");
     expect(result.kits["club-4"]).toBe("https://images.example/kit-4.png");
     const coldRequests = request.mock.calls.length;
-    expect(coldRequests).toBe(9);
+    expect(coldRequests).toBe(10);
     expect(await functions.getOfficialAssets()).toEqual(result);
     expect(request).toHaveBeenCalledTimes(coldRequests);
   });
@@ -82,22 +96,26 @@ describe("public football queries", () => {
       release = resolve;
     });
     request.mockImplementation(async (input) => {
+      if (requestUrl(input).pathname.endsWith("/rpc/read_official_asset_catalog"))
+        return Response.json({ code: "PGRST202" }, { status: 404 });
       tables.add(requestUrl(input).pathname.split("/").at(-1)!);
       await gate;
       return ok([]);
     });
     const callers = Array.from({ length: 20 }, () => functions.getOfficialAssets());
     await vi.waitFor(() => expect(tables).toEqual(new Set(["clubs", "kits"])));
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(3);
     release();
     expect(await Promise.all(callers)).toEqual(Array(20).fill({ crests: {}, kits: {} }));
-    expect(request).toHaveBeenCalledTimes(2);
+    expect(request).toHaveBeenCalledTimes(3);
   });
 
   it("does not cache a partial asset catalog when a later page fails", async () => {
     let failPage = true;
     request.mockImplementation(async (input) => {
       const url = requestUrl(input);
+      if (url.pathname.endsWith("/rpc/read_official_asset_catalog"))
+        return Response.json({ code: "PGRST202" }, { status: 404 });
       if (url.pathname.endsWith("/player_identity_aliases")) return ok([]);
       if (url.pathname.endsWith("/kits")) return ok([]);
       if (!url.searchParams.has("id"))
