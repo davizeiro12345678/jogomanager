@@ -153,11 +153,73 @@ export interface MatchRuntime extends SimView {
   possessionPct(): [number, number];
 }
 
+// SimPlayer is a flat data contract. Fixed field loads avoid general-purpose
+// object enumeration in the hottest snapshot loop. Never reuse mutable copies.
+function cloneSnapshotPlayer(p: SimPlayer): SimPlayer {
+  const copy: SimPlayer = {
+    id: p.id,
+    side: p.side,
+    name: p.name,
+    number: p.number,
+    pos: p.pos,
+    x: p.x,
+    z: p.z,
+    vx: p.vx,
+    vz: p.vz,
+    slotX: p.slotX,
+    slotZ: p.slotZ,
+    pace: p.pace,
+    shooting: p.shooting,
+    passing: p.passing,
+    defending: p.defending,
+    physical: p.physical,
+    stamina: p.stamina,
+    action: p.action,
+    actionT: p.actionT,
+    actionDur: p.actionDur,
+    pid: p.pid,
+    goals: p.goals,
+    assists: p.assists,
+    shots: p.shots,
+    passes: p.passes,
+    tackles: p.tackles,
+    saves: p.saves,
+    onSince: p.onSince,
+    minutes: p.minutes,
+    yellows: p.yellows,
+    sentOff: p.sentOff,
+    injuryWeeks: p.injuryWeeks,
+    interceptions: p.interceptions,
+    offsides: p.offsides,
+    foulsWon: p.foulsWon,
+    pensScored: p.pensScored,
+    pensMissed: p.pensMissed,
+    xg: p.xg,
+  };
+  // The optional cosmetic fields are not present in every historical roster.
+  if ("heightCm" in p) copy.heightCm = p.heightCm;
+  if ("weightKg" in p) copy.weightKg = p.weightKg;
+  return copy;
+}
+
 export function snapshotMatch(
   sim: MatchSim,
   seq: number,
   visualBall?: VisualBallState,
   includeEvents = true,
+): LiveSnapshot {
+  const roster = sim.players;
+  const players = new Array<SimPlayer>(roster.length);
+  for (let i = 0; i < roster.length; i += 1) players[i] = cloneSnapshotPlayer(roster[i]!);
+  return snapshotWithPlayers(sim, seq, visualBall, includeEvents, players);
+}
+
+function snapshotWithPlayers(
+  sim: MatchSim,
+  seq: number,
+  visualBall: VisualBallState | undefined,
+  includeEvents: boolean,
+  players: SimPlayer[],
 ): LiveSnapshot {
   // Most snapshots only move players and the ball. Do not clone the historical
   // feed merely to discard it on the way to the structured-clone boundary.
@@ -172,7 +234,7 @@ export function snapshotMatch(
       eventCache.set(sim, { seq: eventId, events });
     }
   }
-  return {
+  const snapshot: LiveSnapshot = {
     seq,
     execution: sim.executionContract(),
     sentAt: performance.now(),
@@ -183,16 +245,17 @@ export function snapshotMatch(
     weather: sim.weather,
     wind: { ...sim.wind },
     refName: sim.ref.name,
-    players: sim.players.map((player) => ({ ...player })),
+    players,
     ball: { ...sim.ball },
-    ...(visualBall ? { visualBall: { ...visualBall } } : {}),
     possession: sim.possession,
     stats: { home: { ...sim.stats.home }, away: { ...sim.stats.away } },
-    ...(events ? { events } : {}),
     eventSeq: eventId,
     finished: sim.finished,
     subsUsed: { ...sim.subsUsed },
   };
+  if (visualBall) snapshot.visualBall = { ...visualBall };
+  if (events) snapshot.events = events;
+  return snapshot;
 }
 
 export function resultMatch(sim: MatchSim, seq: number, visualBall?: VisualBallState): LiveResult {
@@ -226,7 +289,7 @@ export function snapshotMatchPacket(
     players: _players,
     events: _events,
     ...envelope
-  } = snapshotMatch(sim, seq, options.visualBall, false);
+  } = snapshotWithPlayers(sim, seq, options.visualBall, false, []);
   return {
     ...envelope,
     type: "snapshot",
