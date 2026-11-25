@@ -144,3 +144,25 @@ it("keeps contrasting sleeves distinct when kits share every color and texture",
     expect(playerMaterials(look, sleeves, null, quality)).toBe(b);
   }
 });
+
+it("keeps knit, leather and synthetic boots distinct even in reduced detail", () => {
+  const look = lookFor("reduced-boot-finish", "FW");
+  const kit: Kit = {
+    base: "#ac2028",
+    shorts: "#202020",
+    socks: "#202020",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  for (const quality of ["baixa", "media"] as const) {
+    const [leather, synthetic, knit] = [0, 9, 18].map(
+      (seed) =>
+        playerMaterials({ ...look, seed }, kit, null, quality).boot as THREE.MeshStandardMaterial,
+    );
+    expect(knit!.roughness).toBeGreaterThan(leather!.roughness);
+    expect(leather!.roughness).toBeGreaterThan(synthetic!.roughness);
+    expect(
+      [leather, synthetic, knit].every((boot) => boot!.metalness === 0 && boot!.normalMap === null),
+    ).toBe(true);
+  }
+});

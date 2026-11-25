@@ -3,7 +3,8 @@ import type { TimeOfDay, Weather } from "./matchday";
 /** Presentation only: overcast daylight and stadium floodlights use the same
  * existing sources, with no extra lights, shadow maps or simulation state. */
 export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
-  const cloud = weather === "chuva" || weather === "neve";
+  const snow = weather === "neve";
+  const cloud = weather === "chuva" || snow;
   const night = time === "noite",
     sunset = time === "entardecer";
   const sky = night
@@ -51,9 +52,31 @@ export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
             ? 0.3
             : 0.34,
     hemiColor: night ? "#a9c9ef" : cloud ? "#c5d5e0" : sunset ? "#ffe0c6" : "#dde9f0",
-    groundColor: night ? "#08131a" : cloud ? "#203027" : "#102c1d",
+    // Snow bounces more neutral blue light under the athletes than wet grass.
+    // Retain the existing hemisphere light and floodlight count.
+    groundColor: snow
+      ? night
+        ? "#182d3e"
+        : "#50636e"
+      : night
+        ? "#08131a"
+        : cloud
+          ? "#203027"
+          : "#102c1d",
     environmentKey: night ? (cloud ? 1.58 : 1.45) : cloud ? 1.55 : sunset ? 1.45 : low ? 1.75 : 2.1,
-    fogNear: night ? (cloud ? 65 : 80) : cloud ? 82 : sunset ? 95 : 120,
-    fogFar: night ? (cloud ? 185 : 230) : cloud ? 245 : sunset ? 270 : 330,
+    fogNear: snow ? (night ? 55 : 72) : night ? (cloud ? 65 : 80) : cloud ? 82 : sunset ? 95 : 120,
+    fogFar: snow
+      ? night
+        ? 165
+        : 220
+      : night
+        ? cloud
+          ? 185
+          : 230
+        : cloud
+          ? 245
+          : sunset
+            ? 270
+            : 330,
   };
 }

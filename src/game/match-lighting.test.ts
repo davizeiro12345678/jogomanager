@@ -33,3 +33,14 @@ it("preserves floodlight strength at night while separating storm fill and wet r
   expect(rain.environmentKey).toBeGreaterThan(dry.environmentKey);
   expect(rain.fogFar).toBeLessThan(dry.fogFar);
 });
+
+it("uses a cooler reflected ground fill in snow without adding light sources", () => {
+  for (const time of ["dia", "noite", "entardecer"] as const) {
+    const rain = matchLighting(time, "chuva", false);
+    const snow = matchLighting(time, "neve", false);
+    expect(snow.groundColor).not.toBe(rain.groundColor);
+    expect(snow.keyIntensity).toBe(rain.keyIntensity);
+    expect(snow.keyPosition).toEqual(rain.keyPosition);
+    expect(snow.fogFar).toBeLessThan(rain.fogFar);
+  }
+});

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildTeamSetup } from "./quickMatch";
-import { MatchSim, MATCH_SIMULATION_STEP } from "./sim";
+import { FIELD_X, MatchSim, MATCH_SIMULATION_STEP } from "./sim";
 import { validExecutionContract } from "./match-execution-contract";
 import { pressure } from "./sim-ball-duels";
 
@@ -63,6 +63,35 @@ describe("opt-in contact physics / historical replay boundaries", () => {
         const prior = before.get(player.id)!;
         expect(Math.hypot(player.x - prior.x, player.z - prior.z)).toBeLessThan(1);
       }
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it("reaches a stationary in-play ball close to the goal line at normal speed", () => {
+    const sim = create("contact-goal-line-recovery", 2);
+    try {
+      const receiver = sim.players.find((p) => p.side === "home" && p.pos !== "GK")!;
+      sim.players.forEach((p, index) => {
+        p.x = 16 + (index % 11) * 2;
+        p.z = p.side === "home" ? -10 : 10;
+        p.vx = 0;
+        p.vz = 0;
+      });
+      receiver.x = -FIELD_X + 2;
+      receiver.z = 18;
+      sim.ball = { x: -FIELD_X + 0.51, z: 18, vx: 0, vz: 0, holder: null, height: 0.12 };
+      sim.ballVy = 0;
+      sim.pass = null;
+      sim.pendingShot = null;
+
+      for (let tick = 0; tick < 60 && !sim.ball.holder; tick += 1) {
+        const beforeX = receiver.x;
+        const beforeZ = receiver.z;
+        sim.step(MATCH_SIMULATION_STEP, 6);
+        expect(Math.hypot(receiver.x - beforeX, receiver.z - beforeZ)).toBeLessThan(0.5);
+      }
+      expect(sim.ball.holder).toBe(receiver.id);
     } finally {
       sim.dispose();
     }

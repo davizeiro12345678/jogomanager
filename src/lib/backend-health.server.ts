@@ -60,6 +60,7 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
         headers: { apikey: env["SUPABASE_PUBLISHABLE_KEY"]! },
         signal: AbortSignal.timeout(5_000),
         cache: "no-store",
+        redirect: "error",
       });
       const settings = response.ok ? ((await response.json()) as { external?: unknown }) : null;
       authReachable = Boolean(
@@ -87,6 +88,7 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
           headers,
           signal: AbortSignal.timeout(5_000),
           cache: "no-store",
+          redirect: "error",
         },
       );
       const payload = response.ok ? ((await response.json()) as { users?: unknown }) : null;
@@ -104,6 +106,7 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
             headers,
             signal: AbortSignal.timeout(5_000),
             cache: "no-store",
+            redirect: "error",
           },
         );
         databaseReachable = database.ok && Array.isArray(await database.json());

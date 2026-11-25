@@ -297,6 +297,43 @@ describe("staged authoritative WSS client", () => {
     }
   });
 
+  it("does not accept provisional snapshots or a final receipt before the signed ready", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      socket.message(frame({ type: "snapshot", snapshot: state(500) }));
+      socket.message(
+        frame({
+          type: "final",
+          receipt: {
+            version: 1,
+            roomId,
+            simulationVersion: "contact-2",
+            commandHash: "a".repeat(64),
+            idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+            issuedAt: startAt,
+            closureReason: "completed",
+            result: { homeGoals: 0, awayGoals: 0, winner: "draw" },
+            signature: "test-only-final-receipt-signature",
+          },
+        }),
+      );
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.client.officialReceipt()).toBeNull();
+      expect(f.events).toEqual([]);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      await vi.advanceTimersByTimeAsync(5_001);
+      expect(socket.closeCode).toBe(4003);
+      expect(f.client.statusSnapshot()).toBe("unavailable");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("rejects forged seats and does not join a room from a different domain", async () => {
     const f = fixture();
     f.client.start();
@@ -306,6 +343,8 @@ describe("staged authoritative WSS client", () => {
     socket.message(frame({ type: "ready", seat: "away", snapshot: state(1) }));
     expect(socket.closeCode).toBe(4003);
     expect(f.client.statusSnapshot()).toBe("unavailable");
+    expect(f.client.officialSnapshot()).toBeNull();
+    expect(f.events).toEqual([]);
     expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
     f.client.dispose();
   });

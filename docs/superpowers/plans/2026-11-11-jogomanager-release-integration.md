@@ -384,3 +384,26 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 9. Final deliverable is one reviewable PR to `main`, not a claim that all requested outcomes are complete.
 
 **Next exact action:** inspect the newest PR #132 run for SHA `ec499d621de33ee148184b7411a7197054eedbef`; then continue Task 1 (PR #129 reconciliation) and Task 2 (PR #130 OAuth/career-country verification). Do not start Task 6 or 7 production DDL until maintenance approval.
+
+
+## Addendum 25/11/2026 — sequência ampliada de execução
+
+**Estado:** PR #132 aberto em Draft; nenhum merge ou deploy de produção autorizado. HEAD observado nesta retomada: ac2dd4065e93e48952bf2dbb4968b78ed28d3705. Revalidar o SHA antes de encerrar qualquer gate.
+
+### Sequência prioritária
+1. **Integridade do release:** concluir CodSpeed, Lighthouse Mobile, startup diagnostics e evidência visual no mesmo HEAD. CodSpeed falhou no HEAD atual; não reutilizar o PASS 16/16 do HEAD anterior.
+2. **Staging exato:** reconstruir em checkout limpo e isolado, fixado no SHA atual. O staging existente está em fb07df1 e não valida o PR atual. Preservar o checkout antigo com alterações locais.
+3. **Mega auditoria VPS:** concluir matriz de containers, serviços, sockets, firewall, Tailscale, SSH/CA, certificados, ACLs, sudoers, processos, logs, systemd sandbox e rotas. Aplicar mudanças somente com backup, dry-run, teste de saúde e rollback.
+4. **Chrome QA:** manter perfil virtual isolado com ANGLE/SwiftShader e WebGL2/WebGPU smoke. Registrar explicitamente que SwiftShader é CPU software e não certifica FPS físico.
+5. **API/authz:** repetir testes com contas sintéticas em staging; validar cron, Stripe, guest checkout, ownership, RLS, exposição de dados e cache. Não usar credenciais ou dados reais para contornar preview incompleto.
+6. **Engine determinística:** auditar contratos de autoridade, fixed-step, RNG, checkpoints, replay, Worker/WASM, serialização, rollback e compatibilidade. Nenhuma alteração na ordem de RNG, autoridade ou regras sem paridade e regressão.
+7. **Stack gráfica:** ampliar pipeline de assets, KTX2, shaders, LOD, crowd/stadium, sombras, câmera, pós-processamento, WebGL2/WebGPU fallback e budgets por perfil. Comparar ABBA e manter fallback compatível.
+8. **Detecção de malware:** benchmark controlado EICAR/fixtures benignas e malformadas entre ClamAV, URLhaus, Maldet, Wazuh/Elastic/Tracee; revisar ELF header e falso positivo sem executar amostras.
+9. **Modelo local:** comparar Qwen e alternativas por qualidade, latência, memória e segurança; manter o modelo atual até benchmark reproduzível.
+
+### Regras de liberação
+- Não reduzir limites de Lighthouse/CodSpeed para fazer o gate passar.
+- Não promover resultado de software renderer a certificação de GPU física.
+- Não alterar funcionalidades reservadas do Match 3D.
+- Não remover sudoers, reiniciar agentes privilegiados ou alterar SSH sem preservar acesso break-glass.
+- Todo item permanece pendente até evidência reproduzível no SHA exato.

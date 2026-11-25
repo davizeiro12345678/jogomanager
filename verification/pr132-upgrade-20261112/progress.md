@@ -116,3 +116,13 @@
 3. Refinar Task 1/4–8 em incrementos visuais medidos, começando com primeiro frame/shaders e retrato isolado do atleta.
 4. Homologar física/IA futura com nova revisão, snapshots/tickets/checkpoints/servidor e A/B pareado; não elevar globalmente substeps já existentes para fingir realismo.
 5. Manter PR draft enquanto restarem GPU, staging, SQL, stress, Lighthouse e release; somente release aprovado pode restaurar produção/configuração e motivar novo crawl Semrush.
+
+
+## 25/11/2026 — atualização de evidência Match 3D
+
+- Chrome Stable 158.0.8127.88 no VPS: WebGL2 e WebGPU compute smoke aprovados via ANGLE/SwiftShader; software renderer, sem certificação física.
+- CodSpeed 16/16 PASS observado no HEAD anterior cd919599; HEAD atual ac2dd4 tem CodSpeed FAIL e precisa diagnóstico/repetição.
+- 43 suítes de aceitação e 9-axis QA PASS no HEAD atual; Lighthouse Mobile/evidência visual ainda não concluídos.
+- Staging local ainda roda fb07df1; não é evidência para o HEAD atual.
+- Nenhuma funcionalidade reservada do Match 3D foi implementada nesta etapa.
+- Tasks 13–18 adicionadas como pendentes: engine determinística, stack gráfica, Chrome/browser QA, certificação física, benchmark antivírus/ELF e avaliação de modelo.

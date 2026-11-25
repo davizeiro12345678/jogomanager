@@ -77,6 +77,9 @@ export function gaitPoseAt(
   out = emptyPose(),
   direction?: GaitDirection,
 ): GaitSample {
+  // A discontinuous or corrupt presentation clock must not propagate NaN
+  // to the skeleton matrices. Valid phases and authoritative state are unchanged.
+  if (!Number.isFinite(phase)) phase = 0;
   for (const joint of JOINTS) out[joint] = 0;
   const s = clamp(speed, 0, 12);
   const amount = clamp(s / 6.8, 0, 1);
@@ -138,7 +141,8 @@ export function gaitPoseAt(
   out.ankleR = right.ankle;
   // An arm moves opposite its own leg, rather than using an unrelated sine
   // wave. The two arms need not be exact opposites during double support.
-  const individual = direction?.style === undefined ? 0 : (direction.style % 101) / 100 - 0.5;
+  const style = direction?.style;
+  const individual = style !== undefined && Number.isFinite(style) ? (style % 101) / 100 - 0.5 : 0;
   const armAmplitude = (0.14 + amount * 0.62) * active * (1 + individual * 0.12);
   out.armLPitch = halfStride > 0.001 ? (left.travel / halfStride) * armAmplitude : 0.04;
   out.armRPitch = halfStride > 0.001 ? (right.travel / halfStride) * armAmplitude : 0.04;
