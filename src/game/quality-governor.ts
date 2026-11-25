@@ -23,10 +23,14 @@ export class QualityGovernor {
     this.elapsed += dt;
     this.window.add(dt * 1000);
     if (this.elapsed < 1.5) return this.stage;
-    const { p95, frames } = this.window.summary();
+    const { p50, p95, frames } = this.window.summary();
     this.window.reset();
     this.elapsed = 0;
-    if (this.cooldown > 0 || frames < 8) return this.stage;
+    // At <5 FPS an entire decision window can contain fewer than eight
+    // frames. Require a slow median and at least three observations in that
+    // case; a single stall must not force a downgrade or a quality recovery.
+    const sustainedSparsePressure = frames >= 3 && this.budgetMs > 0 && p50 >= this.budgetMs * 3;
+    if (this.cooldown > 0 || (frames < 8 && !sustainedSparsePressure)) return this.stage;
     const pressure = this.budgetMs > 0 ? p95 / this.budgetMs : 0;
     // Catch a badly overloaded device before it spends most of a match on
     // the wrong side of its frame budget. Preserve hero detail until the
