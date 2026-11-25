@@ -18,7 +18,6 @@ export function classifyPreAuthAuthorityFrame(
   }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "ignore";
   const frame = parsed as Record<string, unknown>;
-  if (frame["type"] === "ready")
-    return frame["seat"] === expectedSeat ? "accept" : "reject_seat";
+  if (frame["type"] === "ready") return frame["seat"] === expectedSeat ? "accept" : "reject_seat";
   return frame["type"] === "sequence_resume" ? "accept" : "ignore";
 }
