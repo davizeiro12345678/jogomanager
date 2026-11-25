@@ -447,8 +447,17 @@ try {
     throw new Error("The real athlete Studio did not initialize a framebuffer.");
   }
   await png(page, "player-studio-face-detailed");
-  const comparison = page.getByRole("button", { name: /compare lightweight model/i });
+  // The Studio is localized; compare the actual pressed state instead of
+  // assuming an English accessible name in a pt-BR browser context.
+  const comparison = page.locator(".studio-keyboard-camera button[aria-pressed]").first();
+  await comparison.waitFor({ state: "visible" });
+  if ((await comparison.getAttribute("aria-pressed")) !== "false") {
+    throw new Error("Athlete Studio did not start with the detailed rig.");
+  }
   await comparison.click();
+  if ((await comparison.getAttribute("aria-pressed")) !== "true") {
+    throw new Error("Athlete Studio did not switch to the lightweight rig.");
+  }
   await page.waitForTimeout(700);
   await png(page, "player-studio-face-lightweight");
   await framing.selectOption("hands");
