@@ -49,12 +49,11 @@ describe("versioned replay codec", () => {
     ]) {
       const originalFrame = original.frames[frameIndex]!;
       const unpacked = decoded.frames[frameIndex]!;
-      expect(unpacked.p).toEqual(
-        originalFrame.p.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
-      );
-      expect(unpacked.b).toEqual(
-        originalFrame.b.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
-      );
+      // Int16 storage canonicalizes a quantized negative zero to +0, so the
+      // reference normalizes the sign of zero before comparing coordinates.
+      const quantized = (coordinate: number) => quantizeReplayComponent(coordinate) / 100 + 0;
+      expect(unpacked.p).toEqual(originalFrame.p.map(quantized));
+      expect(unpacked.b).toEqual(originalFrame.b.map(quantized));
     }
     expect(decoded.score).toEqual(original.score);
     replay.seek(0);
