@@ -1,6 +1,7 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import type { Group } from "three";
+import { observeWarmupContext } from "./cinematic-warmup-context";
 // Keep shader compilation and its generation cache off the initial cinematic
 // static import graph. This code is only needed after the optional actor
 // enters the idle-warmup window, never for first paint.
@@ -98,24 +99,28 @@ export function CinematicProgramWarmup({
       withdraw();
       if (!document.hidden) schedule();
     };
-    const contextLost = () => {
-      lost = true;
-      withdraw();
-      // If the optional module was never requested it has no renderer cache.
-      // Loading it now still guarantees that an in-flight import cannot start
-      // compiling after the context was invalidated.
-      void import("@/game/graphics-warmup")
-        .then(({ invalidateScenePrograms }) => invalidateScenePrograms(gl))
-        .catch(() => undefined);
-    };
+    const stopContext = observeWarmupContext(
+      gl.domElement,
+      () => {
+        lost = true;
+        withdraw();
+      },
+      () =>
+        import("@/game/graphics-warmup").then(({ invalidateScenePrograms }) =>
+          invalidateScenePrograms(gl),
+        ),
+      () => {
+        lost = false;
+        schedule();
+      },
+    );
     document.addEventListener("visibilitychange", visibility);
-    gl.domElement.addEventListener("webglcontextlost", contextLost);
     schedule();
     return () => {
       active = false;
       withdraw();
       document.removeEventListener("visibilitychange", visibility);
-      gl.domElement.removeEventListener("webglcontextlost", contextLost);
+      stopContext();
     };
   }, [gl, scene, camera, invalidate, enabled, requireEnvironment, host]);
   return (

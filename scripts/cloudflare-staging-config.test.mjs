@@ -14,12 +14,18 @@ const base = {
   assets: { directory: "../public", binding: "ASSETS" },
   routes: [{ pattern: "jogomanager.com", custom_domain: true }],
   vars: { PAYMENTS_ENVIRONMENT: "live" },
+  previews: {
+    vars: { PUBLIC_HTML_EDGE_CACHE_ENABLED: "1" },
+    d1_databases: [{ binding: "SPORTS_DB", database_id: "fixture" }],
+  },
 };
 
 test("isolates staging and never inherits production routes or variables", () => {
   const config = stagingWorkerConfig(base, env);
   assert.equal(config.name, "jogomanager-web-staging");
   assert.equal(config.workers_dev, false);
+  assert.equal(config.preview_urls, false);
+  assert.equal(Object.hasOwn(config, "previews"), false);
   assert.deepEqual(config.routes, []);
   assert.equal(config.vars.SUPABASE_URL, url);
   assert.equal(config.vars.PAYMENTS_ENVIRONMENT, "sandbox");

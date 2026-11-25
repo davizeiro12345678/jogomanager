@@ -25,6 +25,7 @@ const REPLACED_KEYS = [
   "routes",
   "route",
   "workers_dev",
+  "previews",
   "preview_urls",
   "keep_vars",
   "account_id",

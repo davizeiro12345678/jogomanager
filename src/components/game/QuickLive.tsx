@@ -98,11 +98,14 @@ export default function QuickLive({
   });
   const [camera, setCamera] = useState<CameraMode>("broadcast");
   const [speed, setSpeed] = useState(1);
-  const [paused, setPaused] = useState(false);
+  const [pausedManually, setPausedManually] = useState(false);
   const [done, setDone] = useState(false);
-  const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(sim, paused);
   const [showEvents, setShowEvents] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const overlayPausesMatch = showTools || dialogOpen;
+  const paused = pausedManually || overlayPausesMatch;
+  const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(sim, paused);
   const toolsTrigger = useRef<HTMLButtonElement>(null);
   const matchHeading = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
@@ -189,16 +192,15 @@ export default function QuickLive({
     };
   }, [setups, sim]);
 
-  useEffect(() => controllerRef.current?.pause(paused), [paused]);
+  useEffect(() => controllerRef.current?.pause(document.hidden || paused), [paused]);
   useEffect(() => controllerRef.current?.setSpeed(speed), [speed]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (event.defaultPrevented || target?.closest('[role="dialog"]')) return;
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && (showEvents || showTools)) {
         setShowEvents(false);
         setShowTools(false);
-        setPaused(true);
         toolsTrigger.current?.focus();
         return;
       }
@@ -211,7 +213,7 @@ export default function QuickLive({
         return;
       if (event.code === "Space") {
         event.preventDefault();
-        setPaused((p) => !p);
+        if (!overlayPausesMatch) setPausedManually((p) => !p);
       }
       if (event.key.toLowerCase() === "c")
         setCamera(
@@ -225,7 +227,7 @@ export default function QuickLive({
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [setNarrating]);
+  }, [overlayPausesMatch, setNarrating, showEvents, showTools]);
 
   const skip = useCallback(() => {
     controllerRef.current?.skip();
@@ -249,10 +251,7 @@ export default function QuickLive({
       </div>
       <button
         type="button"
-        onClick={() => {
-          setPaused(true);
-          onExit();
-        }}
+        onClick={onExit}
         aria-label={t("match.back")}
         className="match-quick-back"
       >
@@ -340,7 +339,8 @@ export default function QuickLive({
           </div>
         )}
         <button
-          onClick={() => setPaused((p) => !p)}
+          onClick={() => setPausedManually((p) => !p)}
+          disabled={overlayPausesMatch}
           aria-label={t(paused ? "match.resume" : "match.pause")}
           aria-pressed={paused}
           className="grid h-11 w-11 place-items-center rounded-full bg-primary text-primary-foreground"
@@ -383,7 +383,6 @@ export default function QuickLive({
           onClick={() => {
             setShowTools((open) => !open);
             setShowEvents(false);
-            setPaused(true);
           }}
         >
           <MoreHorizontal size={21} aria-hidden="true" />
@@ -439,20 +438,12 @@ export default function QuickLive({
           )}
           {t(narrating ? "narration.off" : "narration.on")}
         </button>
-        <NarrationSettings
-          showLabel
-          className="match-tool-action"
-          onOpenChange={(open) => {
-            if (open) setPaused(true);
-          }}
-        />
+        <NarrationSettings showLabel className="match-tool-action" onOpenChange={setDialogOpen} />
         <ShortcutsDialog
           quick
           showLabel
           className="match-tool-action"
-          onOpenChange={(open) => {
-            if (open) setPaused(true);
-          }}
+          onOpenChange={setDialogOpen}
         />
         <button type="button" className="match-tool-action" onClick={skip}>
           <SkipForward size={18} aria-hidden="true" />
