@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import { isMatchRouteEntry, selectMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const [, , baselinePath, candidatePath] = process.argv;
 if (!baselinePath || !candidatePath) {
@@ -71,8 +71,9 @@ add(
   totalGrowthBudgetBytes,
 );
 for (const [name, predicate, includeRaw] of keys) {
-  const b = before.entries?.find(predicate);
-  const a = after.entries?.find(predicate);
+  const pick = name === "Match 3D" ? selectMatchRouteEntry : (entries) => entries.find(predicate);
+  const b = pick(before.entries ?? []);
+  const a = pick(after.entries ?? []);
   if (!b || !a) {
     violations.push(`${name}: missing required route in ${!b ? "baseline" : "candidate"}`);
     continue;

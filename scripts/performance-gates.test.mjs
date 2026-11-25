@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import { isMatchRouteEntry, selectMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -66,12 +66,14 @@ const fixture = () => ({
   })),
 });
 
-function compare(mutate) {
+function compare(mutate, mutateBaseline = () => {}) {
   const cwd = mkdtempSync(path.join(tmpdir(), "bundle-gate-"));
   try {
+    const baseline = fixture();
+    mutateBaseline(baseline);
     const candidate = fixture();
     mutate(candidate);
-    writeFileSync(path.join(cwd, "base.json"), JSON.stringify(fixture()));
+    writeFileSync(path.join(cwd, "base.json"), JSON.stringify(baseline));
     writeFileSync(path.join(cwd, "head.json"), JSON.stringify(candidate));
     const result = spawnSync(
       process.execPath,
@@ -127,6 +129,48 @@ test("Match 3D route selector ignores similarly named engine chunks", () => {
     assert.equal(isMatchRouteEntry({ name }), false, `${name} is not the Match route`);
   }
   assert.equal(isMatchRouteEntry({ name: "match-a1b2c3.js" }), true);
+});
+
+test("Match 3D startup comparison is invariant to hash-driven chunk order", () => {
+  const fullRoute = (name, gzip) => ({
+    name,
+    startupBytes: 900_000,
+    startupGzipBytes: gzip,
+    startupBrotliBytes: gzip - 30_000,
+  });
+  const result = compare(
+    (candidate) => {
+      candidate.entries.find((entry) => entry.name === "match-route.js").name = "match-Zsmall.js";
+      candidate.entries.unshift(fullRoute("match-Abig.js", 579_307));
+    },
+    (baseline) => {
+      baseline.entries.find((entry) => entry.name === "match-route.js").name = "match-Asmall.js";
+      baseline.entries.push(fullRoute("match-Zbig.js", 579_260));
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.report.violations, []);
+  const measured = result.report.rows.find((row) => row.label === "Match 3D startup (gzip)");
+  assert.equal(measured.before, 579_260);
+  assert.equal(measured.after, 579_307);
+  assert.equal(selectMatchRouteEntry([fullRoute("match-Zbig.js", 600)]).name, "match-Zbig.js");
+});
+
+test("Match 3D still rejects actual startup growth beyond 2 KiB with two chunks", () => {
+  const reportWithRoute = (report, name, gzip) => {
+    report.entries.push({
+      name,
+      startupBytes: 900_000,
+      startupGzipBytes: gzip,
+      startupBrotliBytes: gzip - 30_000,
+    });
+  };
+  const result = compare(
+    (candidate) => reportWithRoute(candidate, "match-Abig.js", 582_000),
+    (baseline) => reportWithRoute(baseline, "match-Zbig.js", 579_260),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.report.violations.join("\n"), /Match 3D.*growth 2740 bytes/);
 });
 
 test("bundle gate allows route startup growth up to 2 KiB", () => {
