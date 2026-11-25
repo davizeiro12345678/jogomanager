@@ -33,7 +33,12 @@ export function requestCloudflareBindings(request: Request): Record<string, unkn
       runtime?: { name?: string; cloudflare?: { env?: unknown } };
     }
   ).runtime;
-  const bindings = attached?.name === "cloudflare" ? attached.cloudflare?.env : undefined;
+  // Nitro can attach the Cloudflare runtime without a name in some adapters.
+  // Request.runtime is an in-process server property, never read from HTTP headers.
+  const bindings =
+    attached && (attached.name === "cloudflare" || attached.name === undefined)
+      ? attached.cloudflare?.env
+      : undefined;
   return bindings && typeof bindings === "object"
     ? (bindings as Record<string, unknown>)
     : undefined;
@@ -48,6 +53,7 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
   let authReachable = false;
   let serverCredentialsValid = false;
   let databaseReachable = false;
+  let failureStage = configured ? "auth_transport_error" : "missing_configuration";
   if (configured) {
     try {
       const response = await fetcher(`${env["SUPABASE_URL"]}/auth/v1/settings`, {
@@ -59,8 +65,14 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
       authReachable = Boolean(
         settings && typeof settings.external === "object" && settings.external !== null,
       );
+      failureStage = !response.ok
+        ? "auth_upstream_http_error"
+        : authReachable
+          ? "missing_service_role_key"
+          : "auth_invalid_response";
     } catch {
       authReachable = false;
+      failureStage = "auth_transport_error";
     }
   }
   const privateKey = env["SUPABASE_SERVICE_ROLE_KEY"];
@@ -79,6 +91,11 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
       );
       const payload = response.ok ? ((await response.json()) as { users?: unknown }) : null;
       serverCredentialsValid = Boolean(payload && Array.isArray(payload.users));
+      failureStage = !response.ok
+        ? "admin_credentials_rejected"
+        : serverCredentialsValid
+          ? "database_unreachable"
+          : "admin_invalid_response";
       // Discard the admin response; never expose account records in this endpoint.
       if (serverCredentialsValid) {
         const database = await fetcher(
@@ -90,14 +107,18 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
           },
         );
         databaseReachable = database.ok && Array.isArray(await database.json());
+        failureStage = databaseReachable ? "ready" : "database_unreachable";
       }
     } catch {
       databaseReachable = false;
+      failureStage = "admin_or_database_transport_error";
     }
   }
   const ready = configured && authReachable && serverCredentialsValid && databaseReachable;
   return {
     status: ready ? "ready" : "degraded",
+    // Only diagnostic categories; never include URLs, keys, exception strings or HTTP bodies.
+    failureStage: ready ? null : failureStage,
     release: {
       commit:
         typeof __JOGOMANAGER_BUILD_COMMIT__ === "undefined" ? null : __JOGOMANAGER_BUILD_COMMIT__,
