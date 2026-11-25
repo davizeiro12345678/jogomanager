@@ -22,7 +22,9 @@ export function cinematicDetail(quality: string, hero: boolean) {
     high: quality === "alta" && hero,
     portrait,
     headSampling: hero && quality === "baixa" ? LOW_NARRATIVE_HEAD : undefined,
-    radial: hero ? (quality === "alta" ? 16 : quality === "media" ? 12 : 8) : 8,
+    // The protagonist retains the 12-sided body at the low tier;
+    // background actors remain compact and material/animation tiers stay unchanged.
+    radial: hero ? (quality === "alta" ? 16 : 12) : 8,
   };
 }
 
