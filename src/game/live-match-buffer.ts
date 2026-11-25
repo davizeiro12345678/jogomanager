@@ -84,6 +84,7 @@ const ACTION_CODES = Object.create(null) as Partial<Record<PlayerAction, number>
 for (let index = 0; index < ACTION_NAMES.length; index += 1) {
   ACTION_CODES[ACTION_NAMES[index]!] = index + 1;
 }
+const REPLAY_ACTIONS: readonly (PlayerAction | null)[] = [null, ...ACTION_NAMES];
 
 export type LivePlayerMeta = Pick<
   SimPlayer,
@@ -130,7 +131,7 @@ export function actionFromCode(code: number): PlayerAction | null {
 
 /** Hot path for integral codes read from a replay's Uint8Array. */
 export function actionFromByte(code: number): PlayerAction | null {
-  return ACTION_NAMES[code - 1] ?? null;
+  return REPLAY_ACTIONS[code] ?? null;
 }
 
 export function createLivePlayerMetadata(players: readonly SimPlayer[]): LivePlayerMeta[] {
