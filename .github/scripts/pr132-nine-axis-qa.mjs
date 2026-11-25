@@ -436,35 +436,56 @@ try {
     );
   } else {
     const framing = page.locator('select[aria-label="Framing"]');
-    await framing.waitFor({ state: "visible", timeout: 25_000 });
-    const canvas = page.locator("canvas").first();
-    await canvas.waitFor({ state: "visible", timeout: 25_000 });
-    await framing.selectOption("face");
-    await page.waitForTimeout(1_200);
-    const detailed = await canvas.evaluate((element) => ({
-      width: element.width,
-      height: element.height,
-    }));
-    await png(page, "player-studio-face-detailed");
-    const comparison = page.getByRole("button", { name: /compare lightweight model/i });
-    await comparison.click();
-    await page.waitForTimeout(900);
-    await png(page, "player-studio-face-lightweight");
-    await framing.selectOption("hands");
-    await page.waitForTimeout(650);
-    await png(page, "player-studio-hands-lightweight");
-    report.axes.interaction.metrics.playerStudio = {
-      detailed,
-      comparisons: ["face-detailed", "face-lightweight", "hands-lightweight"],
-    };
-    if (!detailed.width || !detailed.height) {
+    const studioReady = await framing
+      .waitFor({ state: "visible", timeout: 20_000 })
+      .then(() => true)
+      .catch((error) => {
+        if (error?.name !== "TimeoutError") throw error;
+        return false;
+      });
+    if (!studioReady) {
+      await png(page, "player-studio-unavailable-anonymous");
+      report.axes.interaction.metrics.playerStudio = {
+        status: "blocked",
+        reason: "Anonymous preview did not expose the athlete laboratory controls.",
+      };
       find(
-        "runtime",
-        "error",
-        { route: "/visual", selector: "canvas" },
-        "Athlete Studio canvas has no framebuffer dimensions.",
-        "Verify the GPU renderer and asynchronous model initialization.",
+        "interaction",
+        "warning",
+        { route: "/visual", selector: 'select[aria-label="Framing"]' },
+        "Anonymous preview did not render athlete Studio controls.",
+        "Capture the dedicated graphics fixture with its real browser and compare the detailed model.",
       );
+    } else {
+      const canvas = page.locator("canvas").first();
+      await canvas.waitFor({ state: "visible", timeout: 25_000 });
+      await framing.selectOption("face");
+      await page.waitForTimeout(1_200);
+      const detailed = await canvas.evaluate((element) => ({
+        width: element.width,
+        height: element.height,
+      }));
+      await png(page, "player-studio-face-detailed");
+      const comparison = page.getByRole("button", { name: /compare lightweight model/i });
+      await comparison.click();
+      await page.waitForTimeout(900);
+      await png(page, "player-studio-face-lightweight");
+      await framing.selectOption("hands");
+      await page.waitForTimeout(650);
+      await png(page, "player-studio-hands-lightweight");
+      report.axes.interaction.metrics.playerStudio = {
+        detailed,
+        comparisons: ["face-detailed", "face-lightweight", "hands-lightweight"],
+      };
+      if (!detailed.width || !detailed.height) {
+        find(
+          "runtime",
+          "error",
+          { route: "/visual", selector: "canvas" },
+          "Athlete Studio canvas has no framebuffer dimensions.",
+          "Verify the GPU renderer and asynchronous model initialization.",
+        );
+      }
     }
   }
 
