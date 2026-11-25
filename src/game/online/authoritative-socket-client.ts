@@ -13,6 +13,8 @@ import {
   type AuthorityFeedEvent,
 } from "./authoritative-presentation-feed";
 
+import { classifyPreAuthAuthorityFrame } from "./preauth-frame-gate";
+
 export interface AuthorityClientSocket {
   readonly readyState: number;
   send(data: string): void;
@@ -210,6 +212,18 @@ export class AuthoritativeMatchSocketClient {
         // A synthetic DOM event or a frame attributed to a foreign origin
         // must never mutate the presentation feed or its connection state.
         if (!message.isTrusted || message.origin !== new URL(this.url).origin) return;
+        // Until ready authenticates this seat, no snapshot or final result is official.
+        if (this.currentStatus === "authenticating") {
+          const decision = classifyPreAuthAuthorityFrame(message.data, candidate.seat);
+          if (decision === "ignore") return;
+          if (decision === "reject_seat") {
+            this.status("unavailable");
+            socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "seat_mismatch");
+            return;
+          }
+        } else if (this.currentStatus !== "connected") {
+          return;
+        }
         const event = this.feed.accept(message.data);
         if (event.kind === "sequence_resume") {
           if (this.currentStatus === "authenticating" && event.seat === candidate.seat)
