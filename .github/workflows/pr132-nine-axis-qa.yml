@@ -38,7 +38,8 @@ jobs:
           cache: npm
       - name: Reject location metadata in committed screenshot evidence
         run: |
-          node --test scripts/screenshot-privacy.test.mjs
+          node --test scripts/screenshot-privacy.test.mjs scripts/realism-browser-runtime.test.mjs
+          node --check scripts/realism-capture.mjs
           node scripts/screenshot-privacy.mjs
       - name: Verify QA audit syntax and immutable revision
         run: |
