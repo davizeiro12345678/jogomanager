@@ -21,7 +21,9 @@ import { DiscordLink } from "@/components/CommunityInvite";
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  lovableOAuthProvider,
+  canonicalAuthOriginUrl,
+  canonicalAuthRedirectForSession,
+  oauthBrokerForHost,
   socialOAuthOptions,
   socialProviderLabel,
   type SocialProvider,
@@ -78,10 +80,36 @@ export function AuthPage() {
   const [recoveryReady, setRecoveryReady] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
-  // Managed Google/Apple/Microsoft credentials only work through the Lovable broker;
-  // the direct provider path returns 400 "Unsupported provider".
-  const brokeredOAuth = import.meta.env.VITE_AUTH_MODE !== "supabase-direct";
+  // Cloudflare-hosted Google login uses GoTrue's configured provider. The
+  // Lovable /~oauth/initiate broker is not hosted on jogomanager.com.
   const passkeysSupported = supportsPasskeys();
+
+  // TanStack Router may navigate without a server request. Redirect only
+  // unauthenticated www visitors; Supabase sessions are origin-scoped.
+  useEffect(() => {
+    const href = window.location.href;
+    const fallback = canonicalAuthOriginUrl(href);
+    if (!fallback) return;
+    let active = true;
+    void supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!active) return;
+        // An inconclusive lookup is not evidence of a signed-out visitor.
+        // Keep origin-scoped PKCE/session storage intact until a retry succeeds.
+        const canonical = canonicalAuthRedirectForSession(
+          href,
+          error ? undefined : Boolean(data.session),
+        );
+        if (canonical) window.location.replace(canonical);
+      })
+      .catch(() => {
+        // The main session effect reports the error; preserve this origin.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const checkMfa = useCallback(async () => {
     const { data, error: assuranceError } =
@@ -93,6 +121,22 @@ export function AuthPage() {
   }, []);
   const continueSession = async () => {
     if (!(await checkMfa())) await navigate({ href: destination });
+  };
+
+  /** Every browser OAuth entry point must preserve an existing www session. */
+  const guardWwwOAuthStart = async (): Promise<boolean> => {
+    const href = window.location.href;
+    const fallback = canonicalAuthOriginUrl(href);
+    if (!fallback) return false;
+    const session = await supabase.auth.getSession().catch(() => null);
+    if (!session || session.error) {
+      setError("Não foi possível verificar sua sessão. Confira a conexão e tente novamente.");
+      return true;
+    }
+    const canonical = canonicalAuthRedirectForSession(href, Boolean(session.data.session));
+    if (canonical) window.location.replace(canonical);
+    else await continueSession();
+    return true;
   };
 
   useEffect(() => {
@@ -288,7 +332,13 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
-      const brokerProvider = brokeredOAuth ? lovableOAuthProvider(provider) : undefined;
+      // Also catches clicks before the mount-effect session lookup completes.
+      if (await guardWwwOAuthStart()) return;
+      const brokerProvider = oauthBrokerForHost(
+        provider,
+        window.location.hostname,
+        import.meta.env.VITE_AUTH_MODE,
+      );
       if (brokerProvider) {
         const { lovable } = await import("@/integrations/lovable/index");
         const result = await lovable.auth.signInWithOAuth(brokerProvider, {
@@ -322,6 +372,8 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
     try {
+      // Keep the Lovable callback and its verifier on the same browser origin.
+      if (await guardWwwOAuthStart()) return;
       const { lovable } = await import("@/integrations/lovable/index");
       const result = await lovable.auth.signInWithOAuth("lovable", { redirect_uri: callback() });
       if (result.error) throw result.error;

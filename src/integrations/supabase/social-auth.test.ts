@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   availableAuthMethods,
+  canonicalAuthOriginUrl,
+  canonicalAuthRedirectForSession,
   lovableOAuthProvider,
+  oauthBrokerForHost,
   parseAuthMethods,
   socialOAuthOptions,
   socialProviderLabel,
@@ -103,6 +106,51 @@ describe("configured authentication methods", () => {
     )) {
       expect(lovableOAuthProvider(provider)).toBeUndefined();
     }
+  });
+
+  it("uses Supabase Google OAuth directly on the published domains without affecting other providers", () => {
+    expect(oauthBrokerForHost("google", "jogomanager.com")).toBeUndefined();
+    // www/auth is canonically redirected server-side before the browser runs.
+    expect(oauthBrokerForHost("google", "www.jogomanager.com")).toBe("google");
+    expect(oauthBrokerForHost("google", "game-staging.jogomanager.com")).toBe("google");
+    expect(oauthBrokerForHost("google", "jogomanager.com.attacker.test")).toBe("google");
+    expect(oauthBrokerForHost("google", "preview.lovable.app")).toBe("google");
+    expect(oauthBrokerForHost("azure", "jogomanager.com")).toBe("microsoft");
+    expect(oauthBrokerForHost("google", "preview.lovable.app", "supabase-direct")).toBeUndefined();
+  });
+
+  it("canonicalizes in-app www auth navigation before OAuth, preserving callback state", () => {
+    expect(canonicalAuthOriginUrl("https://www.jogomanager.com/auth?next=%2Fclub#oauth")).toBe(
+      "https://jogomanager.com/auth?next=%2Fclub#oauth",
+    );
+    for (const url of [
+      "https://jogomanager.com/auth",
+      "https://preview.lovable.app/auth",
+      "https://www.jogomanager.com.evil.test/auth",
+      "http://www.jogomanager.com/auth",
+      "https://www.jogomanager.com/api/stripe/webhook",
+      "https://www.jogomanager.com:444/auth",
+    ]) {
+      expect(canonicalAuthOriginUrl(url)).toBeUndefined();
+    }
+  });
+
+  it("keeps an existing www Supabase session on its origin without copying credentials", () => {
+    const url = "https://www.jogomanager.com/auth?next=%2Fclub";
+    expect(canonicalAuthRedirectForSession(url, true)).toBeUndefined();
+    expect(canonicalAuthRedirectForSession(url, false)).toBe(
+      "https://jogomanager.com/auth?next=%2Fclub",
+    );
+    expect(canonicalAuthRedirectForSession("https://jogomanager.com/auth", false)).toBeUndefined();
+  });
+
+  it("keeps the origin when the session lookup is inconclusive", () => {
+    const url = "https://www.jogomanager.com/auth?next=%2Fclub";
+    expect(canonicalAuthRedirectForSession(url, undefined)).toBeUndefined();
+    expect(canonicalAuthRedirectForSession(url, null)).toBeUndefined();
+    expect(canonicalAuthRedirectForSession(url, false)).toBe(
+      "https://jogomanager.com/auth?next=%2Fclub",
+    );
   });
 
   it("preserves the callback destination for every configured direct provider", () => {

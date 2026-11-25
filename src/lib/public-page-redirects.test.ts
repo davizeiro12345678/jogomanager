@@ -17,6 +17,32 @@ const ssrFetch = vi.hoisted(() => vi.fn(() => new Response("SSR")));
 vi.mock("@tanstack/react-start/server-entry", () => ({ default: { fetch: ssrFetch } }));
 
 describe("retired public pages", () => {
+  it("redirects www login to the canonical auth origin before SSR or OAuth", async () => {
+    const server = (await import("../server")).default;
+    ssrFetch.mockClear();
+    for (const method of ["GET", "HEAD"]) {
+      const response = await server.fetch(
+        new Request("https://www.jogomanager.com/auth?next=%2Fclub", { method }),
+        {},
+        {},
+      );
+      expect(response.status).toBe(302);
+      expect(response.headers.get("location")).toBe("https://jogomanager.com/auth?next=%2Fclub");
+      expect(response.headers.get("cache-control")).toContain("no-store");
+      expect(ssrFetch).not.toHaveBeenCalled();
+    }
+    for (const url of [
+      "https://jogomanager.com/auth",
+      "https://www.jogomanager.com.evil.test/auth",
+      "https://www.jogomanager.com/api/stripe/webhook",
+    ]) {
+      expect(publicPageRedirect(new Request(url))).toBeUndefined();
+    }
+    expect(
+      publicPageRedirect(new Request("https://www.jogomanager.com/auth", { method: "POST" })),
+    ).toBeUndefined();
+  });
+
   it("returns redirects before invoking the SSR handler", async () => {
     const server = (await import("../server")).default;
     for (const method of ["GET", "HEAD"]) {

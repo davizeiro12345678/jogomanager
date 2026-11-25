@@ -107,6 +107,32 @@ export function lovableOAuthProvider(provider: SocialProvider) {
   return undefined;
 }
 
+/** Use GoTrue Google OAuth on Cloudflare: this origin has no /~oauth/initiate broker. */
+export function oauthBrokerForHost(provider: SocialProvider, hostname: string, authMode?: string) {
+  if (authMode === "supabase-direct") return undefined;
+  if (provider === "google" && hostname === "jogomanager.com") {
+    return undefined;
+  }
+  return lovableOAuthProvider(provider);
+}
+
+/** Keep client-side navigation and PKCE initiation on the canonical auth origin. */
+export function canonicalAuthOriginUrl(href: string): string | undefined {
+  const url = new URL(href);
+  if (url.protocol !== "https:" || url.hostname !== "www.jogomanager.com") return;
+  if (url.port || !/^\/auth(?:\/|$)/.test(url.pathname)) return;
+  url.hostname = "jogomanager.com";
+  return url.href;
+}
+
+/** Origin-scoped browser sessions must not be discarded by www canonicalization. */
+export function canonicalAuthRedirectForSession(
+  href: string,
+  hasSession: boolean | null | undefined,
+): string | undefined {
+  return hasSession === false ? canonicalAuthOriginUrl(href) : undefined;
+}
+
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {
   return { redirectTo, ...(provider === "azure" ? { scopes: "email" } : {}) };
 }
