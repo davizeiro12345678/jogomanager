@@ -44,7 +44,11 @@ test("PR #132 workflows do not persist Git credentials after checkout", () => {
     const checkouts = [...source.matchAll(/^\s*(?:-\s*)?uses:\s*actions\/checkout@[^\n]+/gm)];
     assert.ok(checkouts.length > 0, name + " must checkout an immutable revision");
     for (const checkout of checkouts) {
-      const following = source.slice(checkout.index + checkout[0].length).split("\n").slice(0, 7).join("\n");
+      const following = source
+        .slice(checkout.index + checkout[0].length)
+        .split("\n")
+        .slice(0, 7)
+        .join("\n");
       assert.match(
         following,
         /^\s+persist-credentials:\s+false\s*$/m,
