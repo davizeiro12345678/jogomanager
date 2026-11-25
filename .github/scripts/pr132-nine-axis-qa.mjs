@@ -419,6 +419,55 @@ try {
       );
   }
 
+  // Real headless-browser captures of the detailed athlete and its lightweight
+  // comparison. They are evidence from this SHA, not promotional mockups.
+  await page.setViewportSize({ width: 1365, height: 900 });
+  const studioResponse = await page.goto(new URL("/visual", origin).href, {
+    waitUntil: "domcontentloaded",
+    timeout: 30_000,
+  });
+  if (studioResponse?.status() !== 200) {
+    find(
+      "runtime",
+      "error",
+      { route: "/visual" },
+      "Athlete Studio route did not return HTTP 200.",
+      "Inspect the published Graphics route and local preview.",
+    );
+  } else {
+    const framing = page.locator('select[aria-label="Framing"]');
+    await framing.waitFor({ state: "visible", timeout: 25_000 });
+    const canvas = page.locator("canvas").first();
+    await canvas.waitFor({ state: "visible", timeout: 25_000 });
+    await framing.selectOption("face");
+    await page.waitForTimeout(1_200);
+    const detailed = await canvas.evaluate((element) => ({
+      width: element.width,
+      height: element.height,
+    }));
+    await png(page, "player-studio-face-detailed");
+    const comparison = page.getByRole("button", { name: /compare lightweight model/i });
+    await comparison.click();
+    await page.waitForTimeout(900);
+    await png(page, "player-studio-face-lightweight");
+    await framing.selectOption("hands");
+    await page.waitForTimeout(650);
+    await png(page, "player-studio-hands-lightweight");
+    report.axes.interaction.metrics.playerStudio = {
+      detailed,
+      comparisons: ["face-detailed", "face-lightweight", "hands-lightweight"],
+    };
+    if (!detailed.width || !detailed.height) {
+      find(
+        "runtime",
+        "error",
+        { route: "/visual", selector: "canvas" },
+        "Athlete Studio canvas has no framebuffer dimensions.",
+        "Verify the GPU renderer and asynchronous model initialization.",
+      );
+    }
+  }
+
   const quickMatchRoute = "/partida-rapida?q=baixa";
   for (const viewport of [
     { width: 1365, height: 900 },
