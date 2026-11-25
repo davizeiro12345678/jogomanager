@@ -10,6 +10,28 @@ function fixture() {
 }
 
 describe("weekly development match boundaries", () => {
+  it("retains a __proto__ player ID as an own record without prototype mutation", () => {
+    const { state, player } = fixture();
+    const untrusted = Object.create(null) as Record<string, typeof player>;
+    Object.defineProperty(untrusted, "__proto__", {
+      value: { ...player, clubId: "unrelated-club" },
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
+    const result = applyWeeklyDevelopment(
+      untrusted,
+      state,
+      null,
+      "untrusted-id",
+      new Set(),
+      false,
+      0,
+    );
+    expect(Object.hasOwn(result.players, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(result.players)).toBeNull();
+  });
+
   it("does not fatigue selected players when no match took place", () => {
     const { state, id } = fixture();
     const selected = applyWeeklyDevelopment(state.players, state, null, "bye", new Set(), false, 0);

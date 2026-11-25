@@ -165,3 +165,32 @@ describe("match worker skip ordering", () => {
     );
   });
 });
+
+describe("match worker sender origin", () => {
+  const scoped = worker as WorkerHarness & { location?: { origin?: string } };
+  afterEach(() => {
+    delete scoped.location;
+    worker.postMessage.mockClear();
+  });
+  it("drops commands relayed from a foreign origin", async () => {
+    scoped.location = { origin: "https://jogomanager.com" };
+    const id = 9_100;
+    onmessage?.({
+      data: { id, type: "start", payload: { home: "A", away: "B" } },
+      origin: "https://evil.example",
+    } as unknown as MessageEvent<unknown>);
+    await flushMicrotasks();
+    expect(responseMessages(worker).filter((message) => message.id === id)).toEqual([]);
+  });
+  it("still accepts commands from the owning document origin", async () => {
+    scoped.location = { origin: "https://jogomanager.com" };
+    const id = 9_101;
+    onmessage?.({
+      data: { id, type: "start", payload: { home: "A", away: "B" } },
+      origin: "https://jogomanager.com",
+    } as unknown as MessageEvent<unknown>);
+    await vi.waitFor(() =>
+      expect(responseMessages(worker).some((message) => message.id === id)).toBe(true),
+    );
+  });
+});

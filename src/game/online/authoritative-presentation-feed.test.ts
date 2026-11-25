@@ -204,4 +204,30 @@ describe("browser-side authoritative presentation reducer", () => {
     });
     expect(feed.snapshot()).toBeNull();
   });
+  it("binds the ticket seat once so foreign seats never become presentation state", () => {
+    const feed = new AuthoritativePresentationFeed(room);
+    feed.bindSeat("home");
+    // A resume hint for the other seat is ignored without closing anything.
+    expect(
+      feed.accept(frame({ type: "sequence_resume", roomId: room, seat: "away", sequence: 9 })),
+    ).toEqual({
+      kind: "ignored",
+      reason: "foreign_seat",
+    });
+    // A ready frame claiming the other seat is a seat mismatch, not authority.
+    expect(feed.accept(frame({ type: "ready", seat: "away", snapshot: snapshot(1, 1) }))).toEqual({
+      kind: "ignored",
+      reason: "seat_mismatch",
+    });
+    expect(feed.snapshot()).toBeNull();
+    expect(feed.confirmedSeat()).toBeNull();
+    // The bound seat still authenticates normally afterwards.
+    expect(
+      feed.accept(frame({ type: "ready", seat: "home", snapshot: snapshot(1, 1) })),
+    ).toMatchObject({
+      kind: "ready",
+      seat: "home",
+    });
+    expect(feed.confirmedSeat()).toBe("home");
+  });
 });

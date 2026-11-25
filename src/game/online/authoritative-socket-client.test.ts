@@ -349,6 +349,24 @@ describe("staged authoritative WSS client", () => {
     f.client.dispose();
   });
 
+  it("closes the transport when a ready frame claims another seat after authentication", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.client.statusSnapshot()).toBe("connected");
+    // The signed ticket bound the seat in the feed: a second ready for the
+    // other seat is authority theft, not a stale snapshot.
+    socket.message(frame({ type: "ready", seat: "away", snapshot: state(2) }));
+    expect(socket.closeCode).toBe(4003);
+    expect(f.client.statusSnapshot()).toBe("unavailable");
+    expect(f.client.officialSnapshot()?.revision).toBe(1);
+    expect(f.events).toEqual(["ready"]);
+    f.client.dispose();
+  });
+
   it("preserves official revisions and command sequence after reconnect", async () => {
     vi.useFakeTimers();
     const f = fixture();

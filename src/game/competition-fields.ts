@@ -30,7 +30,7 @@ export function worldCupField(state: CareerState): string[] {
     const champions = recent
       .map((h) => h.champions[competitionId])
       .filter((id): id is string => Boolean(id));
-    const ranking: Record<string, number> = {};
+    const ranking: Record<string, number> = Object.create(null);
     for (const h of recent)
       for (const [id, points] of Object.entries(h.continentalPoints))
         ranking[id] = (ranking[id] ?? 0) + points;

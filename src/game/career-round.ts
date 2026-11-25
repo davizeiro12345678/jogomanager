@@ -81,7 +81,7 @@ export function advanceRound(
   let squadAfterMatch = state.players;
   const liveNews: NewsItem[] = [];
   if (performances.length) {
-    squadAfterMatch = { ...state.players };
+    squadAfterMatch = Object.assign(Object.create(null), state.players);
     for (const perf of performances) {
       const p = squadAfterMatch[perf.pid];
       if (!p) continue;
