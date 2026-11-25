@@ -1,37 +1,17 @@
 #!/usr/bin/env python3
-"""Classify large AV scan inputs without changing coverage or file contents.
+"""Preserve every large AV scan input in the deep-scan fallback.
 
-Only validated uncompressed ELF, GGUF and SafeTensors inputs use the shared
-clamd daemon. Unknown files, archives, symlinks and unreadable paths retain
-the legacy standalone clamscan with deep archive recursion. Fail closed.
+Magic bytes cannot prove the absence of embedded archives or polyglots.
+A path-only list also cannot bind classification to the later scanner's
+open file descriptor. Until the scanner consumes a trusted stable object
+under equivalent inspection policy, no input qualifies for the fast path.
 """
 from __future__ import annotations
 
 import json
 import os
-import stat
 import sys
 from pathlib import Path
-
-
-def _safe_for_shared_daemon(raw_path: bytes) -> bool:
-    flags = os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0)
-    try:
-        fd = os.open(raw_path, flags)
-        try:
-            if not stat.S_ISREG(os.fstat(fd).st_mode):
-                return False
-            head = os.read(fd, 32)
-        finally:
-            os.close(fd)
-    except OSError:
-        return False
-    if head.startswith(b"\x7fELF") or head.startswith(b"GGUF"):
-        return True
-    if raw_path.lower().endswith(b".safetensors") and len(head) >= 9:
-        declared = int.from_bytes(head[:8], "little")
-        return 2 <= declared <= 16 * 1024 * 1024 and head[8:9] == b"{"
-    return False
 
 
 def _atomic_write(dst: Path, entries: list[bytes]) -> None:
@@ -56,9 +36,7 @@ def split(source: Path, shared_out: Path, deep_out: Path) -> dict[str, int]:
         raise ValueError("Invalid absolute filename: abort classification")
     if shared_out == deep_out or source in (shared_out, deep_out):
         raise ValueError("Output paths must differ from each other and input")
-    shared, deep = [], []
-    for entry in original:
-        (shared if _safe_for_shared_daemon(entry) else deep).append(entry)
+    shared, deep = [], list(original)
     if len(shared) + len(deep) != len(original):
         raise ValueError("Classification did not preserve every file")
     _atomic_write(shared_out, shared)

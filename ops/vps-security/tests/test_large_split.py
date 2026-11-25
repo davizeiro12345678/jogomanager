@@ -24,8 +24,9 @@ class CoverageTests(unittest.TestCase):
             daemon=d/"shared.txt";deep=d/"deep.txt"
             stats=module.split(original,daemon,deep)
             first=daemon.read_bytes().splitlines();second=deep.read_bytes().splitlines()
-            self.assertEqual(stats, {"shared_daemon":3,"deep_fallback":3,"total":6})
-            self.assertEqual(first+second, [str(p).encode() for p in files[:3]]+[str(p).encode() for p in files[3:]])
+            self.assertEqual(stats, {"shared_daemon":0,"deep_fallback":6,"total":6})
+            self.assertEqual(first, [])
+            self.assertEqual(second, [str(p).encode() for p in files])
             self.assertTrue(all(not x.endswith(b"archive.zip") for x in first))
             self.assertTrue(all(not x.endswith(b"symlink") for x in first))
             self.assertEqual(daemon.stat().st_mode & 0o777,0o600)

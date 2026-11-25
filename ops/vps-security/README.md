@@ -13,18 +13,20 @@
 
 | Arquivo | Finalidade |
 | --- | --- |
-| `jm-security-large-split.py` | Separa a lista existente de arquivos grandes: arquivos ELF, GGUF e SafeTensors **com cabeçalho validado** seguem para `clamdscan --fdpass`; arquivos desconhecidos, ilegíveis e arquivos compactados continuam com `clamscan` e as regras de recursão profunda |
+| `jm-security-large-split.py` | Preserva a lista integral de arquivos grandes no scanner profundo. A rota rápida está desabilitada por segurança enquanto não houver vínculo estável entre o arquivo inspecionado e o scanner |
 | `jm-av-policy-probe.py` | Produz somente estados sanitizados, sem segredos: `jm_clamav_posture` e `jm_elastic_defend`. O código não altera a política dos motores |
 | `jm-antivirus-policy-rules.xml` | Seis regras para o gerenciador Wazuh, IDs 100790–100795: alerta de perda de prevenção, impossibilidade de verificação e confirmação de recuperação |
-| `tests/` | Seis testes Python com biblioteca padrão cobrindo classificação exata, fallback, falha fechada e mudanças de proteção |
+| `tests/` | Oito testes Python com biblioteca padrão cobrindo classificação exata, fallback, falha fechada e mudanças de proteção |
 
-### Prova da mudança no VPS
+### Evidência histórica da mudança no VPS
+
+**Revisão de segurança posterior:** os testes anteriores não demonstravam que os formatos eram íntegros ou que o caminho continuava apontando para o mesmo arquivo no momento do scan. Esta revisão elimina a rota rápida baseada em prefixo e mantém todas as entradas no scanner profundo. A economia histórica de recursos não se aplica à nova revisão. O código revisado ainda não foi instalado no VPS; a instalação requer validação separada do consumidor das listas.
 
 Em 22/11/2026, 229 arquivos grandes foram classificados **sem perder entradas**: **132** com formatos verificados e **97** conservados para o scanner profundo. Um arquivo ELF de aproximadamente 35 MB passou em um scan `clamdscan --fdpass --file-list` real, no serviço systemd isolado, com retorno zero.
 
 A rotina instalada em `/usr/local/sbin/jm-security-fullscan-10h` usa essa partição no **próximo** ciclo. O scan que já estava em execução permanece intocado, sob `CPUQuota=100%` e `CPUWeight=10`; a configuração Maldet para os próximos ciclos foi reduzida de quatro para três workers. Há cópias locais antes das mudanças, preservadas sob nomes `backup-before-...`. O script de serviço contém exclusões e caminhos de infraestrutura específicos e, por isso, não foi copiado integralmente para este repositório público.
 
-**Importante:** o ganho de RAM só ocorre quando o processo independente termina, não no instante da alteração do script. A divisão mantém o fallback de arquivos compactados e desconhecidos para evitar regressão de inspeção profunda.
+**Importante:** o ganho de RAM só ocorre quando o processo independente termina, não no instante da alteração do script. A revisão atual mantém todos os arquivos no fallback profundo; nenhum ganho de RAM ou CPU é reivindicado.
 
 ### Integração Wazuh verificada
 

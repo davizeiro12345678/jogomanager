@@ -7,6 +7,7 @@ on-access ingest scope. No policy is modified and no process is terminated.
 from __future__ import annotations
 
 import subprocess
+import json
 from pathlib import Path
 from typing import Any
 
@@ -34,14 +35,15 @@ def summarize_clamav(clamd_text: str, onaccess_text: str) -> dict[str, object]:
         "phishing_signatures": enabled("PhishingSignatures"),
         "bytecode": enabled("Bytecode"),
     }
-    healthy = all(core.values()) and access_enabled and "/var/lib/jm-security-ingest" in monitored_paths
+    bounded_scope = set(monitored_paths) == {"/var/lib/jm-security-ingest"}
+    healthy = all(core.values()) and access_enabled and bounded_scope
     return {
         "integration": "jm_clamav_posture",
         "component": "daemon_and_ingest_scope",
         "jm_state": "ok" if healthy else "degraded",
         **core,
         "onaccess_prevention": access_enabled,
-        "onaccess_scope": "ingest_only" if "/var/lib/jm-security-ingest" in monitored_paths else "unverified",
+        "onaccess_scope": "ingest_only" if bounded_scope else "unverified",
         "pua_detection": enabled("DetectPUA"),
     }
 
@@ -109,3 +111,13 @@ def snapshots() -> list[dict[str, object]]:
             "jm_state": "unverified",
         }
     return [clamav, elastic]
+
+
+def main() -> int:
+    for event in snapshots():
+        print(json.dumps(event, sort_keys=True), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
