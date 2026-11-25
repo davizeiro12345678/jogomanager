@@ -10,6 +10,16 @@ export const REPLAY_FORMAT_V2 = 2;
 export const REPLAY_FORMAT_V3 = 3;
 export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
+const REPLAY_COORDINATE_OFFSET = 0x8000;
+let replayCoordinates: Float64Array | undefined;
+
+function buildReplayCoordinates(): Float64Array {
+  const coordinates = new Float64Array(0x10000);
+  for (let index = 0; index < coordinates.length; index += 1) {
+    coordinates[index] = (index - REPLAY_COORDINATE_OFFSET) / QUANTIZE;
+  }
+  return coordinates;
+}
 
 export type StoredReplayV3 = {
   execution?: MatchExecutionContract;
@@ -105,9 +115,11 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 
 function decodeV3(raw: StoredReplayV3): Replay {
   const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
-  const frames: ReplayFrame[] = [];
+  const frames = new Array<ReplayFrame>(timesMs.length);
   const playerCount = raw.meta.length;
   const positionCount = playerCount * 4;
+  // Reuse exact division results for the signed 16-bit position domain.
+  const coordinates = (replayCoordinates ??= buildReplayCoordinates());
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
     timeMs += timesMs[frameIndex]!;
@@ -115,13 +127,10 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const a = new Array<PlayerAction | null>(playerCount);
     const positionBase = frameIndex * positionCount;
     const actionBase = frameIndex * playerCount;
+    for (let component = 0; component < positionCount; component += 1) {
+      p[component] = coordinates[positions[positionBase + component]! + REPLAY_COORDINATE_OFFSET]!;
+    }
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const target = playerIndex * 4;
-      const source = positionBase + target;
-      p[target] = positions[source]! / QUANTIZE;
-      p[target + 1] = positions[source + 1]! / QUANTIZE;
-      p[target + 2] = positions[source + 2]! / QUANTIZE;
-      p[target + 3] = positions[source + 3]! / QUANTIZE;
       a[playerIndex] = actionFromByte(actions[actionBase + playerIndex]!);
     }
     const ballBase = frameIndex * 3;
@@ -138,9 +147,9 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const poss = possession[frameIndex] === 1 ? "away" : "home";
     // Initialize both frame shapes in place. Adding visual data afterward can
     // allocate a separate property store for every frame with visual context.
-    frames.push(
-      frameVisual ? { t, b, p, a, hg, ag, poss, v: frameVisual } : { t, b, p, a, hg, ag, poss },
-    );
+    frames[frameIndex] = frameVisual
+      ? { t, b, p, a, hg, ag, poss, v: frameVisual }
+      : { t, b, p, a, hg, ag, poss };
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),
