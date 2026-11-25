@@ -36,6 +36,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Reject location metadata in committed screenshot evidence
+        run: |
+          node --test scripts/screenshot-privacy.test.mjs
+          node scripts/screenshot-privacy.mjs
       - name: Verify QA audit syntax and immutable revision
         run: |
           node --check .github/scripts/pr132-nine-axis-qa.mjs
