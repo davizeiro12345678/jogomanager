@@ -1,0 +1,66 @@
+services:
+  events-redis:
+    image: redis:8.10.2-alpine
+    container_name: pfm-click-events-redis
+    restart: unless-stopped
+    init: true
+    read_only: true
+    user: "999:1000"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--save", "", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction"]
+    mem_limit: 128m
+    cpus: "0.5"
+    pids_limit: 64
+    volumes:
+      - pfm-click-events-data:/data
+    networks: [eventprivate]
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}
+  events-api:
+    image: node:24-bookworm-slim
+    container_name: pfm-click-events-ingest
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: "0.5"
+    env_file:
+      - /etc/jogomanager/cache-gateway.env
+    command: ["node", "/app/server.mjs"]
+    volumes:
+      - /srv/jogomanager/click-events/server.mjs:/app/server.mjs:ro
+    depends_on:
+      events-redis:
+        condition: service_healthy
+    networks: [gateway, eventprivate]
+    ports:
+      - "127.0.0.1:3095:3095"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3095/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "3"}
+volumes:
+  pfm-click-events-data:
+    external: true
+    name: pfm-click-events-data
+networks:
+  eventprivate:
+    internal: true
+  gateway:
+    external: true
+    name: public-gateway_default
