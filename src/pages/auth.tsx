@@ -95,14 +95,16 @@ export function AuthPage() {
       .getSession()
       .then(({ data, error }) => {
         if (!active) return;
-        // A failed session lookup must not strand the login on a broken origin.
-        const canonical = error
-          ? fallback
-          : canonicalAuthRedirectForSession(href, Boolean(data.session));
+        // An inconclusive lookup is not evidence of a signed-out visitor.
+        // Keep origin-scoped PKCE/session storage intact until a retry succeeds.
+        const canonical = canonicalAuthRedirectForSession(
+          href,
+          error ? undefined : Boolean(data.session),
+        );
         if (canonical) window.location.replace(canonical);
       })
       .catch(() => {
-        if (active) window.location.replace(fallback);
+        // The main session effect reports the error; preserve this origin.
       });
     return () => {
       active = false;
@@ -128,7 +130,7 @@ export function AuthPage() {
     if (!fallback) return false;
     const session = await supabase.auth.getSession().catch(() => null);
     if (!session || session.error) {
-      window.location.replace(fallback);
+      setError("Não foi possível verificar sua sessão. Confira a conexão e tente novamente.");
       return true;
     }
     const canonical = canonicalAuthRedirectForSession(href, Boolean(session.data.session));

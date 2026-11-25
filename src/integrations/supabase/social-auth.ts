@@ -128,9 +128,9 @@ export function canonicalAuthOriginUrl(href: string): string | undefined {
 /** Origin-scoped browser sessions must not be discarded by www canonicalization. */
 export function canonicalAuthRedirectForSession(
   href: string,
-  hasSession: boolean,
+  hasSession: boolean | null | undefined,
 ): string | undefined {
-  return hasSession ? undefined : canonicalAuthOriginUrl(href);
+  return hasSession === false ? canonicalAuthOriginUrl(href) : undefined;
 }
 
 export function socialOAuthOptions(provider: SocialProvider, redirectTo: string) {

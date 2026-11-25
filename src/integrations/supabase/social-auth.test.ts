@@ -144,6 +144,15 @@ describe("configured authentication methods", () => {
     expect(canonicalAuthRedirectForSession("https://jogomanager.com/auth", false)).toBeUndefined();
   });
 
+  it("keeps the origin when the session lookup is inconclusive", () => {
+    const url = "https://www.jogomanager.com/auth?next=%2Fclub";
+    expect(canonicalAuthRedirectForSession(url, undefined)).toBeUndefined();
+    expect(canonicalAuthRedirectForSession(url, null)).toBeUndefined();
+    expect(canonicalAuthRedirectForSession(url, false)).toBe(
+      "https://jogomanager.com/auth?next=%2Fclub",
+    );
+  });
+
   it("preserves the callback destination for every configured direct provider", () => {
     const redirectTo = "https://jogomanager.com/auth?next=%2Fperfil";
     for (const provider of [
