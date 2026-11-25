@@ -59,8 +59,8 @@ describe("stadium environment capture", () => {
     ["entardecer", "neve", "media", 1, 192, "#56616c", "#e4edf3", 1.55, 1.2, "#d5e3ef"],
     ["noite", "seco", "alta", 1, 384, "#060a10", "#e4ecff", 1.45, 2.4, "#d5e3ef"],
     ["noite", "molhado", "media", 1, 192, "#060a10", "#e4ecff", 1.45, 2.4, "#d5e3ef"],
-    ["noite", "chuva", "alta", 1, 384, "#080f16", "#e4ecff", 1.45, 2.4, "#d5e3ef"],
-    ["noite", "neve", "media", 1, 192, "#080f16", "#e4ecff", 1.45, 2.4, "#d5e3ef"],
+    ["noite", "chuva", "alta", 1, 384, "#080f16", "#e4ecff", 1.58, 2.4, "#d5e3ef"],
+    ["noite", "neve", "media", 1, 192, "#080f16", "#e4ecff", 1.58, 2.4, "#d5e3ef"],
   ] as const)(
     "preserves the %s/%s/%s lighting contract at texture scale %s",
     (time, weather, quality, textureScale, resolution, sky, key, intensity, fill, rim) => {

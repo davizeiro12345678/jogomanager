@@ -51,3 +51,16 @@ it("keeps jaw, eyes and eyelids inside their anatomical envelopes with full blin
     expect(reopened).toBe(true);
   }
 });
+
+it("makes tired eyelids reopen more slowly than alert eyelids without changing blink cadence", () => {
+  const alert = { jaw: 0.12, blinkRate: 1, lids: 1, gaze: 0.75 };
+  const tired = { ...alert, lids: 0.75 };
+  let alertClosed = 0;
+  let tiredClosed = 0;
+  for (let t = 0; t < 30; t += 0.005) {
+    if (facialPoseAt(t, 43, alert, 0, 0, 0).lidClosure > 0.65) alertClosed++;
+    if (facialPoseAt(t, 43, tired, 0, 0, 0).lidClosure > 0.65) tiredClosed++;
+  }
+  expect(alertClosed).toBeGreaterThan(0);
+  expect(tiredClosed).toBeGreaterThan(alertClosed * 1.15);
+});

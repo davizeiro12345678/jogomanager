@@ -139,3 +139,22 @@ describe("physical player movement", () => {
     expect(tired.armLRoll).toBeGreaterThan(front.armLRoll);
   });
 });
+
+it.each([1.35, 4, 8])(
+  "keeps ankle orientation continuous across heel strike and toe-off at %s m/s",
+  (speed) => {
+    const duty = 0.64 - Math.min(1, speed / 6.8) * 0.38;
+    const epsilon = 1e-6;
+    const ankle = (cycle: number) => gaitPoseAt(cycle * Math.PI * 2, speed, p).pose.ankleL;
+    expect(Math.abs(ankle(duty - epsilon) - ankle(duty + epsilon))).toBeLessThan(0.001);
+    expect(Math.abs(ankle(1 - epsilon) - ankle(epsilon))).toBeLessThan(0.001);
+  },
+);
+
+it("keeps the presentation rig finite when phase or movement style is temporarily unavailable", () => {
+  const direction = { forward: 5, lateral: 0, stamina: 100, turnRate: 0, hasBall: false };
+  const expected = gaitPoseAt(0, 5, p, emptyPose(), direction);
+  const recovered = gaitPoseAt(Number.NaN, 5, p, emptyPose(), { ...direction, style: Infinity });
+  expect(recovered).toEqual(expected);
+  expect(Object.values(recovered.pose).every(Number.isFinite)).toBe(true);
+});

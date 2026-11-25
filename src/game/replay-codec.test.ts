@@ -49,12 +49,11 @@ describe("versioned replay codec", () => {
     ]) {
       const originalFrame = original.frames[frameIndex]!;
       const unpacked = decoded.frames[frameIndex]!;
-      expect(unpacked.p).toEqual(
-        originalFrame.p.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
-      );
-      expect(unpacked.b).toEqual(
-        originalFrame.b.map((coordinate) => quantizeReplayComponent(coordinate) / 100),
-      );
+      // The packed buffer is an Int16Array, so a quantized -0 reads back as 0.
+      // Coordinates are equal; only the IEEE sign of zero differs.
+      const packed = (coordinate: number) => (quantizeReplayComponent(coordinate) || 0) / 100;
+      expect(unpacked.p).toEqual(originalFrame.p.map(packed));
+      expect(unpacked.b).toEqual(originalFrame.b.map(packed));
     }
     expect(decoded.score).toEqual(original.score);
     replay.seek(0);

@@ -34,11 +34,14 @@ export function solveLegTarget(
   shin: number,
   lateral = 0,
 ) {
-  const length = clamp(
-    Math.hypot(forward, down, lateral),
-    Math.abs(thigh - shin) + 0.001,
-    thigh + shin - 0.001,
-  );
+  const requestedLength = Math.hypot(forward, down, lateral);
+  const length = clamp(requestedLength, Math.abs(thigh - shin) + 0.001, thigh + shin - 0.001);
+  // Preserve the direction of an unreachable target instead of clipping
+  // only the knee extension: that otherwise shifts the planted foot sideways.
+  const projection = requestedLength > 0.001 ? length / requestedLength : 1;
+  forward *= projection;
+  down *= projection;
+  lateral *= projection;
   const cosine = clamp((length * length - thigh * thigh - shin * shin) / (2 * thigh * shin), -1, 1);
   const bend = Math.acos(cosine);
   const verticalReach = thigh + shin * Math.cos(bend);
@@ -74,6 +77,9 @@ export function gaitPoseAt(
   out = emptyPose(),
   direction?: GaitDirection,
 ): GaitSample {
+  // A discontinuous or corrupt presentation clock must not propagate NaN
+  // to the skeleton matrices. Valid phases and authoritative state are unchanged.
+  if (!Number.isFinite(phase)) phase = 0;
   for (const joint of JOINTS) out[joint] = 0;
   const s = clamp(speed, 0, 12);
   const amount = clamp(s / 6.8, 0, 1);
@@ -107,7 +113,9 @@ export function gaitPoseAt(
     const down = length - drop + bob - lift;
     const leg = solveLegTarget(z * forward, down, p.thigh, p.shin, z * lateral);
     // Toe-off and heel strike roll only at the edges of support.
-    const roll = stance ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5 : 0.08;
+    const roll = stance
+      ? Math.max(0, u - 0.8) * 0.7 - Math.max(0, 0.14 - u) * 0.5
+      : 0.14 - 0.21 * smooth(u);
     return {
       ...leg,
       travel: z,
@@ -133,7 +141,8 @@ export function gaitPoseAt(
   out.ankleR = right.ankle;
   // An arm moves opposite its own leg, rather than using an unrelated sine
   // wave. The two arms need not be exact opposites during double support.
-  const individual = direction?.style === undefined ? 0 : (direction.style % 101) / 100 - 0.5;
+  const style = direction?.style;
+  const individual = style !== undefined && Number.isFinite(style) ? (style % 101) / 100 - 0.5 : 0;
   const armAmplitude = (0.14 + amount * 0.62) * active * (1 + individual * 0.12);
   out.armLPitch = halfStride > 0.001 ? (left.travel / halfStride) * armAmplitude : 0.04;
   out.armRPitch = halfStride > 0.001 ? (right.travel / halfStride) * armAmplitude : 0.04;

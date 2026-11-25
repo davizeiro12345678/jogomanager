@@ -112,3 +112,38 @@ it("keeps dry mowing response and reuses paint coverage across colour, roughness
   material.dispose();
   texture.dispose();
 });
+
+it("uses one fine fibre sample for high-tier diffuse and roughness without tinting painted lines", () => {
+  const texture = new THREE.Texture();
+  const material = createPitchSurfaceMaterial({
+    albedo: texture,
+    roughness: texture,
+    microRoughness: texture,
+    normal: texture,
+    normalScale: new THREE.Vector2(0.42, 0.42),
+    markings: texture,
+    wear: texture,
+    wearOpacity: 0.2,
+    tint: new THREE.Color("white"),
+    wet: 0,
+    high: true,
+  });
+  const source = THREE.ShaderLib.standard;
+  const shader = {
+    uniforms: { ...source.uniforms },
+    vertexShader: source.vertexShader,
+    fragmentShader: source.fragmentShader,
+  };
+  material.onBeforeCompile(
+    shader as Parameters<typeof material.onBeforeCompile>[0],
+    {} as THREE.WebGLRenderer,
+  );
+  expect(shader.fragmentShader.match(/texture2D\(pitchDetailRoughness,/g)).toHaveLength(1);
+  expect(shader.fragmentShader).toContain("diffuseColor.rgb *= mix(0.94, 1.06, pitchFibre)");
+  expect(shader.fragmentShader).toContain("roughnessFactor *= mix(0.88, 1.0, pitchFibre)");
+  expect(shader.fragmentShader.indexOf("diffuseColor.rgb *= mix(0.94")).toBeLessThan(
+    shader.fragmentShader.indexOf("vec4 paint"),
+  );
+  material.dispose();
+  texture.dispose();
+});

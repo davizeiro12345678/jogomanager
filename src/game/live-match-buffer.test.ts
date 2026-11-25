@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
-import { WorkerMatchView, snapshotMatchPacket } from "./live-match";
+import { WorkerMatchView, snapshotMatch, snapshotMatchPacket } from "./live-match";
 import type { PlayerAction } from "./animation";
 import {
   MATCH_PLAYER_COUNT,
@@ -99,6 +99,38 @@ describe("live match transferable buffers", () => {
     pool.release(third);
     pool.release(first);
     expect(pool.available()).toBe(3);
+  });
+
+  it("never clones an unused player object when building a transferable packet", () => {
+    const sim = createPlayers();
+    let extraReads = 0;
+    Object.defineProperty(sim.players[0]!, "fixtureOnly", {
+      enumerable: true,
+      get() {
+        extraReads += 1;
+        return 1;
+      },
+    });
+    const packet = snapshotMatchPacket(sim, 1);
+    expect(packet.players.positions.byteLength).toBe(
+      createLivePlayerBuffer(sim.players).positions.byteLength,
+    );
+    expect(extraReads).toBe(0);
+  });
+
+  it("copies every declared player field and never aliases a mutable player snapshot", () => {
+    const sim = createPlayers();
+    const original = sim.players.map((p) => ({ ...p }));
+    const a = snapshotMatch(sim, 1);
+    expect(a.players).toStrictEqual(original);
+    for (let i = 0; i < 120; i++) sim.step(1 / 30, 6);
+    const b = snapshotMatch(sim, 2);
+    expect(b.players).toStrictEqual(sim.players.map((p) => ({ ...p })));
+    expect(a.players).toStrictEqual(original);
+    expect(a.players[0]).not.toBe(b.players[0]);
+    expect(b.players[0]).not.toBe(sim.players[0]);
+    expect(a.events).toBeDefined();
+    expect(Object.hasOwn(snapshotMatch(sim, 3, undefined, false), "events")).toBe(false);
   });
 
   it("applies three consecutive packets while retaining only two for interpolation", () => {

@@ -908,7 +908,8 @@ export function NewCareer() {
           <Cutscene
             scene="arrival"
             look={look}
-            {...(selected ? { accent: selected.club.primary } : {})}
+            club={selected?.club}
+            managerName={name.trim()}
             onDone={() => {
               setScene(false);
               void navigate({ to: "/club" });

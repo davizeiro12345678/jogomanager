@@ -48,3 +48,18 @@ describe("compressed GPU texture budgets", () => {
     expect(gpuTexturePolicy(16, 2).colorAnisotropy).toBe(2);
   });
 });
+
+it("retains authored fine detail only for a high-memory device within the same resident budget", () => {
+  const mips = [1024, 512, 256, 128, 64, 32, 16, 8, 4].map((size) => ({
+    width: size,
+    height: size,
+    data: new Uint8Array(size * size),
+  }));
+  const fast = new THREE.CompressedTexture(mips, 1024, 1024, THREE.RGBA_BPTC_Format);
+  const low = new THREE.CompressedTexture(mips, 1024, 1024, THREE.RGBA_BPTC_Format);
+  expect(prepareGpuTexture(fast, false, gpuTexturePolicy(8, 16), true).droppedMips).toBe(0);
+  expect(prepareGpuTexture(low, false, gpuTexturePolicy(4, 16), true).droppedMips).toBe(2);
+  expect(gpuTexturePolicy(8, 16).residentBudget).toBe(24 * 1024 * 1024);
+  fast.dispose();
+  low.dispose();
+});

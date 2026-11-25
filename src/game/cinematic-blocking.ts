@@ -1,5 +1,6 @@
 import type { SceneArt, Speaker } from "@/content/cutscenes";
 import { cinematicDrillAt, type CinematicDrill } from "./cinematic-action";
+import { cinematicEntranceAt } from "./cinematic-entrance";
 import { cinematicSetFor, type CinematicSet } from "./cinematic-set";
 export { cinematicSetFor, type CinematicSet } from "./cinematic-set";
 
@@ -196,6 +197,11 @@ function residentMarkFor(
   if (art === "gym") return GYM_RESIDENT_MARKS[role] ?? null;
   if (art === "medical") return MEDICAL_RESIDENT_MARKS[role] ?? null;
   if (set === "pitch" && role === "captain") return festive ? [0, 0.4] : [-5.2, 0.4];
+  if (set === "arrival" && role === "captain") {
+    const offset = cinematicEntranceAt(time);
+    const mark = RESIDENT_MARKS.arrival.captain!;
+    return [mark[0] + offset.x, mark[1] + offset.z];
+  }
   return RESIDENT_MARKS[set][role] ?? null;
 }
 

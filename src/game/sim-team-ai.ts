@@ -394,8 +394,12 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
     }
 
-    tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
-    tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
+    // Interception already bounds the revision-2 chase target within one
+    // metre of the lines. Apply the formation margin to the other runs.
+    if (!contactRevision2 || !chase.has(p.id)) {
+      tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
+      tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
+    }
 
     const stam = 0.78 + (p.stamina / 100) * 0.22;
     const baseSpeed = 2.45 + (p.pace / 100) * 3.65;

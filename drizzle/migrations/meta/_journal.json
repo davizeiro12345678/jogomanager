@@ -596,6 +596,27 @@
       "when": 1795269600000,
       "tag": "0084_private_cooperative_match_fixtures",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1795532400000,
+      "tag": "0085_coin_service_ledger_contract",
+      "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1795532400001,
+      "tag": "0086_official_asset_catalog_projection",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1795532400002,
+      "tag": "0087_starter_checkout_single_active_slot",
+      "breakpoints": true
     }
   ]
 }

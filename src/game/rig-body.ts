@@ -66,6 +66,8 @@ export interface RigBodyContext {
   /** qualidade alta: detalhes finos de rosto, músculos e mechas de cabelo */
   hi: boolean;
   portrait?: boolean;
+  /** Optional bounded facial tessellation for narrative close-ups. */
+  headSampling?: { columns: number; rows: number } | undefined;
   /** Staff actors reuse the athlete skeleton with full-length cloth trousers. */
   trousers?: boolean;
   staffStyle?: "jacket" | "polo" | undefined;
@@ -582,7 +584,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
 
   /* --------------------------------------------------------------- rosto */
 
-  const sculpt = buildSculptedFace(P, look, mats, hi, portrait ?? true);
+  const sculpt = buildSculptedFace(P, look, mats, hi, portrait, ctx.headSampling);
   const { head, face, eyes, jaw, eyelidUpperL, eyelidLowerL, eyelidUpperR, eyelidLowerR } = sculpt;
   const hairParts = sculpt.hair;
   const hairSecondaryParts = sculpt.hairSecondary;
@@ -1123,6 +1125,7 @@ export function buildRigBody(ctx: RigBodyContext): RigBody {
     ctx.staffStyle ?? "athlete",
     ctx.look.hairStyle,
     ctx.look.gloves ? "gloves" : "hands",
+    ...(ctx.headSampling ? [`head-${ctx.headSampling.columns}x${ctx.headSampling.rows}`] : []),
   ].join(":");
   return withRigGeometryContext(String(ctx.look.seed), style, lod, () =>
     buildRigBodyUnprepared(ctx),

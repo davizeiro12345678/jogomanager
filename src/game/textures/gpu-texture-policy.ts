@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 export type GpuTexturePolicy = Readonly<{
   maxDataSize: number;
+  maxFineDataSize: number;
   maxColorSize: number;
   residentBudget: number;
   colorAnisotropy: number;
@@ -12,6 +13,11 @@ export function gpuTexturePolicy(memoryGb?: number, maxAnisotropy = 4): GpuTextu
   const constrained = memoryGb !== undefined && memoryGb <= 4;
   return {
     maxDataSize: constrained ? 256 : 512,
+    maxFineDataSize: constrained
+      ? 256
+      : memoryGb !== undefined && memoryGb >= 8 && maxAnisotropy >= 8
+        ? 1024
+        : 512,
     maxColorSize: constrained ? 512 : 1024,
     residentBudget: (constrained ? 8 : 24) * 1024 * 1024,
     colorAnisotropy: Math.max(1, Math.min(constrained ? 2 : 4, maxAnisotropy)),
@@ -24,12 +30,17 @@ export function prepareGpuTexture(
   texture: THREE.CompressedTexture,
   color: boolean,
   policy: GpuTexturePolicy,
+  fineDetail = false,
 ): {
   bytes: number;
   droppedMips: number;
   compressed: boolean;
 } {
-  const maxSize = color ? policy.maxColorSize : policy.maxDataSize;
+  const maxSize = color
+    ? policy.maxColorSize
+    : fineDetail
+      ? policy.maxFineDataSize
+      : policy.maxDataSize;
   const mips = texture.mipmaps;
   let droppedMips = 0;
   while (

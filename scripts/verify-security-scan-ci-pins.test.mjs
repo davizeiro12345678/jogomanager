@@ -32,3 +32,28 @@ test("Bun delays newly released npm dependencies for at least 7 days", () => {
   const source = readFileSync(new URL("bunfig.toml", root), "utf8");
   assert.match(source, /^minimumReleaseAge\s*=\s*604800$/m);
 });
+
+test("PR #132 workflows do not persist Git credentials after checkout", () => {
+  for (const name of [
+    "cinematic-recovery-qa.yml",
+    "pr132-43-acceptance.yml",
+    "pr132-independent-diff-review.yml",
+    "pr132-nine-axis-qa.yml",
+  ]) {
+    const source = readFileSync(new URL(".github/workflows/" + name, root), "utf8");
+    const checkouts = [...source.matchAll(/^\s*(?:-\s*)?uses:\s*actions\/checkout@[^\n]+/gm)];
+    assert.ok(checkouts.length > 0, name + " must checkout an immutable revision");
+    for (const checkout of checkouts) {
+      const following = source
+        .slice(checkout.index + checkout[0].length)
+        .split("\n")
+        .slice(0, 7)
+        .join("\n");
+      assert.match(
+        following,
+        /^\s+persist-credentials:\s+false\s*$/m,
+        name + " must disable checkout credential persistence",
+      );
+    }
+  }
+});

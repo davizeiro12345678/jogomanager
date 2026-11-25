@@ -208,3 +208,38 @@ describe("bounded public data cache", () => {
     }
   });
 });
+
+describe("bounded stale public asset recovery", () => {
+  it("serves the last complete catalog during a refresh failure, without extending its age", async () => {
+    let now = 0;
+    const cache = createPublicReadCache<number>({
+      ttlMs: 100,
+      maxEntries: 1,
+      staleIfErrorMs: 500,
+      now: () => now,
+    });
+    expect(await cache.get("assets", async () => 42)).toBe(42);
+    now = 101;
+    expect(
+      await cache.get("assets", async () => {
+        throw new Error("upstream");
+      }),
+    ).toBe(42);
+    now = 601;
+    await expect(
+      cache.get("assets", async () => {
+        throw new Error("upstream");
+      }),
+    ).rejects.toThrow("upstream");
+    expect(cache.size).toBe(0);
+  });
+
+  it("does not fabricate a catalog on a cold failure", async () => {
+    const cache = createPublicReadCache<number>({ ttlMs: 100, maxEntries: 1, staleIfErrorMs: 500 });
+    await expect(
+      cache.get("assets", async () => {
+        throw new Error("cold");
+      }),
+    ).rejects.toThrow("cold");
+  });
+});

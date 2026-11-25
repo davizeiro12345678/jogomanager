@@ -18,6 +18,7 @@ export {
   type QuickSimEvent,
 } from "./career-quick-sim";
 import { CLUBS, getLeague } from "./data/leagues";
+import { stadiumStyleFor } from "./customStyle";
 import { valueFor } from "./economy";
 import { makeRng } from "./rng";
 import { withCareerWorld } from "./career-world";
@@ -56,6 +57,17 @@ export function initCareer(
   const { lineup, bench } = pickLineup(squad, formation);
   const objective = Math.max(1, Math.min(15, Math.round((96 - club.strength) / 4)));
   const base = defaultV3(club);
+  // The custom stadium was registered before creating the save. Preserve its
+  // capacity, rather than deriving a different number from club strength.
+  const customCapacity = stadiumStyleFor(clubId)?.capacity;
+  if (
+    typeof customCapacity === "number" &&
+    Number.isInteger(customCapacity) &&
+    customCapacity >= 8_000 &&
+    customCapacity <= 90_000
+  ) {
+    base.capacity = customCapacity;
+  }
   const rep = profile?.reputation ?? 3;
   const loved = profile?.favClub === clubId;
   const budget = Math.round(club.strength * 0.9 * (0.7 + rep * 0.12) * 10) / 10;

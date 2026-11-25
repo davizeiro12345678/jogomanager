@@ -52,7 +52,11 @@ class FakeSocket implements AuthorityClientSocket {
     this.onopen?.(new Event("open"));
   }
   message(raw: string): void {
-    this.onmessage?.({ data: raw } as MessageEvent);
+    this.onmessage?.({
+      data: raw,
+      isTrusted: true,
+      origin: "wss://match.jogomanager.com",
+    } as MessageEvent);
   }
   close(code = 1000, reason?: string): void {
     // Calls with a reason come from the browser client. Calls without one in
@@ -264,6 +268,72 @@ describe("staged authoritative WSS client", () => {
     }
   });
 
+  it("rejects synthetic or foreign-origin readiness before granting the transport state", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      const data = frame({ type: "ready", seat: "home", snapshot: state(1) });
+      socket.onmessage?.({
+        data,
+        isTrusted: false,
+        origin: "wss://match.jogomanager.com",
+      } as MessageEvent);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      socket.onmessage?.({
+        data,
+        isTrusted: true,
+        origin: "wss://foreign.example",
+      } as MessageEvent);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+      socket.message(data);
+      expect(f.client.statusSnapshot()).toBe("connected");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("does not accept provisional snapshots or a final receipt before the signed ready", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      socket.message(frame({ type: "snapshot", snapshot: state(500) }));
+      socket.message(
+        frame({
+          type: "final",
+          receipt: {
+            version: 1,
+            roomId,
+            simulationVersion: "contact-2",
+            commandHash: "a".repeat(64),
+            idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+            issuedAt: startAt,
+            closureReason: "completed",
+            result: { homeGoals: 0, awayGoals: 0, winner: "draw" },
+            signature: "test-only-final-receipt-signature",
+          },
+        }),
+      );
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.client.officialReceipt()).toBeNull();
+      expect(f.events).toEqual([]);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      await vi.advanceTimersByTimeAsync(5_001);
+      expect(socket.closeCode).toBe(4003);
+      expect(f.client.statusSnapshot()).toBe("unavailable");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("rejects forged seats and does not join a room from a different domain", async () => {
     const f = fixture();
     f.client.start();
@@ -273,6 +343,8 @@ describe("staged authoritative WSS client", () => {
     socket.message(frame({ type: "ready", seat: "away", snapshot: state(1) }));
     expect(socket.closeCode).toBe(4003);
     expect(f.client.statusSnapshot()).toBe("unavailable");
+    expect(f.client.officialSnapshot()).toBeNull();
+    expect(f.events).toEqual([]);
     expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
     f.client.dispose();
   });

@@ -10,7 +10,6 @@ export const REPLAY_FORMAT_V2 = 2;
 export const REPLAY_FORMAT_V3 = 3;
 export const REPLAY_V3_MIN_REDUCTION = 0.2;
 const QUANTIZE = 100;
-
 export type StoredReplayV3 = {
   execution?: MatchExecutionContract;
   version: typeof REPLAY_FORMAT_V3;
@@ -104,17 +103,19 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
-  const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
   const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
-  const positionCount = playerCount * 4;
+  const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
     timeMs += timesMs[frameIndex]!;
-    const p = new Array<number>(positionCount);
+    // V3 buffers are length-validated before decoding. Preallocate the exact
+    // player arrays and read typed buffers directly: avoid repeated push growth,
+    // optional indexed lookups and four helper calls per athlete per frame.
+    const p = new Array<number>(playerCount * 4);
     const a = new Array<PlayerAction | null>(playerCount);
-    const positionBase = frameIndex * positionCount;
     const actionBase = frameIndex * playerCount;
+    const positionBase = actionBase * 4;
     for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
       const target = playerIndex * 4;
       const source = positionBase + target;
@@ -126,21 +127,22 @@ function decodeV3(raw: StoredReplayV3): Replay {
     }
     const ballBase = frameIndex * 3;
     const scoreBase = frameIndex * 2;
+    const frame: ReplayFrame = {
+      t: timeMs / 1_000,
+      b: [
+        ball[ballBase]! / QUANTIZE,
+        ball[ballBase + 1]! / QUANTIZE,
+        ball[ballBase + 2]! / QUANTIZE,
+      ],
+      p,
+      a,
+      hg: score[scoreBase]!,
+      ag: score[scoreBase + 1]!,
+      poss: possession[frameIndex] === 1 ? "away" : "home",
+    };
     const frameVisual = visual?.[frameIndex];
-    const t = timeMs / 1_000;
-    const b: ReplayFrame["b"] = [
-      ball[ballBase]! / QUANTIZE,
-      ball[ballBase + 1]! / QUANTIZE,
-      ball[ballBase + 2]! / QUANTIZE,
-    ];
-    const hg = score[scoreBase]!;
-    const ag = score[scoreBase + 1]!;
-    const poss = possession[frameIndex] === 1 ? "away" : "home";
-    // Initialize both frame shapes in place. Adding visual data afterward can
-    // allocate a separate property store for every frame with visual context.
-    frames.push(
-      frameVisual ? { t, b, p, a, hg, ag, poss, v: frameVisual } : { t, b, p, a, hg, ag, poss },
-    );
+    if (frameVisual) frame.v = frameVisual;
+    frames.push(frame);
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),

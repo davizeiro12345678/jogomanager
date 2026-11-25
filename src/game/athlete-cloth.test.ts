@@ -219,3 +219,14 @@ describe("bounded athlete garment mechanics", () => {
       }
   });
 });
+
+it("integrates breathing phase continuously when effort changes after a long match", () => {
+  const cloth = new ClothDynamics();
+  for (let frame = 0; frame < 600; frame++) cloth.advance(1 / 60, still);
+  const phase = cloth.breathPhase;
+  cloth.advance(1 / 60, { ...still, effort: 1 });
+  expect((cloth.breathPhase - phase + Math.PI * 2) % (Math.PI * 2)).toBeCloseTo(3.5 / 60, 7);
+  const paused = cloth.breathPhase;
+  cloth.advance(0, still);
+  expect(cloth.breathPhase).toBe(paused);
+});

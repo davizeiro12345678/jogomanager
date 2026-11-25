@@ -252,7 +252,7 @@ function LiveMatch({
   const mySide = isHome ? "home" : "away";
   const { t } = useT();
   const [speed, setSpeed] = useState(1);
-  const [paused, setPaused] = useState(false);
+  const [pausedManually, setPaused] = useState(false);
   const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -275,6 +275,8 @@ function LiveMatch({
   }, [panelOpen]);
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
   const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
+  const [narrationSettingsOpen, setNarrationSettingsOpen] = useState(false);
+  const paused = pausedManually || drawer !== "none" || narrationSettingsOpen;
   const [done, setDone] = useState(false);
   const [postMatchStep, setPostMatchStep] = useState<number | null>(null);
   const [advancing, setAdvancing] = useState(false);
@@ -669,6 +671,7 @@ function LiveMatch({
           <Cutscene
             key={PREMATCH_SCENE_IDS[introStep]}
             scene={PREMATCH_SCENE_IDS[introStep]!}
+            autoPlay
             look={career.manager?.look ?? FALLBACK_LOOK}
             club={myClub}
             managerName={career.managerName}
@@ -797,25 +800,17 @@ function LiveMatch({
           </button>
           <NarrationSettings
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/90"
-            onOpenChange={(open) => {
-              if (open) setPaused(true);
-            }}
+            onOpenChange={setNarrationSettingsOpen}
           />
           <button
-            onClick={() => {
-              setPaused(true);
-              setDrawer("store");
-            }}
+            onClick={() => setDrawer("store")}
             aria-label="Abrir loja"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ShoppingBag size={16} />
           </button>
           <button
-            onClick={() => {
-              setPaused(true);
-              setDrawer("chat");
-            }}
+            onClick={() => setDrawer("chat")}
             aria-label="Abrir chat"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
@@ -961,22 +956,10 @@ function LiveMatch({
           <Sparkles size={12} /> {showStats ? "Ocultar" : "Ver"} estatísticas
         </button>
         <div className="match-panel-actions">
-          <button
-            type="button"
-            onClick={() => {
-              setPaused(true);
-              setDrawer("store");
-            }}
-          >
+          <button type="button" onClick={() => setDrawer("store")}>
             <ShoppingBag size={16} /> Loja
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPaused(true);
-              setDrawer("chat");
-            }}
-          >
+          <button type="button" onClick={() => setDrawer("chat")}>
             <MessageCircle size={16} /> Chat
           </button>
         </div>

@@ -400,6 +400,7 @@ export type Database = {
           price_cents: number | null
           product_key: string | null
           session_id: string
+          starter_slot_released_at: string | null
           stripe_price_id: string | null
           user_id: string
         }
@@ -411,6 +412,7 @@ export type Database = {
           price_cents?: number | null
           product_key?: string | null
           session_id: string
+          starter_slot_released_at?: string | null
           stripe_price_id?: string | null
           user_id: string
         }
@@ -422,6 +424,7 @@ export type Database = {
           price_cents?: number | null
           product_key?: string | null
           session_id?: string
+          starter_slot_released_at?: string | null
           stripe_price_id?: string | null
           user_id?: string
         }
@@ -2354,6 +2357,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      read_official_asset_catalog: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {

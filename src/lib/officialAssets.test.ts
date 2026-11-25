@@ -71,6 +71,24 @@ describe("official asset browser cache", () => {
     expect(written.data).toEqual(data);
   });
 
+  it("uses a bounded stale complete catalogue during an outage without extending its lifetime", async () => {
+    const at = Date.now() - 2 * 86_400_000;
+    get.mockResolvedValue({ at, data });
+    fetchAssets.mockResolvedValueOnce(new Response(null, { status: 503 }));
+    await assets.loadOfficialAssets();
+    expect(assets.officialCrest("club")).toBe(data.crests.club);
+    expect(fetchAssets).toHaveBeenCalledTimes(1);
+    expect(set).not.toHaveBeenCalled();
+  });
+
+  it("does not restore a catalogue older than seven days during an outage", async () => {
+    get.mockResolvedValue({ at: Date.now() - 8 * 86_400_000, data });
+    fetchAssets.mockResolvedValueOnce(new Response(null, { status: 503 }));
+    await assets.loadOfficialAssets();
+    expect(assets.officialCrest("club")).toBeUndefined();
+    expect(set).not.toHaveBeenCalled();
+  });
+
   it("allows a later load to recover after an unavailable server response", async () => {
     fetchAssets.mockResolvedValueOnce(new Response(null, { status: 503 }));
     await assets.loadOfficialAssets();

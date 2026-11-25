@@ -25,3 +25,7 @@ export function resolveFootballPublicEnvironment(
 export function footballPublicEnvironment() {
   return resolveFootballPublicEnvironment(workerBindings, process.env);
 }
+
+export function isFootballWorkerRuntime(): boolean {
+  return workerBindings !== undefined;
+}

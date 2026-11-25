@@ -238,7 +238,10 @@ function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNa
   return {
     weave,
     rib: hi ? compressedOrFallback(socksNormal, FLAT_NORMAL, sockRibNormal, "sockNormal") : null,
-    pores: hi ? compressedOrFallback(skinNormal, FLAT_NORMAL, skinPoreNormal, "skinNormal") : null,
+    pores: hi
+      ? (ktx2("skinDetailNormal") ??
+        compressedOrFallback(skinNormal, FLAT_NORMAL, skinPoreNormal, "skinNormal"))
+      : null,
     grain,
     shorts: hi ? compressedOrFallback(shortsNormal, FLAT_NORMAL, shortsPanelNormal) : null,
     shortsRough: hi ? garmentRoughness("shorts") : null,
@@ -250,9 +253,9 @@ function playerTextureMaps(hi: boolean, names: ReturnType<typeof detailTextureNa
     // The published hair_normal.ktx2 is a grayscale height field (RGB near
     // 127), not tangent-space normals. Streaming it into normalMap flips the
     // scalp's normals and produces silver bands despite the matte pigment.
-    // Reuse the existing immutable fibre normal instead of requesting that
-    // asset. One shared map keeps the same shader feature and texture slot.
-    hairNormal: hi ? (hairStrandNormal() ?? FLAT_NORMAL) : null,
+    // The versioned replacement is a real tangent-space normal. Keep the
+    // shared procedural fallback available while it streams.
+    hairNormal: hi ? (ktx2("hairDetailNormal") ?? hairStrandNormal() ?? FLAT_NORMAL) : null,
     // Fine fibres retain a broad response even when an old compressed
     // roughness asset contains near-black channels from an earlier bake.
     hairRough: hi ? garmentRoughness("shorts") : null,
@@ -326,6 +329,7 @@ export function playerMaterials(
     kit.shorts,
     kit.socks,
     kit.detail,
+    kit.pattern,
     tex?.uuid ?? "-",
     // suor/grama/chuva entram na chave: é o que faz a camisa sujar durante a
     // partida sem que nenhum atleta ganhe material próprio (3 × 3 × 2 no máximo)
@@ -339,7 +343,7 @@ export function playerMaterials(
           bootNormalName,
           skinNormalName,
         ]
-      : []),
+      : [bootNormalName]),
   ].join("|");
 
   const hit = cache.get(key);
@@ -388,7 +392,7 @@ export function playerMaterials(
           roughness: 0.82 - sweat * 0.12,
           normalMap: pores,
           roughnessMap: skinRough,
-          normalScale: new THREE.Vector2(0.11, 0.11),
+          normalScale: new THREE.Vector2(0.15, 0.15),
           clearcoat: 0.025 + sweat * 0.09,
           clearcoatRoughness: 0.62 - sweat * 0.17,
           // gotas de suor: só o verniz recebe o relevo, a pele continua macia
@@ -421,7 +425,7 @@ export function playerMaterials(
           map: tex,
           normalMap: weave,
           roughnessMap: jerseyRough,
-          normalScale: new THREE.Vector2(0.22, 0.22),
+          normalScale: new THREE.Vector2(0.31, 0.31),
           roughness: 0.94 - sweat * 0.14,
           envMapIntensity: 0.55,
           clearcoat: sweat * 0.16,
@@ -444,7 +448,7 @@ export function playerMaterials(
       roughness: 0.98 - sweat * 0.1,
       normalMap: weave,
       roughnessMap: jerseyRough,
-      normalScale: new THREE.Vector2(0.22, 0.22),
+      normalScale: new THREE.Vector2(hi ? 0.31 : 0.22, hi ? 0.31 : 0.22),
       envMapIntensity: 0.55,
       ...(hi
         ? {
@@ -509,7 +513,7 @@ export function playerMaterials(
           // plastic reflection, with no extra material or geometry.
           normalMap: hairNormal,
           roughnessMap: hairRough,
-          normalScale: new THREE.Vector2(0.11, 0.18),
+          normalScale: new THREE.Vector2(0.14, 0.24),
           metalness: 0,
           clearcoat: 0,
           clearcoatRoughness: 0.85,
@@ -545,9 +549,9 @@ export function playerMaterials(
         })
       : new THREE.MeshStandardMaterial({
           color: look.bootColor,
-          roughness: 0.34,
+          roughness: bootFinish.roughness,
           normalMap: grain,
-          metalness: 0.035,
+          metalness: 0,
         }),
     bootAccent: hi
       ? new THREE.MeshPhysicalMaterial({
