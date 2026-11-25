@@ -290,3 +290,40 @@ Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expans
 
 **Continuação necessária, não mascarar como pronta:** secrets e isolamento de banco staging, publicar código completo de DO sem habilitar serviços, testes de duas conexões WSS e recuperação após reinício, admissão de espectadores, ligações de 2x2/torneios ao motor, painel de moderador com notificações, ativação autenticada de recursos, IA de equipe física/gráficos, validação de FPS real. Avaliar integralmente o Quality Gates no SHA exato antes do merge. Não afirmar benchmarking de dispositivos não testados.
 
+
+
+## 25/11/2026 — checkpoint de continuidade
+
+### GitHub / CI
+- HEAD observado: ac2dd4065e93e48952bf2dbb4968b78ed28d3705; PR #132 convertido para Draft.
+- CodeQL PASS; NPM audit de produção PASS; 43 suítes de aceitação PASS; 9-axis QA PASS; inventário automatizado de diff PASS.
+- CodSpeed FAIL no HEAD atual. O resultado anterior 16/16 pertence ao HEAD cd919599 e não vale para ac2dd4.
+- Quality gate, Lighthouse Mobile, evidência visual e startup diagnostics ainda precisam concluir no HEAD exato. Cancelamento não equivale a aprovação.
+- Inventário automatizado cobre 1.154 arquivos e destaca 58 hotspots de revisão; isso não substitui revisão humana integral. A amostra da API de comparação GitHub é limitada.
+
+### VPS / segurança
+- UFW ativo, default deny de entrada; políticas INPUT IPv4/IPv6 DROP. Nginx e painéis observados em loopback; Tailscale ativo, 1/3 peers online, sem rotas anunciadas.
+- SSH: root/password auth desabilitados, public-key only, forwarding desabilitado. Host keys RSA 3072, ECDSA 256 e Ed25519. RequiredRSASize 1024 permanece como hardening pendente.
+- Docker socket root:docker 0660; grupo docker sem membros. jmadmin não está em docker nem video.
+- SentinelX possui NOPASSWD ALL e serviço sem sandbox de filesystem; alteração bloqueada até definir substituição por broker/allowlist sem perder recuperação.
+- Remote Desktop Commander roda como root e tem acesso amplo ao filesystem; hardening requer matriz de operações e teste de recuperação.
+- Tracee usa host PID e capabilities eBPF amplas, mas rede none e rootfs read-only; revisar redução de capabilities sem quebrar coleta.
+- Fail2ban/ClamAV têm erros históricos de inicialização/namespace, mas estão ativos. ClamAV 1.5.4, DB 28194 atualizado em 25/11.
+- Certificado local de origin self-signed; certificado público válido até 19/02/2027. Revisar validação TLS do túnel Cloudflare.
+- Staging atual está em fb07df1, não no HEAD ac2dd4. Não usar como evidência de QA do PR.
+
+### Aplicação / navegador
+- GET /api/health 200 e no-store; GET /api/public/football-assets 200, payload aproximado 2,23 MB.
+- POST /api/public/sync-football sem segredo retorna 401. Endpoints internos support/email retornam 404 na produção observada; handlers do PR exigem autenticação cron.
+- POST Stripe sem parâmetro de ambiente retorna 400 e não executa fulfillment.
+- CSP efetiva ainda usa unsafe-inline/unsafe-eval; política estrita nonce está em report-only/opt-in.
+- Chrome Stable 158.0.8127.88 configurado em perfil isolado; ANGLE/SwiftShader, WebGL2 e WebGPU compute smoke aprovados (16 resultados). É software renderer, não GPU física.
+
+### Pendências bloqueadoras
+- Diagnosticar CodSpeed FAIL no HEAD ac2dd4 e repetir ABBA.
+- Completar Lighthouse Mobile e evidência visual sem cancelamento.
+- Rebuild staging no SHA atual e executar navegação/formulários/estados de erro e partida 3D com Chrome.
+- Decidir plano seguro para SentinelX NOPASSWD ALL; não remover sem substituto e rollback.
+- Rever TLS do túnel, hardening de Tracee/Wazuh/Elastic/Coraza e sandbox systemd.
+- Executar benchmark antivírus/ELF controlado.
+- Manter engine determinística, stack gráfica e certificação física em aberto até prova.
