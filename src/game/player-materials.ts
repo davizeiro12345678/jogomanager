@@ -343,7 +343,7 @@ export function playerMaterials(
           bootNormalName,
           skinNormalName,
         ]
-      : []),
+      : [bootNormalName]),
   ].join("|");
 
   const hit = cache.get(key);
@@ -549,9 +549,9 @@ export function playerMaterials(
         })
       : new THREE.MeshStandardMaterial({
           color: look.bootColor,
-          roughness: 0.34,
+          roughness: bootFinish.roughness,
           normalMap: grain,
-          metalness: 0.035,
+          metalness: 0,
         }),
     bootAccent: hi
       ? new THREE.MeshPhysicalMaterial({
