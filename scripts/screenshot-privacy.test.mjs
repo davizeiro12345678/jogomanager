@@ -38,7 +38,8 @@ test("accepts generic chart metadata without a geolocation field", () => {
 
 test("rejects PNG EXIF, GPS labels and XMP fields", () => {
   assert.ok(findScreenshotLocationMetadata(png(pngChunk("eXIf", "Exif"))).length);
-  assert.ok( findScreenshotLocationMetadata(png(pngChunk("tEXt", "GPSLatitude\0redacted"))).length, );   assert.ok(
+  assert.ok(findScreenshotLocationMetadata(png(pngChunk("tEXt", "GPSLatitude\0redacted"))).length);
+  assert.ok(
     findScreenshotLocationMetadata(png(pngChunk("iTXt", "XML:com.adobe.xmp\0data"))).length,
   );
 });
