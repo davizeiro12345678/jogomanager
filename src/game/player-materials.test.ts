@@ -124,3 +124,23 @@ it("uses stronger fibre relief than skin pores and keeps hair highlights restrai
   expect(hair.specularIntensity).toBeLessThanOrEqual(0.1);
   expect(shirt.sheen).toBeLessThan(0.35);
 });
+
+it("keeps contrasting sleeves distinct when kits share every color and texture", () => {
+  const look = lookFor("contrasting-sleeves", "MF");
+  const solid: Kit = {
+    base: "#ad2030",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const sleeves: Kit = { ...solid, pattern: "sleeves" };
+  for (const quality of ["baixa", "media", "alta"] as const) {
+    const a = playerMaterials(look, solid, null, quality);
+    const b = playerMaterials(look, sleeves, null, quality);
+    expect(a).not.toBe(b);
+    expect((a.jerseyPlain as THREE.MeshStandardMaterial).color.getHexString()).toBe("ad2030");
+    expect((b.jerseyPlain as THREE.MeshStandardMaterial).color.getHexString()).toBe("ffffff");
+    expect(playerMaterials(look, sleeves, null, quality)).toBe(b);
+  }
+});
