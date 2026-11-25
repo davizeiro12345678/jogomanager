@@ -22,7 +22,11 @@ export type AuthorityFeedEvent =
   | { kind: "sequence_resume"; seat: MatchSeat; sequence: number }
   | { kind: "ack" | "nack"; sequence: number; reason?: string }
   | { kind: "pong" }
-  | { kind: "ignored"; reason: "malformed" | "foreign_room" | "stale" | "conflict" };
+  | {
+      kind: "ignored";
+      reason:
+        "malformed" | "foreign_room" | "foreign_seat" | "stale" | "conflict" | "seat_mismatch";
+    };
 
 const MAX_FRAME_BYTES = 64 * 1024;
 const encoder = new TextEncoder();
@@ -47,6 +51,7 @@ export class AuthoritativePresentationFeed {
   private current: MatchSnapshotV1 | null = null;
   private result: MatchReceiptV1 | null = null;
   private seat: MatchSeat | null = null;
+  private expectedSeat: MatchSeat | null = null;
   private lastSequence = 0;
 
   constructor(private readonly roomId: string) {
@@ -64,6 +69,15 @@ export class AuthoritativePresentationFeed {
 
   confirmedSeat(): MatchSeat | null {
     return this.seat;
+  }
+
+  /**
+   * The signed ticket is the only authority for this client's seat. Binding it
+   * once keeps every inbound frame validated in a single place instead of
+   * re-deciding seat authority inside socket callbacks.
+   */
+  bindSeat(seat: MatchSeat): void {
+    this.expectedSeat = seat;
   }
 
   /**
@@ -95,6 +109,10 @@ export class AuthoritativePresentationFeed {
       )
         return { kind: "ignored", reason: "malformed" };
       if (input["roomId"] !== this.roomId) return { kind: "ignored", reason: "foreign_room" };
+      // A resume hint for another seat is not presentation state and never
+      // rewinds this client's sequence, but it must not close the transport.
+      if (this.expectedSeat && seat !== this.expectedSeat)
+        return { kind: "ignored", reason: "foreign_seat" };
       return { kind: "sequence_resume", seat, sequence };
     }
 
@@ -109,6 +127,8 @@ export class AuthoritativePresentationFeed {
         return { kind: "ignored", reason: "malformed" };
       const seat = ready ? parseSeat(input["seat"]) : null;
       if (ready && !seat) return { kind: "ignored", reason: "malformed" };
+      if (ready && this.expectedSeat && seat !== this.expectedSeat)
+        return { kind: "ignored", reason: "seat_mismatch" };
       if (ready && this.seat && this.seat !== seat) return { kind: "ignored", reason: "conflict" };
       let snapshot: MatchSnapshotV1;
       try {

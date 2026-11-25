@@ -474,4 +474,24 @@ function admitMessage(message: unknown) {
     });
 }
 
-self.onmessage = (event: MessageEvent<unknown>) => admitMessage(event.data);
+/**
+ * Worker `message` events expose the sender origin. Only the document that
+ * owns this worker may enqueue simulation commands: an event relayed from a
+ * foreign origin is dropped before it can mutate match state. Environments
+ * without a window origin (tests, workers without location) keep the previous
+ * behaviour and are covered by the protocol validation below.
+ */
+function isTrustedWorkerSender(event: MessageEvent<unknown>): boolean {
+  const sender = (event as { origin?: unknown }).origin;
+  if (typeof sender !== "string" || sender === "") return true;
+  const scope = (self as unknown as { location?: { origin?: unknown } }).location?.origin;
+  return typeof scope !== "string" || scope === "" || sender === scope;
+}
+
+self.onmessage = (event: MessageEvent<unknown>) => {
+  // The simulation worker only serves the document that created it. A frame
+  // relayed from another origin, or a synthetic event without a trusted
+  // sender, must never reach the command queue.
+  if (!isTrustedWorkerSender(event)) return;
+  admitMessage(event.data);
+};

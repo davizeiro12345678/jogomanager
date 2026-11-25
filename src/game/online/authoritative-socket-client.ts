@@ -185,6 +185,7 @@ export class AuthoritativeMatchSocketClient {
         : new WebSocket(this.url);
       this.socket = socket;
       this.ticket = candidate;
+      this.feed.bindSeat(candidate.seat);
       let resumeFrom = 0;
       socket.onopen = () => {
         if (!this.isCurrent(socket, generation)) return;
@@ -225,8 +226,13 @@ export class AuthoritativeMatchSocketClient {
           return;
         }
         const event = this.feed.accept(message.data);
+        if (event.kind === "ignored" && event.reason === "seat_mismatch") {
+          this.rejectForeignSeat(socket);
+          return;
+        }
         if (event.kind === "sequence_resume") {
-          if (this.currentStatus === "authenticating" && event.seat === candidate.seat)
+          // The feed only emits this event for the seat bound from the ticket.
+          if (this.currentStatus === "authenticating")
             resumeFrom = Math.max(resumeFrom, event.sequence);
           return;
         }
@@ -237,11 +243,6 @@ export class AuthoritativeMatchSocketClient {
             event.kind === "nack",
           );
         if (event.kind === "ready") {
-          if (event.seat !== candidate.seat) {
-            this.status("unavailable");
-            socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "seat_mismatch");
-            return;
-          }
           this.clearAuthTimer();
           this.retryCount = 0;
           this.sequence = Math.max(this.sequence, resumeFrom);
@@ -295,6 +296,15 @@ export class AuthoritativeMatchSocketClient {
   private status(status: AuthorityConnectionStatus): void {
     this.currentStatus = status;
     this.options.onStatus?.(status);
+  }
+
+  /**
+   * A frame claiming another seat is never presentation state: the signed
+   * ticket bound in the feed decides authority, and this closes the transport.
+   */
+  private rejectForeignSeat(socket: AuthorityClientSocket): void {
+    this.status("unavailable");
+    socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "seat_mismatch");
   }
 
   private isCurrent(socket: AuthorityClientSocket, generation: number): boolean {
