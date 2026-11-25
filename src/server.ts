@@ -4,6 +4,7 @@ import { compressPublicHtml } from "./lib/public-html-compression";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { publicPageRedirect } from "./lib/public-page-redirects";
+import { rejectSuspiciousEdgeRequest } from "./lib/edge-request-guard";
 import { CSP_NONCE_HEADER, createCspNonce, secureResponse } from "./lib/security-headers";
 
 type ServerEntry = {
@@ -57,6 +58,10 @@ export default {
       response.headers.append("server-timing", `app;dur=${durationMs.toFixed(1)}`);
       return response;
     };
+    // Reject high-confidence abuse before importing SSR or processing request bodies.
+    const rejected = rejectSuspiciousEdgeRequest(request);
+    if (rejected) return measured(rejected);
+
     // Rebuild from public fields: a cross-realm Request may not be cloneable.
     // Never trust a client-provided CSP nonce.
     const headers = new Headers(request.headers);
