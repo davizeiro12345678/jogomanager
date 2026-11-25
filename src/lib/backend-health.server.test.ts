@@ -82,6 +82,19 @@ describe("backend readiness", () => {
     ).toBe("ready");
     expect(fetcher.mock.calls[1]![1].headers.Authorization).toBe(`Bearer ${legacyKey}`);
   });
+  it("never follows redirects on any credential-bearing health request", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ external: { email: true } }))
+      .mockResolvedValueOnce(Response.json({ users: [] }))
+      .mockResolvedValueOnce(Response.json([]));
+    expect((await checkBackendHealth(env, fetcher)).status).toBe("ready");
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    for (const [, request] of fetcher.mock.calls) {
+      expect(request.redirect).toBe("error");
+    }
+  });
+
   it("does not treat an HTML error page as healthy", async () => {
     expect(
       (await checkBackendHealth(env, vi.fn().mockResolvedValue(new Response("<html>error</html>"))))
