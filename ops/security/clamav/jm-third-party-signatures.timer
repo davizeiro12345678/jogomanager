@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily verified third-party ClamAV signature update
+
+[Timer]
+OnCalendar=*-*-* 05:00:00 UTC
+RandomizedDelaySec=45min
+Persistent=true
+Unit=jm-third-party-signatures.service
+
+[Install]
+WantedBy=timers.target

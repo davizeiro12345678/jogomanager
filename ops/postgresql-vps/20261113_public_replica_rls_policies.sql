@@ -1,0 +1,9 @@
+-- Role-scoped policies on tables already readable publicly; no global BYPASSRLS.
+CREATE POLICY jm_vps_replicator_select ON public.competitions FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.clubs FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.stadiums FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.kits FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.competition_seasons FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.official_teams FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.official_venues FOR SELECT TO jm_vps_catalog_replicator USING (true);
+CREATE POLICY jm_vps_replicator_select ON public.official_players FOR SELECT TO jm_vps_catalog_replicator USING (true);
