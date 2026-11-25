@@ -4,8 +4,10 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const sensitiveKey = /(?:^|[^a-z])(?:gps(?:latitude|longitude|info)?|geolocation|latitude|longitude|location|address|coordinates)(?:$|[^a-z])/i;
-const sensitiveValue = /\b(?:GPSLatitude|GPSLongitude|GPSInfo|GPSPosition|geolocation|latitude|longitude|physical.address|street.address)\b/i;
+const sensitiveKey =
+  /(?:^|[^a-z])(?:gps(?:latitude|longitude|info)?|geolocation|latitude|longitude|location|address|coordinates)(?:$|[^a-z])/i;
+const sensitiveValue =
+  /\b(?:GPSLatitude|GPSLongitude|GPSInfo|GPSPosition|geolocation|latitude|longitude|physical.address|street.address)\b/i;
 
 /** Metadata-only guard. Does NOT detect addresses rendered into image pixels. */
 export function findScreenshotLocationMetadata(bytes) {
@@ -112,7 +114,9 @@ export function scanTrackedScreenshots() {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const { scanned, violations } = scanTrackedScreenshots();
-  console.log("Screenshot metadata privacy: " + scanned + " files, " + violations.length + " issues");
+  console.log(
+    "Screenshot metadata privacy: " + scanned + " files, " + violations.length + " issues",
+  );
   for (const item of violations) console.error(item.path + ": " + item.reason);
   if (violations.length) process.exitCode = 1;
 }
