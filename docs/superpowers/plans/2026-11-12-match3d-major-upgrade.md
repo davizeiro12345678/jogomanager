@@ -183,3 +183,44 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 ## Registro de execução
 
 Ver `verification/pr132-upgrade-20261112/progress.md`. A execução inicial trata Tasks 2–3, a correção de textura delimitada de Task 7 e a correção delimitada de Task 10; o restante do salto visual permanece um programa de implementação com gates, sem alegação de entrega total.
+
+
+## Expansion 25/11/2026 — arquitetura, engine e gráficos (PENDENTE)
+
+### Task 13 — Arquitetura da engine determinística
+- [ ] Mapear autoridade server/Worker/browser, contratos de estado, ownership, fixed-step, relógio, RNG e versões de regras.
+- [ ] Separar domínio de simulação, apresentação, transporte, persistência e efeitos cosméticos sem alterar resultados canônicos.
+- [ ] Auditar replay/checkpoint/restore, snapshots, serialização, rollback, worker lifecycle e paridade Node/browser/WASM.
+- [ ] Criar matriz de seeds, fixtures e checkpoints; manter os 21 checkpoints existentes e os stress suites como invariantes.
+- [ ] Benchmark ABBA por tick, setup, replay, GC/alocações e p50/p95/p99; CodSpeed deve bloquear regressão material.
+- [ ] Proibir Math.random, Date.now e estado global no caminho determinístico; exceções devem ficar fora do core e documentadas.
+- [ ] Não mudar ordem de RNG, autoridade, contratos de save/replay ou regras reservadas sem revisão e paridade.
+
+### Task 14 — Evolução massiva da stack gráfica
+- [ ] Inventariar Three.js/R3F, WebGL2, WebGPU opcional, shaders, render targets, pós-processamento, KTX2, atlas, LOD e streaming.
+- [ ] Definir capability tiers com fallback WebGL2 e perfil software; WebGPU nunca será requisito obrigatório sem matriz de compatibilidade.
+- [ ] Melhorar materiais PBR, iluminação, sombras, gramado, estádio, torcida, animação, câmera e transições sem alterar a simulação.
+- [ ] Medir draw calls, triângulos, textura/VRAM quando disponível, uploads, shader compile, frame time e memory churn por perfil.
+- [ ] Criar budgets básicos/intermediários/altos e dynamic resolution com hysteresis; sem exceder budgets existentes sem decisão registrada.
+- [ ] Validar recursos, 404, KTX2, licenças, fallback e recuperação de contexto.
+- [ ] Comparar visualmente com capturas reais pareadas e benchmarks ABBA; não usar SwiftShader como prova de FPS.
+
+### Task 15 — Chrome e matriz de navegadores
+- [ ] Usar perfil isolado Chrome Stable + Playwright no VPS para navegação, formulários, menus, botões, estados de erro e screenshots.
+- [ ] Executar smoke WebGL2/WebGPU compute e registrar renderer real; SwiftShader é software CPU.
+- [ ] Testar partida 3D: câmera, controles, placar, menus, pausa/retomada, chat e estabilidade, sem enviar mensagens nem acionar itens reservados.
+- [ ] Repetir em Chromium/Firefox/WebKit CI quando disponível; separar evidência headless/software de hardware real.
+
+### Task 16 — Certificação física
+- [ ] Executar protocolo em dois aparelhos autorizados da geração-alvo, com 3 sessões de 10 minutos por dispositivo.
+- [ ] Registrar SoC/GPU/RAM, browser, 60 Hz, temperatura, energia, qualidade efetiva, FPS médio/p95/p99 e stalls.
+- [ ] Manter gate de FPS e thermal stability bloqueado até evidência física reproduzível.
+
+### Task 17 — Detecção de malware e ELF
+- [ ] Benchmark controlado EICAR/fixtures benignas, compactadas, scripts, PE e ELF malformados entre ClamAV, URLhaus, Maldet, Wazuh/Elastic e Tracee.
+- [ ] Medir detecção, falso positivo, latência, CPU/RAM, atualização de assinaturas e cobertura por formato.
+- [ ] Melhorar identificação ELF por cabeçalho/endianness/class/machine/sections com validação estrutural e testes negativos; nunca executar amostras.
+
+### Task 18 — Modelo local e triagem assistida
+- [ ] Comparar Qwen e alternativas por benchmark de classificação, explicabilidade, latência, RAM/VRAM e taxa de falsos positivos.
+- [ ] Manter modo observação e revisão humana; modelo não pode autorizar bloqueio/quarentena automaticamente sem política explícita.
