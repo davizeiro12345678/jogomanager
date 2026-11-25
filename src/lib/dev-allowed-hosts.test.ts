@@ -8,9 +8,10 @@ describe("Vite development host policy", () => {
   });
 
   it("normalizes and deduplicates explicitly authorized hosts", () => {
-    expect(
-      resolveDevAllowedHosts(" preview.e2b.app, PREVIEW.E2B.APP, other.example "),
-    ).toEqual(["preview.e2b.app", "other.example"]);
+    expect(resolveDevAllowedHosts(" preview.e2b.app, PREVIEW.E2B.APP, other.example ")).toEqual([
+      "preview.e2b.app",
+      "other.example",
+    ]);
   });
 
   it("rejects wildcards, suffixes, URLs and host-port syntax", () => {
