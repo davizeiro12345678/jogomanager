@@ -38,7 +38,7 @@ jobs:
           cache: npm
       - name: Reject location metadata in committed screenshot evidence
         run: |
-          node --test scripts/screenshot-privacy.test.mjs scripts/realism-browser-runtime.test.mjs
+          node --test scripts/screenshot-privacy.test.mjs scripts/realism-browser-runtime.test.mjs scripts/studio-qa-origin.test.mjs
           node --check scripts/realism-capture.mjs
           node scripts/screenshot-privacy.mjs
       - name: Verify QA audit syntax and immutable revision
@@ -49,6 +49,8 @@ jobs:
       - run: npm ci
       - name: Build anonymous SSR preview, without external credentials
         run: PFM_LOCAL_VERIFY=1 npm run build
+      - name: Build anonymous 3D athlete Studio with the same PR source
+        run: npm run graphics:build
       - name: Install isolated browser evidence runtime
         run: |
           npm install --prefix "$RUNNER_TEMP/pr132-qa-tools" --no-package-lock --no-save playwright@1.62.1
@@ -67,7 +69,24 @@ jobs:
           npx wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 \
             > "$RUNNER_TEMP/pr132-nine-axis/preview.log" 2>&1 &
           SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          # The athlete Studio is not a product SSR route. Isolate it on a
+          # separate loopback-only static server with no auth or reverse proxy.
+          python3 -m http.server 4193 --bind 127.0.0.1 --directory dist-benchmark \
+            > "$RUNNER_TEMP/pr132-nine-axis/studio.log" 2>&1 &
+          GRAPHICS_PID=$!
+          trap 'kill "$SERVER_PID" "$GRAPHICS_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS --max-time 2 -o /dev/null http://127.0.0.1:4193/player-studio.html; then
+              break
+            fi
+            if ! kill -0 "$GRAPHICS_PID" 2>/dev/null; then
+              tail -n 50 "$RUNNER_TEMP/pr132-nine-axis/studio.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          curl -fsS --max-time 5 -o /dev/null http://127.0.0.1:4193/player-studio.html
+          export GRAPHICS_FIXTURE_ORIGIN=http://127.0.0.1:4193
           READY=0
           for i in $(seq 1 100); do
             if curl -fsS --max-time 2 -o /dev/null http://127.0.0.1:4173/; then
