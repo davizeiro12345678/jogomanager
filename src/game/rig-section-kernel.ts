@@ -52,20 +52,27 @@ export function generateRigSectionFallback(input: RigSectionInput): Float32Array
     output[cursor++] = u;
     output[cursor++] = v;
   };
+  // Radial profile depends only on segment and roundness, not the ring.
+  // Reuse one trigonometric evaluation per segment across all rings.
+  const profileX = new Float64Array(radial + 1);
+  const profileZ = new Float64Array(radial + 1);
+  for (let side = 0; side <= radial; side++) {
+    const u = side / radial;
+    const angle = u * Math.PI * 2;
+    const sine = Math.sin(angle);
+    const cosine = Math.cos(angle);
+    profileX[side] = Math.sign(sine) * Math.abs(sine) ** roundness;
+    profileZ[side] = Math.sign(cosine) * Math.abs(cosine) ** roundness;
+  }
   for (let row = 0; row < rows; row++) {
     const offset = row * 4;
+    const y = rings[offset]!;
+    const xRadius = rings[offset + 1]!;
+    const zRadius = rings[offset + 2]!;
+    const zOffset = rings[offset + 3]!;
+    const v = (y - bottom) / span;
     for (let side = 0; side <= radial; side++) {
-      const u = side / radial;
-      const angle = u * Math.PI * 2;
-      const sine = Math.sin(angle);
-      const cosine = Math.cos(angle);
-      write(
-        Math.sign(sine) * Math.abs(sine) ** roundness * rings[offset + 1]!,
-        rings[offset]!,
-        Math.sign(cosine) * Math.abs(cosine) ** roundness * rings[offset + 2]! + rings[offset + 3]!,
-        u,
-        (rings[offset]! - bottom) / span,
-      );
+      write(profileX[side]! * xRadius, y, profileZ[side]! * zRadius + zOffset, side / radial, v);
     }
   }
   for (const [row, mask] of [
@@ -93,16 +100,21 @@ export function rigSectionIndices(input: RigSectionInput): Uint32Array {
     for (let side = 0; side < radial; side++) {
       const a = row * (radial + 1) + side;
       const b = a + radial + 1;
-      output.set([a, a + 1, b, a + 1, b + 1, b], cursor);
-      cursor += 6;
+      output[cursor++] = a;
+      output[cursor++] = a + 1;
+      output[cursor++] = b;
+      output[cursor++] = a + 1;
+      output[cursor++] = b + 1;
+      output[cursor++] = b;
     }
   let center = rows * (radial + 1);
   for (const mask of [1, 2])
     if (caps & mask) {
       for (let side = 0; side < radial; side++) {
         const a = center + 1 + side;
-        output.set([center, mask === 1 ? a + 1 : a, mask === 1 ? a : a + 1], cursor);
-        cursor += 3;
+        output[cursor++] = center;
+        output[cursor++] = mask === 1 ? a + 1 : a;
+        output[cursor++] = mask === 1 ? a : a + 1;
       }
       center += radial + 2;
     }

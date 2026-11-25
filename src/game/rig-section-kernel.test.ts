@@ -76,6 +76,19 @@ describe("bounded rig-section presentation kernel", () => {
     );
   });
 
+  it("preserves indexed mesh order and cap winding without array allocations", () => {
+    const input = {
+      rings: new Float64Array([0, 0.2, 0.2, 0, 1, 0.15, 0.15, 0]),
+      radial: 3,
+      roundness: 1,
+      caps: 3,
+    };
+    expect(Array.from(rigSectionIndices(input))).toEqual([
+      0, 1, 4, 1, 5, 4, 1, 2, 5, 2, 6, 5, 2, 3, 6, 3, 7, 6, 8, 10, 9, 8, 11, 10, 8, 12, 11, 13, 14,
+      15, 13, 15, 16, 13, 16, 17,
+    ]);
+  });
+
   it("rejects values outside the shared TypeScript/Rust ABI budget", () => {
     expect(
       validRigSection({
