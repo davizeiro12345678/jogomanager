@@ -449,7 +449,7 @@ try {
   await png(page, "player-studio-face-detailed");
   // The Studio is localized; compare the actual pressed state instead of
   // assuming an English accessible name in a pt-BR browser context.
-  const comparison = page.locator(".studio-keyboard-camera button[aria-pressed]").first();
+  const comparison = page.locator(".studio-view-actions button[aria-pressed]").last();
   await comparison.waitFor({ state: "visible" });
   if ((await comparison.getAttribute("aria-pressed")) !== "false") {
     throw new Error("Athlete Studio did not start with the detailed rig.");
