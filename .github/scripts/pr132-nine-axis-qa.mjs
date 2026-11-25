@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { readQaInventoryFile } from "./read-qa-inventory-file.mjs";
 import path from "node:path";
+import { studioFixtureUrl } from "../../scripts/studio-qa-origin.mjs";
 
 const [originText, outputText, sha] = process.argv.slice(2);
 if (!originText || !outputText || !/^[0-9a-f]{40}$/.test(sha ?? "")) {
@@ -419,75 +420,46 @@ try {
       );
   }
 
-  // Real headless-browser captures of the detailed athlete and its lightweight
-  // comparison. They are evidence from this SHA, not promotional mockups.
+  // Full athlete Studio lives in the isolated 3D build, not in a public
+  // SSR route. Only a credential-free loopback fixture is accepted.
+  const studioUrl = studioFixtureUrl(process.env["GRAPHICS_FIXTURE_ORIGIN"] ?? "");
   await page.setViewportSize({ width: 1365, height: 900 });
-  const studioResponse = await page.goto(new URL("/visual", origin).href, {
+  const studioResponse = await page.goto(studioUrl.href, {
     waitUntil: "domcontentloaded",
     timeout: 30_000,
   });
   if (studioResponse?.status() !== 200) {
-    find(
-      "runtime",
-      "error",
-      { route: "/visual" },
-      "Athlete Studio route did not return HTTP 200.",
-      "Inspect the published Graphics route and local preview.",
-    );
-  } else {
-    const framing = page.locator('select[aria-label="Framing"]');
-    const studioReady = await framing
-      .waitFor({ state: "visible", timeout: 20_000 })
-      .then(() => true)
-      .catch((error) => {
-        if (error?.name !== "TimeoutError") throw error;
-        return false;
-      });
-    if (!studioReady) {
-      await png(page, "player-studio-unavailable-anonymous");
-      report.axes.interaction.metrics.playerStudio = {
-        status: "blocked",
-        reason: "Anonymous preview did not expose the athlete laboratory controls.",
-      };
-      find(
-        "interaction",
-        "warning",
-        { route: "/visual", selector: 'select[aria-label="Framing"]' },
-        "Anonymous preview did not render athlete Studio controls.",
-        "Capture the dedicated graphics fixture with its real browser and compare the detailed model.",
-      );
-    } else {
-      const canvas = page.locator("canvas").first();
-      await canvas.waitFor({ state: "visible", timeout: 25_000 });
-      await framing.selectOption("face");
-      await page.waitForTimeout(1_200);
-      const detailed = await canvas.evaluate((element) => ({
-        width: element.width,
-        height: element.height,
-      }));
-      await png(page, "player-studio-face-detailed");
-      const comparison = page.getByRole("button", { name: /compare lightweight model/i });
-      await comparison.click();
-      await page.waitForTimeout(900);
-      await png(page, "player-studio-face-lightweight");
-      await framing.selectOption("hands");
-      await page.waitForTimeout(650);
-      await png(page, "player-studio-hands-lightweight");
-      report.axes.interaction.metrics.playerStudio = {
-        detailed,
-        comparisons: ["face-detailed", "face-lightweight", "hands-lightweight"],
-      };
-      if (!detailed.width || !detailed.height) {
-        find(
-          "runtime",
-          "error",
-          { route: "/visual", selector: "canvas" },
-          "Athlete Studio canvas has no framebuffer dimensions.",
-          "Verify the GPU renderer and asynchronous model initialization.",
-        );
-      }
-    }
+    throw new Error("Isolated athlete Studio returned HTTP " + studioResponse?.status());
   }
+  const framing = page.locator("select").filter({
+    has: page.locator('option[value="body"]'),
+  });
+  await framing.waitFor({ state: "visible", timeout: 25_000 });
+  const canvas = page.locator("canvas").first();
+  await canvas.waitFor({ state: "visible", timeout: 25_000 });
+  await framing.selectOption("face");
+  await page.waitForTimeout(1_200);
+  const framebuffer = await canvas.evaluate((element) => ({
+    width: element.width,
+    height: element.height,
+  }));
+  if (!framebuffer.width || !framebuffer.height) {
+    throw new Error("The real athlete Studio did not initialize a framebuffer.");
+  }
+  await png(page, "player-studio-face-detailed");
+  const comparison = page.getByRole("button", { name: /compare lightweight model/i });
+  await comparison.click();
+  await page.waitForTimeout(700);
+  await png(page, "player-studio-face-lightweight");
+  await framing.selectOption("hands");
+  await page.waitForTimeout(650);
+  await png(page, "player-studio-hands-lightweight");
+  report.axes.interaction.metrics.playerStudio = {
+    status: "captured",
+    source: "/player-studio.html",
+    framebuffer,
+    comparisons: ["face-detailed", "face-lightweight", "hands-lightweight"],
+  };
 
   const quickMatchRoute = "/partida-rapida?q=baixa";
   for (const viewport of [
