@@ -7,10 +7,7 @@ test("resolves the isolated player fixture without accepting public URLs", () =>
     studioFixtureUrl("http://127.0.0.1:4193").href,
     "http://127.0.0.1:4193/player-studio.html",
   );
-  assert.equal(
-    studioFixtureUrl("http://localhost:4193/").pathname,
-    "/player-studio.html",
-  );
+  assert.equal(studioFixtureUrl("http://localhost:4193/").pathname, "/player-studio.html");
 });
 
 test("rejects remote hosts, HTTPS and URL credentials or query strings", () => {
