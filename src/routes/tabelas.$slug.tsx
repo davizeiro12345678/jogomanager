@@ -12,8 +12,18 @@ import { LeaguePage } from "@/pages/tabelas.$slug";
 export const Route = createFileRoute("/tabelas/$slug")({
   loader: async ({ params }) => {
     if (!LEAGUE_LABELS[params.slug]) throw notFound();
-    const table = await getLeagueTable({ data: { slug: params.slug } });
-    return { table, label: LEAGUE_LABELS[params.slug]! };
+    const label = LEAGUE_LABELS[params.slug]!;
+    // A public, indexable table must survive a data outage: the page already
+    // renders an "atualizando" notice when the table is null, so an unreachable
+    // database should degrade like the official-assets endpoint instead of
+    // turning the route into a 500 error page.
+    let table: Awaited<ReturnType<typeof getLeagueTable>> = null;
+    try {
+      table = await getLeagueTable({ data: { slug: params.slug } });
+    } catch (error) {
+      console.warn("[tabelas] classificação indisponível", params.slug, error);
+    }
+    return { table, label };
   },
   head: ({ params, loaderData }) => {
     const label = loaderData?.label ?? { name: "Liga", country: "" };
