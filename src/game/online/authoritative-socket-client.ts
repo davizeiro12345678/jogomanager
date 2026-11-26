@@ -194,7 +194,8 @@ export class AuthoritativeMatchSocketClient {
       this.feed.bindSeat(candidate.seat);
       let resumeFrom = 0;
       socket.onopen = () => {
-        if (!this.isCurrent(socket, generation)) return;
+        if (!this.isCurrent(socket, generation) || this.currentStatus !== "connecting") return;
+        if (!this.ensureCurrentHandshakeTicket(socket, candidate)) return;
         this.status("authenticating");
         try {
           socket.send(
@@ -222,6 +223,10 @@ export class AuthoritativeMatchSocketClient {
         // Until ready authenticates this seat, no snapshot or final result is official.
         const phase = this.currentStatus;
         if (phase !== "authenticating" && phase !== "connected") return;
+        // The ticket can expire while the socket or server handshake is delayed.
+        // Renew before accepting any official state from that handshake.
+        if (phase === "authenticating" && !this.ensureCurrentHandshakeTicket(socket, candidate))
+          return;
         const event = this.feed.accept(message.data, phase);
         if (event.kind === "ignored" && event.reason === "seat_mismatch") {
           this.rejectForeignSeat(socket);
@@ -269,6 +274,20 @@ export class AuthoritativeMatchSocketClient {
       };
     } catch {
       if (this.started && generation === this.generation) this.retry();
+    }
+  }
+
+  private ensureCurrentHandshakeTicket(
+    socket: AuthorityClientSocket,
+    candidate: MatchTicketV1,
+  ): boolean {
+    if (this.ticket !== candidate) return false;
+    try {
+      assertCurrentTicket(candidate, (this.options.now ?? Date.now)());
+      return true;
+    } catch {
+      socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
+      return false;
     }
   }
 

@@ -203,6 +203,62 @@ describe("staged authoritative WSS client", () => {
     f.client.dispose();
   });
 
+  it("never sends an expired ticket after a delayed socket open", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      f.advance(90_000);
+      socket.open();
+      expect(socket.sent).toEqual([]);
+      expect(socket.closeCode).toBe(4002);
+      expect(f.client.statusSnapshot()).toBe("retrying");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("rejects readiness at ticket expiry before mutating the official feed", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      f.advance(90_000);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.events).toEqual([]);
+      expect(f.statuses).not.toContain("connected");
+      expect(socket.closeCode).toBe(4002);
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("ignores duplicate open notifications without resending the ticket", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      socket.open();
+      expect(socket.sent).toHaveLength(1);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      socket.open();
+      expect(socket.sent).toHaveLength(1);
+      expect(f.client.statusSnapshot()).toBe("connected");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("records non-identifying command-to-ACK latency and ignores repeated ACK frames", async () => {
     const f = fixture();
     f.client.start();
