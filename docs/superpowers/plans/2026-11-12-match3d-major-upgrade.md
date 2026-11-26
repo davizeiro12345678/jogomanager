@@ -34,6 +34,19 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 **Granularidade:** Tasks 2–3 e a correção imediata de Task 10 são pacotes executáveis desta continuação. As demais descrevem frentes de investigação e implementação. Antes de escrever código de cada frente futura, o executor deve produzir um pacote menor com os defeitos/fixtures observados, assinatura e revisão definitivas, limites derivados da baseline, testes com valores esperados e comandos exatos. Esse refinamento continua dentro do pedido autorizado; não adivinhar anatomia, asset ou contrato de física apenas para preencher um plano. Preservar o histórico das decisões no ledger.
 
+### Reconciliação de evidências em 26/11/2026
+
+Os workflows e artefatos abaixo registram resultados dos respectivos SHAs. Repetir a validação exigida no candidato que entrar em revisão de release.
+
+| Escopo | Estado | Evidência |
+|---|---|---|
+| Estúdio e navegação | Validado em Chrome com WebGL por software | `be8c85f6`, [QA de nove eixos](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724717945). São 29 capturas e troca real entre rig detalhado e leve. |
+| Comparação visual de partida e poses | Validado em laboratório no SHA indicado | `679fbb5f`, [Match 3D visual evidence](https://github.com/davizeiro12345678/jogomanager/actions/runs/45735252382). O CI executou a comparação de fixtures e os tetos de cena móvel. |
+| Lighthouse e build | Validado no SHA indicado | `679fbb5f`, [Quality gates](https://github.com/davizeiro12345678/jogomanager/actions/runs/45735252389). 15/15 medições móveis entre 99 e 100, TBT máximo de 18 ms, LCP máximo de 1.631 ms e CLS zero. |
+| CodSpeed | Gate de p99 reprovado em `b318f663` | `679fbb5f` teve 16 medianas melhores na mesma máquina. Uma execução de `7ccbd8ad` teve 15 melhorias e regressão de 18,39% no decode de replay. Outra aprovou as 16 medianas. `b318f663` reprovou por elevação de p99 em ambas as rodadas. [Execução de `b318f663`](https://github.com/davizeiro12345678/jogomanager/actions/runs/45823494751) |
+| Recuperação de texturas e contexto | Validado no SHA indicado | `b318f663` restabelece a transcodificação de KTX2 ao trocar perfil do renderer. O [teste de ciclo de vida](https://github.com/davizeiro12345678/jogomanager/actions/runs/45823495306) verifica uploads e descarte em alternâncias de LOD e recuperação forçada do contexto. |
+| GPU e homologação | Pendentes | Falta a campanha térmica em hardware físico e o teste autenticado do Worker web, carteira, carreira e salas reais. |
+
 ### Task 1: baseline atual e campanha comparável
 
 **Files:** `src/game/frame-campaign.ts`, `src/game/frame-metrics.ts`, `scripts/frame-campaign-capture.mjs`, `scripts/quality-graphics-sample.mjs`, `scripts/quality-cinematic-evidence.mjs`; evidência em `verification/pr132-upgrade-20261112/`.
@@ -44,7 +57,7 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 - [ ] Validar testes existentes de campanha, hidden tab, mudança de contexto e capacidade; acrescentar caso real faltante antes de mudar instrumentação.
 - [ ] Executar baseline de partida e cutscene: três repetições, 30 s warmup + ≥90 s medidos e sessão térmica de 10 min por aparelho.
 - [ ] Manifestar e preservar a matriz ortogonal de câmera {TV, close}, fase {live, goal, replay}, luz {dia, noite}, clima {seco, chuva}, preset {baixa, média, alta}; incluir noite+chuva. Doze capturas representativas podem complementar a matriz, sem substituir os cenários obrigatórios existentes. Acrescentar entrada/vestiário/negociação com seus presets próprios.
-- [ ] Executar `node --test scripts/frame-campaign-capture.test.mjs` e Vitest `src/game/frame-campaign.test.ts src/game/frame-metrics.test.ts`. Expected: todos aprovados; GPU física sem captura permanece pendente.
+- [x] Executar `node --test scripts/frame-campaign-capture.test.mjs` e Vitest `src/game/frame-campaign.test.ts src/game/frame-metrics.test.ts`. Os testes passaram no checkout de `7ccbd8ad`. A campanha física está registrada na Task 16.
 
 ### Task 2: recuperação real de carregamento de cutscenes
 
@@ -55,7 +68,8 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 - [x] RED: falhar primeiro import, renderizar fallback, tentar novamente e resolver o segundo import; verificar conteúdo real da segunda cena, duas tentativas e nenhuma rejeição reapresentada.
 - [x] Implementar reset do boundary/identidade no evento de retry; preservar desmontagem, skip, diálogo e import em voo.
 - [x] GREEN: executar testes de loading/stage/controles e TypeScript. Expected: retry restaura 3D sem reload; sucesso em cache não refaz import. Evidência e escopo no ledger; campanha completa de FPS continua pendente.
-- [ ] Verificar navegador com download interrompido e reabertura repetida; coletar primeiro frame e recursos retidos.
+- [x] Verificar download interrompido e retomada da cutscene no Chrome. O [workflow de recuperação](https://github.com/davizeiro12345678/jogomanager/actions/runs/45820248917) passou em `7ccbd8ad`.
+- [ ] Medir primeiro frame e retenção após reaberturas repetidas nas condições da campanha.
 - [ ] Commit pequeno com evidência; marcar [~] se o comportamento foi testado mas o navegador/GPU ainda faltar.
 
 ### Task 3: gate SEO que reproduz as capturas Semrush
@@ -88,8 +102,9 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 **Interfaces:** mesmas identidades e atributos; materiais compartilham mapas imutáveis e retenção; `playerMaterials` e `retainPlayerMaterials` continuam compatíveis.
 
-- [ ] RED por defeito anatômico/material observado: ownership de textura ao alternar LOD, cache limitado e continuidade de identidade; adicionar teste só onde houver contrato comportamental.
-- [ ] Revisar proporção tronco/pelve/membros, transição pescoço/rosto, olhos/cabelo e tecido PBR. Escolher três corpos/tons/cabelos distintos e mesma luz/pose para baseline/candidato.
+- [x] Reproduzir a abertura na manga leve nos dois perfis instanciados. O teste cobre a união do ombro e o punho aberto. O fechamento usa o mesmo draw da manga.
+- [x] Registrar ajustes implementados de anatomia e material. `#174` integrou a anatomia cinematográfica, `02667b4` preservou acabamentos de chuteiras e `7ccbd8ad` uniu a barra do calção ao próprio tecido. As suítes de material, calção e rig passaram.
+- [ ] Completar a comparação pareada de três corpos, tons e cabelos em luz e poses idênticas. Validar textura e retenção ao alternar todos os LODs.
 - [ ] Aprovar retrato isolado antes de propagar; implementar hero detail apenas para câmera próxima, mantendo uniforme e silhueta nos demais LODs.
 - [ ] GREEN: regressões existentes de anatomia/materiais/streaming/lifecycle e build gráfico; renderizar 22 jogadores nas três qualidades.
 - [ ] Gate visual independente com fotos comparáveis e draws/triângulos/VRAM/stalls; rejeitar clipping, perda de identidade ou excesso de custo.
@@ -102,7 +117,8 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 - [ ] RED: troca de LOD no apoio não muda fase; curva/frenagem não inverte joelho; recepção/chute/defesa respeitam intervalo de contato e valores finitos.
 - [ ] Implementar foot locking, transições e antecipação/recuperação por intenção com orçamento de câmera; evitar IK em 22 atletas distantes.
-- [ ] GREEN: testes gait/rig-frame/posture e hashes de simulação idênticos quando só apresentação muda.
+- [x] Validar fase de marcha e relógio de ações do replay. Os testes cobrem valores finitos, reinício legítimo de uma ação e restauração do último quadro. As revisões determinísticas passam nos jobs de 200 partidas.
+- [ ] Validar contato pé/solo e pé/bola em toda a matriz de gestos e transições de LOD.
 - [ ] Capturar sprint→parada→giro, passe/chute, tackle e defesa nas mesmas seeds/velocidades; revisar deslizamento e conexão pé-bola quadro a quadro.
 - [ ] Medir animação/CPU e p95 no elenco completo antes de aceitar.
 
@@ -117,7 +133,7 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 - [ ] RED para lifecycle/contratos realmente alterados: mudar gol/replay não recaptura ambiente, trocar clima sim; material descartado não mata mapa retido.
 - [ ] Refinar paleta PBR, variação de grama, desgaste/umidade, contato da bola, exposição e iluminação por hora; substituir volumes genéricos do estádio com módulos/atlas instanciáveis.
 - [ ] Torcida com cor/profundidade/reação por setores; bandeiras e clima limitados por orçamento e importância visual.
-- [ ] GREEN: testes pitch/grass/lighting/environment, integridade KTX2/assets e graphics build.
+- [x] Validar gramado e iluminação já implementados. Passaram os testes de pista, clima e material, a compilação gráfica e o [contrato de assets do Quality gates](https://github.com/davizeiro12345678/jogomanager/actions/runs/45820249368). `92dc6033` reduz reinicializações de mapas e `02667b4` distingue luz refletida por neve e grama molhada.
 - [ ] Comparação de TV e close em dia/noite/chuva em cada preset; manter desenhos de linhas, bola e contraste. Aceite dentro dos tetos da spec, sem elevar orçamento para encobrir regressão.
 
 ### Task 8: cinema e governador com continuidade
@@ -140,6 +156,7 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 - [ ] RED: dois defensores em ordem de elenco invertida, bola atravessando um corpo entre ticks, contato inicial sobreposto, vertical fora do alcance, adversário expulso, poste e reposição legítima.
 - [ ] Resolver primeiro tempo de entrada, depois desempate estável e resposta limitada por massa/velocidade/restituição; preservar RNG e hashes das revisões legadas.
+- [x] Validar limites da colisão varrida opt-in da revisão 2, com rejeição de entradas não finitas, altura fora do alcance e contato real antes do rebote. `7ccbd8ad` passou nos testes de contato e no estresse de 200 partidas da revisão 2.
 - [ ] Conectar revisão por todas as fronteiras antes de opt-in; um único integrador de bola, reinícios/replays distinguem descontinuidade legítima de teleporte.
 - [ ] GREEN: focused physics/authority/checkpoint, 100 cenários de contato, ≥1.000 recuperações e ≥1.000 seeds pareadas na revisão candidata; replays de revisões antigas idênticos.
 - [ ] Medir custo CPU/tick, gols/softlocks/contato impossível e vídeo; promover somente com paridade da mesma revisão entre autoridade e apresentação.
@@ -152,6 +169,7 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 - [x] RED imediato: usar `MatchSim.sendOff()` e uma disputa legal próxima ao corner; atleta expulso estacionado fora de campo não fornece bônus de pressão v2; apoio ativo ainda funciona e v1 mantém comportamento/draw order.
 - [x] Implementar exclusão versionada e GREEN do teste focado + tática/física/replay relacionados. 40 testes em cinco arquivos; IA coletiva futura ainda pendente.
+- [x] Validar a previsão de interceptação existente com fadiga, giro e entradas não finitas. A revisão `7ccbd8ad` preserva as trajetórias da função para os cenários testados e reduz o custo de validação.
 - [ ] Para revisão futura, RED de ETA com aceleração/fadiga/bola alta, ocupação de setor, cobertura de segunda linha, apoio de terceiro homem e reação sem ler futuro.
 - [ ] Implementar percepção em janelas/grade reutilizada e coordenação treinador→setor→atleta com ações limitadas e explicáveis. Sem rede/RNG extra por tick.
 - [ ] GREEN e A/B ≥1.000 seeds pareadas home/away: xG, progressão, perdas, compactação, impedimentos, custo p95/tick e hashes. Não usar vitória isolada como prova de IA melhor.
@@ -162,11 +180,13 @@ Task 1 fornece a comparação. Tasks 2, 3 e a correção delimitada de Task 10 p
 
 **Interfaces:** manter SSR/cliente com nomes CSS idênticos, catálogo fora do startup, invalidation/query keys por identidade e nenhum vazamento de resposta privada em cache público.
 
-- [ ] Inventariar versões exatas, duplicações e advisories; NPMScan direcionado inicial consultou sete pacotes core sem advisory reportado, sem certificar toda a árvore.
+- [x] Auditar as dependências do candidato `7ccbd8ad`. `npm audit --omit=dev` reportou zero avisos. O NPMScan consultou 931 entradas por vulnerabilidade e aprofundou 100 pacotes. `92dc6033` removeu a dependência órfã `r3f-perf` e reconciliou os dois lockfiles.
 - [ ] Reproduzir waterfall/long task ou duplicação em build atual; escrever regressão no consumidor antes de alterar fronteira ou dependência.
 - [ ] Reusar bundling/lazy/cache/decode existentes; atualizar dependência somente por motivo documentado, com auditoria e migração isoladas.
 - [ ] GREEN: lint zero warnings, types, full tests, build e comparação de bundles no mesmo runner. Startup por rota cresce no máximo 2.048 bytes gzip/Brotli; agregado 400.000 bytes por representação e limites absolutos continuam.
-- [ ] Lighthouse das cinco rotas com três amostras pessimistas e cenários de navegação/cache frio-quente; nenhum relaxamento para liberar.
+- [x] Executar o gate Lighthouse móvel das cinco rotas e três amostras por rota. Os 15 registros de `679fbb5f` e o novo gate de `7ccbd8ad` passaram com os limites originais.
+- [ ] Comparar navegação e cache frio/quente no ambiente publicado e repetir o gate no SHA final.
+- [x] Preservar leitura dos replays v2/v3, o formato gravado e os valores quantizados ao reduzir alocações por quadro do decoder. Os testes cobrem independência das faixas de posição e regravação com JSON legado. O impacto no p99 depende do CodSpeed.
 
 ### Task 12: integração, revisão independente e entrega verificável
 
@@ -201,12 +221,13 @@ Ver `verification/pr132-upgrade-20261112/progress.md`. A execução inicial trat
 - [ ] Definir capability tiers com fallback WebGL2 e perfil software; WebGPU nunca será requisito obrigatório sem matriz de compatibilidade.
 - [ ] Melhorar materiais PBR, iluminação, sombras, gramado, estádio, torcida, animação, câmera e transições sem alterar a simulação.
 - [ ] Medir draw calls, triângulos, textura/VRAM quando disponível, uploads, shader compile, frame time e memory churn por perfil.
-- [ ] Criar budgets básicos/intermediários/altos e dynamic resolution com hysteresis; sem exceder budgets existentes sem decisão registrada.
+- [x] Versionar e conferir limites de cena por qualidade, resolução dinâmica com histerese e fallback WebGL2. O [inventário móvel de `7ccbd8ad`](https://github.com/davizeiro12345678/jogomanager/actions/runs/45820249314) passou. Os limites de FPS físico seguem na Task 16.
 - [ ] Validar recursos, 404, KTX2, licenças, fallback e recuperação de contexto.
 - [ ] Comparar visualmente com capturas reais pareadas e benchmarks ABBA; não usar SwiftShader como prova de FPS.
 
 ### Task 15 — Chrome e matriz de navegadores
-- [ ] Usar perfil isolado Chrome Stable + Playwright no VPS para navegação, formulários, menus, botões, estados de erro e screenshots.
+- [x] Rodar Chrome no VPS com o preview local de `7ccbd8ad`. Foram 72 caminhos em dois viewports, 144 respostas HTTP 200, 28 capturas e 17/19 fluxos aprovados. As duas falhas foram o formulário de login do preview sem configuração pública do Supabase.
+- [x] Exercitar o Match 3D no VPS nos dois viewports. O relógio foi de minuto 0 a 1 após retomar, a velocidade e a câmera mudaram, os lances abriram, a pausa se manteve após fechar opções e o retorno à seleção funcionou.
 - [ ] Executar smoke WebGL2/WebGPU compute e registrar renderer real; SwiftShader é software CPU.
 - [ ] Testar partida 3D: câmera, controles, placar, menus, pausa/retomada, chat e estabilidade, sem enviar mensagens nem acionar itens reservados.
 - [ ] Repetir em Chromium/Firefox/WebKit CI quando disponível; separar evidência headless/software de hardware real.

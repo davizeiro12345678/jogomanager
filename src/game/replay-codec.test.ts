@@ -77,7 +77,7 @@ describe("versioned replay codec", () => {
       // The packed buffer is an Int16Array, so a quantized -0 reads back as 0.
       // Coordinates are equal; only the IEEE sign of zero differs.
       const packed = (coordinate: number) => (quantizeReplayComponent(coordinate) || 0) / 100;
-      expect(unpacked.p).toEqual(originalFrame.p.map(packed));
+      expect(Array.from(unpacked.p)).toEqual(Array.from(originalFrame.p, packed));
       expect(unpacked.b).toEqual(originalFrame.b.map(packed));
     }
     expect(decoded.score).toEqual(original.score);
@@ -92,19 +92,26 @@ describe("versioned replay codec", () => {
   it("saturates packed positions without wrapping Int16 boundaries or sharing decode arrays", () => {
     const replay = makeReplay();
     const frame = replay.frames[0]!;
-    const input = frame.p.slice();
+    const input = Array.from(frame.p);
     input.splice(0, 8, 327.675, -327.685, 0, -0, Number.NaN, Infinity, -Infinity, 2.345);
-    const stored = encodeReplay({ ...replay, frames: [{ ...frame, p: input }] });
+    const stored = encodeReplay({
+      ...replay,
+      frames: [
+        { ...frame, p: input },
+        { ...frame, t: frame.t + 1, p: input },
+      ],
+    });
     expect(Array.from(stored.frames.positions.slice(0, 8))).toEqual([
       32_767, -32_768, 0, 0, 0, 32_767, -32_768, 235,
     ]);
     const first = decodeReplay(stored);
     const second = decodeReplay(stored);
-    expect(first.frames[0]!.p.slice(0, 8)).toEqual([
+    expect(Array.from(first.frames[0]!.p).slice(0, 8)).toEqual([
       327.67, -327.68, 0, 0, 0, 327.67, -327.68, 2.35,
     ]);
     first.frames[0]!.p[0] = 10;
     expect(second.frames[0]!.p[0]).toBe(327.67);
+    expect(first.frames[1]!.p[0]).toBe(327.67);
   });
 
   it("accepts unversioned and v2-shaped stored data", () => {
@@ -122,7 +129,10 @@ describe("versioned replay codec", () => {
 
     expect(decoded.frames[0]!.v).toBe(first.v);
     expect(Object.hasOwn(decoded.frames[1]!, "v")).toBe(false);
-    expect(decoded.frames).toEqual([first, older]);
+    expect(decoded.frames.map((frame) => ({ ...frame, p: Array.from(frame.p) }))).toEqual([
+      first,
+      older,
+    ]);
   });
 
   it.each([2, 3])("restores the recorded action clock when playing a v%s replay", (version) => {
@@ -142,7 +152,9 @@ describe("versioned replay codec", () => {
     expect(athlete.actionT).toBe(0.5);
     playback.seek(0.5);
     expect(athlete.actionT).toBe(0.9);
-    expect(decoded.frames).toEqual(recordedFrames);
+    expect(decoded.frames.map((frame) => ({ ...frame, p: Array.from(frame.p) }))).toEqual(
+      recordedFrames,
+    );
   });
 
   it("keeps the old action pose when no usable clock was recorded", () => {
@@ -180,5 +192,11 @@ describe("versioned replay codec", () => {
     expect(report.frameCount).toBe(replay.frames.length);
     expect(report.reductionRatio).toBeLessThan(REPLAY_V3_MIN_REDUCTION);
     expect(encodeStoredReplay(replay)).toMatchObject({ version: 2 });
+    const decoded = decodeReplay(stored);
+    expect(encodeReplay(decoded).frames.positions).toEqual(stored.frames.positions);
+    const legacy = encodeStoredReplay(decoded);
+    expect(legacy.version).toBe(2);
+    const roundTrip = decodeReplay(JSON.parse(JSON.stringify(legacy)));
+    expect(roundTrip.frames[0]!.p).toEqual(Array.from(decoded.frames[0]!.p));
   });
 });

@@ -7,6 +7,27 @@ import { getClip, type ClipName, type PlayerAction } from "./animation";
 import { refineFootballAction } from "./football-action";
 import { placeScaledInstancePart } from "./instance-transform";
 
+it.each([false, true])(
+  "backs the proximal sleeve and leaves the cuff open (compact=%s)",
+  (compact) => {
+    const geometries = createLowPlayerGeometries(compact);
+    const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    try {
+      const sleeve = new THREE.Mesh(geometries["sleeves"]!, material);
+      const ray = new THREE.Raycaster(
+        new THREE.Vector3(0.05, 1, 0.02),
+        new THREE.Vector3(0, -1, 0),
+      );
+      const intersections = ray.intersectObject(sleeve);
+      expect(intersections).toHaveLength(1);
+      expect(intersections[0]!.point.y).toBeCloseTo(0.5);
+    } finally {
+      material.dispose();
+      for (const geometry of Object.values(geometries)) geometry.dispose();
+    }
+  },
+);
+
 // Evaluate the actual native instanced morph texture and instance matrices.
 // This tests the low-LOD geometry/upload contract, not React or GPU playback.
 function posedSurface(mesh: THREE.InstancedMesh, instance: number) {

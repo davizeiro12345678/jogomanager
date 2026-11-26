@@ -1,5 +1,18 @@
 # JogoManager Release Integration Implementation Plan
 
+## Reconciliação 26/11/2026
+
+- [x] Confirmar a integração do [PR #171](https://github.com/davizeiro12345678/jogomanager/pull/171) na branch do PR #132. A análise CodeQL de `7ccbd8ad` passou. As conversas de análise do transporte WebSocket ainda exigem triagem pelo SHA.
+- [x] Conferir execução conjunta de build, lint, TypeScript, testes, SQL, WASM, bundles, estresse de 200 partidas e Lighthouse no [Quality gates de `7ccbd8ad`](https://github.com/davizeiro12345678/jogomanager/actions/runs/45820249368). O resultado pertence a esse commit.
+- [x] Confirmar que produção responde `ready` no SHA `d8465771`, com Auth, credenciais do servidor e banco operacionais depois das correções anteriores do catálogo.
+- [~] Confirmar CodSpeed sem regressões repetíveis. `679fbb5f` passou com 16 medianas melhores. Uma execução de `7ccbd8ad` falhou pelo decode de replay e o rerun passou. `b318f663` reprovou em p99 no decode com 44,327 e 36,491 ms nas rodadas do candidato. O decoder com posições contíguas precisa de nova medição.
+- [x] Restaurar o histórico encadeado de saves no Supabase **hospedado de homologação**. A migração 0053 passou em transação de ensaio com rollback e foi aplicada no projeto isolado. Ledger vazio com RLS, trigger ativo, sem permissão de executar a função para `anon` e `authenticated`.
+- [~] Conciliar a homologação. O painel ainda indica `MIGRATIONS_FAILED`. A instância PostgreSQL do VPS possui outro histórico. O reparo do ledger permite testar esse contrato e a divergência restante ainda precisa ser conciliada.
+- [ ] Completar teste autenticado de passkey/OAuth, checkout sandbox e concessão idempotente, persistência de carreira e multiplayer com 2 e 4 participantes, além do ensaio de recuperação.
+- [ ] Liberar o merge quando os gates do SHA a publicar, a revisão independente e a homologação estiverem comprovados. Conferir o novo SHA no `/api/health` após o deploy.
+
+Os detalhes de materiais, iluminação, animação, física, IA e QA visual estão no [adendo Match 3D](2026-11-12-match3d-major-upgrade.md).
+
 ## Adendo ativo — Match 3D e SEO, 12/11/2026
 
 O pedido mais recente amplia as Tasks 8–9 e a expansão física/IA sem substituir os demais pendentes. Continuar em [2026-11-12-match3d-major-upgrade.md](2026-11-12-match3d-major-upgrade.md), com [spec](../specs/2026-11-12-match3d-major-upgrade-design.md) e [ledger de execução](../../../verification/pr132-upgrade-20261112/progress.md). O adendo distingue correções verificadas neste lote do programa futuro de salto visual, GPU física e correção operacional/recrawl Semrush. Os snapshots de SHA e diagnósticos abaixo são históricos: atualizar antes de retomar.
