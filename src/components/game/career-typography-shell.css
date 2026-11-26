@@ -278,3 +278,15 @@ html[data-reading-space="true"] .career-content :where(p, dd, td) {
 }
 /* In a live match the privacy choice follows the full-height field in
    document flow, so it can never cover the transport controls. */
+
+/* User and club names must remain legible at 200% text zoom. Truncating the
+ * manager's name in the sidebar hid information from keyboard and zoom users. */
+.career-sidebar-footer p {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+.career-sidebar-footer :where(p, span) {
+  min-width: 0;
+}
