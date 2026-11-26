@@ -190,7 +190,7 @@ jobs:
         run: |
           node --test scripts/migration-replay-provenance.test.mjs
           node scripts/verify-migration-history.mjs
-      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v1
         with:
           version: 2.75.2
       # These commands target the disposable local Docker database only.
