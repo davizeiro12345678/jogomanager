@@ -264,7 +264,16 @@ function validateReplayInput(raw: object): void {
 
 export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
   const text = new TextEncoder();
-  const v2Bytes = text.encode(JSON.stringify(replay)).byteLength;
+  // Replay histories are plain data and may contain tens of thousands of frames.
+  // Count their UTF-8 JSON bytes one element at a time rather than allocating a
+  // second full-history string and Uint8Array (hundreds of MiB for a long match).
+  const jsonBytes = (value: unknown) => text.encode(JSON.stringify(value) ?? "null").byteLength;
+  const arrayPayloadBytes = (items: readonly unknown[]) => {
+    let bytes = Math.max(0, items.length - 1); // commas; brackets are in the envelope
+    for (let i = 0; i < items.length; i++) bytes += jsonBytes(items[i]);
+    return bytes;
+  };
+  const v2Bytes = jsonBytes({ ...replay, frames: [] }) + arrayPayloadBytes(replay.frames);
   const arrays = [
     stored.frames.timesMs,
     stored.frames.ball,
@@ -282,11 +291,12 @@ export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
     away: stored.away,
     meta: stored.meta,
     score: stored.score,
-    visual: stored.frames.visual,
+    visual: stored.frames.visual === undefined ? undefined : [],
   };
   const v3Bytes =
     arrays.reduce((sum, value) => sum + value.byteLength, 0) +
-    text.encode(JSON.stringify(envelope)).byteLength;
+    jsonBytes(envelope) +
+    (stored.frames.visual === undefined ? 0 : arrayPayloadBytes(stored.frames.visual));
   return {
     frameCount: replay.frames.length,
     v2Bytes,
