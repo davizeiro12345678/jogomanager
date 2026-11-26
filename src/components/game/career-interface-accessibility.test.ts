@@ -127,7 +127,6 @@ describe("page-owned styles", () => {
     expect(createCss).not.toMatch(/\.career-save-note\b/);
   });
 
-
   it("keeps long manager names readable instead of clipping them at enlarged text sizes", () => {
     const typographyCss = stylesheet("./career-typography-shell.css");
     expect(typographyCss).toMatch(
