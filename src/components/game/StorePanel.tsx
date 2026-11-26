@@ -1,3 +1,5 @@
+import { useT } from "@/i18n/context";
+import { storeAccountMessages } from "@/i18n/store-account-messages";
 import { friendlyError } from "@/lib/friendly-error";
 import { useLocation } from "@tanstack/react-router";
 import artCoins from "@/assets/store/coins.jpg?format=webp&w=640&quality=65&as=url";
@@ -109,6 +111,8 @@ function formatDate(iso: string | null | undefined): string {
  * `columns` deixa o layout de uma coluna quando aparece numa gaveta estreita.
  */
 export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; columns?: 1 | 2 }) {
+  const { lang } = useT();
+  const accountCopy = storeAccountMessages(lang);
   const userId = useAuthUserId();
   const signedIn = userId === undefined ? null : userId !== null;
   const fetchAvailability = useServerFn(getCheckoutAvailability);
@@ -222,7 +226,8 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
             <div className="flex flex-wrap items-center gap-3">
               <Coins className="text-primary" size={20} />
               <span className="font-display text-sm uppercase tracking-wide">
-                {walletQuery.data?.coins ?? 0} moedas
+                {walletQuery.data?.coins ?? 0}{" "}
+                {walletQuery.data?.coins === 1 ? accountCopy.coin : accountCopy.coins}
               </span>
               {walletQuery.data && walletQuery.data.scout_reports > 0 && (
                 <Badge variant="secondary" className="gap-1">
@@ -394,7 +399,8 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                   )}
                   {p.coins > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                      <Coins size={12} /> +{p.coins} moedas
+                      <Coins size={12} /> +{p.coins}{" "}
+                      {p.coins === 1 ? accountCopy.coin : accountCopy.coins}
                     </span>
                   )}
                 </CardContent>
@@ -402,7 +408,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                   <div className="w-full space-y-2">
                     {isSessionLoading ? (
                       <Button className="w-full" disabled>
-                        Verificando conta…
+                        {accountCopy.checking}
                       </Button>
                     ) : isGuest ? (
                       <GuestSignInButton
@@ -434,7 +440,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       {isSessionLoading
                         ? "Aguarde a verificação da conta"
                         : isGuest
-                          ? "Entre na sua conta para comprar"
+                          ? accountCopy.signInToBuy
                           : "Entrega automática na sua conta"}
                     </p>
                   </div>

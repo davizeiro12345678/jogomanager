@@ -1,3 +1,4 @@
+import { nullPrototypeRecord } from "./save-record";
 import { valueFor } from "./economy";
 import { makeRng } from "./rng";
 import { developedPlayer, profileFor, withDevelopmentBase } from "./attributes";
@@ -54,13 +55,12 @@ export function applyWeeklyDevelopment(
     (0.75 + intensity * 0.3) * (boosted ? 1.25 : 1) * (1 + operatingPlan.academy * 0.035);
   const injuryMult = (0.7 + intensity * 0.4) * (1 - operatingPlan.medical * 0.055);
 
-  const next: Record<string, Player> = Object.create(null);
+  const next = Object.entries(players);
   const attrDeltas: AttrDeltas = Object.assign(Object.create(null), state.attrDeltas ?? {});
-  for (const [id, p] of Object.entries(players)) {
-    if (p.clubId !== state.clubId) {
-      next[id] = p;
-      continue;
-    }
+  const developmentState = { ...state, attrDeltas };
+  for (const entry of next) {
+    const [id, p] = entry;
+    if (p.clubId !== state.clubId) continue;
     const q = { ...withDevelopmentBase(p, state.developmentRulesVersion === 2 ? 2 : 1) };
     const detailed = profileFor(q, state).attrs;
     const fitnessRecovery = Math.max(-1.5, Math.min(1.5, (detailed.naturalFitness - 65) * 0.04));
@@ -110,7 +110,13 @@ export function applyWeeklyDevelopment(
         const changes = Object.fromEntries(
           keys.map((key, index) => [key, (index === 0 ? 0.2 : 0.1) * response]),
         );
-        attrDeltas[id] = limitedDevelopmentDelta(q, { ...state, attrDeltas }, changes);
+        // Ratings read this same save-shaped dictionary during the weekly loop.
+        Object.defineProperty(attrDeltas, id, {
+          value: limitedDevelopmentDelta(q, developmentState, changes),
+          configurable: true,
+          enumerable: true,
+          writable: true,
+        });
       }
     } else if (q.age <= 23 && rnd() < 0.16 * growthMult) {
       (q as unknown as Record<string, number>)[attr] = Math.min(99, (q[attr] as number) + 1);
@@ -165,13 +171,13 @@ export function applyWeeklyDevelopment(
       q.condition = Math.max(40, q.condition - 8 - Math.floor(rnd() * 8));
     }
 
-    const effective = developedPlayer(q, { ...state, attrDeltas });
+    const effective = developedPlayer(q, developmentState);
     effective.value = valueFor(effective.ovr, effective.age, {
       economyRulesVersion: state.economyRulesVersion,
       potential: effective.potential,
       contractYears: effective.contractYears,
     });
-    next[id] = effective;
+    entry[1] = effective;
   }
-  return { players: next, news, attrDeltas };
+  return { players: nullPrototypeRecord(next), news, attrDeltas };
 }

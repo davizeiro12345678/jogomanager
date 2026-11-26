@@ -75,6 +75,22 @@ class StudioTexturesTests(unittest.TestCase):
             finally:
                 os.chdir(previous)
 
+    def test_missing_versioned_uuid_never_falls_back_to_network(self):
+        with self.manifest(), patch.object(studio, "build_opener") as opener:
+            with self.assertRaisesRegex(ValueError, "Missing verified Studio texture"):
+                studio.prepare_texture(ENTRY, checksums={}, from_git=True)
+            opener.assert_not_called()
+
+    def test_versioned_bytes_of_expected_size_must_match_digest(self):
+        key = PATH.removeprefix("/__l5e/assets-v1/")
+        raw = json.dumps({"asset_id": key.split("/")[0], "size": len(PAYLOAD), "url": PATH}).encode()
+        with patch.object(studio.subprocess, "check_output",
+                          side_effect=[b"100", raw, str(len(PAYLOAD)).encode(), PAYLOAD]), \
+             patch.object(studio, "build_opener") as opener:
+            with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
+                studio.prepare_texture(ENTRY, checksums={key: "0" * 64}, from_git=True)
+            opener.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,3 +1,4 @@
+import { nullPrototypeRecord } from "./save-record";
 import { CLUBS, LEAGUES, getLeague } from "./data/leagues";
 import { SERIE_D_IDS } from "./data/serie-d";
 import {
@@ -505,22 +506,26 @@ export function seasonCompetitionRecord(
   move: PyramidMove | null,
   regionalPlayoffs: NonNullable<CompetitionSeasonRecord["playoffs"]>,
 ): CompetitionSeasonRecord {
-  const continentalPoints: Record<string, number> = Object.create(null);
-  for (const cup of cups.filter((c) => c.id === "continental")) {
+  const continentalPoints = new Map<string, [string, number]>();
+  const addPoints = (clubId: string, points: number) => {
+    const score = continentalPoints.get(clubId);
+    if (score) score[1] += points;
+    else continentalPoints.set(clubId, [clubId, points]);
+  };
+  for (const cup of cups) {
+    if (cup.id !== "continental") continue;
     for (const g of cup.groups ?? [])
       for (const m of g.matches) {
         if (m.hg === null || m.ag === null) continue;
-        continentalPoints[m.home] =
-          (continentalPoints[m.home] ?? 0) + (m.hg > m.ag ? 3 : m.hg === m.ag ? 1 : 0);
-        continentalPoints[m.away] =
-          (continentalPoints[m.away] ?? 0) + (m.ag > m.hg ? 3 : m.hg === m.ag ? 1 : 0);
+        addPoints(m.home, m.hg > m.ag ? 3 : m.hg === m.ag ? 1 : 0);
+        addPoints(m.away, m.ag > m.hg ? 3 : m.hg === m.ag ? 1 : 0);
       }
     for (const t of cup.ties)
       if (t.hg !== null && t.ag !== null) {
         const winner = t.hg > t.ag ? t.home : t.away;
-        continentalPoints[winner] = (continentalPoints[winner] ?? 0) + 3;
+        addPoints(winner, 3);
       }
-    if (cup.winner) continentalPoints[cup.winner] = (continentalPoints[cup.winner] ?? 0) + 5;
+    if (cup.winner) addPoints(cup.winner, 5);
   }
   return {
     season: state.season,
@@ -535,7 +540,7 @@ export function seasonCompetitionRecord(
         cups.filter((c) => c.winner).map((c) => [c.competitionId ?? c.id, c.winner!]),
       ),
     },
-    continentalPoints,
+    continentalPoints: nullPrototypeRecord(continentalPoints.values()),
     tables: Object.fromEntries(
       Object.entries(tables).filter(
         ([id]) => getLeague(id).country === getLeague(state.leagueId).country,
