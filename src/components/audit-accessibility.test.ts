@@ -13,9 +13,9 @@ describe("audit regression guards", () => {
     expect(shell).toContain('id="career-content"');
   });
   it("explains which multiplayer mode is actually available without advertising unvalidated 2x2", () => {
-    expect(multiplayer).toContain("Multiplayer online");
-    expect(multiplayer).toContain("1×1 disponível");
-    expect(multiplayer).toContain("2×2 em validação");
-    expect(multiplayer).toContain("Ainda indisponível");
+    expect(multiplayer).toContain("copy.title");
+    expect(multiplayer).toContain("copy.oneAvailable");
+    expect(multiplayer).toContain("copy.twoPending");
+    expect(multiplayer).toContain("copy.unavailable");
   });
 });

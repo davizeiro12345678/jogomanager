@@ -14,6 +14,7 @@ import { useOnline } from "@/hooks/useOnline";
 
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useT } from "@/i18n/provider";
+import { multiplayerAvailabilityMessages } from "@/i18n/multiplayer-availability-messages";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -47,11 +48,10 @@ export function MultiplayerPage() {
 }
 
 function SignedOut() {
+  const copy = multiplayerAvailabilityMessages(useT().lang);
   return (
     <Shell>
-      <p className="text-sm text-muted-foreground">
-        O modo 1×1 precisa de uma conta para identificar os dois jogadores.
-      </p>
+      <p className="text-sm text-muted-foreground">{copy.signIn}</p>
       <Link
         to="/auth"
         className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground"
@@ -516,13 +516,14 @@ function MultiplayerAccount({ userId }: { userId: string }) {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const copy = multiplayerAvailabilityMessages(useT().lang);
   return (
     <main className="pitch-bg min-h-[100dvh] px-4 py-10">
       <div className="mx-auto max-w-4xl">
         <ScreenHeader
           title={
             <>
-              <Swords className="text-primary" /> Multiplayer online
+              <Swords className="text-primary" /> {copy.title}
             </>
           }
         />
@@ -531,12 +532,12 @@ function Shell({ children }: { children: React.ReactNode }) {
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <div className="rounded-lg border border-border/60 p-3">
-            <p className="font-medium">1×1 disponível</p>
-            <p className="text-xs text-muted-foreground">Um jogador por equipe.</p>
+            <p className="font-medium">{copy.oneAvailable}</p>
+            <p className="text-xs text-muted-foreground">{copy.oneDescription}</p>
           </div>
           <div className="rounded-lg border border-border/60 p-3">
-            <p className="font-medium">2×2 em validação</p>
-            <p className="text-xs text-muted-foreground">Ainda indisponível.</p>
+            <p className="font-medium">{copy.twoPending}</p>
+            <p className="text-xs text-muted-foreground">{copy.unavailable}</p>
           </div>
         </div>
         <div className="mt-6">{children}</div>
