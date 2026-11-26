@@ -57,6 +57,65 @@ function posedSurface(mesh: THREE.InstancedMesh, instance: number) {
   };
 }
 
+it.each([false, true])("keeps the front of the thigh under the shorts (compact=%s)", (compact) => {
+  const geometries = createLowPlayerGeometries(compact);
+  const material = new THREE.MeshBasicMaterial();
+  const shorts = new THREE.InstancedMesh(geometries["hips"]!, material, 1);
+  const thighs = new THREE.InstancedMesh(geometries["thighs"]!, material, 1);
+  const p = proportionsFor(lookFor("standing-shorts-coverage", "MF"));
+  const matrix = new THREE.Matrix4();
+  const origin = new THREE.Matrix4();
+  placeScaledInstancePart(matrix, origin, 0, 0, 0, p.hipW, p.hipH, p.chestD / 0.47);
+  shorts.setMatrixAt(0, matrix);
+  const cloth = posedSurface(shorts, 0);
+  let samples = 0;
+  try {
+    for (const side of [1, -1]) {
+      const thighX = side * p.hipW * 0.36;
+      const thighY = -p.hipH * 0.4;
+      placeScaledInstancePart(
+        matrix,
+        origin,
+        thighX,
+        thighY - p.thigh * 0.5,
+        0,
+        p.legR * 2,
+        p.thigh,
+        p.legR * 2,
+      );
+      thighs.setMatrixAt(0, matrix);
+      const skin = posedSurface(thighs, 0);
+      try {
+        for (let fraction = 0.18; fraction <= 0.45; fraction += 0.03) {
+          for (const offset of [-0.65, -0.3, 0, 0.3, 0.65]) {
+            const ray = new THREE.Raycaster(
+              new THREE.Vector3(thighX + offset * p.legR, thighY - fraction * p.thigh, 0.3),
+              new THREE.Vector3(0, 0, -1),
+            );
+            const thigh = ray.intersectObject(skin.mesh)[0];
+            if (!thigh) continue;
+            samples++;
+            const front = ray.intersectObject(cloth.mesh)[0];
+            expect(
+              front?.distance ?? Infinity,
+              `${side}/${fraction.toFixed(2)}/${offset}`,
+            ).toBeLessThan(thigh.distance);
+          }
+        }
+      } finally {
+        skin.dispose();
+      }
+    }
+    expect(samples).toBeGreaterThan(40);
+  } finally {
+    cloth.dispose();
+    shorts.dispose();
+    thighs.dispose();
+    material.dispose();
+    for (const geometry of Object.values(geometries)) geometry.dispose();
+  }
+});
+
 it.each([false, true])(
   "keeps real instanced thigh skin through both moving cuffs (compact=%s)",
   (compact) => {

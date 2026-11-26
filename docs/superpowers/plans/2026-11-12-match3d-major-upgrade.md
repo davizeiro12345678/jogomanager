@@ -103,6 +103,7 @@ Os workflows e artefatos abaixo registram resultados dos respectivos SHAs. Repet
 **Interfaces:** mesmas identidades e atributos; materiais compartilham mapas imutáveis e retenção; `playerMaterials` e `retainPlayerMaterials` continuam compatíveis.
 
 - [x] Reproduzir a abertura na manga leve nos dois perfis instanciados. O teste cobre a união do ombro e o punho aberto. O fechamento usa o mesmo draw da manga.
+- [x] Corrigir a interseção da coxa com o calção observada no comparativo do VPS. Os anéis da abertura passam a usar a menor rotação que conserva a mesma distribuição angular. As provas de oclusão cobrem os dois perfis instanciados e o número de anéis e de triângulos permanece igual.
 - [x] Registrar ajustes implementados de anatomia e material. `#174` integrou a anatomia cinematográfica, `02667b4` preservou acabamentos de chuteiras e `7ccbd8ad` uniu a barra do calção ao próprio tecido. As suítes de material, calção e rig passaram.
 - [ ] Completar a comparação pareada de três corpos, tons e cabelos em luz e poses idênticas. Validar textura e retenção ao alternar todos os LODs.
 - [ ] Aprovar retrato isolado antes de propagar; implementar hero detail apenas para câmera próxima, mantendo uniforme e silhueta nos demais LODs.
