@@ -29,6 +29,20 @@ describe("same-runner paired-walltime release gate", () => {
     assert.equal(result.benchmarks, 16);
   });
 
+  it("accepts the provenance string of the stabilised harness", () => {
+    const report = pairedReport();
+    report.protocol =
+      "CodSpeed Walltime, ABBA, one runner, same Node and shared node_modules, fresh process per suite, mirrored suite order, equalised burn and warm-up per slot";
+    report.measurement = {
+      timeMs: 400,
+      warmupTimeMs: 600,
+      burnMs: 1500,
+      slotOrder: ["base-a:match,season,rig", "head-a:rig,season,match"],
+    };
+    const result = evaluatePairedReport(report);
+    assert.equal(result.failures.length, 0);
+  });
+
   it("blocks a confirmed 4% regression regardless of headline labels", () => {
     const report = pairedReport();
     report.benchmarks[3].rounds["head-a"].medianMs = 1.04;

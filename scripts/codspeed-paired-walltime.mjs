@@ -124,7 +124,7 @@ const commit = (cwd) =>
   execFileSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf8" }).trim();
 const report = {
   protocol:
-    "CodSpeed Walltime, ABBA with mirrored suite order, one runner, same Node and shared node_modules, fresh process per suite, equalised burn and warm-up per slot",
+    "CodSpeed Walltime, ABBA, one runner, same Node and shared node_modules, fresh process per suite, mirrored suite order, equalised burn and warm-up per slot",
   minimumSamples,
   measurement: {
     timeMs: measurementTimeMs,
