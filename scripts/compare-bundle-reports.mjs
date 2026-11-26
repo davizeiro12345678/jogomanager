@@ -3,6 +3,7 @@ import {
   findEditorLayers,
   isMatchRouteEntry,
   measureEditorStartup,
+  pickMatchRouteEntry,
 } from "./bundle-report-comparison.mjs";
 
 const [, , baselinePath, candidatePath] = process.argv;
@@ -96,7 +97,10 @@ function addStartup(name, b, a, includeRaw) {
   );
 }
 for (const [name, predicate, includeRaw] of keys) {
-  addStartup(name, before.entries?.find(predicate), after.entries?.find(predicate), includeRaw);
+  // Match 3D resolves by route identity (3D match surface), not hashed name order.
+  const pick = (entries) =>
+    name === "Match 3D" ? pickMatchRouteEntry(entries) : entries?.find(predicate);
+  addStartup(name, pick(before.entries), pick(after.entries), includeRaw);
 }
 const beforeEditor = findEditorLayers(before);
 const afterEditor = findEditorLayers(after);

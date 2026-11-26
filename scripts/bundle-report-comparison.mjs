@@ -63,3 +63,32 @@ export function measureEditorStartup(report, layers) {
     startupBrotliBytes: chunks.reduce((total, chunk) => total + chunk.brotliBytes, 0),
   };
 }
+
+/**
+ * Two `match-*` entries exist: the Match 3D surface (simulation worker, HUD,
+ * live match) and a lighter sibling. Hashed names cannot identify either across
+ * builds, so picking the first match compared 158 KB with 580 KB whenever the
+ * hash order flipped. The selector follows the route itself: the entry whose
+ * startup graph boots the 3D match surface, falling back to the largest graph.
+ */
+const matchSurfaceDependency =
+  /^(?:simWorkerClient|MatchHud|MatchMinimap|MatchLoading|MatchScoreLine|live-match|physics-quality|CutsceneStage|Cutscene)-/;
+const threeRuntimeDependency = /^(?:three(?:\.core)?|react-three-fiber|rapier)-/i;
+const startupDependencies = (entry) =>
+  Array.isArray(entry?.startupDependencies) ? entry.startupDependencies : [];
+const bootsMatchSurface = (entry) =>
+  startupDependencies(entry).some(
+    (dependency) =>
+      matchSurfaceDependency.test(String(dependency)) ||
+      threeRuntimeDependency.test(String(dependency)),
+  );
+const largestStartup = (entries) =>
+  entries.reduce((best, entry) =>
+    (entry.startupGzipBytes ?? 0) > (best.startupGzipBytes ?? 0) ? entry : best,
+  );
+export function pickMatchRouteEntry(entries) {
+  const candidates = (entries ?? []).filter(isMatchRouteEntry);
+  if (candidates.length <= 1) return candidates[0];
+  const matchSurface = candidates.filter(bootsMatchSurface);
+  return largestStartup(matchSurface.length > 0 ? matchSurface : candidates);
+}

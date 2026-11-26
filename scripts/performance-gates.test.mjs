@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import { isMatchRouteEntry, pickMatchRouteEntry } from "./bundle-report-comparison.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -156,6 +156,46 @@ test("Match 3D route selector ignores similarly named engine chunks", () => {
     assert.equal(isMatchRouteEntry({ name }), false, `${name} is not the Match route`);
   }
   assert.equal(isMatchRouteEntry({ name: "match-a1b2c3.js" }), true);
+});
+
+test("Match 3D route selection is stable when hashed chunk order flips", () => {
+  const matchSurface = (name, startupGzipBytes) => ({
+    name,
+    startupGzipBytes,
+    startupDependencies: [
+      name,
+      "rolldown-runtime-a1.js",
+      "MatchHud-CYj7Ycso.js",
+      "simWorkerClient-DbWV6Am3.js",
+      "live-match-B5jGvmYA.js",
+    ],
+  });
+  const sibling = (name, startupGzipBytes) => ({
+    name,
+    startupGzipBytes,
+    startupDependencies: [name, "rolldown-runtime-a1.js", "utils-CfntisIJ.js"],
+  });
+  // Real reports carry ~158 KB and ~580 KB entries whose hash order flips.
+  const baseline = [
+    sibling("match-CKZMMpFB.js", 158_143),
+    matchSurface("match-CNavPzuF.js", 580_137),
+  ];
+  const candidate = [
+    matchSurface("match-DKSopOgT.js", 580_166),
+    sibling("match-D_VQwkwi.js", 158_148),
+  ];
+  assert.equal(pickMatchRouteEntry(baseline).name, "match-CNavPzuF.js");
+  assert.equal(pickMatchRouteEntry(candidate).name, "match-DKSopOgT.js");
+  assert.equal(pickMatchRouteEntry([...candidate].reverse()).name, "match-DKSopOgT.js");
+  assert.equal(pickMatchRouteEntry([]), undefined);
+});
+
+test("Match 3D route selector falls back to the largest startup graph", () => {
+  const entries = [
+    { name: "match-aaaa1111.js", startupGzipBytes: 158_143, startupDependencies: ["utils-a.js"] },
+    { name: "match-bbbb2222.js", startupGzipBytes: 580_137, startupDependencies: ["utils-a.js"] },
+  ];
+  assert.equal(pickMatchRouteEntry(entries).name, "match-bbbb2222.js");
 });
 
 test("bundle gate allows route startup growth up to 2 KiB", () => {
