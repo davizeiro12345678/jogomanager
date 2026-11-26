@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   useRef: vi.fn(),
   useState: vi.fn(),
   events: [] as string[],
+  configured: true,
 }));
 
 vi.mock("react", () => ({
@@ -20,12 +21,15 @@ vi.mock("react", () => ({
 vi.mock("lucide-react", () => ({ Bell: () => null, BellOff: () => null }));
 vi.mock("@/components/ui/button", () => ({ Button: "button" }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getUser: mocks.getUser,
-      onAuthStateChange: mocks.onAuthStateChange,
-    },
-  },
+  getConfiguredSupabaseClient: () =>
+    mocks.configured
+      ? {
+          auth: {
+            getUser: mocks.getUser,
+            onAuthStateChange: mocks.onAuthStateChange,
+          },
+        }
+      : null,
 }));
 vi.mock("@/lib/firebase-config.functions", () => ({
   getFirebaseWebConfig: mocks.getFirebaseWebConfig,
@@ -44,6 +48,7 @@ let effectCleanup: (() => void) | undefined;
 let authListener: ((_event: string, session: { user?: { id: string } } | null) => void) | undefined;
 
 beforeEach(() => {
+  mocks.configured = true;
   mocks.events = [];
   mocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
     effectCallback = effect;
@@ -72,6 +77,14 @@ afterEach(() => {
 });
 
 describe("FirebasePushControl identity ordering", () => {
+  it("does not subscribe to push or auth when the project is unavailable", () => {
+    mocks.configured = false;
+    FirebasePushControl();
+    expect(effectCallback?.()).toBeUndefined();
+    expect(mocks.onAuthStateChange).not.toHaveBeenCalled();
+    expect(mocks.getFirebaseWebConfig).not.toHaveBeenCalled();
+  });
+
   it("keeps the auth event identity when the initial user read resolves afterward", async () => {
     let resolveInitial: ((value: unknown) => void) | undefined;
     mocks.getUser.mockImplementation(() => {

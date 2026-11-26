@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BarChart3, Clock3, ShieldCheck } from "lucide-react";
 
@@ -12,7 +12,7 @@ import { CLUBS } from "@/game/data/leagues";
 
 import type { CareerState } from "@/game/types";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient } from "@/integrations/supabase/client";
 
 type PublicRankingRow = {
   rank: number;
@@ -54,37 +54,59 @@ export function ActivityRanking({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const request = useRef(0);
+  const load = useCallback(async () => {
+    const generation = ++request.current;
     setLoading(true);
     setError("");
-    const [{ data: session }, ranking] = await Promise.all([
-      supabase.auth.getSession(),
-      supabase.rpc("get_public_activity_rankings", { p_limit: 20 }),
-    ]);
-    if (ranking.error) setError("O ranking está temporariamente indisponível.");
-    setRows(ranking.data ?? []);
-    if (session.session?.user.id) {
-      const own = await supabase.rpc("get_own_activity_ranking");
-      setMine(own.data?.[0] ?? null);
+    setMine(null);
+    try {
+      const supabase = getConfiguredSupabaseClient();
+      if (!supabase) throw new Error();
+      const [ranking, own] = await Promise.all([
+        supabase.rpc("get_public_activity_rankings", { p_limit: 20 }),
+        signedIn ? supabase.rpc("get_own_activity_ranking") : null,
+      ]);
+      if (request.current !== generation) return;
+      if (ranking.error || own?.error) throw new Error();
+      setRows(ranking.data ?? []);
+      setMine(own?.data?.[0] ?? null);
+    } catch {
+      if (request.current === generation) {
+        setRows([]);
+        setError("O ranking está temporariamente indisponível.");
+      }
+    } finally {
+      if (request.current === generation) setLoading(false);
     }
-    setLoading(false);
-  };
+  }, [signedIn]);
 
   useEffect(() => {
     void load();
-  }, []);
+    return () => {
+      request.current += 1;
+    };
+  }, [load]);
 
   const setParticipation = async (optedIn: boolean) => {
+    const generation = request.current;
     setSaving(true);
     setError("");
-    const { error: saveError } = await supabase.rpc("set_activity_ranking_preferences", {
-      p_opted_in: optedIn,
-      p_public_name: career.managerName || "Treinador",
-      p_club_id: career.clubId,
-    });
-    if (saveError) setError("Não foi possível salvar sua escolha agora.");
-    else await load();
-    setSaving(false);
+    try {
+      const supabase = getConfiguredSupabaseClient();
+      if (!signedIn || !supabase) throw new Error();
+      const { error } = await supabase.rpc("set_activity_ranking_preferences", {
+        p_opted_in: optedIn,
+        p_public_name: career.managerName || "Treinador",
+        p_club_id: career.clubId,
+      });
+      if (error) throw error;
+      if (request.current === generation) await load();
+    } catch {
+      if (request.current === generation) setError("Não foi possível salvar sua escolha agora.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -130,7 +152,7 @@ export function ActivityRanking({
         {loading ? (
           <li className="py-4 text-sm text-muted-foreground">Carregando ranking…</li>
         ) : null}
-        {!loading && rows.length === 0 ? (
+        {!loading && !error && rows.length === 0 ? (
           <li className="py-4 text-sm text-muted-foreground">
             Ainda não há participantes nesta semana.
           </li>
