@@ -258,8 +258,8 @@
   font-size: 1rem;
 }
 html[data-contrast="high"] .career-shell {
-  --background: var(--background);
-  --card: var(--card);
+  --background: #080f17;
+  --card: #101c28;
   --foreground: #fff;
   --card-foreground: #fff;
   --muted-foreground: var(--foreground);
