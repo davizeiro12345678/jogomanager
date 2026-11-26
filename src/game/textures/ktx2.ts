@@ -406,10 +406,10 @@ export function retainKtx2(
     supportProfiles.set(renderer, profile);
   }
   const firstOwner = owners.count === 0;
-  const wasStarted = started;
   const compatibleBefore = owners.compatible;
   const releaseOwner = owners.acquire(renderer, profile);
   if (started && owners.compatible && decoderProfile !== profile) disposeKtx2();
+  const wasStarted = started;
   initKtx2(renderer);
   // A restored first Canvas can have mounted consumers even though disposal
   // cleared the request queue. Compatibility remains true across zero owners.

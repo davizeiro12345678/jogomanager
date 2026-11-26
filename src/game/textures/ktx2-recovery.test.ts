@@ -2,14 +2,18 @@ import type { WebGLRenderer } from "three";
 import { afterEach, expect, it, vi } from "vitest";
 import { disposeKtx2, ktx2, onKtx2Ready, retainKtx2 } from "./ktx2";
 
-const { load } = vi.hoisted(() => ({ load: vi.fn() }));
+const { load, alternateProfile } = vi.hoisted(() => ({
+  load: vi.fn(),
+  alternateProfile: new WeakSet<object>(),
+}));
 
 vi.mock("three/examples/jsm/loaders/KTX2Loader.js", () => ({
   KTX2Loader: class {
     workerConfig = { bptcSupported: true };
     load = load;
     dispose() {}
-    detectSupport() {
+    detectSupport(renderer: object) {
+      this.workerConfig.bptcSupported = !alternateProfile.has(renderer);
       return this;
     }
     setTranscoderPath() {
@@ -24,7 +28,37 @@ vi.mock("@/game/device-workload", () => ({ deviceTextureDecodeWorkers: () => 1 }
 
 afterEach(() => {
   disposeKtx2();
+  load.mockClear();
   vi.unstubAllGlobals();
+});
+
+it("requeues mounted material textures when a same-turn replacement has a different profile", async () => {
+  vi.stubGlobal("window", {});
+  vi.stubGlobal("navigator", {});
+  const release = retainKtx2({} as WebGLRenderer);
+  const replacement = {} as WebGLRenderer;
+  alternateProfile.add(replacement);
+  const refresh = vi.fn(() => ktx2("hairDetailNormal"));
+  const unsubscribe = onKtx2Ready(refresh);
+  try {
+    ktx2("hairDetailNormal");
+    await Promise.resolve();
+    expect(load).toHaveBeenCalledTimes(1);
+
+    release();
+    const releaseReplacement = retainKtx2(replacement);
+    try {
+      await Promise.resolve();
+      expect(refresh.mock.calls).toEqual([[true], [false]]);
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(load.mock.calls[1]?.[0]).toBe("/textures/detail-v1/hair-normal.ktx2");
+    } finally {
+      releaseReplacement();
+    }
+  } finally {
+    release();
+    unsubscribe();
+  }
 });
 
 it("requeues mounted material textures after the last renderer is lost and reacquired", async () => {
