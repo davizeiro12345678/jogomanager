@@ -66,12 +66,14 @@ const fixture = () => ({
   })),
 });
 
-function compare(mutate) {
+function compare(mutate, mutateBaseline = () => {}) {
   const cwd = mkdtempSync(path.join(tmpdir(), "bundle-gate-"));
   try {
+    const baseline = fixture();
     const candidate = fixture();
+    mutateBaseline(baseline);
     mutate(candidate);
-    writeFileSync(path.join(cwd, "base.json"), JSON.stringify(fixture()));
+    writeFileSync(path.join(cwd, "base.json"), JSON.stringify(baseline));
     writeFileSync(path.join(cwd, "head.json"), JSON.stringify(candidate));
     const result = spawnSync(
       process.execPath,
@@ -83,6 +85,33 @@ function compare(mutate) {
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
+}
+
+function splitEditor(report, suffix, pageFirst = false) {
+  const page = report.entries.find((entry) => entry.name === "editor-route.js");
+  const shared = "shared.js";
+  page.name = `editor-page${suffix}.js`;
+  const wrapper = {
+    name: `editor-wrapper${suffix}.js`,
+    startupBytes: 28_000,
+    startupGzipBytes: 4_800,
+    startupBrotliBytes: 3_800,
+  };
+  wrapper.startupDependencies = [wrapper.name, shared];
+  page.startupDependencies = [page.name, shared];
+  report.chunks = [
+    { name: shared, gzipBytes: 4_000, brotliBytes: 3_000, dynamicImports: [] },
+    { name: page.name, gzipBytes: 6_000, brotliBytes: 5_000, dynamicImports: [] },
+    {
+      name: wrapper.name,
+      gzipBytes: 800,
+      brotliBytes: 800,
+      dynamicImports: [page.name],
+    },
+  ];
+  const index = report.entries.indexOf(page);
+  report.entries.splice(index, 1, ...(pageFirst ? [page, wrapper] : [wrapper, page]));
+  return { page, wrapper };
 }
 
 test("bundle gate permits equal or smaller transport budgets", () => {
@@ -196,6 +225,59 @@ test("bundle gate rejects missing or invalid measurements", () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.report.violations.join("\n"), /Brotli.*invalid/i);
+});
+
+test("editor startup compares equivalent layers when hashed names change their ordering", () => {
+  const result = compare(
+    (candidate) => splitEditor(candidate, "Head", true),
+    (baseline) => splitEditor(baseline, "Base"),
+  );
+  assert.equal(result.status, 0, result.stdout);
+  assert.deepEqual(result.report.violations, []);
+  const gzip = (name) => result.report.rows.find((row) => row.label === `${name} startup (gzip)`);
+  assert.equal(gzip("Editor").after, 10_800);
+  assert.equal(gzip("Editor conteúdo").after, 10_000);
+  assert.equal(gzip("Editor rota").after, 4_800);
+});
+
+test("editor wrapper and content keep independent 2 KiB startup budgets", () => {
+  for (const [role, label] of [
+    ["wrapper", "rota"],
+    ["page", "conteúdo"],
+  ]) {
+    const result = compare(
+      (candidate) => {
+        const layers = splitEditor(candidate, "Head", role === "wrapper");
+        layers[role].startupGzipBytes += 2_049;
+      },
+      (baseline) => splitEditor(baseline, "Base", role === "wrapper"),
+    );
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.report.violations.join("\n"), new RegExp(`Editor ${label}.*growth 2049`));
+  }
+});
+
+test("editor total includes a new wrapper when the baseline editor was a single chunk", () => {
+  const result = compare((candidate) => {
+    const { wrapper } = splitEditor(candidate, "Head", true);
+    candidate.chunks.find((chunk) => chunk.name === wrapper.name).brotliBytes += 1_249;
+  });
+  assert.equal(result.status, 1, result.stdout);
+  assert.match(result.report.violations.join("\n"), /Editor startup \(Brotli Q6\).*growth 2049/);
+});
+
+test("editor comparison rejects a split report missing its page or wrapper", () => {
+  for (const role of ["wrapper", "page"]) {
+    const result = compare(
+      (candidate) => {
+        const layers = splitEditor(candidate, "Head");
+        candidate.entries = candidate.entries.filter((entry) => entry !== layers[role]);
+      },
+      (baseline) => splitEditor(baseline, "Base"),
+    );
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.report.violations.join("\n"), /Editor.*missing required route.*candidate/);
+  }
 });
 
 test("constructor CPU gate accepts an unchanged or faster candidate", () => {

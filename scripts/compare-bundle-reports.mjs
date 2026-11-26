@@ -1,5 +1,9 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import {
+  findEditorLayers,
+  isMatchRouteEntry,
+  measureEditorStartup,
+} from "./bundle-report-comparison.mjs";
 
 const [, , baselinePath, candidatePath] = process.argv;
 if (!baselinePath || !candidatePath) {
@@ -16,7 +20,6 @@ const keys = [
   ["Lobby multiplayer", (entry) => entry.name.startsWith("multiplayer-"), true],
   ["Match 3D", isMatchRouteEntry],
   ["Palco cinematográfico", (entry) => entry.name.startsWith("CinematicStage3D-")],
-  ["Editor", (entry) => entry.name.startsWith("editor-")],
   ["Simulação Worker", (entry) => entry.name.startsWith("match.worker-")],
 ];
 const format = (value) => (typeof value === "number" ? (value / 1024).toFixed(1) + " KiB" : "n/d");
@@ -70,12 +73,10 @@ add(
   true,
   totalGrowthBudgetBytes,
 );
-for (const [name, predicate, includeRaw] of keys) {
-  const b = before.entries?.find(predicate);
-  const a = after.entries?.find(predicate);
+function addStartup(name, b, a, includeRaw) {
   if (!b || !a) {
     violations.push(`${name}: missing required route in ${!b ? "baseline" : "candidate"}`);
-    continue;
+    return;
   }
   // Raw is diagnostic; the existing per-route gate applies to gzip/Brotli.
   if (includeRaw) add(name + " startup raw", b.startupBytes, a.startupBytes);
@@ -94,6 +95,20 @@ for (const [name, predicate, includeRaw] of keys) {
     routeStartupGrowthBudgetBytes,
   );
 }
+for (const [name, predicate, includeRaw] of keys) {
+  addStartup(name, before.entries?.find(predicate), after.entries?.find(predicate), includeRaw);
+}
+const beforeEditor = findEditorLayers(before);
+const afterEditor = findEditorLayers(after);
+addStartup(
+  "Editor",
+  measureEditorStartup(before, beforeEditor),
+  measureEditorStartup(after, afterEditor),
+);
+if (beforeEditor?.wrapper || afterEditor?.wrapper)
+  addStartup("Editor conteúdo", beforeEditor?.page, afterEditor?.page);
+if (beforeEditor?.wrapper) addStartup("Editor rota", beforeEditor.wrapper, afterEditor?.wrapper);
+
 const md = [
   "# Bundle impact: baseline vs candidate",
   "",
