@@ -16,14 +16,20 @@ const workloads = {
   rig: ["registerRigBenchmarks", 4],
 };
 const minimumSamples = 250;
-// The replay codec measures ~13 microseconds per operation, so a 50 ms warm-up
-// left the first task of every slot compiling and optimising inside the sample
-// window. CodSpeed reported the same commit at +10.79% and +22.26% on two
-// consecutive runs while `base-a` and `base-b` themselves differed by 7% and
-// 29%. A longer unmeasured warm-up plus a fixed burn is measurement hygiene,
+// CodSpeed reported the same commit at +10.79% and +22.26% on two consecutive
+// runs while `base-a` and `base-b` themselves differed by 7% and 29%. Two of the
+// three sources of that spread are positional: the first suite of the first slot
+// ran on a cold, boosted CPU, and `replay codec` was always the first suite in
+// every slot. Both are fixed below with a fixed burn and a mirrored suite order.
+//
+// The sample window stays at the values that were measured to be stable for the
+// allocation-heavy replay codec: extending it to 400 ms with a 600 ms warm-up
+// made `decodeReplay` diverge by 39.80% between two identical code bases (base
+// p99 72-106 ms against 9 ms on the candidate) because the longer runs changed
+// the garbage-collection cadence inside the sample window. Measurement hygiene,
 // not a looser limit: the gate below still rejects any confirmed regression.
-const measurementTimeMs = 400;
-const warmupTimeMs = 600;
+const measurementTimeMs = 200;
+const warmupTimeMs = 50;
 const burnMs = 1_500;
 
 /** Equalise the CPU boost/thermal state every slot starts from. The first suite
