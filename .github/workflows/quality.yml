@@ -62,7 +62,7 @@ jobs:
           node scripts/audit-worker-startup.mjs --output=worker-startup-graph.json
       - name: Upload Worker startup graph diagnostic
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cloudflare-worker-startup-graph
           path: worker-startup-graph.json
@@ -91,7 +91,7 @@ jobs:
         run: npm run test:stress -- --reporter=default --reporter=json --outputFile=stress-results.json
       - name: Require executed and passing stress assertions
         run: node scripts/verify-stress-report.mjs stress-results.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: simulation-stress-results
@@ -113,7 +113,7 @@ jobs:
         run: node node_modules/vitest/vitest.mjs run src/game/sim-rules-revision.stress.test.ts --pool=forks --maxWorkers=1 --reporter=default --reporter=json --outputFile=rules-stress-results.json
       - name: Require every revision-2 seed to have executed and passed
         run: node scripts/verify-rules-stress-report.mjs rules-stress-results.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: simulation-rules-v2-stress-results
@@ -143,7 +143,7 @@ jobs:
         run: ln -s "$GITHUB_WORKSPACE/node_modules" "$GITHUB_WORKSPACE/.benchmark-base/node_modules"
       - name: Compare CPU in ABBA order and verify deterministic checkpoints
         run: npm run perf:match-setup -- .benchmark-base . match-setup-results
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: match-setup-performance-results
@@ -286,7 +286,7 @@ jobs:
       - run: npm ci
       - run: npm exec -- vitest run src/game/graphics-benchmark-contract.test.ts src/game/rapier-ball-authority.test.ts --pool=forks --maxWorkers=1
       - run: npm exec -- vite build --config scripts/graphics-vite.config.ts
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: graphics-benchmark-bundle
           path: dist-benchmark
