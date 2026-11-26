@@ -126,7 +126,16 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   }, [router]);
   return (
     <>
-      <a href={pathname === "/" ? "#home-content" : "#conteudo"} className="skip-to-content">
+      <a
+        href={pathname === "/" ? "#home-content" : "#conteudo"}
+        className="skip-to-content"
+        onClick={(event) => {
+          const careerContent = document.getElementById("career-content");
+          if (!careerContent) return;
+          event.preventDefault();
+          careerContent.focus();
+        }}
+      >
         {t("common.skip")}
       </a>
       {pathname === "/" ? (

@@ -50,7 +50,7 @@ function SignedOut() {
   return (
     <Shell>
       <p className="text-sm text-muted-foreground">
-        O multiplayer precisa de uma conta para identificar os dois jogadores.
+        O modo 1×1 precisa de uma conta para identificar os dois jogadores.
       </p>
       <Link
         to="/auth"
@@ -522,13 +522,23 @@ function Shell({ children }: { children: React.ReactNode }) {
         <ScreenHeader
           title={
             <>
-              <Swords className="text-primary" /> Multiplayer 1x1
+              <Swords className="text-primary" /> Multiplayer online
             </>
           }
         />
         <p className="mt-1 text-sm text-muted-foreground">
           Crie uma sala, mande o código e joguem a mesma partida ao vivo, cada um no seu aparelho.
         </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-lg border border-border/60 p-3">
+            <p className="font-medium">1×1 disponível</p>
+            <p className="text-xs text-muted-foreground">Um jogador por equipe.</p>
+          </div>
+          <div className="rounded-lg border border-border/60 p-3">
+            <p className="font-medium">2×2 em validação</p>
+            <p className="text-xs text-muted-foreground">Ainda indisponível.</p>
+          </div>
+        </div>
         <div className="mt-6">{children}</div>
         <Link to="/dashboard" className="mt-6 inline-block text-xs text-muted-foreground underline">
           Voltar ao painel

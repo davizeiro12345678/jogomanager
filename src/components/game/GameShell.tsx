@@ -252,9 +252,6 @@ export function GameShell({
       data-density={density}
     >
       <OfflineBar />
-      <a href="#career-content" className="career-skip">
-        {t("common.skip")}
-      </a>
       <header ref={header} className="game-shell-header career-header">
         <div className="career-header-inner">
           <button
