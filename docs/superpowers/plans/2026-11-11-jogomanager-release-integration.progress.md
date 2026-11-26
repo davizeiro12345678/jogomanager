@@ -541,3 +541,11 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - [x] RED atomic-ranked-match-allocation: 42501 na tentativa de UPDATE direto em sala websocket; proteção correta. GREEN: fixture usa RPC de liquidação para schema 0077+, exige rejeição do UPDATE direto, preserva verificação antiga para 0075. O contrato corrigido passou no preview remoto. Sete contratos SQL aprovados.
 - [x] Verificação após rollback: 0 auth.users, salas, queue, pairs, resultados, ratings e crons ativos; 78 tabelas públicas, todas com RLS. O fencing testa permissões temporárias apenas dentro da transação descartada.
 - [ ] CI do novo SHA, replay legado 0075, testes autenticados em browser, clientes reais 1x1/2x2, passkey, Stripe sandbox, deploy e recuperação externa permanecem pendentes. O sucesso SQL não certifica esses fluxos.
+
+
+## Continuação P1/P2 — integridade de medições (26/11/2026)
+
+- [x] P1: comparador de campanhas rejeita renderizadores software conhecidos (SwiftShader, llvmpipe, WARP, entre outros) e modo headless/vídeo não explicitamente falso. Adiciona p50 e 0,1% low ao resumo sem alterar limiares. Não constitui atestação de hardware físico.
+- [x] P2: TTFB quente exclui a primeira tentativa por posição cronológica, mesmo se a resposta inicial falhar; contadores de cabeçalhos usam mapas sem protótipo. Não altera endpoints nem volume de requisições.
+- [x] RED reproduzido para ambos; GREEN 7/7 testes de campanhas, autoteste TTFB e sintaxe Node 24.22.1 aprovados em arquivos isolados no VPS. Primeira tentativa sem Node no PATH não é evidência de falha de código. CI completo ainda pendente.
+- [ ] P0: QA de nove eixos do SHA 5f12d7dc reprovou na preparação de texturas reais (HTTP 403); não contornar WAF. Staging autenticado, Stripe, GPU física, backup externo, Wazuh, revisão e release permanecem condicionados aos gates existentes. Não abrir novo PR, não publicar main.

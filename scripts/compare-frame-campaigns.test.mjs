@@ -122,3 +122,33 @@ test("enforces duration, repeated runs, revision identity and finite intervals",
     /Mixed commit revisions/,
   );
 });
+
+test("refuses software renderers and unknown capture mode for physical comparisons", () => {
+  for (const gpu of [
+    "ANGLE (Google, SwiftShader Device)",
+    "llvmpipe (LLVM 19)",
+    "Microsoft Basic Render Driver",
+    "Software Rasterizer",
+    "D3D11 WARP",
+  ]) {
+    const candidate = fixture();
+    candidate.setup.gpu = gpu;
+    assert.throws(() => summarizeCampaignRun(candidate, REQ), /software GPU/i);
+  }
+  const unknown = fixture();
+  delete unknown.headless;
+  assert.throws(() => summarizeCampaignRun(unknown, REQ), /headless/i);
+  const unknownVideo = fixture();
+  delete unknownVideo.recordVideo;
+  assert.throws(() => summarizeCampaignRun(unknownVideo, REQ), /video/i);
+});
+
+test("reports p50 and 0.1 percent lows without altering frame thresholds", () => {
+  const result = compareFrameCampaigns(
+    { runs: [fixture(), fixture()] },
+    { runs: [fixture(SHA2, 8), fixture(SHA2, 8)] },
+    REQ,
+  );
+  assert.equal(result.summary.p50Ms.baseMedian, 10);
+  assert.equal(result.summary.pointOnePercentLowFps.headMedian, 125);
+});

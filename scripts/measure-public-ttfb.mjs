@@ -127,8 +127,8 @@ function summarize(name, observations) {
   const ttfb = ok.map((row) => row.ttfbMs);
   const app = ok.map((row) => row.appMs).filter((value) => value != null);
   const statusCounts = {};
-  const cacheCounts = {};
-  const coloCounts = {};
+  const cacheCounts = Object.create(null);
+  const coloCounts = Object.create(null);
   for (const row of observations) {
     const status = String(row.status ?? "error");
     statusCounts[status] = (statusCounts[status] ?? 0) + 1;
@@ -146,7 +146,12 @@ function summarize(name, observations) {
     firstRequestMs: observations[0]?.ttfbMs ?? null,
     medianTtfbMs: round(percentile(ttfb, 0.5)),
     p95TtfbMs: round(percentile(ttfb, 0.95)),
-    warmMedianMs: round(percentile(ttfb.slice(1), 0.5)),
+    warmMedianMs: round(
+      percentile(
+        observations.slice(1).filter((row) => row.status === 200).map((row) => row.ttfbMs),
+        0.5,
+      ),
+    ),
     medianAppMs: round(percentile(app, 0.5)),
     cacheCounts,
     coloCounts,
@@ -166,6 +171,16 @@ function selfTest() {
   assert.equal(parsed.appMs, 21.4);
   assert.equal(parsed.colo, "SAO");
   assert.equal(parsed.cacheStatus, "HIT");
+
+  const failedFirst = summarize("home", [
+    { status: 503, ttfbMs: 90 },
+    { status: 200, ttfbMs: 10, cacheStatus: "__proto__", colo: "constructor" },
+    { status: 200, ttfbMs: 30, cacheStatus: "__proto__", colo: "constructor" },
+  ]);
+  assert.equal(failedFirst.warmMedianMs, 20);
+  assert.equal(failedFirst.cacheCounts["__proto__"], 2);
+  assert.equal(failedFirst.coloCounts["constructor"], 2);
+  assert.equal(summarize("home", [{ status: 200, ttfbMs: 10 }]).warmMedianMs, null);
   console.log("SELF_TEST_OK");
 }
 
