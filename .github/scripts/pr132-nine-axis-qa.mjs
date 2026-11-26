@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { readQaInventoryFile } from "./read-qa-inventory-file.mjs";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
+import { committedSourceInventory } from "./read-qa-committed-source.mjs";
 import path from "node:path";
 import { studioFixtureUrl } from "../../scripts/studio-qa-origin.mjs";
 
@@ -640,16 +640,30 @@ const patterns = [
 try {
   const files = execFileSync(
     "git",
-    ["diff", "--name-only", "--diff-filter=ACMR", "origin/main...HEAD"],
+    ["diff", "--name-only", "-z", "--diff-filter=ACMR", "origin/main...HEAD"],
     { encoding: "utf8", maxBuffer: 5_000_000 },
   )
-    .split(/\r?\n/)
+    .split("\0")
     .filter((p) =>
       /^(src|services|cloudflare|scripts|drizzle)\/.*\.(?:ts|tsx|mjs|js|sql)$/.test(p),
     );
+  const committed = committedSourceInventory(sha);
   const staticResults = [];
+  let inspected = 0;
   for (const file of files.slice(0, 2000)) {
-    const lines = (await readFile(file, "utf8")).split(/\r?\n/);
+    const source = committed.read(file, true);
+    if (source?.text == null) {
+      find(
+        "static",
+        "warning",
+        { file },
+        "Committed regular source unavailable or exceeds byte limit.",
+        "Review the Git object separately; no checkout file was read.",
+      );
+      continue;
+    }
+    inspected++;
+    const lines = source.text.split(/\r?\n/);
     if (lines.length > 1300) {
       staticResults.push({
         path: file,
@@ -674,7 +688,8 @@ try {
     }
   }
   report.axes.static.metrics = {
-    inspectedChangedCodeFiles: files.length,
+    inspectedChangedCodeFiles: inspected,
+    eligibleChangedCodeFiles: files.length,
     reviewCandidates: staticResults.length,
   };
   await writeFile(
@@ -719,6 +734,7 @@ try {
   })
     .split("\0")
     .filter(Boolean);
+  const committed = committedSourceInventory(sha);
   const inventory = [];
   const infrastructure = [
     ".github/workflows/",
@@ -743,12 +759,15 @@ try {
     let lineCount = null;
     let state = "present";
     try {
-      const info = await readQaInventoryFile(
+      const info = committed.read(
         file,
         /\.(?:ts|tsx|mjs|js|json|yaml|yml|css|md|sql|html)$/i.test(file),
       );
-      sizeBytes = info.sizeBytes;
-      if (info.text !== null) lineCount = info.text.split(/\r?\n/).length;
+      if (!info) state = "deleted-or-unavailable";
+      else {
+        sizeBytes = info.sizeBytes;
+        if (info.text !== null) lineCount = info.text.split(/\r?\n/).length;
+      }
     } catch {
       state = "deleted-or-unavailable";
     }

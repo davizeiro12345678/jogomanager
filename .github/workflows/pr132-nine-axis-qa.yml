@@ -8,6 +8,7 @@ on:
       - "drizzle/**"
       - "scripts/**"
       - ".github/scripts/pr132-nine-axis-qa.mjs"
+      - ".github/scripts/read-qa-committed-source*.mjs"
       - ".github/workflows/pr132-nine-axis-qa.yml"
   workflow_dispatch:
 
@@ -43,6 +44,7 @@ jobs:
           node scripts/screenshot-privacy.mjs
       - name: Verify QA audit syntax and immutable revision
         run: |
+          node --test .github/scripts/read-qa-committed-source.test.mjs .github/scripts/read-qa-inventory-file.test.mjs
           node --check .github/scripts/pr132-nine-axis-qa.mjs
           git fetch --no-tags origin main:refs/remotes/origin/main
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
