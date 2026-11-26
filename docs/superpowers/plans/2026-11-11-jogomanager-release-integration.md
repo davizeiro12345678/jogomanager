@@ -487,3 +487,12 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 ## Retomada da homologação de 26/11/2026
 
 O [registro de progresso](./2026-11-11-jogomanager-release-integration.progress.md#homologação-retomada-em-26112026) reúne a campanha visual concluída, as medições de layout no Chrome, a correção da barra traseira do calção e a validação do transporte. O check nativo do CodeQL, o staging autenticado na revisão de entrega, a GPU física e a restauração externa continuam como critérios de publicação.
+
+
+## Continuação P0/P1/P2 — integridade e diagnóstico das texturas (26/11/2026)
+
+- [x] Reproduzir falha do QA de nove eixos do HEAD 7ec779c5: [run 45846818641](https://github.com/davizeiro12345678/jogomanager/actions/runs/45846818641), HTTP 403 ao baixar KTX2. Sondagem independente do VPS confirmou 302 do domínio principal para football-manager.app e 403 no destino; conector Cloudflare não lista essa zona. Não desativar WAF nem contornar controle de acesso.
+- [x] Reforçar preparação de fixtures: validar OID Git, limitar manifesto a 64 KiB e textura a 16 MiB, identificar arquivo/host/status HTTP sem imprimir URL completa e remover temporário após falha. TDD isolado: 4/5 RED e 5/5 GREEN; teste conectado ao workflow existente. A primeira execução RED fez uma solicitação pública incidental; repetição corrigida usou mocks de rede.
+- [ ] P0: restaurar entrega autorizada das texturas reais e executar nove eixos no SHA novo. Não substituir por imagens fictícias nem ignorar 403.
+- [ ] P0: PR #179 6fa4bf09 [CodSpeed 45844733604](https://github.com/davizeiro12345678/jogomanager/actions/runs/45844733604) falhou em MatchSim (+8,96%); causa ainda não comprovada. Preservar limites e revisar novo SHA.
+- [ ] P0/P1: staging autenticado, Stripe sandbox, backup externo restaurável, Wazuh coordenado, CodeQL nativo e GPU física seguem pendentes. P2: confirmar CLS, acessibilidade, textos e carregamentos em candidato publicado de homologação. Sem merge em main ou deploy.

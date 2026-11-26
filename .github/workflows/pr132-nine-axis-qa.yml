@@ -39,6 +39,7 @@ jobs:
           cache: npm
       - name: Reject location metadata in committed screenshot evidence
         run: |
+          python3 -B scripts/test_prepare_studio_qa_textures.py
           node --test scripts/screenshot-privacy.test.mjs scripts/realism-browser-runtime.test.mjs scripts/studio-qa-origin.test.mjs
           node --check scripts/realism-capture.mjs
           node scripts/screenshot-privacy.mjs

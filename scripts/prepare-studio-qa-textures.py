@@ -15,6 +15,10 @@ from uuid import UUID
 ORIGIN = "https://jogomanager.com"
 ASSET_HOSTS = {"jogomanager.com", "football-manager.app"}
 KTX2 = b"\xabKTX 20\xbb\r\n\x1a\n"
+# QA textures total under 5 MiB in the current catalogue. Bound each
+# untrusted manifest and response before allocating or contacting the CDN.
+MAX_MANIFEST_BYTES = 64 * 1024
+MAX_TEXTURE_BYTES = 16 * 1024 * 1024
 
 
 class PublicAssetRedirect(HTTPRedirectHandler):
@@ -34,13 +38,21 @@ class PublicAssetRedirect(HTTPRedirectHandler):
 def prepare_texture(entry):
     mode, kind, oid, manifest = entry.split()
     valid_name = re.fullmatch(r"[a-z0-9_-]+\.ktx2\.asset\.json", manifest)
-    if mode != "100644" or kind != "blob" or not valid_name:
+    if (
+        mode != "100644"
+        or kind != "blob"
+        or not re.fullmatch(r"[0-9a-f]{40}", oid)
+        or not valid_name
+    ):
         raise ValueError("Invalid committed Studio texture manifest")
+    blob_size = int(subprocess.check_output(["git", "cat-file", "-s", oid]))
+    if not 0 < blob_size <= MAX_MANIFEST_BYTES:
+        raise ValueError(f"Invalid committed manifest size for {manifest}")
     data = json.loads(subprocess.check_output(["git", "cat-file", "blob", oid]))
     filename = manifest.removesuffix(".asset.json")
     path = f"/__l5e/assets-v1/{UUID(data['asset_id'])}/{filename}"
     size = data["size"]
-    if data["url"] != path or type(size) is not int or size < len(KTX2):
+    if data["url"] != path or type(size) is not int or not len(KTX2) <= size <= MAX_TEXTURE_BYTES:
         raise ValueError(f"Invalid URL or size for {manifest}")
 
     # This client has no cookie jar, auth handlers or incoming browser headers.
@@ -52,6 +64,11 @@ def prepare_texture(entry):
             break
         except (URLError, TimeoutError) as error:
             if attempt == 2 or (isinstance(error, HTTPError) and 400 <= error.code < 500):
+                if isinstance(error, HTTPError):
+                    host = urlsplit(error.url).hostname or "unknown"
+                    raise RuntimeError(
+                        f"Public Studio texture {filename}: HTTP {error.code} from {host}"
+                    ) from None
                 raise
             sleep(attempt + 1)
     if not payload.startswith(KTX2) or len(payload) != size:
@@ -60,9 +77,15 @@ def prepare_texture(entry):
     if target.resolve() != target:
         raise ValueError("Studio texture destination contains a symbolic link")
     target.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile(dir=target.parent, delete=False) as temp:
-        temp.write(payload)
-    Path(temp.name).replace(target)
+    temp_path = None
+    try:
+        with NamedTemporaryFile(dir=target.parent, delete=False) as temp:
+            temp_path = Path(temp.name)
+            temp.write(payload)
+        temp_path.replace(target)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
     return len(payload)
 
 
