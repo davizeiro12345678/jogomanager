@@ -129,7 +129,7 @@ describe("versioned replay codec", () => {
       t: index / 4,
       b: [index + 0.25, index - 0.5, index * 0.75] as ReplayFrame["b"],
       p: frame.p.map((_, coordinate) => (index * 80 + coordinate - 30) / 100),
-      a: frame.a.map((_, player) => ((index + player) % 2 ? "pass" : "shot") as const),
+      a: frame.a.map((_, player) => (index + player) % 2 ? ("pass" as const) : ("shot" as const)),
       hg: index,
       ag: index + 1,
       poss: (index % 2 ? "away" : "home") as ReplayFrame["poss"],
