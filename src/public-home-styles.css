@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @import "./public-style-sources.css";
 @import "./design-system.css";
-@import "./components/home/home.css";
+@import "./components/home/home-first-paint.css";
 @source "./components/home/FootballHome.tsx";
 @source "./components/home/HomeDetails.tsx";
 @source "./components/home/HomeLeaguePulse.tsx";

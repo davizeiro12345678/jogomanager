@@ -1,3 +1,4 @@
+/* First paint: header, hero, navigation, promises, layout reserves. */
 .football-home {
   --home-lime: #b5ec70;
   --home-ink: #0c1211;
@@ -281,13 +282,6 @@
   padding-top: 85px;
   scroll-margin-top: 30px;
 }
-.home-section-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: end;
-  margin-bottom: 32px;
-}
 .home-section h2,
 .home-first-season h2 {
   font-family: var(--font-display);
@@ -296,261 +290,10 @@
   letter-spacing: -0.035em;
   margin-top: 13px;
 }
-.home-section-heading > p {
-  color: var(--home-muted);
-  font-size: 14px;
-  line-height: 1.7;
-}
-.home-mode-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr;
-  gap: 19px;
-}
-.home-mode {
-  padding: 24px;
-  border: 1px solid #c1d4c21a;
-  background: #141f19;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  transition:
-    border-color 0.2s,
-    transform 0.2s;
-}
-.home-mode:hover {
-  border-color: #b5ec7088;
-  transform: translateY(-4px);
-}
-.home-mode-career {
-  background: linear-gradient(135deg, #253822, #142219);
-}
-.home-mode-art {
-  height: 150px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #b5ec7099;
-  margin-bottom: 22px;
-  background: radial-gradient(ellipse at center, #b5ec701c, transparent 70%);
-}
-.home-mode-art > span {
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-size: 12px;
-  color: #779773;
-  letter-spacing: 0.1em;
-}
-.home-mode-art-match {
-  color: #93cdbb99;
-  background: radial-gradient(ellipse at center, #83c1a516, transparent 70%);
-}
-.home-mode-art-friends {
-  color: #d3bd8399;
-  background: radial-gradient(ellipse at center, #d8bc7714, transparent 70%);
-}
-.home-mode h3 {
-  font-family: var(--font-display);
-  font-size: 25px;
-  letter-spacing: -0.03em;
-  margin: 11px 0;
-}
 .home-mode > p:not(.home-kicker) {
   font-size: 14px;
   line-height: 1.7;
   color: var(--home-muted);
-}
-.home-mode-link {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--home-lime);
-  font-weight: 600;
-  font-size: 14px;
-  padding-top: 24px;
-  margin-top: auto;
-}
-.home-manager-section {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  align-items: center;
-  gap: 80px;
-}
-.home-manager-copy h2 {
-  margin-top: 16px;
-}
-.home-system-buttons {
-  display: flex;
-  gap: 6px;
-  margin-top: 28px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #bbd2bf25;
-}
-.home-system-buttons button {
-  min-height: 44px;
-  padding: 10px 22px;
-  border-radius: 6px;
-  color: #9cad9f;
-  font-size: 14px;
-}
-.home-system-buttons button[aria-pressed="true"] {
-  background: #b5ec701c;
-  color: var(--home-lime);
-}
-.home-system-detail {
-  min-height: 212px;
-  padding-top: 22px;
-}
-.home-system-detail h3 {
-  font-family: var(--font-display);
-  font-size: 19px;
-  line-height: 1.4;
-}
-.home-system-detail > p {
-  color: var(--home-muted);
-  font-size: 15px;
-  line-height: 1.75;
-  margin: 12px 0;
-}
-.home-system-detail small {
-  color: #77907c;
-  font-size: 11px;
-}
-.home-system-detail > a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  color: var(--home-lime);
-  font-size: 13px;
-  margin-top: 12px;
-}
-.home-tactics {
-  max-width: 375px;
-  width: 100%;
-  justify-self: center;
-  border: 1px solid #accbad24;
-  border-radius: 12px;
-  background: #111e18;
-  padding: 19px;
-  box-shadow: 0 30px 80px #0004;
-}
-.home-tactics-top {
-  display: flex;
-  justify-content: space-between;
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  color: #88a38d;
-}
-.home-tactics svg {
-  display: block;
-  width: 100%;
-  max-height: 335px;
-  margin: 10px auto;
-}
-.home-player {
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-.home-formation-buttons {
-  display: flex;
-  gap: 8px;
-}
-.home-formation-buttons button {
-  flex: 1;
-  min-height: 44px;
-  border: 1px solid #aac4ae24;
-  border-radius: 5px;
-  font-size: 12px;
-  color: #a8bdad;
-}
-.home-formation-buttons button[aria-pressed="true"] {
-  background: var(--home-lime);
-  color: #112410;
-  border-color: var(--home-lime);
-}
-.home-tactics-caption {
-  font-size: 11px;
-  color: #8da191;
-  text-align: center;
-  margin-top: 14px;
-}
-.home-first-season {
-  margin-top: 85px;
-  padding: 35px;
-  border: 1px solid #b5ec7022;
-  border-radius: 12px;
-  background: linear-gradient(110deg, #202e1c, #101c16);
-}
-.home-first-season ol {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 25px;
-  margin: 30px 0;
-}
-.home-first-season li > span {
-  font-family: var(--font-display);
-  font-size: 25px;
-  color: #b5ec7066;
-}
-.home-first-season h3 {
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 10px;
-}
-.home-first-season li > p {
-  font-size: 13px;
-  color: var(--home-muted);
-  line-height: 1.6;
-  margin-top: 8px;
-}
-.home-guide-content {
-  color: #d6e2d7;
-  padding-top: 20px;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 850px;
-}
-.home-more-modes {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 28px;
-  padding: 28px 0 0;
-  margin-top: 36px;
-  border-top: 1px solid #abc5af2b;
-  font-size: 13px;
-}
-.home-more-modes > span {
-  color: var(--home-muted);
-}
-.home-more-modes > a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  color: var(--home-lime);
-}
-.home-final-cta {
-  margin: 80px 0 20px;
-  display: flex;
-  justify-content: space-between;
-  gap: 25px;
-  align-items: center;
-  padding: 40px 0;
-  border-top: 1px solid #abc5af2b;
-}
-.home-final-cta h2 {
-  font-family: var(--font-display);
-  font-size: clamp(35px, 4vw, 58px);
-  line-height: 1.1;
-  margin-top: 12px;
-  letter-spacing: -0.04em;
-}
-.home-final-cta > div:last-child > p {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--home-muted);
-  margin-top: 14px;
 }
 .home-final-cta > div:last-child a:not(.home-button) {
   color: var(--home-lime);
@@ -573,12 +316,6 @@
   }
   .home-promises {
     gap: 25px;
-  }
-  .home-manager-section {
-    gap: 35px;
-  }
-  .home-mode {
-    padding: 19px;
   }
 }
 @media (max-width: 760px) {
@@ -674,69 +411,9 @@
   .home-section {
     padding-top: 55px;
   }
-  .home-section-heading {
-    display: block;
-  }
-  .home-section-heading > p {
-    margin-top: 14px;
-  }
-  .home-mode-grid {
-    grid-template-columns: 1fr;
-  }
-  .home-mode {
-    padding: 22px;
-    position: relative;
-  }
-  .home-mode-art {
-    height: 60px;
-    margin-bottom: 12px;
-    justify-content: end;
-  }
-  .home-mode-art svg {
-    width: 54px;
-    height: 54px;
-  }
-  .home-mode-career .home-mode-art {
-    height: 100px;
-  }
-  .home-mode-career .home-mode-art svg {
-    width: 75px;
-    height: 75px;
-  }
-  .home-manager-section {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .home-manager-copy h2 {
-    font-size: 30px;
-  }
-  .home-system-detail {
-    min-height: 225px;
-  }
-  .home-first-season {
-    margin-top: 50px;
-    padding: 25px 22px;
-  }
-  .home-first-season ol {
-    grid-template-columns: 1fr 1fr;
-    gap: 23px 18px;
-  }
-  .home-first-season h2 {
-    font-size: 26px;
-  }
   .home-first-season > .home-button {
     width: 100%;
     font-size: 14px;
-  }
-  .home-final-cta {
-    display: block;
-    margin-top: 55px;
-  }
-  .home-final-cta > div:last-child {
-    margin-top: 25px;
-  }
-  .home-guide-content {
-    contain-intrinsic-size: auto 1850px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -802,4 +479,15 @@
 .home-body > .home-final-cta {
   content-visibility: auto;
   contain-intrinsic-size: auto 280px;
+}
+
+/* Preserve the space before the interactive SVG lazy chunk mounts. */
+.home-tactics-slot {
+  min-width: 0;
+  min-height: 405px;
+}
+.home-tactics-placeholder {
+  width: 100%;
+  min-height: 405px;
+  border-radius: 12px;
 }

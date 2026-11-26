@@ -1,4 +1,5 @@
-import { readFile, readdir } from "node:fs/promises";
+import { open, readdir } from "node:fs/promises";
+import { constants } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -72,9 +73,24 @@ export async function verifyBrowserSupabaseBundle(assetDir, config) {
   const files = await readdir(assetDir, { withFileTypes: true });
   const clients = [];
   for (const file of files) {
-    if (!file.isFile() || !file.name.endsWith(".js")) continue;
-    const contents = await readFile(path.join(assetDir, file.name), "utf8");
-    if (contents.includes("Missing Supabase environment variable")) clients.push(contents);
+    if (!file.name.endsWith(".js")) continue;
+    // CI assets are untrusted generated output. Refuse symlinks even if a
+    // neighboring process swaps a regular entry after readdir() enumerates it.
+    if (file.isSymbolicLink()) throw new Error("Symlinked browser bundle asset");
+    if (!file.isFile()) throw new Error("Unexpected browser bundle asset type");
+    const handle = await open(
+      path.join(assetDir, file.name),
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    );
+    try {
+      const stat = await handle.stat();
+      if (!stat.isFile() || stat.size > 16 * 1024 * 1024)
+        throw new Error("Browser bundle asset too large or not regular");
+      const contents = await handle.readFile({ encoding: "utf8" });
+      if (contents.includes("Missing Supabase environment variable")) clients.push(contents);
+    } finally {
+      await handle.close();
+    }
   }
   if (
     !clients.length ||
