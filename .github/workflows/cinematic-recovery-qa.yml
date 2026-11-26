@@ -6,6 +6,7 @@ on:
       - "src/components/game/**"
       - "src/game/**"
       - "scripts/**"
+      - "verification/quality-update-20261108/graphics-source-snapshot*.mjs"
       - ".github/workflows/cinematic-recovery-qa.yml"
   workflow_dispatch:
 
@@ -30,6 +31,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Verify snapshot input isolation
+        run: node --test verification/quality-update-20261108/graphics-source-snapshot.test.mjs
       - run: npm ci
       - run: npm run graphics:build
       - name: Install isolated browser tooling
