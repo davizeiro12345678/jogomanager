@@ -42,7 +42,7 @@ async function scene() {
   );
   const textures = await import("./turf-detail");
   const maps = textures.turfDetailTextures();
-  const release = textures.retainTurfDetail();
+  const release = textures.retainTurfDetail(maps.normal, maps.roughness);
   releases.push(release);
   return { ...textures, maps, pool, release };
 }
@@ -82,7 +82,7 @@ it("keeps GPU storage dimensions fixed while neutral turf becomes detailed", asy
 
 it("retains shared turf until the last scene leaves and ignores the canceled result", async () => {
   const { maps, pool, release, retainTurfDetail, turfDetailTextures } = await scene();
-  const otherScene = retainTurfDetail();
+  const otherScene = retainTurfDetail(null, maps.roughness);
   releases.push(otherScene);
   await flush();
   const worker = TurfWorker.instances[0]!;

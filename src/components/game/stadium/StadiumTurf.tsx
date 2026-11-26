@@ -27,6 +27,7 @@ import {
   type MowPattern,
 } from "./textures/grass";
 import { LINES_H, LINES_W, pitchLinesTexture } from "./textures/lines";
+import { retainTurfDetail } from "./textures/turf-detail";
 import { pitchWearTexture } from "./textures/wear";
 
 function useBladeMaterial(color: string, webgl2: boolean) {
@@ -178,6 +179,7 @@ export function Pitch({
     void textureRevision;
     return compressed ? (ktx2("grassDetailRough") ?? grassMicroRoughness()) : null;
   }, [compressed, textureRevision]);
+  useEffect(() => retainTurfDetail(norm, microRoughness), [norm, microRoughness]);
   const normalScale = useMemo(
     () => new THREE.Vector2(quality === "alta" ? 0.42 : 0.28, quality === "alta" ? 0.42 : 0.28),
     [quality],

@@ -61,8 +61,23 @@ jobs:
           node --test scripts/verify-production-supabase.test.mjs
           node scripts/verify-production-supabase.mjs
       - run: npm ci
-      - name: Verify browser Supabase build-time env references
-        run: node --test scripts/supabase-public-env-static-access.test.mjs
+      - name: Verify browser Supabase and Stripe build-time env references
+        run: node --test scripts/supabase-public-env-static-access.test.mjs scripts/stripe-public-env-static-access.test.mjs
+      - name: Load the existing live Stripe publishable key
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
+        run: |
+          set -euo pipefail
+          public_key="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/jogomanager-web/settings" \
+            | jq -r '[.result.bindings[] | select(.name == "VITE_PAYMENTS_CLIENT_TOKEN" and .type == "plain_text") | .text] | if length == 1 then .[0] else "" end')"
+          if [[ ! "$public_key" =~ ^pk_live_[A-Za-z0-9]+$ ]]; then
+            echo "Missing or invalid live Stripe publishable key in Worker settings."
+            exit 1
+          fi
+          printf 'VITE_PAYMENTS_CLIENT_TOKEN=%s\n' "$public_key" >> "$GITHUB_ENV"
       - name: Refuse publication of a superseded main revision
         env:
           GH_TOKEN: ${{ github.token }}

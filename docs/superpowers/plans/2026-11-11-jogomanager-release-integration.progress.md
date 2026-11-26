@@ -327,3 +327,50 @@ Plano: `docs/superpowers/plans/2026-11-11-multiplayer-ai-graphics-contact-expans
 - Rever TLS do túnel, hardening de Tracee/Wazuh/Elastic/Coraza e sandbox systemd.
 - Executar benchmark antivírus/ELF controlado.
 - Manter engine determinística, stack gráfica e certificação física em aberto até prova.
+
+## 25/11/2026 — retomada por evidência do PR #132
+
+**Baseline da rodada:** `be8c85f6acc7b5072baa5e3bd96d6d3820ae9321`. PR em rascunho, 939 commits e 1.170 arquivos na auditoria inicial, com base `d84657717bd45d72d97e4c336a9f5f98ae2161ab`. O inventário automatizado do diff não equivale a revisão humana integral. As referências visuais históricas incluem o relatório Match 3D de 26/10 com comparações de atleta, uniforme, pose e enquadramento.
+
+### Evidência remota da baseline
+
+| Gate | Resultado verificado |
+| --- | --- |
+| Quality gates | [45724717936](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724717936). Build, tipos, testes, construção, stress de 200 partidas nas duas revisões, replay SQL, Rust/WASM, bundle, contratos 3D, npm de produção e Lighthouse shell passaram. Lighthouse mobile e agregado reprovaram. |
+| Lighthouse mobile | `/guias` 96/100/100, LCP 2.633/1.280/1.392 ms. O LCP foi o parágrafo de introdução. Uma amostra violou o mínimo de 97 e teto de 2.500 ms. [Relatórios brutos](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724717936/artifacts/15074027847). |
+| CodSpeed | [45724718106](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724718106). As 16 medianas melhoraram ante `main`, com redução de 1,81% a 98,52%. `decodeReplay` teve uma subida isolada de p99 sem repetição. [ABBA bruto](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724718106/artifacts/15073309049). |
+| CodeQL | [45724717978](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724717978) concluiu a análise. As threads #41 e #45 do transporte WebSocket seguem sem resolução comprovada. Rever os dois resultados depois de novo scan. |
+| Visual e interação | [9-axis](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724717945) gerou 29 capturas e um vídeo, com avisos de runtime, assets e moderação no preview anônimo. [Visual](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724718053) e [lifecycle](https://github.com/davizeiro12345678/jogomanager/actions/runs/45724718077) passaram no ambiente desta execução. |
+
+Os PRs relacionados foram revisados por estado e CI. #171/#174 já entraram na integração. #175 já entrou na `main`. #176/#177 e #172 têm evidência de falha em seus próprios heads. #178 fechou sem merge. A continuação reconciliou pontualmente a configuração do Stripe a partir de #165/#167.
+
+### Implementação da candidata
+
+| Área | Mudança e validação |
+| --- | --- |
+| Atletas e gramado | Cache de materiais em qualidade baixa reaproveita kits visualmente iguais. Troca de qualidade do gramado acompanha a propriedade real dos mapas de detalhe, inclusive quando albedo e roughness permanecem compartilhados. Regressão reproduzida com dois consumidores R3F. |
+| Animação e replay | Recupera o relógio das ações dos formatos que o registram e apresenta o quadro terminal, incluindo o placar. Mantém a leitura de replays antigos. |
+| Física | Cinco cenários de integração adicionais para contato varrido, altura, espelhamento, jogador expulso e regra legada. A revisão nova do modelo físico permanece pendente. |
+| IA | Evita calcular distância da bola em decisões que não a consultam. ABBA local: −2,53% no legado e −3,65% no v2. 1.000 sementes pareadas, 1.000 recuperações e 3.000 checkpoints idênticos por comparação, inclusive RNG. Coordenação tática expandida segue pendente. |
+| Carreira 3D | Se o módulo do estádio falhar ao carregar, usa o campo 2D já empregado pelo produto, mantendo o simulador e o botão de nova tentativa. |
+| Lighthouse | Desktop conserva Archivo Black. Mobile usa a alternativa prevista e elimina 18.787 bytes transferidos de fonte em `/guias`. Baseline local pior de 2.659 ms e desempenho .95. Candidata local 2.197/1.492/1.148 ms e .98/1/1 em três medições válidas. Houve crash separado do Chrome local. A campanha oficial de cinco rotas continua obrigatória. |
+| Dependências | Removido `r3f-perf` sem consumidor, junto com 20 entradas npm transitivas e sincronização Bun. Elimina a árvore antiga do Drei que exigia React 18/Fiber 8. `npm ci` limpo com 798 pacotes e `npm audit` com zero advisories reportados, incluindo dev. |
+| WebSocket | O sinal `connected` só é emitido na transição de autenticação. Repetir o mesmo ready não reenvia o comando da UI. A origem já validada é reutilizada e 31 testes focados passaram. Alertas CodeQL requerem reanálise. |
+| Stripe | Acesso estático ao valor público do Vite. O workflow busca a chave pública live no Worker correto, valida o formato antes do build e falha se estiver indisponível. 16 testes focados e contrato de build aprovados localmente. Sandbox e execução real do workflow seguem pendentes. |
+
+### VPS, Supabase e navegação
+
+- VPS `jm-fra-01`: 33 containers inventariados, 25 rodando e 8 parados. Dos rodando, 10 apareceram saudáveis na medição. O Studio Supabase parado estava antes unhealthy e encerrou com código 143. Foram observados 52 listeners TCP, limitados a loopback e Tailscale, e UFW com deny de entrada. SSH root/password/keyboard e forwarding desabilitados. TLS 1.3 com certificado público válido até 19/02/2027.
+- A revisão atual encontrou SentinelX sem sudo, executando não-root com `ProtectSystem=strict` e `NoNewPrivileges=true`. O Gateway tem sudo amplo condicionado a senha e uma regra sem senha limitada. Remote Desktop Commander segue root com 39 capabilities no bounding set e filesystem amplo. Revisar perfil mínimo com acesso alternativo antes de alterar.
+- Backup local executou com sucesso. Timer externo do Drive desabilitado, sem execução registrada na amostra. Restauração isolada não comprovada. APT cache indicou atualizações de segurança de libdw/libelf. CPU observada chegou a carga de cinco minutos 12,31 em 12 vCPUs, com pressão de 11,72% a 14,85% na amostra. Executar benchmarks pesados fora do VPS de operação.
+- Chrome do VPS 158.0.8127.88, perfil temporário, WebGL 2 com ANGLE Vulkan/SwiftShader Subzero e pixel de teste esperado. O VPS não apresentou dispositivo de renderização DRM. Preview local em `fb07df1d18a988c184a348b773b7060f629f96a6`, página inicial HTTP 200 e `/health`/`/healthz` 404. As capturas e a interação deste preview pertencem a esse commit.
+- Chrome público validou 34 destinos vinculados à home. Na partida rápida abriu opções, lances e atalhos, mudou câmera e velocidade e acionou pausa/retomada. A arena não inicializou no navegador público com WebGL desabilitado. Já no preview local da branch, com WebGL explicitamente desabilitado, o campo 2D desenhou pixels e o relógio avançou de 0 a 1 minuto a 8×, com zero exceções de página. A amostra mostrou baixo contraste dos jogadores de uniforme preto sobre o gramado 2D. Chat autenticado e a matriz completa de controles e duração continuam abertos.
+- Supabase de produção retornou 26 apontamentos de superfície GraphQL anon, 49 authenticated e um aviso do RPC `mutate_player_career`. A migração filtra por `auth.uid()`, exige usuário autenticado e valida slot/revisão. Rever schema, grants e RLS em staging antes de alterar o contrato. O linter não confirma vazamento de linhas. Um alerta de desempenho aponta reavaliação em RLS de `coin_service_spends`.
+- No preview Wrangler com SwiftShader e preset baixo, a partida rápida criou canvas WebGL 2, avançou do minuto 0 ao 5 a 8× e registrou zero exceções de página. Em harness isolado com o patch de carreira, duas falhas no download do estádio mantiveram o campo 2D funcional, com posições atualizadas e retry disponível.
+
+### Itens ainda exigidos para release
+
+- Gates do novo SHA, especialmente Lighthouse, CodSpeed, CodeQL e bundle. A proteção de `main` exige PR, threads resolvidas e gate crítico. A regra tem zero aprovações obrigatórias, por isso a revisão independente continua uma ação explícita.
+- Completar preview fixado no novo SHA com sessões de teste, permissões, chat/multiplayer, decisões visuais em câmera próxima, matriz de iluminação e GPU física. Nenhum dos navegadores de auditoria fornece certificação física de 60 FPS.
+- Rever a assinatura dos backups externos, restaurar em isolamento e planejar redução de privilégios do agente remoto. A homologação de autenticação, pagamentos e escopo dos advisors Supabase segue pendente.
+- Manter física e IA avançadas em revisão não promovida até a cobertura de replay/autoridade, A/B de qualidade e orçamento de ticks. Merge e deploy aguardam todas as verificações e reversão homologada.

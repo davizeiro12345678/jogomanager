@@ -227,9 +227,8 @@ export function moveOffBall(sim: MatchSim, dt: number) {
     let tz = p.slotZ * FIELD_Z * widthFactor + bz * 0.28;
     let sprint = 1;
 
-    const ballDist = Math.hypot(bx - p.x, bz - p.z);
-
     if (p.pos === "GK") {
+      const ballDist = Math.hypot(bx - p.x, bz - p.z);
       // Goleiro acompanha ângulo e profundidade: protege o primeiro pau sem
       // abandonar a linha quando a bola ainda está longe.
       const ownGoalX = dir * -FIELD_X;
@@ -316,7 +315,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         }
         if (markZ !== null) tz = tz * 0.55 + markZ * 0.45;
       }
-      if (ballDist < 18) {
+      if (Math.hypot(bx - p.x, bz - p.z) < 18) {
         const pull = p.pos === "DF" ? 0.35 : 0.6;
         tx += (bx - tx) * pull;
         tz += (bz - tz) * pull;

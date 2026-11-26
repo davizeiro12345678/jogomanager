@@ -226,6 +226,23 @@ describe("staged authoritative WSS client", () => {
     f.client.dispose();
   });
 
+  it("publishes the connected transition only once when a ready snapshot repeats", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      const ready = frame({ type: "ready", seat: "home", snapshot: state(1) });
+      socket.message(ready);
+      socket.message(ready);
+      expect(f.statuses.filter((status) => status === "connected")).toEqual(["connected"]);
+      expect(f.client.officialSnapshot()).toMatchObject({ revision: 1 });
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("sends unsequenced heartbeats only after readiness and stops them after the final receipt", async () => {
     vi.useFakeTimers();
     const f = fixture();

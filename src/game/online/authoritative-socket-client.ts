@@ -61,6 +61,7 @@ export class AuthoritativeMatchSocketClient {
   private readonly feed: AuthoritativePresentationFeed;
   private readonly ackLatency = new AuthorityLatencyMetrics();
   private readonly url: string;
+  private readonly origin: string;
   private socket: AuthorityClientSocket | null = null;
   private ticket: MatchTicketV1 | null = null;
   private started = false;
@@ -89,6 +90,7 @@ export class AuthoritativeMatchSocketClient {
     )
       throw new Error("match authority must use a trusted same-site WSS gateway");
     this.url = target.toString();
+    this.origin = target.origin;
     this.feed = new AuthoritativePresentationFeed(options.roomId);
   }
 
@@ -212,7 +214,7 @@ export class AuthoritativeMatchSocketClient {
         // Native WebSocket events carry the authenticated transport's origin.
         // A synthetic DOM event or a frame attributed to a foreign origin
         // must never mutate the presentation feed or its connection state.
-        if (!message.isTrusted || message.origin !== new URL(this.url).origin) return;
+        if (!message.isTrusted || message.origin !== this.origin) return;
         // Until ready authenticates this seat, no snapshot or final result is official.
         if (this.currentStatus === "authenticating") {
           const decision = classifyPreAuthAuthorityFrame(message.data, candidate.seat);
@@ -242,13 +244,11 @@ export class AuthoritativeMatchSocketClient {
             (this.options.now ?? Date.now)(),
             event.kind === "nack",
           );
-        if (event.kind === "ready") {
+        if (this.currentStatus === "authenticating" && event.kind === "ready") {
           this.clearAuthTimer();
           this.retryCount = 0;
           this.sequence = Math.max(this.sequence, resumeFrom);
-          if (this.currentStatus !== "connected") {
-            this.startConnectionTimers(socket, generation, candidate);
-          }
+          this.startConnectionTimers(socket, generation, candidate);
           this.status("connected");
         }
         if (event.kind === "final") {

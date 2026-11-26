@@ -407,3 +407,13 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 - Não alterar funcionalidades reservadas do Match 3D.
 - Não remover sudoers, reiniciar agentes privilegiados ou alterar SSH sem preservar acesso break-glass.
 - Todo item permanece pendente até evidência reproduzível no SHA exato.
+
+### Continuação do checkpoint do PR #132
+
+A auditoria desta retomada parte de `be8c85f6acc7b5072baa5e3bd96d6d3820ae9321`, com `main` em `d84657717bd45d72d97e4c336a9f5f98ae2161ab`. O resultado mais recente do CodSpeed nessa base substitui o FAIL histórico de `ac2dd4`. A execução pareada `45724718106` aprovou os 16 benchmarks por mediana. O gate crítico `45724717936` reprovou em uma amostra de `/guias`, com desempenho 0,96 e LCP de 2.633 ms.
+
+1. Repetir todos os gates no commit da continuação. Em especial, executar três amostras das cinco rotas e comparar as 16 medições do CodSpeed. Conferir medianas, caudas e hashes de estado.
+2. Homologar o commit candidato em staging isolado com Chrome, contas sintéticas e pagamento em sandbox. O preview atual do VPS está em `fb07df1`. O Chrome disponível no VPS renderiza com ANGLE/SwiftShader.
+3. Fechar a revisão CodeQL das threads de transporte autoritativo e a análise das superfícies GraphQL/RLS. Testar o controle de acesso esperado com dados sintéticos. Usar o ledger para rastrear cada evidência.
+4. Completar o protocolo visual e térmico em hardware físico, a cobertura de partidas e os critérios versionados de física e IA. Cobertura de lógica e uma cena renderizada por software são entregas parciais.
+5. Resolver as threads exigidas pela proteção de `main`, revisar a candidata de forma independente, comprovar rollback e validar a seção de release na spec antes de promover.

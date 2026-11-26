@@ -166,3 +166,22 @@ it("keeps knit, leather and synthetic boots distinct even in reduced detail", ()
     ).toBe(true);
   }
 });
+
+it("reuses the low-detail kit when ignored weather and field wear steps change", () => {
+  const look = lookFor("low-quality-surface", "MF");
+  const kit: Kit = {
+    base: "#cc2028",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const dry = { sweat: 0, dirt: 0, wet: 0 };
+  const worn = { sweat: 2, dirt: 2, wet: 1 };
+  expect(playerMaterials(look, kit, null, "baixa", worn)).toBe(
+    playerMaterials(look, kit, null, "baixa", dry),
+  );
+  expect(playerMaterials(look, kit, null, "media", worn)).not.toBe(
+    playerMaterials(look, kit, null, "media", dry),
+  );
+});

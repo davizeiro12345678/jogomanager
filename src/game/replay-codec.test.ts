@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
-import { ReplayRecorder, ReplaySim } from "./replay";
+import { ReplayRecorder, ReplaySim, type ReplayFrame } from "./replay";
 import {
   decodeReplay,
   encodeReplay,
@@ -11,6 +11,7 @@ import {
   REPLAY_V3_MIN_REDUCTION,
   quantizeReplayComponent,
 } from "./replay-codec";
+import { emptyActionContext, emptyVersionedVisualData, getActionPhase } from "./visual-context";
 
 function makeReplay() {
   const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "replay-codec");
@@ -20,6 +21,30 @@ function makeReplay() {
     recorder.sample();
   }
   return recorder.build("Codec test");
+}
+
+function makeActionReplay() {
+  const sim = new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), "replay-action-clock");
+  const recorder = new ReplayRecorder(sim);
+  recorder.sample();
+  const replay = recorder.build("Action clock");
+  const first = replay.frames[0]!;
+  const positions = first.p.map((coordinate) => coordinate || 0);
+  const frame = (t: number, actionT?: number): ReplayFrame => {
+    const actions = first.a.slice();
+    actions[0] = "shot";
+    const visual = emptyVersionedVisualData(replay.meta.length);
+    if (actionT !== undefined)
+      visual.actionContexts[0] = {
+        ...emptyActionContext(),
+        action: "shot",
+        actionT,
+        actionDur: 1,
+        phase: getActionPhase(1 - actionT),
+      };
+    return { ...first, t, p: positions, a: actions, v: visual };
+  };
+  return { ...replay, frames: [frame(0, 0.75), frame(0.25, 0.5), frame(0.5, 0.9), frame(0.75)] };
 }
 
 describe("versioned replay codec", () => {
@@ -86,6 +111,52 @@ describe("versioned replay codec", () => {
     const replay = makeReplay();
     expect(decodeReplay(replay)).toEqual(replay);
     expect(decodeReplay({ version: 2, ...replay })).toEqual(replay);
+  });
+
+  it.each([2, 3])("restores the recorded action clock when playing a v%s replay", (version) => {
+    const replay = makeActionReplay();
+    const recordedFrames = structuredClone(replay.frames);
+    const decoded = decodeReplay(version === 3 ? encodeReplay(replay) : { ...replay, version });
+    const playback = new ReplaySim(decoded);
+    const athlete = playback.players[0]!;
+    expect(athlete.actionDur).toBe(1);
+    expect(athlete.actionT).toBe(0.75);
+    playback.seek(0.125);
+    expect(athlete.actionT).toBeCloseTo(0.625);
+    playback.seek(0.225);
+    expect(playback.generateVisualContext().actionContexts[0]).toMatchObject({ phase: "contact" });
+    expect(playback.generateVisualContext().actionContexts[0]?.actionT).toBe(athlete.actionT);
+    playback.seek(0.375);
+    expect(athlete.actionT).toBe(0.5);
+    playback.seek(0.5);
+    expect(athlete.actionT).toBe(0.9);
+    expect(decoded.frames).toEqual(recordedFrames);
+  });
+
+  it("keeps the old action pose when no usable clock was recorded", () => {
+    const replay = makeActionReplay();
+    const first = replay.frames[0]!;
+    const corrupt = first.v!.actionContexts[0]!;
+    corrupt.actionT = Infinity;
+    const playback = new ReplaySim(replay);
+    expect(playback.players[0]).toMatchObject({ action: "shot", actionT: 0.3, actionDur: 0.6 });
+
+    delete first.v;
+    const legacy = new ReplaySim(replay);
+    expect(legacy.players[0]).toMatchObject({ action: "shot", actionT: 0.3, actionDur: 0.6 });
+  });
+
+  it("presents the recorded score and action of the final frame", () => {
+    const replay = makeActionReplay();
+    const final = replay.frames.at(-1)!;
+    final.a[0] = null;
+    final.hg = 1;
+    final.poss = "away";
+    const playback = new ReplaySim(replay);
+    playback.seek(playback.duration);
+    expect(playback.stats.home.goals).toBe(1);
+    expect(playback.possession).toBe("away");
+    expect(playback.players[0]).toMatchObject({ action: null, actionT: 0, actionDur: 0 });
   });
 
   it("reports the byte comparison used to decide whether v3 is justified", () => {

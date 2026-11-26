@@ -13,9 +13,9 @@ export function onTurfDetailReady(callback: () => void) {
     listeners.delete(callback);
   };
 }
-export function retainTurfDetail() {
+export function retainTurfDetail(normal: THREE.Texture | null, roughness: THREE.Texture | null) {
   const maps = cached;
-  if (!maps) return () => undefined;
+  if (!maps || (normal !== maps.normal && roughness !== maps.roughness)) return () => undefined;
   owners += 1;
   let released = false;
   return () => {

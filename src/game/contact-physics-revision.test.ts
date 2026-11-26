@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildTeamSetup } from "./quickMatch";
 import { FIELD_X, MatchSim, MATCH_SIMULATION_STEP } from "./sim";
 import { validExecutionContract } from "./match-execution-contract";
@@ -147,6 +147,86 @@ describe("opt-in contact physics / historical replay boundaries", () => {
       sim.dispose();
     }
   });
+
+  it.each([
+    { name: "home sweep", direction: 1, revision: 2, height: 1.8, sentOff: false, blocked: true },
+    { name: "away sweep", direction: -1, revision: 2, height: 0.8, sentOff: false, blocked: true },
+    { name: "above reach", direction: 1, revision: 2, height: 2.1, sentOff: false, blocked: false },
+    {
+      name: "sent-off defender",
+      direction: 1,
+      revision: 2,
+      height: 0.8,
+      sentOff: true,
+      blocked: false,
+    },
+    {
+      name: "legacy endpoint",
+      direction: 1,
+      revision: undefined,
+      height: 0.8,
+      sentOff: false,
+      blocked: false,
+    },
+  ] as const)(
+    "keeps the block and rebound contract for $name",
+    ({ direction, revision, height, sentOff, blocked }) => {
+      const sim = create("contact-block-sweep", revision);
+      try {
+        const attacking = direction === 1 ? "home" : "away";
+        const passer = sim.players.find(
+          (player) => player.side === attacking && player.pos !== "GK",
+        )!;
+        const receiver = sim.players.find(
+          (player) => player.side === attacking && player !== passer,
+        )!;
+        const defender = sim.players.find(
+          (player) => player.side !== attacking && player.pos !== "GK",
+        )!;
+        for (const player of sim.players) player.z = 20;
+        if (sentOff) sim.sendOff(defender, "test fixture");
+        defender.x = 0;
+        defender.z = 0;
+        // The path clips the 1.25 m block radius, but both tick endpoints are outside.
+        const previous = { x: -0.7 * direction, z: 1.1, height };
+        sim.ball = {
+          x: 0.7 * direction,
+          z: previous.z,
+          height: height + 0.18,
+          vx: 42 * direction,
+          vz: 0,
+          holder: null,
+        };
+        sim.pass = {
+          from: passer.id,
+          to: receiver.id,
+          fromX: -4 * direction,
+          dir: direction,
+          until: 1,
+          side: attacking,
+        };
+        sim.lastTouch = attacking;
+        const random = vi.spyOn(sim, "rnd").mockReturnValue(0);
+
+        expect(sim.tryBlock(MATCH_SIMULATION_STEP, previous)).toBe(blocked);
+
+        if (blocked) {
+          expect(defender.tackles).toBe(1);
+          expect(sim.ball.x).toBeCloseTo(0, 12);
+          expect(sim.ball.height).toBeCloseTo(height + 0.09, 12);
+          expect(sim.ball.vx * direction).toBeLessThan(0);
+          expect(sim.pass).toBeNull();
+        } else {
+          expect(defender.tackles).toBe(0);
+          expect(sim.ball.x).toBe(0.7 * direction);
+          expect(sim.pass?.to).toBe(receiver.id);
+          expect(random).not.toHaveBeenCalled();
+        }
+      } finally {
+        sim.dispose();
+      }
+    },
+  );
 
   it("keeps deterministic state and revision through a checkpoint recovery", () => {
     const sim = create("contact-checkpoint", 2);

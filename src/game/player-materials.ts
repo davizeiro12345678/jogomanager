@@ -333,7 +333,7 @@ export function playerMaterials(
     tex?.uuid ?? "-",
     // suor/grama/chuva entram na chave: é o que faz a camisa sujar durante a
     // partida sem que nenhum atleta ganhe material próprio (3 × 3 × 2 no máximo)
-    surfaceKey(surface ?? NEUTRAL_STEPS),
+    surfaceKey((quality === "baixa" ? undefined : surface) ?? NEUTRAL_STEPS),
     ...(quality === "alta"
       ? [
           jerseyNormalName,

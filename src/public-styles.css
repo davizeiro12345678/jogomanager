@@ -38,6 +38,10 @@
     --font-display: system-ui, sans-serif;
     --font-sans: system-ui, sans-serif;
   }
+  /* Tailwind's inline theme also emits a literal family for this utility. */
+  [data-public-shell] .font-display {
+    font-family: var(--font-display);
+  }
   [data-public-shell] article > h1 {
     font-weight: 800;
     letter-spacing: -0.025em;
