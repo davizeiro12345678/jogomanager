@@ -424,8 +424,8 @@
 .home-hero-stats {
   margin-top: 26px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  max-width: 420px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
+  max-width: 26.25rem;
   border: 1px solid color-mix(in oklab, var(--home-lime) 35%, transparent);
   border-radius: 14px;
   /* Opaque enough to read over the photo without a costly backdrop blur. */
@@ -435,7 +435,9 @@
 .home-hero-stats > div {
   display: grid;
   align-content: start;
-  padding: 12px clamp(5px, 2vw, 10px);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 0.75rem clamp(0.3125rem, 2vw, 0.625rem);
   text-align: center;
 }
 .home-hero-stats > div + div {
@@ -445,15 +447,27 @@
   grid-row: 1;
   margin: 0;
   font-family: var(--font-display, inherit);
-  font-size: clamp(17px, 4vw, 23px);
+  font-size: clamp(1.0625rem, 4vw, 1.4375rem);
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.2;
   color: var(--home-lime);
 }
 .home-hero-stats dt {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--home-muted);
+}
+
+@media (forced-colors: active) {
+  .football-home :is(a, button):focus-visible {
+    outline-color: Highlight;
+  }
+  .home-hero-stats {
+    border-color: CanvasText;
+  }
+  .home-hero-stats > div + div {
+    border-color: CanvasText;
+  }
 }
