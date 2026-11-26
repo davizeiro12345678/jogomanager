@@ -127,6 +127,14 @@ describe("page-owned styles", () => {
     expect(createCss).not.toMatch(/\.career-save-note\b/);
   });
 
+  it("defines non-cyclic high-contrast career surfaces", () => {
+    const typographyCss = stylesheet("./career-typography-shell.css");
+    expect(typographyCss).not.toMatch(/--([\w-]+):\s*var\(--\1\)\s*;/);
+    expect(typographyCss).toMatch(
+      /html\[data-contrast="high"\] \.career-shell\s*\{[^}]*--background:\s*#[\da-f]{6};[^}]*--card:\s*#[\da-f]{6};/i,
+    );
+  });
+
   it("keeps long manager names readable instead of clipping them at enlarged text sizes", () => {
     const typographyCss = stylesheet("./career-typography-shell.css");
     expect(typographyCss).toMatch(
