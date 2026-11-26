@@ -148,7 +148,10 @@ function summarize(name, observations) {
     p95TtfbMs: round(percentile(ttfb, 0.95)),
     warmMedianMs: round(
       percentile(
-        observations.slice(1).filter((row) => row.status === 200).map((row) => row.ttfbMs),
+        observations
+          .slice(1)
+          .filter((row) => row.status === 200)
+          .map((row) => row.ttfbMs),
         0.5,
       ),
     ),
