@@ -42,7 +42,8 @@ describe("VPS catalog canary", () => {
       expect(url.hostname).toBe("catalog.jogomanager.com");
       expect(url.pathname).toBe("/v1/public/clubs");
       expect(init?.credentials).toBe("omit");
-      expect(init?.redirect).toBe("error");
+      // Workerd implements only follow|manual; "error" throws before dispatch.
+      expect(init?.redirect).toBe("manual");
       expect(init?.method).toBe("GET");
       expect(init?.cache).toBe("no-store");
       expect(new Headers(init?.headers).has("authorization")).toBe(false);

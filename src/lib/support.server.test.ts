@@ -82,7 +82,7 @@ describe("support webhook transport", () => {
     expect(result).toMatchObject({ claimed: 1, delivered: 1, retryQueued: 0 });
     const [url, options] = send.mock.calls[0]!;
     expect(url).toBe(config.url);
-    expect(options).toMatchObject({ method: "POST", redirect: "error" });
+    expect(options).toMatchObject({ method: "POST", redirect: "manual" });
     expect(options?.signal).toBeInstanceOf(AbortSignal);
     const body = String(options?.body);
     const headers = new Headers(options?.headers);

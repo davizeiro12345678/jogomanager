@@ -139,7 +139,7 @@ export async function deliverEmailAutomationEvent(
         "idempotency-key": `jgm-automation/${lease.id}`,
       },
       body: JSON.stringify({ event: lease.event, email: lease.recipient, payload: lease.payload }),
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(8_000),
     });
   } catch {

@@ -47,6 +47,27 @@ export function requestCloudflareBindings(request: Request): Record<string, unkn
 // Replaced by Vite from the checked-out Git revision. It is not a mutable Worker variable.
 declare const __JOGOMANAGER_BUILD_COMMIT__: string | null;
 
+/** Workerd implements only "follow" and "manual"; "error" throws a TypeError
+ * before the request leaves the isolate, which made every production probe
+ * report `auth_transport_error`. Manual keeps credentials off any redirect
+ * target and lets the probe classify the hop itself. */
+const PROBE_REDIRECT_MODE = "manual" as const;
+
+function isRedirectHop(response: Response) {
+  return response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400);
+}
+
+/** Only a 2xx JSON body is evidence of a healthy backend. A redirect hop or an
+ * HTML error page is an upstream failure, never a readiness signal. */
+async function readProbeJson<T>(response: Response): Promise<T | null> {
+  if (!response.ok || isRedirectHop(response)) return null;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 /** Check readiness without disclosing keys, URLs, provider responses or account data. */
 export async function checkBackendHealth(env: Environment, fetcher: typeof fetch = fetch) {
   const configured = Boolean(env["SUPABASE_URL"] && env["SUPABASE_PUBLISHABLE_KEY"]);
@@ -60,17 +81,18 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
         headers: { apikey: env["SUPABASE_PUBLISHABLE_KEY"]! },
         signal: AbortSignal.timeout(5_000),
         cache: "no-store",
-        redirect: "error",
+        redirect: PROBE_REDIRECT_MODE,
       });
-      const settings = response.ok ? ((await response.json()) as { external?: unknown }) : null;
+      const settings = await readProbeJson<{ external?: unknown }>(response);
       authReachable = Boolean(
         settings && typeof settings.external === "object" && settings.external !== null,
       );
-      failureStage = !response.ok
-        ? "auth_upstream_http_error"
-        : authReachable
-          ? "missing_service_role_key"
-          : "auth_invalid_response";
+      failureStage =
+        !response.ok || isRedirectHop(response)
+          ? "auth_upstream_http_error"
+          : authReachable
+            ? "missing_service_role_key"
+            : "auth_invalid_response";
     } catch {
       authReachable = false;
       failureStage = "auth_transport_error";
@@ -88,16 +110,17 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
           headers,
           signal: AbortSignal.timeout(5_000),
           cache: "no-store",
-          redirect: "error",
+          redirect: PROBE_REDIRECT_MODE,
         },
       );
-      const payload = response.ok ? ((await response.json()) as { users?: unknown }) : null;
+      const payload = await readProbeJson<{ users?: unknown }>(response);
       serverCredentialsValid = Boolean(payload && Array.isArray(payload.users));
-      failureStage = !response.ok
-        ? "admin_credentials_rejected"
-        : serverCredentialsValid
-          ? "database_unreachable"
-          : "admin_invalid_response";
+      failureStage =
+        !response.ok || isRedirectHop(response)
+          ? "admin_credentials_rejected"
+          : serverCredentialsValid
+            ? "database_unreachable"
+            : "admin_invalid_response";
       // Discard the admin response; never expose account records in this endpoint.
       if (serverCredentialsValid) {
         const database = await fetcher(
@@ -106,10 +129,10 @@ export async function checkBackendHealth(env: Environment, fetcher: typeof fetch
             headers,
             signal: AbortSignal.timeout(5_000),
             cache: "no-store",
-            redirect: "error",
+            redirect: PROBE_REDIRECT_MODE,
           },
         );
-        databaseReachable = database.ok && Array.isArray(await database.json());
+        databaseReachable = Array.isArray(await readProbeJson<unknown>(database));
         failureStage = databaseReachable ? "ready" : "database_unreachable";
       }
     } catch {

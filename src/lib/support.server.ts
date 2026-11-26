@@ -96,7 +96,7 @@ export async function dispatchSupportOutbox(
     try {
       const response = await (options.fetch ?? fetch)(config.url, {
         method: "POST",
-        redirect: "error",
+        redirect: "manual",
         signal: AbortSignal.timeout(5_000),
         headers: {
           "Content-Type": "application/json",

@@ -91,8 +91,33 @@ describe("backend readiness", () => {
     expect((await checkBackendHealth(env, fetcher)).status).toBe("ready");
     expect(fetcher).toHaveBeenCalledTimes(3);
     for (const [, request] of fetcher.mock.calls) {
-      expect(request.redirect).toBe("error");
+      // Workerd rejects "error" outright, so "manual" is the only mode that both
+      // survives the runtime and keeps credentials off a redirect target.
+      expect(request.redirect).toBe("manual");
     }
+  });
+
+  it("survives the Workers runtime redirect contract instead of failing the probe", async () => {
+    // Mirrors workerd: anything but follow/manual throws before dispatch.
+    const workerdFetch = vi.fn<typeof fetch>(async (_input, init) => {
+      const mode = init?.redirect;
+      if (mode !== undefined && mode !== "follow" && mode !== "manual")
+        throw new TypeError(
+          'Invalid redirect value, must be one of "follow" or "manual" ("error" won\'t be implemented)',
+        );
+      return Response.json({ external: { email: true } });
+    });
+    const result = await checkBackendHealth(env, workerdFetch);
+    expect(result.checks.auth).toBe(true);
+    expect(result.failureStage).not.toBe("auth_transport_error");
+  });
+
+  it("classifies an upstream redirect hop as an unhealthy stage", async () => {
+    const redirecting = vi.fn(async () => new Response(null, { status: 302 }));
+    const result = await checkBackendHealth(env, redirecting);
+    expect(result.status).toBe("degraded");
+    expect(result.failureStage).toBe("auth_upstream_http_error");
+    expect(result.checks.auth).toBe(false);
   });
 
   it("does not treat an HTML error page as healthy", async () => {
