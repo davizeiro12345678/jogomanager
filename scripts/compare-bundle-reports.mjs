@@ -1,6 +1,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import {
   findEditorLayers,
+  findRouteStartup,
+  isMultiplayerRouteEntry,
   isMatchRouteEntry,
   measureEditorStartup,
 } from "./bundle-report-comparison.mjs";
@@ -17,8 +19,6 @@ const keys = [
   ["Página inicial", (entry) => entry.surface === "home"],
   ["Nova carreira", (entry) => entry.surface === "new"],
   ["Partida rápida", (entry) => entry.name.startsWith("partida-rapida-")],
-  ["Lobby multiplayer", (entry) => entry.name.startsWith("multiplayer-"), true],
-  ["Match 3D", isMatchRouteEntry],
   ["Palco cinematográfico", (entry) => entry.name.startsWith("CinematicStage3D-")],
   ["Simulação Worker", (entry) => entry.name.startsWith("match.worker-")],
 ];
@@ -98,6 +98,17 @@ function addStartup(name, b, a, includeRaw) {
 for (const [name, predicate, includeRaw] of keys) {
   addStartup(name, before.entries?.find(predicate), after.entries?.find(predicate), includeRaw);
 }
+addStartup(
+  "Lobby multiplayer",
+  findRouteStartup(before, isMultiplayerRouteEntry),
+  findRouteStartup(after, isMultiplayerRouteEntry),
+  true,
+);
+addStartup(
+  "Match 3D",
+  findRouteStartup(before, isMatchRouteEntry),
+  findRouteStartup(after, isMatchRouteEntry),
+);
 const beforeEditor = findEditorLayers(before);
 const afterEditor = findEditorLayers(after);
 addStartup(

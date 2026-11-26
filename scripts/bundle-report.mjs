@@ -189,7 +189,7 @@ if (process.argv.includes("--check")) {
   const newCareer = entries.find((e) => e.surface === "new");
   const playerCareer = entries.find((e) => e.name.startsWith("jogador.painel-"));
   const editors = entries.filter((e) => e.name.startsWith("editor-"));
-  const match = entries.find(isMatchRouteEntry);
+  const matchEntries = entries.filter(isMatchRouteEntry);
   const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
   const deferredEditorTabs = /^(?:roster-|clubs-|competitions-|import-export-)/;
   if (
@@ -201,7 +201,11 @@ if (process.argv.includes("--check")) {
     )
   )
     throw new Error("Editor must keep its heavy tabs split from the route startup chunk");
-  if (!match || !matchReport || match.dependencies.includes(matchReport.name))
+  if (
+    !matchEntries.length ||
+    !matchReport ||
+    matchEntries.some((match) => match.dependencies.includes(matchReport.name))
+  )
     throw new Error("Match report must remain an on-demand chunk until the match finishes");
   const physics = chunks.find(
     (c) => c.name.startsWith("rapier-") && !c.name.startsWith("rapier-ball-"),
