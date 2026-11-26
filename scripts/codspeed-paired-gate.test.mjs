@@ -63,4 +63,29 @@ describe("same-runner paired-walltime release gate", () => {
     const result = evaluatePairedReport(report);
     assert.ok(result.failures.some((failure) => failure.includes("bench-2")));
   });
+
+  it("does not fail on runner noise that identical code reproduces", () => {
+    const report = pairedReport();
+    // The two base rounds of the same commit already differ by 12%.
+    report.benchmarks[5].rounds["base-a"].medianMs = 1;
+    report.benchmarks[5].rounds["base-b"].medianMs = 1.12;
+    report.benchmarks[5].rounds["head-a"].medianMs = 1.05;
+    report.benchmarks[5].rounds["head-b"].medianMs = 1.08;
+    const result = evaluatePairedReport(report);
+    assert.equal(result.failures.length, 0);
+    assert.ok(result.warnings.some((warning) => warning.includes("bench-5")));
+  });
+
+  it("requires a regression to appear in both head rounds", () => {
+    const report = pairedReport();
+    report.benchmarks[7].rounds["head-a"].medianMs = 1.09;
+    report.benchmarks[7].rounds["head-b"].medianMs = 0.98;
+    const result = evaluatePairedReport(report);
+    assert.equal(result.failures.length, 0);
+    assert.ok(
+      result.warnings.some(
+        (warning) => warning.includes("bench-7") && warning.includes("not confirmed"),
+      ),
+    );
+  });
 });
