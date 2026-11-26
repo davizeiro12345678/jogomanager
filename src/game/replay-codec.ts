@@ -31,9 +31,7 @@ export type StoredReplayV3 = {
   };
 };
 
-type LegacyReplayFrame = Omit<ReplayFrame, "p"> & { p: number[] };
-type LegacyReplay = Omit<Replay, "frames"> & { frames: LegacyReplayFrame[] };
-export type StoredReplayV2 = LegacyReplay & { version: typeof REPLAY_FORMAT_V2 };
+export type StoredReplayV2 = Replay & { version: typeof REPLAY_FORMAT_V2 };
 export type StoredReplay = StoredReplayV2 | StoredReplayV3;
 
 /** Quantize once, then saturate the signed 16-bit replay coordinate. */
@@ -108,22 +106,25 @@ function decodeV3(raw: StoredReplayV3): Replay {
   const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
   const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
-  const positionCount = playerCount * 4;
-  // Decode into one contiguous buffer. Each frame gets its own range so a
-  // seek can read numbers directly without allocating a double array per frame.
-  const decodedPositions = new Float64Array(positions.length);
-  for (let index = 0; index < positions.length; index += 1)
-    decodedPositions[index] = positions[index]! / QUANTIZE;
-
   let timeMs = 0;
   for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
     timeMs += timesMs[frameIndex]!;
-    const positionBase = frameIndex * positionCount;
-    const p = decodedPositions.subarray(positionBase, positionBase + positionCount);
+    // V3 buffers are length-validated before decoding. Preallocate the exact
+    // player arrays and read typed buffers directly: avoid repeated push growth,
+    // optional indexed lookups and four helper calls per athlete per frame.
+    const p = new Array<number>(playerCount * 4);
     const a = new Array<PlayerAction | null>(playerCount);
     const actionBase = frameIndex * playerCount;
-    for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1)
+    const positionBase = actionBase * 4;
+    for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
+      const target = playerIndex * 4;
+      const source = positionBase + target;
+      p[target] = positions[source]! / QUANTIZE;
+      p[target + 1] = positions[source + 1]! / QUANTIZE;
+      p[target + 2] = positions[source + 2]! / QUANTIZE;
+      p[target + 3] = positions[source + 3]! / QUANTIZE;
       a[playerIndex] = actionFromByte(actions[actionBase + playerIndex]!);
+    }
     const ballBase = frameIndex * 3;
     const scoreBase = frameIndex * 2;
     const t = timeMs / 1_000;
@@ -245,8 +246,7 @@ function validateReplayInput(raw: object): void {
       !Array.isArray(frame.b) ||
       frame.b.length !== 3 ||
       !frame.b.every(finite) ||
-      (!Array.isArray(frame.p) &&
-        (replay["version"] !== undefined || !(frame.p instanceof Float64Array))) ||
+      !Array.isArray(frame.p) ||
       frame.p.length !== meta.length * 4 ||
       !frame.p.every(finite) ||
       !Array.isArray(frame.a) ||
@@ -262,15 +262,7 @@ function validateReplayInput(raw: object): void {
   }
 }
 
-function asLegacyReplay(replay: Replay): LegacyReplay {
-  if (replay.frames.every(({ p }) => Array.isArray(p))) return replay as LegacyReplay;
-  return {
-    ...replay,
-    frames: replay.frames.map((frame) => ({ ...frame, p: Array.from(frame.p) })),
-  };
-}
-
-function compareReplayBytes(replay: LegacyReplay, stored: StoredReplayV3) {
+export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
   const text = new TextEncoder();
   const v2Bytes = text.encode(JSON.stringify(replay)).byteLength;
   const arrays = [
@@ -303,15 +295,10 @@ function compareReplayBytes(replay: LegacyReplay, stored: StoredReplayV3) {
   };
 }
 
-export function estimateReplayBytes(replay: Replay, stored: StoredReplayV3) {
-  return compareReplayBytes(asLegacyReplay(replay), stored);
-}
-
 export function encodeStoredReplay(replay: Replay): StoredReplay {
   const compact = encodeReplay(replay);
-  const legacy = asLegacyReplay(replay);
-  const report = compareReplayBytes(legacy, compact);
+  const report = estimateReplayBytes(replay, compact);
   return report.reductionRatio >= REPLAY_V3_MIN_REDUCTION
     ? compact
-    : { version: REPLAY_FORMAT_V2, ...legacy };
+    : { version: REPLAY_FORMAT_V2, ...replay };
 }

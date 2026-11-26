@@ -2,12 +2,17 @@ import { Scripts, useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { RouteHeadContent } from "@/components/RouteHeadContent";
 import { isLightweightCssPath } from "@/lib/public-content-routes";
-import { GUIA_DE_SCOUTING_PATH, GUIAS_PATH } from "@/lib/public-route-paths";
+import {
+  GUIA_DE_SCOUTING_PATH,
+  GUIAS_PATH,
+  MELHORES_FORMACOES_PATH,
+} from "@/lib/public-route-paths";
 
 export function RootShell({ children }: { children: ReactNode }) {
   const pathname = useLocation({ select: (location) => location.pathname });
   const path = pathname.replace(/\/+$/, "");
-  const editorialShell = path === GUIAS_PATH || path === GUIA_DE_SCOUTING_PATH;
+  const editorialShell =
+    path === GUIAS_PATH || path === GUIA_DE_SCOUTING_PATH || path === MELHORES_FORMACOES_PATH;
   return (
     <html
       lang="pt-BR"
