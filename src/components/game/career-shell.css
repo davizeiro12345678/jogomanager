@@ -10,7 +10,6 @@
     --career-z-match-transport: 20;
     --career-z-match-tools: 25;
     --career-z-overlay: 70;
-    --career-z-skip: 100;
     --career-nav-height: 4.125rem;
     --career-content-bottom-space: 4rem;
     --career-focus: #a5e8ff;
@@ -229,14 +228,6 @@
 }
 .career-bottom-nav {
   display: none;
-}
-.career-skip {
-  position: fixed;
-  top: -100px;
-  left: 20px;
-}
-.career-skip:focus {
-  top: 10px;
 }
 
 .trainer-heading {

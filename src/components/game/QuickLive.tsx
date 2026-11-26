@@ -33,7 +33,7 @@ import { createLiveMatchController, type LiveMatchController } from "@/game/simW
 import { safeClub } from "@/game/squad";
 import { CAMERA_OPTIONS } from "@/game/camera-modes";
 import { useT } from "@/i18n/provider";
-import "./career-interface.css";
+import "./match-interface.css";
 
 interface Snap {
   minute: number;

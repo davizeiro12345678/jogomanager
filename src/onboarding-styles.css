@@ -1,0 +1,19 @@
+@import "tailwindcss" source(none);
+@import "./public-style-sources.css";
+@import "./design-system.css";
+@import "./game-presentation.css";
+
+/* Account, career archive and the manager wizard share the same UI primitives. */
+@source "./pages/auth.tsx";
+@source "./pages/new.tsx";
+@source "./pages/carreiras.tsx";
+@source "./components/security/MfaChallenge.tsx";
+@source "./components/security/PhoneAuthPanel.tsx";
+@source "./components/game/Crest.tsx";
+@source "./components/game/Flag.tsx";
+@source "./components/game/ManagerPortrait.tsx";
+@source "./components/game/Cutscene.tsx";
+@source "./components/game/CutsceneStage.tsx";
+@source "./components/game/MatchLoading.tsx";
+@source "./components/game/cinematic";
+@source "./components/ui/sonner.tsx";

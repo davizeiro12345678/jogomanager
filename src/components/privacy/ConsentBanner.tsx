@@ -51,7 +51,7 @@ export function ConsentBanner() {
             Saiba mais
           </a>
         </p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2"

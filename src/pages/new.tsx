@@ -328,7 +328,7 @@ export function NewCareer() {
               .
             </p>
           </div>
-          <span className="career-save-note">
+          <span className="career-create-save-note">
             <Shield size={16} />
             Comece como convidado
             <br />

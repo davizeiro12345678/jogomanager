@@ -1,7 +1,5 @@
 import { Crest } from "@/components/game/Crest";
 
-import { ScreenHeader } from "@/components/game/screen-kit";
-
 import { CLUBS } from "@/game/data/leagues";
 
 import {
@@ -72,7 +70,7 @@ export function CareersHub() {
 
         <header className="career-hub-heading">
           <p className="career-hub-kicker">SEU ARQUIVO DE HISTÓRIAS</p>
-          <ScreenHeader title="Minhas carreiras" />
+          <h1 className="career-hub-title">Minhas carreiras</h1>
           <p className="athlete-meta">
             Treinador e atletas vivem em saves separados. Escolha uma história para retomar sem
             substituir nenhuma outra.

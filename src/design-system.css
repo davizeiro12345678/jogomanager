@@ -533,8 +533,9 @@
 }
 
 .skip-to-content:focus {
-  inset-block-start: 1rem;
-  inset-inline-start: 1rem;
+  position: fixed;
+  inset-block-start: max(1rem, env(safe-area-inset-top));
+  inset-inline-start: max(1rem, env(safe-area-inset-left));
   z-index: 60;
   inline-size: auto;
   block-size: auto;

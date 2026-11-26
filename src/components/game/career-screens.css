@@ -536,3 +536,57 @@ html[data-text-size="xlarge"] .career-content {
     touch-action: manipulation;
   }
 }
+
+/* Allow the browser to keep focused items clear of both fixed navigation bars. */
+.career-content,
+.career-content :where(h1, h2, h3, a, button, summary, input, select, textarea, [tabindex]) {
+  scroll-margin-block-start: calc(var(--career-header-height) + 0.75rem);
+  scroll-margin-block-end: calc(var(--career-footer-height) + 1.5rem);
+}
+.career-content:focus-visible {
+  outline: 3px solid var(--career-focus);
+  outline-offset: -3px;
+}
+
+.career-shell .career-header {
+  background: var(--background);
+  backdrop-filter: none;
+}
+.career-shell .career-bottom-nav {
+  background: var(--card);
+  backdrop-filter: none;
+}
+.career-bottom-nav :where(a, button) {
+  overflow-wrap: anywhere;
+}
+.career-shell .career-nav-item[aria-current="page"] {
+  border-inline-start: 3px solid var(--career-readable-accent);
+}
+.career-header-actions,
+.career-workspace,
+.career-sidebar-footer > div {
+  min-inline-size: 0;
+}
+
+@media (max-width: 47.99rem) {
+  .career-header-actions {
+    gap: 0.25rem;
+  }
+  .career-header-inner {
+    padding-inline: max(0.5rem, env(safe-area-inset-left));
+  }
+}
+@media (max-width: 24rem) {
+  .career-header-actions :is(.career-icon-button, .career-search-button) {
+    flex: 0 0 44px;
+    inline-size: 44px;
+    min-inline-size: 44px;
+    padding-inline: 0;
+  }
+  .career-header-play {
+    margin-inline-start: auto;
+  }
+  .career-shell .career-nav-item span {
+    white-space: normal;
+  }
+}

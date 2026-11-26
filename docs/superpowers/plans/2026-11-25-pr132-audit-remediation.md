@@ -235,3 +235,11 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [x] VPS: o relatório de 1.194.726 arquivos apontou saída 124 nos dois processos ClamAV de streaming e no Maldet. O Maldet chegou a 90%. No VPS, o limite dos processos ClamAV de streaming passou a 12h, o do Maldet a 11h e o do serviço a 33h. Validação de sintaxe, configuração efetiva, timer e daemon aprovadas. O scan integral permanece pendente.
 - [ ] P0: restauração externa verificada, login hospedado, checkout/fulfillment e multiplayer autenticado. A base Supabase de homologação tem tabelas de salas e ledger de saves, mas o painel marca `MIGRATIONS_FAILED`.
 - [ ] P1/P2: validar os gates no SHA enviado, medir FPS em GPU física e confirmar estado da varredura além de atualizar Wazuh com recuperação ensaiada.
+
+### CSS e acessibilidade da carreira após a integração do #132 — 26/11/2026
+
+- [x] O #132 já foi mesclado em `c449875f`. O candidato de CSS segue no #179, sincronizado com a `main` `3a74699b`.
+- [x] Entrada SSR de estilos específica para criação, login e arquivo. Fontes Tailwind de artigos, tabelas e loja foram realocadas para as folhas que as usam. O arquivo de saves separou seu título do shell pesado do jogo.
+- [x] Estilos do escritório e do HUD da partida são carregados com suas próprias telas. Validação inclui os caminhos irmãos `/carreira`, `/partida-rapida` e `/match` e preserva o comparador de bundles.
+- [x] Ajustes de foco sob navegação fixa, retorno do menu, contraste, texto ampliado, largura do quadro financeiro e isolamento da nota do assistente de criação.
+- [ ] Homologação hospedada dos fluxos autenticados e publicação continuam condicionadas aos gates do SHA do candidato e à infraestrutura de staging. Os contratos SQL do checkpoint anterior permanecem evidência de banco isolado.

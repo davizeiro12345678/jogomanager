@@ -1,3 +1,4 @@
+import "@/components/game/match-interface.css";
 import { playGoalAnthem } from "@/game/goal-anthem";
 
 import { Link, useNavigate } from "@tanstack/react-router";

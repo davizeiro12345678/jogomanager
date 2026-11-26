@@ -105,3 +105,31 @@ describe("mobile career paint and accessibility budgets", () => {
     );
   });
 });
+
+describe("page-owned styles", () => {
+  const stylesheet = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+
+  it("keeps the match overlay and coach office out of the general career stylesheet", () => {
+    expect(interfaceCss).not.toMatch(/match-interface|coach-office/);
+    expect(contentCss).not.toContain(".match-interface");
+    expect(stylesheet("./match-interface.css")).toContain(".match-interface .match-scoreboard");
+    expect(stylesheet("./QuickLive.tsx")).toContain('import "./match-interface.css"');
+    expect(stylesheet("../../pages/match.tsx")).toContain(
+      'import "@/components/game/match-interface.css"',
+    );
+    expect(stylesheet("../../pages/carreira.tsx")).toContain(
+      'import "@/components/game/coach/coach-office.css"',
+    );
+  });
+
+  it("keeps the wizard's saved-game note separate from the live career shell", () => {
+    expect(createCss).toContain(".career-create-save-note");
+    expect(createCss).not.toMatch(/\.career-save-note/);
+  });
+
+  it("reserves the measured header and footer space when a career control gets focus", () => {
+    expect(screensCss).toMatch(/scroll-margin-block-start:\s*calc\(var\(--career-header-height\)/);
+    expect(screensCss).toMatch(/scroll-margin-block-end:\s*calc\(var\(--career-footer-height\)/);
+    expect(screensCss).toMatch(/\.career-content:focus-visible\s*\{/);
+  });
+});
