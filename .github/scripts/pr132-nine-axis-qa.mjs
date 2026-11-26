@@ -17,6 +17,7 @@ if (origin.protocol !== "http:" || !["localhost", "127.0.0.1", "[::1]"].includes
 }
 const runtime = process.env["PLAYWRIGHT_MODULE"];
 if (!runtime) throw new Error("PLAYWRIGHT_MODULE is required");
+const studioUrl = studioFixtureUrl(process.env["GRAPHICS_FIXTURE_ORIGIN"] ?? "");
 const { chromium } = createRequire(path.join(runtime, "package.json"))("playwright");
 const output = path.resolve(outputText);
 await mkdir(path.join(output, "screenshots"), { recursive: true });
@@ -53,7 +54,24 @@ const safePath = (text) =>
   String(text)
     .replace(/[\r\n|]/g, " ")
     .slice(0, 240);
+async function waitForAuthView(page) {
+  const current = new URL(page.url());
+  if (current.origin !== origin.origin || current.pathname !== "/auth") {
+    throw new Error("Authentication QA left the expected local route.");
+  }
+  const main = page.locator("main.auth-stage");
+  const unavailable = main.locator("#auth-unavailable-title:visible");
+  const entry = main
+    .locator(
+      '#auth-email:enabled:visible, input[type="tel"]:enabled:visible, button.auth-social:enabled:visible',
+    )
+    .or(main.getByRole("button", { name: "Entrar com chave de acesso", disabled: false }));
+  await unavailable.or(entry).first().waitFor({ state: "visible", timeout: 12000 });
+  return (await unavailable.isVisible()) ? "unavailable" : "configured";
+}
+
 const png = async (page, name) => {
+  if (new URL(page.url()).pathname === "/auth") await waitForAuthView(page);
   const file = path.join("screenshots", name + ".png");
   await page.screenshot({ path: path.join(output, file), fullPage: true, animations: "disabled" });
   report.screenshots.push(file);
@@ -77,6 +95,11 @@ try {
   const pageErrors = [];
   const consoleErrors = [];
   const networkFailures = [];
+  const loadedStudioTextures = new Set();
+  const isStudioTexture = (url) =>
+    url.origin === studioUrl.origin &&
+    url.pathname.startsWith("/__l5e/assets-v1/") &&
+    url.pathname.endsWith(".ktx2");
   await page.addInitScript(() => {
     window.__qaLongTasks = [];
     if (typeof PerformanceObserver !== "undefined") {
@@ -114,22 +137,27 @@ try {
   });
   page.on("requestfailed", (request) => {
     const url = new URL(request.url());
-    if (url.origin === origin.origin) {
+    const texture = isStudioTexture(url);
+    if (url.origin === origin.origin || texture) {
       networkFailures.push({
         route: new URL(page.url()).pathname,
         asset: url.pathname,
         error: request.failure()?.errorText,
+        requiredTexture: texture,
       });
     }
   });
   page.on("response", (response) => {
-    if (response.status() < 400) return;
     const url = new URL(response.url());
-    if (url.origin === origin.origin && /\.(js|css|wasm)(\?|$)/.test(url.pathname)) {
+    const texture = isStudioTexture(url);
+    if (texture && response.ok()) loadedStudioTextures.add(url.pathname);
+    if (response.status() < 400) return;
+    if (texture || (url.origin === origin.origin && /\.(js|css|wasm)(\?|$)/.test(url.pathname))) {
       networkFailures.push({
         asset: url.pathname,
         status: response.status(),
         route: new URL(page.url()).pathname,
+        requiredTexture: texture,
       });
     }
   });
@@ -153,6 +181,7 @@ try {
     }
     const status = response?.status() ?? 0;
     const name = route === "/" ? "home" : route.slice(1);
+    const authView = route === "/auth" ? await waitForAuthView(page) : undefined;
     const baseMetrics = await page.evaluate(() => {
       const nav = performance.getEntriesByType("navigation")[0];
       return {
@@ -167,7 +196,11 @@ try {
           .length,
       };
     });
-    report.axes.runtime.metrics[name] = { status, headings: baseMetrics.headings };
+    report.axes.runtime.metrics[name] = {
+      status,
+      headings: baseMetrics.headings,
+      ...(authView && { authView }),
+    };
     report.axes.performance.metrics[name] = {
       loadMs: baseMetrics.loadMs,
       domReadyMs: baseMetrics.domReadyMs,
@@ -216,6 +249,7 @@ try {
     for (const width of [320, 390, 768]) {
       await page.setViewportSize({ width, height: 844 });
       await page.waitForTimeout(120);
+      const responsiveAuthView = route === "/auth" ? await waitForAuthView(page) : undefined;
       const layout = await page.evaluate(() => {
         const overflow = document.documentElement.scrollWidth - innerWidth;
         const clipped = [...document.querySelectorAll("button,a[href],input,textarea,select")]
@@ -232,7 +266,10 @@ try {
           }));
         return { overflow, clipped };
       });
-      report.axes.responsive.metrics[name + "-" + width] = layout;
+      report.axes.responsive.metrics[name + "-" + width] = {
+        ...layout,
+        ...(responsiveAuthView && { authView: responsiveAuthView }),
+      };
       if (layout.overflow > 2) {
         find(
           "responsive",
@@ -266,41 +303,72 @@ try {
       });
       if (await toggle.count()) {
         await toggle.first().click({ timeout: 9000 });
-        await page
-          .locator("#moderation-center-title")
-          .waitFor({ state: "visible", timeout: 3500 })
-          .catch(() => undefined);
-        await png(page, "contato-moderation-open");
-        const view = await page.evaluate(() => ({
-          pathname: location.pathname,
-          mounted: Boolean(document.getElementById("moderation-center-title")),
-          bodyTextChars: (document.body.innerText || "").trim().length,
-        }));
-        report.axes.interaction.metrics["moderationViewOpened"] = view.mounted;
-        report.axes.interaction.metrics["moderationViewAfterClick"] = view;
-        if (!view.mounted || view.pathname !== "/contato") {
+        const guestLink = page.locator("#moderation-sign-in");
+        const panel = page.locator("#moderation-center-title");
+        const expectedReturn = "/contato#moderacao";
+        const view = {
+          state: "unresolved",
+          signInPageReached: false,
+          signInAvailability: "unknown",
+          returnEntryVerified: false,
+        };
+        try {
+          await guestLink.or(panel).first().waitFor({ state: "visible", timeout: 9000 });
+          view.state = (await panel.count()) ? "unexpected-private-panel" : "guest-sign-in";
+          if (view.state === "unexpected-private-panel") {
+            throw new Error("The private review panel appeared in an anonymous browser.");
+          }
+          if (new URL(page.url()).pathname !== route) {
+            throw new Error("Opening moderation unexpectedly navigated away from contact.");
+          }
+          const target = new URL(await guestLink.getAttribute("href"), page.url());
+          const isModerationSignIn = (url) =>
+            url.origin === origin.origin &&
+            url.pathname === "/auth" &&
+            url.searchParams.get("next") === expectedReturn;
+          if (!isModerationSignIn(target)) throw new Error("Incorrect moderation sign-in link.");
+          await png(page, "contato-moderation-open");
+          await guestLink.click();
+          await page.waitForURL(isModerationSignIn, { timeout: 9000 });
+          view.signInAvailability = await waitForAuthView(page);
+          view.signInPageReached = true;
+          if (view.signInAvailability === "unavailable") {
+            const back = page.getByRole("link", { name: "Voltar ao jogo" });
+            if ((await back.getAttribute("href")) !== expectedReturn)
+              throw new Error("Unavailable login lost the moderation return.");
+            await back.click();
+          } else {
+            // No credentials in this campaign. Verify the redirect destination independently.
+            await page.goto(new URL(target.searchParams.get("next"), origin).href);
+          }
+          await guestLink.waitFor();
+          const returned = new URL(page.url());
+          if (
+            returned.origin !== origin.origin ||
+            returned.pathname + returned.search + returned.hash !== expectedReturn
+          )
+            throw new Error("Sign-in return did not reach the moderation section.");
+          if (await panel.count()) throw new Error("Guest return exposed the private panel.");
+          view.returnEntryVerified = true;
+        } catch (error) {
           find(
             "interaction",
-            "warning",
-            {
-              route: "/contato",
-              afterClick: view.pathname,
-              sourceHint: "src/components/support/ModerationReviewCenter.tsx",
-            },
-            "Click did not produce a visible moderation review center; the preview may have redirected to sign-in.",
-            "Verify feature flag, authenticated access, redirect and lazy boundary with an isolated test account. A successful click alone does not prove functionality.",
+            "error",
+            { route, state: view.state },
+            "Moderation guest flow failed: " + error.message,
+            "Check the private panel boundary, sign-in action and local moderation return.",
           );
         }
-        if (view.pathname !== "/contato") {
-          await page.goto(new URL("/contato", origin).href, {
-            waitUntil: "domcontentloaded",
-          });
-          await page.waitForTimeout(650);
+        report.axes.interaction.metrics["moderationViewOpened"] =
+          view.state === "unexpected-private-panel";
+        report.axes.interaction.metrics["moderationViewAfterClick"] = view;
+        if (new URL(page.url()).pathname !== route) {
+          await page.goto(new URL(route, origin).href, { waitUntil: "domcontentloaded" });
         }
       } else {
         find(
           "interaction",
-          "warning",
+          "error",
           { route, selector: "button" },
           "Moderation review entry was not found.",
           "Check the localized button label, lazy module and public contact route.",
@@ -351,6 +419,7 @@ try {
         );
       }
     }
+    if (route === "/auth") await waitForAuthView(page);
     const elements = await page.evaluate(() => {
       const visible = (element) => {
         const r = element.getBoundingClientRect();
@@ -422,7 +491,6 @@ try {
 
   // Full athlete Studio lives in the isolated 3D build, not in a public
   // SSR route. Only a credential-free loopback fixture is accepted.
-  const studioUrl = studioFixtureUrl(process.env["GRAPHICS_FIXTURE_ORIGIN"] ?? "");
   await page.setViewportSize({ width: 1365, height: 900 });
   const studioResponse = await page.goto(studioUrl.href, {
     waitUntil: "domcontentloaded",
@@ -579,7 +647,7 @@ try {
   for (const item of networkFailures) {
     find(
       "network",
-      "warning",
+      item.requiredTexture ? "error" : "warning",
       { route: item.route, asset: item.asset },
       "Resource failed: " + (item.status ?? item.error),
       "Check file URL, caching and content type. Compare the network waterfall before changing the code.",
@@ -588,6 +656,16 @@ try {
   report.axes.runtime.metrics.pageErrors = pageErrors.length;
   report.axes.runtime.metrics.consoleErrors = consoleErrors.length;
   report.axes.network.metrics.failed = networkFailures.length;
+  report.axes.network.metrics.loadedStudioTextures = loadedStudioTextures.size;
+  if (!loadedStudioTextures.size) {
+    find(
+      "network",
+      "error",
+      { route: studioUrl.pathname },
+      "The athlete Studio loaded no public KTX2 textures.",
+      "Verify texture loading and the prepared fixture before certifying athlete materials.",
+    );
+  }
 
   const videos = page.video();
   await context.close();

@@ -174,6 +174,35 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - [ ] Gateway: plano Free e saldo zero confirmados; titular precisa contratar Pro/recarga no painel. Ops bundle incluído no Pro, não comprar redundância. Sem pagamento efetuado.
 - [ ] Homologação autenticada, Stripe sandbox, multiplayer real, GPU física, revisão dos alertas, CSP efetiva e deploy continuam pendentes. Manter #132 e #179; nenhum novo PR nem alteração em main.
 
+## Retomada da homologação de 26/11/2026
+
+O [registro de progresso](./2026-11-11-jogomanager-release-integration.progress.md#homologação-retomada-em-26112026) reúne a campanha visual concluída, as medições de layout no Chrome, a correção da barra traseira do calção e a validação do transporte. O check nativo do CodeQL, o staging autenticado na revisão de entrega, a GPU física e a restauração externa continuam como critérios de publicação.
+
+
+## Continuação P0/P1/P2 — integridade e diagnóstico das texturas (26/11/2026)
+
+- [x] Reproduzir falha do QA de nove eixos do HEAD 7ec779c5: [run 45846818641](https://github.com/davizeiro12345678/jogomanager/actions/runs/45846818641), HTTP 403 ao baixar KTX2. Sondagem independente do VPS confirmou 302 do domínio principal para football-manager.app e 403 no destino; conector Cloudflare não lista essa zona. Não desativar WAF nem contornar controle de acesso.
+- [x] Reforçar preparação de fixtures: validar OID Git, limitar manifesto a 64 KiB e textura a 16 MiB, identificar arquivo/host/status HTTP sem imprimir URL completa e remover temporário após falha. TDD isolado: 4/5 RED e 5/5 GREEN; teste conectado ao workflow existente. A primeira execução RED fez uma solicitação pública incidental; repetição corrigida usou mocks de rede.
+- [ ] P0: restaurar entrega autorizada das texturas reais e executar nove eixos no SHA novo. Não substituir por imagens fictícias nem ignorar 403.
+- [ ] P0: PR #179 6fa4bf09 [CodSpeed 45844733604](https://github.com/davizeiro12345678/jogomanager/actions/runs/45844733604) falhou em MatchSim (+8,96%); causa ainda não comprovada. Preservar limites e revisar novo SHA.
+- [ ] P0/P1: staging autenticado, Stripe sandbox, backup externo restaurável, Wazuh coordenado, CodeQL nativo e GPU física seguem pendentes. P2: confirmar CLS, acessibilidade, textos e carregamentos em candidato publicado de homologação. Sem merge em main ou deploy.
+
+
+## Continuação P0/P1 — homologação remota dos contratos SQL (26/11/2026)
+
+- [x] Localizar branch Supabase staging-release-132, isolada e with_data=false. Consulta SQL funciona apesar do status histórico MIGRATIONS_FAILED e get_project retornar not found; não alterar ou usar produção.
+- [x] Executar contratos do SHA b1619cd no preview remoto com BEGIN/ROLLBACK: atomic-match-room, cooperative-match-roster, authoritative-match-settlement, private-matchmaking-queue, match_contact_revision e room-authority-fencing. Todos passaram.
+- [x] RED atomic-ranked-match-allocation: 42501 na tentativa de UPDATE direto em sala websocket; proteção correta. GREEN: fixture usa RPC de liquidação para schema 0077+, exige rejeição do UPDATE direto, preserva verificação antiga para 0075. O contrato corrigido passou no preview remoto. Sete contratos SQL aprovados.
+- [x] Verificação após rollback: 0 auth.users, salas, queue, pairs, resultados, ratings e crons ativos; 78 tabelas públicas, todas com RLS. O fencing testa permissões temporárias apenas dentro da transação descartada.
+- [ ] CI do novo SHA, replay legado 0075, testes autenticados em browser, clientes reais 1x1/2x2, passkey, Stripe sandbox, deploy e recuperação externa permanecem pendentes. O sucesso SQL não certifica esses fluxos.
+
+
+## Continuação P1/P2 — integridade de medições (26/11/2026)
+
+- [x] P1: comparador de campanhas rejeita renderizadores software conhecidos (SwiftShader, llvmpipe, WARP, entre outros) e modo headless/vídeo não explicitamente falso. Adiciona p50 e 0,1% low ao resumo sem alterar limiares. Não constitui atestação de hardware físico.
+- [x] P2: TTFB quente exclui a primeira tentativa por posição cronológica, mesmo se a resposta inicial falhar; contadores de cabeçalhos usam mapas sem protótipo. Não altera endpoints nem volume de requisições.
+- [x] RED reproduzido para ambos; GREEN 7/7 testes de campanhas, autoteste TTFB e sintaxe Node 24.22.1 aprovados em arquivos isolados no VPS. Primeira tentativa sem Node no PATH não é evidência de falha de código. CI completo ainda pendente.
+- [ ] P0: QA de nove eixos do SHA 5f12d7dc reprovou na preparação de texturas reais (HTTP 403); não contornar WAF. Staging autenticado, Stripe, GPU física, backup externo, Wazuh, revisão e release permanecem condicionados aos gates existentes. Não abrir novo PR, não publicar main.
 <!-- audit-verified-20261126-p0p1p2 -->
 ## Checkpoint auditável — 26/11/2026, após merge do #132
 
@@ -198,3 +227,11 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [ ] **P0 homologação:** configurar um projeto Supabase de staging isolado com URL e chave publicável durante o build do Vite, mais os bindings privados apropriados do Worker; executar smoke test com identidades de teste, OAuth/passkey/MFA, saúde da API e fallback seguro. Apenas um projeto Supabase de produção aparece no conector; nenhum segredo foi copiado para staging.
 - [ ] **Gates finais:** CI, CodSpeed pareado, Lighthouse, QA visual no novo commit e 1×1/2×2 real permanecem bloqueadores do merge; sem mudanças de produção ou alteração de limiares.
 <!-- /auth-preview-missing-config-20261126 -->
+
+### Retomada após o merge do #132 — 26/11/2026
+
+- [x] Revalidar o estado atual: #132 mesclado, produção `c2eec81a` saudável e #179 em rascunho. Usar `c2eec81a` como referência para a Home e os orçamentos.
+- [x] Home: quatro modos na mesma linha em desktop, dois por linha em tablet e leitura vertical em mobile. Os links SSR já recebem grid e estilo sem aguardar hidratação. A prancheta 3D do jogo segue fora da Home; a prévia de formação tem seu próprio chunk e CSS.
+- [x] VPS: o relatório de 1.194.726 arquivos apontou saída 124 nos dois processos ClamAV de streaming e no Maldet. O Maldet chegou a 90%. No VPS, o limite dos processos ClamAV de streaming passou a 12h, o do Maldet a 11h e o do serviço a 33h. Validação de sintaxe, configuração efetiva, timer e daemon aprovadas. O scan integral permanece pendente.
+- [ ] P0: restauração externa verificada, login hospedado, checkout/fulfillment e multiplayer autenticado. A base Supabase de homologação tem tabelas de salas e ledger de saves, mas o painel marca `MIGRATIONS_FAILED`.
+- [ ] P1/P2: validar os gates no SHA enviado, medir FPS em GPU física e confirmar estado da varredura além de atualizar Wazuh com recuperação ensaiada.

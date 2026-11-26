@@ -10,6 +10,7 @@ import { useCareer } from "./useCareer";
 const harness = vi.hoisted(() => ({
   owner: "account-a" as string | null,
   online: true,
+  authConfigured: true,
   epoch: 4,
   generation: 3,
   local: null as CareerState | null,
@@ -55,8 +56,8 @@ vi.mock("@/lib/career-maintenance-loader", () => ({
   loadCareerRecovery: () => harness.loadRecovery(),
   loadCareerMigration: () => harness.loadMigration(),
 }));
-vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
+vi.mock("@/integrations/supabase/client", () => {
+  const client = {
     auth: {
       onAuthStateChange: (
         observe: (event: string, session: { user: { id: string } } | null) => void,
@@ -73,8 +74,15 @@ vi.mock("@/integrations/supabase/client", () => ({
         };
       },
     },
-  },
-}));
+  };
+  return {
+    getConfiguredSupabaseClient: () => (harness.authConfigured ? client : null),
+    get supabase() {
+      if (!harness.authConfigured) throw new Error("Missing Supabase configuration");
+      return client;
+    },
+  };
+});
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({
     getQueryData: (key: unknown) => harness.cache.get(JSON.stringify(key)),
@@ -183,6 +191,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   harness.owner = "account-a";
   harness.online = true;
+  harness.authConfigured = true;
   harness.epoch += 1;
   harness.generation = 3;
   harness.effects = [];
@@ -220,6 +229,30 @@ afterEach(() => {
 });
 
 describe("useCareer persistence lifecycle", () => {
+  it("saves a guest match locally without a configured auth service after navigation", async () => {
+    harness.owner = null;
+    harness.authConfigured = false;
+    const guestKey = JSON.stringify(["career", "guest", 0]);
+    harness.cache.set(guestKey, { ...(harness.cache.get(cacheKey) as object), generation: null });
+    const { result, unmount } = renderCareer();
+    result.update({ ...harness.local!, round: 2 });
+    unmount();
+    await harness.mutation;
+    expect(harness.local?.round).toBe(2);
+    expect(harness.persisted).toHaveBeenCalled();
+    expect(harness.save).not.toHaveBeenCalled();
+    expect(harness.observers.size).toBe(0);
+  });
+
+  it("does not persist an account when its auth service is unavailable", async () => {
+    harness.authConfigured = false;
+    const { result } = renderCareer();
+    result.update({ ...harness.local!, round: 2 });
+    await harness.mutation;
+    expect(harness.persisted).not.toHaveBeenCalled();
+    expect(harness.save).not.toHaveBeenCalled();
+  });
+
   it("persists an accepted match result after the page unmounts and disposes the retained auth observer", async () => {
     const { result, unmount } = renderCareer();
     const next = { ...harness.local!, managerName: "Accepted result", round: 2 };

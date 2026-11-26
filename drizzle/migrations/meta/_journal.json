@@ -617,6 +617,20 @@
       "when": 1795532400002,
       "tag": "0087_starter_checkout_single_active_slot",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1795708800000,
+      "tag": "0088_rls_cached_auth_context",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1795712400000,
+      "tag": "0089_moderation_foreign_key_indexes",
+      "breakpoints": true
     }
   ]
 }

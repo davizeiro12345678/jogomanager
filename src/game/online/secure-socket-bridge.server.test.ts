@@ -222,6 +222,47 @@ describe("signed WebSocket bridge composition", () => {
     },
   );
 
+  it("delivers passive snapshots until the seat ticket expires", async () => {
+    const { homeTicket, session } = await setup();
+    let time = now;
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => time,
+    });
+    const socket = new TestSocket();
+    expect(await bridge.attach(socket, homeTicket)).toBe("home");
+    time = homeTicket.expiresAt - 1;
+    bridge.broadcastSnapshot();
+    time = homeTicket.expiresAt;
+    bridge.broadcastSnapshot();
+    expect(socket.sent.map((message) => JSON.parse(message).type)).toEqual(["ready", "snapshot"]);
+    expect(socket.code).toBe(1001);
+    bridge.close();
+  });
+
+  it("keeps the renewal close when saving the handshake outlasts the ticket", async () => {
+    const { homeTicket, session } = await setup();
+    let time = now;
+    const bridge = createSecureMatchSocketBridge({
+      session,
+      signingSecret: secret,
+      now: () => time,
+      persistAfterCommand: async () => {
+        time = homeTicket.expiresAt;
+      },
+    });
+    const socket = new TestSocket();
+    const admission = new AuthoritativeSocketAdmission(bridge, socket);
+    await admission.onMessage(
+      JSON.stringify({ type: "authenticate", version: 1, ticket: homeTicket }),
+    );
+    expect(socket.sent).toEqual([]);
+    expect(socket.code).toBe(1001);
+    admission.detach();
+    bridge.close();
+  });
+
   it("still fences the room when saving an accepted command fails", async () => {
     const { homeTicket, awayTicket, session } = await setup();
     const persistAfterCommand = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);

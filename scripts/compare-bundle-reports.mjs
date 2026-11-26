@@ -1,10 +1,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import {
   findEditorLayers,
-  findRouteStartup,
-  isMultiplayerRouteEntry,
-  isMatchRouteEntry,
   measureEditorStartup,
+  measureBrowserRoute,
 } from "./bundle-report-comparison.mjs";
 
 const [, , baselinePath, candidatePath] = process.argv;
@@ -15,12 +13,15 @@ if (!baselinePath || !candidatePath) {
 }
 const before = JSON.parse(readFileSync(baselinePath, "utf8"));
 const after = JSON.parse(readFileSync(candidatePath, "utf8"));
+const findEntry = (predicate) => (report) => report.entries?.find(predicate);
 const keys = [
-  ["Página inicial", (entry) => entry.surface === "home"],
-  ["Nova carreira", (entry) => entry.surface === "new"],
-  ["Partida rápida", (entry) => entry.name.startsWith("partida-rapida-")],
-  ["Palco cinematográfico", (entry) => entry.name.startsWith("CinematicStage3D-")],
-  ["Simulação Worker", (entry) => entry.name.startsWith("match.worker-")],
+  ["Página inicial", findEntry((entry) => entry.surface === "home")],
+  ["Nova carreira", findEntry((entry) => entry.surface === "new")],
+  ["Partida rápida", (report) => measureBrowserRoute(report, "partida-rapida-")],
+  ["Lobby multiplayer", (report) => measureBrowserRoute(report, "multiplayer-"), true],
+  ["Match 3D", (report) => measureBrowserRoute(report, "match-")],
+  ["Palco cinematográfico", findEntry((entry) => entry.name.startsWith("CinematicStage3D-"))],
+  ["Simulação Worker", findEntry((entry) => entry.name.startsWith("match.worker-"))],
 ];
 const format = (value) => (typeof value === "number" ? (value / 1024).toFixed(1) + " KiB" : "n/d");
 const difference = (base, current) =>
@@ -95,20 +96,9 @@ function addStartup(name, b, a, includeRaw) {
     routeStartupGrowthBudgetBytes,
   );
 }
-for (const [name, predicate, includeRaw] of keys) {
-  addStartup(name, before.entries?.find(predicate), after.entries?.find(predicate), includeRaw);
+for (const [name, measure, includeRaw] of keys) {
+  addStartup(name, measure(before), measure(after), includeRaw);
 }
-addStartup(
-  "Lobby multiplayer",
-  findRouteStartup(before, isMultiplayerRouteEntry),
-  findRouteStartup(after, isMultiplayerRouteEntry),
-  true,
-);
-addStartup(
-  "Match 3D",
-  findRouteStartup(before, isMatchRouteEntry),
-  findRouteStartup(after, isMatchRouteEntry),
-);
 const beforeEditor = findEditorLayers(before);
 const afterEditor = findEditorLayers(after);
 addStartup(

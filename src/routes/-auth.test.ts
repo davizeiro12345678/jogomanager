@@ -13,11 +13,14 @@ const state = vi.hoisted(() => ({
   configured: true,
 }));
 
+vi.mock("@/integrations/supabase/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/integrations/supabase/client")>();
+  return {
+    ...actual,
+    getConfiguredSupabaseClient: () => (state.configured ? actual.supabase : null),
+  };
+});
 vi.mock("@/hooks/useAuthMethods", () => ({ useAuthMethods: () => state }));
-vi.mock("@/integrations/supabase/client", () => ({
-  getConfiguredSupabaseClient: () => (state.configured ? {} : null),
-  supabase: {},
-}));
 vi.mock("@/integrations/supabase/passkey-auth", () => ({
   supportsPasskeys: () => state.passkeysSupported,
   passkeyErrorMessage: () => "Falha na chave de acesso",
@@ -26,7 +29,8 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: object) => ({ options, useSearch: () => ({}) }),
   getRouteApi: () => ({ useSearch: () => ({}) }),
   useNavigate: () => vi.fn(),
-  Link: ({ children }: { children: React.ReactNode }) => createElement("a", null, children),
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) =>
+    createElement("a", { href: to }, children),
 }));
 
 // Exercise the real browser page, not the SSR-only placeholder of its route.
@@ -37,6 +41,7 @@ function renderAuth() {
 }
 
 beforeEach(() => {
+  state.configured = true;
   state.methods = parseAuthMethods({
     external: {
       google: true,
@@ -55,17 +60,19 @@ beforeEach(() => {
   state.loading = false;
   state.error = null;
   state.passkeysSupported = true;
-  state.configured = true;
 });
 
 describe("game login screen", () => {
-  it("fails closed with a clear screen if this environment has no Supabase configuration", () => {
+  it("renders an actionable unavailable state when the project is unconfigured", () => {
     state.configured = false;
     const markup = renderAuth();
-    expect(markup).toContain("Autenticação indisponível neste ambiente");
-    expect(markup).toContain("Não é possível iniciar uma sessão");
-    expect(markup).not.toContain("Entrar com e-mail");
+    expect(markup).toContain('id="auth-unavailable-title"');
+    expect(markup).toContain('href="/"');
+    expect(markup).toContain('href="/new"');
+    expect(markup).toContain("Continuar como convidado");
+    expect(markup).not.toContain("auth-email");
   });
+
   it("renders all eight enabled providers together with email and passkeys", () => {
     const markup = renderAuth();
     for (const label of [

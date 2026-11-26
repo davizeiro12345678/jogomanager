@@ -4,6 +4,7 @@ import { safeAuthNext, authCallbackErrorMessage, authErrorMessage } from "./auth
 describe("auth callback destinations", () => {
   it("keeps local paths, queries and anchors", () => {
     expect(safeAuthNext("/club?tab=team#squad")).toBe("/club?tab=team#squad");
+    expect(safeAuthNext("/suporte/../contato#moderacao")).toBe("/contato#moderacao");
   });
   it.each([
     "https://evil.example/",
@@ -11,6 +12,7 @@ describe("auth callback destinations", () => {
     "/\\evil.example",
     "/\n/evil.example",
     "javascript:alert(1)",
+    "/.//",
     null,
     1,
   ])("rejects external or ambiguous destination %s", (value) => {

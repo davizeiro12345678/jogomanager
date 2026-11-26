@@ -72,6 +72,14 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
     setFeedback(null);
     setStatus("checking");
 
+    const stop = () => {
+      if (disposed) return;
+      disposed = true;
+      const ch = chanRef.current;
+      chanRef.current = null;
+      if (ch) void supabase.removeChannel(ch);
+    };
+
     const joinRoomChat = async () => {
       try {
         const {
@@ -108,7 +116,9 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
       const ch = supabase.channel(`room-chat-${roomId}`, {
         config: { private: true, broadcast: { self: true } },
       });
+      chanRef.current = ch;
       ch.on("broadcast", { event: "msg" }, ({ payload }) => {
+        if (disposed) return;
         const message = parseRoomChatMessage(payload);
         if (!message) return;
         setMsgs((current) => appendRoomChatMessage(current, message));
@@ -124,20 +134,13 @@ export function RoomChat({ roomId, userId }: { roomId: string; userId: string })
           channelStatus === "CLOSED"
         ) {
           setStatus("unavailable");
-          void supabase.removeChannel(ch);
-          if (chanRef.current === ch) chanRef.current = null;
+          stop();
         }
       });
-      chanRef.current = ch;
     };
 
     void joinRoomChat();
-    return () => {
-      disposed = true;
-      const ch = chanRef.current;
-      if (ch) void supabase.removeChannel(ch);
-      chanRef.current = null;
-    };
+    return stop;
   }, [roomId, userId]);
 
   return (

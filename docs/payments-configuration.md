@@ -28,3 +28,13 @@ Account and visitor checkout use one mount lifecycle. Stripe.js loads lazily; re
 Wallet, subscription and purchase queries are scoped to the current authenticated user. The return page restarts its confirmation polling on retry, stops after errors or closure, and recognizes a season pass only from the matching server-verified subscription and wallet state. It never grants items from a browser save or a returned Stripe client secret; fulfillment remains on the trusted server paths.
 
 Validation covers loader retries, rejection/timeout/closure, missing server configuration, environment mismatches and attested subscription delivery. No real charge, new payment key, webhook endpoint or production game deployment is created by these tests. Real payment and webhook delivery remain unverified until the private runtime configuration and the reviewed build are deployed.
+
+## Database fulfillment contract
+
+On a disposable preview with the forward wallet schema from Drizzle `0047`, run the following command from the repository root using an account that can create the temporary Auth fixture and assume `service_role`.
+
+```sh
+psql -X --set=ON_ERROR_STOP=1 --dbname="$STORE_FIXTURE_DB_URL" --file=tests/sql/store-fulfillment-idempotency-contract.sql
+```
+
+The transaction replays both the payment event ID and checkout reference, checks the five wallet balances, purchased theme, purchase row and completed receipt, then rolls back the fixture. Stripe sandbox delivery through the signed HTTP endpoint has its own end-to-end test.

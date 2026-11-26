@@ -88,6 +88,19 @@ export class AuthoritativePresentationFeed {
    */
   bindSeat(seat: MatchSeat): void {
     this.expectedSeat = seat;
+    // Every new transport starts unauthenticated: a previous confirmation
+    // cannot authorize the next socket, only a fresh ready for this seat can.
+    this.seat = null;
+  }
+
+  /**
+   * Connection authority is the seat bound from the signed ticket, never the
+   * frame that just arrived. The transport may only be treated as
+   * authenticated once the feed confirmed that exact seat, so the socket
+   * decides on local state instead of trusting a message type.
+   */
+  readyAuthorized(): boolean {
+    return this.expectedSeat !== null && this.seat === this.expectedSeat;
   }
 
   /**

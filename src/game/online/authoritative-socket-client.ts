@@ -193,9 +193,12 @@ export class AuthoritativeMatchSocketClient {
       this.ticket = candidate;
       this.feed.bindSeat(candidate.seat);
       let resumeFrom = 0;
+      let authDeadlineAt = 0;
       socket.onopen = () => {
         if (!this.isCurrent(socket, generation) || this.currentStatus !== "connecting") return;
-        if (!this.ensureCurrentHandshakeTicket(socket, candidate)) return;
+        const openedAt = (this.options.now ?? Date.now)();
+        if (!this.ensureCurrentTicket(socket, candidate, openedAt)) return;
+        authDeadlineAt = openedAt + AUTH_DEADLINE_MS;
         this.status("authenticating");
         try {
           socket.send(
@@ -223,10 +226,13 @@ export class AuthoritativeMatchSocketClient {
         // Until ready authenticates this seat, no snapshot or final result is official.
         const phase = this.currentStatus;
         if (phase !== "authenticating" && phase !== "connected") return;
-        // The ticket can expire while the socket or server handshake is delayed.
-        // Renew before accepting any official state from that handshake.
-        if (phase === "authenticating" && !this.ensureCurrentHandshakeTicket(socket, candidate))
+        // Queued frames can outlive the ticket while the tab suspends its timers.
+        const receivedAt = (this.options.now ?? Date.now)();
+        if (!this.ensureCurrentTicket(socket, candidate, receivedAt)) return;
+        if (phase === "authenticating" && receivedAt >= authDeadlineAt) {
+          socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "auth_timeout");
           return;
+        }
         const event = this.feed.accept(message.data, phase);
         if (event.kind === "ignored" && event.reason === "seat_mismatch") {
           this.rejectForeignSeat(socket);
@@ -243,7 +249,10 @@ export class AuthoritativeMatchSocketClient {
             (this.options.now ?? Date.now)(),
             event.kind === "nack",
           );
-        if (phase === "authenticating" && event.kind === "ready") {
+        // The feed confirms the seat bound from the signed ticket. A message
+        // type alone never authenticates this transport, so the decision reads
+        // local state instead of the frame that just arrived.
+        if (phase === "authenticating" && this.feed.readyAuthorized()) {
           this.clearAuthTimer();
           this.retryCount = 0;
           this.sequence = Math.max(this.sequence, resumeFrom);
@@ -277,13 +286,14 @@ export class AuthoritativeMatchSocketClient {
     }
   }
 
-  private ensureCurrentHandshakeTicket(
+  private ensureCurrentTicket(
     socket: AuthorityClientSocket,
     candidate: MatchTicketV1,
+    now: number,
   ): boolean {
     if (this.ticket !== candidate) return false;
     try {
-      assertCurrentTicket(candidate, (this.options.now ?? Date.now)());
+      assertCurrentTicket(candidate, now);
       return true;
     } catch {
       socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");

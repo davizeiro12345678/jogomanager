@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import { recordWorldTransition, withCareerWorld } from "@/game/career-world";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient } from "@/integrations/supabase/client";
 import {
   retainCareerSave,
   waitForCareerLocalWrites,
@@ -1211,7 +1211,13 @@ export function useCareer() {
           epoch: operationEpoch,
           readEpoch: () => readCareerEpoch(operationOwner),
           observeOwner: (observe) => {
-            const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+            const client = getConfiguredSupabaseClient();
+            if (!client) {
+              if (operationOwner !== null) throw new Error("Account identity unavailable");
+              // Guest-only builds have no auth provider that could switch the save owner.
+              return () => undefined;
+            }
+            const { data } = client.auth.onAuthStateChange((_event, session) => {
               observe(session?.user.id ?? null);
             });
             return () => data.subscription.unsubscribe();

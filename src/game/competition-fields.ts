@@ -24,23 +24,25 @@ export function worldCupField(state: CareerState): string[] {
   );
   if (!recent.length) return [];
   const field: string[] = [];
+  const ranking = new Map<string, number>();
+  for (const h of recent)
+    for (const [id, points] of Object.entries(h.continentalPoints))
+      ranking.set(id, (ranking.get(id) ?? 0) + points);
+  const compareRank = (a: string, b: string) =>
+    (ranking.get(b) ?? 0) - (ranking.get(a) ?? 0) || a.localeCompare(b);
   for (const confed of Object.keys(CONTINENTAL_NAMES) as Confederation[]) {
     const competitionId = primaryCompetitionId(confed),
       quota = CLUB_WORLD_CUP_QUOTA[CONTINENTAL_NAMES[confed]]!;
     const champions = recent
       .map((h) => h.champions[competitionId])
       .filter((id): id is string => Boolean(id));
-    const ranking: Record<string, number> = Object.create(null);
-    for (const h of recent)
-      for (const [id, points] of Object.entries(h.continentalPoints))
-        ranking[id] = (ranking[id] ?? 0) + points;
-    const candidates = Object.keys(ranking).filter(
+    const candidates = [...ranking.keys()].filter(
       (id) => confederationFor(countryOfClub(id) ?? "") === confed,
     );
     const selected: string[] = [];
     const add = (id: string, champion: boolean) => {
       if (
-        !CLUBS[id] ||
+        !Object.hasOwn(CLUBS, id) ||
         selected.length >= quota ||
         selected.some((other) => sameClub(id, other)) ||
         field.some((other) => sameClub(id, other))
@@ -54,14 +56,8 @@ export function worldCupField(state: CareerState): string[] {
       selected.push(id);
     };
     // OFC usa o campeão mais bem colocado no período; outras confederações dão prioridade a todos os campeões.
-    for (const id of [...champions].sort(
-      (a, b) => (ranking[b] ?? 0) - (ranking[a] ?? 0) || a.localeCompare(b),
-    ))
-      add(id, true);
-    for (const id of candidates.sort(
-      (a, b) => (ranking[b] ?? 0) - (ranking[a] ?? 0) || a.localeCompare(b),
-    ))
-      add(id, false);
+    for (const id of [...champions].sort(compareRank)) add(id, true);
+    for (const id of candidates.sort(compareRank)) add(id, false);
     if (selected.length !== quota) return [];
     field.push(...selected);
   }

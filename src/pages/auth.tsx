@@ -1,3 +1,5 @@
+import { useT } from "@/i18n/context";
+import { authRecoveryMessages } from "@/i18n/auth-recovery-messages";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import {
@@ -49,35 +51,39 @@ const MfaChallenge = lazy(() =>
 );
 
 export function AuthPage() {
-  if (!getConfiguredSupabaseClient()) {
+  const { lang } = useT();
+  const copy = authRecoveryMessages(lang);
+  const search = Route.useSearch();
+  if (!getConfiguredSupabaseClient())
     return (
-      <main className="grid min-h-dvh place-items-center bg-background px-4">
-        <section role="alert" className="max-w-md rounded-2xl border border-border p-6 text-center">
-          <h1 className="text-xl font-semibold text-foreground">
-            Autenticação indisponível neste ambiente
+      <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
+        <section className="surface-card max-w-md rounded-2xl border border-border p-6">
+          <h1 id="auth-unavailable-title" className="font-display text-2xl">
+            {copy.unavailableTitle}
           </h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Não é possível iniciar uma sessão porque este ambiente ainda não está configurado.
-          </p>
-          <Link
-            to="/"
-            className="mt-5 inline-block min-h-11 rounded-md border border-input px-4 py-3 text-sm"
-          >
-            Voltar ao início
-          </Link>
-          <Link to="/new" className="mt-3 block text-sm text-primary underline">
-            Continuar sem entrar
-          </Link>
+          <p className="mt-3 text-sm text-muted-foreground">{copy.unavailableHint}</p>
+          <div className="mt-4 flex flex-wrap gap-x-4">
+            <Link
+              to="/new"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
+            >
+              {copy.playAsGuest}
+            </Link>
+            <a
+              href={search.next ?? "/"}
+              className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline"
+            >
+              {copy.backToGame}
+            </a>
+          </div>
         </section>
       </main>
     );
-  }
-  return <ConfiguredAuthPage />;
+  return <ConfiguredAuthPage search={search} />;
 }
 
-function ConfiguredAuthPage() {
+function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSearch> }) {
   const navigate = useNavigate();
-  const search = Route.useSearch();
   const destination = search.next ?? "/club";
   // Only the path: query strings could carry codes or personal values.
   const entryRoute = destination.split(/[?#]/)[0] || "/club";
@@ -423,7 +429,7 @@ function ConfiguredAuthPage() {
       </main>
     );
   return (
-    <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
+    <main className="auth-stage grid min-h-dvh items-start justify-items-center lg:items-center px-4 py-10">
       <div className="auth-card grid w-full max-w-5xl overflow-hidden rounded-2xl border border-border/60 bg-card/85 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
         <section
           className="auth-hero relative hidden overflow-hidden border-r border-border/60 p-10 lg:flex lg:flex-col lg:justify-between"

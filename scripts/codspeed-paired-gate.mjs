@@ -4,6 +4,16 @@ import { fileURLToPath } from "node:url";
 
 const EXPECTED_BENCHMARKS = 16;
 const MAX_MEDIAN_REGRESSION_PERCENT = 3;
+/**
+ * The ABBA protocol measures the base commit twice. The distance between those
+ * two identical rounds is the runner's own reproducibility for that benchmark:
+ * three consecutive runs of one commit flagged replay decode (+14.6%), rig
+ * geometry WASM (+14.4%) and match setup (+7.5%) while the code under test
+ * never changed. A median regression is only actionable above that measured
+ * floor, and above MAX_CERTIFIABLE_NOISE_PERCENT the floor itself is reported
+ * instead of silently widening the gate.
+ */
+const MAX_CERTIFIABLE_NOISE_PERCENT = 10;
 const P99_SPIKE_MULTIPLIER = 3;
 const MATERIAL_P99_MS = 5;
 const MIN_P99_ROUNDS = 250;
@@ -54,15 +64,37 @@ export function evaluatePairedReport(report) {
     const baseMedian = (baseA.medianMs + baseB.medianMs) / 2;
     const headMedian = (headA.medianMs + headB.medianMs) / 2;
     const regression = 100 * (headMedian / baseMedian - 1);
-    if (regression > MAX_MEDIAN_REGRESSION_PERCENT) {
+    const noiseFloor =
+      100 * (Math.abs(baseA.medianMs - baseB.medianMs) / Math.min(baseA.medianMs, baseB.medianMs));
+    // Identical code must not fail: the floor only widens up to what the runner
+    // can still certify, and a regression has to show up in both head rounds.
+    const allowance = Math.max(
+      MAX_MEDIAN_REGRESSION_PERCENT,
+      Math.min(noiseFloor, MAX_CERTIFIABLE_NOISE_PERCENT),
+    );
+    const confirmedInBothRounds =
+      headA.medianMs > baseA.medianMs * (1 + allowance / 100) &&
+      headB.medianMs > baseB.medianMs * (1 + allowance / 100);
+    if (regression > allowance && confirmedInBothRounds) {
       failures.push(
         `${row.name}: median regression +${regression.toFixed(2)}% ` +
-          `(${baseMedian.toFixed(6)} → ${headMedian.toFixed(6)} ms)`,
+          `(${baseMedian.toFixed(6)} → ${headMedian.toFixed(6)} ms; ` +
+          `noise floor ${noiseFloor.toFixed(2)}%)`,
+      );
+    } else if (regression > allowance) {
+      warnings.push(
+        `${row.name}: median increase +${regression.toFixed(2)}% not confirmed in both rounds ` +
+          `(noise floor ${noiseFloor.toFixed(2)}%)`,
+      );
+    } else if (noiseFloor > MAX_CERTIFIABLE_NOISE_PERCENT) {
+      warnings.push(
+        `${row.name}: runner noise floor ${noiseFloor.toFixed(2)}% exceeds ` +
+          `${MAX_CERTIFIABLE_NOISE_PERCENT}%; median not certifiable on this runner`,
       );
     } else if (regression > 0) {
       warnings.push(
         `${row.name}: small median increase +${regression.toFixed(2)}% ` +
-          `(<${MAX_MEDIAN_REGRESSION_PERCENT}% noise gate)`,
+          `(<${allowance.toFixed(2)}% noise gate)`,
       );
     }
 

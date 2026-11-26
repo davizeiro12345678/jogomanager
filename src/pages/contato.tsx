@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import { PublicLinks } from "@/components/PublicLinks";
@@ -8,7 +8,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { DiscordLink } from "@/components/CommunityInvite";
 import { CREATOR } from "@/content/creator";
 import { CreatorDetails } from "@/components/creator/CreatorDetails";
-import { CONTATO_PATH as PATH } from "@/lib/public-route-paths";
+import { CONTATO_PATH as PATH, MODERATION_ANCHOR } from "@/lib/public-route-paths";
 import { reportRoomFromSearch } from "@/lib/support-report-context";
 import { useT } from "@/i18n/provider";
 import { creatorMessages } from "@/i18n/creator-messages";
@@ -66,6 +66,10 @@ export function ContatoPage() {
   // Render the same initial HTML on server and browser, then open contextually.
   const [supportOpen, setSupportOpen] = useState(false);
   const [moderationOpen, setModerationOpen] = useState(false);
+  const hash = useLocation({ select: (location) => location.hash });
+  useEffect(() => {
+    if (hash === MODERATION_ANCHOR) setModerationOpen(true);
+  }, [hash]);
   useEffect(() => {
     if (reportRoomFromSearch(window.location.search) !== null) setSupportOpen(true);
   }, []);
@@ -118,6 +122,7 @@ export function ContatoPage() {
 
         <section
           className="surface-card mt-6 rounded-xl border border-border/60 p-5"
+          id={MODERATION_ANCHOR}
           aria-label={moderationCopy.sectionAria}
         >
           <h2 className="font-display text-xl">{moderationCopy.title}</h2>

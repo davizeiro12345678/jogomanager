@@ -230,4 +230,20 @@ describe("browser-side authoritative presentation reducer", () => {
     });
     expect(feed.confirmedSeat()).toBe("home");
   });
+
+  it("authorizes the connection only from the seat bound by the signed ticket", () => {
+    const feed = new AuthoritativePresentationFeed(room);
+    expect(feed.readyAuthorized()).toBe(false);
+    feed.bindSeat("home");
+    // A binding alone never authenticates: the feed must confirm that seat.
+    expect(feed.readyAuthorized()).toBe(false);
+    expect(
+      feed.accept(frame({ type: "ready", seat: "away", snapshot: snapshot(1, 1) })),
+    ).toMatchObject({ kind: "ignored", reason: "seat_mismatch" });
+    expect(feed.readyAuthorized()).toBe(false);
+    expect(
+      feed.accept(frame({ type: "ready", seat: "home", snapshot: snapshot(1, 1) })),
+    ).toMatchObject({ kind: "ready" });
+    expect(feed.readyAuthorized()).toBe(true);
+  });
 });

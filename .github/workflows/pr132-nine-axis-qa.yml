@@ -7,6 +7,8 @@ on:
       - "services/**"
       - "drizzle/**"
       - "scripts/**"
+      - "player-studio.html"
+      - ".github/fixtures/studio-ktx2/**"
       - ".github/scripts/pr132-nine-axis-qa.mjs"
       - ".github/scripts/read-qa-committed-source*.mjs"
       - ".github/workflows/pr132-nine-axis-qa.yml"
@@ -39,6 +41,7 @@ jobs:
           cache: npm
       - name: Reject location metadata in committed screenshot evidence
         run: |
+          python3 -B scripts/test_prepare_studio_qa_textures.py
           node --test scripts/screenshot-privacy.test.mjs scripts/realism-browser-runtime.test.mjs scripts/studio-qa-origin.test.mjs
           node --check scripts/realism-capture.mjs
           node scripts/screenshot-privacy.mjs
@@ -53,6 +56,11 @@ jobs:
         run: PFM_LOCAL_VERIFY=1 npm run build
       - name: Build anonymous 3D athlete Studio with the same PR source
         run: npm run graphics:build
+      - name: Prepare versioned public athlete textures for the anonymous Studio
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/pr132-nine-axis"
+          python3 scripts/prepare-studio-qa-textures.py --from-git 2>&1 | tee "$RUNNER_TEMP/pr132-nine-axis/studio-textures.log"
       - name: Install isolated browser evidence runtime
         run: |
           npm install --prefix "$RUNNER_TEMP/pr132-qa-tools" --no-package-lock --no-save playwright@1.62.1
@@ -71,8 +79,7 @@ jobs:
           npx wrangler dev --config .output/server/wrangler.json --local --ip 127.0.0.1 --port 4173 \
             > "$RUNNER_TEMP/pr132-nine-axis/preview.log" 2>&1 &
           SERVER_PID=$!
-          # The athlete Studio is not a product SSR route. Isolate it on a
-          # separate loopback-only static server with no auth or reverse proxy.
+          # The browser stays on loopback, including requests for public textures.
           python3 -m http.server 4193 --bind 127.0.0.1 --directory dist-benchmark \
             > "$RUNNER_TEMP/pr132-nine-axis/studio.log" 2>&1 &
           GRAPHICS_PID=$!

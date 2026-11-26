@@ -1,0 +1,459 @@
+/* First paint: header, hero, navigation, promises, layout reserves. */
+.football-home {
+  --home-lime: #b5ec70;
+  --home-ink: #0c1211;
+  --home-muted: #b0c0b5;
+  --home-border: #a9c4af36;
+  --home-panel: #14231c;
+  background: var(--home-ink);
+  color: #eef3ed;
+  overflow-x: clip;
+}
+.football-home a,
+.football-home button {
+  -webkit-tap-highlight-color: transparent;
+}
+.football-home :is(a, button):focus-visible {
+  outline: 2px solid var(--home-lime);
+  outline-offset: 5px;
+}
+.home-nav {
+  height: 86px;
+  max-width: 1360px;
+  margin: auto;
+  padding: 0 40px;
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  position: relative;
+  z-index: 30;
+}
+.home-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.home-brand-logo {
+  display: block;
+  width: auto;
+  height: 56px;
+}
+.home-desktop-nav {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+  margin-left: auto;
+  font-size: 14px;
+}
+.home-desktop-nav > a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: #c6d0c7;
+}
+.home-desktop-nav > a:hover {
+  color: var(--home-lime);
+}
+/* Keep the Discord button readable despite the generic navigation link color. */
+.home-desktop-nav > a[href^="https://discord.gg/"] {
+  color: #fff;
+}
+.home-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 14px 23px;
+  background: var(--home-lime);
+  color: #14220f;
+  border: 1px solid var(--home-lime);
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 15px;
+  transition:
+    background 0.18s,
+    transform 0.18s;
+}
+.home-button:hover {
+  background: #ccf794;
+  transform: translateY(-2px);
+}
+.home-button-secondary {
+  background: #101b15d9;
+  color: #eef3ed;
+  border-color: #ddebd640;
+}
+.home-button-secondary:hover {
+  background: #293e2d;
+}
+.home-nav-cta {
+  min-height: 44px;
+  padding: 9px 17px;
+  font-size: 13px;
+}
+.home-menu-button {
+  display: none;
+}
+.home-hero {
+  max-width: 1536px;
+  margin: auto;
+  min-height: clamp(590px, 65vw, 705px);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+}
+.home-hero-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 48%;
+  z-index: -3;
+}
+.home-hero-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, #09140ff7 0%, #09140fed 23%, #09140f91 48%, #09140f0d 82%),
+    linear-gradient(0deg, var(--home-ink), transparent 30%);
+}
+.home-hero-content {
+  width: min(100%, 1280px);
+  margin: auto;
+  padding: 70px 40px 100px;
+}
+.home-kicker {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  line-height: 1.6;
+  font-weight: 700;
+  color: var(--home-lime);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.home-kicker > span {
+  width: 6px;
+  height: 6px;
+  background: var(--home-lime);
+  border-radius: 50%;
+}
+.home-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(46px, 6.5vw, 90px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.04;
+  margin: 0 0 20px;
+}
+.home-hero h1 em {
+  font-style: normal;
+  color: var(--home-lime);
+}
+.home-hero-copy {
+  max-width: 44ch;
+  color: #c5d2c4;
+  font-size: 18px;
+  line-height: 1.65;
+}
+.home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+.home-hero-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #a4b7a5;
+  margin-top: 16px;
+}
+.home-hero-note svg {
+  color: var(--home-lime);
+}
+.home-hero-foot {
+  position: absolute;
+  inset: auto 40px 22px;
+  display: flex;
+  justify-content: center;
+  font-size: 12px;
+}
+.home-hero-foot a {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 44px;
+  color: #dce5dc;
+  padding-inline: 12px;
+}
+.home-resume-wrap {
+  display: grid;
+  gap: 8px;
+  max-width: 350px;
+  margin-top: 24px;
+}
+.home-resume-wrap .home-resume {
+  margin-top: 0;
+}
+.home-resume-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 17px;
+  border-radius: 8px;
+  background: var(--home-lime);
+  color: #14220f;
+  font-weight: 700;
+  font-size: 14px;
+}
+.home-resume-play:focus-visible,
+.home-resume:focus-visible {
+  outline: 2px solid var(--home-lime);
+  outline-offset: 3px;
+}
+.home-resume {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  max-width: 350px;
+  margin-top: 24px;
+  padding: 14px 17px;
+  background: #0e201ad9;
+  border: 1px solid #b5ec7040;
+  border-radius: 8px;
+}
+.home-resume > span {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--home-lime);
+}
+.home-resume strong {
+  grid-column: 1;
+  font-size: 18px;
+  margin-top: 5px;
+}
+.home-resume small {
+  grid-column: 1;
+  color: #a7b5ac;
+}
+.home-resume svg {
+  grid-column: 2;
+  grid-row: 1/4;
+  align-self: center;
+  color: var(--home-lime);
+}
+.home-promises {
+  display: flex;
+  justify-content: center;
+  gap: 70px;
+  padding: 23px 24px;
+  border-block: 1px solid #b9d0bc17;
+  background: #111c16;
+}
+.home-promises > span {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+  color: #bfcdbf;
+}
+.home-promises svg {
+  width: 18px;
+  color: var(--home-lime);
+}
+.home-body {
+  max-width: 1280px;
+  margin: auto;
+  padding: 0 40px;
+}
+.home-section {
+  padding-top: 85px;
+  scroll-margin-top: 30px;
+}
+.home-section h2,
+.home-first-season h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.2vw, 43px);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  margin-top: 13px;
+}
+.home-mode > p:not(.home-kicker) {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--home-muted);
+}
+.home-final-cta > div:last-child a:not(.home-button) {
+  color: var(--home-lime);
+  text-decoration: underline;
+}
+@media (max-width: 1000px) {
+  .home-nav {
+    padding-inline: 24px;
+    gap: 18px;
+  }
+  .home-desktop-nav {
+    gap: 14px;
+  }
+  .home-hero-content,
+  .home-body {
+    padding-inline: 24px;
+  }
+  .home-hero-foot {
+    inset-inline: 24px;
+  }
+  .home-promises {
+    gap: 25px;
+  }
+}
+@media (max-width: 760px) {
+  .home-nav {
+    height: 72px;
+    padding-inline: 12px;
+    gap: 9px;
+  }
+  .home-desktop-nav {
+    display: none;
+  }
+  .home-nav-cta {
+    margin-left: auto;
+    font-size: 11px;
+    padding-inline: 9px;
+    text-align: center;
+  }
+  .home-nav-cta svg {
+    display: none;
+  }
+  .home-brand {
+    font-size: 11px;
+  }
+  .home-brand-logo {
+    height: 42px;
+  }
+  .home-menu-button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    color: #bed0bd;
+  }
+  .home-mobile-menu {
+    position: absolute;
+    top: 72px;
+    inset-inline: 0;
+    padding: 14px 24px;
+    background: #101c15;
+    border-bottom: 1px solid #b5ec7044;
+    box-shadow: 0 15px 30px #0007;
+    display: grid;
+    gap: 5px;
+  }
+  .home-mobile-menu > a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+  }
+  .home-hero {
+    min-height: 620px;
+  }
+  .home-hero-content {
+    padding: 54px 18px 85px;
+  }
+  .home-hero-image {
+    object-position: 62% 50%;
+  }
+  .home-hero-shade {
+    background: linear-gradient(180deg, #08130f52 0%, #08130fd9 26%, var(--home-ink) 100%);
+  }
+  .home-hero h1 {
+    font-size: clamp(35px, 9.3vw, 65px);
+  }
+  .home-hero-copy {
+    font-size: 16px;
+    max-width: 390px;
+  }
+  .home-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 360px;
+  }
+  .home-promises {
+    display: grid;
+    gap: 13px;
+    justify-content: start;
+    padding: 20px 24px;
+  }
+  .home-promises > span {
+    font-size: 12px;
+  }
+  .home-body {
+    padding-inline: 22px;
+  }
+  .home-section {
+    padding-top: 55px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .football-home * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+  .home-button:hover,
+  .home-mode:hover {
+    transform: none;
+  }
+}
+
+/* Real catalog figures give the first screen concrete proof, not only slogans. */
+.home-hero-stats {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 420px;
+  border: 1px solid color-mix(in oklab, var(--home-lime) 35%, transparent);
+  border-radius: 14px;
+  /* Opaque enough to read over the photo without a costly backdrop blur. */
+  background: color-mix(in oklab, var(--home-ink) 86%, transparent);
+  overflow: hidden;
+}
+.home-hero-stats > div {
+  display: grid;
+  align-content: start;
+  padding: 12px clamp(5px, 2vw, 10px);
+  text-align: center;
+}
+.home-hero-stats > div + div {
+  border-left: 1px solid color-mix(in oklab, var(--home-lime) 25%, transparent);
+}
+.home-hero-stats dd {
+  grid-row: 1;
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(17px, 4vw, 23px);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--home-lime);
+}
+.home-hero-stats dt {
+  margin-top: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--home-muted);
+}

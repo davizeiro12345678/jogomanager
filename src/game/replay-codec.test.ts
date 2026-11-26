@@ -120,6 +120,37 @@ describe("versioned replay codec", () => {
     expect(decodeReplay({ version: 2, ...replay })).toEqual(replay);
   });
 
+  it("keeps consecutive packed frame offsets, actions and independent arrays aligned", () => {
+    const replay = makeActionReplay();
+    const frames = replay.frames.map((frame, index) => ({
+      ...frame,
+      t: index / 4,
+      b: [index + 0.25, index - 0.5, index * 0.75] as ReplayFrame["b"],
+      p: frame.p.map((_, coordinate) => (index * 80 + coordinate - 30) / 100),
+      a: frame.a.map((_, player) => ((index + player) % 2 ? ("pass" as const) : ("shot" as const))),
+      hg: index,
+      ag: index + 1,
+      poss: (index % 2 ? "away" : "home") as ReplayFrame["poss"],
+    }));
+    const decoded = decodeReplay(encodeReplay({ ...replay, frames }));
+    for (let index = 0; index < frames.length; index += 1) {
+      const actual = decoded.frames[index]!;
+      const expected = frames[index]!;
+      expect(actual.t).toBe(expected.t);
+      expect(actual.b).toEqual(expected.b);
+      expect(actual.p).toEqual(expected.p);
+      expect(actual.a).toEqual(expected.a);
+      expect([actual.hg, actual.ag, actual.poss]).toEqual([
+        expected.hg,
+        expected.ag,
+        expected.poss,
+      ]);
+      expect(actual.v).toBe(expected.v);
+    }
+    decoded.frames[0]!.p[0] = 999;
+    expect(decoded.frames[1]!.p[0]).toBe(frames[1]!.p[0]);
+  });
+
   it("preserves the frame shape when one v3 replay mixes visual and older frames", () => {
     const replay = makeActionReplay();
     const first = replay.frames[0]!;

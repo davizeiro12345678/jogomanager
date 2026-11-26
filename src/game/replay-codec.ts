@@ -76,7 +76,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
       positions[target + 1] = quantizeReplayComponent(framePositions[source + 1] ?? 0);
       positions[target + 2] = quantizeReplayComponent(framePositions[source + 2] ?? 0);
       positions[target + 3] = quantizeReplayComponent(framePositions[source + 3] ?? 0);
-      actions[actionBase + playerIndex] = actionCode(frameActions[playerIndex] ?? null);
+      const action = frameActions[playerIndex];
+      if (action) actions[actionBase + playerIndex] = actionCode(action);
     }
   }
 

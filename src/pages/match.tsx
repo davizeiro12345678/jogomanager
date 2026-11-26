@@ -26,14 +26,6 @@ import {
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-
 import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/LazyStadium";
@@ -81,7 +73,7 @@ import {
   type LiveMatchController,
 } from "@/game/simWorkerClient";
 
-import { achievementById } from "@/game/achievements";
+import { reportSilent } from "@/lib/silent-errors";
 
 import { detectQuality, detectQualityByGpu } from "@/game/device";
 
@@ -108,7 +100,11 @@ import { useT } from "@/i18n/provider";
 import type { CareerState, ManagerLook, Player } from "@/game/types";
 
 import { Feed, Scoreboard } from "@/features/match/MatchHud";
-import { MatchManagementControls } from "@/features/match/MatchManagementControls";
+const MatchManagementControls = lazy(() =>
+  import("@/features/match/MatchManagementControls").then((module) => ({
+    default: module.MatchManagementControls,
+  })),
+);
 
 import { snapshot, type Snap } from "@/features/match/types";
 
@@ -129,13 +125,7 @@ const PrematchCeremony = lazy(() =>
   })),
 );
 
-const StorePanel = lazy(() =>
-  import("@/components/game/StorePanel").then((module) => ({ default: module.StorePanel })),
-);
-
-const ChatPanel = lazy(() =>
-  import("@/components/game/ChatPanel").then((module) => ({ default: module.ChatPanel })),
-);
+const MatchDrawer = lazy(() => import("@/features/match/MatchDrawer"));
 
 const MatchStatsPanel = lazy(() =>
   import("@/features/match/MatchStatsPanel").then((module) => ({
@@ -256,6 +246,7 @@ function LiveMatch({
   const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [panelVisited, setPanelVisited] = useState(false);
   const panelTrigger = useRef<HTMLButtonElement>(null);
   const panelClose = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -274,9 +265,16 @@ function LiveMatch({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [panelOpen]);
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
-  const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
+  const [drawer, setDrawer] = useState<{
+    panel: "store" | "chat";
+    open: boolean;
+    trigger: HTMLButtonElement;
+  } | null>(null);
+  function openDrawer(panel: "store" | "chat", trigger: HTMLButtonElement) {
+    setDrawer({ panel, open: true, trigger });
+  }
   const [narrationSettingsOpen, setNarrationSettingsOpen] = useState(false);
-  const paused = pausedManually || drawer !== "none" || narrationSettingsOpen;
+  const paused = pausedManually || drawer?.open === true || narrationSettingsOpen;
   const [done, setDone] = useState(false);
   const [postMatchStep, setPostMatchStep] = useState<number | null>(null);
   const [advancing, setAdvancing] = useState(false);
@@ -560,11 +558,21 @@ function LiveMatch({
     setAdvancing(true);
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
-      for (const id of next.achievements ?? []) {
-        if (!before.has(id)) {
-          const a = achievementById(id);
-          if (a) toast.success(`Conquista desbloqueada: ${a.title}`);
-        }
+      const unlocked = (next.achievements ?? []).filter((id) => !before.has(id));
+      if (unlocked.length > 0) {
+        void import("@/game/achievements")
+          .then(({ achievementById }) => {
+            for (const id of unlocked) {
+              const achievement = achievementById(id);
+              if (achievement) toast.success(`Conquista desbloqueada: ${achievement.title}`);
+            }
+          })
+          .catch((error: unknown) =>
+            reportSilent("match.achievement-notice", error, {
+              classification: "degradation",
+              feature: "achievements",
+            }),
+          );
       }
       update(next);
       setAdvancing(false);
@@ -803,14 +811,16 @@ function LiveMatch({
             onOpenChange={setNarrationSettingsOpen}
           />
           <button
-            onClick={() => setDrawer("store")}
+            onClick={(event) => openDrawer("store", event.currentTarget)}
+            aria-haspopup="dialog"
             aria-label="Abrir loja"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ShoppingBag size={16} />
           </button>
           <button
-            onClick={() => setDrawer("chat")}
+            onClick={(event) => openDrawer("chat", event.currentTarget)}
+            aria-haspopup="dialog"
             aria-label="Abrir chat"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
@@ -827,6 +837,7 @@ function LiveMatch({
         <button
           ref={panelTrigger}
           onClick={() => {
+            setPanelVisited(true);
             setPanelOpen((v) => !v);
             setShowStats(false);
           }}
@@ -841,39 +852,22 @@ function LiveMatch({
       </div>
 
       {/* Loja e chat sem sair da partida */}
-      <Sheet open={drawer !== "none"} onOpenChange={(o) => !o && setDrawer("none")}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col overflow-y-auto sm:max-w-md"
-          closeLabel={drawer === "store" ? "Fechar loja" : "Fechar chat"}
+      {drawer && (
+        <Suspense
+          fallback={
+            <p role="status" className="sr-only">
+              {t("common.loading")}
+            </p>
+          }
         >
-          <SheetHeader>
-            <SheetTitle className="pr-10 font-display uppercase tracking-wide">
-              {drawer === "store" ? "Loja" : "Chat global"}
-            </SheetTitle>
-            <SheetDescription>
-              {drawer === "store"
-                ? "Se precisar entrar, a loja abre em outra página e esta partida ao vivo não é salva. Com conta, o jogo fica pausado durante o checkout."
-                : "Converse com outros técnicos sem perder o jogo."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4 flex min-h-0 flex-1 flex-col">
-            <Suspense
-              fallback={
-                <p role="status" className="py-8 text-center text-sm text-muted-foreground">
-                  Carregando…
-                </p>
-              }
-            >
-              {drawer === "store" ? (
-                <StorePanel next="/loja" columns={1} />
-              ) : drawer === "chat" ? (
-                <ChatPanel next="/match" />
-              ) : null}
-            </Suspense>
-          </div>
-        </SheetContent>
-      </Sheet>
+          <MatchDrawer
+            open={drawer.open}
+            panel={drawer.panel}
+            trigger={drawer.trigger}
+            onClose={() => setDrawer({ ...drawer, open: false })}
+          />
+        </Suspense>
+      )}
 
       {/* Painel de controle */}
       <section
@@ -936,15 +930,19 @@ function LiveMatch({
           </button>
         </div>
 
-        <MatchManagementControls
-          myTactics={myTactics}
-          setMentality={setMentality}
-          setPressing={setPressing}
-          subsUsed={subsUsed}
-          onPitch={onPitch}
-          benchAvailable={benchAvailable}
-          onSubstitute={makeSub}
-        />
+        {panelVisited && (
+          <Suspense fallback={<p role="status">{t("common.loading")}</p>}>
+            <MatchManagementControls
+              myTactics={myTactics}
+              setMentality={setMentality}
+              setPressing={setPressing}
+              subsUsed={subsUsed}
+              onPitch={onPitch}
+              benchAvailable={benchAvailable}
+              onSubstitute={makeSub}
+            />
+          </Suspense>
+        )}
 
         <button
           onClick={() => {
@@ -956,10 +954,18 @@ function LiveMatch({
           <Sparkles size={12} /> {showStats ? "Ocultar" : "Ver"} estatísticas
         </button>
         <div className="match-panel-actions">
-          <button type="button" onClick={() => setDrawer("store")}>
+          <button
+            type="button"
+            onClick={(event) => openDrawer("store", event.currentTarget)}
+            aria-haspopup="dialog"
+          >
             <ShoppingBag size={16} /> Loja
           </button>
-          <button type="button" onClick={() => setDrawer("chat")}>
+          <button
+            type="button"
+            onClick={(event) => openDrawer("chat", event.currentTarget)}
+            aria-haspopup="dialog"
+          >
             <MessageCircle size={16} /> Chat
           </button>
         </div>

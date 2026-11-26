@@ -100,13 +100,15 @@ export class AuthoritativeSocketBridge {
           sequence,
         });
       }
-      this.send(peer, {
+      const readySent = this.send(peer, {
         type: "ready",
         version: MATCH_PROTOCOL_VERSION,
         seat,
         snapshot: this.options.session.snapshot(),
       });
-      return seat;
+      if (readySent) return seat;
+      this.detach(socket);
+      return null;
     } catch {
       socket.close(1008, "ticket_rejected");
       return null;
@@ -199,6 +201,7 @@ export class AuthoritativeSocketBridge {
     if (this.storageFailed) throw new Error("match storage unavailable");
     const now = this.now();
     for (const peer of this.peers.values()) {
+      if (this.disconnectExpired(peer, now)) continue;
       if (peer.socket.readyState !== WS_OPEN || now - peer.lastActivityAt > MAX_INACTIVE_MS) {
         peer.socket.close(1001, "connection_timeout");
         this.detach(peer.socket);
@@ -256,17 +259,21 @@ export class AuthoritativeSocketBridge {
     }
   }
 
-  private send(peer: Connection, payload: object): void {
-    if (peer.socket.readyState !== WS_OPEN) return;
+  private send(peer: Connection, payload: object): boolean {
+    if (this.peers.get(peer.seat) !== peer || peer.socket.readyState !== WS_OPEN) return false;
+    // A persistence wait or a paused client may outlast admission.
+    if (this.disconnectExpired(peer, this.now())) return false;
     if (peer.socket.bufferedAmount > MAX_BUFFERED_BYTES) {
       peer.socket.close(1013, "slow_consumer");
       this.detach(peer.socket);
-      return;
+      return false;
     }
     try {
       peer.socket.send(JSON.stringify(payload));
+      return true;
     } catch {
       this.detach(peer.socket);
+      return false;
     }
   }
 

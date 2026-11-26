@@ -71,7 +71,7 @@ export async function fetchVpsPublicCrests(
           url.searchParams.set("page", String(page));
           const response = await fetchImpl(url, {
             method: "GET",
-            redirect: "error",
+            redirect: "manual",
             credentials: "omit",
             cache: "no-store",
             headers: { accept: "application/json" },

@@ -61,6 +61,8 @@ function frameStats(intervals) {
   const total = intervals.reduce((sum, x) => sum + x, 0);
   const slow = sorted.slice(-Math.max(1, Math.ceil(sorted.length * 0.01)));
   const slowMean = slow.reduce((sum, x) => sum + x, 0) / slow.length;
+  const slowest = sorted.slice(-Math.max(1, Math.ceil(sorted.length * 0.001)));
+  const slowestMean = slowest.reduce((sum, x) => sum + x, 0) / slowest.length;
   return {
     frames: intervals.length,
     fps: (1000 * intervals.length) / total,
@@ -68,6 +70,7 @@ function frameStats(intervals) {
     p95Ms: quantile(sorted, 0.95),
     p99Ms: quantile(sorted, 0.99),
     onePercentLowFps: 1000 / slowMean,
+    pointOnePercentLowFps: 1000 / slowestMean,
     framesOver50Ms: intervals.filter((x) => x > 50).length,
   };
 }
@@ -97,8 +100,14 @@ function setupFingerprint(setup) {
 export function summarizeCampaignRun(run, requirements = DEFAULT_REQUIREMENTS) {
   assert(/^[a-f0-9]{40}$/.test(run?.revision ?? ""), "Full immutable SHA required");
   const fingerprint = setupFingerprint(run.setup);
-  assert(run.recordVideo !== true, "Recorded video captures cannot certify FPS");
-  assert(run.headless !== true, "Headless captures cannot certify physical GPU FPS");
+  assert(run.recordVideo === false, "Recorded or unknown video captures cannot certify FPS");
+  assert(run.headless === false, "Headless or unknown captures cannot certify physical GPU FPS");
+  const softwareRenderer =
+    /swiftshader|llvmpipe|softpipe|software\s+rasterizer|\bwarp\b|microsoft basic render driver/i;
+  assert(
+    ![run.setup.gpu, run.setup.renderer].some((value) => softwareRenderer.test(String(value))),
+    "Known software GPU cannot certify physical GPU FPS",
+  );
   const report = run.report;
   assert(
     report?.context?.phase === "match" || report?.context?.phase === "cutscene",
@@ -207,7 +216,15 @@ export function compareFrameCampaigns(
       "Mixed commit revisions",
     );
   }
-  const metrics = ["fps", "p95Ms", "p99Ms", "onePercentLowFps", "framesOver50Ms"];
+  const metrics = [
+    "fps",
+    "p50Ms",
+    "p95Ms",
+    "p99Ms",
+    "onePercentLowFps",
+    "pointOnePercentLowFps",
+    "framesOver50Ms",
+  ];
   const summary = Object.fromEntries(
     metrics.map((key) => [
       key,
