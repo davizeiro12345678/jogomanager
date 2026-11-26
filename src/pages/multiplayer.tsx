@@ -56,7 +56,7 @@ function SignedOut() {
         to="/auth"
         className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground"
       >
-        Entrar ou criar conta
+        {copy.signInAction}
       </Link>
     </Shell>
   );
@@ -528,7 +528,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           }
         />
         <p className="mt-1 text-sm text-muted-foreground">
-          Crie uma sala, mande o código e joguem a mesma partida ao vivo, cada um no seu aparelho.
+          {copy.intro}
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <div className="rounded-lg border border-border/60 p-3">
@@ -542,7 +542,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
         <div className="mt-6">{children}</div>
         <Link to="/dashboard" className="mt-6 inline-block text-xs text-muted-foreground underline">
-          Voltar ao painel
+          {copy.backToDashboard}
         </Link>
       </div>
     </main>
