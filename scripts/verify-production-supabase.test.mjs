@@ -107,16 +107,18 @@ test("rejects a symlinked JavaScript asset rather than following or silently ski
   const dir = await mkdtemp(path.join(os.tmpdir(), "supabase-asset-link-"));
   const outside = await mkdtemp(path.join(os.tmpdir(), "supabase-asset-outside-"));
   try {
-    await writeFile(path.join(outside, "foreign.js"),
-      '"Missing Supabase environment variable";"https://lguqnwvsfeefxamzeyos.supabase.co";"sb_publishable_fixture"');
+    await writeFile(
+      path.join(outside, "foreign.js"),
+      '"Missing Supabase environment variable";"https://lguqnwvsfeefxamzeyos.supabase.co";"sb_publishable_fixture"',
+    );
     await symlink(path.join(outside, "foreign.js"), path.join(dir, "client-a.js"));
     await assert.rejects(
       verifyBrowserSupabaseBundle(dir, productionSupabaseConfig(env)),
       /symlink/i,
     );
   } finally {
-    await rm(dir, {recursive: true, force: true});
-    await rm(outside, {recursive: true, force: true});
+    await rm(dir, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
   }
 });
 
@@ -124,14 +126,16 @@ test("rejects oversized JavaScript assets before reading their contents", async 
   const dir = await mkdtemp(path.join(os.tmpdir(), "supabase-asset-large-"));
   try {
     const file = path.join(dir, "client-a.js");
-    await writeFile(file,
-      '"Missing Supabase environment variable";"https://lguqnwvsfeefxamzeyos.supabase.co";"sb_publishable_fixture"');
+    await writeFile(
+      file,
+      '"Missing Supabase environment variable";"https://lguqnwvsfeefxamzeyos.supabase.co";"sb_publishable_fixture"',
+    );
     await truncate(file, 16 * 1024 * 1024 + 1);
     await assert.rejects(
       verifyBrowserSupabaseBundle(dir, productionSupabaseConfig(env)),
       /asset.*large/i,
     );
   } finally {
-    await rm(dir, {recursive: true, force: true});
+    await rm(dir, { recursive: true, force: true });
   }
 });
