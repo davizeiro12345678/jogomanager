@@ -15,7 +15,9 @@ describe("multiplayer availability copy", () => {
     expect(copy.oneAvailable).toBe("1×1 available");
     expect(copy.twoPending).toBe("2×2 under validation");
     expect(copy.unavailable).toBe("Not available yet.");
-    expect(copy.intro).toBe("Create a room, share the code, and play the same match live on separate devices.");
+    expect(copy.intro).toBe(
+      "Create a room, share the code, and play the same match live on separate devices.",
+    );
     expect(copy.signInAction).toBe("Sign in or create an account");
     expect(copy.backToDashboard).toBe("Back to dashboard");
   });

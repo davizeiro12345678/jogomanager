@@ -33,7 +33,8 @@ const messages: FeatureMessages<keyof typeof pt> = {
     twoPending: "2×2 en validación",
     unavailable: "Todavía no disponible.",
     signIn: "El modo 1×1 requiere una cuenta para identificar a ambos jugadores.",
-    intro: "Crea una sala, comparte el código y jueguen el mismo partido en directo desde distintos dispositivos.",
+    intro:
+      "Crea una sala, comparte el código y jueguen el mismo partido en directo desde distintos dispositivos.",
     signInAction: "Iniciar sesión o crear cuenta",
     backToDashboard: "Volver al panel",
   },

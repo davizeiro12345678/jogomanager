@@ -527,9 +527,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             </>
           }
         />
-        <p className="mt-1 text-sm text-muted-foreground">
-          {copy.intro}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.intro}</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <div className="rounded-lg border border-border/60 p-3">
             <p className="font-medium">{copy.oneAvailable}</p>

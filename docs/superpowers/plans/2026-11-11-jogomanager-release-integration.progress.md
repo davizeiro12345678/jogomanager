@@ -526,3 +526,19 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - [ ] VPS: zero unidades failed, SSH efetivo RSA mínimo 2048, serviços essenciais ativos. Timer externo ativo mas OAuth e verificação criptográfica ausentes; sem transferência confirmada. Wazuh aguarda backup do Indexer. A varredura longa está executando; não interromper para alterar política de timeout.
 - [ ] Gateway: plano Free e saldo zero confirmados; titular precisa contratar Pro/recarga no painel. Ops bundle incluído no Pro, não comprar redundância. Sem pagamento efetuado.
 - [ ] Homologação autenticada, Stripe sandbox, multiplayer real, GPU física, revisão dos alertas, CSP efetiva e deploy continuam pendentes. Manter #132 e #179; nenhum novo PR nem alteração em main.
+
+<!-- audit-verified-20261126-p0p1p2 -->
+## Checkpoint auditável — 26/11/2026, após merge do #132
+
+Este registro substitui estados operacionais antigos, sem apagá-los. As validações locais abaixo pertencem ao código corrigido; qualquer commit posterior requer novos checks no SHA exato.
+
+- [x] PR #132 já mesclado na main: merge `c449875f20a1093a31929c114d8274a998eea42e`; referências anteriores a Draft são históricas. PR #179 continua aberto em Draft, sem merge e sem deploy deste conjunto.
+- [x] PR #179: corrigida a localização do texto introdutório do multiplayer, do link de autenticação e do retorno ao dashboard, preservando os rótulos honestos 1x1 e 2x2 pendente em português, inglês e espanhol. Implementação inicial em `3ef7fb2ddcebd555711942e2a14b550efab36299`; formatação revisada nesta continuação.
+- [x] Checkout de QA isolado no VPS, Node 24.22.1: cinco testes Vitest focados, seis testes Node de bundle, Prettier, ESLint e TypeScript sem erros. Nenhum limite de desempenho foi alterado. O Chrome 158 do VPS executou smoke test headless de um preview anterior; essa observação não certifica o novo HEAD.
+- [~] Dezesseis operações de inspeção read-only solicitadas em paralelo no Gateway Pro: 11 aprovaram e cinco falharam por indisponibilidade do executor ou resultado inválido. UFW ativo com entrada deny, zero unidades systemd failed, 33 containers observados, 334 GB disponíveis no filesystem raiz, wazuh-agent retido. Falhas de inspeção não são prova de falha do host.
+- [~] Stripe sandbox: 15 produtos ativos e dois endpoints de webhook habilitados, ambos encaminhados a serviços Lovable; integração ponta a ponta com fulfillment/idempotência não certificada. Supabase disponibiliza somente o projeto de produção neste conector.
+- [ ] P0: confirmar CI completo, Lighthouse e CodSpeed comparáveis do SHA final; validar checkout/webhook/idempotência, autenticação real, persistência autenticada, backup externo restaurável e rollback em ambiente isolado antes da liberação.
+- [ ] P1: validar multiplayer 1x1 e 2x2 com usuários/dispositivos reais, hardening VPS/Wazuh condicionado ao backup, CSP efetiva, CodeQL pendente e gráficos/performance em GPU física.
+- [ ] P2: verificar a correção internacionalizada em preview publicado no SHA final e em dispositivos móveis. Não transferir testes visuais do preview anterior.
+- [ ] Não efetuar deploy, merge do #179, force-push, cobrança real, migração em produção nem marcar gates como aprovados sem evidências correspondentes.
+<!-- /audit-verified-20261126-p0p1p2 -->
