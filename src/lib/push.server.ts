@@ -6,7 +6,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/database";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/firebase_messaging";
 /** Upper bound of device tokens contacted for a single event. */
@@ -46,6 +46,14 @@ function gatewayKeys(): { lovableKey: string; fcmKey: string } | null {
   return lovableKey && fcmKey ? { lovableKey, fcmKey } : null;
 }
 
+/**
+ * Keep the external gateway bounded: sequential delivery can otherwise block
+ * one chat event for 200 network round-trips. Parallelism is intentionally
+ * conservative to avoid overwhelming the Firebase connector.
+ */
+export const MAX_PARALLEL_PUSH_REQUESTS = 4;
+export const PUSH_REQUEST_TIMEOUT_MS = 5_000;
+
 export async function sendPushToTokens(
   tokens: readonly string[],
   message: PushMessage,
@@ -53,34 +61,53 @@ export async function sendPushToTokens(
   const keys = gatewayKeys();
   const deadTokens: string[] = [];
   if (!keys) return { sent: 0, deadTokens };
+
+  const selectedTokens = tokens.slice(0, MAX_TOKENS_PER_EVENT);
+  let nextIndex = 0;
   let sent = 0;
-  for (const token of tokens.slice(0, MAX_TOKENS_PER_EVENT)) {
-    const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keys.lovableKey}`,
-        "X-Connection-Api-Key": keys.fcmKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title: message.title, body: message.body.slice(0, 300) },
-          data: message.path ? { path: message.path } : undefined,
-        },
-      }),
-    });
-    if (res.ok) {
-      sent += 1;
-      continue;
+  let failed = 0;
+
+  const worker = async (): Promise<void> => {
+    while (nextIndex < selectedTokens.length) {
+      const token = selectedTokens[nextIndex++]!;
+      try {
+        const res = await fetch(`${GATEWAY_URL}/v1/projects/_/messages:send`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${keys.lovableKey}`,
+            "X-Connection-Api-Key": keys.fcmKey,
+            "Content-Type": "application/json",
+          },
+          signal: AbortSignal.timeout(PUSH_REQUEST_TIMEOUT_MS),
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title: message.title, body: message.body.slice(0, 300) },
+              data: message.path ? { path: message.path } : undefined,
+            },
+          }),
+        });
+        if (res.ok) {
+          sent += 1;
+          continue;
+        }
+        // Only inspect the error to identify tokens that Firebase confirms are
+        // invalid. No token, provider response body or credential is logged.
+        if (isDeadToken(res.status, await res.text())) deadTokens.push(token);
+        else failed += 1;
+      } catch {
+        // A stalled or rejected request must not suppress all other devices.
+        failed += 1;
+      }
     }
-    const body = await res.text();
-    if (isDeadToken(res.status, body)) {
-      deadTokens.push(token);
-      continue;
-    }
-    console.error(`FCM falhou [${res.status}]`);
-  }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(MAX_PARALLEL_PUSH_REQUESTS, selectedTokens.length) }, () =>
+      worker(),
+    ),
+  );
+  if (failed) console.error(`FCM indisponível para ${failed} dispositivo(s)`);
   return { sent, deadTokens };
 }
 
@@ -93,7 +120,7 @@ export async function sendPushToUsers(
   if (userIds.length === 0) return;
   const { data, error } = await admin
     .from("push_subscriptions")
-    .select("token")
+    .select("id, token, user_id, updated_at")
     .in("user_id", [...userIds])
     .limit(MAX_TOKENS_PER_EVENT);
   if (error) {
@@ -103,11 +130,19 @@ export async function sendPushToUsers(
   const tokens = (data ?? []).map((row) => row.token);
   const { deadTokens } = await sendPushToTokens(tokens, message);
   if (deadTokens.length === 0) return;
-  const { error: cleanup } = await admin
-    .from("push_subscriptions")
-    .delete()
-    .in("token", deadTokens);
-  if (cleanup) console.error("push token cleanup failed", cleanup.message);
+  const dead = new Set(deadTokens);
+  for (const row of data ?? []) {
+    if (!dead.has(row.token)) continue;
+    // Only remove the registration observed before sending.
+    const { error: cleanup } = await admin
+      .from("push_subscriptions")
+      .delete()
+      .eq("id", row.id)
+      .eq("token", row.token)
+      .eq("user_id", row.user_id)
+      .eq("updated_at", row.updated_at);
+    if (cleanup) console.error("push token cleanup failed", cleanup.message);
+  }
 }
 
 /** Fire-and-forget wrapper so callers never await or fail on push delivery. */

@@ -44,7 +44,7 @@ test("Supabase public Vite properties are declared for strict TypeScript", () =>
   assert.doesNotMatch(declaration, /(?:SERVICE_ROLE|sb_secret_|STRIPE_SECRET)/i);
 });
 
-test("auth method discovery and auth mode use build-time public variables", () => {
+test("auth method discovery and native OAuth use build-time public variables", () => {
   const discovery = readFileSync(
     new URL("../src/integrations/supabase/social-auth.ts", import.meta.url),
     "utf8",
@@ -57,7 +57,14 @@ test("auth method discovery and auth mode use build-time public variables", () =
     assert.ok(discovery.includes(`import.meta.env.${key}`), key);
   }
   const authPage = readFileSync(new URL("../src/pages/auth.tsx", import.meta.url), "utf8");
-  assert.ok(authPage.includes("import.meta.env.VITE_AUTH_MODE"));
+  assert.ok(
+    authPage.includes("supabase.auth.signInWithOAuth"),
+    "published OAuth must use the configured Supabase provider",
+  );
+  assert.ok(
+    !authPage.includes("lovable.auth.signInWithOAuth"),
+    "published OAuth must not call the missing /~oauth/initiate broker",
+  );
 });
 
 test("all browser modules avoid computed access to mandatory public auth variables", () => {

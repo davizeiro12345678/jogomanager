@@ -2,25 +2,13 @@ import { ScreenHeader, SectionCard } from "@/components/game/screen-kit";
 
 import { Link } from "@tanstack/react-router";
 
-import { Copy, LogOut, Play, RefreshCw, Send, Swords, Users, WifiOff } from "lucide-react";
+import { Copy, LogOut, Play, RefreshCw, Swords, Users, WifiOff } from "lucide-react";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { Crest } from "@/components/game/Crest";
 
-import { Stadium3D, type CameraMode, type Quality } from "@/components/game/Stadium3D";
-
 import { CLUBS, getLeague, LEAGUES } from "@/game/data/leagues";
-
-import { detectQuality } from "@/game/device";
-
-import { WorkerMatchView } from "@/game/live-match";
-
-import { buildTeamSetup } from "@/game/quickMatch";
-
-import { createLiveMatchController, type LiveMatchController } from "@/game/simWorkerClient";
-
-import { getLiveRoomConnectionState } from "@/game/multiplayer-connection";
 
 import { useOnline } from "@/hooks/useOnline";
 
@@ -29,12 +17,21 @@ import { useT } from "@/i18n/provider";
 
 import { supabase } from "@/integrations/supabase/client";
 
-import { canJoinRoomChat } from "@/lib/room-chat-access";
-import { isSettlementLeaseExpired, MATCH_SETTLEMENT_LEASE_MS } from "@/lib/multiplayer-settlement";
+import { isSettlementLeaseExpired } from "@/lib/multiplayer-settlement";
 
+import { RoomChat } from "@/features/multiplayer/RoomChat";
 import type { MultiplayerRoomRecord as Room } from "@/lib/multiplayer.functions";
 
 import { reportSilent } from "@/lib/silent-errors";
+
+const LiveRoom = lazy(() =>
+  import("@/features/multiplayer/LiveRoom").then((module) => ({ default: module.LiveRoom })),
+);
+const MatchmakingPanel = lazy(() =>
+  import("@/features/multiplayer/MatchmakingPanel").then((module) => ({
+    default: module.MatchmakingPanel,
+  })),
+);
 
 export function MultiplayerPage() {
   const userId = useAuthUserId();
@@ -66,6 +63,7 @@ function SignedOut() {
 }
 
 function MultiplayerAccount({ userId }: { userId: string }) {
+  const { t } = useT();
   const online = useOnline();
   const [room, setRoom] = useState<Room | null>(null);
   const [open, setOpen] = useState<Room[]>([]);
@@ -154,6 +152,24 @@ function MultiplayerAccount({ userId }: { userId: string }) {
     };
   }, [online, room?.id]);
 
+  const openMatchedRoom = useCallback(
+    async (roomId: string): Promise<boolean> => {
+      if (!online) return false;
+      const { data, error: lookupError } = await supabase
+        .from("match_rooms")
+        .select("*")
+        .eq("id", roomId)
+        .eq("server_seeded", true)
+        .eq("status", "live")
+        .maybeSingle();
+      if (lookupError || !data || (data.host_id !== userId && data.guest_id !== userId))
+        return false;
+      setRoom(data as unknown as Room);
+      return true;
+    },
+    [online, userId],
+  );
+
   async function createRoom() {
     if (!userId) return setError("Entre na conta novamente para criar uma sala.");
     setBusy(true);
@@ -172,7 +188,16 @@ function MultiplayerAccount({ userId }: { userId: string }) {
       };
     });
     setBusy(false);
-    if (!result.ok) return setError("Não foi possível criar a sala.");
+    if (!result.ok)
+      return setError(
+        result.reason === "rate_limited"
+          ? "Você atingiu o limite de criação de salas desta hora. Aguarde para criar outra."
+          : result.reason === "too_many_rooms"
+            ? "Você já tem três salas ativas. Encerre uma delas antes de criar outra."
+            : result.reason === "verification_required"
+              ? "Confirme o e-mail da sua conta para criar uma sala online."
+              : "Não foi possível criar a sala.",
+      );
     setRoom(result.room as unknown as Room);
   }
 
@@ -240,14 +265,25 @@ function MultiplayerAccount({ userId }: { userId: string }) {
 
   if (room && room.status === "live" && room.guest_club) {
     return (
-      <LiveRoom
-        room={room}
-        isHost={room.host_id === userId}
-        online={online}
-        onExit={() => {
-          void leave();
-        }}
-      />
+      <Suspense
+        fallback={
+          <main className="grid h-[100dvh] place-items-center bg-background px-6 text-center">
+            <p role="status" className="text-sm text-muted-foreground">
+              {t("common.loading")}
+            </p>
+          </main>
+        }
+      >
+        <LiveRoom
+          room={room}
+          userId={userId}
+          isHost={room.host_id === userId}
+          online={online}
+          onExit={() => {
+            void leave();
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -406,6 +442,10 @@ function MultiplayerAccount({ userId }: { userId: string }) {
             </div>
           </SectionCard>
 
+          <Suspense fallback={null}>
+            <MatchmakingPanel clubId={club} online={online} onMatched={openMatchedRoom} />
+          </Suspense>
+
           <SectionCard className="mt-6 rounded-2xl border border-border/60 surface-card p-5">
             <div className="flex items-center gap-2">
               <Users size={16} className="text-muted-foreground" />
@@ -525,422 +565,5 @@ function SideCard({
         {ready ? "Pronto" : "Aguardando"}
       </span>
     </div>
-  );
-}
-
-type RoomChatMessage = { id: string; text: string; senderId: string; createdAt: string };
-
-type RoomChatStatus = "checking" | "ready" | "unavailable";
-
-const ROOM_CHAT_MAX_TEXT_LENGTH = 200;
-const ROOM_CHAT_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function parseRoomChatMessage(payload: unknown): RoomChatMessage | null {
-  if (typeof payload !== "object" || payload === null) return null;
-  const record = payload as Record<string, unknown>;
-  const keys = Object.keys(record);
-  if (
-    keys.length !== 4 ||
-    !keys.includes("id") ||
-    !keys.includes("text") ||
-    !keys.includes("senderId") ||
-    !keys.includes("createdAt")
-  )
-    return null;
-  const rawId = record["id"];
-  const rawText = record["text"];
-  const senderId = record["senderId"];
-  const createdAt = record["createdAt"];
-  if (
-    typeof rawId !== "string" ||
-    typeof rawText !== "string" ||
-    typeof senderId !== "string" ||
-    typeof createdAt !== "string"
-  )
-    return null;
-  if (
-    rawId.length > 100 ||
-    rawId.trim() !== rawId ||
-    !ROOM_CHAT_ID_PATTERN.test(rawId) ||
-    rawText.length < 1 ||
-    rawText.length > ROOM_CHAT_MAX_TEXT_LENGTH ||
-    rawText.trim() !== rawText
-  ) {
-    return null;
-  }
-  if (!ROOM_CHAT_ID_PATTERN.test(senderId) || !Number.isFinite(Date.parse(createdAt))) return null;
-  return { id: rawId, text: rawText, senderId, createdAt };
-}
-
-/** Chat da sala por canal privado em tempo real (não fica salvo). */
-function RoomChat({ roomId, userId }: { roomId: string; userId: string }) {
-  const { t } = useT();
-  const messageInputLabel = "Mensagem…";
-  const [msgs, setMsgs] = useState<RoomChatMessage[]>([]);
-  const [text, setText] = useState("");
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [status, setStatus] = useState<RoomChatStatus>("checking");
-  const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-
-  useEffect(() => {
-    let disposed = false;
-    setMsgs([]);
-    setFeedback(null);
-    setStatus("checking");
-
-    const joinRoomChat = async () => {
-      try {
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser();
-        if (disposed) return;
-        if (authError || !user || user.id !== userId) {
-          setStatus("unavailable");
-          return;
-        }
-
-        const { data: membership, error: membershipError } = await supabase
-          .from("match_rooms")
-          .select("id, host_id, guest_id, status")
-          .eq("id", roomId)
-          .or(`host_id.eq.${user.id},guest_id.eq.${user.id}`)
-          .in("status", ["open", "ready", "live", "settling"])
-          .maybeSingle();
-        if (disposed) return;
-        if (membershipError || !membership || !canJoinRoomChat(membership, user.id)) {
-          setStatus("unavailable");
-          return;
-        }
-
-        // The UI check improves feedback; realtime.messages RLS is the security boundary.
-        await supabase.realtime.setAuth();
-      } catch {
-        if (!disposed) setStatus("unavailable");
-        return;
-      }
-      if (disposed) return;
-
-      const ch = supabase.channel(`room-chat-${roomId}`, {
-        config: { private: true, broadcast: { self: true } },
-      });
-      ch.on("broadcast", { event: "msg" }, ({ payload }) => {
-        const message = parseRoomChatMessage(payload);
-        if (!message) return;
-        setMsgs((current) => {
-          if (current.some((existing) => existing.id === message.id)) return current;
-          return [...current.slice(-40), message];
-        });
-      }).subscribe((channelStatus) => {
-        if (disposed) return;
-        if (channelStatus === "SUBSCRIBED") {
-          setStatus("ready");
-          return;
-        }
-        if (
-          channelStatus === "CHANNEL_ERROR" ||
-          channelStatus === "TIMED_OUT" ||
-          channelStatus === "CLOSED"
-        ) {
-          setStatus("unavailable");
-          void supabase.removeChannel(ch);
-          if (chanRef.current === ch) chanRef.current = null;
-        }
-      });
-      chanRef.current = ch;
-    };
-
-    void joinRoomChat();
-    return () => {
-      disposed = true;
-      const ch = chanRef.current;
-      if (ch) void supabase.removeChannel(ch);
-      chanRef.current = null;
-    };
-  }, [roomId, userId]);
-
-  return (
-    <div className="mt-5 rounded-xl border border-border/50 bg-background/40 p-3">
-      <div className="max-h-40 overflow-y-auto text-sm">
-        {status === "checking" ? (
-          <p className="text-xs text-muted-foreground">Verificando acesso à sala…</p>
-        ) : status === "unavailable" ? (
-          <p className="text-xs text-muted-foreground">
-            O chat desta sala não está disponível para este participante.
-          </p>
-        ) : msgs.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Converse com seu adversário aqui.</p>
-        ) : (
-          msgs.map((m, i) => (
-            <p key={`${m.id}-${i}`} className="mb-1">
-              <span className="text-muted-foreground">
-                {m.senderId === userId ? "Você" : "Adversário"}:{" "}
-              </span>
-              {m.text}
-            </p>
-          ))
-        )}
-      </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const value = text.trim();
-          const channel = chanRef.current;
-          if (
-            !value ||
-            value.length > ROOM_CHAT_MAX_TEXT_LENGTH ||
-            status !== "ready" ||
-            !channel
-          ) {
-            return;
-          }
-          setFeedback(null);
-          void import("@/lib/chat.functions")
-            .then(({ sendRoomChatMessage }) =>
-              sendRoomChatMessage({ data: { roomId, text: value } }),
-            )
-            .then((result) => {
-              if (result.ok) {
-                setText((current) => (current === value ? "" : current));
-                return;
-              }
-              setFeedback(
-                result.message ??
-                  (result.reason === "rate_limited" ? t("common.retry") : t("screen.error")),
-              );
-            })
-            .catch(() => {
-              setFeedback(t("screen.error"));
-            });
-        }}
-        className="mt-2 flex gap-2"
-      >
-        <label className="sr-only" htmlFor={`room-chat-message-${roomId}`}>
-          {messageInputLabel}
-        </label>
-        <input
-          id={`room-chat-message-${roomId}`}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={messageInputLabel}
-          maxLength={ROOM_CHAT_MAX_TEXT_LENGTH}
-          disabled={status !== "ready"}
-          className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-        />
-        <button
-          type="submit"
-          aria-label="Enviar mensagem"
-          disabled={status !== "ready"}
-          className="min-h-11 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground"
-        >
-          <Send size={14} />
-        </button>
-      </form>
-      {feedback ? (
-        <p role="alert" className="mt-2 text-xs text-destructive">
-          {feedback}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * Each browser renders a deterministic presentation seeded by the room ID.
- * The server keeps the outcome seed private and publishes the replayed score.
- */
-function LiveRoom({
-  room,
-  isHost,
-  online,
-  onExit,
-}: {
-  room: Room;
-  isHost: boolean;
-  online: boolean;
-  onExit: () => void;
-}) {
-  const setups = useMemo(
-    () => ({
-      home: buildTeamSetup(room.host_club),
-      away: buildTeamSetup(room.guest_club!),
-      seed: ["multiplayer-view", room.id].join(":"),
-    }),
-    [room.id, room.host_club, room.guest_club],
-  );
-  const sim = useMemo(() => new WorkerMatchView(setups.home, setups.away), [setups]);
-  const [quality] = useState<Quality>(() => detectQuality() as Quality);
-  const [camera, setCamera] = useState<CameraMode>("broadcast");
-  const [snap, setSnap] = useState({ minute: 0, hg: 0, ag: 0, finished: false });
-  const published = useRef(false);
-  const authoritativeResult = useRef(false);
-  const controllerRef = useRef<LiveMatchController | null>(null);
-  const publishRetry = useRef<number | null>(null);
-  const onlineRef = useRef(online);
-  const connection = getLiveRoomConnectionState(online);
-  onlineRef.current = online;
-
-  useEffect(() => {
-    const controller = createLiveMatchController({
-      ...setups,
-      view: sim,
-      onSnapshot: (view) => {
-        if (authoritativeResult.current) return;
-        setSnap({
-          minute: view.minute(),
-          hg: view.stats.home.goals,
-          ag: view.stats.away.goals,
-          finished: view.finished,
-        });
-      },
-      onFinished: (view) => {
-        if (authoritativeResult.current) return;
-        setSnap({
-          minute: view.minute(),
-          hg: view.stats.home.goals,
-          ag: view.stats.away.goals,
-          finished: true,
-        });
-      },
-    });
-    controllerRef.current = controller;
-    controller.pause(document.hidden || !onlineRef.current);
-    const onVisibility = () => controller.pause(document.hidden || !onlineRef.current);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      controller.dispose();
-      controllerRef.current = null;
-    };
-  }, [setups, sim]);
-
-  useEffect(() => {
-    if (!online || !isHost || !snap.finished || published.current) return;
-    let disposed = false;
-    let attempts = 0;
-    const publish = async () => {
-      published.current = true;
-      let retryReason: string | null = null;
-      try {
-        const { finishMatchRoom } = await import("@/lib/multiplayer.functions");
-        const result = await finishMatchRoom({ data: { roomId: room.id } });
-        if (result.ok || disposed) return;
-        retryReason = result.reason;
-      } catch (error) {
-        if (disposed) return;
-        reportSilent("multiplayer.operation", error, {
-          classification: "fatal",
-          feature: "rooms",
-          phase: "finish",
-          dedupeKey: "room-finish",
-        });
-      }
-      published.current = false;
-      if (attempts++ < 4) {
-        const retryDelay = retryReason === "settling" ? MATCH_SETTLEMENT_LEASE_MS + 1000 : 3000;
-        publishRetry.current = window.setTimeout(() => {
-          publishRetry.current = null;
-          if (!disposed && !published.current) void publish();
-        }, retryDelay);
-      }
-    };
-    void publish();
-    return () => {
-      disposed = true;
-      if (publishRetry.current !== null) {
-        window.clearTimeout(publishRetry.current);
-        publishRetry.current = null;
-      }
-      // A request may still be resolving while the browser goes offline. Let a
-      // fresh effect retry after reconnection; the server-side settling claim
-      // remains the single authority if the earlier request also reaches it.
-      published.current = false;
-    };
-  }, [online, snap.finished, isHost, room.id]);
-
-  useEffect(() => {
-    if (authoritativeResult.current) return;
-    controllerRef.current?.pause(connection.pausePresentation || document.hidden);
-  }, [connection.pausePresentation]);
-
-  useEffect(() => {
-    if (room.status !== "done") return;
-    authoritativeResult.current = true;
-    controllerRef.current?.pause(true);
-
-    const state = room.state;
-    if (typeof state !== "object" || state === null || Array.isArray(state)) return;
-    const homeGoals = state["hg"];
-    const awayGoals = state["ag"];
-    if (
-      typeof homeGoals !== "number" ||
-      !Number.isInteger(homeGoals) ||
-      typeof awayGoals !== "number" ||
-      !Number.isInteger(awayGoals)
-    ) {
-      return;
-    }
-    setSnap({ minute: room.minute, hg: homeGoals, ag: awayGoals, finished: true });
-  }, [room.minute, room.state, room.status]);
-
-  const home = CLUBS[room.host_club]!;
-  const away = CLUBS[room.guest_club!]!;
-
-  return (
-    <main className="relative h-[100dvh] w-full overflow-hidden bg-background">
-      <Stadium3D sim={sim} mode={camera} quality={quality} />
-      <h1 className="sr-only">
-        Multiplayer: {home.name} x {away.name}
-      </h1>
-      <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-3">
-        <div className="flex w-full max-w-md items-center gap-2 rounded-2xl border border-white/12 bg-black/70 px-3 py-2 backdrop-blur-xl">
-          <Crest club={home} size={26} detail="simple" />
-          <span className="font-display text-base text-white">{home.short}</span>
-          <span className="mx-auto font-display text-2xl tabular-nums text-white">
-            {snap.hg} <span className="text-white/35">:</span> {snap.ag}
-          </span>
-          <span className="font-display text-base text-white">{away.short}</span>
-          <Crest club={away} size={26} detail="simple" />
-          <span className="ml-1 rounded-md bg-primary px-2 py-0.5 font-display text-xs tabular-nums text-primary-foreground">
-            {snap.minute}'
-          </span>
-        </div>
-      </div>
-      {connection.notice ? (
-        <div
-          role="status"
-          aria-live="assertive"
-          className="absolute inset-0 z-30 grid place-items-center bg-background/85 px-5 text-center backdrop-blur-sm"
-        >
-          <div className="max-w-sm rounded-2xl border border-amber-400/30 bg-black/70 p-6 shadow-2xl">
-            <WifiOff className="mx-auto mb-3 text-amber-300" size={28} aria-hidden="true" />
-            <h2 className="font-display text-lg uppercase tracking-wide text-white">
-              {connection.notice.title}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-white/70">{connection.notice.detail}</p>
-          </div>
-        </div>
-      ) : null}
-      <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full border border-white/12 bg-black/70 p-1.5 backdrop-blur-xl">
-        <button
-          onClick={() =>
-            setCamera((c) =>
-              c === "broadcast" ? "tactical" : c === "tactical" ? "fan" : "broadcast",
-            )
-          }
-          className="rounded-full px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white/80"
-        >
-          Câmera
-        </button>
-        <button
-          onClick={onExit}
-          disabled={!online}
-          className="rounded-full bg-white/15 px-4 py-1.5 font-display text-xs uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {!online ? "Reconectando" : snap.finished ? "Encerrar" : "Abandonar"}
-        </button>
-      </div>
-    </main>
   );
 }

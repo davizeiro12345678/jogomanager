@@ -1,3 +1,4 @@
+import { nullPrototypeRecord } from "./save-record";
 import { evaluateAchievements } from "./achievements";
 import { processCups } from "./career-cups";
 import { applyWeeklyDevelopment } from "./career-development";
@@ -81,9 +82,9 @@ export function advanceRound(
   let squadAfterMatch = state.players;
   const liveNews: NewsItem[] = [];
   if (performances.length) {
-    squadAfterMatch = { ...state.players };
+    const roster = new Map(Object.entries(state.players));
     for (const perf of performances) {
-      const p = squadAfterMatch[perf.pid];
+      const p = roster.get(perf.pid);
       if (!p) continue;
       const q = {
         ...p,
@@ -127,8 +128,9 @@ export function advanceRound(
           body: `${q.name} será desfalque por aproximadamente ${perf.injuryWeeks} rodada(s).`,
         });
       }
-      squadAfterMatch[perf.pid] = q;
+      roster.set(perf.pid, q);
     }
+    squadAfterMatch = nullPrototypeRecord(roster);
   }
 
   // mecânicas semanais sobre o elenco (quem tem dado ao vivo não entra no sorteio)

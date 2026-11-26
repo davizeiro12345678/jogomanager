@@ -3,9 +3,7 @@
  * efeito no elenco e na diretoria, e a rodada é resolvida. Momentos marcantes
  * abrem cenas 3D (treino, vestiário, sala de troféus, comissão técnica).
  */
-import { createFileRoute } from "@tanstack/react-router";
-
-import { CoachCareerPage } from "@/pages/carreira";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/carreira")({
   ssr: false,
@@ -31,5 +29,8 @@ export const Route = createFileRoute("/carreira")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: CoachCareerPage,
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/carreira"), "CoachCareerPage"),
 });

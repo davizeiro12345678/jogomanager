@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { createNoise2D } from "simplex-noise";
-import { turfDetailTextures, retainTurfDetail } from "./turf-detail";
+import { turfDetailTextures } from "./turf-detail";
 import { OwnedTextureCache } from "@/game/owned-texture-cache";
 
 /**
@@ -315,11 +315,9 @@ const _rough = new OwnedTextureCache<MowPattern>(1);
 export function retainGrassMaps(albedo: THREE.Texture | null, roughness: THREE.Texture | null) {
   const releaseAlbedo = _albedo.retain(albedo);
   const releaseRoughness = _rough.retain(roughness);
-  const releaseDetail = retainTurfDetail();
   return () => {
     releaseAlbedo();
     releaseRoughness();
-    releaseDetail();
   };
 }
 

@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
-import { WorkerMatchView, snapshotMatchPacket } from "./live-match";
+import { WorkerMatchView, snapshotMatch, snapshotMatchPacket } from "./live-match";
+import type { PlayerAction } from "./animation";
 import {
   MATCH_PLAYER_COUNT,
   PLAYER_STATE_STRIDE,
   actionCode,
+  actionFromByte,
   applyLivePlayerBuffer,
   createLivePlayerBuffer,
   createLivePlayerMetadata,
@@ -33,6 +35,21 @@ describe("live match transferable buffers", () => {
     expect(encoded.states).toHaveLength(MATCH_PLAYER_COUNT * PLAYER_STATE_STRIDE);
     expect(encoded.states[10]).toBe(actionCode(players[0]!.action));
     expect(createLivePlayerMetadata(players)).toHaveLength(MATCH_PLAYER_COUNT);
+  });
+
+  it("preserves replay action bytes and ignores unknown actions", () => {
+    const actions = [
+      [0, null],
+      [1, "shot"],
+      [14, "pass"],
+      [42, "elastico"],
+    ] as const;
+    for (const [code, action] of actions) {
+      expect(actionCode(action)).toBe(code);
+      expect(actionFromByte(code)).toBe(action);
+    }
+    expect(actionCode("constructor" as PlayerAction)).toBe(0);
+    expect(actionFromByte(255)).toBeNull();
   });
 
   it("rejects inconsistent ownership buffers and preserves player identity on apply", () => {
@@ -82,6 +99,38 @@ describe("live match transferable buffers", () => {
     pool.release(third);
     pool.release(first);
     expect(pool.available()).toBe(3);
+  });
+
+  it("never clones an unused player object when building a transferable packet", () => {
+    const sim = createPlayers();
+    let extraReads = 0;
+    Object.defineProperty(sim.players[0]!, "fixtureOnly", {
+      enumerable: true,
+      get() {
+        extraReads += 1;
+        return 1;
+      },
+    });
+    const packet = snapshotMatchPacket(sim, 1);
+    expect(packet.players.positions.byteLength).toBe(
+      createLivePlayerBuffer(sim.players).positions.byteLength,
+    );
+    expect(extraReads).toBe(0);
+  });
+
+  it("copies every declared player field and never aliases a mutable player snapshot", () => {
+    const sim = createPlayers();
+    const original = sim.players.map((p) => ({ ...p }));
+    const a = snapshotMatch(sim, 1);
+    expect(a.players).toStrictEqual(original);
+    for (let i = 0; i < 120; i++) sim.step(1 / 30, 6);
+    const b = snapshotMatch(sim, 2);
+    expect(b.players).toStrictEqual(sim.players.map((p) => ({ ...p })));
+    expect(a.players).toStrictEqual(original);
+    expect(a.players[0]).not.toBe(b.players[0]);
+    expect(b.players[0]).not.toBe(sim.players[0]);
+    expect(a.events).toBeDefined();
+    expect(Object.hasOwn(snapshotMatch(sim, 3, undefined, false), "events")).toBe(false);
   });
 
   it("applies three consecutive packets while retaining only two for interpolation", () => {

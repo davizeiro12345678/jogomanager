@@ -2,7 +2,7 @@
 import { AthleteCloth } from "@/game/athlete-cloth";
 import { kitTextureFor } from "@/game/graphics/kit-atlas";
 import { useMatchSurface } from "@/game/graphics/surface-context-state";
-import type { Kit } from "@/game/kits";
+import { retainKitTexture, type Kit } from "@/game/kits";
 import { matchRigSegments } from "@/game/match-rig-detail";
 import { isCoarsePointer } from "@/game/device";
 import {
@@ -12,10 +12,11 @@ import {
 } from "@/game/player-materials";
 import type { LodLevel, PlayerLook, Proportions } from "@/game/player-model";
 import { buildRigSkin, rebindRigSkinMaterials, type RigSkin } from "@/game/rig-skin";
+import { rigRetainedBytes, type MatchRigPool, type PooledMatchRig } from "@/game/match-rig-pool";
 import type { SimPlayer } from "@/game/sim";
 import { requestKtx2 } from "@/game/textures/ktx2";
 import type React from "react";
-import { createElement, useEffect, useLayoutEffect, useMemo } from "react";
+import { createElement, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Quality } from "./player-rig-contract";
 
@@ -31,9 +32,10 @@ interface RigMeshInputs {
   hi: boolean;
   P: Proportions;
   jerseyInk: string;
-  player: Pick<SimPlayer, "x" | "z">;
+  player: Pick<SimPlayer, "x" | "z" | "id">;
   shadows: boolean;
   clothPhysics: boolean;
+  rigPool?: MatchRigPool | undefined;
   painted: React.RefObject<boolean>;
   lodState: React.RefObject<LodLevel | null>;
   castState: React.RefObject<boolean | null>;
@@ -57,6 +59,7 @@ export function usePlayerRigMeshes({
   player,
   shadows,
   clothPhysics,
+  rigPool,
   painted,
   lodState,
   castState,
@@ -93,34 +96,130 @@ export function usePlayerRigMeshes({
   // por peça mesclada (~53). A matriz de bind é a posição do atleta, porque
   // ossos e malhas são filhos do mesmo grupo raiz. Reconstruído só quando
   // aparência ou qualidade mudam.
-  const skin = useMemo<RigSkin>(
-    () =>
-      buildRigSkin(
-        {
-          P,
-          look,
-          segs: { radial: segs.radial, cap: segs.cap },
-          hi,
-          portrait,
-          mats,
-          jerseyInk,
-          handR: look.gloves ? P.handR * 1.25 : P.handR,
-          handMat: look.gloves ? mats.glove : mats.skin,
+  const createSkin = () =>
+    buildRigSkin(
+      {
+        P,
+        look,
+        segs: { radial: segs.radial, cap: segs.cap },
+        hi,
+        portrait,
+        mats,
+        jerseyInk,
+        handR: look.gloves ? P.handR * 1.25 : P.handR,
+        handMat: look.gloves ? mats.glove : mats.skin,
+      },
+      [player.x, 0, player.z],
+    );
+  const buildCurrent = useRef(createSkin);
+  buildCurrent.current = () => {
+    const skin = createSkin();
+    // Prepare the retained immutable morph buffers before applying the dormant
+    // byte budget. Mounted owners construct their own dynamics and bindings.
+    new AthleteCloth(skin, P, hi && clothPhysics);
+    return skin;
+  };
+  const poolKey = JSON.stringify([
+    player.id,
+    quality,
+    portrait,
+    segs.radial,
+    segs.cap,
+    hi,
+    jerseyInk,
+    clothPhysics,
+    look,
+    P,
+    kit,
+    tex?.uuid,
+  ]);
+  const [pooled, setPooled] = useState<{
+    pool: MatchRigPool;
+    key: string;
+    resource: PooledMatchRig;
+  } | null>(null);
+  const matsCurrent = useRef(mats);
+  matsCurrent.current = mats;
+  useLayoutEffect(() => {
+    if (!rigPool) return undefined;
+    const lease = rigPool.acquire(poolKey, () => {
+      const skin = buildCurrent.current();
+      let primary = matsCurrent.current;
+      let release = retainPlayerMaterials(primary);
+      const atlas = ("map" in primary.jersey ? primary.jersey.map : null) as typeof tex;
+      const releaseKit = retainKitTexture(atlas);
+      const kitImage = atlas?.image as { width?: number; height?: number } | undefined;
+      const kitBytes = Math.max(0, (kitImage?.width ?? 0) * (kitImage?.height ?? 0) * 4);
+      return {
+        value: {
+          skin,
+          retainMaterials(next) {
+            if (next === primary) return;
+            const nextRelease = retainPlayerMaterials(next);
+            release();
+            primary = next;
+            release = nextRelease;
+          },
         },
-        [player.x, 0, player.z],
-      ),
+        estimatedBytes: rigRetainedBytes(skin) + kitBytes,
+        dispose: () => {
+          skin.dispose();
+          release();
+          releaseKit();
+        },
+      };
+    });
+    setPooled({ pool: rigPool, key: poolKey, resource: lease.value });
+    return () => {
+      // Returning a skeleton to the pool must never move it out of another
+      // still-mounted actor. R3F primitives remain owned by this lifecycle.
+      const meshes = skinnedMeshes.current.slice();
+      queueMicrotask(() => {
+        // Keep the old lease exclusive through a StrictMode effect replay and
+        // the current commit. A new owner can only take it after detachment.
+        lease.value.skin.root.removeFromParent();
+        for (const mesh of meshes) mesh.removeFromParent();
+        lease.release();
+      });
+    };
+  }, [rigPool, poolKey, skinnedMeshes]);
+  const fallbackSkin = useMemo<RigSkin | null>(
+    () =>
+      rigPool
+        ? null
+        : buildRigSkin(
+            {
+              P,
+              look,
+              segs: { radial: segs.radial, cap: segs.cap },
+              hi,
+              portrait,
+              mats,
+              jerseyInk,
+              handR: look.gloves ? P.handR * 1.25 : P.handR,
+              handMat: look.gloves ? mats.glove : mats.skin,
+            },
+            [player.x, 0, player.z],
+          ),
     // `player.x/z` ficam de propósito: a matriz de bind defasada é compensada
     // pelo three.js a cada quadro, e incluí-los aqui reconstruiria as 18 malhas
     // do atleta a cada movimento.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [P, look, kit, segs.radial, segs.cap, hi, portrait, jerseyInk],
+    [P, look, kit, segs.radial, segs.cap, hi, portrait, jerseyInk, rigPool],
   );
-  useEffect(() => () => skin.dispose(), [skin]);
+  const pooledResource =
+    rigPool && pooled?.pool === rigPool && pooled.key === poolKey ? pooled.resource : null;
+  const skin = rigPool ? (pooledResource?.skin ?? null) : fallbackSkin;
+  useEffect(() => {
+    if (!fallbackSkin) return undefined;
+    return () => fallbackSkin.dispose();
+  }, [fallbackSkin]);
   const cloth = useMemo(
-    () => new AthleteCloth(skin, P, hi && clothPhysics),
+    () => (skin ? new AthleteCloth(skin, P, hi && clothPhysics) : null),
     [skin, P, hi, clothPhysics],
   );
   useLayoutEffect(() => {
+    if (!skin) return;
     painted.current = false;
     lodState.current = null;
     castState.current = null;
@@ -135,6 +234,7 @@ export function usePlayerRigMeshes({
     nearMeshes.current = [];
     bootMeshes.current = [];
     skinnedMeshes.current = [];
+    if (!skin) return [];
     return skin.groups.map((group, index) => {
       const mesh = new THREE.SkinnedMesh(group.geometry, group.material);
       // The portrait camera can sit beside an overhead glove, far outside
@@ -165,9 +265,12 @@ export function usePlayerRigMeshes({
   // Material maps/surface steps change far more often than body geometry.
   // Rebind their stable slots in place and keep the mesh and skeleton objects.
   useLayoutEffect(() => {
+    if (!skin) return;
+    pooledResource?.retainMaterials(mats);
     rebindRigSkinMaterials(skin, skinnedMeshes.current, mats);
-  }, [skin, mats, drawMeshes, skinnedMeshes]);
+  }, [skin, mats, drawMeshes, skinnedMeshes, pooledResource]);
   useLayoutEffect(() => {
+    if (!cloth) return;
     for (const mesh of skinnedMeshes.current) {
       cloth.bind(mesh);
       if (!hi || !clothPhysics) mesh.morphTargetInfluences?.fill(0);

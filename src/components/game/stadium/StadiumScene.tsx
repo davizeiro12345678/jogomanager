@@ -1,13 +1,14 @@
-import { AdaptiveEvents, Environment, Lightformer } from "@react-three/drei";
+import { AdaptiveEvents } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
-import { FrameProbe } from "../FrameProbe";
+import { FrameProbe } from "../LazyFrameProbe";
 import { useQualityPressure, useRuntimeSceneBudget } from "../runtime-budget-context";
 import { MatchPlayers } from "../players/MatchPlayers";
 import { PostFX } from "../post/LazyPostFX";
 import type { GpuBackend } from "../renderer";
 import { StadiumProps } from "./Props";
 import { StaticBatch } from "./StaticBatch";
+import { StadiumEnvironment } from "./StadiumEnvironment";
 import { Ball } from "./StadiumBall";
 import { Stands } from "./StadiumStructure";
 import { Pitch } from "./StadiumTurf";
@@ -35,6 +36,7 @@ import { colorClash, kitFor } from "@/game/kits";
 import { captureGoalFocus, type GoalFocus } from "@/game/goal-choreography";
 import type { GradeWeather } from "@/game/graphics/grade";
 import { matchLighting } from "@/game/match-lighting";
+import { shadowMapSizeFor } from "@/game/graphics/shadow-map-budget";
 import { matchLook, type Weather } from "@/game/matchday";
 import type { SimView } from "@/game/sim-contracts";
 import { useVisual } from "@/game/visual-settings";
@@ -49,6 +51,8 @@ export function StadiumScene({
   postIntensity,
   supporters,
   adaptive,
+  measurementKey,
+  suspended,
 }: {
   sim: SimView;
   mode: CameraMode;
@@ -59,6 +63,8 @@ export function StadiumScene({
   postIntensity: number;
   supporters?: SupporterMatchday | undefined;
   adaptive: boolean;
+  measurementKey?: string;
+  suspended?: boolean;
 }) {
   useFrame(() => {
     const interpolated = sim as SimView & { renderTick?: (now?: number) => void };
@@ -112,6 +118,7 @@ export function StadiumScene({
 
   const lighting = matchLighting(time, look.weather, quality === "baixa");
   const sunColor = lighting.keyColor;
+  const shadowResolution = shadowMapSizeFor(quality, pressure);
   const visualBall = presentationBall(sim);
 
   return (
@@ -120,54 +127,20 @@ export function StadiumScene({
       {/* Profundidade por horário: de noite a névoa fecha antes e dá volume às luzes */}
       <fog attach="fog" args={[lighting.sky, lighting.fogNear, lighting.fogFar]} />
       <AdaptiveEvents />
-      <FrameProbe quality={quality} adaptive={adaptive} />
+      <FrameProbe
+        quality={quality}
+        adaptive={adaptive}
+        {...(measurementKey === undefined ? {} : { measurementKey })}
+        {...(suspended === undefined ? {} : { suspended })}
+      />
 
       {/* IBL local (sem HDR remoto): reflexos coerentes em traves, bola e kits */}
-      {quality !== "baixa" ? (
-        <Environment
-          resolution={Math.round((quality === "alta" ? 384 : 192) * budget.textureScale)}
-          frames={1}
-        >
-          <color attach="background" args={[lighting.sky]} />
-          <Lightformer
-            intensity={
-              quality === "media" &&
-              time === "dia" &&
-              (look.weather === "seco" || look.weather === "molhado")
-                ? 1.75
-                : lighting.environmentKey
-            }
-            color={sunColor}
-            position={[0, 24, 0]}
-            rotation={[Math.PI / 2, 0, 0]}
-            scale={[60, 60, 1]}
-          />
-          <Lightformer
-            intensity={time === "noite" ? 2.4 : 1.2}
-            color="#dceaff"
-            position={[-30, 14, 0]}
-            rotation-y={Math.PI / 2}
-            scale={[60, 8, 1]}
-          />
-          <Lightformer
-            intensity={time === "noite" ? 2.4 : 1.2}
-            color="#dceaff"
-            position={[30, 14, 0]}
-            rotation-y={-Math.PI / 2}
-            scale={[60, 8, 1]}
-          />
-          <Lightformer
-            intensity={0.8}
-            color={
-              time === "entardecer" && look.weather !== "chuva" && look.weather !== "neve"
-                ? "#ff9b5c"
-                : "#d5e3ef"
-            }
-            position={[0, 6, -40]}
-            scale={[60, 8, 1]}
-          />
-        </Environment>
-      ) : null}
+      <StadiumEnvironment
+        time={time}
+        weather={look.weather}
+        quality={quality}
+        textureScale={budget.textureScale}
+      />
 
       {/* The low profile has no IBL cube. Compensate with existing lights,
           keeping kit/grass readable without allocating environment targets. */}
@@ -186,13 +159,7 @@ export function StadiumScene({
         intensity={lighting.keyIntensity}
         color={sunColor}
         castShadow={shadows && budget.shadows}
-        shadow-mapSize={
-          quality === "alta" && pressure < 5
-            ? [2048, 2048]
-            : quality === "media"
-              ? [1024, 1024]
-              : [512, 512]
-        }
+        shadow-mapSize={[shadowResolution, shadowResolution]}
         shadow-bias={-0.00014}
         shadow-normalBias={quality === "alta" ? 0.014 : 0.03}
         shadow-radius={quality === "alta" ? 2.4 : 1.2}

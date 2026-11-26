@@ -9,18 +9,23 @@ export type SeatTransformRequest = {
   module: WebAssembly.Module;
   memory: WebAssembly.Memory;
   lane: number;
+  lanes: 2 | 4;
   args: [number, number, number, number, number, number, number];
 };
 
-/** Each worker owns one exact half of a fixed non-overlapping shared arena.
- * Validate the envelope before instantiation or passing i32 offsets to WASM. */
+/** Each worker owns one disjoint slice of a fixed shared arena.
+ * The worker count is pinned in every request and checked before WASM writes. */
 export function validSeatTransformRequest(value: unknown): value is SeatTransformRequest {
   if (!value || typeof value !== "object" || typeof SharedArrayBuffer === "undefined") return false;
   const request = value as Partial<SeatTransformRequest>;
   if (
     !(request.module instanceof WebAssembly.Module) ||
     !(request.memory instanceof WebAssembly.Memory) ||
-    (request.lane !== 0 && request.lane !== 1) ||
+    (request.lanes !== 2 && request.lanes !== 4) ||
+    typeof request.lane !== "number" ||
+    !Number.isInteger(request.lane) ||
+    request.lane < 0 ||
+    request.lane >= request.lanes ||
     !Array.isArray(request.args) ||
     request.args.length !== 7 ||
     request.args.some((arg) => !Number.isSafeInteger(arg) || arg < 0)
@@ -42,8 +47,9 @@ export function validSeatTransformRequest(value: unknown): value is SeatTransfor
     colors === matrices + count * 64 &&
     skins === colors + count * 12 &&
     styles === skins + count * 12 &&
-    start === Math.floor((count * request.lane) / 2) &&
-    end === Math.floor((count * (request.lane + 1)) / 2) &&
+    start === Math.floor((count * request.lane) / request.lanes) &&
+    end === Math.floor((count * (request.lane + 1)) / request.lanes) &&
+    start < end &&
     bytes <= arena.byteLength &&
     arena.byteLength <= SEAT_ARENA_MAX_BYTES
   );

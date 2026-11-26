@@ -11,7 +11,9 @@ export function safeAuthNext(value: unknown): string | undefined {
   try {
     const base = "https://auth.invalid";
     const url = new URL(value, base);
-    return url.origin === base ? `${url.pathname}${url.search}${url.hash}` : undefined;
+    // The normalized pathname will be used as a fresh navigation target.
+    if (url.origin !== base || url.pathname.startsWith("//")) return undefined;
+    return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return undefined;
   }

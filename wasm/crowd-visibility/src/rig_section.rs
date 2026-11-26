@@ -33,30 +33,40 @@ pub fn generate_rig_section(rings: &[f64], radial: u32, roundness: f64, caps: u3
         Vec::with_capacity((rows * (radial as usize + 1) + cap_count * (radial as usize + 2)) * 5);
     let bottom = rings[0];
     let span = (rings[(rows - 1) * 4] - bottom).max(0.001);
-    for row in 0..rows {
-        let offset = row * 4;
-        for side in 0..=radial {
-            let u = side as f64 / radial as f64;
-            let angle = u * std::f64::consts::TAU;
-            let s = angle.sin();
-            let c = angle.cos();
-            let signed_s = if s == 0.0 {
+    // Rings share their angular profile. The ABI bounds radial to 128, so a
+    // fixed stack buffer avoids repeating sin/cos/powf and another heap owner.
+    let mut angular = [[0.0_f64; 3]; 129];
+    for side in 0..=radial {
+        let u = side as f64 / radial as f64;
+        let angle = u * std::f64::consts::TAU;
+        let s = angle.sin();
+        let c = angle.cos();
+        angular[side as usize] = [
+            if s == 0.0 {
                 s
             } else {
                 s.signum() * s.abs().powf(roundness)
-            };
-            let signed_c = if c == 0.0 {
+            },
+            if c == 0.0 {
                 c
             } else {
                 c.signum() * c.abs().powf(roundness)
-            };
+            },
+            u,
+        ];
+    }
+    for row in 0..rows {
+        let offset = row * 4;
+        let v = (rings[offset] - bottom) / span;
+        for side in 0..=radial {
+            let [signed_s, signed_c, u] = angular[side as usize];
             write(
                 &mut output,
                 signed_s * rings[offset + 1],
                 rings[offset],
                 signed_c * rings[offset + 2] + rings[offset + 3],
                 u,
-                (rings[offset] - bottom) / span,
+                v,
             );
         }
     }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validSeatTransformRequest, type SeatTransformRequest } from "./seat-transform-contract";
 
-function request(lane = 0, count = 513): SeatTransformRequest {
+function request(lane = 0, count = 513, lanes: 2 | 4 = 2): SeatTransformRequest {
   const matrices = 64 + count * 72;
   const colors = matrices + count * 64;
   const skins = colors + count * 12;
@@ -10,9 +10,10 @@ function request(lane = 0, count = 513): SeatTransformRequest {
     module: new WebAssembly.Module(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])),
     memory: new WebAssembly.Memory({ initial: 2, maximum: 512, shared: true }),
     lane,
+    lanes,
     args: [
-      Math.floor((count * lane) / 2),
-      Math.floor((count * (lane + 1)) / 2),
+      Math.floor((count * lane) / lanes),
+      Math.floor((count * (lane + 1)) / lanes),
       64,
       matrices,
       colors,
@@ -27,6 +28,15 @@ describe("shared seat WASM offset contract", () => {
     expect(validSeatTransformRequest(request(0))).toBe(true);
     expect(validSeatTransformRequest(request(1))).toBe(true);
   });
+  it("accepts four deterministic partitions with odd seat counts", () => {
+    for (let lane = 0; lane < 4; lane++)
+      expect(validSeatTransformRequest(request(lane, 513, 4))).toBe(true);
+    expect(validSeatTransformRequest(request(4, 513, 4))).toBe(false);
+    const forged = request(2, 513, 4);
+    forged.args[0] = 0;
+    expect(validSeatTransformRequest(forged)).toBe(false);
+  });
+
   it("rejects overlapping regions, out-of-bounds writes and forged lane ranges", () => {
     for (const [field, value] of [
       [0, 1],

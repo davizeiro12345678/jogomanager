@@ -14,7 +14,9 @@ permissions:
 
 concurrency:
   group: match3d-visual-${{ github.ref }}
-  cancel-in-progress: true
+  # Finish the running base/candidate pair. GitHub coalesces pending revisions
+  # in this group; each artifact still certifies only its own SHA.
+  cancel-in-progress: false
 
 jobs:
   evidence:

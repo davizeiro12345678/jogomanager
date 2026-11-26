@@ -2,6 +2,7 @@
 export const ANALISE_DE_PARTIDA_DE_FUTEBOL_PATH = "/analise-de-partida-de-futebol";
 export const COMPARATIVO_JOGOS_MANAGER_PATH = "/comparativo-jogos-manager";
 export const CONTATO_PATH = "/contato";
+export const MODERATION_ANCHOR = "moderacao";
 export const CRIADOR_PATH = "/criador";
 export const DICAS_DE_GESTAO_PATH = "/dicas-de-gestao";
 export const GLOSSARIO_DO_FUTEBOL_PATH = "/glossario-do-futebol";

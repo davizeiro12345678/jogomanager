@@ -17,6 +17,7 @@ import { postfxLookupAssets } from "./scripts/postfx-lookup-assets.ts";
 import { modulePreloadPlan } from "./scripts/module-preload-plan.ts";
 import { compactShaderSource } from "./scripts/compact-shader-source.ts";
 import { resolveBuildCommit } from "./src/lib/release-identity.ts";
+import { resolveDevAllowedHosts } from "./src/lib/dev-allowed-hosts.ts";
 
 // Load non-VITE_ env vars into process.env for server routes (email, webhooks).
 // These are NOT injected into the client bundle.
@@ -93,9 +94,12 @@ const projectConfig = defineConfig({
           compatibility_date: "2026-10-02",
           workers_dev: true,
           keep_vars: true,
-          observability: { enabled: true },
+          observability: { enabled: true, redact_query_string: true },
           // Keep Worker Previews isolated from the production D1 database.
           previews: {
+            // This flag is scoped to isolated Workers Previews. The top-level
+            // production Worker never receives it by default.
+            vars: { PUBLIC_HTML_EDGE_CACHE_ENABLED: "1" },
             d1_databases: [
               {
                 binding: "SPORTS_DB",
@@ -144,11 +148,11 @@ const projectConfig = defineConfig({
     // Module workers retain dynamic import boundaries. IIFE output inlined
     // Rapier's WASM and season management into every match worker startup.
     worker: { format: "es", plugins: () => [rapierWasmAsset()] },
-    // O preview do sandbox é servido num host *.e2b.app gerado por sessão; sem
-    // liberar a lista de hosts o Vite responde 403 e o jogo não carrega.
+    // Keep sandbox previews reachable, but require their exact session hostname.
+    // Set PFM_DEV_ALLOWED_HOSTS before startup for an authorized preview.
     server: {
       host: "0.0.0.0",
-      allowedHosts: true,
+      allowedHosts: resolveDevAllowedHosts(process.env["PFM_DEV_ALLOWED_HOSTS"]),
       watch: { ignored: ["**/verification/**", "**/dist-benchmark/**", "**/.cloudflare/**"] },
     },
     // The authoritative fallback may run on the browser's main thread too.

@@ -1,0 +1,937 @@
+{
+  "result": {
+    "lints": [
+      {
+        "name": "rls_enabled_no_policy",
+        "title": "RLS Enabled No Policy",
+        "level": "INFO",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+        "count": 22,
+        "findings": [
+          {
+            "detail": "Table \\`auth_safety.phone_otp_attempts\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "phone_otp_attempts",
+              "type": "table",
+              "schema": "auth_safety"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`auth_safety.resend_delivery_events\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "resend_delivery_events",
+              "type": "table",
+              "schema": "auth_safety"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`backup_restore.batches\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "batches",
+              "type": "table",
+              "schema": "backup_restore"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`backup_restore.runs\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "runs",
+              "type": "table",
+              "schema": "backup_restore"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`data_quality.player_identity_corrections\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "player_identity_corrections",
+              "type": "table",
+              "schema": "data_quality"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`data_quality.player_role_corrections\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "player_role_corrections",
+              "type": "table",
+              "schema": "data_quality"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`football_import_private.jobs\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "jobs",
+              "type": "table",
+              "schema": "football_import_private"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`football_import_private.receipts\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "receipts",
+              "type": "table",
+              "schema": "football_import_private"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`football_import_private.settings\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "settings",
+              "type": "table",
+              "schema": "football_import_private"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`oracle_bridge_private.config\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "config",
+              "type": "table",
+              "schema": "oracle_bridge_private"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`oracle_bridge_private.outbox\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "outbox",
+              "type": "table",
+              "schema": "oracle_bridge_private"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`private_performance.runtime_metrics\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "runtime_metrics",
+              "type": "table",
+              "schema": "private_performance"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`private_performance.top_query_snapshots\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "top_query_snapshots",
+              "type": "table",
+              "schema": "private_performance"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.api_football_data\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "api_football_data",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.api_football_import_progress\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "api_football_import_progress",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.api_football_page_progress\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "api_football_page_progress",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.api_football_quota_usage\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "api_football_quota_usage",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.api_football_season_coverage\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "api_football_season_coverage",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.checkout_session_owners\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "checkout_session_owners",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.coupon_eligible_users\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "coupon_eligible_users",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.payment_webhook_events\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "payment_webhook_events",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "Table \\`public.tech_telemetry_rate_limits\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "tech_telemetry_rate_limits",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          }
+        ]
+      },
+      {
+        "name": "pg_graphql_anon_table_exposed",
+        "title": "Public Can See Object in GraphQL Schema",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects tables, views, materialized views, and foreign tables that are visible in the GraphQL schema to anyone using your public anon key. Revoke `SELECT` from `anon` for objects that should not be discoverable before sign-in, and check lint 0027 for the matching signed-in-user exposure.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0026_pg_graphql_anon_table_exposed",
+        "count": 26,
+        "findings": [
+          {
+            "detail": "table `public.activity_rankings` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "activity_rankings",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.club_catalog_links` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "club_catalog_links",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.club_honours` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "club_honours",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.clubs` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "clubs",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.competition_seasons` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "competition_seasons",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.competitions` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "competitions",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.kits` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "kits",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_equipment` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_equipment",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_event_aliases` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_event_aliases",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_event_details` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_event_details",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_events` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_events",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "view `public.official_events_catalog` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_events_catalog",
+              "type": "view",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_leagues` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_leagues",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_media` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_media",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_players` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_players",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_seasons` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_seasons",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_teams` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_teams",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_venues` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "official_venues",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_career_clubs` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "player_career_clubs",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_honours` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "player_honours",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_identity_aliases` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "player_identity_aliases",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_season_stats` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "player_season_stats",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.players` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "players",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "view `public.players_catalog` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "players_catalog",
+              "type": "view",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.stadiums` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "stadiums",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.store_products` is visible in the GraphQL schema because the `anon` role can `SELECT` it. Revoke `SELECT` from `anon` if it should not be discoverable without signing in.",
+            "metadata": {
+              "name": "store_products",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          }
+        ]
+      },
+      {
+        "name": "pg_graphql_authenticated_table_exposed",
+        "title": "Signed-In Users Can See Object in GraphQL Schema",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects tables, views, materialized views, and foreign tables that are visible in the GraphQL schema to signed-in users. Revoke `SELECT` from `authenticated` for objects that signed-in users should not discover, and check lint 0026 for the matching public exposure.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0027_pg_graphql_authenticated_table_exposed",
+        "count": 48,
+        "findings": [
+          {
+            "detail": "table `public.activity_rankings` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "activity_rankings",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.careers` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "careers",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.chat_messages` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "chat_messages",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.chat_reports` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "chat_reports",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.club_catalog_links` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "club_catalog_links",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.club_honours` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "club_honours",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.clubs` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "clubs",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.competition_seasons` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "competition_seasons",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.competitions` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "competitions",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.coupon_redemptions` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "coupon_redemptions",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.entitlement_ledger` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "entitlement_ledger",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.kits` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "kits",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.match_rooms` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "match_rooms",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_equipment` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_equipment",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_event_aliases` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_event_aliases",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_event_details` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_event_details",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_events` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_events",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "view `public.official_events_catalog` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_events_catalog",
+              "type": "view",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_leagues` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_leagues",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_media` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_media",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_players` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_players",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_seasons` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_seasons",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_teams` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_teams",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.official_venues` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "official_venues",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_career_clubs` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_career_clubs",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_career_revisions` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_career_revisions",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_careers` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_careers",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_honours` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_honours",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_identity_aliases` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_identity_aliases",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_profiles` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_profiles",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.player_season_stats` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "player_season_stats",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.players` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "players",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "view `public.players_catalog` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "players_catalog",
+              "type": "view",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.profiles` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "profiles",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.purchase_payment_reviews` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "purchase_payment_reviews",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.push_subscriptions` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "push_subscriptions",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.stadiums` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "stadiums",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.store_products` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "store_products",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.subscriptions` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "subscriptions",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_achievements` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_achievements",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_blocks` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_blocks",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_boosts` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_boosts",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_cosmetic_grants` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_cosmetic_grants",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_entitlements` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_entitlements",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_equipped_cosmetics` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_equipped_cosmetics",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_purchases` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_purchases",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.user_wallet` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "user_wallet",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          },
+          {
+            "detail": "table `public.wallet_item_log` is visible in the GraphQL schema to signed-in users because the `authenticated` role can `SELECT` it. Revoke `SELECT` from `authenticated` if it should not be discoverable to every account.",
+            "metadata": {
+              "name": "wallet_item_log",
+              "type": "table",
+              "schema": "public"
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          }
+        ]
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Function `public.mutate_player_career(p_slot integer, p_expected_revision bigint, p_operation text, p_state jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/mutate_player_career`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "mutate_player_career",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_slot integer, p_expected_revision bigint, p_operation text, p_state jsonb",
+              "security_definer": true
+            },
+            "observed_at": "2026-11-08T23:09:57.785Z"
+          }
+        ]
+      }
+    ]
+  }
+}

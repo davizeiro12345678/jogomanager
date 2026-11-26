@@ -8,7 +8,6 @@
 //  e faz um travelling contínuo dentro da fala.
 // ============================================================================
 
-import { Environment, Lightformer } from "@react-three/drei";
 import { CinematicDirector as Director } from "./CinematicDirector";
 import { Canvas } from "@react-three/fiber";
 import {
@@ -18,6 +17,7 @@ import {
   startTransition,
   Suspense,
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
@@ -40,23 +40,33 @@ import {
   type CinematicSet,
 } from "@/game/cinematic-blocking";
 import { hashSeed } from "@/game/rng";
+import { cinematicArrivalLighting } from "@/game/cinematic-arrival-lighting";
 
 import type { CinematicCue } from "@/game/cinematic-cue";
 import { CinematicAtmosphere } from "./cinematic/CinematicAtmosphere";
+import { CinematicEnvironment } from "./cinematic/CinematicEnvironment";
 
 import { CinematicSpecialSet } from "./cinematic/CinematicSpecialSet";
 import { CinematicPortraitLight } from "./cinematic/CinematicPortraitLight";
 import { CinematicActor as Figure } from "./cinematic/CinematicActor";
 import { CinematicRuntime } from "./cinematic/CinematicRuntime";
-import { CinematicFrameProbe } from "./cinematic/CinematicFrameProbe";
+import { LazyCinematicFrameProbe } from "./cinematic/LazyCinematicFrameProbe";
 import { CinematicSetBatch, type CinematicBatchSnapshot } from "./cinematic/CinematicSetBatch";
 import { GraphicsBoundary } from "./GraphicsBoundary";
 import { Ktx2CanvasAssets } from "./Ktx2CanvasAssets";
 
 import { CinematicSetFinish } from "./cinematic/CinematicSetFinish";
 import { CinematicStoryDressing } from "./cinematic/CinematicStoryDressing";
-import { CinematicBusinessDressing } from "./cinematic/CinematicBusinessDressing";
+// Corporate boards are only needed for authored business cutscenes.
+// Keep the locale/artwork generator outside every other cinematic startup.
+const CinematicBusinessDressing = lazy(() =>
+  import("./cinematic/CinematicBusinessDressing").then((module) => ({
+    default: module.CinematicBusinessDressing,
+  })),
+);
 import { CinematicMotivatedLight } from "./cinematic/CinematicMotivatedLight";
+import { CinematicProgramWarmup } from "./cinematic/CinematicProgramWarmup";
+import { CinematicSetBoundary } from "./cinematic/CinematicSetCommit";
 import { resolveCinematicSetLoader } from "./cinematic/sets/registry";
 
 import {
@@ -119,6 +129,8 @@ function Stage({
   light = "neutra",
   festive = false,
   enhanced = true,
+  prepareHero,
+  warmupHost,
   onBatch,
   onUnavailable,
   transitionController,
@@ -141,6 +153,8 @@ function Stage({
   light?: LineLight;
   festive?: boolean;
   enhanced?: boolean;
+  prepareHero: boolean;
+  warmupHost: RefObject<HTMLDivElement | null>;
   onBatch?: ((snapshot: CinematicBatchSnapshot) => void) | undefined;
   onUnavailable?: (() => void) | undefined;
   transitionController: TransitionController;
@@ -150,6 +164,15 @@ function Stage({
     const loader = resolveCinematicSetLoader(kind);
     return loader ? lazy(loader) : null;
   }, [kind]);
+  const selectedSetIdentity = useMemo(
+    () => ({ set: SelectedSet, art, quality }),
+    [SelectedSet, art, quality],
+  );
+  const [committedSet, setCommittedSet] = useState<object | null>(null);
+  const selectedSetCommitted = useCallback(
+    () => setCommittedSet(selectedSetIdentity),
+    [selectedSetIdentity],
+  );
   useEffect(() => {
     if (!SelectedSet) onUnavailable?.();
   }, [SelectedSet, onUnavailable]);
@@ -157,13 +180,25 @@ function Stage({
   const tint = LINE_TINT[light];
   const warm = light === "neutra" ? base : tint.sky;
   const indoor = kind === "locker" || kind === "press" || kind === "office" || kind === "tunnel";
-  const amb = (indoor ? 0.34 : 0.5) * tint.amb;
+  const arrivalLight = cinematicArrivalLighting(kind, art);
+  const amb = (arrivalLight?.ambient ?? (indoor ? 0.34 : 0.5)) * tint.amb;
   // Existing fixtures retain their own detailed rigs. Every other authored
   // speaker receives one semantic overlay, shared by the camera resolver.
   const stagedActor = cinematicStageActorFor(art, speaker, festive);
   const residentSpeaker = stagedActor?.presence === "resident" ? stagedActor.role : null;
   const setScene = SelectedSet ? (
-    <Suspense fallback={<group />}>
+    <CinematicSetBoundary
+      onCommitted={selectedSetCommitted}
+      scenery={
+        art === "medical" || art === "gym" ? (
+          <CinematicSpecialSet
+            medical={art === "medical"}
+            primary={primary}
+            speaker={residentSpeaker}
+          />
+        ) : null
+      }
+    >
       <SelectedSet
         primary={primary}
         secondary={secondary}
@@ -171,7 +206,7 @@ function Stage({
         festive={festive}
         training={art === "training"}
       />
-    </Suspense>
+    </CinematicSetBoundary>
   ) : (
     <group />
   );
@@ -179,18 +214,24 @@ function Stage({
     <>
       <color
         attach="background"
-        args={[art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#101b29"]}
+        args={[
+          arrivalLight?.sky ?? (art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#101b29"),
+        ]}
       />
       <fog
         attach="fog"
         args={[
-          art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#0a1310",
+          arrivalLight?.fog ?? (art === "training" ? "#83a8ba" : indoor ? "#0b1017" : "#0a1310"),
           indoor ? 8 : 22,
           indoor ? 34 : 70,
         ]}
       />
       <ambientLight intensity={amb} color={warm} />
-      <hemisphereLight intensity={indoor ? 0.4 : 0.45} color="#dce8f4" groundColor="#30333a" />
+      <hemisphereLight
+        intensity={arrivalLight?.hemisphere ?? (indoor ? 0.4 : 0.45)}
+        color="#dce8f4"
+        groundColor={arrivalLight?.hemisphereGround ?? "#30333a"}
+      />
       {indoor ? (
         <>
           <directionalLight position={[0, 2.5, 6]} intensity={0.38} color="#e8f0f7" />
@@ -204,8 +245,8 @@ function Stage({
       <directionalLight
         castShadow
         position={[5, 11, 6]}
-        intensity={indoor ? 1.55 : 2.6}
-        color={light === "neutra" ? "#fff8f2" : warm}
+        intensity={arrivalLight?.keyIntensity ?? (indoor ? 1.55 : 2.6)}
+        color={arrivalLight?.keyColor ?? (light === "neutra" ? "#fff8f2" : warm)}
         shadow-mapSize={quality === "alta" ? [2048, 2048] : [1024, 1024]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.02}
@@ -224,13 +265,7 @@ function Stage({
         color={light === "neutra" ? "#d4e6ff" : tint.rim}
       />
       <CinematicMotivatedLight kind={kind} art={art} mood={mood} light={light} quality={quality} />
-      {enhanced && quality !== "baixa" && (
-        <Environment resolution={quality === "alta" ? 96 : 64} frames={1}>
-          <Lightformer position={[0, 6, 2]} scale={[10, 3, 1]} intensity={2.2} color={warm} />
-          <Lightformer position={[-6, 3, -4]} scale={[6, 4, 1]} intensity={1.1} color="#d6e5f4" />
-          <Lightformer position={[6, 3, -4]} scale={[6, 4, 1]} intensity={0.8} color="#e6dfd3" />
-        </Environment>
-      )}
+      {enhanced && quality !== "baixa" && <CinematicEnvironment quality={quality} warm={warm} />}
       <Director
         business={business}
         kind={kind}
@@ -253,13 +288,15 @@ function Stage({
       >
         {art !== "medical" && art !== "gym" && <CinematicSetFinish kind={kind} primary={primary} />}
         {business ? (
-          <CinematicBusinessDressing
-            business={business}
-            primary={primary}
-            secondary={secondary}
-            quality={quality}
-            language={language ?? "pt-BR"}
-          />
+          <Suspense fallback={<group />}>
+            <CinematicBusinessDressing
+              business={business}
+              primary={primary}
+              secondary={secondary}
+              quality={quality}
+              language={language ?? "pt-BR"}
+            />
+          </Suspense>
         ) : null}
         <CinematicStoryDressing
           kind={kind}
@@ -268,13 +305,6 @@ function Stage({
           secondary={secondary}
           quality={quality}
         />
-        {art === "medical" || art === "gym" ? (
-          <CinematicSpecialSet
-            medical={art === "medical"}
-            primary={primary}
-            speaker={residentSpeaker}
-          />
-        ) : null}
         {onUnavailable ? (
           <CinematicSetErrorBoundary key={kind} onUnavailable={onUnavailable}>
             {setScene}
@@ -283,30 +313,37 @@ function Stage({
           setScene
         )}
         {stagedActor?.presence === "overlay" ? (
-          <Figure
-            key={`speaker-${art}-${stagedActor.role}`}
-            x={stagedActor.mark[0]}
-            z={stagedActor.mark[1]}
-            color={
-              stagedActor.role === "captain" || stagedActor.role === "fan"
-                ? primary
-                : stagedActor.role === "referee"
-                  ? "#222d36"
-                  : secondary
-            }
-            shorts="#19232b"
-            seed={hashSeed(`cinematic-speaker:${stagedActor.role}`)}
-            role={stagedActor.role}
-            costume={
-              stagedActor.role === "captain" || stagedActor.role === "fan" ? "player" : "staff"
-            }
-            clipboard={
-              stagedActor.role === "assistant" ||
-              stagedActor.role === "doctor" ||
-              stagedActor.role === "scout"
-            }
-            acting
-          />
+          <CinematicProgramWarmup
+            key={`speaker-${art}-${stagedActor.role}-${quality}`}
+            enabled={prepareHero && committedSet === selectedSetIdentity}
+            requireEnvironment={enhanced && quality !== "baixa"}
+            host={warmupHost}
+          >
+            <Figure
+              key={`speaker-${art}-${stagedActor.role}`}
+              x={stagedActor.mark[0]}
+              z={stagedActor.mark[1]}
+              color={
+                stagedActor.role === "captain" || stagedActor.role === "fan"
+                  ? primary
+                  : stagedActor.role === "referee"
+                    ? "#222d36"
+                    : secondary
+              }
+              shorts="#19232b"
+              seed={hashSeed(`cinematic-speaker:${stagedActor.role}`)}
+              role={stagedActor.role}
+              costume={
+                stagedActor.role === "captain" || stagedActor.role === "fan" ? "player" : "staff"
+              }
+              clipboard={
+                stagedActor.role === "assistant" ||
+                stagedActor.role === "doctor" ||
+                stagedActor.role === "scout"
+              }
+              acting
+            />
+          </CinematicProgramWarmup>
         ) : null}
       </CinematicSetBatch>
     </>
@@ -554,7 +591,7 @@ export const CinematicStage3D = memo(function CinematicStage3D({
               voiceClockRef={voiceClockRef}
               voicePlayingRef={voicePlayingRef}
             >
-              <CinematicFrameProbe
+              <LazyCinematicFrameProbe
                 host={host}
                 openedAt={openedAt.current}
                 stopped={paused || reduced || hidden}
@@ -582,6 +619,8 @@ export const CinematicStage3D = memo(function CinematicStage3D({
                 festive={(art === "trophy" || art === "celebration") && mood === "good"}
                 onBatch={onBatch}
                 enhanced={showEnhanced}
+                prepareHero={ready && (showEnhanced || !enhancedAllowed)}
+                warmupHost={host}
                 onUnavailable={onUnavailable}
                 transitionController={transitionController}
               />

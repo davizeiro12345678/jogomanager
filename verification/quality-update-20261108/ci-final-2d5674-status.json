@@ -1,0 +1,150 @@
+{
+  "collectedAt": "2026-11-09T02:30:55.625Z",
+  "head": "2d567421031a56b6f67d5d8c88e2ef05a0b2a650",
+  "workflowRuns": [
+    {
+      "id": 42550425691,
+      "name": "Public environment and MCP safety",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42550425641,
+      "name": "Match 3D visual evidence",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 42550425591,
+      "name": "Auxiliary match worker",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42550425644,
+      "name": "CodSpeed",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42550425604,
+      "name": "Match 3D mobile draw inventory",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42550425625,
+      "name": "Match 3D lifecycle and context recovery",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42550425678,
+      "name": "Match 3D startup CPU diagnostic",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 42550425638,
+      "name": "Quality gates",
+      "status": "completed",
+      "conclusion": "failure"
+    }
+  ],
+  "qualityJobs": [
+    {
+      "id": 128944533957,
+      "name": "3D asset compression contract",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534152,
+      "name": "Rust kernels and generated WASM parity",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534195,
+      "name": "Build, types and tests",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Run npm exec -- vitest run --exclude src/game/sim.stress.test.ts --pool=forks --maxWorkers=1",
+          "conclusion": "failure"
+        }
+      ]
+    },
+    {
+      "id": 128944534211,
+      "name": "Critical same-runner MatchSim construction",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534245,
+      "name": "Supabase migration replay and access contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534271,
+      "name": "Lighthouse mobile multi-page audit",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534310,
+      "name": "Deterministic 3D benchmark contract",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534313,
+      "name": "Critical 200-match deterministic stress",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534345,
+      "name": "Critical startup bundle comparison / bundle",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534359,
+      "name": "Production dependency audit",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128944534392,
+      "name": "Lighthouse shell audit",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": []
+    },
+    {
+      "id": 128946364828,
+      "name": "Critical performance release gate",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Require every critical job to have passed",
+          "conclusion": "failure"
+        }
+      ]
+    }
+  ]
+}

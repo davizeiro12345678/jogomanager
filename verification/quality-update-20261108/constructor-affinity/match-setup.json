@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-11-09T00:06:22.256Z",
+  "protocol": "same-runner ABBA, pinned Node and identical dependencies, shared serialized team fixture, 3000 warm-ups + 31 batches of 1000 constructions per pass",
+  "baseline": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-baseline-20261108",
+  "candidate": "C:\\Users\\User\\Documents\\ChatGPT\\DAVI ANDRIAN THOMAZINI\\quality-update-20261108",
+  "environment": {
+    "node": "v24.22.0",
+    "platform": "win32",
+    "architecture": "x64",
+    "kernel": "10.0.26300",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12500H"
+  },
+  "dependencyLockSha256": "5eae50109a34ea612a39cf13b8b349d7e2925ea7694972b2b7fc4746ce514dea",
+  "fixtureSha256": "1f6caef41d7353c40d208a98474a896a5dbbb62f88c5fd600f22316dae60d056",
+  "samplesPerRevision": 62,
+  "deterministicCheckpoints": 21,
+  "budget": {
+    "baselineCpuMs": 0.188,
+    "candidateCpuMs": 0.203,
+    "durationChangePercent": 7.978723404255317,
+    "materialRegressionPercent": 10,
+    "confidence": 0.99,
+    "lowerRatio": 1,
+    "upperRatio": 1.0855614973262033,
+    "failed": false
+  },
+  "violations": []
+}

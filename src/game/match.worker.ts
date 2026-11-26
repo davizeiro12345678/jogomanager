@@ -5,17 +5,11 @@ import {
   MATCH_SIMULATION_STEP,
   MATCH_SIMULATION_TICK_LIMIT,
   MAX_LIVE_MOTION_SCALE,
-  MatchSim,
-} from "./sim";
+} from "./sim-contracts";
+import type { MatchSim } from "./sim";
 
 import type { RapierVisualPhysics } from "./rapier-ball-visual";
-import {
-  LIVE_MATCH_WORKER_TELEMETRY_MARK,
-  createSnapshotTelemetryTracker,
-  isLiveSnapshotResponse,
-  isLiveTelemetryWorker,
-  markLiveWorkerSnapshot,
-} from "./snapshot-telemetry";
+import { isLiveTelemetryWorker } from "./snapshot-telemetry-flag";
 import { visualBallFromCanonical, type VisualBallState } from "./visual-ball";
 import { initializeMatchExecution } from "./match-execution";
 import { LiveSnapshotEncoder } from "./live-transport";
@@ -62,22 +56,23 @@ function recoveryState() {
   }
   return { checkpointSeq, ticks: recoveryTicks.map((tick) => [...tick] as [number, number]) };
 }
-const snapshotTelemetry = isLiveTelemetryWorker((self as unknown as { name?: unknown }).name)
-  ? createSnapshotTelemetryTracker()
+const telemetryModule = isLiveTelemetryWorker((self as unknown as { name?: unknown }).name)
+  ? await import("./snapshot-telemetry")
   : null;
+const snapshotTelemetry = telemetryModule?.createSnapshotTelemetryTracker();
 let telemetryMarkCount = 0;
 
 function post(message: unknown) {
-  if (snapshotTelemetry && isLiveSnapshotResponse(message)) {
+  if (telemetryModule && snapshotTelemetry && telemetryModule.isLiveSnapshotResponse(message)) {
     const measurement = snapshotTelemetry.sample(message.snapshot, performance.now());
     // Mantém uma janela curta no User Timing do Worker para não acumular uma
     // entrada por snapshot durante partidas longas. Não altera a mensagem nem
     // toca no estado determinístico da simulação.
     if (telemetryMarkCount >= 120 && typeof performance.clearMarks === "function") {
-      performance.clearMarks(LIVE_MATCH_WORKER_TELEMETRY_MARK);
+      performance.clearMarks(telemetryModule.LIVE_MATCH_WORKER_TELEMETRY_MARK);
       telemetryMarkCount = 0;
     }
-    markLiveWorkerSnapshot(measurement);
+    telemetryModule.markLiveWorkerSnapshot(measurement);
     telemetryMarkCount += 1;
   }
   self.postMessage(message);
@@ -235,7 +230,13 @@ async function startLive(message: Extract<LiveWorkerRequest, { type: "startLive"
   clearVisualPhysics();
   // Freeze the backend before the first step so loading timing cannot change
   // the seeded pass decisions halfway through a match.
+  // Load the full deterministic simulator only when the worker receives a
+  // start command. Lobby/worker bootstrap no longer pays for all football AI,
+  // physics and rule modules before it actually needs them.
+  const { MatchSim } = await import("./sim");
   live = new MatchSim(message.home, message.away, message.seed, {
+    rulesRevision: message.rulesRevision,
+    contactPhysicsRevision: message.contactPhysicsRevision,
     knockout: message.knockout,
     weather: message.weather,
   });
@@ -374,7 +375,10 @@ async function handleMessage(message: LiveWorkerRequest) {
     return;
   }
   if (message.type === "simulate") {
+    const { MatchSim } = await import("./sim");
     const sim = new MatchSim(message.home, message.away, message.seed, {
+      rulesRevision: message.rulesRevision,
+      contactPhysicsRevision: message.contactPhysicsRevision,
       knockout: message.knockout,
       weather: message.weather,
     });
@@ -470,4 +474,24 @@ function admitMessage(message: unknown) {
     });
 }
 
-self.onmessage = (event: MessageEvent<unknown>) => admitMessage(event.data);
+/**
+ * Worker `message` events expose the sender origin. Only the document that
+ * owns this worker may enqueue simulation commands: an event relayed from a
+ * foreign origin is dropped before it can mutate match state. Environments
+ * without a window origin (tests, workers without location) keep the previous
+ * behaviour and are covered by the protocol validation below.
+ */
+function isTrustedWorkerSender(event: MessageEvent<unknown>): boolean {
+  const sender = (event as { origin?: unknown }).origin;
+  if (typeof sender !== "string" || sender === "") return true;
+  const scope = (self as unknown as { location?: { origin?: unknown } }).location?.origin;
+  return typeof scope !== "string" || scope === "" || sender === scope;
+}
+
+self.onmessage = (event: MessageEvent<unknown>) => {
+  // The simulation worker only serves the document that created it. A frame
+  // relayed from another origin, or a synthetic event without a trusted
+  // sender, must never reach the command queue.
+  if (!isTrustedWorkerSender(event)) return;
+  admitMessage(event.data);
+};

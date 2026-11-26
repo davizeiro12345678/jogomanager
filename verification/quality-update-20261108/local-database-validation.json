@@ -1,0 +1,57 @@
+{
+  "runtime": "v24.22.0",
+  "pgliteVersion": "0.5.15",
+  "startedAt": "2026-11-08T23:49:36.447Z",
+  "kind": "ephemeral_wasm_postgresql_contract_replay",
+  "sources": [
+    "drizzle/migrations/0023_multiplayer_server_authority.sql",
+    "drizzle/migrations/0061_career_tombstone_generation.sql",
+    "drizzle/migrations/0063_repair_career_and_push_access.sql",
+    "drizzle/migrations/0064_support_ticket_outbox.sql",
+    "drizzle/migrations/0065_atomic_match_room_creation.sql"
+  ],
+  "fixtures": [
+    "tests/sql/career-tombstone-generation-contract.sql",
+    "tests/sql/support-outbox-contract.sql",
+    "tests/sql/atomic-match-room-contract.sql"
+  ],
+  "checks": [
+    {
+      "path": "drizzle/migrations/0023_multiplayer_server_authority.sql",
+      "passed": true
+    },
+    {
+      "path": "drizzle/migrations/0061_career_tombstone_generation.sql",
+      "passed": true
+    },
+    {
+      "path": "drizzle/migrations/0063_repair_career_and_push_access.sql",
+      "passed": true
+    },
+    {
+      "path": "drizzle/migrations/0064_support_ticket_outbox.sql",
+      "passed": true
+    },
+    {
+      "path": "drizzle/migrations/0065_atomic_match_room_creation.sql",
+      "passed": true
+    },
+    {
+      "path": "tests/sql/career-tombstone-generation-contract.sql",
+      "passed": true
+    },
+    {
+      "path": "tests/sql/support-outbox-contract.sql",
+      "passed": true
+    },
+    {
+      "path": "tests/sql/atomic-match-room-contract.sql",
+      "passed": true
+    }
+  ],
+  "success": true,
+  "scope": "In-memory PostgreSQL via optional PGlite, minimal Supabase-style roles and prerequisite tables, actual forward SQL and fixture bodies. No remote service, personal data, webhook or production writes. Full Supabase replay and multi-process lock contention remain separate required checks.",
+  "postgresql": "PostgreSQL 18.6 (PGlite 0.5.15) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.13 (e13ee988ce3d87a738dd8f3661d02223308c412a), 32-bit",
+  "sourceDigest": "e48cf8f9bd4b6caa6793e7ae44770c61d13d39f8b0f514b0234cd8dae4c400f5",
+  "durationMs": 1766.5093
+}

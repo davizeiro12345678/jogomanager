@@ -60,7 +60,7 @@ describe("VPS catalog canary", () => {
       fetchImpl: mock as typeof fetch,
     });
     expect(result).toEqual([{ id: "club-1", crest_url: "https://example.com/crest.png" }]);
-    expect(mock).toHaveBeenCalledTimes(6);
+    expect(mock).toHaveBeenCalledTimes(8);
   });
 
   it("falls back on empty, failed, or invalid responses", async () => {
@@ -80,11 +80,32 @@ describe("VPS catalog canary", () => {
     }
   });
 
+  it("supports the complete production-sized catalog of 38,854 clubs", async () => {
+    const total = 38_854;
+    const mock = vi.fn(async (input: RequestInfo | URL) => {
+      const page = Number(new URL(String(input)).searchParams.get("page"));
+      const start = page * 1000;
+      const length = Math.max(0, Math.min(1000, total - start));
+      const rows = Array.from({ length }, (_, index) => ({
+        id: "club-" + (start + index),
+        crest_url: null,
+      }));
+      return new Response(JSON.stringify(rows), { status: 200 });
+    });
+    const result = await fetchVpsPublicCrests({
+      enabled: true,
+      origin,
+      fetchImpl: mock as typeof fetch,
+    });
+    expect(result).toHaveLength(total);
+    expect(mock).toHaveBeenCalledTimes(40);
+  });
+
   it("rejects a truncated catalog beyond its page cap", async () => {
     const mock = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       const page = Number(url.searchParams.get("page"));
-      const rows = Array.from({ length: 100 }, (_, index) => ({
+      const rows = Array.from({ length: 1000 }, (_, index) => ({
         id: `club-${page}-${index}`,
         crest_url: null,
       }));
@@ -96,6 +117,6 @@ describe("VPS catalog canary", () => {
       fetchImpl: mock as typeof fetch,
     });
     expect(result).toBeNull();
-    expect(mock).toHaveBeenCalledTimes(72);
+    expect(mock).toHaveBeenCalledTimes(128);
   });
 });

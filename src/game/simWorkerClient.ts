@@ -38,6 +38,7 @@ import { LIVE_CONTROL_RESPONSE_TIMEOUT_MS, validMatchCommand } from "./match-com
 import { MAX_PENDING_SIMULATION_COMMANDS } from "./sequential-worker-queue";
 import { initializeMatchExecution } from "./match-execution";
 import { getMatchEligibilityFailure } from "./match-eligibility";
+import type { MatchRulesRevision } from "./match-execution-contract";
 
 let worker: Worker | null = null;
 let seq = 0;
@@ -192,6 +193,8 @@ interface LiveMatchOptions {
   home: TeamSetup;
   away: TeamSetup;
   seed: string;
+  rulesRevision?: MatchRulesRevision | undefined;
+  contactPhysicsRevision?: 2 | undefined;
   knockout?: boolean;
   weather?: WeatherKind;
   view?: WorkerMatchView;
@@ -216,6 +219,8 @@ function createLiveMatchWorker(telemetry: boolean) {
 
 function bootstrapView(view: WorkerMatchView, options: LiveMatchOptions): void {
   const sim = new MatchSim(options.home, options.away, options.seed, {
+    rulesRevision: options.rulesRevision,
+    contactPhysicsRevision: options.contactPhysicsRevision,
     knockout: options.knockout,
     weather: options.weather,
   });
@@ -239,6 +244,13 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   const view = options.view ?? new WorkerMatchView(options.home, options.away);
   bootstrapView(view, options);
   let liveWorker: Worker | null = null;
+  let startupTimer: ReturnType<typeof setTimeout> | null = null;
+  let startupPending = false;
+  const clearStartupDeadline = () => {
+    if (startupTimer !== null) clearTimeout(startupTimer);
+    startupTimer = null;
+    startupPending = false;
+  };
   let localSim: MatchSim | null = null;
   let localTimer: ReturnType<typeof setInterval> | null = null;
   let localSkipTimer: ReturnType<typeof setTimeout> | null = null;
@@ -270,6 +282,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
     wire: unknown = state,
   ) => {
     if (disposed) return;
+    if (source === "worker") clearStartupDeadline();
     const applyStartedAt = snapshotTelemetry ? performance.now() : 0;
     const transport = snapshotTelemetry?.sample(wire, applyStartedAt);
     view.apply(state);
@@ -376,6 +389,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
   };
 
   const startFallback = (reason?: string) => {
+    clearStartupDeadline();
     cancelPendingCommands();
     for (const id of [...tacticsRequests.keys()]) settleTactics(id, false);
     if (liveWorker) {
@@ -470,6 +484,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         return;
       }
       const initial = new MatchSim(options.home, options.away, options.seed, {
+        rulesRevision: options.rulesRevision,
+        contactPhysicsRevision: options.contactPhysicsRevision,
         knockout: options.knockout,
         weather: options.weather,
       });
@@ -501,6 +517,10 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         const message = event.data;
         if (!message || !message.ok) {
           if (message) settleTactics(message.id, false);
+          if (startupPending && message?.id === 1) {
+            startFallback(message.error);
+            return;
+          }
           if (
             message &&
             (message.code === "queue-full" ||
@@ -513,7 +533,8 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
           startFallback(message && "error" in message ? message.error : undefined);
           return;
         }
-        if (message.type === "command") settleTactics(message.id, message.result === true);
+        if (message.type === "ready" && message.id === 1) clearStartupDeadline();
+        else if (message.type === "command") settleTactics(message.id, message.result === true);
         else if (message.type === "recovery") {
           if (snapshotTelemetry) recoveryBytes += estimateSerializedCloneBytes(message.checkpoint);
           checkpoints.set(message.checkpointSeq, message.checkpoint);
@@ -559,12 +580,22 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
         reportSilent("match-worker", event, { class: "degradation", code: "message-error" });
         startFallback("Falha ao ler a partida; recuperação local ativada.");
       };
+      startupPending = true;
+      startupTimer = setTimeout(() => {
+        reportSilent("match-worker", "Startup acknowledgement timed out", {
+          class: "degradation",
+          code: "startup-timeout",
+        });
+        startFallback("O Worker não iniciou; simulação local ativada.");
+      }, 15_000);
       send({
         type: "startLive",
         compact: true,
         home: options.home,
         away: options.away,
         seed: options.seed,
+        rulesRevision: options.rulesRevision,
+        contactPhysicsRevision: options.contactPhysicsRevision,
         knockout: options.knockout,
         weather: options.weather,
       });
@@ -667,6 +698,7 @@ export function createLiveMatchController(options: LiveMatchOptions): LiveMatchC
       if (disposed) return;
       disposed = true;
       initializationAbort.abort();
+      clearStartupDeadline();
       // Termination stops the worker immediately; posting a stop message first
       // only clones a command that the worker may never receive.
       cancelPendingCommands();

@@ -1,0 +1,947 @@
+{
+  "tag": "baseline-broadcast-1",
+  "url": "http://127.0.0.1:4280/graphics-benchmark.html?scenario=broadcast&quality=alta&warmup=10&duration=30",
+  "startedAt": "2026-11-08T23:17:42.344Z",
+  "protocol": {
+    "quality": "alta",
+    "renderWidth": 1280,
+    "renderHeight": 720,
+    "dpr": 1,
+    "headless": true,
+    "browser": "msedge",
+    "adaptive": false,
+    "warmupSeconds": 10,
+    "durationSeconds": 30,
+    "scope": "local completed-render timing diagnostic; full protocol status comes from the embedded contract"
+  },
+  "errors": [],
+  "failedRequests": [],
+  "sample": {
+    "frames": 370,
+    "meanMs": 81.08108108108108,
+    "fps": 12.333333333333334,
+    "onePercentLow": 0.3976657023272207,
+    "p50": 50.30000001192093,
+    "p95": 145,
+    "p99": 770.1000000089407,
+    "maxMs": 4522.699999988079,
+    "stalls": 189,
+    "elapsed": 41.101,
+    "complete": true,
+    "protocol": {
+      "warmupMs": 10000,
+      "measurementMs": 30000,
+      "interruptions": 0,
+      "coveredMs": 30000,
+      "contractChanged": false,
+      "adaptive": false,
+      "longTasksScope": "whole run including warmup"
+    },
+    "acceptance": {
+      "target": {
+        "quality": "alta",
+        "width": 1280,
+        "height": 720,
+        "dpr": 1,
+        "fps": 45,
+        "p95Ms": 28
+      },
+      "passes": false,
+      "reasons": [
+        "short-protocol",
+        "mean-fps-below-45",
+        "p95-above-28ms"
+      ],
+      "stretch": {
+        "targetFps": 69,
+        "passes": false,
+        "reasons": [
+          "short-protocol",
+          "mean-fps-below-45",
+          "p95-above-28ms",
+          "extended-protocol-incomplete",
+          "mean-fps-below-69",
+          "p95-above-20ms",
+          "one-percent-low-below-50"
+        ]
+      },
+      "scope": "single run; three equivalent runs and both GPUs required for campaign acceptance"
+    },
+    "draws": 188.4972972972973,
+    "maxDraws": 303,
+    "triangles": 187977.05945945947,
+    "heapUsedBytes": 86968792,
+    "geometries": 305,
+    "textures": 124,
+    "programs": 111,
+    "materials": 156,
+    "staticBatches": [
+      {
+        "eligible": 6,
+        "merged": 6,
+        "draws": 2,
+        "visibleSources": 0,
+        "detachedSources": 0
+      },
+      {
+        "eligible": 6,
+        "merged": 6,
+        "draws": 2,
+        "visibleSources": 0,
+        "detachedSources": 0
+      },
+      {
+        "eligible": 56,
+        "merged": 56,
+        "draws": 3,
+        "visibleSources": 0,
+        "detachedSources": 0
+      },
+      {
+        "eligible": 13,
+        "merged": 12,
+        "draws": 3,
+        "visibleSources": 0,
+        "detachedSources": 0
+      },
+      {
+        "eligible": 98,
+        "merged": 94,
+        "draws": 14,
+        "visibleSources": 0,
+        "detachedSources": 0
+      }
+    ],
+    "actorBatches": [
+      {
+        "sources": 126,
+        "draws": 5,
+        "bones": 126,
+        "visibleSources": 0
+      }
+    ],
+    "census": {
+      "buckets": {
+        "player": {
+          "meshes": 24,
+          "draws": 24,
+          "triangles": 68320,
+          "shadowCasters": 0,
+          "geometryBytes": 3845320,
+          "textureBytes": 5975050
+        },
+        "playerLow": {
+          "meshes": 18,
+          "draws": 18,
+          "triangles": 35160,
+          "shadowCasters": 0,
+          "geometryBytes": 126912,
+          "textureBytes": 16384
+        },
+        "crowd": {
+          "meshes": 3,
+          "draws": 3,
+          "triangles": 21258,
+          "shadowCasters": 0,
+          "geometryBytes": 291604,
+          "textureBytes": 43691
+        },
+        "grass": {
+          "meshes": 1,
+          "draws": 1,
+          "triangles": 34,
+          "shadowCasters": 0,
+          "geometryBytes": 140,
+          "textureBytes": 21846
+        },
+        "props": {
+          "meshes": 48,
+          "draws": 48,
+          "triangles": 22584,
+          "shadowCasters": 5,
+          "geometryBytes": 3387884,
+          "textureBytes": 8891057
+        },
+        "static": {
+          "meshes": 9,
+          "draws": 9,
+          "triangles": 10700,
+          "shadowCasters": 1,
+          "geometryBytes": 258428,
+          "textureBytes": 2097180
+        },
+        "goal": {
+          "meshes": 6,
+          "draws": 6,
+          "triangles": 7760,
+          "shadowCasters": 2,
+          "geometryBytes": 247360,
+          "textureBytes": 699104
+        },
+        "ball": {
+          "meshes": 2,
+          "draws": 2,
+          "triangles": 2496,
+          "shadowCasters": 1,
+          "geometryBytes": 58848,
+          "textureBytes": 2097153
+        },
+        "sky": {
+          "meshes": 1,
+          "draws": 1,
+          "triangles": 2592,
+          "shadowCasters": 0,
+          "geometryBytes": 61024,
+          "textureBytes": 2796203
+        },
+        "other": {
+          "meshes": 53,
+          "draws": 53,
+          "triangles": 44128,
+          "shadowCasters": 0,
+          "geometryBytes": 2181392,
+          "textureBytes": 21670681
+        }
+      },
+      "total": {
+        "meshes": 165,
+        "draws": 165,
+        "triangles": 215032,
+        "shadowCasters": 9,
+        "geometryBytes": 10458912,
+        "textureBytes": 44308349
+      },
+      "budgetUse": 0.6346153846153846,
+      "fitsBudget": true
+    },
+    "firstFrameMs": 9568.90000000596,
+    "longTasks": 60,
+    "longTaskMs": 33702,
+    "width": 1280,
+    "height": 720,
+    "dpr": 1,
+    "scenario": {
+      "id": "broadcast",
+      "label": "Alto · transmissão · dia",
+      "seed": "graphics-broadcast-v1",
+      "quality": "alta",
+      "presetCamera": "broadcast",
+      "camera": "broadcast",
+      "time": "dia",
+      "weather": "seco",
+      "mow": "stripes",
+      "fixture": {
+        "homeClubId": "fla",
+        "awayClubId": "pal",
+        "label": "Flamengo x Palmeiras"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "requested": {
+        "scenario": "broadcast",
+        "seed": null,
+        "quality": "alta",
+        "camera": null
+      }
+    },
+    "browser": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+      "platform": "Windows",
+      "language": "pt-BR",
+      "mobile": false
+    },
+    "hardware": {
+      "hardwareConcurrency": 16,
+      "deviceMemoryGiB": 32,
+      "devicePixelRatio": 1,
+      "screen": {
+        "width": 1440,
+        "height": 1000,
+        "colorDepth": 24
+      },
+      "maxTextureSize": 16384,
+      "maxAnisotropy": 16
+    },
+    "backend": {
+      "kind": "webgl2",
+      "renderer": "fl",
+      "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "gpuRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "gpuVendor": "Google Inc. (Intel)",
+      "rendererClass": "hardware"
+    }
+  },
+  "game": {
+    "scenario": {
+      "id": "broadcast",
+      "label": "Alto · transmissão · dia",
+      "seed": "graphics-broadcast-v1",
+      "quality": "alta",
+      "presetCamera": "broadcast",
+      "camera": "broadcast",
+      "time": "dia",
+      "weather": "seco",
+      "mow": "stripes",
+      "fixture": {
+        "homeClubId": "fla",
+        "awayClubId": "pal",
+        "label": "Flamengo x Palmeiras"
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "requested": {
+        "scenario": "broadcast",
+        "seed": null,
+        "quality": "alta",
+        "camera": null
+      }
+    },
+    "mode": "broadcast",
+    "worker": true,
+    "simulation": {
+      "minute": 5,
+      "ball": {
+        "x": 12.3,
+        "z": -8,
+        "height": 2.33
+      },
+      "score": [
+        0,
+        0
+      ],
+      "possession": "home"
+    },
+    "metrics": {
+      "frames": 370,
+      "meanMs": 81.08108108108108,
+      "fps": 12.333333333333334,
+      "onePercentLow": 0.3976657023272207,
+      "p50": 50.30000001192093,
+      "p95": 145,
+      "p99": 770.1000000089407,
+      "maxMs": 4522.699999988079,
+      "stalls": 189,
+      "elapsed": 41.101,
+      "complete": true,
+      "protocol": {
+        "warmupMs": 10000,
+        "measurementMs": 30000,
+        "interruptions": 0,
+        "coveredMs": 30000,
+        "contractChanged": false,
+        "adaptive": false,
+        "longTasksScope": "whole run including warmup"
+      },
+      "acceptance": {
+        "target": {
+          "quality": "alta",
+          "width": 1280,
+          "height": 720,
+          "dpr": 1,
+          "fps": 45,
+          "p95Ms": 28
+        },
+        "passes": false,
+        "reasons": [
+          "short-protocol",
+          "mean-fps-below-45",
+          "p95-above-28ms"
+        ],
+        "stretch": {
+          "targetFps": 69,
+          "passes": false,
+          "reasons": [
+            "short-protocol",
+            "mean-fps-below-45",
+            "p95-above-28ms",
+            "extended-protocol-incomplete",
+            "mean-fps-below-69",
+            "p95-above-20ms",
+            "one-percent-low-below-50"
+          ]
+        },
+        "scope": "single run; three equivalent runs and both GPUs required for campaign acceptance"
+      },
+      "draws": 188.4972972972973,
+      "maxDraws": 303,
+      "triangles": 187977.05945945947,
+      "heapUsedBytes": 86968792,
+      "geometries": 305,
+      "textures": 124,
+      "programs": 111,
+      "materials": 156,
+      "staticBatches": [
+        {
+          "eligible": 6,
+          "merged": 6,
+          "draws": 2,
+          "visibleSources": 0,
+          "detachedSources": 0
+        },
+        {
+          "eligible": 6,
+          "merged": 6,
+          "draws": 2,
+          "visibleSources": 0,
+          "detachedSources": 0
+        },
+        {
+          "eligible": 56,
+          "merged": 56,
+          "draws": 3,
+          "visibleSources": 0,
+          "detachedSources": 0
+        },
+        {
+          "eligible": 13,
+          "merged": 12,
+          "draws": 3,
+          "visibleSources": 0,
+          "detachedSources": 0
+        },
+        {
+          "eligible": 98,
+          "merged": 94,
+          "draws": 14,
+          "visibleSources": 0,
+          "detachedSources": 0
+        }
+      ],
+      "actorBatches": [
+        {
+          "sources": 126,
+          "draws": 5,
+          "bones": 126,
+          "visibleSources": 0
+        }
+      ],
+      "census": {
+        "buckets": {
+          "player": {
+            "meshes": 24,
+            "draws": 24,
+            "triangles": 68320,
+            "shadowCasters": 0,
+            "geometryBytes": 3845320,
+            "textureBytes": 5975050
+          },
+          "playerLow": {
+            "meshes": 18,
+            "draws": 18,
+            "triangles": 35160,
+            "shadowCasters": 0,
+            "geometryBytes": 126912,
+            "textureBytes": 16384
+          },
+          "crowd": {
+            "meshes": 3,
+            "draws": 3,
+            "triangles": 21258,
+            "shadowCasters": 0,
+            "geometryBytes": 291604,
+            "textureBytes": 43691
+          },
+          "grass": {
+            "meshes": 1,
+            "draws": 1,
+            "triangles": 34,
+            "shadowCasters": 0,
+            "geometryBytes": 140,
+            "textureBytes": 21846
+          },
+          "props": {
+            "meshes": 48,
+            "draws": 48,
+            "triangles": 22584,
+            "shadowCasters": 5,
+            "geometryBytes": 3387884,
+            "textureBytes": 8891057
+          },
+          "static": {
+            "meshes": 9,
+            "draws": 9,
+            "triangles": 10700,
+            "shadowCasters": 1,
+            "geometryBytes": 258428,
+            "textureBytes": 2097180
+          },
+          "goal": {
+            "meshes": 6,
+            "draws": 6,
+            "triangles": 7760,
+            "shadowCasters": 2,
+            "geometryBytes": 247360,
+            "textureBytes": 699104
+          },
+          "ball": {
+            "meshes": 2,
+            "draws": 2,
+            "triangles": 2496,
+            "shadowCasters": 1,
+            "geometryBytes": 58848,
+            "textureBytes": 2097153
+          },
+          "sky": {
+            "meshes": 1,
+            "draws": 1,
+            "triangles": 2592,
+            "shadowCasters": 0,
+            "geometryBytes": 61024,
+            "textureBytes": 2796203
+          },
+          "other": {
+            "meshes": 53,
+            "draws": 53,
+            "triangles": 44128,
+            "shadowCasters": 0,
+            "geometryBytes": 2181392,
+            "textureBytes": 21670681
+          }
+        },
+        "total": {
+          "meshes": 165,
+          "draws": 165,
+          "triangles": 215032,
+          "shadowCasters": 9,
+          "geometryBytes": 10458912,
+          "textureBytes": 44308349
+        },
+        "budgetUse": 0.6346153846153846,
+        "fitsBudget": true
+      },
+      "firstFrameMs": 9568.90000000596,
+      "longTasks": 60,
+      "longTaskMs": 33702,
+      "width": 1280,
+      "height": 720,
+      "dpr": 1,
+      "scenario": {
+        "id": "broadcast",
+        "label": "Alto · transmissão · dia",
+        "seed": "graphics-broadcast-v1",
+        "quality": "alta",
+        "presetCamera": "broadcast",
+        "camera": "broadcast",
+        "time": "dia",
+        "weather": "seco",
+        "mow": "stripes",
+        "fixture": {
+          "homeClubId": "fla",
+          "awayClubId": "pal",
+          "label": "Flamengo x Palmeiras"
+        },
+        "viewport": {
+          "width": 1280,
+          "height": 720,
+          "dpr": 1
+        },
+        "requested": {
+          "scenario": "broadcast",
+          "seed": null,
+          "quality": "alta",
+          "camera": null
+        }
+      },
+      "browser": {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+        "platform": "Windows",
+        "language": "pt-BR",
+        "mobile": false
+      },
+      "hardware": {
+        "hardwareConcurrency": 16,
+        "deviceMemoryGiB": 32,
+        "devicePixelRatio": 1,
+        "screen": {
+          "width": 1440,
+          "height": 1000,
+          "colorDepth": 24
+        },
+        "maxTextureSize": 16384,
+        "maxAnisotropy": 16
+      },
+      "backend": {
+        "kind": "webgl2",
+        "renderer": "fl",
+        "contextVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "gpuRenderer": "ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+        "gpuVendor": "Google Inc. (Intel)",
+        "rendererClass": "hardware"
+      }
+    }
+  },
+  "resources": [
+    {
+      "name": "/assets/benchmark-DbwUSegM.js",
+      "bytes": 82833,
+      "decodedBytes": 231950,
+      "durationMs": 491.1000000089407
+    },
+    {
+      "name": "/assets/jsx-runtime-D3jfb0Ew.js",
+      "bytes": 3682,
+      "decodedBytes": 8901,
+      "durationMs": 110.29999999701977
+    },
+    {
+      "name": "/assets/scheduler-BpwWJQsl.js",
+      "bytes": 1860,
+      "decodedBytes": 3551,
+      "durationMs": 111.19999998807907
+    },
+    {
+      "name": "/assets/silent-errors-BVc3bOfB.js",
+      "bytes": 2048,
+      "decodedBytes": 4620,
+      "durationMs": 111.79999999701977
+    },
+    {
+      "name": "/assets/three.core-CqqFKHSV.js",
+      "bytes": 101080,
+      "decodedBytes": 379000,
+      "durationMs": 509.5
+    },
+    {
+      "name": "/assets/react-three-fiber.esm-DefF_0eM.js",
+      "bytes": 143570,
+      "decodedBytes": 538010,
+      "durationMs": 563.7999999970198
+    },
+    {
+      "name": "/assets/club-reference-Cf_EOyn7.js",
+      "bytes": 194882,
+      "decodedBytes": 576878,
+      "durationMs": 565.7999999970198
+    },
+    {
+      "name": "/assets/extends-CvVTau-c.js",
+      "bytes": 531,
+      "decodedBytes": 231,
+      "durationMs": 472.70000000298023
+    },
+    {
+      "name": "/assets/Lightformer-CPZcqaex.js",
+      "bytes": 19164,
+      "decodedBytes": 52966,
+      "durationMs": 491.5
+    },
+    {
+      "name": "/assets/scene-census-D2wiI4F1.js",
+      "bytes": 1869,
+      "decodedBytes": 3690,
+      "durationMs": 509.20000000298023
+    },
+    {
+      "name": "/assets/player-surface-C3fxwrEG.js",
+      "bytes": 68628,
+      "decodedBytes": 195962,
+      "durationMs": 508.40000000596046
+    },
+    {
+      "name": "/assets/rng-D6mypZgi.js",
+      "bytes": 4426,
+      "decodedBytes": 10822,
+      "durationMs": 509.3999999910593
+    },
+    {
+      "name": "/assets/device-3w7MqpG0.js",
+      "bytes": 1205,
+      "decodedBytes": 905,
+      "durationMs": 545.7000000029802
+    },
+    {
+      "name": "/assets/preload-helper-DjzSQ1t3.js",
+      "bytes": 1049,
+      "decodedBytes": 1383,
+      "durationMs": 547.2999999970198
+    },
+    {
+      "name": "/assets/live-match-FiALFYFQ.js",
+      "bytes": 9706,
+      "decodedBytes": 25040,
+      "durationMs": 550.1000000089407
+    },
+    {
+      "name": "/assets/graphics-renderer-metadata-BM_DB4rR.js",
+      "bytes": 1237,
+      "decodedBytes": 937,
+      "durationMs": 556.7000000029802
+    },
+    {
+      "name": "/assets/surface-context-state-BoKjpesn.js",
+      "bytes": 20123,
+      "decodedBytes": 72873,
+      "durationMs": 558.2000000029802
+    },
+    {
+      "name": "/assets/GraphicsBoundary-BbjFlbaS.js",
+      "bytes": 1025,
+      "decodedBytes": 1319,
+      "durationMs": 561.3999999910593
+    },
+    {
+      "name": "/assets/point-size-guard-Bor8Sf9K.js",
+      "bytes": 561,
+      "decodedBytes": 261,
+      "durationMs": 563.6999999880791
+    },
+    {
+      "name": "/assets/maath.esm-B7GwMZVn.js",
+      "bytes": 3716,
+      "decodedBytes": 8347,
+      "durationMs": 562.6999999880791
+    },
+    {
+      "name": "/assets/useDisposable-DpDI2TEd.js",
+      "bytes": 807,
+      "decodedBytes": 507,
+      "durationMs": 563.7999999970198
+    },
+    {
+      "name": "/assets/graphics-fixture.worker-C3BD9_S1.js",
+      "bytes": 166692,
+      "decodedBytes": 467255,
+      "durationMs": 16.69999998807907
+    },
+    {
+      "name": "/favicon.ico",
+      "bytes": 300,
+      "decodedBytes": 0,
+      "durationMs": 2.2999999970197678
+    },
+    {
+      "name": "/assets/PostFX-BypVJuGL.js",
+      "bytes": 2816,
+      "decodedBytes": 6310,
+      "durationMs": 9.699999988079071
+    },
+    {
+      "name": "/assets/HdrSanitize-B5b3Jsef.js",
+      "bytes": 114469,
+      "decodedBytes": 288969,
+      "durationMs": 17.5
+    },
+    {
+      "name": "/__l5e/assets-v1/3b876db3-d4c2-4b37-a2ef-33b50a029a5d/grass_stripes_albedo.ktx2",
+      "bytes": 53540,
+      "decodedBytes": 53240,
+      "durationMs": 422.1000000089407
+    },
+    {
+      "name": "/__l5e/assets-v1/0a1d5e3c-9136-47c1-85ec-8803eaf4916d/grass_rough.ktx2",
+      "bytes": 81312,
+      "decodedBytes": 81012,
+      "durationMs": 363.20000000298023
+    },
+    {
+      "name": "/assets/turf-detail.worker-CaLDlE7I.js",
+      "bytes": 3393,
+      "decodedBytes": 7743,
+      "durationMs": -9878.70000000298
+    },
+    {
+      "name": "/basis/basis_transcoder.js",
+      "bytes": 15481,
+      "decodedBytes": 57548,
+      "durationMs": 141.5
+    },
+    {
+      "name": "/basis/basis_transcoder.wasm",
+      "bytes": 527633,
+      "decodedBytes": 527333,
+      "durationMs": 30.400000005960464
+    },
+    {
+      "name": "/assets/PlayerRig-BBDfL7tf.js",
+      "bytes": 8273,
+      "decodedBytes": 20456,
+      "durationMs": 9.299999997019768
+    },
+    {
+      "name": "/assets/player-materials-DnryAvC5.js",
+      "bytes": 5566,
+      "decodedBytes": 14057,
+      "durationMs": 8.700000002980232
+    },
+    {
+      "name": "/assets/crowd-visibility.worker-WNRKmmA7.js",
+      "bytes": 5428,
+      "decodedBytes": 14390,
+      "durationMs": -71.29999999701977
+    },
+    {
+      "name": "/assets/postfx-lookup-4481f54a16e0f654-ncSAWWbc.png",
+      "bytes": 477,
+      "decodedBytes": 177,
+      "durationMs": 4.5999999940395355
+    },
+    {
+      "name": "/assets/postfx-lookup-61765e87819b91a7-DFiiV4YC.png",
+      "bytes": 50367,
+      "decodedBytes": 50067,
+      "durationMs": 7
+    },
+    {
+      "name": "/__l5e/assets-v1/7c560d79-4a76-49e0-916f-f85897656efa/net_mask.ktx2",
+      "bytes": 11945,
+      "decodedBytes": 11645,
+      "durationMs": 934.7000000029802
+    },
+    {
+      "name": "/__l5e/assets-v1/6b8ebe8d-aa17-4ca7-9986-d3350119d656/concrete_albedo.ktx2",
+      "bytes": 134903,
+      "decodedBytes": 134603,
+      "durationMs": 999.7999999970198
+    },
+    {
+      "name": "/__l5e/assets-v1/5e567391-cf68-432c-b6eb-781f323f42c5/concrete_rough.ktx2",
+      "bytes": 49575,
+      "decodedBytes": 49275,
+      "durationMs": 310.20000000298023
+    },
+    {
+      "name": "/__l5e/assets-v1/dd609325-387a-4164-8081-8314e1ed22ce/jersey_hoops_normal.ktx2",
+      "bytes": 52926,
+      "decodedBytes": 52626,
+      "durationMs": 500.6000000089407
+    },
+    {
+      "name": "/__l5e/assets-v1/8cdc8993-2cbf-4b4f-93ab-32d656651ea6/boot_leather_normal.ktx2",
+      "bytes": 54672,
+      "decodedBytes": 54372,
+      "durationMs": 294.20000000298023
+    },
+    {
+      "name": "/__l5e/assets-v1/4faa6635-94cf-41c6-9c40-20f66efaa089/socks_fine_normal.ktx2",
+      "bytes": 49343,
+      "decodedBytes": 49043,
+      "durationMs": 312.8999999910593
+    },
+    {
+      "name": "/__l5e/assets-v1/1aeac64d-9298-4659-b6ec-d125cec2d3d5/skin_light_normal.ktx2",
+      "bytes": 53839,
+      "decodedBytes": 53539,
+      "durationMs": 312.59999999403954
+    },
+    {
+      "name": "/__l5e/assets-v1/b56b79e3-7058-41da-8dbf-f0c845ae7497/shorts_stitched_normal.ktx2",
+      "bytes": 60723,
+      "decodedBytes": 60423,
+      "durationMs": 270.09999999403954
+    },
+    {
+      "name": "/__l5e/assets-v1/a09b8a50-c8c0-4420-a7bb-f485c9fa112b/jersey_hoops_rough.ktx2",
+      "bytes": 55471,
+      "decodedBytes": 55171,
+      "durationMs": 608.7000000029802
+    },
+    {
+      "name": "/__l5e/assets-v1/a9b96173-6094-4c38-bcc9-b4a9904ed3a3/sweat_mask.ktx2",
+      "bytes": 120480,
+      "decodedBytes": 120180,
+      "durationMs": 302.5
+    },
+    {
+      "name": "/__l5e/assets-v1/d270eb19-25ee-41c2-804b-d8533a4d9a47/hair_normal.ktx2",
+      "bytes": 314838,
+      "decodedBytes": 314538,
+      "durationMs": 309.19999998807907
+    },
+    {
+      "name": "/__l5e/assets-v1/b97c71db-91c9-4c82-a2e2-fd68391f97af/boot_rough.ktx2",
+      "bytes": 176464,
+      "decodedBytes": 176164,
+      "durationMs": 286.8999999910593
+    },
+    {
+      "name": "/__l5e/assets-v1/8146c2ba-068c-49ff-966d-d0cb3352ca65/shin_normal.ktx2",
+      "bytes": 100041,
+      "decodedBytes": 99741,
+      "durationMs": 334
+    },
+    {
+      "name": "/__l5e/assets-v1/b600b20e-4d52-48a4-8993-6f157418a981/shin_rough.ktx2",
+      "bytes": 50233,
+      "decodedBytes": 49933,
+      "durationMs": 373.79999999701977
+    },
+    {
+      "name": "/__l5e/assets-v1/1026b414-b581-45fd-b46c-d95b4ae36bd9/sweat_normal.ktx2",
+      "bytes": 158456,
+      "decodedBytes": 158156,
+      "durationMs": 322.09999999403954
+    },
+    {
+      "name": "/__l5e/assets-v1/32bc4882-ce35-48e7-8f3c-454fc077a95b/boot_synthetic_normal.ktx2",
+      "bytes": 58284,
+      "decodedBytes": 57984,
+      "durationMs": 322.70000000298023
+    },
+    {
+      "name": "/__l5e/assets-v1/2f8839c9-ff49-41a2-b67f-f8a185ebf106/socks_heavy_normal.ktx2",
+      "bytes": 52498,
+      "decodedBytes": 52198,
+      "durationMs": 311.20000000298023
+    },
+    {
+      "name": "/__l5e/assets-v1/afeada6f-2796-4cf5-b34d-9930493e1dbb/shorts_mesh_normal.ktx2",
+      "bytes": 60018,
+      "decodedBytes": 59718,
+      "durationMs": 310.1000000089407
+    },
+    {
+      "name": "/__l5e/assets-v1/3e1371c0-3ef9-4a6c-82ce-927e39ad5b0e/boot_knit_normal.ktx2",
+      "bytes": 60615,
+      "decodedBytes": 60315,
+      "durationMs": 269.1000000089407
+    },
+    {
+      "name": "/__l5e/assets-v1/09803766-2d3c-4a6f-b8be-cee4cb990b1e/skin_dark_normal.ktx2",
+      "bytes": 53834,
+      "decodedBytes": 53534,
+      "durationMs": 276.3999999910593
+    },
+    {
+      "name": "/__l5e/assets-v1/1de009f3-efff-4922-a429-b2587c16c114/shorts_plain_normal.ktx2",
+      "bytes": 58127,
+      "decodedBytes": 57827,
+      "durationMs": 254.90000000596046
+    },
+    {
+      "name": "/__l5e/assets-v1/c1348b5a-1dd0-4167-8e63-e339a61b9ce9/skin_medium_normal.ktx2",
+      "bytes": 53410,
+      "decodedBytes": 53110,
+      "durationMs": 316.09999999403954
+    },
+    {
+      "name": "/__l5e/assets-v1/8ae46b52-c535-4260-9869-5823244508b6/jersey_solid_normal.ktx2",
+      "bytes": 52544,
+      "decodedBytes": 52244,
+      "durationMs": 290.29999999701977
+    },
+    {
+      "name": "/__l5e/assets-v1/32ece484-9c61-4a0d-be24-9060bd47a649/jersey_solid_rough.ktx2",
+      "bytes": 55500,
+      "decodedBytes": 55200,
+      "durationMs": 291.20000000298023
+    },
+    {
+      "name": "/__l5e/assets-v1/c70f94e4-eab6-4553-8f36-8d07f2327767/socks_rib_normal.ktx2",
+      "bytes": 16298,
+      "decodedBytes": 15998,
+      "durationMs": 338.3999999910593
+    }
+  ],
+  "image": {
+    "path": "baseline-broadcast-1.png",
+    "sha256": "ef1554f726087dbfaf8bb55801817b3dee79dcedd119b5c55538b19c31d273fc"
+  },
+  "complete": true,
+  "completedAt": "2026-11-08T23:18:35.585Z"
+}

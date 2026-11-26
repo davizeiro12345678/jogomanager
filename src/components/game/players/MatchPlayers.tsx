@@ -12,6 +12,7 @@ import { goalPresentationFor, type GoalFocusRef } from "@/game/goal-choreography
 import { gkKitFor, type Kit } from "@/game/kits";
 import { reportSilent } from "@/lib/silent-errors";
 import { LowPlayers } from "./LowPlayers";
+import { createMatchRigPool } from "@/game/match-rig-pool";
 
 /** Full articulated geometry is mounted only for visible, nearby athletes.
  * Distant athletes share the existing instance batches, including contact shadows.
@@ -45,6 +46,19 @@ export function MatchPlayers({
 }) {
   const [near, setNear] = useState<ReadonlySet<string>>(new Set());
   const [dense, setDense] = useState<ReadonlySet<string>>(new Set());
+  const rigPool = useMemo(createMatchRigPool, []);
+  const poolLifecycle = useMemo(() => ({ cycle: 0 }), []);
+  const promotions = useRef(0);
+  useEffect(() => {
+    const cycle = ++poolLifecycle.cycle;
+    return () => {
+      // StrictMode re-runs effects in the same turn. A real scene exit closes
+      // the pool after child leases detach; a replayed setup cancels this close.
+      queueMicrotask(() => {
+        if (poolLifecycle.cycle === cycle) rigPool.dispose();
+      });
+    };
+  }, [rigPool, poolLifecycle]);
   // Do not fetch the articulated geometry, skinning, IK, textures and clips
   // until the match camera has actually selected its first visible hero.
   const [DetailedRig, setDetailedRig] = useState<
@@ -197,7 +211,13 @@ export function MatchPlayers({
       const desired: string[] = [];
       for (let index = 0; index < selection.count; index += 1)
         desired.push(sim.players[selection.indices[index]!]!.id);
-      setNear(stageHeroMembership(near, desired));
+      const staged = stageHeroMembership(near, desired);
+      setNear(staged);
+      for (const id of staged) promotions.current += Number(!near.has(id));
+      if (promotions.current >= Math.max(1, budget.heroPlayers)) {
+        promotions.current = 0;
+        rigPool.advanceCycle();
+      }
     }
     // Only mounted heroes can consume dense geometry. Changes to offscreen
     // or unselected candidates must not reconcile the player tree.
@@ -217,7 +237,7 @@ export function MatchPlayers({
     if (denseChanged) setDense(new Set(denseCandidates));
   });
   return (
-    <>
+    <group userData={{ matchRigPool: rigPool }}>
       <LowPlayers
         sim={sim}
         homeKit={homeKit}
@@ -251,8 +271,9 @@ export function MatchPlayers({
               quality={quality}
               denseGeometry={legacyTopology || dense.has(player.id)}
               matchTopology={!legacyTopology}
+              rigPool={rigPool}
             />
           ))}
-    </>
+    </group>
   );
 }

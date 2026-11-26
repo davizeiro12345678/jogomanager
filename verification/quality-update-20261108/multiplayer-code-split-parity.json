@@ -1,0 +1,26 @@
+{
+  "originalPageBytes": 34502,
+  "extractedPageBytes": 26996,
+  "originalLiveRoomBodySha256": "b9337484438358c70302134e765ae29209cc90b3a13b8578b5de2bcb2f862a2d",
+  "extractedLiveRoomBodySha256": "b9337484438358c70302134e765ae29209cc90b3a13b8578b5de2bcb2f862a2d",
+  "newLazyFeature": "src/features/multiplayer/LiveRoom.tsx",
+  "route": "/multiplayer",
+  "claimsRuntimeFpsImprovement": false,
+  "extractionStageCopiedVerbatim": true,
+  "extractionHashesPrecedePresentationLocalization": true,
+  "currentLocalizedBodySha256": "fb251baf8a480cb5abac42e1bdc9c359344f8910b6621396292a95bb833fffb1",
+  "currentPresentationLocalized": true,
+  "currentPageBytes": 27040,
+  "currentBodyIsByteIdenticalToOriginal": false,
+  "changedAfterExtraction": [
+    "useT locale subscription",
+    "feature-local presentation labels"
+  ],
+  "gameplayOrServerAuthorityChanged": false,
+  "validation": {
+    "targetedTests": 59,
+    "failures": 0,
+    "i18nNewCandidates": 0,
+    "lintWarnings": 0
+  }
+}

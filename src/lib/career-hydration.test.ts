@@ -92,6 +92,7 @@ describe("career hydration state", () => {
     expect(status).toBe("offline");
     expect(canCreateCareer({ status, hasCareer: true, replace: true })).toBe(false);
     expect(canResetCareer(status)).toBe(false);
+    expect(canMutateCareer(status)).toBe(true);
   });
 
   it("allows only explicit online recreation from a confirmed tombstone", () => {

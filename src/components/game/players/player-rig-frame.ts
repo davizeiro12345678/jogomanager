@@ -101,8 +101,8 @@ interface PlayerRigFrameInput {
     castState: React.RefObject<boolean | null>;
     nearMeshes: React.RefObject<THREE.SkinnedMesh[]>;
     bootMeshes: React.RefObject<THREE.SkinnedMesh[]>;
-    skin: RigSkin;
-    cloth: AthleteCloth;
+    skin: RigSkin | null;
+    cloth: AthleteCloth | null;
   };
 }
 
@@ -218,6 +218,7 @@ export function usePlayerRigFrame({ scene, resources }: PlayerRigFrameInput) {
   const contactR = useRef(1);
   const accelerationLean = useRef(0);
   useFrame((state, rawDt) => {
+    if (!skin || !cloth) return;
     if (paused && painted.current && sampled.current === previewAt) {
       // A paused pose still serves a changed inspection camera. Do not
       // re-run animation or smoothing just to switch from body to gloves.

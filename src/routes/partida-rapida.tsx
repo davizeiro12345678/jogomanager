@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { QuickMatchPage } from "@/components/game/QuickMatchPage";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { canonical, noindexMeta, seoMeta } from "@/lib/seo";
 
 export const Route = createFileRoute("/partida-rapida")({
@@ -17,5 +16,6 @@ export const Route = createFileRoute("/partida-rapida")({
     ],
     links: canonical("/partida-rapida"),
   }),
-  component: QuickMatchPage,
+  // Preserve server-rendered selection/SEO; load the page only for this route.
+  component: lazyRouteComponent(() => import("@/components/game/QuickMatchPage"), "QuickMatchPage"),
 });

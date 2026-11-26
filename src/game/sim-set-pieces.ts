@@ -24,17 +24,21 @@ export type SetPieceHost = Pick<
   | "ballSpin"
   | "ballVy"
   | "bestTaker"
+  | "goalkeeper"
+  | "rulesRevision"
   | "exemptUntil"
   | "lastPass"
   | "lastTouch"
   | "looseTime"
   | "minute"
+  | "noteOffsideKick"
   | "pass"
   | "pendingShot"
   | "players"
   | "pushEvent"
   | "recordShot"
   | "restartFor"
+  | "resetOffsidePhase"
   | "restartTimer"
   | "rnd"
   | "scheduleRestart"
@@ -47,10 +51,14 @@ export type SetPieceHost = Pick<
 >;
 
 export function setupPenalty(sim: SetPieceHost, side: Side) {
+  sim.resetOffsidePhase();
   const dir = sim.attackDir(side);
   const goalX = dir * FIELD_X;
   const taker = sim.bestTaker(side, "shooting");
-  const gk = sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+  const gk =
+    sim.rulesRevision === 2
+      ? sim.goalkeeper(side === "home" ? "away" : "home")
+      : (sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null);
   if (!taker) return;
   taker.x = goalX - dir * PENALTY_DIST;
   taker.z = 0.6;
@@ -101,13 +109,17 @@ export function takePenalty(sim: SetPieceHost) {
   const side = sp.side;
   const dir = sim.attackDir(side);
   const taker = sim.players.find((p) => p.id === sp.takerId) ?? null;
-  const gk = sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+  const gk =
+    sim.rulesRevision === 2
+      ? sim.goalkeeper(side === "home" ? "away" : "home")
+      : (sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null);
   sim.setPiece = null;
   if (!taker) {
     sim.scheduleRestart(side === "home" ? "away" : "home");
     return;
   }
   const late = sim.minute() >= 75;
+  sim.noteOffsideKick(taker, sim.ball.x);
   const close = Math.abs(sim.stats.home.goals - sim.stats.away.goals) <= 1;
   const out = solvePenalty({
     taker: taker.shooting,
@@ -175,6 +187,7 @@ export function takePenalty(sim: SetPieceHost) {
 }
 
 export function setupDirectFK(sim: SetPieceHost, side: Side, fx: number, fz: number) {
+  sim.resetOffsidePhase();
   const dir = sim.attackDir(side);
   const goalX = dir * FIELD_X;
   const taker = sim.bestTaker(side, "shooting");
@@ -227,7 +240,10 @@ export function takeDirectFK(sim: SetPieceHost) {
   const side = sp.side;
   const dir = sim.attackDir(side);
   const taker = sim.players.find((p) => p.id === sp.takerId) ?? null;
-  const gk = sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+  const gk =
+    sim.rulesRevision === 2
+      ? sim.goalkeeper(side === "home" ? "away" : "home")
+      : (sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null);
   sim.setPiece = null;
   if (!taker) {
     sim.restartFor(side, "throwIn");
@@ -235,6 +251,7 @@ export function takeDirectFK(sim: SetPieceHost) {
   }
   const fx = sim.ball.x;
   const fz = sim.ball.z;
+  sim.noteOffsideKick(taker, fx);
   const dist = Math.hypot(dir * FIELD_X - fx, fz);
   const wall = sim.players.filter(
     (p) => p.side !== side && !p.sentOff && Math.hypot(p.x - fx, p.z - fz) < 12,
@@ -322,6 +339,7 @@ export function takeDirectFK(sim: SetPieceHost) {
 }
 
 export function setupCorner(sim: SetPieceHost, side: Side) {
+  sim.resetOffsidePhase();
   // batedor vai para a bandeira; área enche dos dois lados
   const dir = sim.attackDir(side);
   const goalX = dir * FIELD_X;
@@ -390,7 +408,10 @@ export function takeCorner(sim: SetPieceHost) {
   const defense = sim.players.filter(
     (p) => p.side !== side && !p.sentOff && p.pos !== "GK" && Math.abs(p.x - goalX) < 22,
   );
-  const gk = sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null;
+  const gk =
+    sim.rulesRevision === 2
+      ? sim.goalkeeper(side === "home" ? "away" : "home")
+      : (sim.players.find((p) => p.side !== side && p.pos === "GK" && !p.sentOff) ?? null);
   const att = attack.reduce((s, p) => s + p.physical + p.shooting * 0.4, 0);
   const dfn = defense.reduce((s, p) => s + p.physical + p.defending * 0.4, 0);
   const duel = solveCornerDuel({
@@ -408,12 +429,13 @@ export function takeCorner(sim: SetPieceHost) {
       side: gk.side,
       text: `${gk.name} sai do gol e fica com o escanteio.`,
     });
-    sim.scheduleRestart(gk.side);
+    sim.scheduleRestart(gk.side, "keeperControl");
     return;
   }
   if (duel.winner === "defense") {
     const clearer = [...defense].sort((a, b) => b.physical - a.physical)[0] ?? null;
     if (clearer) {
+      sim.noteOffsideKick(clearer, clearer.x);
       sim.trigger(clearer, "headClear", 0.9);
       sim.ball.x = clearer.x;
       sim.ball.z = clearer.z;
@@ -441,6 +463,7 @@ export function takeCorner(sim: SetPieceHost) {
     return;
   }
   sim.trigger(header, "header", 0.9);
+  sim.noteOffsideKick(header, header.x);
   const goalP = duel.headerXg * 1.1;
   const onP = goalP + 0.4;
   const roll = sim.rnd();

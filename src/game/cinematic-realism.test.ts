@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { cinematicActorPose, cinematicLook } from "./cinematic-actor";
+import { gaitCadence } from "./gait-kinematics";
 import { cinematicExpressionAt, CinematicGaze } from "./cinematic-expression";
 import { cinematicShotFor } from "./cinematic-shot";
 import { cinematicStageFocus } from "./cinematic-blocking";
@@ -99,4 +100,32 @@ describe("cinematic physical performance", () => {
       }
     }
   });
+});
+
+it("tracks the moving arrival actor rather than the final mark during a close-up", () => {
+  const start = cinematicStageFocus("arrival", "captain", "arrival", false, 0)!;
+  const end = cinematicStageFocus("arrival", "captain", "arrival", false, 4.8)!;
+  expect(Math.hypot(end[0] - start[0], end[1] - start[1])).toBeCloseTo(3, 6);
+  const shot = cinematicShotFor(
+    "arrival",
+    "captain",
+    "close",
+    16 / 9,
+    false,
+    false,
+    "arrival",
+    0,
+    0,
+  );
+  expect(Math.hypot(shot.target[0] - start[0], shot.target[2] - start[1])).toBeLessThan(0.3);
+});
+
+it("matches the walk stride clock to physical cadence instead of a fixed angular frequency", () => {
+  const p = proportionsFor(cinematicLook(0));
+  const speed = 1.35;
+  const duration = 1 / gaitCadence(speed, p.thigh + p.shin);
+  const first = cinematicActorPose(0, 0, "walk", false, p);
+  const next = cinematicActorPose(duration, 0, "walk", false, p);
+  expect(next.legLPitch).toBeCloseTo(first.legLPitch, 6);
+  expect(next.kneeL).toBeCloseTo(first.kneeL, 6);
 });

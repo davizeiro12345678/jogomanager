@@ -13,11 +13,11 @@ export interface VpsCatalogOptions {
   fetchImpl?: typeof fetch;
 }
 
-const PAGE_SIZE = 100;
-const PAGE_BATCH = 6;
-const MAX_PAGES = 72;
-const REQUEST_BUDGET_MS = 4_500;
-const CATALOG_HOST = "catalog.jogomanager.com";
+const PAGE_SIZE = 1000;
+const PAGE_BATCH = 8;
+const MAX_PAGES = 128;
+const REQUEST_BUDGET_MS = 10_000;
+const CATALOG_HOSTS = new Set(["catalog.jogomanager.com", "catalog-vps.jogomanager.com"]);
 
 function safeOrigin(input: string | undefined): URL | null {
   if (!input) return null;
@@ -25,7 +25,7 @@ function safeOrigin(input: string | undefined): URL | null {
     const url = new URL(input);
     if (
       url.protocol !== "https:" ||
-      url.hostname !== CATALOG_HOST ||
+      !CATALOG_HOSTS.has(url.hostname) ||
       url.username ||
       url.password ||
       url.port ||

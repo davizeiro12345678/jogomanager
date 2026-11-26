@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { StaticBatch } from "./StaticBatch";
 import { RigidActorBatch } from "./RigidActorBatch";
+import { useDisposable } from "../useDisposable";
 import * as THREE from "three";
 import { censusRef } from "@/game/scene-census";
 import { FIELD_X, FIELD_Z, type SimView } from "@/game/sim";
@@ -19,7 +20,7 @@ import { metalAlbedo, metalRoughness, grilleTexture } from "./textures/metal";
 export type PropsQuality = "alta" | "media" | "baixa";
 
 function useMetal(color = "#8d949b", repeat = 3) {
-  return useMemo(() => {
+  return useDisposable(() => {
     const map = metalAlbedo();
     const rough = metalRoughness();
     const m = new THREE.MeshStandardMaterial({
@@ -39,8 +40,9 @@ function useMetal(color = "#8d949b", repeat = 3) {
       t.repeat.set(repeat, repeat);
       m.roughnessMap = t;
     }
-    return m;
-  }, [color, repeat]);
+    // Clones belong to this material; cached source textures remain shared.
+    return { material: m, textures: [m.map, m.roughnessMap] };
+  }, [color, repeat]).material;
 }
 
 /* ------------------------------------------------------------- reservas */
@@ -129,7 +131,7 @@ function Tunnel() {
 
 function SectorGrilles({ rings }: { rings: number }) {
   const tex = useMemo(() => grilleTexture(), []);
-  const mat = useMemo(() => {
+  const mat = useDisposable(() => {
     const m = new THREE.MeshStandardMaterial({
       color: "#b9c2cb",
       roughness: 0.5,
@@ -146,8 +148,8 @@ function SectorGrilles({ rings }: { rings: number }) {
       m.map = t;
       m.alphaMap = t;
     }
-    return m;
-  }, [tex]);
+    return { material: m, texture: m.map };
+  }, [tex]).material;
 
   const height = 2.0 + rings * 1.45;
   return (
@@ -264,7 +266,7 @@ function TvCameras({ sim }: { sim: SimView }) {
 
 function PressBoxes({ rings }: { rings: number }) {
   const top = 2.0 + rings * 1.45;
-  const glass = useMemo(
+  const glass = useDisposable(
     () =>
       new THREE.MeshStandardMaterial({
         color: "#9dc6e0",

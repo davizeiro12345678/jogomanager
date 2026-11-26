@@ -238,8 +238,12 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   }
 }
 
-/** Keep both public webhook URLs on exactly the same signed, idempotent handler. */
-export async function processStripeWebhook(request: Request): Promise<Response> {
+/** Canonical raw-body Stripe signature handler; the alias delegates here. */
+export async function handleStripeWebhookPost({
+  request,
+}: {
+  request: Request;
+}): Promise<Response> {
   const rawEnv = new URL(request.url).searchParams.get("env");
   let event: Stripe.Event;
   let env: StripeEnv;
@@ -275,6 +279,11 @@ export async function processStripeWebhook(request: Request): Promise<Response> 
       headers: { "Retry-After": "30" },
     });
   }
+}
+
+/** Stable alias entry point; both URLs share raw body signature validation. */
+export async function processStripeWebhook(request: Request): Promise<Response> {
+  return handleStripeWebhookPost({ request });
 }
 
 /** A webhook is an authenticated POST endpoint, never a public HTML page. */

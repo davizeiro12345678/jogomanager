@@ -163,11 +163,6 @@ export function CinematicDirector({
     if (transitionHold) {
       // Keep the previous composed shot under the opaque matte. The next shot
       // is committed only by the controller's swap callback.
-      camera.userData["cinematicFraming"] = shot.framing;
-      camera.userData["cinematicSubject"] = stagedActor?.role ?? "environment";
-      camera.userData["cinematicActorPresence"] = stagedActor?.presence ?? "environment";
-      camera.userData["cinematicShotType"] =
-        opening || shot.framing === "establishing" ? "master" : reaction ? "reaction" : "dialogue";
       return;
     }
     // A cut snaps to a composed shot. Only the movement inside that shot drifts.
@@ -186,7 +181,7 @@ export function CinematicDirector({
     camera.lookAt(runtime.focus);
     const fov = shot.fov - (climax && focus ? 1 : 0);
     const nextFov =
-      cut || runtime.stopped || runtime.reduced
+      transitionSnap || cut || runtime.stopped || runtime.reduced
         ? fov
         : THREE.MathUtils.damp(camera.fov, fov, 8, runtime.clock.dt);
     if (Math.abs(camera.fov - nextFov) > 0.01) {

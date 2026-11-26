@@ -5,9 +5,7 @@
 //  funciona sem login e é aplicado automaticamente ao mundo do jogo.
 // ============================================================================
 
-import { createFileRoute } from "@tanstack/react-router";
-
-import { EditorPage } from "@/pages/editor";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/editor")({
   ssr: false,
@@ -33,5 +31,8 @@ export const Route = createFileRoute("/editor")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: EditorPage,
+  // The route never SSRs. Exclude its heavy client graph from the Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/editor"), "EditorPage"),
 });

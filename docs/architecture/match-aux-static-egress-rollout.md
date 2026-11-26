@@ -4,7 +4,7 @@
 
 **Code staged, not promoted:** The main app currently finishes verified multiplayer rooms on the trusted TanStack server, using the secret seed held in Supabase, never a client-submitted score. The optional remote adapter added here is **disabled unless MATCH_AUX_URL is configured**.
 
-No VM has been provisioned. The SentinelX account currently has **0 saved compute integrations and 0 connected hosts**. The Atlas IP allowlist still contains a single *pre-existing home-client IP*, not a newly assigned cloud egress IP. Do not add a fake IP or open `0.0.0.0/0`.
+No VM has been provisioned. The SentinelX account currently has **0 saved compute integrations and 0 connected hosts**. The Atlas IP allowlist still contains a single _pre-existing home-client IP_, not a newly assigned cloud egress IP. Do not add a fake IP or open `0.0.0.0/0`.
 
 The Atlas project already has a least-privileged user `jogomanager_aux_prod_rw` whose URI is encrypted in Supabase Vault under `mongodb_aux_uri_production`. The new auxiliary process needs the same URI **as a server-only environment variable**, copied by a credential-authorized operator, never committed to GitHub.
 
@@ -25,12 +25,12 @@ Browser --JWT--> TanStack Server (checks host/room/secret from Supabase)
                            canonical MatchSim only (bounded 60k ticks)
                                                         |
                            Atlas Free (TLS, game_jobs, status/receipt cache)
-                            ^ 
+                            ^
                             | dedicated static VM outbound IPv4 /32 only
                         MongoDB Atlas allowlist
 ```
 
-The optional adapter changes only *where verified deterministic simulation runs*, not who authorizes or writes the final scores. Money, item grants, account identity, matchmaking and verified career progress remain in Supabase/Stripe. This service does not accept arbitrary client rosters, rewards, identities or scores.
+The optional adapter changes only _where verified deterministic simulation runs_, not who authorizes or writes the final scores. Money, item grants, account identity, matchmaking and verified career progress remain in Supabase/Stripe. This service does not accept arbitrary client rosters, rewards, identities or scores.
 
 ## Provisioning sequence (NOT YET EXECUTED)
 
@@ -54,7 +54,9 @@ MONGODB_URI=<mongodb-srv-URI-read-from-Supabase-Vault-by-authorized-operator>
 
 ## Runtime and limits
 
-- One active simulation per Node process; other signed requests receive HTTP 429.
+- Independent rooms run on persistent Node worker threads. Each room keeps the same sequential, seeded MatchSim and one durable result. Signed requests receive HTTP 429 once the simulator is at capacity.
+- `MATCH_AUX_WORKERS` accepts 1 to 512. The default reserves one logical CPU and requests at most eight workers. The runtime also caps workers by available logical CPUs and its memory budget. The supplied systemd memory limit permits two workers. Higher profiles require corresponding CPU allocation, memory and task limits. Worker count does not measure physical cores or guarantee a throughput gain.
+- `/healthz` reports effective capacity and active matches. Timeouts retire the worker, and a room claim fences late results from earlier attempts.
 - Unique index `roomId` and 7-day TTL for auxiliary `game_jobs`, with deterministic digest binding to canonical server-supplied seed and club IDs.
 - MongoDB Free shared CPU/RAM has no guaranteed dedicated compute; approximately 100 read/write operations/sec is an account-service bound, not a players-online capacity guarantee.
 - Current capacity in matches/s, concurrent users, memory p95, API p95 and monthly egress cost: **not yet benchmarked**.

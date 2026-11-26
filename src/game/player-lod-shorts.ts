@@ -2,7 +2,9 @@ import * as THREE from "three";
 import type { Pose } from "./animation-core";
 import { footballShorts } from "./player-shorts";
 
-const template = { hipW: 1, hipH: 1, chestD: 0.47, legR: 0.306, thigh: 3.4 };
+// The instanced thigh has six or eight facets. Its oblique corners need
+// clearance behind the chords of the octagonal cloth, including at the cuff.
+const template = { hipW: 1, hipH: 1, chestD: 0.47, legR: 0.346, thigh: 3.4 };
 const normalScale = [0.255, 0.14, 0.255] as const;
 
 /** Three-joint cloth skinning expressed as native instanced morph targets.

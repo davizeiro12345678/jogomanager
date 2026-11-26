@@ -1,0 +1,61 @@
+{
+  "byteIdentical": true,
+  "scope": "BufferGeometry.clone copy traffic during one construction, including body sources; not total heap usage or frame timing",
+  "rows": [
+    {
+      "id": "athlete",
+      "cloneCountBefore": 160,
+      "cloneCountAfter": 112,
+      "eliminatedClones": 48,
+      "copiedBytesBefore": 4274160,
+      "copiedBytesAfter": 2166336,
+      "eliminatedCopiedBytes": 2107824,
+      "copyReductionPercent": 49.31551462743556,
+      "geometryAndMorphSha256": "21630c1bc0d716e948e07b1cb9e8e7b3e2c1ba127951befa5294b97b11c43d5e"
+    },
+    {
+      "id": "keeper",
+      "cloneCountBefore": 161,
+      "cloneCountAfter": 108,
+      "eliminatedClones": 53,
+      "copiedBytesBefore": 4455632,
+      "copiedBytesAfter": 2253712,
+      "eliminatedCopiedBytes": 2201920,
+      "copyReductionPercent": 49.4188029891158,
+      "geometryAndMorphSha256": "ebb970ae7b146715281ab89957e1def21ed5365a1f5e6d002bae10064d329183"
+    },
+    {
+      "id": "cinematic",
+      "cloneCountBefore": 183,
+      "cloneCountAfter": 132,
+      "eliminatedClones": 51,
+      "copiedBytesBefore": 4414752,
+      "copiedBytesAfter": 2236632,
+      "eliminatedCopiedBytes": 2178120,
+      "copyReductionPercent": 49.337312718811845,
+      "geometryAndMorphSha256": "4f7f92c7d52d37f789a1f871313d7924f075a9d31129c86291c85274654ce612"
+    },
+    {
+      "id": "staff",
+      "cloneCountBefore": 160,
+      "cloneCountAfter": 112,
+      "eliminatedClones": 48,
+      "copiedBytesBefore": 4064796,
+      "copiedBytesAfter": 2059818,
+      "eliminatedCopiedBytes": 2004978,
+      "copyReductionPercent": 49.32542740152274,
+      "geometryAndMorphSha256": "04ee1e9990ba3ed672916b8b5b490945f7806bbdf53cefcd6ac3b5f211752bf8"
+    },
+    {
+      "id": "medium",
+      "cloneCountBefore": 144,
+      "cloneCountAfter": 95,
+      "eliminatedClones": 49,
+      "copiedBytesBefore": 1136152,
+      "copiedBytesAfter": 581216,
+      "eliminatedCopiedBytes": 554936,
+      "copyReductionPercent": 48.84346460684837,
+      "geometryAndMorphSha256": "d36f4e85cddbe79c8be3afc09a57520428543964028eb8f3459b76f2d6367b10"
+    }
+  ]
+}

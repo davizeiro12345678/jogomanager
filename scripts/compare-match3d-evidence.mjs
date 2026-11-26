@@ -1,4 +1,5 @@
 import { readFile, writeFile, access } from "node:fs/promises";
+import { isDeepStrictEqual } from "node:util";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 
@@ -79,16 +80,15 @@ export function compareMatch3dEvidence(before, after) {
       if (candidate.scene) {
         check(
           Boolean(candidate.authoritativeSnapshot) &&
-            JSON.stringify(candidate.authoritativeSnapshot) ===
-              JSON.stringify(baseline.authoritativeSnapshot),
+            isDeepStrictEqual(candidate.authoritativeSnapshot, baseline.authoritativeSnapshot),
           `${candidate.label}: worker snapshot mismatch`,
         );
         check(
-          JSON.stringify(candidate.scene.scenario) === JSON.stringify(baseline.scene?.scenario),
+          isDeepStrictEqual(candidate.scene.scenario, baseline.scene?.scenario),
           `${candidate.label}: different scenario`,
         );
         check(
-          JSON.stringify(candidate.scene.simulation) === JSON.stringify(baseline.scene?.simulation),
+          isDeepStrictEqual(candidate.scene.simulation, baseline.scene?.simulation),
           `${candidate.label}: authoritative state changed`,
         );
       }

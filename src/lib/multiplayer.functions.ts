@@ -3,25 +3,23 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
-import { CLUBS } from "@/game/data/leagues";
-import { buildTeamSetup } from "@/game/quickMatch";
-import {
-  LIVE_MATCH_CLOCK_SCALE,
-  MATCH_SIMULATION_STEP,
-  MATCH_SIMULATION_TICK_LIMIT,
-  MatchSim,
-} from "@/game/sim";
 import {
   createSettlementLeaseGuard,
   isSettlementLeaseExpired,
   settlementLeaseCutoff,
 } from "@/lib/multiplayer-settlement";
 
-const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+// Load the club catalogue only for authenticated, validated multiplayer requests.
+async function hasKnownClub(clubId: string): Promise<boolean> {
+  const { CLUBS } = await import("@/game/data/leagues");
+  return Object.hasOwn(CLUBS, clubId);
+}
 
 export interface MultiplayerRoomRecord {
   id: string;
   code: string;
+  contact_physics_revision?: 1 | 2;
+  settlement_authority?: "legacy" | "websocket";
   host_id: string;
   guest_id: string | null;
   host_club: string;
@@ -40,56 +38,32 @@ export type RoomActionResult =
 
 export type FinishRoomResult = { ok: true } | { ok: false; reason: string };
 
-function secureRoomCode(): string {
-  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(8));
-  return Array.from(bytes, (value) => ROOM_CODE_ALPHABET[value & 31]).join("");
-}
-
 export const createMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: unknown) => z.object({ hostClub: z.string().min(1).max(80) }).parse(input))
+  .validator((input: unknown) =>
+    z
+      .object({ hostClub: z.string().min(1).max(80) })
+      .strict()
+      .parse(input),
+  )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.hostClub]) return { ok: false, reason: "invalid_club" };
+    if (!(await hasKnownClub(data.hostClub))) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const seed = globalThis.crypto.randomUUID();
-      const { data: room, error } = await supabaseAdmin
-        .from("match_rooms")
-        .insert({
-          code: secureRoomCode(),
-          host_id: context.userId,
-          host_club: data.hostClub,
-          seed: "",
-          server_seeded: true,
-          status: "open",
-          minute: 0,
-          state: {},
-        })
-        .select("*")
-        .single();
-      if (!error && room) {
-        const { error: secretError } = await supabaseAdmin
-          .from("match_room_secrets")
-          .insert({ room_id: room.id, seed });
-        if (secretError) {
-          await supabaseAdmin.from("match_rooms").delete().eq("id", room.id);
-          return { ok: false, reason: "create_failed" };
-        }
-        return { ok: true, room: room as unknown as MultiplayerRoomRecord };
-      }
-      if (error?.code !== "23505") return { ok: false, reason: "create_failed" };
-    }
-    return { ok: false, reason: "create_failed" };
+    const { createPrivateMatchRoom } = await import("./multiplayer-room-create.server");
+    return createPrivateMatchRoom(supabaseAdmin, context.userId, data.hostClub);
   });
 
 export const joinMatchRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: unknown) =>
-    z.object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) }).parse(input),
+    z
+      .object({ roomId: z.string().uuid(), guestClub: z.string().min(1).max(80) })
+      .strict()
+      .parse(input),
   )
   .handler(async ({ data, context }): Promise<RoomActionResult> => {
-    if (!CLUBS[data.guestClub]) return { ok: false, reason: "invalid_club" };
+    if (!(await hasKnownClub(data.guestClub))) return { ok: false, reason: "invalid_club" };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
@@ -126,8 +100,8 @@ export const startMatchRoom = createServerFn({ method: "POST" })
       currentRoom.status !== "ready" ||
       !currentRoom.server_seeded ||
       !currentRoom.guest_club ||
-      !CLUBS[currentRoom.host_club] ||
-      !CLUBS[currentRoom.guest_club]
+      !(await hasKnownClub(currentRoom.host_club)) ||
+      !(await hasKnownClub(currentRoom.guest_club))
     ) {
       return { ok: false, reason: "room_not_ready" };
     }
@@ -166,7 +140,7 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error: lookupError } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_id, status, updated_at")
+      .select("id, host_id, guest_id, status, updated_at, settlement_authority")
       .eq("id", data.roomId)
       .maybeSingle();
     if (lookupError || !room) return { ok: false, reason: "not_found" };
@@ -174,6 +148,7 @@ export const leaveMatchRoom = createServerFn({ method: "POST" })
       return { ok: false, reason: "not_participant" };
     }
     if (room.status === "done") return { ok: true };
+    if (room.settlement_authority === "websocket") return { ok: false, reason: "authority_only" };
     // A deterministic replay is already running under a live server-side
     // lease. An expired lease can be closed by a participant, but the CAS
     // below must beat any concurrent reclaim before deleting the private seed.
@@ -216,11 +191,14 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: room, error } = await supabaseAdmin
       .from("match_rooms")
-      .select("id, host_id, guest_club, host_club, server_seeded, status, state, updated_at")
+      .select(
+        "id, host_id, guest_club, host_club, contact_physics_revision, settlement_authority, server_seeded, status, state, updated_at",
+      )
       .eq("id", data.roomId)
       .maybeSingle();
     if (error || !room) return { ok: false, reason: "not_found" };
     if (room.host_id !== context.userId) return { ok: false, reason: "not_host" };
+    if (room.settlement_authority === "websocket") return { ok: false, reason: "authority_only" };
     if (room.status === "done") {
       if (!room.server_seeded) return { ok: false, reason: "room_closed" };
       const state = room.state as { hg?: unknown; ag?: unknown } | null;
@@ -239,7 +217,7 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
     if (!room.server_seeded || !room.guest_club) {
       return { ok: false, reason: "invalid_room" };
     }
-    if (!CLUBS[room.host_club] || !CLUBS[room.guest_club]) {
+    if (!(await hasKnownClub(room.host_club)) || !(await hasKnownClub(room.guest_club))) {
       return { ok: false, reason: "invalid_room" };
     }
 
@@ -321,7 +299,9 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
       // egress, secrets, and Atlas connectivity pass an end-to-end test.
       const { matchAuxEnabled, simulateOnMatchAux } = await import("./match-aux-client.server");
       let result: { hg: number; ag: number; minute: number };
-      if (matchAuxEnabled()) {
+      // Legacy auxiliary workers do not attest contact-physics revision 2.
+      // Preserve a deterministic pinned authority for newly created rooms.
+      if (matchAuxEnabled() && room.contact_physics_revision !== 2) {
         const verified = await simulateOnMatchAux({
           roomId: room.id,
           homeClub: room.host_club,
@@ -330,10 +310,23 @@ export const finishMatchRoom = createServerFn({ method: "POST" })
         });
         result = { hg: verified.hg, ag: verified.ag, minute: verified.minute };
       } else {
+        // Import physics and team construction only for the trusted legacy replay.
+        // Ordinary SSR, room joins and auxiliary authority never evaluate this graph.
+        const [{ buildTeamSetup }, simulation] = await Promise.all([
+          import("@/game/quickMatch"),
+          import("@/game/sim"),
+        ]);
+        const {
+          MatchSim,
+          LIVE_MATCH_CLOCK_SCALE,
+          MATCH_SIMULATION_STEP,
+          MATCH_SIMULATION_TICK_LIMIT,
+        } = simulation;
         const sim = new MatchSim(
           buildTeamSetup(room.host_club),
           buildTeamSetup(room.guest_club),
           secret.seed,
+          room.contact_physics_revision === 2 ? { contactPhysicsRevision: 2 } : undefined,
         );
         let steps = 0;
         while (!sim.finished && steps++ < MATCH_SIMULATION_TICK_LIMIT) {

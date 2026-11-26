@@ -1,6 +1,6 @@
 import type { Pose } from "./animation-core";
 import { emptyPose } from "./animation-core";
-import { gaitPoseAt, solveLegTarget } from "./gait-kinematics";
+import { gaitCadence, gaitPoseAt, solveLegTarget } from "./gait-kinematics";
 import { clampPoseAnatomy, soleHeightFor } from "./ground-contact";
 import { lookFor, type PlayerLook, type Proportions } from "./player-model";
 import type { ManagerLook } from "./types";
@@ -73,10 +73,12 @@ export function cinematicActorPose(
   cue?: CinematicCue,
   lineTime = time,
   keepSeated = false,
+  walkSpeed = 1.35,
 ): Pose {
   for (const key of Object.keys(out) as (keyof Pose)[]) out[key] = 0;
   const t = time + (seed % 17) * 0.37;
-  if (posture === "walk") gaitPoseAt(t * 5.2, 1.35, p, out);
+  if (posture === "walk")
+    gaitPoseAt(t * gaitCadence(walkSpeed, p.thigh + p.shin) * Math.PI * 2, walkSpeed, p, out);
   else {
     out.armLRoll = 0.07;
     out.armRRoll = -0.07;

@@ -7,7 +7,7 @@ import type { Proportions } from "./player-model";
 export function footballShorts(
   p: Pick<Proportions, "hipW" | "hipH" | "chestD" | "thigh" | "legR">,
   radial = 16,
-  options?: { waistOnly?: boolean; waistRows?: number; legRows?: number },
+  options?: { waistOnly?: boolean; waistRows?: number; legRows?: number; rolledHem?: boolean },
 ): THREE.BufferGeometry {
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -59,6 +59,11 @@ export function footballShorts(
     if (row) stitch((row - 1) * (radial * 2 + 1), row * (radial * 2 + 1), radial * 2);
   }
   const branch = rows * (radial * 2 + 1);
+  const angleStep = (Math.PI * 2) / radial;
+  // A whole radial step only changes where the seam starts. Rotate by the
+  // nearest equivalent angle so stitching the rise does not pinch the cloth
+  // through the quadriceps, especially when the low LOD has just two rings.
+  const openingTurn = (radial / 4 - Math.round(radial / 4)) * angleStep;
   for (const sign of options?.waistOnly ? [] : [1, -1]) {
     let previous = branch + (sign === 1 ? 0 : radial);
     const legRows = options?.legRows ?? 7;
@@ -68,18 +73,14 @@ export function footballShorts(
       const center = crotchRadius + (centers - crotchRadius) * t;
       const width = crotchRadius * (1 - t) + (p.legR * 1.16 + 0.007) * t;
       const depth = p.legR * (1.34 - t * 0.1) + 0.007;
+      const turn = THREE.MathUtils.smoothstep(t, 0, 0.55) * openingTurn;
+      const fold = Math.sin(Math.PI * t);
+      const hemRoll = Math.exp(-(((t - 0.97) / 0.07) ** 2)) * 0.0022;
       const start = positions.length / 3;
       for (let i = 0; i <= radial; i++) {
-        // Meet the thigh's sin/cos angular grid at the opening. A 90-degree
-        // phase mismatch is harmless on dense rings, but six-sided extras
-        // put skin corners directly behind cloth edges and looked torn when
-        // seated. Blend from the crotch's authored grid without a new ring.
-        const phase =
-          (i / radial) * Math.PI * 2 + THREE.MathUtils.smoothstep(t, 0, 0.55) * Math.PI * 0.5;
-        const hemRoll = Math.exp(-(((t - 0.97) / 0.07) ** 2)) * 0.0022;
-        const panel = Math.cos(phase * 2) * Math.sin(Math.PI * t) * 0.001;
-        const crease =
-          Math.sin(phase * 5 + t * 4) * Math.sin(Math.PI * t) * 0.0018 + hemRoll + panel;
+        const phase = i * angleStep + turn;
+        const panel = Math.cos(phase * 2) * fold * 0.001;
+        const crease = Math.sin(phase * 5 + t * 4) * fold * 0.0018 + hemRoll + panel;
         append(
           sign * (center - Math.cos(phase) * (width + crease)),
           y,
@@ -90,6 +91,32 @@ export function footballShorts(
       }
       stitch(previous, start, radial);
       previous = start;
+    }
+    if (options?.rolledHem) {
+      // Fold the actual rim inward. The return shares the panel's indexed
+      // edge and shows the inside of the cloth when a lifted leg exposes it.
+      const rim = previous;
+      const center = sign * centers;
+      const thickness = Math.max(p.legR * 0.026, 0.0016);
+      for (const [inset, lift] of [
+        [thickness * 0.7, thickness * 0.2],
+        [thickness, p.thigh * 0.18],
+      ] as const) {
+        const start = positions.length / 3;
+        const scale = 1 - inset / (p.legR * 1.24 + 0.007);
+        for (let i = 0; i <= radial; i++) {
+          const vertex = rim + i;
+          append(
+            center + (positions[vertex * 3]! - center) * scale,
+            hem + lift,
+            positions[vertex * 3 + 2]! * scale,
+            uvs[vertex * 2]!,
+            sign,
+          );
+        }
+        stitch(previous, start, radial);
+        previous = start;
+      }
     }
   }
   const geometry = new THREE.BufferGeometry();
