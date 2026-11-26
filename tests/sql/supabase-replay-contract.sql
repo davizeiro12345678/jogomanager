@@ -417,6 +417,64 @@ END;
 $mfa$;
 RESET ROLE;
 
+-- Payment fulfillment is privileged and at-most-once per Stripe reference.
+-- Both a second fulfillment call and a replayed completed event must be inert.
+-- All synthetic records are discarded by the encompassing ROLLBACK.
+DO $payment_idempotency$
+DECLARE
+  test_owner uuid := '22222222-2222-4222-8222-222222222222';
+  initial_coins bigint;
+  credited boolean;
+  credited_again boolean;
+BEGIN
+  ASSERT NOT has_function_privilege('anon',
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+    'EXECUTE'), 'Anonymous callers may not mint paid items';
+  ASSERT NOT has_function_privilege('authenticated',
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+    'EXECUTE'), 'Authenticated users may not mint paid items';
+  ASSERT has_function_privilege('service_role',
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+    'EXECUTE'), 'Service-role Stripe fulfillment permission must remain available';
+  ASSERT NOT has_function_privilege('authenticated',
+    'public.begin_payment_webhook_event(text,text)', 'EXECUTE'),
+    'Client must never register privileged payment events';
+
+  SELECT coins INTO initial_coins FROM public.user_wallet WHERE user_id = test_owner;
+  ASSERT initial_coins IS NOT NULL, 'Missing synthetic wallet fixture';
+
+  ASSERT public.begin_payment_webhook_event(
+    'evt_replay_payment_fixture_01', 'checkout.session.completed'),
+    'A fresh payment event must start processing';
+  ASSERT public.begin_payment_webhook_event(
+    'evt_replay_payment_fixture_01', 'checkout.session.completed'),
+    'An in-progress payment may be retried safely';
+
+  INSERT INTO public.user_purchases(user_id, product_key, amount_cents, status, reference)
+  VALUES(test_owner, 'coins_small', 500, 'pending', 'cs_replay_payment_fixture_01');
+
+  SELECT public.fulfill_store_purchase(test_owner, 'coins_small',
+    'cs_replay_payment_fixture_01', 500, 101, 0, 0, ARRAY[]::text[], 0, 0)
+  INTO credited;
+  SELECT public.fulfill_store_purchase(test_owner, 'coins_small',
+    'cs_replay_payment_fixture_01', 500, 101, 0, 0, ARRAY[]::text[], 0, 0)
+  INTO credited_again;
+
+  ASSERT credited IS TRUE AND credited_again IS FALSE,
+    'The same payment reference must not grant benefits twice';
+  ASSERT (SELECT coins FROM public.user_wallet WHERE user_id = test_owner) = initial_coins + 101,
+    'Duplicate checkout changed the wallet more than once';
+  ASSERT (SELECT count(*) FROM public.user_purchases
+    WHERE reference = 'cs_replay_payment_fixture_01') = 1,
+    'The same checkout reference must have one purchase receipt';
+
+  PERFORM public.finish_payment_webhook_event('evt_replay_payment_fixture_01', true);
+  ASSERT NOT public.begin_payment_webhook_event(
+    'evt_replay_payment_fixture_01', 'checkout.session.completed'),
+    'Completed payment event must reject replay';
+END;
+$payment_idempotency$;
+
 ROLLBACK;
 
 -- Run the private metrics contract as a separate rollback-only fixture.
