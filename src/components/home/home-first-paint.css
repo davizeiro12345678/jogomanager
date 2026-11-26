@@ -428,8 +428,9 @@
   max-width: 26.25rem;
   border: 1px solid color-mix(in oklab, var(--home-lime) 35%, transparent);
   border-radius: 14px;
-  /* Opaque enough to read over the photo without a costly backdrop blur. */
-  background: color-mix(in oklab, var(--home-ink) 86%, transparent);
+  /* One-pixel gaps stay consistent even when the grid wraps. */
+  gap: 1px;
+  background: color-mix(in oklab, var(--home-lime) 25%, var(--home-ink));
   overflow: hidden;
 }
 .home-hero-stats > div {
@@ -437,11 +438,9 @@
   align-content: start;
   min-width: 0;
   overflow-wrap: anywhere;
+  background: var(--home-ink);
   padding: 0.75rem clamp(0.3125rem, 2vw, 0.625rem);
   text-align: center;
-}
-.home-hero-stats > div + div {
-  border-left: 1px solid color-mix(in oklab, var(--home-lime) 25%, transparent);
 }
 .home-hero-stats dd {
   grid-row: 1;
@@ -467,7 +466,8 @@
   .home-hero-stats {
     border-color: CanvasText;
   }
-  .home-hero-stats > div + div {
-    border-color: CanvasText;
+  .home-hero-stats > div {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }
