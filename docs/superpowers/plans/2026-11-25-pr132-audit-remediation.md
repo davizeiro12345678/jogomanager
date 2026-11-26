@@ -173,3 +173,12 @@ O [registro de progresso](./2026-11-11-jogomanager-release-integration.progress.
 - [ ] P0: restaurar entrega autorizada das texturas reais e executar nove eixos no SHA novo. Não substituir por imagens fictícias nem ignorar 403.
 - [ ] P0: PR #179 6fa4bf09 [CodSpeed 45844733604](https://github.com/davizeiro12345678/jogomanager/actions/runs/45844733604) falhou em MatchSim (+8,96%); causa ainda não comprovada. Preservar limites e revisar novo SHA.
 - [ ] P0/P1: staging autenticado, Stripe sandbox, backup externo restaurável, Wazuh coordenado, CodeQL nativo e GPU física seguem pendentes. P2: confirmar CLS, acessibilidade, textos e carregamentos em candidato publicado de homologação. Sem merge em main ou deploy.
+
+
+## Continuação P0/P1 — homologação remota dos contratos SQL (26/11/2026)
+
+- [x] Localizar branch Supabase staging-release-132, isolada e with_data=false. Consulta SQL funciona apesar do status histórico MIGRATIONS_FAILED e get_project retornar not found; não alterar ou usar produção.
+- [x] Executar contratos do SHA b1619cd no preview remoto com BEGIN/ROLLBACK: atomic-match-room, cooperative-match-roster, authoritative-match-settlement, private-matchmaking-queue, match_contact_revision e room-authority-fencing. Todos passaram. 
+- [x] RED atomic-ranked-match-allocation: 42501 na tentativa de UPDATE direto em sala websocket; proteção correta. GREEN: fixture usa RPC de liquidação para schema 0077+, exige rejeição do UPDATE direto, preserva verificação antiga para 0075. O contrato corrigido passou no preview remoto. Sete contratos SQL aprovados.
+- [x] Verificação após rollback: 0 auth.users, salas, queue, pairs, resultados, ratings e crons ativos; 78 tabelas públicas, todas com RLS. O fencing testa permissões temporárias apenas dentro da transação descartada.
+- [ ] CI do novo SHA, replay legado 0075, testes autenticados em browser, clientes reais 1x1/2x2, passkey, Stripe sandbox, deploy e recuperação externa permanecem pendentes. O sucesso SQL não certifica esses fluxos.

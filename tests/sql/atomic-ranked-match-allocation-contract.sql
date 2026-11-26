@@ -19,6 +19,8 @@ DECLARE
   v_code text;
   v_public_seed text;
   v_status jsonb;
+  v_settlement jsonb;
+  v_direct_finish_denied boolean := false;
 BEGIN
   IF public.match_queue_allocate() IS NOT NULL THEN
     RAISE EXCEPTION 'allocated room without any waiting players';
@@ -57,7 +59,30 @@ BEGIN
     RAISE EXCEPTION 'a second allocation reused committed seats'; END IF;
 
   -- Do not reveal a finished room via stale-pair polling.
-  UPDATE public.match_rooms SET status='done' WHERE id=v_room;
+  -- Migration 0075 supports legacy direct closure. On the fully migrated
+  -- schema (0077+), ranked rooms require the signed settlement RPC instead.
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_attribute
+      WHERE attrelid='public.match_rooms'::regclass
+        AND attname='settlement_authority' AND NOT attisdropped) THEN
+    BEGIN
+      UPDATE public.match_rooms SET status='done' WHERE id=v_room;
+    EXCEPTION WHEN insufficient_privilege THEN
+      v_direct_finish_denied := true;
+    END;
+    IF NOT v_direct_finish_denied THEN
+      RAISE EXCEPTION 'direct ranked closure bypassed settlement authority';
+    END IF;
+    -- Synthetic receipt, same fixture contract as authoritative settlement.
+    v_settlement := public.settle_authoritative_match(
+      v_room,gen_random_uuid(),repeat('a',64),repeat('A',43),
+      'contact-2','completed',1,0,90
+    );
+    IF v_settlement->>'status' IS DISTINCT FROM 'settled' THEN
+      RAISE EXCEPTION 'authorized ranked settlement failed';
+    END IF;
+  ELSE
+    UPDATE public.match_rooms SET status='done' WHERE id=v_room;
+  END IF;
   IF (public.match_queue_status('50000000-0000-4000-8000-000000000001')->>'status')<>'not_joined'
   THEN RAISE EXCEPTION 'finished room was returned as a live match'; END IF;
 END;
