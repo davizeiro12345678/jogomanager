@@ -25,7 +25,13 @@ export type AuthorityFeedEvent =
   | {
       kind: "ignored";
       reason:
-        "malformed" | "foreign_room" | "foreign_seat" | "stale" | "conflict" | "seat_mismatch";
+        | "malformed"
+        | "foreign_room"
+        | "foreign_seat"
+        | "stale"
+        | "conflict"
+        | "seat_mismatch"
+        | "wrong_phase";
     };
 
 const MAX_FRAME_BYTES = 64 * 1024;
@@ -67,6 +73,10 @@ export class AuthoritativePresentationFeed {
     return this.result ? structuredClone(this.result) : null;
   }
 
+  hasFinalReceipt(): boolean {
+    return this.result !== null;
+  }
+
   confirmedSeat(): MatchSeat | null {
     return this.seat;
   }
@@ -85,7 +95,7 @@ export class AuthoritativePresentationFeed {
    * Stale, conflicting, cross-room and maliciously oversized frames cannot
    * roll back an official scoreboard.
    */
-  accept(raw: unknown): AuthorityFeedEvent {
+  accept(raw: unknown, phase: "authenticating" | "connected" = "connected"): AuthorityFeedEvent {
     if (typeof raw !== "string" || raw.length > MAX_FRAME_BYTES)
       return { kind: "ignored", reason: "malformed" };
     if (encoder.encode(raw).byteLength > MAX_FRAME_BYTES)
@@ -98,6 +108,12 @@ export class AuthoritativePresentationFeed {
     }
     if (!object(input) || input["version"] !== MATCH_PROTOCOL_VERSION)
       return { kind: "ignored", reason: "malformed" };
+    if (
+      phase === "authenticating" &&
+      input["type"] !== "ready" &&
+      input["type"] !== "sequence_resume"
+    )
+      return { kind: "ignored", reason: "wrong_phase" };
 
     if (input["type"] === "sequence_resume") {
       const seat = parseSeat(input["seat"]);
@@ -127,9 +143,6 @@ export class AuthoritativePresentationFeed {
         return { kind: "ignored", reason: "malformed" };
       const seat = ready ? parseSeat(input["seat"]) : null;
       if (ready && !seat) return { kind: "ignored", reason: "malformed" };
-      if (ready && this.expectedSeat && seat !== this.expectedSeat)
-        return { kind: "ignored", reason: "seat_mismatch" };
-      if (ready && this.seat && this.seat !== seat) return { kind: "ignored", reason: "conflict" };
       let snapshot: MatchSnapshotV1;
       try {
         snapshot = parseMatchSnapshotV1(input["snapshot"]);
@@ -137,6 +150,9 @@ export class AuthoritativePresentationFeed {
         return { kind: "ignored", reason: "malformed" };
       }
       if (snapshot.roomId !== this.roomId) return { kind: "ignored", reason: "foreign_room" };
+      if (ready && this.expectedSeat && seat !== this.expectedSeat)
+        return { kind: "ignored", reason: "seat_mismatch" };
+      if (ready && this.seat && this.seat !== seat) return { kind: "ignored", reason: "conflict" };
       if (this.result) return { kind: "ignored", reason: "stale" };
       if (this.current) {
         if (

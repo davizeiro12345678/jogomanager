@@ -276,6 +276,8 @@ describe("staged authoritative WSS client", () => {
         }),
       );
       expect(f.events.at(-1)).toBe("final");
+      expect(f.client.statusSnapshot()).toBe("connected");
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
       await vi.advanceTimersByTimeAsync(90_000);
       expect(socket.sent).toHaveLength(2);
       expect(socket.closeCode).toBeNull();
@@ -346,6 +348,30 @@ describe("staged authoritative WSS client", () => {
       await vi.advanceTimersByTimeAsync(5_001);
       expect(socket.closeCode).toBe(4003);
       expect(f.client.statusSnapshot()).toBe("unavailable");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it.each([
+    ["unsupported protocol", { version: 2, snapshot: state(1) }],
+    ["missing snapshot", {}],
+    ["foreign room", { snapshot: { ...state(1), roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5" } }],
+    ["malformed snapshot", { snapshot: { ...state(1), tick: -1 } }],
+  ])("ignores a foreign-seat ready with %s before authenticating", async (_, invalid) => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      socket.message(frame({ type: "ready", seat: "away", ...invalid }));
+      expect(socket.closeCode).toBeNull();
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.events).toEqual([]);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      expect(f.client.statusSnapshot()).toBe("connected");
     } finally {
       f.client.dispose();
     }

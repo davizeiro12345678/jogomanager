@@ -13,8 +13,6 @@ import {
   type AuthorityFeedEvent,
 } from "./authoritative-presentation-feed";
 
-import { classifyPreAuthAuthorityFrame } from "./preauth-frame-gate";
-
 export interface AuthorityClientSocket {
   readonly readyState: number;
   send(data: string): void;
@@ -147,7 +145,13 @@ export class AuthoritativeMatchSocketClient {
     input: Omit<MatchCommandV1, "version" | "roomId" | "sequence">,
   ): number | null {
     const socket = this.socket;
-    if (this.currentStatus !== "connected" || !socket || socket.readyState !== WS_OPEN) return null;
+    if (
+      this.currentStatus !== "connected" ||
+      !socket ||
+      socket.readyState !== WS_OPEN ||
+      this.feed.hasFinalReceipt()
+    )
+      return null;
     const now = (this.options.now ?? Date.now)();
     if (!this.ticket || this.ticket.expiresAt <= now) {
       socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
@@ -216,26 +220,16 @@ export class AuthoritativeMatchSocketClient {
         // must never mutate the presentation feed or its connection state.
         if (!message.isTrusted || message.origin !== this.origin) return;
         // Until ready authenticates this seat, no snapshot or final result is official.
-        if (this.currentStatus === "authenticating") {
-          const decision = classifyPreAuthAuthorityFrame(message.data, candidate.seat);
-          if (decision === "ignore") return;
-          if (decision === "reject_seat") {
-            this.status("unavailable");
-            socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "seat_mismatch");
-            return;
-          }
-        } else if (this.currentStatus !== "connected") {
-          return;
-        }
-        const event = this.feed.accept(message.data);
+        const phase = this.currentStatus;
+        if (phase !== "authenticating" && phase !== "connected") return;
+        const event = this.feed.accept(message.data, phase);
         if (event.kind === "ignored" && event.reason === "seat_mismatch") {
           this.rejectForeignSeat(socket);
           return;
         }
         if (event.kind === "sequence_resume") {
           // The feed only emits this event for the seat bound from the ticket.
-          if (this.currentStatus === "authenticating")
-            resumeFrom = Math.max(resumeFrom, event.sequence);
+          if (phase === "authenticating") resumeFrom = Math.max(resumeFrom, event.sequence);
           return;
         }
         if (event.kind === "ack" || event.kind === "nack")
@@ -244,17 +238,14 @@ export class AuthoritativeMatchSocketClient {
             (this.options.now ?? Date.now)(),
             event.kind === "nack",
           );
-        if (this.currentStatus === "authenticating" && event.kind === "ready") {
+        if (phase === "authenticating" && event.kind === "ready") {
           this.clearAuthTimer();
           this.retryCount = 0;
           this.sequence = Math.max(this.sequence, resumeFrom);
           this.startConnectionTimers(socket, generation, candidate);
           this.status("connected");
         }
-        if (event.kind === "final") {
-          this.clearAuthTimer();
-          this.clearConnectionTimers();
-        }
+        if (this.feed.hasFinalReceipt()) this.clearConnectionTimers();
         if (event.kind !== "ignored") this.options.onEvent(event);
       };
       socket.onclose = (close) => {

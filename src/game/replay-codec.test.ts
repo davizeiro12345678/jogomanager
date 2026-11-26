@@ -113,6 +113,18 @@ describe("versioned replay codec", () => {
     expect(decodeReplay({ version: 2, ...replay })).toEqual(replay);
   });
 
+  it("preserves the frame shape when one v3 replay mixes visual and older frames", () => {
+    const replay = makeActionReplay();
+    const first = replay.frames[0]!;
+    const { v: _visual, ...older } = replay.frames[1]!;
+    const stored = encodeReplay({ ...replay, frames: [first, older] });
+    const decoded = decodeReplay(stored);
+
+    expect(decoded.frames[0]!.v).toBe(first.v);
+    expect(Object.hasOwn(decoded.frames[1]!, "v")).toBe(false);
+    expect(decoded.frames).toEqual([first, older]);
+  });
+
   it.each([2, 3])("restores the recorded action clock when playing a v%s replay", (version) => {
     const replay = makeActionReplay();
     const recordedFrames = structuredClone(replay.frames);
