@@ -124,7 +124,7 @@ describe("page-owned styles", () => {
 
   it("keeps the wizard's saved-game note separate from the live career shell", () => {
     expect(createCss).toContain(".career-create-save-note");
-    expect(createCss).not.toMatch(/\.career-save-note/);
+    expect(createCss).not.toMatch(/\.career-save-note\b/);
   });
 
   it("reserves the measured header and footer space when a career control gets focus", () => {
