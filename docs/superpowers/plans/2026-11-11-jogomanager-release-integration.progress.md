@@ -626,3 +626,14 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [x] Conciliar o #179 com a `main` `c2eec81a`, preservando os dois históricos e adotando o comparador de bundle por grafo de hidratação já integrado. Preservar rótulos do multiplayer e navegação acessível corrigida no #179.
 - [x] Mostrar retorno e entrada como convidado no estado localizado de autenticação sem configuração. O teste de rota cobre os dois destinos e a ausência do formulário.
 - [ ] Aprovar gates desse candidato e homologar OAuth, passkey, cobrança sandbox e persistência. Confirmar recuperação externa, upgrade coordenado do Wazuh e GPU física.
+
+
+## Checkpoint de acessibilidade e homologação do PR #179 — 26/11/2026
+
+- [x] PR #132 confirmado como merged em main às 18:10:56 UTC, HEAD histórico `06affc34932f5eafc264e517893bcad590c2662d`; não o reabrir. As instruções históricas de não merge acima são registros dos checkpoints anteriores.
+- [x] PR #179 permanece aberto em Draft na branch `fix/audit-vps-ui-20261126`. A Home, os estilos de carreira, o Match e as folhas específicas já possuem mudanças extensas nessa branch; não duplicar refatoração.
+- [x] P2: corrigida a truncagem visual do nome de treinador no rodapé da sidebar, causada por `max-width: 155px`, `white-space: nowrap` e `text-overflow: ellipsis`. Override localizado em `src/components/game/career-typography-shell.css` preserva nomes longos com zoom de texto, sem mudar o layout do Match 3D. Teste de regressão acrescentado em `career-interface-accessibility.test.ts`. Commits `25867894` e `d1a361eb`; arquivos confirmados pela API GitHub. Execução do teste e validação visual ainda pendentes.
+- [ ] P0: CI e CodSpeed do HEAD final, comparações equivalentes; Lighthouse mobile e bundle. Checks anteriores não certificam este HEAD.
+- [ ] P0: Stripe Sandbox autenticado, passkeys/Auth, multiplayer físico 1×1 e arquitetura 2×2, backup externo criptografado com restauração isolada.
+- [ ] P1: QA visual dos componentes de carreira (320/390/768/1280 px, 200%/400% zoom, teclado, leitor de tela, contraste forçado, movimento reduzido), Textures/Match 3D em GPU física, Wazuh e revisão CodeQL.
+- [ ] P1: revisão humana independente, evidências reais de staging no SHA final e rollback testado. Não converter #179 em Ready, não mesclar ou publicar sem gates.
