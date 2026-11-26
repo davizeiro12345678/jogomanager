@@ -127,6 +127,14 @@ describe("page-owned styles", () => {
     expect(createCss).not.toMatch(/\.career-save-note\b/);
   });
 
+
+  it("keeps long manager names readable instead of clipping them at enlarged text sizes", () => {
+    const typographyCss = stylesheet("./career-typography-shell.css");
+    expect(typographyCss).toMatch(
+      /\.career-sidebar-footer p\s*\{[^}]*white-space:\s*normal;[^}]*overflow-wrap:\s*anywhere;[^}]*text-overflow:\s*clip;/s,
+    );
+  });
+
   it("reserves the measured header and footer space when a career control gets focus", () => {
     expect(screensCss).toMatch(/scroll-margin-block-start:\s*calc\(var\(--career-header-height\)/);
     expect(screensCss).toMatch(/scroll-margin-block-end:\s*calc\(var\(--career-footer-height\)/);
