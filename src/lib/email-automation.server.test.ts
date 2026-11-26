@@ -79,7 +79,8 @@ describe("Resend automation transport", () => {
     });
     const [url, init] = request.mock.calls[0]!;
     expect(url).toBe("https://api.resend.com/events/send");
-    expect(init?.redirect).toBe("error");
+    // Workerd implements only follow|manual; "error" throws before dispatch.
+    expect(init?.redirect).toBe("manual");
     expect(init?.signal).toBeInstanceOf(AbortSignal);
     expect(new Headers(init?.headers).get("idempotency-key")).toBe(`jgm-automation/${lease.id}`);
     expect(JSON.parse(String(init?.body))).toEqual({
