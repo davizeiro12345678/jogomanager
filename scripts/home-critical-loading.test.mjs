@@ -32,3 +32,11 @@ test("editorial content and navigation stay available in the SSR tree", () => {
   assert.match(home, /<section id="modos"/);
   assert.match(home, /<HomeDetails\s*\/>/);
 });
+
+test("home catalog metrics reflow at enlarged text sizes and support forced colors", () => {
+  const css = source("src/components/home/home-first-paint.css");
+  assert.match(css, /grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 7rem\), 1fr\)\)/);
+  assert.match(css, /\.home-hero-stats > div \{[^}]*overflow-wrap: anywhere/s);
+  assert.match(css, /\.home-hero-stats dt \{[^}]*font-size: 0\.75rem/s);
+  assert.match(css, /@media \(forced-colors: active\)[\s\S]*outline-color: Highlight/);
+});
