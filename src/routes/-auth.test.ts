@@ -10,9 +10,14 @@ const state = vi.hoisted(() => ({
   error: null as string | null,
   retry: vi.fn(),
   passkeysSupported: true,
+  configured: true,
 }));
 
 vi.mock("@/hooks/useAuthMethods", () => ({ useAuthMethods: () => state }));
+vi.mock("@/integrations/supabase/client", () => ({
+  getConfiguredSupabaseClient: () => (state.configured ? {} : null),
+  supabase: {},
+}));
 vi.mock("@/integrations/supabase/passkey-auth", () => ({
   supportsPasskeys: () => state.passkeysSupported,
   passkeyErrorMessage: () => "Falha na chave de acesso",
@@ -50,9 +55,17 @@ beforeEach(() => {
   state.loading = false;
   state.error = null;
   state.passkeysSupported = true;
+  state.configured = true;
 });
 
 describe("game login screen", () => {
+  it("fails closed with a clear screen if this environment has no Supabase configuration", () => {
+    state.configured = false;
+    const markup = renderAuth();
+    expect(markup).toContain("Autenticação indisponível neste ambiente");
+    expect(markup).toContain("Não é possível iniciar uma sessão");
+    expect(markup).not.toContain("Entrar com e-mail");
+  });
   it("renders all eight enabled providers together with email and passkeys", () => {
     const markup = renderAuth();
     for (const label of [

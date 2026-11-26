@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient, supabase } from "@/integrations/supabase/client";
 
 import {
   socialOAuthOptions,
@@ -49,6 +49,33 @@ const MfaChallenge = lazy(() =>
 );
 
 export function AuthPage() {
+  if (!getConfiguredSupabaseClient()) {
+    return (
+      <main className="grid min-h-dvh place-items-center bg-background px-4">
+        <section role="alert" className="max-w-md rounded-2xl border border-border p-6 text-center">
+          <h1 className="text-xl font-semibold text-foreground">
+            Autenticação indisponível neste ambiente
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Não é possível iniciar uma sessão porque este ambiente ainda não está configurado.
+          </p>
+          <Link
+            to="/"
+            className="mt-5 inline-block min-h-11 rounded-md border border-input px-4 py-3 text-sm"
+          >
+            Voltar ao início
+          </Link>
+          <Link to="/new" className="mt-3 block text-sm text-primary underline">
+            Continuar sem entrar
+          </Link>
+        </section>
+      </main>
+    );
+  }
+  return <ConfiguredAuthPage />;
+}
+
+function ConfiguredAuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const destination = search.next ?? "/club";

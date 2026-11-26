@@ -189,3 +189,12 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [ ] P2: verificar a correção internacionalizada em preview publicado no SHA final e em dispositivos móveis. Não transferir testes visuais do preview anterior.
 - [ ] Não efetuar deploy, merge do #179, force-push, cobrança real, migração em produção nem marcar gates como aprovados sem evidências correspondentes.
 <!-- /audit-verified-20261126-p0p1p2 -->
+
+<!-- auth-preview-missing-config-20261126 -->
+### Continuação da autenticação do preview — 26/11/2026
+
+- [x] **Diagnóstico reproduzido no SHA 7b37970c:** /auth do preview respondeu HTTP 200, mas a interface exibiu o ErrorComponent de raiz. O Chrome CDP capturou: `Missing Supabase environment variable(s): SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY`; /api/health do mesmo preview retornou HTTP 503 com `failureStage=missing_configuration` e verificações auth/serverCredentials/database falsas. A produção, isoladamente, respondeu HTTP 200/ready. Não confundir compilação Vite e bindings do Worker.
+- [x] **Correção de degradação segura no PR #179:** /auth não monta o formulário quando `getConfiguredSupabaseClient()` não encontra configuração; mostra indisponibilidade e navegação pública, sem abrir sessão nem recorrer a credenciais de produção. Teste RED: 1 falha esperada/6 aprovações; GREEN: 7/7, Prettier, ESLint e TypeScript aprovados no checkout isolado. Não é conserto do login real.
+- [ ] **P0 homologação:** configurar um projeto Supabase de staging isolado com URL e chave publicável durante o build do Vite, mais os bindings privados apropriados do Worker; executar smoke test com identidades de teste, OAuth/passkey/MFA, saúde da API e fallback seguro. Apenas um projeto Supabase de produção aparece no conector; nenhum segredo foi copiado para staging.
+- [ ] **Gates finais:** CI, CodSpeed pareado, Lighthouse, QA visual no novo commit e 1×1/2×2 real permanecem bloqueadores do merge; sem mudanças de produção ou alteração de limiares.
+<!-- /auth-preview-missing-config-20261126 -->
