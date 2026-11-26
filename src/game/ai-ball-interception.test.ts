@@ -31,6 +31,14 @@ describe("predictive loose-ball pursuit", () => {
     expect(away.score).toBeGreaterThan(toward.score);
   });
 
+  it("ranks recovery more slowly for a fatigued interceptor with the same pace", () => {
+    const stationary = { ...base, ballVx: 0 };
+    const fresh = predictLooseBallInterception(stationary);
+    const tired = predictLooseBallInterception({ ...stationary, stamina: 15 });
+    expect(tired).toMatchObject({ x: fresh.x, z: fresh.z });
+    expect(tired.score).toBeGreaterThan(fresh.score);
+  });
+
   it("remains deterministic under repeated evaluation", () => {
     const first = predictLooseBallInterception(base);
     for (let index = 0; index < 10; index += 1) {
@@ -58,6 +66,17 @@ describe("predictive loose-ball pursuit", () => {
     const corruptedBall = predictLooseBallInterception({ ...base, ballX: Infinity });
     expect(corruptedBall).toEqual({ x: 0, z: 2, score: 1_000_000 });
   });
+
+  it.each(["playerZ", "playerVx", "playerVz", "pace", "stamina", "ballVx", "ballVz"] as const)(
+    "returns the bounded fallback when %s is not finite",
+    (field) => {
+      expect(predictLooseBallInterception({ ...base, [field]: Infinity })).toEqual({
+        x: base.ballX,
+        z: base.ballZ,
+        score: 1_000_000,
+      });
+    },
+  );
 
   it("handles a stationary close ball with finite coordinates", () => {
     const target = predictLooseBallInterception({

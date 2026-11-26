@@ -33,20 +33,19 @@ const clamp = (n: number, lower: number, upper: number) => Math.max(lower, Math.
  * from the ball doesn't magically pivot at full speed.
  */
 export function predictLooseBallInterception(input: InterceptionInput): InterceptionTarget {
-  const { playerX, playerZ, playerVx, playerVz, ballX, ballZ, ballVx, ballVz } = input;
+  const { playerX, playerZ, playerVx, playerVz, pace, stamina, ballX, ballZ, ballVx, ballVz } =
+    input;
   if (
-    ![
-      playerX,
-      playerZ,
-      playerVx,
-      playerVz,
-      ballX,
-      ballZ,
-      ballVx,
-      ballVz,
-      input.pace,
-      input.stamina,
-    ].every(Number.isFinite)
+    !Number.isFinite(playerX) ||
+    !Number.isFinite(playerZ) ||
+    !Number.isFinite(playerVx) ||
+    !Number.isFinite(playerVz) ||
+    !Number.isFinite(pace) ||
+    !Number.isFinite(stamina) ||
+    !Number.isFinite(ballX) ||
+    !Number.isFinite(ballZ) ||
+    !Number.isFinite(ballVx) ||
+    !Number.isFinite(ballVz)
   ) {
     return {
       x: clamp(Number.isFinite(ballX) ? ballX : 0, -FIELD_X + 1, FIELD_X - 1),
@@ -54,8 +53,8 @@ export function predictLooseBallInterception(input: InterceptionInput): Intercep
       score: 1_000_000,
     };
   }
-  const staminaFactor = 0.78 + (clamp(input.stamina, 0, 100) / 100) * 0.22;
-  const speed = (2.45 + (clamp(input.pace, 0, 100) / 100) * 3.65) * staminaFactor;
+  const staminaFactor = 0.78 + (clamp(stamina, 0, 100) / 100) * 0.22;
+  const speed = (2.45 + (clamp(pace, 0, 100) / 100) * 3.65) * staminaFactor;
   const directDistance = Math.hypot(ballX - playerX, ballZ - playerZ);
   const forecastSeconds = clamp(directDistance / Math.max(speed, 0.1), 0, 1.2);
   // Approximate deceleration for target choice only. The ball physics itself

@@ -76,6 +76,31 @@ describe("match physics extras", () => {
     expect(sweptBallPlayerContact(0, 0, Number.MAX_VALUE, 1, 1, 0, 1)).toBeNull();
   });
 
+  it("keeps swept contact and radius boundaries across 100 mirrored cases", () => {
+    const radius = 1.25;
+    for (const direction of [-1, 1]) {
+      for (const speed of [8, 15, 30, 42, 60]) {
+        for (const step of [1 / 60, 1 / 30]) {
+          const halfDistance = (direction * speed * step) / 2;
+          for (const offset of [-radius, 0, 0.4, radius, radius + 0.001]) {
+            const hit = sweptBallPlayerContact(
+              -halfDistance,
+              0,
+              halfDistance,
+              0,
+              0,
+              offset,
+              radius,
+            );
+            expect(hit).toEqual(
+              Math.abs(offset) <= radius ? { fraction: 0.5, distance: Math.abs(offset) } : null,
+            );
+          }
+        }
+      }
+    }
+  });
+
   it("hard or wet ball spills further", () => {
     expect(firstTouchSpill(4, 30, "rain")).toBeGreaterThan(firstTouchSpill(4, 10, "clear"));
   });

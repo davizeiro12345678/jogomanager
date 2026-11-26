@@ -7,7 +7,7 @@ import type { Proportions } from "./player-model";
 export function footballShorts(
   p: Pick<Proportions, "hipW" | "hipH" | "chestD" | "thigh" | "legR">,
   radial = 16,
-  options?: { waistOnly?: boolean; waistRows?: number; legRows?: number },
+  options?: { waistOnly?: boolean; waistRows?: number; legRows?: number; rolledHem?: boolean },
 ): THREE.BufferGeometry {
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -90,6 +90,32 @@ export function footballShorts(
       }
       stitch(previous, start, radial);
       previous = start;
+    }
+    if (options?.rolledHem) {
+      // Fold the actual rim inward. The return shares the panel's indexed
+      // edge and shows the inside of the cloth when a lifted leg exposes it.
+      const rim = previous;
+      const center = sign * centers;
+      const thickness = Math.max(p.legR * 0.026, 0.0016);
+      for (const [inset, lift] of [
+        [thickness * 0.7, thickness * 0.2],
+        [thickness, p.thigh * 0.18],
+      ] as const) {
+        const start = positions.length / 3;
+        const scale = 1 - inset / (p.legR * 1.24 + 0.007);
+        for (let i = 0; i <= radial; i++) {
+          const vertex = rim + i;
+          append(
+            center + (positions[vertex * 3]! - center) * scale,
+            hem + lift,
+            positions[vertex * 3 + 2]! * scale,
+            uvs[vertex * 2]!,
+            sign,
+          );
+        }
+        stitch(previous, start, radial);
+        previous = start;
+      }
     }
   }
   const geometry = new THREE.BufferGeometry();

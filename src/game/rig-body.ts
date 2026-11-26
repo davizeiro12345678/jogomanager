@@ -290,16 +290,14 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
             ],
             segs.radial,
           )
-        : footballShorts(P, segs.radial),
+        : footballShorts(P, segs.radial, { rolledHem: true }),
       shorts,
       undefined,
       cast,
     ),
   ];
   if (!ctx.trousers) {
-    // A real waistband and two rolled leg openings break the flat, painted-on
-    // shorts silhouette.  They reuse `shorts`, therefore they are baked into
-    // the existing hips mesh rather than becoming three new draw calls.
+    // Bake the waistband into the same hips mesh as the shorts.
     hips.push(
       rigPart(
         withOpeningLeg(
@@ -317,33 +315,9 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
         cast,
       ),
     );
-    const shortsHemY = -P.hipH * 0.4 - P.thigh * 0.49;
-    const shortsHemTube = Math.max(P.legR * 0.026, 0.0016);
-    for (const side of SIDES)
-      hips.push(
-        rigPart(
-          withOpeningLeg(
-            ellipticalGarmentRing(
-              // The tube's inner edge meets the authored shell. The old
-              // radii sat inside the thigh near the opening and alternated
-              // cloth/skin triangles once the femur rotated into a seat.
-              P.legR * 1.16 + 0.007 + 0.0022 + shortsHemTube,
-              P.legR * 1.24 + 0.007 + 0.0022 + shortsHemTube,
-              shortsHemTube,
-              segs.radial,
-              hi ? 5 : 4,
-            ),
-            side,
-          ),
-          shorts,
-          // Sit just above the authored opening: it reads as a rolled edge
-          // but leaves the garment's true lowest ring available to the
-          // leg-skinning contract and its inner-hem probes.
-          { position: [side * P.hipW * 0.36, shortsHemY + shortsHemTube * 1.25, 0] },
-          cast,
-        ),
-      );
-    if (hi)
+    if (hi) {
+      const shortsHemY = -P.hipH * 0.4 - P.thigh * 0.49;
+      const shortsHemTube = Math.max(P.legR * 0.026, 0.0016);
       for (const side of SIDES) {
         // A short curved outseam anchors the waistband to each leg opening.
         // It is marked with the same femur identity as the opening, so a
@@ -372,6 +346,7 @@ function buildRigBodyUnprepared(ctx: RigBodyContext): RigBody {
         );
         hips.push(rigPart(outseam, shorts, undefined, cast));
       }
+    }
   }
 
   const spine: RigPart[] = [
