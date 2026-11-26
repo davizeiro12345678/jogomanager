@@ -506,11 +506,9 @@ export function seasonCompetitionRecord(
   move: PyramidMove | null,
   regionalPlayoffs: NonNullable<CompetitionSeasonRecord["playoffs"]>,
 ): CompetitionSeasonRecord {
-  const continentalPoints = new Map<string, [string, number]>();
+  const continentalPoints = new Map<string, number>();
   const addPoints = (clubId: string, points: number) => {
-    const score = continentalPoints.get(clubId);
-    if (score) score[1] += points;
-    else continentalPoints.set(clubId, [clubId, points]);
+    continentalPoints.set(clubId, (continentalPoints.get(clubId) ?? 0) + points);
   };
   for (const cup of cups) {
     if (cup.id !== "continental") continue;
@@ -540,7 +538,7 @@ export function seasonCompetitionRecord(
         cups.filter((c) => c.winner).map((c) => [c.competitionId ?? c.id, c.winner!]),
       ),
     },
-    continentalPoints: nullPrototypeRecord(continentalPoints.values()),
+    continentalPoints: nullPrototypeRecord(continentalPoints),
     tables: Object.fromEntries(
       Object.entries(tables).filter(
         ([id]) => getLeague(id).country === getLeague(state.leagueId).country,
