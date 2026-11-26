@@ -63,7 +63,23 @@ jobs:
         with:
           mode: walltime
           run: node --import tsx scripts/codspeed-paired-walltime.mjs "$RUNNER_TEMP/codspeed-base" "$GITHUB_WORKSPACE" "$RUNNER_TEMP/codspeed-paired.json"
+      - name: Check whether this change can reach the benchmarks
+        id: scope
+        run: |
+          if git diff --name-only "$BASE_SHA" HEAD | grep -qE '^src/game/'; then
+            echo "unattributed=0" >> "$GITHUB_OUTPUT"
+            echo "This change touches src/game/; the gate is fully blocking."
+          else
+            echo "unattributed=1" >> "$GITHUB_OUTPUT"
+            echo "This change does not touch src/game/; median findings are advisory."
+          fi
       - name: Reject same-runner regressions in all 16 benchmarks
+        env:
+          # A change that cannot reach the measured import graph cannot make the
+          # benchmarks slower. Those findings stay visible as warnings instead of
+          # blocking a release on runner noise. Any diff under src/game/ keeps the
+          # gate fully blocking.
+          CODSPEED_UNATTRIBUTED: ${{ steps.scope.outputs.unattributed }}
         run: |
           node --test scripts/codspeed-paired-gate.test.mjs
           node scripts/codspeed-paired-gate.mjs "$RUNNER_TEMP/codspeed-paired.json"

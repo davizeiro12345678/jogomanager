@@ -16,11 +16,41 @@ const workloads = {
   rig: ["registerRigBenchmarks", 4],
 };
 const minimumSamples = 250;
+// CodSpeed reported the same commit at +10.79% and +22.26% on two consecutive
+// runs while `base-a` and `base-b` themselves differed by 7% and 29%. Two of the
+// three sources of that spread are positional: the first suite of the first slot
+// ran on a cold, boosted CPU, and `replay codec` was always the first suite in
+// every slot. Both are fixed below with a fixed burn and a mirrored suite order.
+//
+// The sample window stays at the values that were measured to be stable for the
+// allocation-heavy replay codec: extending it to 400 ms with a 600 ms warm-up
+// made `decodeReplay` diverge by 39.80% between two identical code bases (base
+// p99 72-106 ms against 9 ms on the candidate) because the longer runs changed
+// the garbage-collection cadence inside the sample window. Measurement hygiene,
+// not a looser limit: the gate below still rejects any confirmed regression.
+const measurementTimeMs = 200;
+const warmupTimeMs = 50;
+const burnMs = 1_500;
+
+/** Equalise the CPU boost/thermal state every slot starts from. The first suite
+ * of the first slot used to run on a cold, boosted CPU and always looked
+ * faster, which biased every CPU-bound benchmark against the candidate. */
+function burnCpu(milliseconds) {
+  const deadline = performance.now() + milliseconds;
+  let sink = 0;
+  let step = 0;
+  while (performance.now() < deadline) {
+    for (let inner = 0; inner < 20_000; inner += 1) sink += Math.sqrt((step += 1) % 997);
+  }
+  assert.ok(Number.isFinite(sink), "CPU burn must not be optimised away");
+}
 
 async function measureSuite(directory, label, file, output) {
   assert.ok(Object.hasOwn(workloads, file), `Unknown benchmark suite: ${file}`);
   const [register, expectedCount] = workloads[file];
-  const bench = withCodSpeed(new Bench({ time: 200, warmupTime: 50, iterations: minimumSamples }));
+  const bench = withCodSpeed(
+    new Bench({ time: measurementTimeMs, warmupTime: warmupTimeMs, iterations: minimumSamples }),
+  );
   const namespaced = {
     add(name, fn, options) {
       bench.add(label + "/" + name, fn, options);
@@ -29,6 +59,7 @@ async function measureSuite(directory, label, file, output) {
   };
   const suite = await import(pathToFileURL(join(directory, "src/game/benchmarks", file + ".ts")));
   suite[register](namespaced);
+  burnCpu(burnMs);
   bench.runSync();
   assert.equal(bench.tasks.length, expectedCount, `Missing ${file} benchmarks`);
   const rows = bench.tasks.map(({ name, result }) => {
@@ -56,14 +87,18 @@ const base = resolve(basePath);
 const head = resolve(headPath);
 const results = new Map();
 const scratch = await mkdtemp(join(os.tmpdir(), "codspeed-abba-"));
+const suiteOrder = Object.keys(workloads);
+// Each side gets one forward and one reversed slot so a thermal ramp inside a
+// slot cannot systematically favour base (or head) for the suite it runs first.
+const slots = [
+  { label: "base-a", directory: base, order: suiteOrder },
+  { label: "head-a", directory: head, order: [...suiteOrder].reverse() },
+  { label: "head-b", directory: head, order: suiteOrder },
+  { label: "base-b", directory: base, order: [...suiteOrder].reverse() },
+];
 try {
-  for (const [label, directory] of [
-    ["base-a", base],
-    ["head-a", head],
-    ["head-b", head],
-    ["base-b", base],
-  ]) {
-    for (const file of Object.keys(workloads)) {
+  for (const { label, directory, order } of slots) {
+    for (const file of order) {
       // Give each suite its own V8 heap. Large replay allocations must not
       // influence the later geometry measurements through GC or JIT state.
       const sample = join(scratch, `${label}-${file}.json`);
@@ -95,8 +130,14 @@ const commit = (cwd) =>
   execFileSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf8" }).trim();
 const report = {
   protocol:
-    "CodSpeed Walltime, ABBA, one runner, same Node and shared node_modules, fresh process per suite",
+    "CodSpeed Walltime, ABBA, one runner, same Node and shared node_modules, fresh process per suite, mirrored suite order, equalised burn and warm-up per slot",
   minimumSamples,
+  measurement: {
+    timeMs: measurementTimeMs,
+    warmupTimeMs,
+    burnMs,
+    slotOrder: slots.map(({ label, order }) => `${label}:${order.join(",")}`),
+  },
   base: commit(base),
   head: commit(head),
   node: process.version,

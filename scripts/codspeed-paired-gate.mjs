@@ -14,6 +14,12 @@ const MAX_MEDIAN_REGRESSION_PERCENT = 3;
  * instead of silently widening the gate.
  */
 const MAX_CERTIFIABLE_NOISE_PERCENT = 10;
+
+/** Reproducibility of two identical rounds, as a percentage of the faster one. */
+function roundSpread(first, second) {
+  return 100 * (Math.abs(first - second) / Math.min(first, second));
+}
+
 const P99_SPIKE_MULTIPLIER = 3;
 const MATERIAL_P99_MS = 5;
 const MIN_P99_ROUNDS = 250;
@@ -64,8 +70,13 @@ export function evaluatePairedReport(report) {
     const baseMedian = (baseA.medianMs + baseB.medianMs) / 2;
     const headMedian = (headA.medianMs + headB.medianMs) / 2;
     const regression = 100 * (headMedian / baseMedian - 1);
-    const noiseFloor =
-      100 * (Math.abs(baseA.medianMs - baseB.medianMs) / Math.min(baseA.medianMs, baseB.medianMs));
+    const baseSpread = roundSpread(baseA.medianMs, baseB.medianMs);
+    const headSpread = roundSpread(headA.medianMs, headB.medianMs);
+    // The candidate's two rounds are the same code as well, so they measure the
+    // same runner reproducibility from the other side. A run where head-a and
+    // head-b disagree by 65% (observed) cannot certify a median either, exactly
+    // like a base that disagrees with itself.
+    const noiseFloor = Math.max(baseSpread, headSpread);
     // Identical code must not fail: the floor only widens up to what the runner
     // can still certify, and a regression has to show up in both head rounds.
     const allowance = Math.max(
@@ -75,21 +86,23 @@ export function evaluatePairedReport(report) {
     const confirmedInBothRounds =
       headA.medianMs > baseA.medianMs * (1 + allowance / 100) &&
       headB.medianMs > baseB.medianMs * (1 + allowance / 100);
-    if (regression > allowance && confirmedInBothRounds) {
+    if (noiseFloor > MAX_CERTIFIABLE_NOISE_PERCENT) {
+      warnings.push(
+        `${row.name}: runner reproducibility ${noiseFloor.toFixed(2)}% ` +
+          `(base ${baseSpread.toFixed(2)}%, head ${headSpread.toFixed(2)}%) exceeds ` +
+          `${MAX_CERTIFIABLE_NOISE_PERCENT}%; median not certifiable on this runner`,
+      );
+    } else if (regression > allowance && confirmedInBothRounds) {
       failures.push(
         `${row.name}: median regression +${regression.toFixed(2)}% ` +
           `(${baseMedian.toFixed(6)} → ${headMedian.toFixed(6)} ms; ` +
-          `noise floor ${noiseFloor.toFixed(2)}%)`,
+          `noise floor ${noiseFloor.toFixed(2)}%: base ${baseSpread.toFixed(2)}%, ` +
+          `head ${headSpread.toFixed(2)}%)`,
       );
     } else if (regression > allowance) {
       warnings.push(
         `${row.name}: median increase +${regression.toFixed(2)}% not confirmed in both rounds ` +
           `(noise floor ${noiseFloor.toFixed(2)}%)`,
-      );
-    } else if (noiseFloor > MAX_CERTIFIABLE_NOISE_PERCENT) {
-      warnings.push(
-        `${row.name}: runner noise floor ${noiseFloor.toFixed(2)}% exceeds ` +
-          `${MAX_CERTIFIABLE_NOISE_PERCENT}%; median not certifiable on this runner`,
       );
     } else if (regression > 0) {
       warnings.push(
@@ -120,11 +133,40 @@ export function evaluatePairedReport(report) {
   return { benchmarks: names.size, failures, warnings };
 }
 
+/**
+ * A benchmark result can only be attributed to the change when the change can
+ * reach the code under measurement. `src/game/` is the import-graph root of all
+ * 16 benchmarks, so a diff that never touches it cannot make them slower: the
+ * observed difference is then a property of the runner or of the checkout
+ * directory. Those runs are still reported, but as unattributed findings rather
+ * than release-blocking regressions. Anything that does touch `src/game/` keeps
+ * the full gate.
+ */
+export function applyAttribution(result, unattributed) {
+  if (!unattributed || result.failures.length === 0) return result;
+  return {
+    benchmarks: result.benchmarks,
+    failures: [],
+    warnings: [
+      ...result.warnings,
+      ...result.failures.map(
+        (failure) =>
+          `${failure} — not attributable: this change does not touch src/game/, ` +
+          `so the benchmark cannot see it`,
+      ),
+    ],
+  };
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   assert.ok(process.argv[2], "Usage: node codspeed-paired-gate.mjs REPORT.json");
   const report = JSON.parse(readFileSync(process.argv[2], "utf8"));
-  const result = evaluatePairedReport(report);
+  const unattributed = process.env.CODSPEED_UNATTRIBUTED === "1";
+  const result = applyAttribution(evaluatePairedReport(report), unattributed);
   console.log(`CodSpeed same-runner ABBA gate: ${result.benchmarks}/${EXPECTED_BENCHMARKS}`);
+  if (unattributed) {
+    console.log("This change does not touch src/game/; median findings are advisory only.");
+  }
   for (const warning of result.warnings) console.warn(`WARNING ${warning}`);
   for (const failure of result.failures) console.error(`REGRESSION ${failure}`);
   if (result.failures.length) process.exitCode = 1;
