@@ -7,7 +7,11 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
-import { isMatchRouteEntry, pickMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import {
+  isMatchRouteEntry,
+  measureBrowserRoute,
+  pickMatchRouteEntry,
+} from "./bundle-report-comparison.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -196,6 +200,64 @@ test("Match 3D route selector falls back to the largest startup graph", () => {
     { name: "match-bbbb2222.js", startupGzipBytes: 580_137, startupDependencies: ["utils-a.js"] },
   ];
   assert.equal(pickMatchRouteEntry(entries).name, "match-bbbb2222.js");
+});
+
+function splitMatchFixture(report, childGzip) {
+  const wrapper = report.entries.find((entry) => entry.name === "match-route.js");
+  wrapper.dependencies = [wrapper.name, "shared.js"];
+  wrapper.startupDependencies = wrapper.dependencies;
+  report.entries.unshift({ ...wrapper, name: "match-perception-hash.js" });
+  const chunk = (name, gzipBytes, imports = [], dynamicImports = []) => ({
+    name,
+    bytes: gzipBytes * 2,
+    gzipBytes,
+    brotliBytes: gzipBytes / 2,
+    imports,
+    dynamicImports,
+  });
+  report.chunks = [
+    chunk(
+      "hydrate-app-hash.js",
+      1,
+      [],
+      ["match-route.js", "partida-rapida-route.js", "multiplayer-route.js"],
+    ),
+    chunk("partida-rapida-route.js", 1),
+    chunk("multiplayer-route.js", 1),
+    chunk("shared.js", 4_000),
+    chunk("match-route.js", 1_000, ["shared.js"], ["match-page.js"]),
+    chunk("match-page.js", childGzip, ["shared.js"], ["StorePanel-hash.js"]),
+    chunk("StorePanel-hash.js", 100_000),
+  ];
+}
+
+test("route startup counts the rendered match and wrapper exactly once regardless of hash order", () => {
+  const model = fixture();
+  splitMatchFixture(model, 7_049);
+  for (const order of [model.chunks, [...model.chunks].reverse()]) {
+    const result = measureBrowserRoute({ ...model, chunks: order }, "match-");
+    assert.equal(result.name, "match-page.js");
+    assert.equal(result.startupGzipBytes, 12_049);
+    assert.ok(!result.startupDependencies.includes("StorePanel-hash.js"));
+  }
+  const gate = compare((candidate) => splitMatchFixture(candidate, 7_049));
+  assert.equal(gate.status, 1);
+  assert.match(gate.report.violations.join("\n"), /Match 3D.*growth 2049 bytes/);
+});
+
+test("route startup rejects ambiguous hydration roots, duplicate pages and missing page imports", () => {
+  const model = fixture();
+  splitMatchFixture(model, 1);
+  const root = model.chunks.find((c) => c.name === "hydrate-app-hash.js");
+  root.dynamicImports.push("match-second.js");
+  assert.equal(measureBrowserRoute(model, "match-"), undefined);
+  root.dynamicImports.pop();
+  const wrapper = model.chunks.find((c) => c.name === "match-route.js");
+  wrapper.dynamicImports.push("match-other.js");
+  assert.equal(measureBrowserRoute(model, "match-"), undefined);
+  wrapper.dynamicImports.pop();
+  model.chunks.find((c) => c.name === "match-page.js").imports.push("missing.js");
+  assert.equal(measureBrowserRoute(model, "match-"), undefined);
 });
 
 test("bundle gate allows route startup growth up to 2 KiB", () => {

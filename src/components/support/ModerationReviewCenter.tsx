@@ -1,8 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useT } from "@/i18n/provider";
 import { moderationReviewMessages } from "@/i18n/moderation-review-messages";
+import { CONTATO_PATH, MODERATION_ANCHOR } from "@/lib/public-route-paths";
 import { mayShowModerationData } from "@/lib/moderation-identity";
 import {
   decideModerationAppeal,
@@ -233,7 +235,17 @@ export function ModerationReviewCenter() {
     }
   }
 
-  if (!userId) return <p className="text-sm text-muted-foreground">{copy.signIn}</p>;
+  if (userId === null)
+    return (
+      <Link
+        id="moderation-sign-in"
+        to="/auth"
+        search={{ next: `${CONTATO_PATH}#${MODERATION_ANCHOR}` }}
+        className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+      >
+        {copy.signIn}
+      </Link>
+    );
   if (!mayShowModerationData(userId, loadedFor))
     return (
       <p role="status" className="text-sm text-muted-foreground">

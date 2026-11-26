@@ -1,3 +1,5 @@
+import { useT } from "@/i18n/context";
+import { authRecoveryMessages } from "@/i18n/auth-recovery-messages";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import {
@@ -18,7 +20,7 @@ import { Button } from "@/components/ui/button";
 
 import { DiscordLink } from "@/components/CommunityInvite";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient, supabase } from "@/integrations/supabase/client";
 
 import {
   socialOAuthOptions,
@@ -49,8 +51,31 @@ const MfaChallenge = lazy(() =>
 );
 
 export function AuthPage() {
-  const navigate = useNavigate();
+  const { lang } = useT();
+  const copy = authRecoveryMessages(lang);
   const search = Route.useSearch();
+  if (!getConfiguredSupabaseClient())
+    return (
+      <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
+        <section className="surface-card max-w-md rounded-2xl border border-border p-6">
+          <h1 id="auth-unavailable-title" className="font-display text-2xl">
+            {copy.unavailableTitle}
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">{copy.unavailableHint}</p>
+          <a
+            href={search.next ?? "/"}
+            className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
+          >
+            {copy.backToGame}
+          </a>
+        </section>
+      </main>
+    );
+  return <ConfiguredAuthPage search={search} />;
+}
+
+function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSearch> }) {
+  const navigate = useNavigate();
   const destination = search.next ?? "/club";
   // Only the path: query strings could carry codes or personal values.
   const entryRoute = destination.split(/[?#]/)[0] || "/club";

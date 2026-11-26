@@ -9,7 +9,7 @@ const brotliBytes = (data) =>
     params: { [constants.BROTLI_PARAM_QUALITY]: 6 },
   }).length;
 import { init, parse } from "es-module-lexer";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import { measureBrowserRoute } from "./bundle-report-comparison.mjs";
 
 const cinematicSetChunkPrefixes = [
   { set: "locker", prefix: "LockerRoom-" },
@@ -184,12 +184,12 @@ if (process.argv.includes("--check")) {
   if (hydration && bootstraps.some((chunk) => closure(chunk.name).includes(hydration.name)))
     throw new Error("The first-paint bootstrap must not statically import its hydration runtime");
   const worker = entries.find((e) => e.name.startsWith("match.worker-"));
-  const quick = entries.find((e) => e.name.startsWith("partida-rapida-"));
+  const quick = measureBrowserRoute({ entries, chunks }, "partida-rapida-");
   const home = entries.find((e) => e.surface === "home");
   const newCareer = entries.find((e) => e.surface === "new");
   const playerCareer = entries.find((e) => e.name.startsWith("jogador.painel-"));
   const editors = entries.filter((e) => e.name.startsWith("editor-"));
-  const match = entries.find(isMatchRouteEntry);
+  const match = measureBrowserRoute({ entries, chunks }, "match-");
   const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
   const deferredEditorTabs = /^(?:roster-|clubs-|competitions-|import-export-)/;
   if (

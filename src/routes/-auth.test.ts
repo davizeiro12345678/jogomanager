@@ -10,8 +10,16 @@ const state = vi.hoisted(() => ({
   error: null as string | null,
   retry: vi.fn(),
   passkeysSupported: true,
+  configured: true,
 }));
 
+vi.mock("@/integrations/supabase/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/integrations/supabase/client")>();
+  return {
+    ...actual,
+    getConfiguredSupabaseClient: () => (state.configured ? actual.supabase : null),
+  };
+});
 vi.mock("@/hooks/useAuthMethods", () => ({ useAuthMethods: () => state }));
 vi.mock("@/integrations/supabase/passkey-auth", () => ({
   supportsPasskeys: () => state.passkeysSupported,
@@ -32,6 +40,7 @@ function renderAuth() {
 }
 
 beforeEach(() => {
+  state.configured = true;
   state.methods = parseAuthMethods({
     external: {
       google: true,
@@ -53,6 +62,14 @@ beforeEach(() => {
 });
 
 describe("game login screen", () => {
+  it("renders an actionable unavailable state when the project is unconfigured", () => {
+    state.configured = false;
+    const markup = renderAuth();
+    expect(markup).toContain('id="auth-unavailable-title"');
+    expect(markup).toContain('href="/"');
+    expect(markup).not.toContain("auth-email");
+  });
+
   it("renders all eight enabled providers together with email and passkeys", () => {
     const markup = renderAuth();
     for (const label of [

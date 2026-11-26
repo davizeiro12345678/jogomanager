@@ -32,6 +32,31 @@ describe("weekly development match boundaries", () => {
     expect(Object.getPrototypeOf(result.players)).toBeNull();
   });
 
+  it("keeps a legacy roster key separate from the profile ID used to read gains", () => {
+    const state = initCareer("bra", "fla", "Legacy roster");
+    const [first, second] = Object.values(state.players);
+    const players = {
+      "visita/07": { ...first!, id: "perfil A", age: 19 },
+      reserva: { ...second!, id: "visita/07", age: 28 },
+    };
+    const attrDeltas = { "perfil A": { passing: 0.75 }, "visita/07": { finishing: 1.5 } };
+    const next = applyWeeklyDevelopment(
+      players,
+      { ...state, players, attrDeltas },
+      null,
+      "4",
+      new Set(),
+      false,
+      0,
+    );
+    const gain = next.attrDeltas["visita/07"]!;
+    expect(gain.pace).toBeGreaterThan(0);
+    expect(gain.passing).toBe(0.75);
+    expect(next.players["visita/07"]!.developmentDelta).toEqual(attrDeltas["perfil A"]);
+    expect(next.players["reserva"]!.developmentDelta).toEqual(gain);
+    expect(attrDeltas["visita/07"]).toEqual({ finishing: 1.5 });
+  });
+
   it("does not fatigue selected players when no match took place", () => {
     const { state, id } = fixture();
     const selected = applyWeeklyDevelopment(state.players, state, null, "bye", new Set(), false, 0);

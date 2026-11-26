@@ -56,8 +56,7 @@ export function applyWeeklyDevelopment(
   const injuryMult = (0.7 + intensity * 0.4) * (1 - operatingPlan.medical * 0.055);
 
   const next = Object.entries(players);
-  const attrDeltas: AttrDeltas = Object.assign(Object.create(null), state.attrDeltas ?? {});
-  const developmentState = { ...state, attrDeltas };
+  const attrDeltas = new Map(Object.entries(state.attrDeltas ?? {}));
   for (const entry of next) {
     const [id, p] = entry;
     if (p.clubId !== state.clubId) continue;
@@ -110,13 +109,9 @@ export function applyWeeklyDevelopment(
         const changes = Object.fromEntries(
           keys.map((key, index) => [key, (index === 0 ? 0.2 : 0.1) * response]),
         );
-        // Ratings read this same save-shaped dictionary during the weekly loop.
-        Object.defineProperty(attrDeltas, id, {
-          value: limitedDevelopmentDelta(q, developmentState, changes),
-          configurable: true,
-          enumerable: true,
-          writable: true,
-        });
+        // A legacy save's roster key can differ from the player's profile ID.
+        const previous = attrDeltas.get(q.id) ?? {};
+        attrDeltas.set(id, limitedDevelopmentDelta(q, state, changes, previous));
       }
     } else if (q.age <= 23 && rnd() < 0.16 * growthMult) {
       (q as unknown as Record<string, number>)[attr] = Math.min(99, (q[attr] as number) + 1);
@@ -171,7 +166,8 @@ export function applyWeeklyDevelopment(
       q.condition = Math.max(40, q.condition - 8 - Math.floor(rnd() * 8));
     }
 
-    const effective = developedPlayer(q, developmentState);
+    q.developmentDelta = attrDeltas.get(q.id) ?? {};
+    const effective = developedPlayer(q);
     effective.value = valueFor(effective.ovr, effective.age, {
       economyRulesVersion: state.economyRulesVersion,
       potential: effective.potential,
@@ -179,5 +175,5 @@ export function applyWeeklyDevelopment(
     });
     entry[1] = effective;
   }
-  return { players: nullPrototypeRecord(next), news, attrDeltas };
+  return { players: nullPrototypeRecord(next), news, attrDeltas: nullPrototypeRecord(attrDeltas) };
 }

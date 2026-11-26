@@ -47,6 +47,7 @@ jobs:
       - name: Preserve candidate analyzers and install one dependency graph
         run: |
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
+          cp scripts/bundle-report-comparison.mjs "$RUNNER_TEMP/bundle-report-comparison.mjs"
           cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"
           cp scripts/normalize-baseline-entities-alias.test.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.test.mjs"
           cp scripts/prepare-bundle-baseline-compat.mjs "$RUNNER_TEMP/prepare-bundle-baseline-compat.mjs"
@@ -83,6 +84,7 @@ jobs:
           PFM_LOCAL_VERIFY=1 npm run build
           # Run the candidate analyzer with the shared node_modules.
           cp "$RUNNER_TEMP/bundle-report.mjs" scripts/bundle-report.mjs
+          cp "$RUNNER_TEMP/bundle-report-comparison.mjs" scripts/bundle-report-comparison.mjs
           node scripts/bundle-report.mjs baseline .output/public/assets
           cp verification/bundle-2026-10-01/baseline.json "$RUNNER_TEMP/baseline.json"
           # Restore the checked-out tree before switching revisions; the baseline

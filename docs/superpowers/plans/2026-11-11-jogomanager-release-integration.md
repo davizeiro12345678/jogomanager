@@ -513,3 +513,12 @@ O [registro de progresso](./2026-11-11-jogomanager-release-integration.progress.
 - [x] P2: TTFB quente exclui a primeira tentativa por posição cronológica, mesmo se a resposta inicial falhar; contadores de cabeçalhos usam mapas sem protótipo. Não altera endpoints nem volume de requisições.
 - [x] RED reproduzido para ambos; GREEN 7/7 testes de campanhas, autoteste TTFB e sintaxe Node 24.22.1 aprovados em arquivos isolados no VPS. Primeira tentativa sem Node no PATH não é evidência de falha de código. CI completo ainda pendente.
 - [ ] P0: QA de nove eixos do SHA 5f12d7dc reprovou na preparação de texturas reais (HTTP 403); não contornar WAF. Staging autenticado, Stripe, GPU física, backup externo, Wazuh, revisão e release permanecem condicionados aos gates existentes. Não abrir novo PR, não publicar main.
+
+## Critérios de aceite verificados em 26/11/2026
+
+- [x] Integridade das 47 texturas originais e execução dos nove eixos com capturas no SHA 26e4881. O ensaio em quatro larguras e as capturas frontal e posterior do calção constam no [ledger](./2026-11-11-jogomanager-release-integration.progress.md).
+- [x] Duas contas de teste criaram e ocuparam uma sala privada no staging self-hosted, chegaram ao estado ready e trocaram uma mensagem confirmada entre dois navegadores na aplicação fb07df1 após a migração de leitura do Realtime.
+- [x] Checkout hospedado concluído na sandbox da Onze Interactive. O pagamento simulado de R$ 4,90 correspondeu a uma única cobrança.
+- [ ] Concluir a partida 1×1 nos dois clientes e a aceitação 2×2 no ambiente com autoridade cooperativa. Validar o checkout iniciado pela loja do jogo, a entrega do webhook, a atualização da carteira e a repetição idempotente no staging.
+- [ ] Confirmar as medições no commit entregue, com captura de login em estado definido, revisão do CodeQL, comparação integral do CodSpeed e campanha 3D completa. A iluminação e o movimento foram exercitados em renderização por software. A homologação térmica e de frame time em GPU física permanece aberta.
+- [ ] Restaurar o backup externo em destino isolado, validar o conteúdo e fechar a manutenção coordenada do Wazuh. Manter a física e a IA v3 na branch experimental enquanto a mediana do perfil padrão v2 exceder a referência.

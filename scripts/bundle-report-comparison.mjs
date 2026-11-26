@@ -92,3 +92,67 @@ export function pickMatchRouteEntry(entries) {
   const matchSurface = candidates.filter(bootsMatchSurface);
   return largestStartup(matchSurface.length > 0 ? matchSurface : candidates);
 }
+
+// Route filenames are content-hashed. Only the hydration import identifies the
+// wrapper; a lazy page is mandatory work, while its optional drawers/match are not.
+export function measureBrowserRoute(report, prefix) {
+  const matches = (name) => name.startsWith(prefix);
+  const entries = report.entries ?? [];
+  const chunks = report.chunks ?? [];
+  const hydration = chunks.filter((chunk) => chunk.name.startsWith("hydrate-app-"));
+  if (!hydration.length) {
+    // Historical reports lack the wrapper graph. Retain the Match surface
+    // identity used by earlier report consumers.
+    if (prefix === "match-") return pickMatchRouteEntry(entries);
+    const candidates = entries.filter((entry) => matches(entry.name));
+    return candidates.length === 1 ? candidates[0] : undefined;
+  }
+  if (hydration.length !== 1) return undefined;
+  const roots = [...new Set(hydration[0].dynamicImports.filter(matches))];
+  if (roots.length !== 1) return undefined;
+  const wrappers = entries.filter((entry) => entry.name === roots[0]);
+  const byName = new Map(chunks.map((chunk) => [chunk.name, chunk]));
+  const root = byName.get(roots[0]);
+  if (byName.size !== chunks.length || wrappers.length !== 1 || !root) return undefined;
+  const [wrapper] = wrappers;
+  const isPage = (name) =>
+    matches(name) || (prefix === "partida-rapida-" && name.startsWith("QuickMatchPage-"));
+  const targets = [...new Set(root.dynamicImports.filter(isPage))];
+  if (!targets.length) return wrapper;
+  if (targets.length !== 1 || !wrapper.startupDependencies?.includes(root.name)) return undefined;
+  const page = byName.get(targets[0]);
+  if (!page || page.name === root.name || page.dynamicImports.some(isPage)) return undefined;
+
+  const dependencies = new Set(wrapper.dependencies);
+  const startup = new Set(wrapper.startupDependencies);
+  const pending = [page.name];
+  const visited = new Set();
+  while (pending.length) {
+    const name = pending.pop();
+    if (visited.has(name)) continue;
+    visited.add(name);
+    const chunk = byName.get(name);
+    if (!chunk || !Array.isArray(chunk.imports)) return undefined;
+    dependencies.add(name);
+    startup.add(name);
+    pending.push(...chunk.imports);
+  }
+  const metrics = { startupBytes: 0, startupGzipBytes: 0, startupBrotliBytes: 0 };
+  for (const name of startup) {
+    const chunk = byName.get(name);
+    if (
+      !chunk ||
+      ![chunk.bytes, chunk.gzipBytes, chunk.brotliBytes].every((v) => Number.isFinite(v) && v > 0)
+    )
+      return undefined;
+    metrics.startupBytes += chunk.bytes;
+    metrics.startupGzipBytes += chunk.gzipBytes;
+    metrics.startupBrotliBytes += chunk.brotliBytes;
+  }
+  return {
+    ...metrics,
+    name: page.name,
+    dependencies: [...dependencies],
+    startupDependencies: [...startup],
+  };
+}

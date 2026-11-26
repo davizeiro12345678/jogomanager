@@ -220,6 +220,30 @@ describe("staged authoritative WSS client", () => {
     }
   });
 
+  it.each([
+    [4_999, true],
+    [5_000, false],
+    [5_001, false],
+  ] as const)("applies the handshake deadline at receipt after %i ms", async (delay, accepted) => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      // A suspended tab can deliver the gateway message before its queued timer runs.
+      f.advance(delay);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      expect(f.events).toEqual(accepted ? ["ready"] : []);
+      expect(f.client.statusSnapshot()).toBe(accepted ? "connected" : "unavailable");
+      expect(f.client.officialSnapshot()?.revision).toBe(accepted ? 1 : undefined);
+      expect(socket.closeCode).toBe(accepted ? null : 4003);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("rejects readiness at ticket expiry before mutating the official feed", async () => {
     vi.useFakeTimers();
     const f = fixture();

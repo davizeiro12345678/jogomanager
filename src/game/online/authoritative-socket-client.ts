@@ -193,9 +193,12 @@ export class AuthoritativeMatchSocketClient {
       this.ticket = candidate;
       this.feed.bindSeat(candidate.seat);
       let resumeFrom = 0;
+      let authDeadlineAt = 0;
       socket.onopen = () => {
         if (!this.isCurrent(socket, generation) || this.currentStatus !== "connecting") return;
-        if (!this.ensureCurrentTicket(socket, candidate)) return;
+        const openedAt = (this.options.now ?? Date.now)();
+        if (!this.ensureCurrentTicket(socket, candidate, openedAt)) return;
+        authDeadlineAt = openedAt + AUTH_DEADLINE_MS;
         this.status("authenticating");
         try {
           socket.send(
@@ -224,7 +227,12 @@ export class AuthoritativeMatchSocketClient {
         const phase = this.currentStatus;
         if (phase !== "authenticating" && phase !== "connected") return;
         // Queued frames can outlive the ticket while the tab suspends its timers.
-        if (!this.ensureCurrentTicket(socket, candidate)) return;
+        const receivedAt = (this.options.now ?? Date.now)();
+        if (!this.ensureCurrentTicket(socket, candidate, receivedAt)) return;
+        if (phase === "authenticating" && receivedAt >= authDeadlineAt) {
+          socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "auth_timeout");
+          return;
+        }
         const event = this.feed.accept(message.data, phase);
         if (event.kind === "ignored" && event.reason === "seat_mismatch") {
           this.rejectForeignSeat(socket);
@@ -275,10 +283,14 @@ export class AuthoritativeMatchSocketClient {
     }
   }
 
-  private ensureCurrentTicket(socket: AuthorityClientSocket, candidate: MatchTicketV1): boolean {
+  private ensureCurrentTicket(
+    socket: AuthorityClientSocket,
+    candidate: MatchTicketV1,
+    now: number,
+  ): boolean {
     if (this.ticket !== candidate) return false;
     try {
-      assertCurrentTicket(candidate, (this.options.now ?? Date.now)());
+      assertCurrentTicket(candidate, now);
       return true;
     } catch {
       socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
