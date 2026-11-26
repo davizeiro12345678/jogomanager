@@ -637,3 +637,14 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [ ] P0: Stripe Sandbox autenticado, passkeys/Auth, multiplayer físico 1×1 e arquitetura 2×2, backup externo criptografado com restauração isolada.
 - [ ] P1: QA visual dos componentes de carreira (320/390/768/1280 px, 200%/400% zoom, teclado, leitor de tela, contraste forçado, movimento reduzido), Textures/Match 3D em GPU física, Wazuh e revisão CodeQL.
 - [ ] P1: revisão humana independente, evidências reais de staging no SHA final e rollback testado. Não converter #179 em Ready, não mesclar ou publicar sem gates.
+
+
+## Checkpoint de CSS, acessibilidade e CI do PR #179 — 26/11/2026, 18h
+
+- [x] P0: corrigido o único erro de lint observado no job 140171155800 (linha em branco no teste de acessibilidade), commit `155677e3`.
+- [x] P1: removidas referências cíclicas de `--background` e `--card` no alto contraste da carreira; superfícies explícitas e teste de regressão (`9b0d342b`, `0a865bdc`).
+- [x] P2: grade de indicadores da Home com auto-fit, unidades rem, quebra de palavras, separadores adaptáveis e foco em forced-colors (`d9a22887`, `f5b5285b`, `36892364`).
+- [x] Evidência de browser isolado no VPS (Gateway job `job_01M8CVM1JG00Z834CRBJAJY2HX`): seis fixtures Chrome antes/depois. Antes: fundos transparentes no alto contraste; depois: rgb(8,15,23) e rgb(16,28,40). Grade a 320px: 3→2 colunas, sem overflow; a 390px com raiz de 32px: 3→1, rótulo 11→24px; a 1280px: 3 colunas, sem overflow. Não é E2E do jogo completo.
+- [x] Testes direcionados em arquivos do SHA `368923640c1bcbbc7f826d4efc14e6c41cd8c0e6`: 4/4 Home (node:test) e 15/15 carreira (Vitest 5.0.3), Node 24.22.1. Gateway job `job_01M8CVQ5YT00AYTCXNYB6MCYTA`. A verificação inicial de Prettier sem configuração local falhou; repetição com `.prettierrc` real confirmou ambos os arquivos inalterados (job `job_01M8CVSG2Z0051BGMZ7XT9CME7`).
+- [ ] CodSpeed: comparação histórica 8dac85dd vs 33a6c3f mostrou duas regressões simuladas com CPUs diferentes; o gate pareado passou, mas três medianas foram declaradas não certificáveis por ruído >10%. Não declarar ausência de regressão. Revalidar no HEAD final.
+- [ ] Lighthouse, CI completo, QA visual e acessibilidade do aplicativo inteiro, GPU física, Stripe Sandbox, passkey e multiplayer 1×1/2×2, backup e rollback continuam gates. Não mesclar apenas por mergeable=true.
