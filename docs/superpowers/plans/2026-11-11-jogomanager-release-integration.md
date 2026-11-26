@@ -300,7 +300,7 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 
 - [x] Frame campaign and percentile/low/stall instrumentation added.
 - [x] Rendered-frame bridge and scene suspension props connected to the match page and quick match.
-- [ ] Verify exact current branch tests and CI graphics contracts.
+- [x] Verify exact current branch tests and CI graphics contracts. (SHA a54090be, contratos e recuperação aprovados; campanha visual completa e hardware físico pendentes.)
 - [ ] Add regression tests for pause/resume, hidden tab, quality/DPR change, rules revision change, renderer/context loss and sample-capacity overflow.
 - [ ] Run deterministic browser benchmark with fixed seed/fixture, 30 s warmup and ≥90 s measured window per scene.
 - [ ] Capture baseline/candidate mean FPS, p50/p95/p99, 1%/0.1% lows, stalls >33/50/100/250 ms, draws, triangles, geometries, textures, programs, heap, GPU/backend and resolution.
@@ -369,14 +369,14 @@ Legend: **[x]** evidence complete; **[~]** implementation partly present / verif
 ## Task 14: Final verification, independent review and PR
 
 - [ ] Refresh branch head SHA and run the exact-head CI to completion; no canceled or stale run counts as a pass.
-- [ ] Run `npm ci`.
-- [ ] Run `npm run lint`.
-- [ ] Run `npm exec -- tsc --noEmit --pretty false`.
-- [ ] Run `npm test`.
+- [x] Run `npm ci`. (SHA a54090be, CI 45830854917; repetir no head final.)
+- [x] Run `npm run lint`. (SHA a54090be, CI 45830854917.)
+- [x] Run `npm exec -- tsc --noEmit --pretty false`. (SHA a54090be, CI 45830854917.)
+- [x] Run `npm test`. (Suíte equivalente Vitest do CI 45830854917 em a54090be; stress separado.)
 - [ ] Run `npm run wasm:test` and `npm run wasm:build`; verify generated bindings/parity.
 - [ ] Run `npm run test:stress -- --reporter=default --reporter=json --outputFile=stress-results.json` and the 200-seed rules-v2 stress job.
 - [ ] Run `npm run build`, `npm run bundle:check`, `npm run test:performance-gates`, `npm run perf:match-setup -- .benchmark-base . match-setup-results` in the CI-equivalent environment.
-- [ ] Verify local Supabase migration replay and all SQL contracts.
+- [x] Verify local Supabase migration replay and all SQL contracts. (CI 45830854917 em a54090be; staging real permanece pendente.)
 - [ ] Review visual evidence, Lighthouse, CodSpeed, bundle before/after and physical-device reports.
 - [ ] Run a fresh independent whole-branch review against the spec and Review Focus.
 - [ ] Fix all Critical/Important findings with TDD RED→GREEN and a full green suite; ledger deferred minors.
@@ -432,3 +432,24 @@ A auditoria desta retomada parte de `be8c85f6acc7b5072baa5e3bd96d6d3820ae9321`, 
 3. Fechar a revisão CodeQL das threads de transporte autoritativo e a análise das superfícies GraphQL/RLS. Testar o controle de acesso esperado com dados sintéticos. Usar o ledger para rastrear cada evidência.
 4. Completar o protocolo visual e térmico em hardware físico, a cobertura de partidas e os critérios versionados de física e IA. Cobertura de lógica e uma cena renderizada por software são entregas parciais.
 5. Resolver as threads exigidas pela proteção de `main`, revisar a candidata de forma independente, comprovar rollback e validar a seção de release na spec antes de promover.
+
+## Checkpoint comprovado — 26/11/2026 (PRs #132 e #179)
+
+Este checkpoint substitui estados operacionais antigos, sem apagar o histórico. Não criar outro PR: #132 é a integração para main e #179 é a correção da auditoria destinada à integração. Ambos continuam Draft. Sem merge em main ou deploy.
+
+### Evidências fechadas e critérios restantes
+
+- [x] Confirmar produção: `/api/health` respondeu HTTP 200/ready com release `d84657717bd45d72d97e4c336a9f5f98ae2161ab`. Não certifica o candidato nem resolve a intermitência histórica de 503.
+- [x] Validar a política Vite em processo real, no checkout isolado de `a54090bee9fdde44aacd5c7966036ef869b16a66`, bind loopback e sem credenciais de produção: host autorizado 200, host não autorizado 403, localhost 200 (Gateway job `job_01M8C1WQ5400QT7R0K26HWGEAT`, exit 0). Preview externo autenticado ainda pendente.
+- [x] CI do SHA acima: npm ci, lint, tipos, Vitest, build, bundle absoluto/comparativo, replay SQL, Rust/WASM, duas suítes de stress de 200 partidas, contrato gráfico e MatchSim passaram no [Quality Gates 45830854917](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830854917). Lighthouse mobile e gate agregado ainda não concluídos no momento da observação.
+- [x] CodeQL [45830854794](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830854794), 43 suítes [45830854544](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830854544), nove eixos [45830854594](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830854594), inventário independente automatizado [45830854781](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830854781) e CodSpeed [45830854573](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830854573) passaram nesse SHA. Não equivale a revisão humana independente nem QA autenticado.
+- [x] PR #179: remoção de skip link duplicado no GameShell, foco no conteúdo da carreira e disponibilidade 1x1/2x2 comunicada honestamente (`01fea245`); i18n em pt/en/es (`515e3c3`); comparador por grafo de imports, sem alterar orçamento de 2048 B (`eef1a388`). 35/35 testes locais de gates; [comparação real 45830207865](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830207865) passou no job bundle. O PR #179 ainda reprovou Lighthouse (home 0,92; TBT 320 ms) e CodSpeed [45830207885](https://github.com/davizeiro12345678/jogomanager/actions/runs/45830207885). Não está liberado para integrar.
+- [x] VPS: oito patches originais instalados (Kerberos, libpcap, libtiff, runsc); gerenciador de patches ativo, reboot automático desligado; curadoria LMD corrigida com testes e hash da base preservado; On-Access 64→128 MiB no diretório de ingestão; SSH sem senha/root, serviços críticos ativos, zero unidades failed nas amostras. EICAR do daemon aprovado, prevenção acima de 64 MiB ainda não provada.
+- [x] Backup local: 5/5 checksums, 1.034 entradas de configuração, restauração isolada do dump JogoManager com duas tabelas, instância encerrada e cópia temporária removida. Timer externo habilitado; nenhum upload confirmado.
+- [ ] Backup externo: OAuth do Google Drive e verificação da recuperação criptográfica ausentes; manter gate, não fabricar marcador. Wazuh 4.14.11 pendente de backup restaurável do Indexer e upgrade coordenado dos três serviços centrais antes do agente.
+- [ ] Autenticação real (OAuth/passkey/MFA/recuperação), Stripe sandbox/webhook/idempotência, persistência de carreiras, multiplayer 1x1 e 2x2 com dispositivos/assentos reais; staging isolado no SHA exato.
+- [ ] UI: CLS auth observado 0,876 e loja 0,162 na produção em Chrome mobile; investigar causa e repetir medidas comparáveis; Lovable removido no código, não confirmado em produção.
+- [ ] Match 3D: erro GL_INVALID_VALUE observado duas vezes em campanha anterior e não reproduzido na repetição; GPU stall persiste; simulação completa, benchmark físico, materiais/anatomia, animação, clipping, cutscenes, física e IA precisam de evidência comparável. SwiftShader não certifica FPS físico.
+- [ ] Fechar Lighthouse, CodSpeed e QA visual no novo HEAD, revisar threads/alertas restantes (incluindo #47 mencionado anteriormente), validar CSP estrita, backup externo, rollback e revisão independente; só então considerar aprovação. Nenhuma alteração de limites, bypass ou deploy.
+
+**Continuidade:** atualizar estes três arquivos existentes e a descrição dos PRs com evidência, sem marcar tarefas compostas como concluídas apenas por subtarefas. Não incluir IPs, caminhos pessoais, credenciais ou localização de usuário em evidência pública. Qualquer commit de documentação gera um novo SHA; revalidar os gates no novo head.
