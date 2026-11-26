@@ -590,3 +590,13 @@ html[data-text-size="xlarge"] .career-content {
     white-space: normal;
   }
 }
+
+.stat-strip .stat-cell {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+@container career-content (max-width: 19rem) {
+  .stat-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

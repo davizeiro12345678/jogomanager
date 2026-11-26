@@ -15,6 +15,8 @@ import { useAthleteSlots } from "@/hooks/useAthlete";
 import { useCareer } from "@/hooks/useCareer";
 
 import { Button } from "@/components/ui/button";
+import { useT } from "@/i18n/context";
+import { featureMessages } from "@/i18n/feature-messages";
 
 import { Link } from "@tanstack/react-router";
 
@@ -31,6 +33,12 @@ import {
 
 import "@/components/game/athlete.css";
 
+const CAREER_ARCHIVE_MESSAGES = {
+  pt: { title: "Minhas carreiras" },
+  en: { title: "My careers" },
+  es: { title: "Mis carreras" },
+} as const;
+
 function syncLabel(sync: ReturnType<typeof useCareer>["sync"], signedIn: boolean | null) {
   if (signedIn === false) return { Icon: CloudOff, label: "Salvo neste aparelho" };
   if (sync === "synced")
@@ -42,6 +50,8 @@ function syncLabel(sync: ReturnType<typeof useCareer>["sync"], signedIn: boolean
 }
 
 export function CareersHub() {
+  const { lang } = useT();
+  const copy = featureMessages(lang, CAREER_ARCHIVE_MESSAGES);
   const { career, isLoading, signedIn, sync } = useCareer();
   const { slots, error: athleteError } = useAthleteSlots();
   const coach = summarizeCoachCareer(career);
@@ -70,7 +80,7 @@ export function CareersHub() {
 
         <header className="career-hub-heading">
           <p className="career-hub-kicker">SEU ARQUIVO DE HISTÓRIAS</p>
-          <h1 className="career-hub-title">Minhas carreiras</h1>
+          <h1 className="career-hub-title">{copy.title}</h1>
           <p className="athlete-meta">
             Treinador e atletas vivem em saves separados. Escolha uma história para retomar sem
             substituir nenhuma outra.

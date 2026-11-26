@@ -196,7 +196,7 @@ export function FinancesPage() {
             Risco {forecast.risk}
           </p>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
           {OPERATING_PLAN_PRESETS.map((preset) => {
             const selected = Object.entries(preset.plan).every(
               ([key, value]) => plan[key as keyof typeof plan] === value,
@@ -217,7 +217,7 @@ export function FinancesPage() {
             );
           })}
         </div>
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Receita projetada" value={`${formatMoney(forecast.income)}/sem`} />
           <Metric label="Custo projetado" value={`${formatMoney(forecast.expense)}/sem`} />
           <Metric label="Folha / receita" value={`${Math.round(forecast.wageRatio * 100)}%`} />
