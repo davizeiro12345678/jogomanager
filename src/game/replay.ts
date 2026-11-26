@@ -45,7 +45,7 @@ export interface ReplayFrame {
   /** bola: x, z, altura */
   b: [number, number, number];
   /** por jogador: x, z, vx, vz */
-  p: number[] | Float64Array;
+  p: number[];
   /** ação em curso por jogador (null = nenhuma) */
   a: (PlayerAction | null)[];
   hg: number;
