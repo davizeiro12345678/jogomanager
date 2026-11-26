@@ -240,6 +240,26 @@ describe("staged authoritative WSS client", () => {
     }
   });
 
+  it("renews before presenting queued updates when a suspended tab resumes at ticket expiry", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      f.advance(90_000);
+      socket.message(frame({ type: "snapshot", snapshot: state(2) }));
+      expect(f.client.officialSnapshot()?.revision).toBe(1);
+      expect(f.events).toEqual(["ready"]);
+      expect(socket.closeCode).toBe(4002);
+      expect(f.client.statusSnapshot()).toBe("retrying");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
   it("ignores duplicate open notifications without resending the ticket", async () => {
     vi.useFakeTimers();
     const f = fixture();

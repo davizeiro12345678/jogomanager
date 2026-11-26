@@ -1,6 +1,7 @@
 import { MATCH_PROTOCOL_VERSION, parseMatchTicketV1 } from "./match-protocol";
 import { AuthoritativeSocketBridge, type MatchSocket } from "./authoritative-socket-bridge.server";
 
+const WS_OPEN = 1;
 const MAX_AUTH_BYTES = 4096;
 const AUTH_DEADLINE_MS = 5_000;
 const utf8 = new TextEncoder();
@@ -104,6 +105,6 @@ export class AuthoritativeSocketAdmission {
     if (this.state === "closed") return;
     this.state = "closed";
     clearTimeout(this.deadline);
-    this.socket.close(1008, reason);
+    if (this.socket.readyState === WS_OPEN) this.socket.close(1008, reason);
   }
 }

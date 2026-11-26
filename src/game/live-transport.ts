@@ -160,7 +160,7 @@ export class LiveSnapshotEncoder {
       !(buffer instanceof ArrayBuffer)
     )
       return false;
-    const entry = this.slots[slot];
+    const entry = this.slots.at(slot);
     if (
       session !== this.session ||
       !entry ||

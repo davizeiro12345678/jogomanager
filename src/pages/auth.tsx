@@ -396,7 +396,7 @@ export function AuthPage() {
       </main>
     );
   return (
-    <main className="auth-stage grid min-h-dvh place-items-center px-4 py-10">
+    <main className="auth-stage grid min-h-dvh items-start justify-items-center lg:items-center px-4 py-10">
       <div className="auth-card grid w-full max-w-5xl overflow-hidden rounded-2xl border border-border/60 bg-card/85 shadow-2xl backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
         <section
           className="auth-hero relative hidden overflow-hidden border-r border-border/60 p-10 lg:flex lg:flex-col lg:justify-between"

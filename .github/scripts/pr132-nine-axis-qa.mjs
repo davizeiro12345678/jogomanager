@@ -17,6 +17,7 @@ if (origin.protocol !== "http:" || !["localhost", "127.0.0.1", "[::1]"].includes
 }
 const runtime = process.env["PLAYWRIGHT_MODULE"];
 if (!runtime) throw new Error("PLAYWRIGHT_MODULE is required");
+const studioUrl = studioFixtureUrl(process.env["GRAPHICS_FIXTURE_ORIGIN"] ?? "");
 const { chromium } = createRequire(path.join(runtime, "package.json"))("playwright");
 const output = path.resolve(outputText);
 await mkdir(path.join(output, "screenshots"), { recursive: true });
@@ -77,6 +78,11 @@ try {
   const pageErrors = [];
   const consoleErrors = [];
   const networkFailures = [];
+  const loadedStudioTextures = new Set();
+  const isStudioTexture = (url) =>
+    url.origin === studioUrl.origin &&
+    url.pathname.startsWith("/__l5e/assets-v1/") &&
+    url.pathname.endsWith(".ktx2");
   await page.addInitScript(() => {
     window.__qaLongTasks = [];
     if (typeof PerformanceObserver !== "undefined") {
@@ -114,22 +120,27 @@ try {
   });
   page.on("requestfailed", (request) => {
     const url = new URL(request.url());
-    if (url.origin === origin.origin) {
+    const texture = isStudioTexture(url);
+    if (url.origin === origin.origin || texture) {
       networkFailures.push({
         route: new URL(page.url()).pathname,
         asset: url.pathname,
         error: request.failure()?.errorText,
+        requiredTexture: texture,
       });
     }
   });
   page.on("response", (response) => {
-    if (response.status() < 400) return;
     const url = new URL(response.url());
-    if (url.origin === origin.origin && /\.(js|css|wasm)(\?|$)/.test(url.pathname)) {
+    const texture = isStudioTexture(url);
+    if (texture && response.ok()) loadedStudioTextures.add(url.pathname);
+    if (response.status() < 400) return;
+    if (texture || (url.origin === origin.origin && /\.(js|css|wasm)(\?|$)/.test(url.pathname))) {
       networkFailures.push({
         asset: url.pathname,
         status: response.status(),
         route: new URL(page.url()).pathname,
+        requiredTexture: texture,
       });
     }
   });
@@ -422,7 +433,6 @@ try {
 
   // Full athlete Studio lives in the isolated 3D build, not in a public
   // SSR route. Only a credential-free loopback fixture is accepted.
-  const studioUrl = studioFixtureUrl(process.env["GRAPHICS_FIXTURE_ORIGIN"] ?? "");
   await page.setViewportSize({ width: 1365, height: 900 });
   const studioResponse = await page.goto(studioUrl.href, {
     waitUntil: "domcontentloaded",
@@ -579,7 +589,7 @@ try {
   for (const item of networkFailures) {
     find(
       "network",
-      "warning",
+      item.requiredTexture ? "error" : "warning",
       { route: item.route, asset: item.asset },
       "Resource failed: " + (item.status ?? item.error),
       "Check file URL, caching and content type. Compare the network waterfall before changing the code.",
@@ -588,6 +598,16 @@ try {
   report.axes.runtime.metrics.pageErrors = pageErrors.length;
   report.axes.runtime.metrics.consoleErrors = consoleErrors.length;
   report.axes.network.metrics.failed = networkFailures.length;
+  report.axes.network.metrics.loadedStudioTextures = loadedStudioTextures.size;
+  if (!loadedStudioTextures.size) {
+    find(
+      "network",
+      "error",
+      { route: studioUrl.pathname },
+      "The athlete Studio loaded no public KTX2 textures.",
+      "Verify texture loading and the prepared fixture before certifying athlete materials.",
+    );
+  }
 
   const videos = page.video();
   await context.close();

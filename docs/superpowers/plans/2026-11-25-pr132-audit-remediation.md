@@ -160,3 +160,7 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - [ ] VPS: zero unidades failed, SSH efetivo RSA mínimo 2048, serviços essenciais ativos. Timer externo ativo mas OAuth e verificação criptográfica ausentes; sem transferência confirmada. Wazuh aguarda backup do Indexer. A varredura longa está executando; não interromper para alterar política de timeout.
 - [ ] Gateway: plano Free e saldo zero confirmados; titular precisa contratar Pro/recarga no painel. Ops bundle incluído no Pro, não comprar redundância. Sem pagamento efetuado.
 - [ ] Homologação autenticada, Stripe sandbox, multiplayer real, GPU física, revisão dos alertas, CSP efetiva e deploy continuam pendentes. Manter #132 e #179; nenhum novo PR nem alteração em main.
+
+## Retomada da homologação de 26/11/2026
+
+O [registro de progresso](./2026-11-11-jogomanager-release-integration.progress.md#homologação-retomada-em-26112026) reúne a campanha visual concluída, as medições de layout no Chrome, a correção da barra traseira do calção e a validação do transporte. O check nativo do CodeQL, o staging autenticado na revisão de entrega, a GPU física e a restauração externa continuam como critérios de publicação.

@@ -1,5 +1,5 @@
 import { friendlyError } from "@/lib/friendly-error";
-import { Link, useLocation } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import artCoins from "@/assets/store/coins.jpg?format=webp&w=640&quality=65&as=url";
 import artScout from "@/assets/store/scout.jpg?format=webp&w=640&quality=65&as=url";
 import artTraining from "@/assets/store/training.jpg?format=webp&w=640&quality=65&as=url";
@@ -215,63 +215,42 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
 
   return (
     <div>
-      {isGuest && <GuestSignInNotice className="mb-4" />}
-      {signedIn === true && <CouponRedeem onRedeemed={() => void walletQuery.refetch()} />}
-      <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Coins className="text-primary" size={20} />
-          <span className="font-display text-sm uppercase tracking-wide">
-            {isGuest || isSessionLoading
-              ? "Vitrine da loja"
-              : `${walletQuery.data?.coins ?? 0} moedas`}
-          </span>
-          {walletQuery.data && walletQuery.data.scout_reports > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              <Search size={12} /> {walletQuery.data.scout_reports} relatórios
-            </Badge>
-          )}
-          {walletQuery.data && walletQuery.data.training_boosts > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              <Dumbbell size={12} /> {walletQuery.data.training_boosts} treinos
-            </Badge>
-          )}
-          {walletQuery.data && walletQuery.data.injury_treatments > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              <HeartPulse size={12} /> {walletQuery.data.injury_treatments} tratamentos
-            </Badge>
-          )}
-          {walletQuery.data && walletQuery.data.opponent_reports > 0 && (
-            <Badge variant="secondary" className="gap-1">
-              <ClipboardList size={12} /> {walletQuery.data.opponent_reports} análises do rival
-            </Badge>
-          )}
-          {subscriptionActive && (
-            <Badge className="gap-1">
-              <Sparkles size={12} /> Passe ativo até{" "}
-              {formatDate(walletQuery.data?.season_pass_until)}
-            </Badge>
-          )}
-        </div>
-        {isSessionLoading ? (
-          <p role="status" className="mt-2 text-xs text-muted-foreground">
-            Verificando sua conta para mostrar a ação de compra segura…
-          </p>
-        ) : isGuest ? (
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <p>
-              Veja os pacotes e preços. Compre por e-mail ou entre para vincular o item direto à
-              carreira.
-            </p>
-            <Link
-              to="/auth"
-              search={{ next }}
-              className="font-medium text-primary underline underline-offset-4"
-            >
-              Já tenho conta
-            </Link>
-          </div>
-        ) : (
-          <>
+      {signedIn === true ? (
+        <>
+          <CouponRedeem onRedeemed={() => void walletQuery.refetch()} />
+          <div className="mb-4 rounded-2xl border border-border/60 surface-card p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <Coins className="text-primary" size={20} />
+              <span className="font-display text-sm uppercase tracking-wide">
+                {walletQuery.data?.coins ?? 0} moedas
+              </span>
+              {walletQuery.data && walletQuery.data.scout_reports > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Search size={12} /> {walletQuery.data.scout_reports} relatórios
+                </Badge>
+              )}
+              {walletQuery.data && walletQuery.data.training_boosts > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <Dumbbell size={12} /> {walletQuery.data.training_boosts} treinos
+                </Badge>
+              )}
+              {walletQuery.data && walletQuery.data.injury_treatments > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <HeartPulse size={12} /> {walletQuery.data.injury_treatments} tratamentos
+                </Badge>
+              )}
+              {walletQuery.data && walletQuery.data.opponent_reports > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <ClipboardList size={12} /> {walletQuery.data.opponent_reports} análises do rival
+                </Badge>
+              )}
+              {subscriptionActive && (
+                <Badge className="gap-1">
+                  <Sparkles size={12} /> Passe ativo até{" "}
+                  {formatDate(walletQuery.data?.season_pass_until)}
+                </Badge>
+              )}
+            </div>
             {walletQuery.data ? (
               <WalletActions
                 coins={walletQuery.data.coins}
@@ -290,9 +269,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                 pagamento seguro.
               </p>
             ) : null}
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      ) : (
+        <GuestSignInNotice className="mb-4" pending={isSessionLoading} next={next} />
+      )}
 
       {!checkoutEnabled ? (
         <div
@@ -424,7 +405,10 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                         Verificando conta…
                       </Button>
                     ) : isGuest ? (
-                      <GuestSignInButton className="w-full" />
+                      <GuestSignInButton
+                        className="w-full"
+                        next={`/loja?produto=${encodeURIComponent(p.key)}`}
+                      />
                     ) : (
                       <Button
                         className="w-full"
@@ -450,7 +434,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                       {isSessionLoading
                         ? "Aguarde a verificação da conta"
                         : isGuest
-                          ? "Compra segura por e-mail; entre se já tiver uma conta"
+                          ? "Entre na sua conta para comprar"
                           : "Entrega automática na sua conta"}
                     </p>
                   </div>

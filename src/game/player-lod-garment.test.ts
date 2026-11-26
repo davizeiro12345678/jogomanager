@@ -57,7 +57,7 @@ function posedSurface(mesh: THREE.InstancedMesh, instance: number) {
   };
 }
 
-it.each([false, true])("keeps the front of the thigh under the shorts (compact=%s)", (compact) => {
+it.each([false, true])("covers the thigh from all angles (compact=%s)", (compact) => {
   const geometries = createLowPlayerGeometries(compact);
   const material = new THREE.MeshBasicMaterial();
   const shorts = new THREE.InstancedMesh(geometries["hips"]!, material, 1);
@@ -86,27 +86,33 @@ it.each([false, true])("keeps the front of the thigh under the shorts (compact=%
       thighs.setMatrixAt(0, matrix);
       const skin = posedSurface(thighs, 0);
       try {
-        for (let fraction = 0.18; fraction <= 0.45; fraction += 0.03) {
-          for (const offset of [-0.65, -0.3, 0, 0.3, 0.65]) {
-            const ray = new THREE.Raycaster(
-              new THREE.Vector3(thighX + offset * p.legR, thighY - fraction * p.thigh, 0.3),
-              new THREE.Vector3(0, 0, -1),
-            );
-            const thigh = ray.intersectObject(skin.mesh)[0];
-            if (!thigh) continue;
-            samples++;
-            const front = ray.intersectObject(cloth.mesh)[0];
-            expect(
-              front?.distance ?? Infinity,
-              `${side}/${fraction.toFixed(2)}/${offset}`,
-            ).toBeLessThan(thigh.distance);
+        for (let angle = 0; angle < 360; angle += 30) {
+          const yaw = THREE.MathUtils.degToRad(angle);
+          const depth = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+          const across = new THREE.Vector3(depth.z, 0, -depth.x);
+          const ray = new THREE.Raycaster(new THREE.Vector3(), depth.clone().negate());
+          for (let fraction = 0.18; fraction <= 0.45; fraction += 0.03) {
+            for (const offset of [-0.65, -0.3, 0, 0.3, 0.65]) {
+              ray.ray.origin
+                .set(thighX, thighY - fraction * p.thigh, 0)
+                .addScaledVector(across, offset * p.legR)
+                .addScaledVector(depth, 0.3);
+              const thigh = ray.intersectObject(skin.mesh)[0];
+              if (!thigh) continue;
+              samples++;
+              const garment = ray.intersectObject(cloth.mesh)[0];
+              expect(
+                garment?.distance ?? Infinity,
+                `${side}/${angle}/${fraction.toFixed(2)}/${offset}`,
+              ).toBeLessThan(thigh.distance);
+            }
           }
         }
       } finally {
         skin.dispose();
       }
     }
-    expect(samples).toBeGreaterThan(40);
+    expect(samples).toBeGreaterThan(40 * 12);
   } finally {
     cloth.dispose();
     shorts.dispose();

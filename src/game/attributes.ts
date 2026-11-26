@@ -326,7 +326,7 @@ export function evolveSeason(
   current: AttrDeltas,
   preciseDeltas = false,
 ): AttrDeltas {
-  const out: AttrDeltas = { ...current };
+  const out = new Map(Object.entries(current));
   for (const p of players) {
     const rnd = makeRng(`evo-${p.id}-${season}`);
     // Ficha já evoluída: a base "limpa" é ela menos o que já foi acumulado.
@@ -369,10 +369,10 @@ export function evolveSeason(
       if (rounded !== 0) delta[k] = rounded;
       else delete delta[k];
     }
-    if (Object.keys(delta).length) out[p.id] = delta;
-    else delete out[p.id];
+    if (Object.keys(delta).length) out.set(p.id, delta);
+    else out.delete(p.id);
   }
-  return out;
+  return Object.fromEntries(out);
 }
 
 /** Ganho de treino aplicado fora do fim de temporada (impulsos, academia). */
@@ -569,14 +569,14 @@ export function evolveSeasonV2(players: Player[], state: CareerState): AttrDelta
     state.attrDeltas ?? {},
     true,
   );
-  const out: AttrDeltas = { ...(state.attrDeltas ?? {}) };
+  const out = new Map(Object.entries(state.attrDeltas ?? {}));
   for (const p of closingPlayers) {
     const changes: AttrDelta = {};
     for (const key of ALL_KEYS)
       changes[key] = (proposed[p.id]?.[key] ?? 0) - (state.attrDeltas?.[p.id]?.[key] ?? 0);
-    out[p.id] = limitedDevelopmentDelta(p, state, changes);
+    out.set(p.id, limitedDevelopmentDelta(p, state, changes));
   }
-  return out;
+  return Object.fromEntries(out);
 }
 
 export function groupsFor(pos: Position): AttributeGroup[] {

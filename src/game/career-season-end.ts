@@ -17,7 +17,7 @@ import { calendarYear } from "./competition-regulations";
 import { developedPlayer, evolveSeason, evolveSeasonV2, withDevelopmentBase } from "./attributes";
 import { applyFinanceEvent } from "./career-finances";
 import { computeTable, generateFixtures } from "./season";
-import type { CareerState, NewsItem, Player } from "./types";
+import type { CareerState, NewsItem } from "./types";
 import { pickLineup } from "./career";
 import { processCups } from "./career-cups";
 
@@ -68,24 +68,26 @@ export function endSeason(state: CareerState): CareerState {
 
   // envelhecimento e reset de estatísticas
   const rnd = makeRng(`age-${state.clubId}-${state.season}`);
-  const aged: Record<string, Player> = Object.create(null);
-  for (const [id, p] of Object.entries(state.players)) {
-    aged[id] = {
-      ...p,
-      age: p.age + 1,
-      goals: 0,
-      assists: 0,
-      apps: 0,
-      yellows: 0,
-      suspended: false,
-      condition: 88 + Math.floor(rnd() * 10),
-      morale: Math.max(45, Math.min(90, p.morale)),
-    };
-  }
+  const aged = Object.fromEntries(
+    Object.entries(state.players).map(([id, p]) => [
+      id,
+      {
+        ...p,
+        age: p.age + 1,
+        goals: 0,
+        assists: 0,
+        apps: 0,
+        yellows: 0,
+        suspended: false,
+        condition: 88 + Math.floor(rnd() * 10),
+        morale: Math.max(45, Math.min(90, p.morale)),
+      },
+    ]),
+  );
 
   // aposentadorias e garotos da base
   const regen = applyRegens(aged, state.clubId, state.season, state.round);
-  const players = Object.fromEntries(
+  const roster = new Map(
     Object.entries(regen.players).map(([id, p]) => [
       id,
       withDevelopmentBase(p, state.developmentRulesVersion === 2 ? 2 : 1),
@@ -93,14 +95,15 @@ export function endSeason(state: CareerState): CareerState {
   );
   news.push(...regen.news);
 
-  const squad = Object.values(players);
+  const squad = Array.from(roster.values());
 
   // Evolução dos 46 atributos: fica guardada na carreira e vale para sempre.
   const attrDeltas =
     state.developmentRulesVersion === 2
       ? evolveSeasonV2(squad, state)
       : evolveSeason(squad, state.season, state.attrDeltas ?? {});
-  for (const p of squad) players[p.id] = developedPlayer(p, { ...state, attrDeltas });
+  for (const p of squad) roster.set(p.id, developedPlayer(p, { ...state, attrDeltas }));
+  const players = Object.fromEntries(roster);
   const { lineup, bench } = pickLineup(Object.values(players), state.tactics.formation, {
     ...state,
     attrDeltas,
