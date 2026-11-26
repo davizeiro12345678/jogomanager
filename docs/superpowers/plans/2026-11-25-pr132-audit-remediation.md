@@ -140,3 +140,13 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - [ ] Homologação Supabase/Stripe: apenas projeto de produção acessível; não substituir staging independente por produção. Não foram executadas cobranças reais, migrações de produção ou testes com usuários reais.
 - [ ] Backup externo: timer ativo, mas OAuth e confirmação criptográfica continuam ausentes. Sem upload comprovado; Wazuh 4.14.11 depende de backup restaurável do Indexer e upgrade coordenado.
 - [ ] CodSpeed do #179, CI do próximo SHA, QA autenticado, desempenho em GPU física, materiais/animação e merge/deploy permanecem condicionados aos respectivos gates. Não criar outros PRs.
+
+
+## Continuação P0/P1 — isolamento de evidências (26/11/2026)
+
+- [x] Reproduzir e corrigir a leitura por links simbólicos no coletor graphics-source-snapshot: dois casos RED e três testes GREEN, incluindo caso normal. Restringir caminhos ao checkout, rejeitar symlinks e arquivos não regulares, usar descritor com O_NOFOLLOW e lista Git delimitada por NUL. Teste conectado ao CI cinematográfico. A corrida de troca concorrente de diretórios ancestrais por outro processo local não é certificada; executar em checkout isolado.
+- [x] Conferir quatro workflows apontados por persistência de credenciais: cinematic-recovery, 43-acceptance, independent-diff-review e nine-axis já possuem persist-credentials: false no HEAD d2a6d4e. Nenhuma exceção do scanner adicionada.
+- [ ] Fechamento dos alertas de scanners e revisão independente: revalidar no novo SHA; threads não resolvidas automaticamente. Alerta #47 não certificado.
+- [ ] CodSpeed #179 bd77aadd: gate pareado 45841850637 reprovado em buildTeamSetup (+3,65%), decodeReplay (+17,26%) e fallback de rig 16 radial (+7,89%). Não alterar limiares nem imputar causa sem evidência. Bundle e shell Lighthouse passaram em ambos os PRs na coleta; Lighthouse mobile completo ainda em andamento.
+- [ ] VPS: serviços críticos ativos, zero unidades failed, timer externo habilitado mas sem OAuth e comprovação criptográfica. Wazuh 4.14.11 aguarda backup restaurável. Gateway Free, saldo zero e contratação de backups restrita ao titular. Não publicar credenciais ou dados privados.
+- [ ] Staging: apenas Supabase de produção listado; dois contextos Stripe de teste disponíveis, sem checkout real executado. Continuam pendentes autenticação, webhook, multiplayer real, GPU física e release. Não criar novos PRs, não publicar main.
