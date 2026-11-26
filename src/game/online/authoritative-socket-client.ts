@@ -249,7 +249,10 @@ export class AuthoritativeMatchSocketClient {
             (this.options.now ?? Date.now)(),
             event.kind === "nack",
           );
-        if (phase === "authenticating" && event.kind === "ready") {
+        // The feed confirms the seat bound from the signed ticket. A message
+        // type alone never authenticates this transport, so the decision reads
+        // local state instead of the frame that just arrived.
+        if (phase === "authenticating" && this.feed.readyAuthorized()) {
           this.clearAuthTimer();
           this.retryCount = 0;
           this.sequence = Math.max(this.sequence, resumeFrom);
