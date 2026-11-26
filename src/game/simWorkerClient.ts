@@ -194,7 +194,7 @@ interface LiveMatchOptions {
   away: TeamSetup;
   seed: string;
   rulesRevision?: MatchRulesRevision | undefined;
-  contactPhysicsRevision?: 2 | undefined;
+  contactPhysicsRevision?: 2 | 3 | undefined;
   knockout?: boolean;
   weather?: WeatherKind;
   view?: WorkerMatchView;

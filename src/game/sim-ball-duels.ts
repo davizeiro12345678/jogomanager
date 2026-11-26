@@ -7,6 +7,9 @@ import type { MatchSim } from "./sim";
 import {
   type ShotTechnique,
   blockRestitution,
+  blockContactEntry,
+  type BallFlightSample,
+  type BlockTrajectoryPoint,
   fatigueStrikeFactor,
   firstTouchSpill,
   goalkeeperCanReach,
@@ -14,7 +17,7 @@ import {
   shotProfile,
   sweptBallPlayerContact,
 } from "./match-physics-extras";
-import { type Side, type SimPlayer } from "./sim-contracts";
+import { usesCoordinatedTactics, type Side, type SimPlayer } from "./sim-contracts";
 import {
   FIELD_X,
   FIELD_Z,
@@ -115,6 +118,89 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
   sim.synchronizeBallPhysics();
 }
 
+const NO_BLOCKS: readonly BlockHit[] = [];
+
+interface BlockHit {
+  player: SimPlayer;
+  time: number;
+  position: BlockTrajectoryPoint;
+  vx: number;
+  vz: number;
+}
+
+/** Traverse the solver path in tick order. Each defender gets one attempt per tick. */
+function chronologicalBlocks(
+  sim: MatchSim,
+  dt: number,
+  attacking: Side,
+  previous: BlockTrajectoryPoint,
+  starts: Float64Array | undefined,
+  flight: BallFlightSample[] | undefined,
+): readonly BlockHit[] {
+  const count = flight?.length ?? 0;
+  let tested = 0;
+  let hits: BlockHit[] | undefined;
+  let from = previous,
+    start = 0;
+  for (let frame = 0; frame < Math.max(1, count); frame++) {
+    const sample = flight?.[frame];
+    const to = sample ?? sim.ball;
+    const end = sample?.time ?? 1;
+    const seconds = (end - start) * dt;
+    const vx = sample && seconds > 0 ? (to.x - from.x) / seconds : sim.ball.vx;
+    const vz = sample && seconds > 0 ? (to.z - from.z) / seconds : sim.ball.vz;
+    if (Math.hypot(vx, vz) >= 8) {
+      for (let i = 0; i < sim.players.length; i++) {
+        const p = sim.players[i]!;
+        if (p.side === attacking || p.pos === "GK" || p.sentOff || tested & (1 << i)) continue;
+        const x0 = starts?.[2 * i] ?? p.x,
+          z0 = starts?.[2 * i + 1] ?? p.z;
+        const dx = p.x - x0,
+          dz = p.z - z0;
+        const fraction = blockContactEntry(
+          from,
+          to,
+          x0 + start * dx,
+          z0 + start * dz,
+          x0 + end * dx,
+          z0 + end * dz,
+        );
+        if (fraction === null) continue;
+        const x = from.x + (to.x - from.x) * fraction,
+          z = from.z + (to.z - from.z) * fraction;
+        if (
+          Math.abs(z) > FIELD_Z - 0.5 ||
+          Math.abs(x) > FIELD_X ||
+          (sim.pendingShot && x * sim.attackDir(attacking) >= FIELD_X - 1.6)
+        )
+          continue;
+        tested |= 1 << i;
+        (hits ??= []).push({
+          player: p,
+          time: start + fraction * (end - start),
+          position: { x, z, height: from.height + (to.height - from.height) * fraction },
+          vx,
+          vz,
+        });
+      }
+    }
+    if (
+      Math.abs(to.z) > FIELD_Z - 0.5 ||
+      Math.abs(to.x) > FIELD_X ||
+      (sim.pendingShot && to.x * sim.attackDir(attacking) >= FIELD_X - 1.6)
+    )
+      break;
+    from = to;
+    start = end;
+  }
+  if (!hits) return NO_BLOCKS;
+  if (hits.length === 1) return hits;
+  return hits.sort(
+    (a, b) =>
+      a.time - b.time || (a.player.id < b.player.id ? -1 : a.player.id > b.player.id ? 1 : 0),
+  );
+}
+
 /**
  * Defesa ativa: um adversário no caminho pode bloquear o chute/passe.
  * Devolve verdadeiro quando a jogada foi encerrada aqui.
@@ -122,20 +208,35 @@ export function controlBall(sim: MatchSim, p: SimPlayer, ballSpeed: number, h: n
 export function tryBlock(
   sim: MatchSim,
   dt: number,
-  previous?: { x: number; z: number; height: number },
+  previous?: BlockTrajectoryPoint,
+  starts?: Float64Array,
+  flight?: BallFlightSample[],
 ): boolean {
-  const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
-  if (speed < 8 || (sim.contactPhysicsRevision !== 2 && sim.ball.height > 1.9)) return false;
   const attacking = sim.pendingShot?.side ?? (sim.pass ? sim.lastTouch : null);
   if (!attacking) return false;
 
+  const speed = Math.hypot(sim.ball.vx, sim.ball.vz);
+  if (
+    (!flight?.length && speed < 8) ||
+    (sim.contactPhysicsRevision === null && sim.ball.height > 1.9)
+  )
+    return false;
+  if (sim.contactPhysicsRevision === 3 && previous) {
+    for (const hit of chronologicalBlocks(sim, dt, attacking, previous, starts, flight)) {
+      const chance = (0.35 + (hit.player.defending / 100) * 0.5) * Math.min(1, dt * 30);
+      if (sim.rnd() > chance) continue;
+      Object.assign(sim.ball, hit.position, { vx: hit.vx, vz: hit.vz });
+      return rebound(sim, hit.player, attacking, Math.hypot(hit.vx, hit.vz));
+    }
+    return false;
+  }
   for (const p of sim.players) {
     if (p.side === attacking || p.pos === "GK" || p.sentOff) continue;
     const swept =
-      sim.contactPhysicsRevision === 2 && previous
+      sim.contactPhysicsRevision !== null && previous
         ? sweptBallPlayerContact(previous.x, previous.z, sim.ball.x, sim.ball.z, p.x, p.z, 1.25)
         : null;
-    if (sim.contactPhysicsRevision === 2 && previous) {
+    if (sim.contactPhysicsRevision !== null && previous) {
       if (!swept) continue;
       const height = previous.height + (sim.ball.height - previous.height) * swept.fraction;
       if (height > 1.9 || height < 0) continue;
@@ -152,33 +253,37 @@ export function tryBlock(
       sim.ball.z = previous.z + (sim.ball.z - previous.z) * swept.fraction;
       sim.ball.height = previous.height + (sim.ball.height - previous.height) * swept.fraction;
     }
-    const slide = sim.rnd() < 0.45;
-    sim.trigger(p, slide ? "slide" : "block", 0.7);
-    p.tackles++;
-    sim.noteOffsideDeflection(p);
-    sim.lastTouch = p.side;
-    const wasShot = !!sim.pendingShot;
-    sim.pendingShot = null;
-    sim.pass = null;
-    // rebote: a bola volta desviada e perde muita força
-    const ang = Math.atan2(sim.ball.vz, sim.ball.vx) + Math.PI + (sim.rnd() - 0.5) * 1.6;
-    const back = speed * (0.2 + sim.rnd() * 0.25) * blockRestitution(slide, p.weightKg);
-    sim.ball.vx = Math.cos(ang) * back;
-    sim.ball.vz = Math.sin(ang) * back;
-    sim.ballVy = 1.6 + sim.rnd() * 2.4;
-    sim.ballSpin = 0;
-    sim.synchronizeBallPhysics();
-    if (wasShot) {
-      sim.pushEvent({
-        minute: sim.minute(),
-        type: "shot",
-        side: attacking,
-        text: `${p.name} se joga e bloqueia a finalização!`,
-      });
-    }
-    return true;
+    return rebound(sim, p, attacking, speed);
   }
   return false;
+}
+
+function rebound(sim: MatchSim, p: SimPlayer, attacking: Side, speed: number): boolean {
+  const slide = sim.rnd() < 0.45;
+  sim.trigger(p, slide ? "slide" : "block", 0.7);
+  p.tackles++;
+  sim.noteOffsideDeflection(p);
+  sim.lastTouch = p.side;
+  const wasShot = !!sim.pendingShot;
+  sim.pendingShot = null;
+  sim.pass = null;
+  // rebote: a bola volta desviada e perde muita força
+  const ang = Math.atan2(sim.ball.vz, sim.ball.vx) + Math.PI + (sim.rnd() - 0.5) * 1.6;
+  const back = speed * (0.2 + sim.rnd() * 0.25) * blockRestitution(slide, p.weightKg);
+  sim.ball.vx = Math.cos(ang) * back;
+  sim.ball.vz = Math.sin(ang) * back;
+  sim.ballVy = 1.6 + sim.rnd() * 2.4;
+  sim.ballSpin = 0;
+  sim.synchronizeBallPhysics();
+  if (wasShot) {
+    sim.pushEvent({
+      minute: sim.minute(),
+      type: "shot",
+      side: attacking,
+      text: `${p.name} se joga e bloqueia a finalização!`,
+    });
+  }
+  return true;
 }
 
 /**
@@ -215,7 +320,7 @@ export function resolveShot(
   // Revised physics checks whether the keeper really arrived at the contact
   // point; a distant dive cannot magically prevent an on-target goal.
   if (
-    sim.contactPhysicsRevision === 2 &&
+    sim.contactPhysicsRevision !== null &&
     s.outcome === "saved" &&
     gk &&
     !goalkeeperCanReach(gk.x, gk.z, planeX, crossingZ, crossingHeight, gk.defending, gk.stamina)
@@ -267,7 +372,7 @@ export function resolveShot(
     if (sim.rnd() < 0.45) {
       // Historical replays preserve the old keeper positioning. The revised
       // model keeps the actual dive location: a save cannot teleport a keeper.
-      if (sim.contactPhysicsRevision !== 2) {
+      if (sim.contactPhysicsRevision === null) {
         gk.x = sim.ball.x - dir * 0.4;
         gk.z = sim.ball.z * 0.6;
       }
@@ -384,26 +489,69 @@ export function dribble(sim: MatchSim, holder: SimPlayer, dt: number) {
   holder.z = Math.max(-FIELD_Z + 1, Math.min(FIELD_Z - 1, holder.z));
 }
 
+const TACKLE_BALL_REACH = 1.08;
+// The held ball sits up to 0.9 m ahead of the carrier in both integrators.
+const TACKLE_CARRIER_REACH = 0.9 + TACKLE_BALL_REACH;
+
+function pressureChallenger(sim: MatchSim, holder: SimPlayer): SimPlayer | null {
+  if (sim.contactPhysicsRevision !== 3) {
+    const reach = sim.contactPhysicsRevision === 2 ? TACKLE_BALL_REACH : 2.2;
+    let closest: SimPlayer | null = null;
+    let closestSquared = Infinity;
+    for (const player of sim.players) {
+      if (player.side === holder.side || player.sentOff) continue;
+      const dx = player.x - holder.x;
+      if (dx > reach || dx < -reach) continue;
+      const dz = player.z - holder.z;
+      if (dz > reach || dz < -reach) continue;
+      const squared = dx * dx + dz * dz;
+      if (squared < closestSquared) {
+        closest = player;
+        closestSquared = squared;
+      }
+    }
+    // Preserve the original circular boundary (including floating-point ties).
+    if (!closest || Math.sqrt(closestSquared) > reach) return null;
+    const opp = closest;
+    if (
+      sim.contactPhysicsRevision === 2 &&
+      Math.hypot(opp.x - sim.ball.x, opp.z - sim.ball.z) > reach
+    )
+      return null;
+    return opp;
+  }
+  let best: SimPlayer | null = null;
+  let bestDistance = TACKLE_BALL_REACH ** 2;
+  for (const p of sim.players) {
+    if (p.side === holder.side || p.sentOff) continue;
+    const dx = p.x - sim.ball.x,
+      dz = p.z - sim.ball.z;
+    const distance = dx * dx + dz * dz;
+    if (!(
+      distance <= bestDistance &&
+      (p.x - holder.x) ** 2 + (p.z - holder.z) ** 2 <= TACKLE_CARRIER_REACH ** 2
+    ))
+      continue;
+    if (distance < bestDistance || !best || p.id < best.id) {
+      best = p;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
 export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
-  const { opp, dist } = sim.nearestOpponent(holder);
-  // v2 requires body/foot reach before stealing possession; a successful
-  // random tackle must not transfer the ball across two metres of open field.
-  const contactReach = sim.contactPhysicsRevision === 2 ? 1.08 : 2.2;
-  if (!opp || dist > contactReach || sim.restartTimer > 0) return;
-  // Body proximity alone is not enough: the defender must reach the actual
-  // ball, otherwise a tackle on the carrier's back teleports possession.
-  if (
-    sim.contactPhysicsRevision === 2 &&
-    Math.hypot(opp.x - sim.ball.x, opp.z - sim.ball.z) > contactReach
-  )
-    return;
+  if (sim.restartTimer > 0) return;
+  const opp = pressureChallenger(sim, holder);
+  if (!opp) return;
   const press = 0.55 + sim.setup(opp.side).tactics.pressing * 0.22;
   let support = 0;
   for (const defender of sim.players) {
     if (defender.side !== opp.side || defender.id === opp.id) continue;
     // V2 counts only teammates still playing; omitted revisions keep historical
     // duel outcomes and their exact random draw order for saved replays.
-    if (defender.sentOff && sim.setup(opp.side).tacticalAiRevision === 2) continue;
+    if (defender.sentOff && usesCoordinatedTactics(sim.setup(opp.side).tacticalAiRevision))
+      continue;
     if (Math.hypot(defender.x - holder.x, defender.z - holder.z) < 3.2) support += 1;
   }
   const overload = 1 + Math.min(2, support) * 0.28;
@@ -473,7 +621,7 @@ export function pressure(sim: MatchSim, holder: SimPlayer, dt: number) {
     sim.noteOffsideControl(opp);
     sim.decisionTimer = 0.4;
     sim.trigger(opp, "intercept", 0.5);
-    if (sim.contactPhysicsRevision === 2) sim.synchronizeBallPhysics();
+    if (sim.contactPhysicsRevision !== null) sim.synchronizeBallPhysics();
     if (sim.rnd() < 0.008) sim.injure(holder, "na dividida");
   }
 }

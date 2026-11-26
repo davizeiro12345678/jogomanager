@@ -1,3 +1,4 @@
+import type { BallFlightSample } from "./match-physics-extras";
 import { FORMATIONS } from "./formations";
 import {
   evaluatePassLanesFallback,
@@ -96,7 +97,8 @@ export class MatchSim {
   #perceptionBackend: "compat" | "wasm" = "compat";
   #execution: MatchExecutionContract | null = null;
   #rulesRevision: MatchRulesRevision = 1;
-  #contactPhysicsRevision: 2 | null = null;
+  #contactPhysicsRevision: 2 | 3 | null = null;
+  #blockStarts: Float64Array | undefined;
   #rulesState: MatchRulesStateV2 | null = null;
   #physicsFault = false;
   private passLaneKernel: PassLaneKernel = evaluatePassLanesFallback;
@@ -121,7 +123,9 @@ export class MatchSim {
       physics: this.ballPhysics ? "rapier" : "compat",
       perception: this.#perceptionBackend,
       ...(this.#rulesRevision === 2 ? { rulesRevision: 2 as const } : {}),
-      ...(this.#contactPhysicsRevision === 2 ? { contactPhysicsRevision: 2 as const } : {}),
+      ...(this.#contactPhysicsRevision !== null
+        ? { contactPhysicsRevision: this.#contactPhysicsRevision }
+        : {}),
     };
   }
 
@@ -131,7 +135,7 @@ export class MatchSim {
   }
 
   /** Movement/possession contact model pinned before kick-off. */
-  get contactPhysicsRevision(): 2 | null {
+  get contactPhysicsRevision(): 2 | 3 | null {
     return this.#contactPhysicsRevision;
   }
 
@@ -424,12 +428,16 @@ export class MatchSim {
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
       rulesRevision?: MatchRulesRevision | undefined;
-      contactPhysicsRevision?: 2 | undefined;
+      contactPhysicsRevision?: 2 | 3 | undefined;
     },
   ) {
     if (opts?.rulesRevision !== undefined && !validMatchRulesRevision(opts.rulesRevision))
       throw new RangeError("Unknown match rules revision");
-    if (opts?.contactPhysicsRevision !== undefined && opts.contactPhysicsRevision !== 2)
+    if (
+      opts?.contactPhysicsRevision !== undefined &&
+      opts.contactPhysicsRevision !== 2 &&
+      opts.contactPhysicsRevision !== 3
+    )
       throw new RangeError("Unknown contact physics revision");
     this.#rulesRevision = opts?.rulesRevision ?? 1;
     this.#contactPhysicsRevision = opts?.contactPhysicsRevision ?? null;
@@ -542,7 +550,11 @@ export class MatchSim {
     this.ballSpin = state.spin;
   }
 
-  private stepAuthoritativeBall(dt: number, holder: SimPlayer | null): boolean {
+  private stepAuthoritativeBall(
+    dt: number,
+    holder: SimPlayer | null,
+    flight?: BallFlightSample[],
+  ): boolean {
     const physics = this.ballPhysics;
     if (!physics) return false;
     try {
@@ -550,7 +562,7 @@ export class MatchSim {
       const holderState = holder
         ? { id: holder.id, x: holder.x, z: holder.z, vx: holder.vx, vz: holder.vz }
         : null;
-      physics.step(dt, state, holderState);
+      physics.step(dt, state, holderState, flight);
       this.applyMutableBallPhysicsState(state);
       return true;
     } catch {
@@ -1236,10 +1248,22 @@ export class MatchSim {
     if (this.restartTimer > 0) this.restartTimer -= dt;
     this.tickActions(dt);
 
+    let blockStarts: Float64Array | undefined;
+    if (
+      this.#contactPhysicsRevision === 3 &&
+      !this.ball.holder &&
+      (this.pendingShot || this.pass)
+    ) {
+      blockStarts = this.#blockStarts ??= new Float64Array(44);
+      for (let i = 0; i < this.players.length; i++) {
+        blockStarts[i * 2] = this.players[i]!.x;
+        blockStarts[i * 2 + 1] = this.players[i]!.z;
+      }
+    }
     this.moveOffBall(dt);
     this.separate();
     this.drainStamina(clockDt);
-    this.moveBall(dt);
+    this.moveBall(dt, true, blockStarts);
     this.sanitize();
 
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
@@ -1301,7 +1325,7 @@ export class MatchSim {
     const R = 0.85; // raio do corpo
     const list = this.players;
     // Fixed during a step: read once instead of on every potential contact.
-    const boundedContact = this.#contactPhysicsRevision === 2;
+    const boundedContact = this.#contactPhysicsRevision !== null;
     const holderId = this.ball.holder;
     for (let i = 0; i < list.length; i++) {
       const a = list[i]!;
@@ -1401,7 +1425,7 @@ export class MatchSim {
     this.ballSpin = clampFinite(this.ballSpin, -12, 12, 0);
   }
 
-  private moveBall(dt: number, useBallPhysics = true) {
+  private moveBall(dt: number, useBallPhysics = true, blockStarts?: Float64Array) {
     const holder = this.ball.holder ? this.players.find((p) => p.id === this.ball.holder) : null;
     if (holder) {
       this.looseTime = 0;
@@ -1420,7 +1444,8 @@ export class MatchSim {
     this.looseTime += dt;
     const previousBall = { x: this.ball.x, z: this.ball.z, height: this.ball.height };
 
-    this.lastAuthoritative = useBallPhysics && this.stepAuthoritativeBall(dt, null);
+    const flight: BallFlightSample[] | undefined = blockStarts && this.ballPhysics ? [] : undefined;
+    this.lastAuthoritative = useBallPhysics && this.stepAuthoritativeBall(dt, null, flight);
     if (!this.lastAuthoritative) {
       // Compatibilidade para replays legados, simulação rápida e navegadores
       // em que a inicialização WASM não estiver disponível.
@@ -1471,7 +1496,7 @@ export class MatchSim {
     }
 
     // --- bloqueio da defesa e interceptação no caminho da bola ---
-    if (this.tryBlock(dt, previousBall)) return;
+    if (this.tryBlock(dt, previousBall, blockStarts, flight)) return;
 
     // --- finalização em voo: resolve quando a bola chega na área do gol ---
     if (this.pendingShot && this.resolveShot(previousBall)) return;
@@ -1520,7 +1545,7 @@ export class MatchSim {
     const h = this.ball.height;
     // bola muito alta não pode ser dominada; entre 0.9 e 2.4 é cabeceio
     const reachable = h <= 2.4;
-    const contactRadius = this.#contactPhysicsRevision === 2 ? (h > 0.9 ? 1.3 : 1.05) : 1.9;
+    const contactRadius = this.#contactPhysicsRevision !== null ? (h > 0.9 ? 1.3 : 1.05) : 1.9;
     if (closest && bestD < contactRadius && ballSpeed < 30 && reachable) {
       this.controlBall(closest, ballSpeed, h);
       return;
@@ -1530,7 +1555,7 @@ export class MatchSim {
       // Old replays used a rescue teleport here. New contact physics lets the
       // existing chasers reach the stationary ball under normal acceleration.
       // No player may jump to the ball merely because the timer expired.
-      if (this.#contactPhysicsRevision === 2) return;
+      if (this.#contactPhysicsRevision !== null) return;
       if (this.offsideAtContact(closest)) {
         this.controlBall(closest, ballSpeed, h);
         return;
@@ -1559,8 +1584,10 @@ export class MatchSim {
   /** @internal */ tryBlock(
     dt: number,
     previous?: { x: number; z: number; height: number },
+    starts?: Float64Array,
+    flight?: BallFlightSample[],
   ): boolean {
-    return ballDuels.tryBlock(this, dt, previous);
+    return ballDuels.tryBlock(this, dt, previous, starts, flight);
   }
 
   /** @internal */ resolveShot(

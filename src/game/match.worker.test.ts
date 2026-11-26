@@ -82,6 +82,39 @@ describe("match worker skip ordering", () => {
         expect(message.snapshot.execution?.rulesRevision).toBe(2);
   });
 
+  it.each([
+    [3, undefined],
+    [undefined, 3],
+    [3, 3],
+  ] as const)(
+    "pins contact %s and home tactics %s independently in the real worker",
+    async (contact, tactics) => {
+      send({
+        id: 21,
+        type: "startLive",
+        home: buildTeamSetup("fla", "4-3-3", 2, 1, tactics ? { tacticalAiRevision: tactics } : {}),
+        away: buildTeamSetup("pal"),
+        seed: "worker-revisions",
+        contactPhysicsRevision: contact,
+        compact: true,
+      });
+      await waitForReady(21);
+      await vi.advanceTimersByTimeAsync(150);
+      const packet = responseMessages(worker).find(
+        (message) => message.ok && message.type === "recovery",
+      );
+      expect(packet?.ok && packet.type === "recovery").toBe(true);
+      if (packet?.ok && packet.type === "recovery") {
+        expect(packet.checkpoint.execution?.contactPhysicsRevision).toBe(contact);
+        expect(packet.checkpoint.state["home"]).toBeDefined();
+        expect(
+          (packet.checkpoint.state["home"] as { tacticalAiRevision?: number }).tacticalAiRevision,
+        ).toBe(tactics);
+        expect(packet.checkpoint.state["away"]).not.toHaveProperty("tacticalAiRevision");
+      }
+    },
+  );
+
   it("keeps pause, tactics and substitute behind the complete skip", async () => {
     const home = buildTeamSetup("fla");
     const away = buildTeamSetup("pal");

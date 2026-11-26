@@ -68,7 +68,9 @@ export function validMatchTeam(v: unknown): boolean {
       (!Array.isArray(v["bench"]) || v["bench"].length > MAX_MATCH_BENCH_PLAYERS)) ||
     (v["morale"] !== undefined && !finite(v["morale"], 0, 100)) ||
     (v["cpu"] !== undefined && typeof v["cpu"] !== "boolean") ||
-    (v["tacticalAiRevision"] !== undefined && v["tacticalAiRevision"] !== 2)
+    (v["tacticalAiRevision"] !== undefined &&
+      v["tacticalAiRevision"] !== 2 &&
+      v["tacticalAiRevision"] !== 3)
   )
     return false;
   const roster = [...v["players"], ...((v["bench"] ?? []) as unknown[])];
@@ -184,7 +186,9 @@ export function validMatchCommand(v: unknown): v is LiveWorkerRequest {
         (v["rulesRevision"] === undefined ||
           v["rulesRevision"] === 1 ||
           v["rulesRevision"] === 2) &&
-        (v["contactPhysicsRevision"] === undefined || v["contactPhysicsRevision"] === 2) &&
+        (v["contactPhysicsRevision"] === undefined ||
+          v["contactPhysicsRevision"] === 2 ||
+          v["contactPhysicsRevision"] === 3) &&
         (v["knockout"] === undefined || typeof v["knockout"] === "boolean") &&
         (v["weather"] === undefined || WEATHER.includes(v["weather"] as string)) &&
         (v["compact"] === undefined || typeof v["compact"] === "boolean")

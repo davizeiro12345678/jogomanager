@@ -1,3 +1,4 @@
+import type { BallFlightSample } from "./match-physics-extras";
 /**
  * Autoridade física canônica da bola.
  *
@@ -59,7 +60,12 @@ export interface RapierBallAuthorityOptions {
 export interface BallPhysicsAuthority {
   readonly engine: "rapier-wasm";
   reset(state: RapierBallState, holder?: RapierBallHolder | null): void;
-  step(dt: number, state: RapierBallState, holder: RapierBallHolder | null): void;
+  step(
+    dt: number,
+    state: RapierBallState,
+    holder: RapierBallHolder | null,
+    flight?: BallFlightSample[],
+  ): void;
   /**
    * Clima físico: atrito/restituição do gramado e vento (aceleração u/s²
    * aplicada só com a bola no ar). Opcional para implementações de teste.
@@ -204,7 +210,12 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.ballCollider.setRestitution(cond.rapierBallRestitution);
   }
 
-  step(dt: number, state: RapierBallState, holder: RapierBallHolder | null) {
+  step(
+    dt: number,
+    state: RapierBallState,
+    holder: RapierBallHolder | null,
+    flight?: BallFlightSample[],
+  ) {
     if (this.disposed) return;
 
     if (holder && holder.id === state.holder) {
@@ -224,11 +235,15 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     // slices as Rapier. Their total remains equal to the outer elapsed time,
     // but a curving ball can now react to turf, post and net contacts between
     // the force samples.
-    this.stepWorld(dt, (substep) => {
-      this.applyMagnusImpulse(substep, state.spin);
-      this.applyWindImpulse(substep);
-      this.applyQuadraticDrag(substep);
-    });
+    this.stepWorld(
+      dt,
+      (substep) => {
+        this.applyMagnusImpulse(substep, state.spin);
+        this.applyWindImpulse(substep);
+        this.applyQuadraticDrag(substep);
+      },
+      flight,
+    );
     this.writeDynamicState(state);
     this.lastWritten = copyState(state);
   }
@@ -240,7 +255,11 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
     this.world.free();
   }
 
-  private stepWorld(dt: number, beforeStep?: (substep: number) => void) {
+  private stepWorld(
+    dt: number,
+    beforeStep?: (substep: number) => void,
+    flight?: BallFlightSample[],
+  ) {
     const total = Math.max(1 / 240, Math.min(MAX_AUTHORITATIVE_STEP, finite(dt, 1 / 30)));
     const count = highFidelitySubsteps(total);
     const substep = total / count;
@@ -249,6 +268,15 @@ export class RapierBallAuthority implements BallPhysicsAuthority {
       beforeStep?.(substep);
       const started = this.options.observeSubstep ? performance.now() : 0;
       this.world.step();
+      if (flight) {
+        const pos = this.ballBody.translation();
+        flight.push({
+          time: (index + 1) / count,
+          x: pos.x,
+          z: pos.z,
+          height: Math.max(BALL_PHYSICS_RADIUS, pos.y),
+        });
+      }
       if (this.options.observeSubstep) {
         const solverMs = performance.now() - started;
         let contacts = 0;

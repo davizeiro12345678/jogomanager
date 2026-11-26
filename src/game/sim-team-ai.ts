@@ -13,10 +13,11 @@ import {
   coordinatedPassingLaneCover,
   coordinatedSupportRun,
 } from "./tactical-ai-v2";
+import { firstPlayableInterception, type PlannedInterception } from "./ai-playable-interception";
 import { advanceAthlete } from "./athlete-dynamics";
 import { pitchTraction } from "./match-physics-extras";
 import { positionalOverall } from "./overall";
-import { type Side, type SimPlayer } from "./sim-contracts";
+import { usesCoordinatedTactics, type Side, type SimPlayer } from "./sim-contracts";
 import {
   type AiBenchInput,
   type AiLineupInput,
@@ -35,7 +36,9 @@ export function halfTimeRead(sim: MatchSim, side: Side) {
   const foe: Side = side === "home" ? "away" : "home";
   const [home, away] = sim.possessionPct();
   const own = side === "home" ? home : away;
-  const plan = (setup.tacticalAiRevision === 2 ? coordinatedHalfTimePlan : halfTimePlan)(
+  const plan = (
+    usesCoordinatedTactics(setup.tacticalAiRevision) ? coordinatedHalfTimePlan : halfTimePlan
+  )(
     { goals: sim.stats[side].goals, shots: sim.stats[side].shots, possession: own },
     { goals: sim.stats[foe].goals, shots: sim.stats[foe].shots, possession: 100 - own },
     setup.tactics,
@@ -104,12 +107,38 @@ export function aiManage(sim: MatchSim, side: Side) {
   }
 }
 
+const MATCH_SIDES: readonly Side[] = ["home", "away"];
+
+function looseBallTargets(sim: MatchSim): Partial<Record<Side, PlannedInterception>> | null {
+  // A pass, shot and restart already have assigned roles. Plan for an
+  // unclaimed ball after a spill or deflection without replacing those runs.
+  if (sim.ball.holder || sim.pass || sim.pendingShot || sim.setPiece || sim.restartTimer > 0)
+    return null;
+  return sim.home.tacticalAiRevision === 3 || sim.away.tacticalAiRevision === 3 ? {} : null;
+}
+
 /** ids dos jogadores designados a perseguir a bola solta */
-export function chasers(sim: MatchSim): Set<string> {
+export function chasers(sim: MatchSim, targets = looseBallTargets(sim)): Set<string> {
   const set = sim.chaseIds;
   set.clear();
   if (sim.ball.holder) return set;
-  for (const side of ["home", "away"] as Side[]) {
+  for (const side of MATCH_SIDES) {
+    if (targets && sim.setup(side).tacticalAiRevision === 3) {
+      const plan = firstPlayableInterception(
+        sim.ball,
+        sim.ballVy,
+        sim.players,
+        side,
+        pitchTraction(sim.weather, sim.time),
+        sim.contactPhysicsRevision,
+      );
+      if (plan) {
+        set.add(plan.id);
+        targets[side] = plan;
+        continue;
+      }
+      // A ball beyond the short planning horizon still needs a pursuing team.
+    }
     let first: SimPlayer | null = null;
     let second: SimPlayer | null = null;
     let firstDistance = Infinity;
@@ -119,7 +148,7 @@ export function chasers(sim: MatchSim): Set<string> {
       const dx = player.x - sim.ball.x;
       const dz = player.z - sim.ball.z;
       const distance =
-        sim.contactPhysicsRevision === 2
+        sim.contactPhysicsRevision !== null
           ? predictLooseBallInterception({
               playerX: player.x,
               playerZ: player.z,
@@ -152,7 +181,8 @@ export function chasers(sim: MatchSim): Set<string> {
 export function moveOffBall(sim: MatchSim, dt: number) {
   const bx = sim.ball.x;
   const bz = sim.ball.z;
-  const chase = sim.chasers();
+  const targets = looseBallTargets(sim);
+  const chase = chasers(sim, targets);
   // The holder is skipped below, so its position stays fixed throughout sim pass.
   const holder = sim.ball.holder ? sim.players.find((q) => q.id === sim.ball.holder) : undefined;
   const passingTarget = sim.pass ? sim.players.find((q) => q.id === sim.pass?.to) : undefined;
@@ -163,7 +193,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
   const lateGame = remaining < 15;
   const goalDiff = sim.stats.home.goals - sim.stats.away.goals;
   const currentMinute = sim.minute();
-  const contactRevision2 = sim.contactPhysicsRevision === 2;
+  const contactRevision2 = sim.contactPhysicsRevision !== null;
   const motionPhase = sim.time * 0.4;
   const urgency = (side: Side) => {
     if (!lateGame) return 0;
@@ -194,6 +224,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
     const surge = !attacking && sim.pressSurge[side] > 0;
     return {
       setup,
+      coordinated: usesCoordinatedTactics(setup.tacticalAiRevision),
       dir: sim.attackDir(side),
       attacking,
       surge,
@@ -213,6 +244,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
     if (p.id === holderId) continue;
     const {
       setup,
+      coordinated,
       dir,
       attacking,
       surge,
@@ -260,7 +292,11 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
     } else if (chase.has(p.id)) {
       // interceptação: mira num ponto à frente da bola
-      if (contactRevision2) {
+      const plan = targets?.[p.side];
+      if (plan) {
+        tx = plan.x;
+        tz = plan.z;
+      } else if (contactRevision2) {
         const intercept = predictLooseBallInterception({
           playerX: p.x,
           playerZ: p.z,
@@ -288,19 +324,18 @@ export function moveOffBall(sim: MatchSim, dt: number) {
         const line = lineX[p.side];
         // Historical matches keep their exact legacy behavior (pressing is 0..2).
         // The v2 opponent opts into a deterministic, bounded coordinated trap.
-        const trap =
-          setup.tacticalAiRevision === 2
-            ? coordinatedOffsideTrap({
-                pressing: setup.tactics.pressing,
-                ballX: bx,
-                defenderLineX: line,
-                attackDirection: dir > 0 ? 1 : -1,
-                minute: currentMinute,
-                scoreDifference,
-              })
-            : sim.rulesRevision === 2 && setup.tactics.pressing === 2 && Math.abs(bx - line) > 14
-              ? dir * 3.5
-              : 0;
+        const trap = coordinated
+          ? coordinatedOffsideTrap({
+              pressing: setup.tactics.pressing,
+              ballX: bx,
+              defenderLineX: line,
+              attackDirection: dir > 0 ? 1 : -1,
+              minute: currentMinute,
+              scoreDifference,
+            })
+          : sim.rulesRevision === 2 && setup.tactics.pressing === 2 && Math.abs(bx - line) > 14
+            ? dir * 3.5
+            : 0;
         tx = tx * 0.35 + (line + trap) * 0.65;
         // marcação por zona: cobre o adversário mais perigoso da sua faixa
         let markZ: number | null = null;
@@ -323,7 +358,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
       // perdendo no fim: a equipe inteira sobe para pressionar
       tx += push * 7 * dir;
-      if (setup.tacticalAiRevision === 2) {
+      if (coordinated) {
         const cover = coordinatedDefensiveCover({
           ballZ: bz,
           targetZ: tz,
@@ -376,7 +411,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
       }
       tz += Math.sin(motionPhase + p.number) * 0.9;
       tx += push * 5 * dir;
-      if (setup.tacticalAiRevision === 2 && holder && p.pos !== "GK") {
+      if (coordinated && holder && p.pos !== "GK") {
         const run = coordinatedSupportRun({
           holderX: holder.x,
           holderZ: holder.z,
@@ -395,7 +430,7 @@ export function moveOffBall(sim: MatchSim, dt: number) {
 
     // Interception already bounds the revision-2 chase target within one
     // metre of the lines. Apply the formation margin to the other runs.
-    if (!contactRevision2 || !chase.has(p.id)) {
+    if ((!contactRevision2 && !targets?.[p.side]) || !chase.has(p.id)) {
       tx = Math.max(-FIELD_X + 2, Math.min(FIELD_X - 2, tx));
       tz = Math.max(-FIELD_Z + 2, Math.min(FIELD_Z - 2, tz));
     }

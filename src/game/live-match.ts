@@ -76,7 +76,7 @@ export type LiveWorkerRequest =
       away: TeamSetup;
       seed: string;
       rulesRevision?: MatchRulesRevision | undefined;
-      contactPhysicsRevision?: 2 | undefined;
+      contactPhysicsRevision?: 2 | 3 | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
       compact?: boolean;
@@ -104,7 +104,7 @@ export type LiveWorkerRequest =
       away: TeamSetup;
       seed: string;
       rulesRevision?: MatchRulesRevision | undefined;
-      contactPhysicsRevision?: 2 | undefined;
+      contactPhysicsRevision?: 2 | 3 | undefined;
       knockout?: boolean | undefined;
       weather?: WeatherKind | undefined;
     }

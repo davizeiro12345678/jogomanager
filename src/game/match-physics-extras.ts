@@ -163,3 +163,61 @@ export function sweptBallPlayerContact(
   const distance = Math.hypot(fromX + dx * closest - athleteX, fromZ + dz * closest - athleteZ);
   return Number.isFinite(distance) && distance <= radius ? { fraction: closest, distance } : null;
 }
+
+export interface BlockTrajectoryPoint {
+  x: number;
+  z: number;
+  height: number;
+}
+
+export interface BallFlightSample extends BlockTrajectoryPoint {
+  time: number;
+}
+
+/** First joint overlap of a 1.25 m moving defender disk and the playable height interval. */
+export function blockContactEntry(
+  from: BlockTrajectoryPoint,
+  to: BlockTrajectoryPoint,
+  fromX: number,
+  fromZ: number,
+  toX: number,
+  toZ: number,
+): number | null {
+  const radius = 1.25;
+  const x = from.x - fromX,
+    endX = to.x - toX;
+  if ((x > radius && endX > radius) || (x < -radius && endX < -radius)) return null;
+  const z = from.z - fromZ,
+    endZ = to.z - toZ;
+  if (
+    (z > radius && endZ > radius) ||
+    (z < -radius && endZ < -radius) ||
+    (from.height > 1.9 && to.height > 1.9) ||
+    (from.height < 0 && to.height < 0)
+  )
+    return null;
+  const dx = endX - x,
+    dz = endZ - z,
+    travel = Math.hypot(dx, dz);
+  if (!Number.isFinite(travel) || !Number.isFinite(from.height) || !Number.isFinite(to.height))
+    return null;
+  let enter = 0,
+    exit = 1;
+  const dh = to.height - from.height;
+  if (dh !== 0) {
+    const ground = -from.height / dh,
+      high = (1.9 - from.height) / dh;
+    enter = Math.max(0, Math.min(ground, high));
+    exit = Math.min(1, Math.max(ground, high));
+  }
+  if (travel === 0) return Math.hypot(x, z) <= radius ? enter : null;
+  const nx = dx / travel,
+    nz = dz / travel,
+    offset = x * nz - z * nx;
+  if (Math.abs(offset) > radius) return null;
+  const center = -(x * nx + z * nz),
+    chord = Math.sqrt(radius * radius - offset * offset);
+  enter = Math.max(enter, (center - chord) / travel);
+  exit = Math.min(exit, (center + chord) / travel);
+  return enter <= exit ? enter : null;
+}

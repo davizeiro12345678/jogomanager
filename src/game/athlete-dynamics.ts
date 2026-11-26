@@ -27,6 +27,16 @@ export function restoreAthleteRemainder(body: AthleteBody, remainder: number) {
   liveRemainder.set(body, remainder);
 }
 
+/** Shared acceleration limit in metres per second squared at the current grip. */
+export function athleteAcceleration(p: AthleteBody, grip: number): number {
+  const force =
+    ((4 + clamp(p.pace, 0, 100) * 0.018 + clamp(p.physical, 0, 100) * 0.012) *
+      (0.72 + clamp(p.stamina, 0, 100) * 0.0028) *
+      78) /
+    mass(p);
+  return clamp(force, 3.2, 7.5) * grip;
+}
+
 /** Bounded acceleration, stopping distance and continuous coasting. Substeps
  * keep a coarse fast-forward tick consistent with the live match clock. */
 export function advanceAthlete(
@@ -39,12 +49,7 @@ export function advanceAthlete(
 ) {
   if (!Number.isFinite(dt) || dt <= 0) return;
   const grip = clamp(traction, 0.4, 1.1);
-  const force =
-    ((4 + clamp(p.pace, 0, 100) * 0.018 + clamp(p.physical, 0, 100) * 0.012) *
-      (0.72 + clamp(p.stamina, 0, 100) * 0.0028) *
-      78) /
-    mass(p);
-  const acceleration = clamp(force, 3.2, 7.5) * grip;
+  const acceleration = athleteAcceleration(p, grip);
   const braking = (7.2 + clamp(p.physical, 0, 100) * 0.02) * grip;
   // Spatial motion resolves at 139 Hz minimum while the deterministic match
   // clock, AI and rules remain at 30 Hz. Ten slices cover the live 1 / 15 s

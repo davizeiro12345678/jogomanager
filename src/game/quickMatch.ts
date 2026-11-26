@@ -26,7 +26,7 @@ export function buildTeamSetup(
   formation: FormationKey = "4-3-3",
   mentality = 2,
   pressing = 1,
-  opts?: { cpu?: boolean; morale?: number; tacticalAiRevision?: 2 },
+  opts?: Pick<TeamSetup, "cpu" | "morale" | "tacticalAiRevision">,
 ): TeamSetup {
   const club = safeClub(clubId);
   const namedSquad = NAMED_SQUADS[clubId];
@@ -72,7 +72,9 @@ export function buildTeamSetup(
     bench: team.bench.map((player) => ({ ...player })),
     morale: opts?.morale ?? team.morale,
     cpu: opts?.cpu ?? true,
-    ...(opts?.tacticalAiRevision === 2 ? { tacticalAiRevision: 2 as const } : {}),
+    ...(opts?.tacticalAiRevision === 2 || opts?.tacticalAiRevision === 3
+      ? { tacticalAiRevision: opts.tacticalAiRevision }
+      : {}),
   };
 }
 

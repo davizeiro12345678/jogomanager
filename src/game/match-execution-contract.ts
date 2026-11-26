@@ -10,7 +10,7 @@ export interface MatchExecutionContract {
   /** Omission preserves the original seeded rules and existing replay contracts. */
   rulesRevision?: MatchRulesRevision | undefined;
   /** Opt-in physical contact model; omission preserves historical replays. */
-  contactPhysicsRevision?: 2 | undefined;
+  contactPhysicsRevision?: 2 | 3 | undefined;
 }
 export function validExecutionContract(value: unknown): value is MatchExecutionContract {
   if (!value || typeof value !== "object") return false;
@@ -20,7 +20,8 @@ export function validExecutionContract(value: unknown): value is MatchExecutionC
     (contract["rulesRevision"] === undefined ||
       validMatchRulesRevision(contract["rulesRevision"])) &&
     (contract["contactPhysicsRevision"] === undefined ||
-      contract["contactPhysicsRevision"] === 2) &&
+      contract["contactPhysicsRevision"] === 2 ||
+      contract["contactPhysicsRevision"] === 3) &&
     (contract["physics"] === "compat" || contract["physics"] === "rapier") &&
     (contract["perception"] === "compat" || contract["perception"] === "wasm")
   );

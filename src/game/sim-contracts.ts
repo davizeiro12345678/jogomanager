@@ -128,8 +128,12 @@ export interface TeamSetup {
   morale?: number;
   /** lado controlado pela IA (substitui e ajusta a tática sozinha) */
   cpu?: boolean;
-  /** Opt-in v2 intelligence; omitted for legacy simulations and saved replays. */
-  tacticalAiRevision?: 2;
+  /** Per-side tactical profile. Omitted on historical matches and replays. */
+  tacticalAiRevision?: 2 | 3;
+}
+
+export function usesCoordinatedTactics(revision: TeamSetup["tacticalAiRevision"]): boolean {
+  return revision === 2 || revision === 3;
 }
 
 export interface MatchStats {
