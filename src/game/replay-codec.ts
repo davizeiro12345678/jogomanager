@@ -103,30 +103,31 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
-  const frames: ReplayFrame[] = [];
   const playerCount = raw.meta.length;
   const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
+  const frames = new Array<ReplayFrame>(timesMs.length);
+  const positionStride = playerCount * 4;
   let timeMs = 0;
+  let actionBase = 0;
+  let positionBase = 0;
+  let ballBase = 0;
+  let scoreBase = 0;
   for (let frameIndex = 0; frameIndex < timesMs.length; frameIndex += 1) {
     timeMs += timesMs[frameIndex]!;
-    // V3 buffers are length-validated before decoding. Preallocate the exact
-    // player arrays and read typed buffers directly: avoid repeated push growth,
-    // optional indexed lookups and four helper calls per athlete per frame.
-    const p = new Array<number>(playerCount * 4);
+    // The input buffers were length-validated. Decode contiguous coordinates
+    // without repeated multiplication for each athlete; keep each frame's
+    // arrays independent, including frames that lack visual context.
+    const p = new Array<number>(positionStride);
     const a = new Array<PlayerAction | null>(playerCount);
-    const actionBase = frameIndex * playerCount;
-    const positionBase = actionBase * 4;
-    for (let playerIndex = 0; playerIndex < playerCount; playerIndex += 1) {
-      const target = playerIndex * 4;
-      const source = positionBase + target;
-      p[target] = positions[source]! / QUANTIZE;
-      p[target + 1] = positions[source + 1]! / QUANTIZE;
-      p[target + 2] = positions[source + 2]! / QUANTIZE;
-      p[target + 3] = positions[source + 3]! / QUANTIZE;
-      a[playerIndex] = actionFromByte(actions[actionBase + playerIndex]!);
+    for (let offset = 0; offset < positionStride; offset += 4) {
+      const source = positionBase + offset;
+      p[offset] = positions[source]! / QUANTIZE;
+      p[offset + 1] = positions[source + 1]! / QUANTIZE;
+      p[offset + 2] = positions[source + 2]! / QUANTIZE;
+      p[offset + 3] = positions[source + 3]! / QUANTIZE;
     }
-    const ballBase = frameIndex * 3;
-    const scoreBase = frameIndex * 2;
+    for (let player = 0; player < playerCount; player += 1)
+      a[player] = actionFromByte(actions[actionBase + player]!);
     const t = timeMs / 1_000;
     const b: ReplayFrame["b"] = [
       ball[ballBase]! / QUANTIZE,
@@ -137,9 +138,13 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const ag = score[scoreBase + 1]!;
     const poss = possession[frameIndex] === 1 ? "away" : "home";
     const frameVisual = visual?.[frameIndex];
-    frames.push(
-      frameVisual ? { t, b, p, a, hg, ag, poss, v: frameVisual } : { t, b, p, a, hg, ag, poss },
-    );
+    frames[frameIndex] = frameVisual
+      ? { t, b, p, a, hg, ag, poss, v: frameVisual }
+      : { t, b, p, a, hg, ag, poss };
+    actionBase += playerCount;
+    positionBase += positionStride;
+    ballBase += 3;
+    scoreBase += 2;
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),
