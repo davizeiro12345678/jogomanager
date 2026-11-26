@@ -427,15 +427,34 @@ DECLARE
   credited boolean;
   credited_again boolean;
 BEGIN
+  -- The recorded core Drizzle schema has the eight-argument grant RPC.
+  -- The production reconciliation migration also has a ten-argument overload;
+  -- check its grants only when that overload is present in this database.
+  ASSERT to_regprocedure(
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[])')
+    IS NOT NULL, 'Core payment fulfillment function missing';
   ASSERT NOT has_function_privilege('anon',
-    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[])',
     'EXECUTE'), 'Anonymous callers may not mint paid items';
   ASSERT NOT has_function_privilege('authenticated',
-    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[])',
     'EXECUTE'), 'Authenticated users may not mint paid items';
   ASSERT has_function_privilege('service_role',
-    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[])',
     'EXECUTE'), 'Service-role Stripe fulfillment permission must remain available';
+  IF to_regprocedure(
+    'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)')
+    IS NOT NULL THEN
+    ASSERT NOT has_function_privilege('anon',
+      'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+      'EXECUTE'), 'Anonymous callers may not invoke extended fulfillment';
+    ASSERT NOT has_function_privilege('authenticated',
+      'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+      'EXECUTE'), 'Authenticated users may not invoke extended fulfillment';
+    ASSERT has_function_privilege('service_role',
+      'public.fulfill_store_purchase(uuid,text,text,integer,integer,integer,integer,text[],integer,integer)',
+      'EXECUTE'), 'Service role must retain extended fulfillment';
+  END IF;
   ASSERT NOT has_function_privilege('authenticated',
     'public.begin_payment_webhook_event(text,text)', 'EXECUTE'),
     'Client must never register privileged payment events';
@@ -454,10 +473,10 @@ BEGIN
   VALUES(test_owner, 'coins_small', 500, 'pending', 'cs_replay_payment_fixture_01');
 
   SELECT public.fulfill_store_purchase(test_owner, 'coins_small',
-    'cs_replay_payment_fixture_01', 500, 101, 0, 0, ARRAY[]::text[], 0, 0)
+    'cs_replay_payment_fixture_01', 500, 101, 0, 0, ARRAY[]::text[])
   INTO credited;
   SELECT public.fulfill_store_purchase(test_owner, 'coins_small',
-    'cs_replay_payment_fixture_01', 500, 101, 0, 0, ARRAY[]::text[], 0, 0)
+    'cs_replay_payment_fixture_01', 500, 101, 0, 0, ARRAY[]::text[])
   INTO credited_again;
 
   ASSERT credited IS TRUE AND credited_again IS FALSE,
