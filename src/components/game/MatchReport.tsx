@@ -6,6 +6,7 @@ import { CLUBS } from "@/game/data/leagues";
 import type { MatchRuntime } from "@/game/live-match";
 import { Button } from "@/components/ui/button";
 import { CornerAd, NativeSponsoredCard } from "@/features/ads/AdZones";
+import { useT } from "@/i18n/context";
 
 type Tab = "resumo" | "notas" | "chutes" | "sumula";
 
@@ -16,6 +17,7 @@ export function MatchReport({
   awayId,
   mySide,
   advancing,
+  mode = "career",
   onFinish,
 }: {
   sim: MatchRuntime;
@@ -24,7 +26,10 @@ export function MatchReport({
   mySide: "home" | "away";
   onFinish: () => void;
   advancing?: boolean;
+  mode?: "career" | "quick";
 }) {
+  const { t } = useT();
+  const finishLabel = mode === "quick" ? t("match.back") : "Voltar à central";
   const [tab, setTab] = useState<Tab>("resumo");
   const ratings = useMemo(() => sim.playerRatings(), [sim]);
   const motm = useMemo(() => sim.manOfTheMatch(), [sim]);
@@ -182,9 +187,11 @@ export function MatchReport({
           ) : null}
         </div>
 
-        <div className="mt-5">
-          <GuestCloudPrompt next="/club" compact />
-        </div>
+        {mode === "career" && (
+          <div className="mt-5">
+            <GuestCloudPrompt next="/club" compact />
+          </div>
+        )}
 
         <NativeSponsoredCard context="postmatch" compact className="mt-3" />
 
@@ -193,7 +200,7 @@ export function MatchReport({
           onClick={onFinish}
           className="mt-5 w-full rounded-lg bg-primary px-4 py-2.5 font-display text-sm uppercase tracking-widest text-primary-foreground disabled:opacity-50 disabled:cursor-wait"
         >
-          {advancing ? "Processando..." : "Voltar à central"}
+          {advancing ? "Processando..." : finishLabel}
         </Button>
       </div>
       <CornerAd context="postmatch" delayMs={1800} />

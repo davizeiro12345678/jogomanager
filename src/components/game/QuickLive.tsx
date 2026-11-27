@@ -452,7 +452,14 @@ export default function QuickLive({
       </div>
 
       {done ? (
-        <MatchReport sim={sim} homeId={myId} awayId={oppId} mySide="home" onFinish={onExit} />
+        <MatchReport
+          sim={sim}
+          homeId={myId}
+          awayId={oppId}
+          mySide="home"
+          mode="quick"
+          onFinish={onExit}
+        />
       ) : null}
     </div>
   );

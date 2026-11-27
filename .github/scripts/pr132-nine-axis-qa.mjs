@@ -655,8 +655,23 @@ try {
       );
       matchEvidence.clock = { before, after: await advanced.jsonValue() };
       await advanced.dispose();
+      const essential = page.getByRole("button", { name: "Só o essencial", exact: true });
+      if (await essential.isVisible()) await essential.click();
+      await trigger.click();
+      await options.getByRole("button", { name: "Pular para o fim", exact: true }).click();
+      const fullTime = page.getByRole("dialog", { name: "Fim de jogo", exact: true });
+      await fullTime.waitFor({ timeout: 45_000 });
+      if (await fullTime.getByRole("complementary", { name: "Salvar carreira na nuvem" }).count()) {
+        throw new Error("Quick match report unexpectedly offered career cloud saving");
+      }
+      await png(page, "quick-match-full-time-375");
+      await fullTime
+        .getByRole("button", { name: "Voltar à escolha de times", exact: true })
+        .click();
+      matchEvidence.fullTimeReturnedToSelection = true;
+    } else {
+      await page.getByRole("button", { name: "Voltar à escolha de times", exact: true }).click();
     }
-    await page.getByRole("button", { name: "Voltar à escolha de times", exact: true }).click();
     await page.locator("#quick-league").waitFor();
     report.axes.interaction.metrics[`quickMatch${viewport.width}`] = matchEvidence;
   }
