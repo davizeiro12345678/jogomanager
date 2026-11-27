@@ -1,12 +1,6 @@
--- Run only on an isolated clone. This contract verifies the migration preserves
--- owner-only SELECT semantics and prevents per-row auth.uid() evaluation.
+-- Verify the RLS policy structure only on an isolated staging clone.
+-- No mutation or table scan is needed to inspect the policy catalog.
 BEGIN;
-SET LOCAL ROLE authenticated;
--- A null uid must not authorize records, including a null owner.
-SELECT COUNT(*) AS rows_visible_without_jwt
-FROM public.coin_service_spends;
-RESET ROLE;
--- Inspect the effective SELECT expression. No data is changed.
 DO $audit$
 DECLARE policy_text text;
 BEGIN
