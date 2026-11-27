@@ -95,18 +95,20 @@ export function QuickMatchPage() {
 
   if (started) {
     return (
-      <Suspense fallback={<MatchLoading />}>
-        <QuickLive
-          myId={myClub}
-          oppId={oppClub}
-          difficulty={difficulty}
-          seed={seed}
-          onExit={() => {
-            setSeed(`quick-${Date.now()}`);
-            setStarted(false);
-          }}
-        />
-      </Suspense>
+      <main>
+        <Suspense fallback={<MatchLoading />}>
+          <QuickLive
+            myId={myClub}
+            oppId={oppClub}
+            difficulty={difficulty}
+            seed={seed}
+            onExit={() => {
+              setSeed(`quick-${Date.now()}`);
+              setStarted(false);
+            }}
+          />
+        </Suspense>
+      </main>
     );
   }
 

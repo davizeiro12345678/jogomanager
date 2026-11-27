@@ -6,6 +6,8 @@ const shell = readFileSync(new URL("./game/GameShell.tsx", import.meta.url), "ut
 const multiplayer = readFileSync(new URL("../pages/multiplayer.tsx", import.meta.url), "utf8");
 const pending = readFileSync(new URL("./RoutePending.tsx", import.meta.url), "utf8");
 const store = readFileSync(new URL("../pages/loja.tsx", import.meta.url), "utf8");
+const quickMatch = readFileSync(new URL("./game/QuickMatchPage.tsx", import.meta.url), "utf8");
+const quickLive = readFileSync(new URL("./game/QuickLive.tsx", import.meta.url), "utf8");
 const managerArticle = readFileSync(
   new URL("../pages/jogo-de-manager-de-futebol.tsx", import.meta.url),
   "utf8",
@@ -31,6 +33,14 @@ describe("audit regression guards", () => {
     expect(store).toContain('<main className="store-stage min-h-dvh px-4 py-6">');
     expect(store.split("<main ").length - 1).toBe(1);
     expect(store.split("</main>").length - 1).toBe(1);
+  });
+  it("keeps one main landmark across selection, loading and live quick match", () => {
+    const started = quickMatch.split("if (started) {")[1] ?? "";
+    expect(started).toMatch(
+      /<main>\s*<Suspense fallback=\{<MatchLoading \/>\}>\s*<QuickLive\b[\s\S]*?<\/Suspense>\s*<\/main>/,
+    );
+    expect(started.match(/<main\b/g)).toHaveLength(2);
+    expect(quickLive).not.toMatch(/<main\b/);
   });
   it("explains which multiplayer mode is actually available without advertising unvalidated 2x2", () => {
     expect(multiplayer).toContain("copy.title");

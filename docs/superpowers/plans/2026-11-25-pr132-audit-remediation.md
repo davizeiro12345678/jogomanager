@@ -252,3 +252,15 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [ ] Validar CI e QA hospedada no novo SHA, login e passkey em staging, Stripe Sandbox e fluxo autenticado de 1×1/2×2. A restauração externa, o upgrade coordenado do Wazuh e o teste em GPU física exigem validação própria.
 
 [Auditoria operacional e visual](../../operations/pr179-gateway-vps-visual-audit-2026-11-27.md)
+
+### Homologação a partir de `37bfb1cd` em 27/11/2026
+
+- [x] Revisar CI do checkpoint. No SHA `37bfb1cd`, Quality Gates, Lighthouse móvel nas cinco rotas e os 16 benchmarks pareados passaram.
+- [x] Corrigir a falta da região principal na partida rápida. A fase ativa e seu carregamento passam a ter um único `main`, assim como a seleção. O teste de regressão falhou antes da correção e passou com a mudança.
+- [x] Validar o Auth isolado com duas contas descartáveis. Links de uso único, renovação, persistência de metadados, logout e remoção das contas passaram. Os contratos SQL de carteira, carreira, fila cooperativa e liquidação também passaram no ambiente isolado.
+- [x] Verificar Tailscale, SSH, sudo do Gateway e duas verificações sob demanda em binários de sistema. Os dois arquivos terminaram sem detecção.
+- [ ] P0 — Vincular o aplicativo de staging ao Supabase isolado e validar senha com CAPTCHA, passkeys e saves reais. O login direto por senha retornou `captcha_failed` e o preview do PR segue sem configuração do Supabase.
+- [ ] P0 — Validar checkout autenticado, evento Stripe assinado e crédito idempotente. A primeira chave fornecida nesta etapa retornou HTTP 401 no modo de testes. O catálogo do sandbox correto respondeu pelo conector.
+- [ ] P0/P1 — Validar multiplayer 1×1 e 2×2 no aplicativo de staging, comprovar a restauração externa e executar o upgrade coordenado do Wazuh após o ensaio de recuperação.
+- [ ] P2 — Acumular a evidência visual do novo commit, incluindo Android e GPU física. O executor do navegador Android encerrou a sessão antes da interação.
+- [ ] Revalidar todos os gates no novo SHA antes de liberar o PR.
