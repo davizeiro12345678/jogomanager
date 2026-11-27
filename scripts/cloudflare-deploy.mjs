@@ -112,8 +112,7 @@ try {
   if (action === "deploy") {
     const configured = settings["VITE_PAYMENTS_CLIENT_TOKEN"];
     const environment =
-      settings["PAYMENTS_ENVIRONMENT"] ||
-      (configured?.startsWith("pk_live_") ? "live" : "sandbox");
+      settings["PAYMENTS_ENVIRONMENT"] || (configured?.startsWith("pk_live_") ? "live" : "sandbox");
     assertStripePublicBuildKey(configured, environment);
   }
   if (action === "build" || action === "deploy") {
