@@ -534,6 +534,7 @@ function LiveMatch({
   // Atalhos de teclado
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (introActive || ceremonyActive || e.defaultPrevented) return;
       if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
       if (
         e.target instanceof HTMLElement &&
@@ -556,7 +557,7 @@ function LiveMatch({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [camera, chooseCamera, skip]);
+  }, [camera, chooseCamera, skip, introActive, ceremonyActive]);
 
   function finish() {
     const perf = sim
@@ -705,7 +706,7 @@ function LiveMatch({
             trophies={career.trophies.length}
             narrate
             cinematic
-            onDone={() => setIntroStep((s) => s + 1)}
+            onDone={() => setIntroStep((s) => (s === introStep ? s + 1 : s))}
             sequenceActions={
               <>
                 <button
