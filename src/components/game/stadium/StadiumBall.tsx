@@ -8,7 +8,7 @@ import { footballTextures } from "./textures/ball";
 import { BallResponse } from "@/game/ball-response";
 import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
-import { ballShadowAppearance, presentationBall } from "./stadium-ball";
+import { ballHorizontalBlend, ballShadowAppearance, presentationBall } from "./stadium-ball";
 import { softShadowTexture } from "../players/soft-shadow";
 
 export function Ball({
@@ -49,7 +49,11 @@ export function Ball({
     const delta = Math.min(Math.max(0, dt), 0.05);
     const snap =
       !previous.current || Math.hypot(visualBall.x - m.position.x, visualBall.z - m.position.z) > 4;
-    const blend = snap ? 1 : 1 - Math.exp(-42 * delta);
+    const blend = ballHorizontalBlend(delta, {
+      hasVisualBall: sim.visualBall != null,
+      isHeld: sim.ball.holder != null,
+      discontinuity: snap,
+    });
     m.position.x += (visualBall.x - m.position.x) * blend;
     m.position.z += (visualBall.z - m.position.z) * blend;
     // The simulation exposes height of the centre, including the ball radius.
