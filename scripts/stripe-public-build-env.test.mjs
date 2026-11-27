@@ -84,3 +84,11 @@ test("production GitHub deploy keeps the proven direct Google OAuth mode", () =>
   assert.match(workflow, /stripe-public-build-env\.mjs/);
   assert.match(deploy, /VITE_AUTH_MODE.*supabase-direct/);
 });
+
+test("manual sandbox deployment infers the environment when explicit PAYMENTS_ENVIRONMENT is absent", () => {
+  const deploy = readFileSync(new URL("./cloudflare-deploy.mjs", import.meta.url), "utf8");
+  assert.match(
+    deploy,
+    /configured\?\.startsWith\("pk_live_"\)\s*\?\s*"live"\s*:\s*"sandbox"/,
+  );
+});
