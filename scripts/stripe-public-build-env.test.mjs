@@ -91,8 +91,5 @@ test("production GitHub deploy preserves current Supabase and Stripe protections
 
 test("manual sandbox deployment infers the environment when explicit PAYMENTS_ENVIRONMENT is absent", () => {
   const deploy = readFileSync(new URL("./cloudflare-deploy.mjs", import.meta.url), "utf8");
-  assert.match(
-    deploy,
-    /configured\?\.startsWith\("pk_live_"\)\s*\?\s*"live"\s*:\s*"sandbox"/,
-  );
+  assert.match(deploy, /configured\?\.startsWith\("pk_live_"\)\s*\?\s*"live"\s*:\s*"sandbox"/);
 });
