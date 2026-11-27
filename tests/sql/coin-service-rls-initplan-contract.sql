@@ -1,20 +1,28 @@
--- Verify the existing Drizzle 0088 RLS migration on an isolated staging clone.
--- No mutation or table scan is needed to inspect the policy catalog.
--- If this fails on production, first deploy drizzle/migrations/0088_rls_cached_auth_context.sql via the standard release process; do not introduce a duplicate Supabase migration.
+-- Inspect both policies installed by canonical Drizzle migration 0088.
+-- Run only in an isolated staging database. No financial records are read.
+-- Production currently lacks public.career_save_chain: applying migration 0088
+-- directly in that environment before reconciling the history would fail.
 BEGIN;
 DO $audit$
-DECLARE policy_text text;
+DECLARE matched_policies integer;
 BEGIN
-  SELECT qual INTO policy_text
+  SELECT COUNT(*) INTO matched_policies
   FROM pg_policies
-  WHERE schemaname = 'public' AND tablename = 'coin_service_spends'
-    AND policyname = 'Players read their own coin services' AND cmd = 'SELECT'
-    AND roles @> ARRAY['authenticated']::name[];
-  IF policy_text IS NULL
-     OR policy_text NOT LIKE '%auth.uid()%'
-     OR policy_text NOT LIKE '%SELECT%'
-     OR policy_text NOT LIKE '%user_id%' THEN
-    RAISE EXCEPTION 'coin_service_spends RLS optimization not installed: %', policy_text;
+  WHERE schemaname = 'public'
+    AND cmd = 'SELECT'
+    AND roles @> ARRAY['authenticated']::name[]
+    AND (
+      (tablename = 'coin_service_spends'
+        AND policyname = 'Players read their own coin services')
+      OR
+      (tablename = 'career_save_chain'
+        AND policyname = 'Owners read their save chain')
+    )
+    AND qual LIKE '%SELECT auth.uid()%'
+    AND qual LIKE '%user_id%';
+  IF matched_policies <> 2 THEN
+    RAISE EXCEPTION 'Drizzle 0088 RLS contract incomplete: % of 2 owner policies',
+      matched_policies;
   END IF;
 END;
 $audit$;
