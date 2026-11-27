@@ -5,7 +5,7 @@ import { JOGO_DE_MANAGER_DE_FUTEBOL_PATH as PATH } from "@/lib/public-route-path
 
 export function Page() {
   return (
-    <div className="pitch-bg min-h-dvh px-4 py-14">
+    <main className="pitch-bg min-h-dvh px-4 py-14">
       <article className="mx-auto max-w-3xl">
         <p className="font-display text-xs uppercase tracking-[0.4em] text-primary">Grátis</p>
         <h1 className="mt-3 font-display text-4xl leading-tight sm:text-5xl">
@@ -352,6 +352,6 @@ export function Page() {
 
         <PublicLinks exclude={PATH} />
       </article>
-    </div>
+    </main>
   );
 }
