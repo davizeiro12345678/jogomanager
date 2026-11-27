@@ -213,7 +213,10 @@ export function clampPose(pose: Pose): Pose {
   for (const joint of JOINTS) {
     const value = pose[joint];
     const limits = JOINT_LIMITS[joint];
-    clamped[joint] = Math.max(limits.min, Math.min(limits.max, value));
+    // Invalid replay / procedural samples must never reach a bone transform.
+    clamped[joint] = Number.isFinite(value)
+      ? Math.max(limits.min, Math.min(limits.max, value))
+      : 0;
   }
   return clamped;
 }
