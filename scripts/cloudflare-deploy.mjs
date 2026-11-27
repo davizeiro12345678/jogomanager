@@ -107,7 +107,10 @@ try {
   await mkdir(path.join(root, ".wrangler/logs"), { recursive: true });
   if (action === "deploy") {
     const configured = settings["VITE_PAYMENTS_CLIENT_TOKEN"];
-    assertStripePublicBuildKey(configured, settings["PAYMENTS_ENVIRONMENT"] || "live");
+    const environment =
+      settings["PAYMENTS_ENVIRONMENT"] ||
+      (configured?.startsWith("pk_live_") ? "live" : "sandbox");
+    assertStripePublicBuildKey(configured, environment);
   }
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
