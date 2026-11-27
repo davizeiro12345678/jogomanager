@@ -190,3 +190,32 @@ sandbox assinado e offsite com restore, além de preparar snapshot dos
 centrais Wazuh e teste GPU. Os três commits de sombra são autocontidos e
 reversíveis. Este checkpoint não relaxa branch protection, limites de
 performance, CSP, RLS, SSH, firewall, Tailscale ou validação de assinatura.
+
+
+## Continuação 27/11/2026, 19:44 UTC — chaves isoladas, pose segura, HTML mobile e navegadores
+
+**HEAD de referência anterior ao fechamento:** `7504d530c2d2b4d6dfc7f1ab86729cdae86806ba`. A branch é alterada por fluxos paralelos; reconsultar CI após este commit. PR #179 continua **Draft**, sem autorização de merge ou deploy. A matriz de P0 do checkpoint anterior permanece aberta.
+
+### Chaves e conectividade: evidência sem valores secretos
+
+- O Gateway informou nomes, não conteúdos, das credenciais armazenadas. Três candidatas ao Supabase isolado (`jogomanager-supabase-staging-service-role`, `legacy-jogomanager-supabase-staging`, `supabase`) retornaram **HTTP 401** em `http://127.0.0.1:25431/auth/v1/admin/users?per_page=1`. Não se deve trocar bindings da aplicação por essas chaves sem provar origem e papéis.
+- O cliente já em execução no contêiner `jm-real-game-stage-local` consulta a URL configurada `supabase-staging.jogomanager.com` com **HTTP 200**. Também houve **HTTP 200** no Envoy local usando as credenciais de serviço/publicáveis de ambos os contêineres (apenas no processo privado, sem exposição). Essas evidências mostram que o 503 do preview **não pode ser atribuído apenas** à falta de todas as chaves ou à diferença textual entre variáveis. A rota `http://127.0.0.1:3092/api/health` ainda retorna **503** com corpo contendo `error`; rastrear aplicação/Worker, DNS e checks reais antes de uma correção.
+- A chave de teste `jogomanager-stripe-sandbox-api-key-file` autentica (GET `/v1/account`, **HTTP 200**) na conta **principal em modo teste**, `acct_1UCpy65Co1CQ7ndi`. A chave armazenada como `stripesecret` autentica na **conta Sandbox distinta**, `acct_1UCoO24f5HwE4lTW`. Outra chave candidata recebeu 401. Nada foi cobrado.
+- A conta Sandbox separada tinha dois webhooks Lovable habilitados e o endpoint JogoManager risk antigo desabilitado. Criou-se um novo endpoint de **risco sandbox** `we_1UgUzo4f5HwE4lTWy5XaCDCK` com eventos `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`; ele foi **imediatamente desabilitado**, e o estado `disabled` confirmado por leitura posterior. A tentativa de armazenar o segredo HMAC no Cloudflare foi **bloqueada pelo controle de segurança da ferramenta**; não tentar contornar. O segredo não foi exposto em chats, logs ou Git. O Worker continua sem `STRIPE_WHSEC_RISK` e health **503 (4/5 canais)**. Este webhook não deve ser habilitado antes de rotação/instalação autorizada da assinatura e teste de entrega real. O Worker auxiliar só audita, não concede carteira.
+- O banco Supabase de **produção** possui `public.user_wallet` e `public.payment_webhook_events` mas não `public.career_save_chain`. A consulta retornou **zero tabelas físicas em public sem RLS habilitada**, o que não substitui testes das policies sob identidade de usuários distintos. Nenhuma migração foi aplicada à produção.
+
+### Correção incremental da animação no PR
+
+- Teste novo `src/game/animation-pose-safety.test.ts` no commit `8c7031b`: garante que `clampPose` elimina NaN/±Infinity, limita ângulos finitos e não modifica a entrada.
+- Implementação `646faee`, seguida de formatação exigida por Prettier `59ebf59`: valores de junta não finitos geram **pose neutra (0 rad)**. O rig renderizado também usa o limitador anatômico próprio de `ground-contact.ts`, já resistente a não finitos; esta é uma defesa complementar, **não** uma remodelagem massiva de geometria ou uma alteração de física autoritativa.
+- Os commits de sombreamento de contato da bola e a correção da transição cinematográfica permanecem no PR. Seus testes e capturas em Chromium por software não comprovam FPS, 1% lows, frame pacing, qualidade PBR, IK real ou 90 minutos em GPU dedicada. GPU no VPS: PCI virtual `1234:1111`, sem NVIDIA e sem render node. A homologação gráfica física **continua P1 pendente**.
+- O CI do primeiro commit de implementação da pose reprovou **apenas Prettier**; corrigido em `59ebf59`. A rodada `7504d530` foi observada com **23 success, 1 neutral, 3 skipped e 1 build em progresso**; revalidar o head mais recente para saber o veredito.
+
+### Navegadores reais e artefato HTML
+
+- A conta Gateway Pro permite quatro navegadores simultâneos. Neste lote: Chrome e Edge receberam **Cloudflare challenge** (sem tentativa de bypass); Firefox abriu `/new` em produção, clicou `Só o essencial` e avançou **Identidade → Aparência → Perfil**, confirmando elementos acessíveis e estado do wizard. A tentativa de clicar `Continuar` fora do viewport falhou inicialmente por scroll, foi repetida após rolar e passou. O Android Chromium encerrou por falha do provedor antes de carregar `/multiplayer`.
+- **Todas as quatro sessões desse lote foram encerradas**, com confirmação `stopped` e consumo inferior a US$0,01 de saldo por sessão. Nenhum fluxo autenticado foi testado.
+- Gerado e verificado via Chrome 158 do VPS a 390 × 844 o relatório HTML autocontido `/home/jmadmin/relatorio-pr179-auditoria-mobile-2026-11-27.html`: 4.321.934 bytes, SHA-256 `f520b6580e1ded85928fd1c1527570f2cd1b1042291aad6f4602ac0007f2bc0d`. Contém **seis capturas reais embutidas**, origem identificada como produção **anterior** ao head do PR, matrizes P0/P1/P2, distinção entre código e medição, layout responsivo e limites de QA. Artefato transferido ao Gateway com download temporário. Validação móvel `/opt/pfm-pr179-visual-qa-20261127/report-mobile-validation.png` (SHA-256 `dace168ec33ae233f665d2eb4e1094885a738c4f6a956684007f9d92f0314d08`).
+- A fatura fornecida pelo proprietário mostra **US$15 de Static IP paga**, mas as três regiões compartilhadas consultadas retornam `staticIp.status=slot_available`, sem IP provisionado à conta. O bundle Ops ainda não está inscrito em nenhum servidor; uma cobrança/fatura e um recurso operacional habilitado são evidências distintas.
+
+**Bloqueios de publicação mantidos:** assinatura Stripe e crédito idempotente em fluxo real sandbox, Auth/passkey/saves staging, multiplayer 1×1 e 2×2 com clientes autenticados, backup externo cifrado restaurado, schema/RLS verificados, Wazuh 4.14.11 com snapshot/rollback e QA 3D/física em GPU física. Sem corte do acesso `sudo` do Gateway, sem desligar firewall, sem migração destrutiva ou merge.
