@@ -162,7 +162,7 @@ try {
 
     // Deliberately leave the WebGL module request pending. The route is only
     // used by this isolated local CI origin, never a production website.
-    await page.route(/\\/CinematicStage3D-[^/]+\\.js(?:\\?.*)?$/, () => {
+    await page.route(/\/CinematicStage3D-[^/]+\.js(?:\?.*)?$/, () => {
       entry.requests++;
     });
 
@@ -191,13 +191,19 @@ try {
 
       entry.mode = await dialog.getAttribute("data-scene-mode");
       entry.fallback = await dialog.getAttribute("data-scene-auto-fallback");
-      if (entry.requests < 1) throw new Error("3D module did not stall in the synthetic test");
-      if (entry.pageErrors.length) throw new Error("Uncaught browser exceptions: " + entry.pageErrors.join("; "));
-      await page.screenshot({ path: path.join(output, "autoplay-never-ready-recovered.png") });
+      if (entry.requests < 1)
+        throw new Error("3D module did not stall in the synthetic test");
+      if (entry.pageErrors.length)
+        throw new Error("Uncaught browser exceptions: " + entry.pageErrors.join("; "));
+      await page.screenshot({
+        path: path.join(output, "autoplay-never-ready-recovered.png"),
+      });
       entry.passed = true;
     } catch (error) {
       entry.failure = String(error.stack || error);
-      await page.screenshot({ path: path.join(output, "autoplay-never-ready-failure.png") }).catch(() => {});
+      await page
+        .screenshot({ path: path.join(output, "autoplay-never-ready-failure.png") })
+        .catch(() => {});
     } finally {
       await context.close();
     }
