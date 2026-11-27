@@ -5,7 +5,6 @@ export function presentationBall(sim: SimView) {
   return sim.visualBall ?? sim.ball;
 }
 
-
 /**
  * The Worker/renderer already interpolates `visualBall`. Applying a second
  * camera-side spring makes the ball visibly lag behind the player's boot.
@@ -18,9 +17,7 @@ export function ballHorizontalBlend(
   opts: { hasVisualBall: boolean; isHeld: boolean; discontinuity: boolean },
 ): number {
   if (opts.hasVisualBall || opts.isHeld || opts.discontinuity) return 1;
-  const dt = Number.isFinite(deltaSeconds)
-    ? Math.max(0, Math.min(deltaSeconds, 0.05))
-    : 0;
+  const dt = Number.isFinite(deltaSeconds) ? Math.max(0, Math.min(deltaSeconds, 0.05)) : 0;
   return 1 - Math.exp(-42 * dt);
 }
 
