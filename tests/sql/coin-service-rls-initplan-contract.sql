@@ -20,6 +20,29 @@ BEGIN
     )
     AND qual LIKE '%SELECT auth.uid()%'
     AND qual LIKE '%user_id%';
+  IF to_regclass('public.career_save_chain') IS NULL
+    OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'careers'
+        AND column_name = 'chain_hash'
+    )
+    OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'careers'
+        AND column_name = 'chain_length'
+    )
+    OR NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgrelid = to_regclass('public.careers')
+        AND tgname = 'careers_link_save' AND NOT tgisinternal
+    )
+    OR NOT EXISTS (
+      SELECT 1 FROM pg_proc
+      WHERE pronamespace = 'public'::regnamespace
+        AND proname = 'link_career_save'
+    ) THEN
+    RAISE EXCEPTION 'Drizzle 0053 career save chain prerequisites are missing';
+  END IF;
   IF matched_policies <> 2 THEN
     RAISE EXCEPTION 'Drizzle 0088 RLS contract incomplete: % of 2 owner policies',
       matched_policies;
