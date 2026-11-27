@@ -201,6 +201,17 @@ jobs:
         run: bash scripts/start-replay-db.sh
       - name: Replay the complete canonical migration history
         run: supabase db reset --local --no-seed --yes
+      # The canonical Supabase history predates these application-owned Drizzle
+      # tables. Newer forward migrations must not run against a partial schema.
+      - name: Replay coin-service and save-chain prerequisites on disposable Postgres
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0044_coin_career_services.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0045_fix_spend_coins_on_service.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0047_wallet_stored_services.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0053_career_save_hash_chain.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0054_add_youth_boost_and_stadium_upgrade_services.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0055_add_contract_renewal_service.sql
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0056_complete_training_and_scout_coin_services.sql
       - name: Apply the forward growth-observability migration to the disposable database
         run: psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f drizzle/migrations/0060_database_growth_observability.sql
       - name: Apply the forward career tombstone and generation migration to the disposable database
