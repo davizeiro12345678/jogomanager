@@ -104,7 +104,8 @@ export function encodeReplay(replay: Replay): StoredReplayV3 {
 }
 
 function decodeV3(raw: StoredReplayV3): Replay {
-  const frames: ReplayFrame[] = [];
+  // Allocate the exact output length. Decoding a full match must not repeatedly grow this array.
+  const frames: ReplayFrame[] = new Array(raw.frames.timesMs.length);
   const playerCount = raw.meta.length;
   const { timesMs, ball, positions, actions, score, possession, visual } = raw.frames;
   let timeMs = 0;
@@ -138,9 +139,9 @@ function decodeV3(raw: StoredReplayV3): Replay {
     const ag = score[scoreBase + 1]!;
     const poss = possession[frameIndex] === 1 ? "away" : "home";
     const frameVisual = visual?.[frameIndex];
-    frames.push(
-      frameVisual ? { t, b, p, a, hg, ag, poss, v: frameVisual } : { t, b, p, a, hg, ag, poss },
-    );
+    frames[frameIndex] = frameVisual
+      ? { t, b, p, a, hg, ag, poss, v: frameVisual }
+      : { t, b, p, a, hg, ag, poss };
   }
   return {
     ...(raw.execution ? { execution: { ...raw.execution } } : {}),
