@@ -71,7 +71,9 @@ export function cutsceneMatteStyle(
   const fadingIn = !reducedMotion && phase === "fading-in";
   return {
     background: CUTSCENE_OPAQUE_MATTE,
-    opacity: opaque ? 1 : 0,
+    // Leave the outgoing scene recognizable even if a download fails. An
+    // entirely opaque matte made the illustrated fallback appear broken.
+    opacity: opaque ? 0.58 : 0,
     transition: fadingIn
       ? `opacity ${CUTSCENE_TRANSITION_TIMING.fadeInMs}ms cubic-bezier(0.22, 1, 0.36, 1)`
       : "none",
