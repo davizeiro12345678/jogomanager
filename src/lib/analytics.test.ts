@@ -12,6 +12,7 @@ vi.mock("posthog-js/dist/module.slim.no-external.js", () => ({ default: mocks })
 vi.mock("./firebase", () => ({ initFirebase: vi.fn() }));
 
 let allowed = false;
+let decidedAt = "2026-11-27T00:00:00.000Z";
 
 beforeEach(() => {
   vi.resetModules();
@@ -21,10 +22,11 @@ beforeEach(() => {
   vi.stubGlobal("window", {
     location: { origin: "https://jogomanager.com" },
     localStorage: {
-      getItem: () => JSON.stringify({ analytics: allowed, decidedAt: "2026-11-27T00:00:00.000Z" }),
+      getItem: () => JSON.stringify({ analytics: allowed, decidedAt }),
     },
   });
   allowed = false;
+  decidedAt = "2026-11-27T00:00:00.000Z";
 });
 
 afterEach(() => {
@@ -33,6 +35,16 @@ afterEach(() => {
 });
 
 describe("analytics consent and checkout privacy", () => {
+  it("does not initialize or capture with a malformed stored consent date", async () => {
+    allowed = true;
+    decidedAt = "fixture";
+    const { initAnalytics, track } = await import("./analytics");
+    expect(await initAnalytics()).toBeNull();
+    track("compra_concluida");
+    expect(mocks.init).not.toHaveBeenCalled();
+    expect(mocks.capture).not.toHaveBeenCalled();
+  });
+
   it("loads only after consent, removes checkout identifiers and stops after revocation", async () => {
     const { initAnalytics, track } = await import("./analytics");
     await initAnalytics();
