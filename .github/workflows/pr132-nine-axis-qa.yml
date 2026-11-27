@@ -1,4 +1,4 @@
-name: PR 132 nine-axis visual, security and interaction QA
+name: PR 132/179 nine-axis visual, security and interaction QA
 
 on:
   pull_request:
@@ -24,7 +24,7 @@ concurrency:
 jobs:
   nine-axis:
     name: Nine-axis UI/interaction/security evidence
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 132 }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 132 || github.event.pull_request.number == 179 }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
