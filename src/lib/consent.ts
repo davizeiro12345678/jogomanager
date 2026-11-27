@@ -16,7 +16,7 @@ const DEFAULT: ConsentState = { analytics: false, telemetry: false, decidedAt: n
 // the trusted head script carries its CSP nonce onto the generated style.
 // HeadContent replays scripts after hydration, when this parser-only rule must
 // stay removed so a later reset/remount can show the question normally.
-export const CONSENT_VISIBILITY_SCRIPT = `(function(){if(document.readyState!=="loading")return;try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})||"null");if(c&&typeof c.decidedAt==="string"){var s=document.createElement("style");s.id="pfm-consent-bootstrap";s.nonce=document.currentScript?.nonce||"";s.textContent="[data-pfm-consent-banner]{display:none!important}";document.head.appendChild(s)}}catch{}})();`;
+export const CONSENT_VISIBILITY_SCRIPT = `(function(){if(document.readyState!=="loading")return;try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})||"null");if(c&&typeof c.decidedAt==="string"&&Number.isFinite(Date.parse(c.decidedAt))){var s=document.createElement("style");s.id="pfm-consent-bootstrap";s.nonce=document.currentScript?.nonce||"";s.textContent="[data-pfm-consent-banner]{display:none!important}";document.head.appendChild(s)}}catch{}})();`;
 
 export function readConsent(): ConsentState {
   if (typeof window === "undefined") return DEFAULT;
@@ -24,10 +24,12 @@ export function readConsent(): ConsentState {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return DEFAULT;
     const v = JSON.parse(raw) as Partial<ConsentState>;
+    if (!v || typeof v.decidedAt !== "string" || !Number.isFinite(Date.parse(v.decidedAt)))
+      return DEFAULT;
     return {
       analytics: v.analytics === true,
       telemetry: v.telemetry === true,
-      decidedAt: typeof v.decidedAt === "string" ? v.decidedAt : null,
+      decidedAt: v.decidedAt,
     };
   } catch {
     return DEFAULT;
