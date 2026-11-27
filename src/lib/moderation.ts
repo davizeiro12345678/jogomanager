@@ -92,19 +92,23 @@ const UNICODE_LOOKALIKES: Record<string, string> = {
   "\u03bd": "v",
 };
 
-/** Canonicalize compatibility forms, accents, invisibles and look-alikes. */
-export function normalizeForModeration(text: string): string {
+/** Normalization shared by profanity and anti-phishing detectors. */
+const UNICODE_CONFUSABLES =
+  /[\u0430\u0435\u043a\u043c\u043e\u0440\u0441\u0442\u0445\u0443\u0456\u0458\u0455\u04bb\u03b1\u03b5\u03bf\u03c1\u03c4\u03c7\u03bd]/gu;
+
+function visibleSafetyText(text: string): string {
   return text
     .normalize("NFKC")
     .replace(INVISIBLE_FORMAT_CHARACTERS, "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
-    .replace(
-      /[\u0430\u0435\u043a\u043c\u043e\u0440\u0441\u0442\u0445\u0443\u0456\u0458\u0455\u04bb\u03b1\u03b5\u03bf\u03c1\u03c4\u03c7\u03bd]/gu,
-      (c) => UNICODE_LOOKALIKES[c] ?? c,
-    )
-    .replace(/[0-9@$]/g, (c) => LOOKALIKES[c] ?? c);
+    .replace(UNICODE_CONFUSABLES, (c) => UNICODE_LOOKALIKES[c] ?? c);
+}
+
+/** Canonicalize compatibility forms, accents, invisibles and look-alikes. */
+export function normalizeForModeration(text: string): string {
+  return visibleSafetyText(text).replace(/[0-9@$]/g, (c) => LOOKALIKES[c] ?? c);
 }
 
 /** Letters only, with runs of the same letter collapsed ("poorrraaa" -> "pora"). */
@@ -170,10 +174,10 @@ function repeatKey(text: string): string {
 export type ModerationReason = "profanity" | "link" | "contact" | "shouting" | "repeated";
 
 const LINK =
-  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app)\b|discord\.gg)/i;
+  /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|gg|xyz|br|me|ly|app|dev|site|live|online|club|info|biz|co|ai|top|click|store|shop|fun)\b|discord\.gg)/i;
 const EMAIL = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 /** Eight or more digits, allowing spaces, dots, dashes and parentheses between them. */
-const PHONE = /(?:\d[\s().-]?){8,}/;
+const PHONE = /(?:\d[\s().-]{0,4}){8,}/;
 
 /** Minimum letters before the all-caps rule applies, so "GOL!" is allowed. */
 const SHOUTING_MIN_LETTERS = 12;
@@ -187,8 +191,13 @@ export function moderateMessage(
   previous: readonly string[] = [],
 ): ModerationReason | null {
   if (containsProfanity(text)) return "profanity";
-  if (EMAIL.test(text) || PHONE.test(text)) return "contact";
-  if (LINK.test(text)) return "link";
+  // Normalize contacts separately from profanity: leetspeak substitutions would
+  // destroy digits and @, while compatibility forms and invisibles hide both.
+  // Confusable letters can disguise phishing links and contacts as well as
+  // offensive words; keep digits and @ unchanged for the contact detectors.
+  const visible = visibleSafetyText(text);
+  if (EMAIL.test(visible) || PHONE.test(visible)) return "contact";
+  if (LINK.test(visible)) return "link";
   const letters = text.replace(/[^\p{L}]/gu, "");
   if (
     letters.length >= SHOUTING_MIN_LETTERS &&

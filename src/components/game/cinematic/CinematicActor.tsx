@@ -3,6 +3,7 @@ import { createPortal } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Speaker } from "@/content/cutscenes";
 import { cinematicActorPose, cinematicIdleAt, cinematicLook } from "@/game/cinematic-actor";
+import { cinematicEntranceAt } from "@/game/cinematic-entrance";
 import { cinematicDetail, cinematicHairMotionDriveAt } from "@/game/cinematic-performance";
 import {
   advanceAthleteHairMotion,
@@ -148,6 +149,7 @@ export function CinematicActor({
         mats,
         hi: detail.portrait,
         portrait: detail.portrait,
+        headSampling: detail.headSampling,
         segs: { radial: detail.radial, cap: 4 },
         jerseyInk: color,
         handR: p.handR,
@@ -159,7 +161,7 @@ export function CinematicActor({
       { mergeLods: true },
     );
     return detail.portrait ? built : compactCinematicSkin(built);
-  }, [p, look, mats, detail.portrait, detail.radial, color, staff, formal]);
+  }, [p, look, mats, detail.portrait, detail.headSampling, detail.radial, color, staff, formal]);
   const cloth = useMemo(
     () => new AthleteCloth(skin, p, detail.portrait),
     [skin, p, detail.portrait],
@@ -201,7 +203,8 @@ export function CinematicActor({
   useEffect(() => () => skin.dispose(), [skin]);
   useCinematicFrame((time, dt) => {
     if (dt === 0 && !first.current) return;
-    const arriving = entrance && time < 4.8;
+    const entranceMotion = entrance ? cinematicEntranceAt(time, rot) : null;
+    const arriving = entranceMotion?.moving ?? false;
     const posture = arriving ? "walk" : pose;
     cinematicActorPose(
       time,
@@ -214,6 +217,7 @@ export function CinematicActor({
       runtime.cue,
       runtime.clock.lineTime,
       exercise || recovery,
+      arriving ? entranceMotion!.speed / scale : 1.35,
     );
     const drill =
       drillIndex === undefined
@@ -251,7 +255,7 @@ export function CinematicActor({
       : 0;
     const gaze = listening.current.sample(wantedYaw, dt, first.current || runtime.reduced);
     const listeningYaw = gaze.headYaw;
-    if (pose === "sit") {
+    if (pose === "sit" || arriving) {
       // Leg IK already follows a smooth contact path. Interpolating the
       // joint angles again would disconnect it from the root's rise timing.
       for (const key of [
@@ -407,7 +411,7 @@ export function CinematicActor({
     }
     cloth.update(dt, {
       x: c.hipRoll * 2,
-      z: arriving ? 3 / 4.8 : pose === "walk" ? 1.3 : 0,
+      z: arriving ? entranceMotion!.speed : (drill?.speed ?? (pose === "walk" ? 1.35 : 0)),
       lift: Math.max(0, c.hipY),
       effort: exercise || drill ? 0.7 : acting ? 0.2 : 0,
       bend: Math.abs(c.spine) + Math.abs(c.legLPitch - c.legRPitch) * 0.18,
@@ -427,9 +431,9 @@ export function CinematicActor({
         pose === "walk" && !drill ? Math.max(0, c.hipY * 0.4) : 0,
         z + Math.cos(rot) * rise,
       );
-      if (entrance) {
-        const u = Math.min(1, time / 4.8);
-        group.current.position.z = z - (1 - u) * 3;
+      if (entranceMotion) {
+        group.current.position.x = x + entranceMotion.x;
+        group.current.position.z = z + entranceMotion.z;
       }
       if (drill) {
         group.current.position.x = drill.x;

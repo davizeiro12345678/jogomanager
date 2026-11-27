@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  getConfiguredSupabaseClient: vi.fn(),
   getSession: vi.fn(),
   observeFirebasePushIdentity: vi.fn(),
   onAuthStateChange: vi.fn(),
@@ -16,12 +17,7 @@ vi.mock("react", () => ({
   useState: mocks.useState,
 }));
 vi.mock("@/integrations/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getSession: mocks.getSession,
-      onAuthStateChange: mocks.onAuthStateChange,
-    },
-  },
+  getConfiguredSupabaseClient: mocks.getConfiguredSupabaseClient,
 }));
 vi.mock("@/lib/firebase-push", () => ({
   observeFirebasePushIdentity: mocks.observeFirebasePushIdentity,
@@ -38,6 +34,9 @@ beforeEach(() => {
     effectCleanup = effect() ?? undefined;
   });
   mocks.useState.mockReturnValue([undefined, mocks.setUserId]);
+  mocks.getConfiguredSupabaseClient.mockReturnValue({
+    auth: { getSession: mocks.getSession, onAuthStateChange: mocks.onAuthStateChange },
+  });
   mocks.onAuthStateChange.mockImplementation(() => {
     mocks.calls.push("listener");
     return { data: { subscription: { unsubscribe: vi.fn() } } };
@@ -56,6 +55,16 @@ afterEach(() => {
 });
 
 describe("useAuthUserId auth ordering", () => {
+  it("preserves anonymous play when Supabase is not configured", () => {
+    mocks.getConfiguredSupabaseClient.mockReturnValue(null);
+
+    useAuthUserId();
+
+    expect(mocks.setUserId).toHaveBeenCalledWith(null);
+    expect(mocks.onAuthStateChange).not.toHaveBeenCalled();
+    expect(mocks.getSession).not.toHaveBeenCalled();
+  });
+
   it("registers auth listeners before reading the initial session and observes that identity", async () => {
     useAuthUserId();
     await Promise.resolve();

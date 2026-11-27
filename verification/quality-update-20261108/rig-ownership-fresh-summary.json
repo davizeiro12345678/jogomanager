@@ -1,0 +1,10 @@
+{
+  "command": "node node_modules/vitest/vitest.mjs run src/game/rig-skin.test.ts --maxWorkers=1 --reporter=json",
+  "node": "v24.22.0",
+  "sourceSha256": "7d8bcdecad2a7d6774250da54ea9a385021a28851d0b8154398899aa57c4db3e",
+  "testSha256": "dd34cfb97eca1e35b2e950a836d0766aa6bec097a249ca216813a76ed94f9c85",
+  "tests": 20,
+  "passed": 20,
+  "failed": 0,
+  "success": true
+}

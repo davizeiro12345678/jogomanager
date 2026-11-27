@@ -15,7 +15,13 @@ export async function recoverMatch(
     state["home"] as MatchSim["home"],
     state["away"] as MatchSim["away"],
     checkpoint.seed,
-    { knockout: state["knockout"] as boolean, weather: state["weather"] as MatchSim["weather"] },
+    {
+      knockout: state["knockout"] as boolean,
+      weather: state["weather"] as MatchSim["weather"],
+      rulesRevision: checkpoint.version === 2 ? checkpoint.execution?.rulesRevision : undefined,
+      contactPhysicsRevision:
+        checkpoint.version === 2 ? checkpoint.execution?.contactPhysicsRevision : undefined,
+    },
   );
   try {
     if (checkpoint.perception === "wasm") {
@@ -59,10 +65,21 @@ export async function recoverMatch(
         const expected = snapshot.players[index]!;
         return (
           player.id !== expected.id ||
-          Math.hypot(player.x - expected.x, player.z - expected.z) > 0.002
+          Math.hypot(player.x - expected.x, player.z - expected.z) > 0.002 ||
+          Math.hypot(player.vx - expected.vx, player.vz - expected.vz) > 0.002
         );
       }) ||
-      Math.hypot(sim.ball.x - snapshot.ball.x, sim.ball.z - snapshot.ball.z) > 0.002
+      // A visually plausible snapshot may still conceal a divergent next tick.
+      // Compare movement, holder and the pinned execution contract, not only
+      // scoreboard/positions. Compact packets quantize players to Float32.
+      Math.hypot(sim.ball.x - snapshot.ball.x, sim.ball.z - snapshot.ball.z) > 0.002 ||
+      Math.hypot(sim.ball.vx - snapshot.ball.vx, sim.ball.vz - snapshot.ball.vz) > 0.002 ||
+      Math.abs(sim.ball.height - snapshot.ball.height) > 0.002 ||
+      sim.ball.holder !== snapshot.ball.holder ||
+      sim.possession !== snapshot.possession ||
+      sim.phase !== snapshot.phase ||
+      (snapshot.execution !== undefined &&
+        JSON.stringify(sim.executionContract()) !== JSON.stringify(snapshot.execution))
     )
       throw new Error(
         `Recovery does not match confirmed snapshot (time=${sim.time - snapshot.time}, events=${sim.lastEventId - snapshot.eventSeq}, ball=${Math.hypot(sim.ball.x - snapshot.ball.x, sim.ball.z - snapshot.ball.z)}, player=${Math.max(...sim.players.map((p, i) => Math.hypot(p.x - snapshot.players[i]!.x, p.z - snapshot.players[i]!.z)))})`,

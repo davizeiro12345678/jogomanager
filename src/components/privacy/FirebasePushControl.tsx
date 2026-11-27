@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient } from "@/integrations/supabase/client";
 import { getFirebaseWebConfig } from "@/lib/firebase-config.functions";
 import {
   disableFirebaseNotifications,
@@ -24,6 +24,8 @@ export function FirebasePushControl() {
   const currentUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const supabase = getConfiguredSupabaseClient();
+    if (!supabase) return;
     let mounted = true;
     const syncIdentity = (userId: string | null) => {
       const version = ++identityVersionRef.current;

@@ -1,7 +1,7 @@
 # Evidências e plano de proteção do repositório — 21/11/2026
 
 **Alvo:** [davizeiro12345678/jogomanager](https://github.com/davizeiro12345678/jogomanager)  
-**Branch de trabalho:** docs/security-main-20261121 (PR exclusivo de documentação e segurança; o [PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132) permanece independente)  
+**Branch de trabalho:** integration/release-2026-11-11 ([PR #132](https://github.com/davizeiro12345678/jogomanager/pull/132))  
 **Critério:** distinguir controles **verificados**, **configurados no código** e **dependentes de acesso administrativo**. O documento não é uma certificação de segurança.
 
 ## Inventário observado por API

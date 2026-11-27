@@ -1,6 +1,7 @@
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
 import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
-import { Suspense, lazy, useEffect, useState } from "react";
+import { HomeDeferredAssets } from "./HomeDeferredAssets";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowRight,
@@ -21,7 +22,7 @@ import heroAvif from "@/assets/hero-stadium.jpg?format=avif&w=640;1024;1080;1600
 import heroWebp from "@/assets/hero-stadium.jpg?format=webp&w=640;1024;1080;1600&quality=62&as=srcset";
 import heroFallback from "@/assets/hero-stadium.jpg?format=jpg&w=1024&quality=58&as=url";
 import brandLogo from "@/assets/brand/jogomanager-logo-header.webp";
-import "./home.css";
+import brandLogoSources from "@/assets/brand/jogomanager-logo-header.webp?format=webp&w=224;320;420&quality=82&as=srcset";
 
 // Defer lengthy editorial sections without creating an extra chunk for the tiny league pulse.
 const HomeDetails = lazy(() => import("./HomeDetails").then((m) => ({ default: m.HomeDetails })));
@@ -51,111 +52,42 @@ const SYSTEMS = [
     to: "/guias",
   },
 ] as const;
-const FORMATIONS = {
-  "4-3-3": [
-    [50, 87],
-    [15, 68],
-    [38, 72],
-    [62, 72],
-    [85, 68],
-    [50, 52],
-    [30, 40],
-    [70, 40],
-    [17, 20],
-    [50, 14],
-    [83, 20],
-  ],
-  "4-4-2": [
-    [50, 87],
-    [15, 69],
-    [38, 73],
-    [62, 73],
-    [85, 69],
-    [16, 42],
-    [38, 48],
-    [62, 48],
-    [84, 42],
-    [36, 19],
-    [64, 19],
-  ],
-  "3-5-2": [
-    [50, 87],
-    [26, 70],
-    [50, 75],
-    [74, 70],
-    [10, 40],
-    [35, 47],
-    [50, 53],
-    [65, 47],
-    [90, 40],
-    [36, 19],
-    [64, 19],
-  ],
-} as const;
-type Formation = keyof typeof FORMATIONS;
+const TacticalPreview = lazy(() =>
+  import("./TacticalPreview").then(({ TacticalPreview }) => ({ default: TacticalPreview })),
+);
 
-/** A lightweight SVG teaches the interaction; the actual 3D engine loads
- * through the game routes only. No league catalogue, simulation or Canvas. */
-function TacticalPreview() {
-  const [formation, setFormation] = useState<Formation>("4-3-3");
+function DeferredTacticalPreview() {
+  const anchor = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+
+  useEffect(() => {
+    const node = anchor.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some(({ isIntersecting }) => isIntersecting)) {
+          setNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "700px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="home-tactics" aria-label="Prévia das formações">
-      <div className="home-tactics-top">
-        <span>PRANCHETA DO TREINADOR</span>
-        <span>PRÉVIA</span>
-      </div>
-      <svg viewBox="0 0 240 300" role="img" aria-label={`Onze jogadores na formação ${formation}`}>
-        <defs>
-          <pattern id="home-mow" width="240" height="50" patternUnits="userSpaceOnUse">
-            <rect width="240" height="25" fill="#17382c" />
-            <rect y="25" width="240" height="25" fill="#1a3e30" />
-          </pattern>
-        </defs>
-        <rect x="8" y="8" width="224" height="284" rx="5" fill="url(#home-mow)" />
-        <g fill="none" stroke="#b6d2bd" strokeOpacity=".35" strokeWidth="1.2">
-          <rect x="19" y="18" width="202" height="264" />
-          <path d="M19 150h202M69 18v42h102V18M69 282v-42h102v42M97 18v15h46V18M97 282v-15h46v15" />
-          <circle cx="120" cy="150" r="28" />
-          <circle cx="120" cy="150" r="2" fill="#b6d2bd" />
-        </g>
-        {FORMATIONS[formation].map(([x, y], i) => (
-          <g
-            key={i}
-            className="home-player"
-            style={{ transform: `translate(${x * 2 + 20}px,${y * 2.64 + 18}px)` }}
-          >
-            <circle
-              r="12"
-              fill={i === 0 ? "#d9b967" : "#b4ec6b"}
-              stroke="#081510"
-              strokeWidth="3"
-            />
-            <text
-              y="3.5"
-              textAnchor="middle"
-              fontSize="10"
-              fontFamily="sans-serif"
-              fontWeight="700"
-              fill="#102416"
-            >
-              {i + 1}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="home-formation-buttons" role="group" aria-label="Experimentar formação">
-        {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={formation === f}
-            onClick={() => setFormation(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-      <p className="home-tactics-caption">Mude o desenho. Imagine a próxima jogada.</p>
+    <div ref={anchor} className="home-tactics-slot">
+      {near ? (
+        <Suspense fallback={<div className="home-tactics-placeholder" aria-hidden="true" />}>
+          <TacticalPreview />
+        </Suspense>
+      ) : (
+        <div className="home-tactics-placeholder" aria-hidden="true" />
+      )}
     </div>
   );
 }
@@ -173,6 +105,19 @@ export function FootballHome() {
   } | null>(null);
   useEffect(() => {
     let active = true;
+    // First-time visitors do not have a guest career. Avoid importing the
+    // 30 KB+ offline persistence module and idb helpers during home hydration
+    // when readLocalCareer() could only return null. The blocked-storage case
+    // still falls back to the original validated reader.
+    try {
+      if (
+        window.localStorage.getItem("manager3d.career.v2.guest") === null &&
+        window.localStorage.getItem("manager3d.career.v1") === null
+      )
+        return;
+    } catch {
+      // Storage may be blocked or unavailable in private browsing.
+    }
     // Returning players alone need the catalogue to resolve their club name.
     void import("@/lib/careerStorage")
       .then(async ({ readLocalCareer }) => {
@@ -223,10 +168,13 @@ export function FootballHome() {
   const active = SYSTEMS[system]!;
   return (
     <main className="football-home">
+      <HomeDeferredAssets />
       <header className="home-nav">
         <Link to="/" className="home-brand" aria-label="jogomanager — início">
           <img
             src={brandLogo}
+            srcSet={`${brandLogoSources}, ${brandLogo} 560w`}
+            sizes="(max-width: 640px) 106px, 141px"
             alt="jogomanager — Da várzea à final, cada decisão é sua"
             width={560}
             height={223}
@@ -288,6 +236,7 @@ export function FootballHome() {
             width={1600}
             height={912}
             fetchPriority="high"
+            // AVIF decode should not synchronously monopolize the mobile main thread.
             decoding="async"
           />
         </picture>
@@ -493,7 +442,7 @@ export function FootballHome() {
               </Link>
             </div>
           </div>
-          <TacticalPreview />
+          <DeferredTacticalPreview />
         </section>
         <section className="home-first-season" aria-labelledby="home-first-title">
           <p className="home-kicker">SEU PRIMEIRO DIA NO CLUBE</p>

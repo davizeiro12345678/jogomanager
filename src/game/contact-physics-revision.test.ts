@@ -1,0 +1,251 @@
+import { describe, expect, it, vi } from "vitest";
+import { buildTeamSetup } from "./quickMatch";
+import { FIELD_X, MatchSim, MATCH_SIMULATION_STEP } from "./sim";
+import { validExecutionContract } from "./match-execution-contract";
+import { pressure } from "./sim-ball-duels";
+
+const create = (seed: string, revision?: 2) =>
+  new MatchSim(buildTeamSetup("fla"), buildTeamSetup("pal"), seed, {
+    ...(revision ? { contactPhysicsRevision: revision } : {}),
+  });
+
+describe("opt-in contact physics / historical replay boundaries", () => {
+  it("defaults to the historical unmodified execution contract", () => {
+    const sim = create("contact-default");
+    try {
+      expect(sim.contactPhysicsRevision).toBeNull();
+      expect(sim.executionContract()).not.toHaveProperty("contactPhysicsRevision");
+      expect(validExecutionContract(sim.executionContract())).toBe(true);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it("rejects unknown contact models instead of silently downgrading", () => {
+    const sim = create("contact-model", 2);
+    try {
+      expect(sim.executionContract().contactPhysicsRevision).toBe(2);
+      expect(validExecutionContract(sim.executionContract())).toBe(true);
+      expect(
+        validExecutionContract({ ...sim.executionContract(), contactPhysicsRevision: 5 }),
+      ).toBe(false);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it("never warps the nearest player to a distant stationary ball after rescue timeout", () => {
+    const sim = create("contact-no-teleport", 2);
+    try {
+      sim.ball.holder = null;
+      sim.ball.x = 0;
+      sim.ball.z = 0;
+      sim.ball.vx = 0;
+      sim.ball.vz = 0;
+      sim.ball.height = 0.12;
+      sim.ballVy = 0;
+      sim.looseTime = 3.6;
+      sim.pass = null;
+      sim.pendingShot = null;
+      sim.players.forEach((player, index) => {
+        // Deliberately not overlapping and at least 16m away from the ball.
+        player.x = 16 + (index % 11) * 2.2;
+        player.z = index < 11 ? -10 : 10;
+        player.vx = 0;
+        player.vz = 0;
+      });
+      const before = new Map(
+        sim.players.map((player) => [player.id, { x: player.x, z: player.z }]),
+      );
+      sim.step(MATCH_SIMULATION_STEP, 6);
+      expect(sim.ball.holder).toBeNull();
+      for (const player of sim.players) {
+        const prior = before.get(player.id)!;
+        expect(Math.hypot(player.x - prior.x, player.z - prior.z)).toBeLessThan(1);
+      }
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it("reaches a stationary in-play ball close to the goal line at normal speed", () => {
+    const sim = create("contact-goal-line-recovery", 2);
+    try {
+      const receiver = sim.players.find((p) => p.side === "home" && p.pos !== "GK")!;
+      sim.players.forEach((p, index) => {
+        p.x = 16 + (index % 11) * 2;
+        p.z = p.side === "home" ? -10 : 10;
+        p.vx = 0;
+        p.vz = 0;
+      });
+      receiver.x = -FIELD_X + 2;
+      receiver.z = 18;
+      sim.ball = { x: -FIELD_X + 0.51, z: 18, vx: 0, vz: 0, holder: null, height: 0.12 };
+      sim.ballVy = 0;
+      sim.pass = null;
+      sim.pendingShot = null;
+
+      for (let tick = 0; tick < 60 && !sim.ball.holder; tick += 1) {
+        const beforeX = receiver.x;
+        const beforeZ = receiver.z;
+        sim.step(MATCH_SIMULATION_STEP, 6);
+        expect(Math.hypot(receiver.x - beforeX, receiver.z - beforeZ)).toBeLessThan(0.5);
+      }
+      expect(sim.ball.holder).toBe(receiver.id);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it("does not grant possession on a tackle from 1.7 metres away", () => {
+    const sim = create("contact-reach", 2);
+    try {
+      const holder = sim.players.find((player) => player.side === "home" && player.pos !== "GK")!;
+      const challenger = sim.players.find(
+        (player) => player.side === "away" && player.pos !== "GK",
+      )!;
+      sim.players.forEach((player) => {
+        player.x = 28;
+        player.z = player.side === "home" ? -12 : 12;
+      });
+      holder.x = 0;
+      holder.z = 0;
+      challenger.x = 1.7;
+      challenger.z = 0;
+      sim.ball.holder = holder.id;
+      sim.possession = holder.side;
+      pressure(sim, holder, 4);
+      expect(sim.ball.holder).toBe(holder.id);
+      expect(sim.possession).toBe(holder.side);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it("does not transfer possession when defender hits the body but misses the ball", () => {
+    const sim = create("contact-missed-ball", 2);
+    try {
+      const holder = sim.players.find((player) => player.side === "home" && player.pos !== "GK")!;
+      const challenger = sim.players.find(
+        (player) => player.side === "away" && player.pos !== "GK",
+      )!;
+      sim.players.forEach((player) => {
+        player.x = 25;
+        player.z = player.side === "home" ? -12 : 12;
+      });
+      holder.x = 0;
+      holder.z = 0;
+      challenger.x = 0.8;
+      challenger.z = 0;
+      sim.ball.holder = holder.id;
+      sim.ball.x = -0.8;
+      sim.ball.z = 0;
+      sim.possession = holder.side;
+      pressure(sim, holder, 4);
+      expect(sim.ball.holder).toBe(holder.id);
+    } finally {
+      sim.dispose();
+    }
+  });
+
+  it.each([
+    { name: "home sweep", direction: 1, revision: 2, height: 1.8, sentOff: false, blocked: true },
+    { name: "away sweep", direction: -1, revision: 2, height: 0.8, sentOff: false, blocked: true },
+    { name: "above reach", direction: 1, revision: 2, height: 2.1, sentOff: false, blocked: false },
+    {
+      name: "sent-off defender",
+      direction: 1,
+      revision: 2,
+      height: 0.8,
+      sentOff: true,
+      blocked: false,
+    },
+    {
+      name: "legacy endpoint",
+      direction: 1,
+      revision: undefined,
+      height: 0.8,
+      sentOff: false,
+      blocked: false,
+    },
+  ] as const)(
+    "keeps the block and rebound contract for $name",
+    ({ direction, revision, height, sentOff, blocked }) => {
+      const sim = create("contact-block-sweep", revision);
+      try {
+        const attacking = direction === 1 ? "home" : "away";
+        const passer = sim.players.find(
+          (player) => player.side === attacking && player.pos !== "GK",
+        )!;
+        const receiver = sim.players.find(
+          (player) => player.side === attacking && player !== passer,
+        )!;
+        const defender = sim.players.find(
+          (player) => player.side !== attacking && player.pos !== "GK",
+        )!;
+        for (const player of sim.players) player.z = 20;
+        if (sentOff) sim.sendOff(defender, "test fixture");
+        defender.x = 0;
+        defender.z = 0;
+        // The path clips the 1.25 m block radius, but both tick endpoints are outside.
+        const previous = { x: -0.7 * direction, z: 1.1, height };
+        sim.ball = {
+          x: 0.7 * direction,
+          z: previous.z,
+          height: height + 0.18,
+          vx: 42 * direction,
+          vz: 0,
+          holder: null,
+        };
+        sim.pass = {
+          from: passer.id,
+          to: receiver.id,
+          fromX: -4 * direction,
+          dir: direction,
+          until: 1,
+          side: attacking,
+        };
+        sim.lastTouch = attacking;
+        const random = vi.spyOn(sim, "rnd").mockReturnValue(0);
+
+        expect(sim.tryBlock(MATCH_SIMULATION_STEP, previous)).toBe(blocked);
+
+        if (blocked) {
+          expect(defender.tackles).toBe(1);
+          expect(sim.ball.x).toBeCloseTo(0, 12);
+          expect(sim.ball.height).toBeCloseTo(height + 0.09, 12);
+          expect(sim.ball.vx * direction).toBeLessThan(0);
+          expect(sim.pass).toBeNull();
+        } else {
+          expect(defender.tackles).toBe(0);
+          expect(sim.ball.x).toBe(0.7 * direction);
+          expect(sim.pass?.to).toBe(receiver.id);
+          expect(random).not.toHaveBeenCalled();
+        }
+      } finally {
+        sim.dispose();
+      }
+    },
+  );
+
+  it("keeps deterministic state and revision through a checkpoint recovery", () => {
+    const sim = create("contact-checkpoint", 2);
+    const replay = create("contact-checkpoint", 2);
+    try {
+      for (let index = 0; index < 45; index += 1) sim.step(MATCH_SIMULATION_STEP, 6);
+      const saved = sim.checkpoint();
+      expect(saved.execution?.contactPhysicsRevision).toBe(2);
+      replay.restoreCheckpoint(saved);
+      expect(replay.contactPhysicsRevision).toBe(2);
+      expect(replay.checkpoint()).toEqual(saved);
+      for (let index = 0; index < 45; index += 1) {
+        sim.step(MATCH_SIMULATION_STEP, 6);
+        replay.step(MATCH_SIMULATION_STEP, 6);
+      }
+      expect(replay.checkpoint()).toEqual(sim.checkpoint());
+    } finally {
+      sim.dispose();
+      replay.dispose();
+    }
+  });
+});

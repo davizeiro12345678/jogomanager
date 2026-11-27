@@ -3,7 +3,7 @@ import { useContext, useLayoutEffect, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import {
   batchStaticStadium,
-  captureStaticStadiumState,
+  createStaticStadiumObserver,
   type StaticStadiumBatch,
 } from "@/game/static-stadium-batch";
 import type { CensusBucket } from "@/game/scene-census";
@@ -34,6 +34,7 @@ export function StaticBatch({
   const settled = useRef({ revision: "", frames: 0 });
   const dynamicSources = useRef(new Set<THREE.Mesh>());
   const cleanup = useRef<StaticStadiumBatch | null>(null);
+  const observer = useRef<ReturnType<typeof createStaticStadiumObserver> | undefined>(undefined);
 
   useLayoutEffect(() => {
     pending.current = true;
@@ -42,6 +43,8 @@ export function StaticBatch({
     return () => {
       cleanup.current?.();
       cleanup.current = null;
+      observer.current?.dispose();
+      observer.current = undefined;
     };
   }, [signature, active, bucket, shadows, textureRevision]);
 
@@ -51,7 +54,8 @@ export function StaticBatch({
     if (!active) return;
 
     const currentBatch = cleanup.current;
-    const state = captureStaticStadiumState(currentRoot, {
+    const observation = (observer.current ??= createStaticStadiumObserver(currentRoot));
+    let state = observation.read({
       exclude: dynamicSources.current,
     });
     if (currentBatch && !currentBatch.isCurrent(state.revision)) {
@@ -62,16 +66,16 @@ export function StaticBatch({
       cleanup.current = null;
       pending.current = true;
       settled.current = { revision: "", frames: 0 };
+      // Cleanup restored source visibility and changed the exclusion set.
+      // Only this transition needs a fresh capture in the same frame.
+      state = observation.read({ exclude: dynamicSources.current });
     }
 
     if (pending.current) {
-      const nextState = captureStaticStadiumState(currentRoot, {
-        exclude: dynamicSources.current,
-      });
-      if (!nextState.sourceCount) return;
+      if (!state.sourceCount) return;
       const stable = settled.current;
-      stable.frames = nextState.revision === stable.revision ? stable.frames + 1 : 0;
-      stable.revision = nextState.revision;
+      stable.frames = state.revision === stable.revision ? stable.frames + 1 : 0;
+      stable.revision = state.revision;
       if (stable.frames >= 2) {
         const next = batchStaticStadium(currentRoot, {
           ...(bucket ? { bucket } : {}),

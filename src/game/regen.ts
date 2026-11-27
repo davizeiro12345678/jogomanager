@@ -133,7 +133,7 @@ export function applyRegens(
   round: number,
 ): RegenResult {
   const rnd = makeRng(`regen-${clubId}-${season}`);
-  const next: Record<string, Player> = {};
+  const next = new Map<string, Player>();
   const retired: Player[] = [];
   const news: NewsItem[] = [];
 
@@ -142,7 +142,7 @@ export function applyRegens(
       retired.push(p);
       continue;
     }
-    next[id] = p;
+    next.set(id, p);
   }
 
   for (const p of retired) {
@@ -159,9 +159,9 @@ export function applyRegens(
   const promoted: Player[] = [];
   const target = Math.max(18, Object.keys(players).length);
   let i = 0;
-  while (Object.keys(next).length < target && i < 12) {
+  while (next.size < target && i < 12) {
     const y = makeYouth(clubId, i, season, rnd);
-    next[y.id] = y;
+    next.set(y.id, y);
     promoted.push(y);
     i++;
   }
@@ -180,5 +180,5 @@ export function applyRegens(
     });
   }
 
-  return { players: next, news, retired, promoted };
+  return { players: Object.fromEntries(next), news, retired, promoted };
 }

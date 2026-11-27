@@ -199,12 +199,14 @@ function CompetitionDialog({
             <Input value={form.country} onChange={(e) => set("country", e.target.value)} />
           </div>
           <div>
-            <span className={labelCls}>Formato</span>
+            <span id="editor-competitions-formato" className={labelCls}>
+              Formato
+            </span>
             <Select
               value={form.format}
               onValueChange={(v) => set("format", v as CompetitionFormat)}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby="editor-competitions-formato">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -1,16 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { processStripeWebhook, rejectNonPostStripeWebhook } from "../public/payments/webhook";
+import { handleStripeWebhookPost, rejectNonPostStripeWebhook } from "../public/payments/webhook";
 
 /**
- * Stable public Stripe alias. Signatures are checked against the original
- * unmodified request body by the same handler as the canonical endpoint.
+ * Public compatibility endpoint. GET is a non-sensitive liveness/contract
+ * response only; Stripe deliveries must use POST with a verified signature.
+ * Keep the original signed handler as the single source of fulfillment logic.
  */
 export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
     handlers: {
-      POST: ({ request }) => processStripeWebhook(request),
-      GET: rejectNonPostStripeWebhook,
+      GET: async () =>
+        Response.json(
+          { service: "stripe-webhook", method: "POST", signatureRequired: true },
+          {
+            headers: {
+              "cache-control": "no-store",
+              "x-content-type-options": "nosniff",
+            },
+          },
+        ),
       HEAD: rejectNonPostStripeWebhook,
+      POST: handleStripeWebhookPost,
     },
   },
 });

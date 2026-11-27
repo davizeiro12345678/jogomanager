@@ -21,9 +21,8 @@ export function Floodlights({ time, quality }: { time: TimeOfDay; quality: Quali
       {spots.map(([sx, sz], i) => {
         const px = sx * (FIELD_X + 20);
         const pz = sz * (FIELD_Z + 22);
-        const dist = Math.hypot(px, pz);
         return (
-          <group key={i} position={[px, 0, pz]}>
+          <group key={i} position={[px, 0, pz]} rotation={[0, Math.atan2(-px, -pz), 0]}>
             {/* mastro treliçado */}
             <mesh position={[0, 14, 0]} castShadow>
               <cylinderGeometry args={[0.5, 0.9, 28, 8]} />

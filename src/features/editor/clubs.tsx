@@ -121,9 +121,11 @@ export default function ClubsTab({ data, onChange }: { data: CustomData; onChang
       <div className="space-y-4 rounded-xl border border-border/60 surface-card p-4">
         <div className="flex flex-wrap gap-3">
           <div>
-            <span className={labelCls}>Liga</span>
+            <span id="editor-clubs-liga" className={labelCls}>
+              Liga
+            </span>
             <Select value={leagueId} onValueChange={onSelectLeague}>
-              <SelectTrigger className="w-56">
+              <SelectTrigger aria-labelledby="editor-clubs-liga" className="w-56">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -136,9 +138,11 @@ export default function ClubsTab({ data, onChange }: { data: CustomData; onChang
             </Select>
           </div>
           <div>
-            <span className={labelCls}>Clube</span>
+            <span id="editor-clubs-clube" className={labelCls}>
+              Clube
+            </span>
             <Select value={clubId} onValueChange={setClubId}>
-              <SelectTrigger className="w-56">
+              <SelectTrigger aria-labelledby="editor-clubs-clube" className="w-56">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

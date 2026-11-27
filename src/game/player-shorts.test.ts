@@ -378,4 +378,66 @@ describe("tailored player shorts", () => {
     expect(group.geometry.hasAttribute("openingLeg")).toBe(false);
     rig.dispose();
   });
+
+  it.each([6, 8, 24])("joins every rolled hem edge to its shorts panel at %i sides", (radial) => {
+    const look = lookFor("shorts-kick-hem", "FW");
+    const p = proportionsFor(look);
+    const mats = playerMaterials(look, kitFor("fla", "#cc1e32", "#161b21"), null, "alta");
+    const rig = buildRigSkin(
+      {
+        P: p,
+        look,
+        mats,
+        hi: radial > 8,
+        segs: { radial, cap: 4 },
+        handR: p.handR,
+        handMat: mats.skin,
+        jerseyInk: "#fff",
+      },
+      [0, 0, 0],
+    );
+    const { geometry } = rig.groups.find((g) => g.material === mats.shorts && g.lod === "core")!;
+    const hemY = p.hipY - p.hipH * 0.4 - p.thigh * 0.49;
+    const position = geometry.getAttribute("position");
+    const skinIndex = geometry.getAttribute("skinIndex");
+    const skinWeight = geometry.getAttribute("skinWeight");
+    const index = geometry.getIndex()!;
+    const hemEdges = new Map<string, { a: number; b: number; neighbours: number[] }>();
+    for (let i = 0; i < index.count; i += 3) {
+      for (let corner = 0; corner < 3; corner++) {
+        const a = index.getX(i + corner);
+        const b = index.getX(i + ((corner + 1) % 3));
+        if (Math.abs(position.getY(a) - hemY) > 1e-6 || Math.abs(position.getY(b) - hemY) > 1e-6)
+          continue;
+        const key = `${Math.min(a, b)}:${Math.max(a, b)}`;
+        const edge = hemEdges.get(key) ?? { a, b, neighbours: [] };
+        edge.neighbours.push(index.getX(i + ((corner + 2) % 3)));
+        hemEdges.set(key, edge);
+      }
+    }
+    try {
+      expect(hemEdges.size).toBe(radial * 2);
+      const edgesPerFemur = new Map<number, number>();
+      const femurAt = (vertex: number) => {
+        const isLeft = skinWeight.getY(vertex) > skinWeight.getZ(vertex);
+        expect(isLeft ? skinWeight.getY(vertex) : skinWeight.getZ(vertex)).toBeCloseTo(1, 6);
+        return isLeft ? skinIndex.getY(vertex) : skinIndex.getZ(vertex);
+      };
+      for (const [key, { a, b, neighbours }] of hemEdges) {
+        expect(neighbours, `hem edge ${key} needs a panel and a return face`).toHaveLength(2);
+        const femur = femurAt(a);
+        expect(femurAt(b)).toBe(femur);
+        const returnVertex = neighbours.reduce((low, vertex) =>
+          position.getY(vertex) < position.getY(low) ? vertex : low,
+        );
+        expect(position.getY(returnVertex) - hemY).toBeLessThan(0.004);
+        expect(femurAt(returnVertex)).toBe(femur);
+        edgesPerFemur.set(femur, (edgesPerFemur.get(femur) ?? 0) + 1);
+      }
+      expect(edgesPerFemur.get(rig.bones.indexOf(rig.boneOf.legL))).toBe(radial);
+      expect(edgesPerFemur.get(rig.bones.indexOf(rig.boneOf.legR))).toBe(radial);
+    } finally {
+      rig.dispose();
+    }
+  });
 });

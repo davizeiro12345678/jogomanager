@@ -41,3 +41,17 @@ function resolveStageWithSustainedPressure(governor: QualityGovernor, frameMs: n
   for (let i = 0; i < 12; i++) runWindow(governor, frameMs);
   return governor.stage;
 }
+
+it("reduces sustained extreme pressure even below five frames per second", () => {
+  const governor = new QualityGovernor(20);
+  expect(runWindow(governor, 500, 3)).toBe(3);
+  expect(runWindow(governor, 500, 12)).toBe(8);
+});
+
+it("does not treat an isolated long stall as sustained low-frame-rate pressure", () => {
+  const governor = new QualityGovernor(20);
+  governor.sample(0.01);
+  governor.sample(0.01);
+  governor.sample(1.5);
+  expect(governor.stage).toBe(0);
+});

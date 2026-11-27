@@ -45,7 +45,10 @@ export function facialPoseAt(
   const period = (3.2 + noise(actor, 1) * 2.6) * clamp(expression.blinkRate, 0.5, 2.8);
   const elapsed = (t + noise(actor, 2) * period) % period;
   // Closing is faster than reopening; tired eyelids retain a modest droop.
-  const blink = elapsed < 0.055 ? smooth(elapsed / 0.055) : 1 - smooth((elapsed - 0.055) / 0.12);
+  const lidFatigue = clamp((1 - expression.lids) / 0.35, 0, 1);
+  const reopeningSeconds = 0.12 + lidFatigue * 0.09;
+  const blink =
+    elapsed < 0.055 ? smooth(elapsed / 0.055) : 1 - smooth((elapsed - 0.055) / reopeningSeconds);
   const rest = clamp((1 - expression.lids) * 0.55, 0.001, 0.32);
   out.lidClosure = clamp(Math.max(rest, blink), 0.001, 1);
   const breathing =

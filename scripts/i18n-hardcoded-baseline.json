@@ -3,14 +3,11 @@
   "auditKind": "hardcoded-candidate",
   "scope": {
     "source": "src/**/*.tsx",
-    "excluded": [
-      "src/i18n/**",
-      "**/*.test.tsx"
-    ],
+    "excluded": ["src/i18n/**", "**/*.test.tsx"],
     "detector": "TypeScript JSX literal heuristic"
   },
   "candidateCount": 3058,
-  "fileCount": 184,
+  "fileCount": 185,
   "candidates": [
     {
       "file": "src/components/ArticleShell.tsx",
@@ -3956,36 +3953,6 @@
     },
     {
       "file": "src/components/home/FootballHome.tsx",
-      "line": 102,
-      "kind": "jsx-attribute:aria-label",
-      "text": "Prévia das formações"
-    },
-    {
-      "file": "src/components/home/FootballHome.tsx",
-      "line": 104,
-      "kind": "jsx-text",
-      "text": "PRANCHETA DO TREINADOR"
-    },
-    {
-      "file": "src/components/home/FootballHome.tsx",
-      "line": 105,
-      "kind": "jsx-text",
-      "text": "PRÉVIA"
-    },
-    {
-      "file": "src/components/home/FootballHome.tsx",
-      "line": 146,
-      "kind": "jsx-attribute:aria-label",
-      "text": "Experimentar formação"
-    },
-    {
-      "file": "src/components/home/FootballHome.tsx",
-      "line": 158,
-      "kind": "jsx-text",
-      "text": "Mude o desenho. Imagine a próxima jogada."
-    },
-    {
-      "file": "src/components/home/FootballHome.tsx",
       "line": 227,
       "kind": "jsx-attribute:aria-label",
       "text": "jogomanager — início"
@@ -4775,6 +4742,36 @@
       "line": 87,
       "kind": "jsx-attribute:aria-label",
       "text": "Carregando catálogo público"
+    },
+    {
+      "file": "src/components/home/TacticalPreview.tsx",
+      "line": 107,
+      "kind": "jsx-text",
+      "text": "Mude o desenho. Imagine a próxima jogada."
+    },
+    {
+      "file": "src/components/home/TacticalPreview.tsx",
+      "line": 51,
+      "kind": "jsx-attribute:aria-label",
+      "text": "Prévia das formações"
+    },
+    {
+      "file": "src/components/home/TacticalPreview.tsx",
+      "line": 53,
+      "kind": "jsx-text",
+      "text": "PRANCHETA DO TREINADOR"
+    },
+    {
+      "file": "src/components/home/TacticalPreview.tsx",
+      "line": 54,
+      "kind": "jsx-text",
+      "text": "PRÉVIA"
+    },
+    {
+      "file": "src/components/home/TacticalPreview.tsx",
+      "line": 95,
+      "kind": "jsx-attribute:aria-label",
+      "text": "Experimentar formação"
     },
     {
       "file": "src/components/LeagueDataInsights.tsx",

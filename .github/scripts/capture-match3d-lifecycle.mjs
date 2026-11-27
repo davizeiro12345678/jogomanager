@@ -6,6 +6,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE);
 const [outputArg, sha] = process.argv.slice(2),
   output = path.resolve(outputArg);
+const streamedFixture = "jersey_hoops_normal.ktx2";
+const fallbackFixture = "shorts_mesh_normal.ktx2";
+const detailedCompressedTextures = 3;
 await mkdir(output, { recursive: true });
 const server = spawn(
   process.execPath,
@@ -32,6 +35,11 @@ const report = {
   sha,
   physicalDeviceCertification: false,
   basis: "SwiftShader native WebGL allocation/deletion accounting; no timing certification",
+  assetFixture: {
+    served: streamedFixture,
+    missing: fallbackFixture,
+    expectedDetailedCompressedTextures: detailedCompressedTextures,
+  },
   errors: [],
   samples: [],
 };
@@ -62,11 +70,27 @@ try {
     hasTouch: true,
   });
   page.on("pageerror", (error) => report.errors.push(error.message));
+  // Keep this allocation comparison hermetic while exercising both the real
+  // worker transcoder and the procedural fallback for an immutable miss.
+  const fixtureRequests = new Set();
+  await page.route("**/__l5e/assets-v1/**", async (route) => {
+    const name = path.basename(new URL(route.request().url()).pathname);
+    fixtureRequests.add(name);
+    if (name === streamedFixture) {
+      await route.fulfill({
+        path: "public/textures/detail-v1/fabric-normal.ktx2",
+        contentType: "image/ktx2",
+      });
+    } else {
+      await route.fulfill({ status: 404 });
+    }
+  });
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 6 });
     Object.defineProperty(navigator, "deviceMemory", { get: () => 6 });
-    const resources = new Map(),
-      state = (window.__life = { draws: 0, lost: 0, restored: 0, live: {} });
+    const resources = new Map();
+    const compressed = new Set();
+    const state = (window.__life = { draws: 0, lost: 0, restored: 0, live: {}, compressed: 0 });
     for (const kind of [
       "Buffer",
       "Texture",
@@ -89,7 +113,20 @@ try {
       WebGL2RenderingContext.prototype[`delete${kind}`] = function (object) {
         const result = remove.call(this, object);
         live.delete(object);
+        if (kind === "Texture" && compressed.delete(object)) state.compressed = compressed.size;
         state.live[kind] = live.size;
+        return result;
+      };
+    }
+    for (const name of ["compressedTexImage2D", "compressedTexSubImage2D"]) {
+      const upload = WebGL2RenderingContext.prototype[name];
+      WebGL2RenderingContext.prototype[name] = function (target, level, ...args) {
+        const result = upload.call(this, target, level, ...args);
+        if (target === this.TEXTURE_2D && level === 0) {
+          const texture = this.getParameter(this.TEXTURE_BINDING_2D);
+          if (texture && resources.get("Texture").has(texture)) compressed.add(texture);
+          state.compressed = compressed.size;
+        }
         return result;
       };
     }
@@ -110,6 +147,8 @@ try {
       "webglcontextlost",
       () => {
         state.lost++;
+        compressed.clear();
+        state.compressed = 0;
         for (const [kind, live] of resources) {
           live.clear();
           state.live[kind] = 0;
@@ -130,12 +169,18 @@ try {
     await page.locator('section[data-scene-status="ready"]').waitFor({ timeout: 60000 });
     await page.waitForFunction(() => window.__life.draws > 200, undefined, { timeout: 60000 });
   }
-  async function settle() {
+  async function settle(detailed) {
+    // Hair and skin stream from the checked-in assets. The shirt uses the
+    // routed KTX2 body above. All three must actually upload on every detail
+    // mount, and leave the native context on each low-detail transition.
+    const expected = detailed ? detailedCompressedTextures : 0;
+    await page.waitForFunction((expected) => window.__life.compressed === expected, expected, {
+      timeout: 60000,
+    });
     const before = await page.evaluate(() => window.__life.draws);
     await page.waitForFunction((before) => window.__life.draws > before + 80, before, {
       timeout: 60000,
     });
-    await page.waitForTimeout(1000);
   }
   async function toggle(low) {
     await page
@@ -150,9 +195,13 @@ try {
         exact: true,
       })
       .waitFor();
-    await settle();
+    await settle(!low);
   }
   await open();
+  await settle(true);
+  if (!fixtureRequests.has(streamedFixture) || !fixtureRequests.has(fallbackFixture)) {
+    throw Error("Studio did not exercise both the streamed and missing KTX2 fixture URLs");
+  }
   for (let i = 0; i < 2; i++) {
     await toggle(true);
     await toggle(false);
@@ -186,7 +235,7 @@ try {
     beforeLoss,
     { timeout: 60000 },
   );
-  await settle();
+  await settle(true);
   report.recovered = await page.evaluate(() => structuredClone(window.__life));
   for (const [kind, count] of Object.entries(report.recovered.live))
     if (count > warm.live[kind])
@@ -197,6 +246,7 @@ try {
   for (let cycle = 1; cycle <= 3; cycle++) {
     await page.goto("about:blank");
     await open();
+    await settle(true);
     report.samples.push({
       reentry: cycle,
       ...(await page.evaluate(() => structuredClone(window.__life))),

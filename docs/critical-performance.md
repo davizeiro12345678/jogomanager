@@ -37,7 +37,7 @@ Os valores são definidos em `src/game/contracts/graphics-profile.ts` e continua
 | ------ | -------: | --------------------: | -----------------: | -----------------: |
 | Baixa  |       60 |                 22 ms |                 90 |            180.000 |
 | Média  |       60 |                 20 ms |                170 |            420.000 |
-| Alta   |       45 |                 28 ms |                260 |            850.000 |
+| Alta   |       60 |                 20 ms |                260 |            850.000 |
 | Cinema |       30 |               33,3 ms |                340 |          1.200.000 |
 
 O governador reduz o trabalho visual quando há pressão. Testes de contrato e imagens de um navegador com renderização por software não comprovam esses limites em um aparelho físico. Mudanças do rig ou do renderizador exigem comparação no mesmo cenário, semente, resolução, qualidade, dispositivo e caminho gráfico, com erros e perdas visuais examinados. Registrar explicitamente quando essa certificação não foi realizada.

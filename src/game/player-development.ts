@@ -86,10 +86,12 @@ export function limitedDevelopmentDelta(
   p: Player,
   state: CareerState,
   changes: AttrDelta,
+  currentDelta: AttrDelta = state.attrDeltas?.[p.id] ?? {},
 ): AttrDelta {
-  const existing = { ...(state.attrDeltas?.[p.id] ?? {}) };
+  const existing = { ...currentDelta };
   if (!p.developmentBase || p.developmentBase.rulesVersion !== 2) return existing;
-  const before = effectivePlayer(p, state).ovr;
+  const preview = { ...p, developmentDelta: existing };
+  const before = effectivePlayer(preview).ovr;
   const savedStart =
     state.developmentSeasonStart?.season === state.season
       ? state.developmentSeasonStart.ratings?.[p.id]
@@ -114,7 +116,8 @@ export function limitedDevelopmentDelta(
     return out;
   };
   const valid = (delta: AttrDelta) => {
-    const rating = effectivePlayer(p, { attrDeltas: { [p.id]: delta } }).ovr;
+    preview.developmentDelta = delta;
+    const rating = effectivePlayer(preview).ovr;
     return rating <= upper && rating >= lower;
   };
   const full = candidate(1);

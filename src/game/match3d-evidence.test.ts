@@ -85,3 +85,31 @@ it("does not conceal missing assets or context loss", () => {
   expect(result.visualAssetsComplete).toBe(false);
   expect(result.violations).toContain("mobile-basic: lost or unrecorded WebGL context");
 });
+
+it("accepts equivalent worker snapshots whose nested object keys have different insertion order", () => {
+  const before = capture(),
+    after = capture();
+  before.matchScenes[0]!.authoritativeSnapshot = { seq: 2, time: 36 };
+  after.matchScenes[0]!.authoritativeSnapshot = { time: 36, seq: 2 };
+  before.matchScenes[0]!.scene.simulation = { score: [0, 0], ball: { x: 1 } };
+  after.matchScenes[0]!.scene.simulation = { ball: { x: 1 }, score: [0, 0] };
+  expect(compareMatch3dEvidence(before, after).violations).toEqual([]);
+});
+
+it("still rejects array order, missing properties and numeric or type differences", () => {
+  const before = capture(),
+    after = capture();
+  before.matchScenes[0]!.scene.simulation.score = [1, 0];
+  after.matchScenes[0]!.scene.simulation.score = [0, 1];
+  after.matchScenes[1]!.authoritativeSnapshot.time += 0.001;
+  Reflect.deleteProperty(after.matchScenes[2]!.authoritativeSnapshot, "seq");
+  Reflect.set(after.matchScenes[3]!.authoritativeSnapshot, "time", "36");
+  expect(compareMatch3dEvidence(before, after).violations).toEqual(
+    expect.arrayContaining([
+      "match-0: authoritative state changed",
+      "match-1: worker snapshot mismatch",
+      "match-2: worker snapshot mismatch",
+      "match-3: worker snapshot mismatch",
+    ]),
+  );
+});

@@ -49,7 +49,7 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
     pitchWet: { value: wet },
   };
   material.customProgramCacheKey = () =>
-    `match-pitch-layers-v5:${options.mergeLayers !== false}:${Boolean(wear)}:${Boolean(markings)}:${Boolean(options.microRoughness)}`;
+    `match-pitch-layers-v6:${options.mergeLayers !== false}:${Boolean(wear)}:${Boolean(markings)}:${Boolean(options.microRoughness)}`;
   if (options.mergeLayers !== false && (wear || markings || options.microRoughness))
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -68,6 +68,7 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
         .replace(
           "#include <map_fragment>",
           `#include <map_fragment>
+        ${options.microRoughness ? "float pitchFibre = texture2D(pitchDetailRoughness, vPitchUv * vec2(48.0, 32.0)).g; diffuseColor.rgb *= mix(0.94, 1.06, pitchFibre);" : ""}
         ${
           wear
             ? `vec4 soil = texture2D(pitchWear, vPitchUv);
@@ -89,7 +90,7 @@ export function createPitchSurfaceMaterial(options: PitchSurfaceOptions) {
           // A dry sports pitch has a broad fibre response, never a varnished
           // green floor. Retain the mower map; soil only affects worn patches.
           roughnessFactor = clamp(roughnessFactor + (1.0 - pitchWet) * 0.16, 0.48, 1.0);
-          ${options.microRoughness ? "roughnessFactor *= 0.88 + 0.12 * texture2D(pitchDetailRoughness, vPitchUv * vec2(48.0, 32.0)).g;" : ""}
+          ${options.microRoughness ? "roughnessFactor *= mix(0.88, 1.0, pitchFibre);" : ""}
           ${wear ? "roughnessFactor = mix(roughnessFactor, 0.98 - pitchWet * 0.28, soil.a * pitchWearOpacity);" : ""}
           ${markings ? "roughnessFactor = mix(roughnessFactor, 0.94 - pitchWet * 0.08, pitchPaintCoverage);" : ""}`,
         )

@@ -12,7 +12,6 @@ const template = [
   "VITE_SUPABASE_PROJECT_ID=example-project",
   "VITE_SUPABASE_URL=https://example-project.supabase.co",
   "VITE_SUPABASE_PUBLISHABLE_KEY=",
-  "VITE_AUTH_MODE=supabase",
   "VITE_PAYMENTS_CLIENT_TOKEN=",
   "PAYMENTS_ENVIRONMENT=live",
   "SUPABASE_URL=https://example-project.supabase.co",

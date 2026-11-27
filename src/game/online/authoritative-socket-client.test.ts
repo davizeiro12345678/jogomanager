@@ -1,0 +1,577 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  AuthoritativeMatchSocketClient,
+  type AuthorityClientSocket,
+} from "./authoritative-socket-client";
+import type { MatchTicketV1 } from "./match-protocol";
+
+const roomId = "45fd1d08-4f81-44bc-9072-1e35ce9d1d94";
+const userId = "7b40bcbe-a4ca-430c-9b49-61aa9c5118e9";
+const startAt = 1_700_000_000_000;
+const state = (revision: number) => ({
+  version: 1,
+  roomId,
+  revision,
+  tick: revision,
+  phase: "live",
+  publicState: {
+    minute: 0,
+    score: { home: 0, away: 0 },
+    possession: { home: 50, away: 50 },
+  },
+  presentationEvents: [],
+});
+const frame = (payload: object) => JSON.stringify({ version: 1, ...payload });
+function ticket(now: number): MatchTicketV1 {
+  return {
+    version: 1,
+    roomId,
+    userId,
+    seat: "home",
+    issuedAt: now,
+    expiresAt: now + 90_000,
+    nonce: `test-nonce-${now}-for-client`,
+    signature: "signed-test-ticket-with-correct-safe-format",
+  };
+}
+
+class FakeSocket implements AuthorityClientSocket {
+  readyState = 0;
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  readonly sent: string[] = [];
+  closeCode: number | null = null;
+
+  send(raw: string): void {
+    if (this.readyState !== 1) throw new Error("socket closed");
+    this.sent.push(raw);
+  }
+  open(): void {
+    this.readyState = 1;
+    this.onopen?.(new Event("open"));
+  }
+  message(raw: string): void {
+    this.onmessage?.({
+      data: raw,
+      isTrusted: true,
+      origin: "wss://match.jogomanager.com",
+    } as MessageEvent);
+  }
+  close(code = 1000, reason?: string): void {
+    // Calls with a reason come from the browser client. Calls without one in
+    // these tests simulate close frames arriving from the server/network.
+    if (reason !== undefined && code !== 1000 && (code < 3000 || code > 4999)) {
+      throw new DOMException("Invalid client WebSocket close code", "InvalidAccessError");
+    }
+    this.closeCode = code;
+    this.readyState = 3;
+    this.onclose?.({ code } as CloseEvent);
+  }
+}
+
+function fixture() {
+  let now = startAt;
+  let requested = 0;
+  const sockets: FakeSocket[] = [];
+  const events: string[] = [];
+  const statuses: string[] = [];
+  const client = new AuthoritativeMatchSocketClient({
+    gatewayUrl: "wss://match.jogomanager.com/rooms",
+    pageOrigin: "https://jogomanager.com",
+    roomId,
+    issueTicket: async () => {
+      requested += 1;
+      return ticket(now);
+    },
+    onEvent: (event) => events.push(event.kind),
+    onStatus: (status) => statuses.push(status),
+    socketFactory: () => {
+      const socket = new FakeSocket();
+      sockets.push(socket);
+      return socket;
+    },
+    now: () => now,
+  });
+  return {
+    client,
+    sockets,
+    events,
+    statuses,
+    requests: () => requested,
+    advance: (ms: number) => {
+      now += ms;
+    },
+  };
+}
+
+const flush = async () => {
+  for (let index = 0; index < 5; index += 1) await Promise.resolve();
+};
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("staged authoritative WSS client", () => {
+  it("reports the sequence of the submitted forfeit so the UI can match its response", async () => {
+    const f = fixture();
+    const forfeit = { kind: "forfeit", payload: { confirmed: true } } as const;
+    expect(f.client.sendTrackedCommand(forfeit)).toBeNull();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    expect(f.client.sendTrackedCommand(forfeit)).toBe(2);
+    expect(JSON.parse(socket.sent.at(-1)!)).toMatchObject({
+      type: "command",
+      command: { kind: "forfeit", sequence: 2 },
+    });
+    socket.close(4001);
+    expect(f.client.sendTrackedCommand(forfeit)).toBeNull();
+    f.client.dispose();
+  });
+
+  it("resumes a fresh client's sequence before the first command after authentication", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "sequence_resume", roomId, seat: "away", sequence: 90 }));
+    socket.message(frame({ type: "sequence_resume", roomId: userId, seat: "home", sequence: 80 }));
+    socket.message(frame({ type: "sequence_resume", roomId, seat: "home", sequence: 6 }));
+    expect(f.events).toEqual([]);
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    socket.message(frame({ type: "sequence_resume", roomId, seat: "home", sequence: 60 }));
+    expect(f.client.sendTrackedCommand({ kind: "ready", payload: { ready: true } })).toBe(7);
+    expect(f.events).toEqual(["ready"]);
+    f.client.dispose();
+  });
+
+  it("rejects an insecure or foreign-host gateway before sending a signed ticket", () => {
+    const f = fixture();
+    expect(
+      () =>
+        new AuthoritativeMatchSocketClient({
+          gatewayUrl: "wss://evil.example/rooms",
+          pageOrigin: "https://jogomanager.com",
+          roomId,
+          issueTicket: async () => ticket(startAt),
+          onEvent: () => undefined,
+        }),
+    ).toThrow(/trusted/i);
+    expect(
+      () =>
+        new AuthoritativeMatchSocketClient({
+          gatewayUrl: "ws://match.jogomanager.com/rooms",
+          pageOrigin: "https://jogomanager.com",
+          roomId,
+          issueTicket: async () => ticket(startAt),
+          onEvent: () => undefined,
+        }),
+    ).toThrow(/trusted/i);
+    expect(f.requests()).toBe(0);
+  });
+
+  it("waits for signed server ready before allowing sequenced player commands", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    expect(f.requests()).toBe(1);
+    expect(f.sockets).toHaveLength(1);
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+
+    const socket = f.sockets[0]!;
+    socket.open();
+    expect(JSON.parse(socket.sent[0]!)).toMatchObject({
+      type: "authenticate",
+      version: 1,
+      ticket: { roomId, userId, seat: "home" },
+    });
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.statuses.at(-1)).toBe("connected");
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    expect(JSON.parse(socket.sent[1]!)).toMatchObject({
+      type: "command",
+      command: { roomId, version: 1, sequence: 1, kind: "ready" },
+    });
+    expect(f.events).toContain("ready");
+    f.client.dispose();
+  });
+
+  it("never sends an expired ticket after a delayed socket open", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      f.advance(90_000);
+      socket.open();
+      expect(socket.sent).toEqual([]);
+      expect(socket.closeCode).toBe(4002);
+      expect(f.client.statusSnapshot()).toBe("retrying");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it.each([
+    [4_999, true],
+    [5_000, false],
+    [5_001, false],
+  ] as const)("applies the handshake deadline at receipt after %i ms", async (delay, accepted) => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      // A suspended tab can deliver the gateway message before its queued timer runs.
+      f.advance(delay);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      expect(f.events).toEqual(accepted ? ["ready"] : []);
+      expect(f.client.statusSnapshot()).toBe(accepted ? "connected" : "unavailable");
+      expect(f.client.officialSnapshot()?.revision).toBe(accepted ? 1 : undefined);
+      expect(socket.closeCode).toBe(accepted ? null : 4003);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("rejects readiness at ticket expiry before mutating the official feed", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      f.advance(90_000);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.events).toEqual([]);
+      expect(f.statuses).not.toContain("connected");
+      expect(socket.closeCode).toBe(4002);
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("renews before presenting queued updates when a suspended tab resumes at ticket expiry", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      f.advance(90_000);
+      socket.message(frame({ type: "snapshot", snapshot: state(2) }));
+      expect(f.client.officialSnapshot()?.revision).toBe(1);
+      expect(f.events).toEqual(["ready"]);
+      expect(socket.closeCode).toBe(4002);
+      expect(f.client.statusSnapshot()).toBe("retrying");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("ignores duplicate open notifications without resending the ticket", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    try {
+      f.client.start();
+      await flush();
+      const socket = f.sockets[0]!;
+      socket.open();
+      socket.open();
+      expect(socket.sent).toHaveLength(1);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      socket.open();
+      expect(socket.sent).toHaveLength(1);
+      expect(f.client.statusSnapshot()).toBe("connected");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("records non-identifying command-to-ACK latency and ignores repeated ACK frames", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    f.advance(125);
+    socket.message(frame({ type: "ack", sequence: 1 }));
+    socket.message(frame({ type: "ack", sequence: 1 }));
+    expect(f.client.latencySummary()).toMatchObject({
+      samples: 1,
+      accepted: 1,
+      rejected: 0,
+      pending: 0,
+      p50Ms: 125,
+      p95Ms: 125,
+      p99Ms: 125,
+    });
+    f.client.dispose();
+  });
+
+  it("publishes the connected transition only once when a ready snapshot repeats", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      const ready = frame({ type: "ready", seat: "home", snapshot: state(1) });
+      socket.message(ready);
+      socket.message(ready);
+      expect(f.statuses.filter((status) => status === "connected")).toEqual(["connected"]);
+      expect(f.client.officialSnapshot()).toMatchObject({ revision: 1 });
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("sends unsequenced heartbeats only after readiness and stops them after the final receipt", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      await vi.advanceTimersByTimeAsync(4_000);
+      expect(socket.sent).toHaveLength(1);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      f.advance(24_000);
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(JSON.parse(socket.sent[1]!)).toEqual({ type: "ping" });
+      expect(f.client.latencySummary().pending).toBe(0);
+
+      socket.message(
+        frame({
+          type: "final",
+          receipt: {
+            version: 1,
+            roomId,
+            simulationVersion: "contact-2",
+            commandHash: "a".repeat(64),
+            idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+            issuedAt: startAt + 24_000,
+            closureReason: "completed",
+            result: { homeGoals: 0, awayGoals: 0, winner: "draw" },
+            signature: "test-only-final-receipt-signature",
+          },
+        }),
+      );
+      expect(f.events.at(-1)).toBe("final");
+      expect(f.client.statusSnapshot()).toBe("connected");
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+      await vi.advanceTimersByTimeAsync(90_000);
+      expect(socket.sent).toHaveLength(2);
+      expect(socket.closeCode).toBeNull();
+      expect(f.requests()).toBe(1);
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("rejects synthetic or foreign-origin readiness before granting the transport state", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      const data = frame({ type: "ready", seat: "home", snapshot: state(1) });
+      socket.onmessage?.({
+        data,
+        isTrusted: false,
+        origin: "wss://match.jogomanager.com",
+      } as MessageEvent);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      socket.onmessage?.({
+        data,
+        isTrusted: true,
+        origin: "wss://foreign.example",
+      } as MessageEvent);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+      socket.message(data);
+      expect(f.client.statusSnapshot()).toBe("connected");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("does not accept provisional snapshots or a final receipt before the signed ready", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      socket.message(frame({ type: "snapshot", snapshot: state(500) }));
+      socket.message(
+        frame({
+          type: "final",
+          receipt: {
+            version: 1,
+            roomId,
+            simulationVersion: "contact-2",
+            commandHash: "a".repeat(64),
+            idempotencyKey: "42711d45-34a3-4d6b-81bb-a67db8b7e4f0",
+            issuedAt: startAt,
+            closureReason: "completed",
+            result: { homeGoals: 0, awayGoals: 0, winner: "draw" },
+            signature: "test-only-final-receipt-signature",
+          },
+        }),
+      );
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.client.officialReceipt()).toBeNull();
+      expect(f.events).toEqual([]);
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      await vi.advanceTimersByTimeAsync(5_001);
+      expect(socket.closeCode).toBe(4003);
+      expect(f.client.statusSnapshot()).toBe("unavailable");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it.each([
+    ["unsupported protocol", { version: 2, snapshot: state(1) }],
+    ["missing snapshot", {}],
+    ["foreign room", { snapshot: { ...state(1), roomId: "7008a399-62df-4d47-a314-0c2eb2d4c4c5" } }],
+    ["malformed snapshot", { snapshot: { ...state(1), tick: -1 } }],
+  ])("ignores a foreign-seat ready with %s before authenticating", async (_, invalid) => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    try {
+      socket.message(frame({ type: "ready", seat: "away", ...invalid }));
+      expect(socket.closeCode).toBeNull();
+      expect(f.client.statusSnapshot()).toBe("authenticating");
+      expect(f.client.officialSnapshot()).toBeNull();
+      expect(f.events).toEqual([]);
+      socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+      expect(f.client.statusSnapshot()).toBe("connected");
+    } finally {
+      f.client.dispose();
+    }
+  });
+
+  it("rejects forged seats and does not join a room from a different domain", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "away", snapshot: state(1) }));
+    expect(socket.closeCode).toBe(4003);
+    expect(f.client.statusSnapshot()).toBe("unavailable");
+    expect(f.client.officialSnapshot()).toBeNull();
+    expect(f.events).toEqual([]);
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(false);
+    f.client.dispose();
+  });
+
+  it("closes the transport when a ready frame claims another seat after authentication", async () => {
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.message(frame({ type: "ready", seat: "home", snapshot: state(1) }));
+    expect(f.client.statusSnapshot()).toBe("connected");
+    // The signed ticket bound the seat in the feed: a second ready for the
+    // other seat is authority theft, not a stale snapshot.
+    socket.message(frame({ type: "ready", seat: "away", snapshot: state(2) }));
+    expect(socket.closeCode).toBe(4003);
+    expect(f.client.statusSnapshot()).toBe("unavailable");
+    expect(f.client.officialSnapshot()?.revision).toBe(1);
+    expect(f.events).toEqual(["ready"]);
+    f.client.dispose();
+  });
+
+  it("preserves official revisions and command sequence after reconnect", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const first = f.sockets[0]!;
+    first.open();
+    first.message(frame({ type: "ready", seat: "home", snapshot: state(10) }));
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    first.close(1006);
+    expect(f.client.statusSnapshot()).toBe("retrying");
+    f.advance(1000);
+    await vi.advanceTimersByTimeAsync(1000);
+    await flush();
+    expect(f.requests()).toBe(2);
+    const second = f.sockets[1]!;
+    second.open();
+    second.message(frame({ type: "ready", seat: "home", snapshot: state(10) }));
+    expect(f.client.statusSnapshot()).toBe("connected");
+    expect(f.client.officialSnapshot()?.revision).toBe(10);
+    expect(f.client.sendCommand({ kind: "ready", payload: { ready: true } })).toBe(true);
+    expect(JSON.parse(second.sent[1]!).command.sequence).toBe(2);
+    f.client.dispose();
+  });
+
+  it("fails closed on ticket rejection without unlimited reconnect or exposing it in the URL", async () => {
+    vi.useFakeTimers();
+    const f = fixture();
+    f.client.start();
+    await flush();
+    const socket = f.sockets[0]!;
+    socket.open();
+    socket.close(1008);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(f.client.statusSnapshot()).toBe("unavailable");
+    expect(f.requests()).toBe(1);
+    expect(f.sockets).toHaveLength(1);
+    f.client.dispose();
+  });
+
+  it("disposal fences pending asynchronous ticket issuance", async () => {
+    let resolve!: (value: MatchTicketV1) => void;
+    const pending = new Promise<MatchTicketV1>((next) => {
+      resolve = next;
+    });
+    let sockets = 0;
+    const client = new AuthoritativeMatchSocketClient({
+      gatewayUrl: "wss://match.jogomanager.com/rooms",
+      pageOrigin: "https://jogomanager.com",
+      roomId,
+      issueTicket: async () => pending,
+      onEvent: () => undefined,
+      socketFactory: () => {
+        sockets += 1;
+        return new FakeSocket();
+      },
+      now: () => startAt,
+    });
+    client.start();
+    client.dispose();
+    resolve(ticket(startAt));
+    await flush();
+    expect(sockets).toBe(0);
+  });
+});

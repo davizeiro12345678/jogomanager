@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["../../src/i18n/quality-update-messages.test.ts"]
+}

@@ -77,9 +77,11 @@ export default function RosterTab({ data, onChange }: { data: CustomData; onChan
     <div className="mt-4 grid gap-4">
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border/60 surface-card p-4">
         <div>
-          <span className={labelCls}>Liga</span>
+          <span id="editor-roster-liga" className={labelCls}>
+            Liga
+          </span>
           <Select value={leagueId} onValueChange={onSelectLeague}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger aria-labelledby="editor-roster-liga" className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -92,9 +94,11 @@ export default function RosterTab({ data, onChange }: { data: CustomData; onChan
           </Select>
         </div>
         <div>
-          <span className={labelCls}>Clube</span>
+          <span id="editor-roster-clube" className={labelCls}>
+            Clube
+          </span>
           <Select value={clubId} onValueChange={setClubId}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger aria-labelledby="editor-roster-clube" className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -281,9 +285,11 @@ function PlayerDialog({
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
           <div>
-            <span className={labelCls}>Posição</span>
+            <span id="editor-roster-posicao" className={labelCls}>
+              Posição
+            </span>
             <Select value={form.pos} onValueChange={(v) => set("pos", v as Position)}>
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby="editor-roster-posicao">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -296,9 +302,11 @@ function PlayerDialog({
             </Select>
           </div>
           <div>
-            <span className={labelCls}>Clube</span>
+            <span id="editor-roster-clube-2" className={labelCls}>
+              Clube
+            </span>
             <Select value={form.clubId} onValueChange={(v) => set("clubId", v)}>
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby="editor-roster-clube-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-h-72">
@@ -367,14 +375,16 @@ function PlayerDialog({
             />
           </div>
           <div>
-            <span className={labelCls}>Personalidade</span>
+            <span id="editor-roster-personalidade" className={labelCls}>
+              Personalidade
+            </span>
             <Select
               value={form.personality ?? "__none"}
               onValueChange={(v) =>
                 set("personality", v === "__none" ? undefined : (v as Personality))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger aria-labelledby="editor-roster-personalidade">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { Perfil } from "@/pages/perfil";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/perfil")({
   ssr: false,
@@ -23,5 +21,8 @@ export const Route = createFileRoute("/perfil")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Perfil,
+  // A browser-only screen must not enter the Cloudflare server module graph.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/perfil"), "Perfil"),
 });

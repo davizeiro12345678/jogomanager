@@ -264,6 +264,8 @@ export interface ScoutReport {
 }
 
 export interface CareerState {
+  /** New matches select their rules before the first tick; old saves omit this. */
+  matchRulesRevision?: 1 | 2 | undefined;
   /** Missing version preserves the rules of an existing personal save. */
   economyRulesVersion?: 1 | 2 | undefined;
   developmentRulesVersion?: 1 | 2 | undefined;

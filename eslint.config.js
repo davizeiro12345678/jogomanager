@@ -14,6 +14,9 @@ export default tseslint.config(
       "dist-benchmark",
       ".npm-cache",
       ".bun-cache",
+      // Local benchmark/report runtimes contain installed third-party code.
+      // This directory is gitignored and contains no application source.
+      ".cache/**",
       "wasm/**/target/**",
       "src/game/wasm/pkg/**",
       "src/integrations/supabase/types.ts",

@@ -1,0 +1,104 @@
+{
+  "recordedAt": "2026-11-09 01:36:40 UTC",
+  "sourceCommit": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+  "workflowRun": 42543242306,
+  "jobId": 128922613834,
+  "conclusion": "success",
+  "executionScope": "pull_request virtual merge ea58b87 of0a6a04e into c20036f",
+  "instrument": "Lighthouse mobile multi-page audit; not physical mobile GPU/FPS certification",
+  "routes": [
+    {
+      "url": "http://127.0.0.1:4173/",
+      "runs": 3,
+      "pessimistic": {
+        "performanceScore": null,
+        "totalBlockingTimeMs": null,
+        "largestContentfulPaintMs": null,
+        "cumulativeLayoutShift": null,
+        "accessibilityScore": null
+      }
+    },
+    {
+      "url": "http://127.0.0.1:4173/guias",
+      "runs": 3,
+      "pessimistic": {
+        "performanceScore": null,
+        "totalBlockingTimeMs": null,
+        "largestContentfulPaintMs": null,
+        "cumulativeLayoutShift": null,
+        "accessibilityScore": null
+      }
+    },
+    {
+      "url": "http://127.0.0.1:4173/guia-de-scouting",
+      "runs": 3,
+      "pessimistic": {
+        "performanceScore": null,
+        "totalBlockingTimeMs": null,
+        "largestContentfulPaintMs": null,
+        "cumulativeLayoutShift": null,
+        "accessibilityScore": null
+      }
+    },
+    {
+      "url": "http://127.0.0.1:4173/melhores-formacoes",
+      "runs": 3,
+      "pessimistic": {
+        "performanceScore": null,
+        "totalBlockingTimeMs": null,
+        "largestContentfulPaintMs": null,
+        "cumulativeLayoutShift": null,
+        "accessibilityScore": null
+      }
+    },
+    {
+      "url": "http://127.0.0.1:4173/partida-rapida",
+      "runs": 3,
+      "pessimistic": {
+        "performanceScore": null,
+        "totalBlockingTimeMs": null,
+        "largestContentfulPaintMs": null,
+        "cumulativeLayoutShift": null,
+        "accessibilityScore": null
+      }
+    }
+  ],
+  "primaryLogEvidence": [
+    "2026-11-09T01:00:54.6347839Z HEAD is now at ea58b87 Merge 0a6a04e581571a367cc1c742ead21f984abbbc1b into c20036f33a8f7d8eff15012d276606a3964e4a54",
+    "2026-11-09T01:01:45.0631050Z Running Lighthouse 3 time(s) on http://127.0.0.1:4173/",
+    "2026-11-09T01:01:58.2794936Z Run #1...done.",
+    "2026-11-09T01:02:10.6560279Z Run #2...done.",
+    "2026-11-09T01:02:23.1537911Z Run #3...done.",
+    "2026-11-09T01:02:23.2925393Z Running Lighthouse 3 time(s) on http://127.0.0.1:4173/guias",
+    "2026-11-09T01:02:34.4540722Z Run #1...done.",
+    "2026-11-09T01:02:45.5965826Z Run #2...done.",
+    "2026-11-09T01:02:56.9059908Z Run #3...done.",
+    "2026-11-09T01:02:57.0513355Z Running Lighthouse 3 time(s) on http://127.0.0.1:4173/guia-de-scouting",
+    "2026-11-09T01:03:08.1686586Z Run #1...done.",
+    "2026-11-09T01:03:19.2757805Z Run #2...done.",
+    "2026-11-09T01:03:30.4885435Z Run #3...done.",
+    "2026-11-09T01:03:30.6352079Z Running Lighthouse 3 time(s) on http://127.0.0.1:4173/melhores-formacoes",
+    "2026-11-09T01:03:41.7581075Z Run #1...done.",
+    "2026-11-09T01:03:52.8788756Z Run #2...done.",
+    "2026-11-09T01:04:04.0089556Z Run #3...done.",
+    "2026-11-09T01:04:04.1589651Z Running Lighthouse 3 time(s) on http://127.0.0.1:4173/partida-rapida",
+    "2026-11-09T01:04:58.8024606Z Run #1...done.",
+    "2026-11-09T01:05:53.5508224Z Run #2...done.",
+    "2026-11-09T01:06:48.1374445Z Run #3...done.",
+    "2026-11-09T01:06:48.6758791Z Checking assertions against 5 URL(s), 15 total run(s)",
+    "2026-11-09T01:06:48.6761511Z All results processed!",
+    "2026-11-09T01:06:50.1782900Z Artifact lighthouse-results successfully finalized. Artifact ID 13642596919"
+  ],
+  "artifact": {
+    "id": 13642596919,
+    "name": "lighthouse-results",
+    "sizeInBytes": 8242143,
+    "headSha": "0a6a04e581571a367cc1c742ead21f984abbbc1b",
+    "digest": "sha256:9280f123cd43ec580e1612801b443683185c9173b64b2eec78cd919ca4af1a8f"
+  },
+  "limitations": [
+    "Successful job logs confirm15 runs across5 routes and passing assertions but do not print exact audit numbers.",
+    "Exact performance/TBT/LCP/CLS/accessibility values and pessimistic aggregates are unknown from the inspected logs; no thresholds or estimated numbers are substituted.",
+    "Artifact has not been locally decompressed during the active video capture."
+  ]
+}

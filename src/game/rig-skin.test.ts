@@ -16,6 +16,7 @@ import { gaitPoseAt } from "./gait-kinematics";
 import { clampPoseAnatomy, solveGroundContact } from "./ground-contact";
 import { eyelidRotationFor } from "./facial-animation";
 import { sharedDetailMaterial } from "./rig-materials";
+import { AthleteCloth } from "./athlete-cloth";
 
 const KIT = {
   base: "#0a8f3c",
@@ -70,6 +71,140 @@ function vertices(geometry: THREE.BufferGeometry): number[] {
 }
 
 describe("rig skin", () => {
+  it("moves private body buffers and releases merged and surviving surfaces exactly once", () => {
+    const original = rigBodyModule.buildRigBody;
+    const owned: {
+      geometry: THREE.BufferGeometry;
+      cloned: ReturnType<typeof vi.spyOn>;
+      disposed: ReturnType<typeof vi.spyOn>;
+    }[] = [];
+    const body = vi.spyOn(rigBodyModule, "buildRigBody").mockImplementationOnce((ctx) => {
+      const result = original(ctx);
+      // Exercise the merge-failure path as well: each unmerged surface must
+      // stay alive until the returned skin releases it.
+      result.legL.find((mesh) => mesh.material === ctx.mats.skin)!.geometry.deleteAttribute("uv");
+      for (const { geometry } of result.all)
+        owned.push({
+          geometry,
+          cloned: vi.spyOn(geometry, "clone"),
+          disposed: vi.spyOn(geometry, "dispose"),
+        });
+      return result;
+    });
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let skin: ReturnType<typeof buildRigSkin> | undefined;
+    try {
+      skin = buildRigSkin(context(), ROOT);
+      const surviving = new Set(skin.groups.map((group) => group.geometry));
+      expect(owned.some(({ geometry }) => surviving.has(geometry))).toBe(true);
+      expect(owned.some(({ geometry }) => !surviving.has(geometry))).toBe(true);
+      expect(error).toHaveBeenCalled();
+      for (const resource of owned) {
+        expect(resource.cloned).not.toHaveBeenCalled();
+        expect(resource.disposed).toHaveBeenCalledTimes(surviving.has(resource.geometry) ? 0 : 1);
+      }
+      skin.dispose();
+      skin.dispose();
+      for (const resource of owned) expect(resource.disposed).toHaveBeenCalledTimes(1);
+    } finally {
+      skin?.dispose();
+      for (const resource of owned) {
+        resource.cloned.mockRestore();
+        resource.disposed.mockRestore();
+      }
+      body.mockRestore();
+      error.mockRestore();
+    }
+  });
+  it("clones aliased body surfaces without mutating their shared buffers", () => {
+    const original = rigBodyModule.buildRigBody;
+    let shared: THREE.BufferGeometry | undefined;
+    let cloned: ReturnType<typeof vi.spyOn> | undefined;
+    let disposed: ReturnType<typeof vi.spyOn> | undefined;
+    let positions: Float32Array | undefined;
+    const body = vi.spyOn(rigBodyModule, "buildRigBody").mockImplementationOnce((ctx) => {
+      const result = original(ctx);
+      const mesh = result.hair[0]!;
+      result.hair.push({ ...mesh });
+      result.all.push({ ...mesh });
+      shared = mesh.geometry;
+      positions = new Float32Array(shared.getAttribute("position").array);
+      cloned = vi.spyOn(shared, "clone");
+      disposed = vi.spyOn(shared, "dispose");
+      return result;
+    });
+    let skin: ReturnType<typeof buildRigSkin> | undefined;
+    try {
+      skin = buildRigSkin(context(), ROOT);
+      expect(cloned).toHaveBeenCalledTimes(2);
+      expect(shared!.getAttribute("position").array).toEqual(positions);
+      expect(shared!.hasAttribute("skinIndex")).toBe(false);
+      expect(disposed).toHaveBeenCalledTimes(1);
+      expect(skin.groups.every((group) => group.geometry !== shared)).toBe(true);
+      skin.dispose();
+      expect(disposed).toHaveBeenCalledTimes(1);
+    } finally {
+      skin?.dispose();
+      cloned?.mockRestore();
+      disposed?.mockRestore();
+      body.mockRestore();
+    }
+  });
+  it("matches the cloned construction byte for byte and isolates later cloth morph lifetime", () => {
+    const ctx = context();
+    const moved = buildRigSkin(ctx, ROOT);
+    const original = rigBodyModule.buildRigBody;
+    const body = vi.spyOn(rigBodyModule, "buildRigBody").mockImplementationOnce((context) => {
+      const result = original(context);
+      // Mark every source as aliased to exercise the original clone path.
+      // Joint lists stay unchanged, so topology and transforms stay identical.
+      result.all.push(...result.all);
+      return result;
+    });
+    let cloned: ReturnType<typeof buildRigSkin> | undefined;
+    try {
+      cloned = buildRigSkin(ctx, ROOT);
+      new AthleteCloth(moved, ctx.P);
+      new AthleteCloth(cloned, ctx.P);
+      expect(moved.groups.length).toBe(cloned.groups.length);
+      moved.groups.forEach((group, index) => {
+        const actual = group.geometry;
+        const expected = cloned!.groups[index]!.geometry;
+        expect(actual).not.toBe(expected);
+        expect(group.materialKey).toBe(cloned!.groups[index]!.materialKey);
+        expect(group.lod).toBe(cloned!.groups[index]!.lod);
+        expect(actual.groups).toEqual(expected.groups);
+        expect(actual.boundingBox).toEqual(expected.boundingBox);
+        expect(actual.boundingSphere).toEqual(expected.boundingSphere);
+        expect(Object.keys(actual.attributes)).toEqual(Object.keys(expected.attributes));
+        for (const name of Object.keys(actual.attributes)) {
+          expect(actual.attributes[name]!.array).not.toBe(expected.attributes[name]!.array);
+          expect(actual.attributes[name]!.array).toEqual(expected.attributes[name]!.array);
+        }
+        expect(actual.index?.array).toEqual(expected.index?.array);
+        for (const name of Object.keys(
+          actual.morphAttributes,
+        ) as (keyof typeof actual.morphAttributes)[]) {
+          actual.morphAttributes[name]!.forEach((attribute, morph) => {
+            expect(attribute.array).not.toBe(expected.morphAttributes[name]![morph]!.array);
+            expect(attribute.array).toEqual(expected.morphAttributes[name]![morph]!.array);
+          });
+        }
+      });
+      const survivor = cloned.groups[0]!.geometry;
+      const disposed = vi.spyOn(survivor, "dispose");
+      moved.dispose();
+      expect(disposed).not.toHaveBeenCalled();
+      expect(vertices(survivor).every(Number.isFinite)).toBe(true);
+      cloned.dispose();
+      expect(disposed).toHaveBeenCalledTimes(1);
+      disposed.mockRestore();
+    } finally {
+      moved.dispose();
+      cloned?.dispose();
+      body.mockRestore();
+    }
+  });
   it("retains every skin surface if a malformed limb cannot merge with its siblings", () => {
     const original = rigBodyModule.buildRigBody;
     const body = vi.spyOn(rigBodyModule, "buildRigBody").mockImplementationOnce((ctx) => {

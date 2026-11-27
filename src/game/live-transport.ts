@@ -151,7 +151,16 @@ export class LiveSnapshotEncoder {
     this.forceReset = true;
   }
   recycle(session: number, slot: number, buffer: ArrayBuffer): boolean {
-    const entry = this.slots[slot];
+    // The slot comes back across a Worker boundary: reject string/object keys,
+    // even when TypeScript declared it numeric in the sender.
+    if (
+      !Number.isInteger(slot) ||
+      slot < 0 ||
+      slot >= this.slots.length ||
+      !(buffer instanceof ArrayBuffer)
+    )
+      return false;
+    const entry = this.slots.at(slot);
     if (
       session !== this.session ||
       !entry ||

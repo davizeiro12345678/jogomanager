@@ -19,3 +19,16 @@ it("keeps roof braces, concourse portals and railings within three material draw
     data.materials.forEach((material) => material.dispose());
   }
 });
+
+it("differentiates matte concrete, brushed steel and painted fascia without new material batches", () => {
+  const { meshes, materials } = buildArenaArchitecture(11, "#b22b42", true);
+  const [concrete, steel, fascia] = materials;
+  expect(concrete!.metalness).toBe(0);
+  expect(concrete!.envMapIntensity).toBeLessThan(0.5);
+  expect(steel!.metalness).toBeGreaterThanOrEqual(0.6);
+  expect(steel!.roughness).toBeGreaterThan(0.4);
+  expect(fascia!.metalness).toBe(0);
+  expect(meshes).toHaveLength(3);
+  meshes.forEach((m) => m.geometry.dispose());
+  materials.forEach((m) => m.dispose());
+});

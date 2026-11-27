@@ -131,6 +131,39 @@ describe("offline career owner boundary", () => {
     expect(await loadLocalCareer()).toEqual(guest);
   });
 
+  it("recovers an account from its own mirror when IndexedDB becomes unreadable", async () => {
+    const saved = career("Offline account");
+    await saveLocalCareer(saved, "manual", "alice-id");
+    storage.setItem(LEGACY_KEY, JSON.stringify(career("Unrelated guest")));
+    failGet.value = true;
+
+    await expect(loadLocalCareer("alice-id")).resolves.toEqual(saved);
+    await expect(loadLocalCareer("another-account")).resolves.toBeNull();
+  });
+
+  it("ignores scalar persisted saves and recovers only a valid owner mirror", async () => {
+    const saved = career("Recovered account");
+    await saveLocalCareer(saved, "manual", "alice-id");
+    indexed.set("career.v2.account-alice-id.career", "corrupt scalar");
+    await expect(loadLocalCareer("alice-id")).resolves.toEqual(saved);
+    storage.setItem("manager3d.career.v2.account-another-account", "42");
+    expect(readLocalCareer("another-account")).toBeNull();
+  });
+
+  it("fails closed when an IndexedDB outbox has a malformed state or timestamp", async () => {
+    const key = "career.v2.account-alice-id.outbox";
+    indexed.set(key, { at: 1, state: [], generation: 1, revision: "queued-revision" });
+    await expect(readOutbox("alice-id")).rejects.toThrow("Career outbox is unreadable");
+    indexed.set(key, {
+      at: NaN,
+      state: career("Alice"),
+      generation: 1,
+      revision: "queued-revision",
+    });
+    await expect(readOutbox("alice-id")).rejects.toThrow("Career outbox is unreadable");
+    expect(indexed.has(key)).toBe(true);
+  });
+
   it("acknowledges only the uploaded account's queued revision", async () => {
     const alice = await queueSync(career("Alice"), "alice-id", { generation: 1 });
     await queueSync(career("Bruno"), "bruno-id", { generation: 1 });
