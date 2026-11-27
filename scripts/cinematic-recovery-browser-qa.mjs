@@ -53,6 +53,29 @@ try {
     args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
 
+  async function assertIllustrationVisible(page, entry) {
+    // The previous QA only checked mode='2d'. A fully opaque transition layer
+    // left the illustrated scene effectively black despite a passing test.
+    const dialog = page.getByRole("dialog");
+    await dialog.locator(".cutscene-world svg").first().waitFor({
+      state: "visible",
+      timeout: 8_000,
+    });
+    await page.waitForTimeout(60);
+    entry.matting = await dialog.locator(".cutscene-matte").evaluate((el) => ({
+      opacity: Number.parseFloat(getComputedStyle(el).opacity),
+      background: getComputedStyle(el).backgroundColor,
+    }));
+    if (entry.matting.opacity > 0.61)
+      throw new Error(`Scene is hidden behind opaque matte (${entry.matting.opacity})`);
+    await page.waitForTimeout(560);
+    entry.matting.settledOpacity = await dialog
+      .locator(".cutscene-matte")
+      .evaluate((el) => Number.parseFloat(getComputedStyle(el).opacity));
+    if (entry.matting.settledOpacity > 0.05)
+      throw new Error("Transition never revealed the illustrated scene");
+  }
+
   async function runCase(name, kind) {
     const entry = { name, passed: false, requests: 0, aborted: 0, pageErrors: [] };
     report.cases.push(entry);
@@ -96,6 +119,7 @@ try {
             () =>
               document.querySelector('[role="dialog"]')?.getAttribute("data-scene-mode") === "2d",
           );
+          await assertIllustrationVisible(page, entry);
           const advance = page.getByRole("button", { name: "Avançar diálogo", exact: true });
           for (let attempt = 0; attempt < 3; attempt++) {
             await advance.click();
@@ -191,6 +215,7 @@ try {
 
       entry.mode = await dialog.getAttribute("data-scene-mode");
       entry.fallback = await dialog.getAttribute("data-scene-auto-fallback");
+      await assertIllustrationVisible(page, entry);
       if (entry.requests < 1) throw new Error("3D module did not stall in the synthetic test");
       if (entry.pageErrors.length)
         throw new Error("Uncaught browser exceptions: " + entry.pageErrors.join("; "));
