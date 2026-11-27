@@ -68,11 +68,14 @@ function isUnclaimedGuestSubscription(subscription: StripeSubscriptionEvent): bo
  * sessão com `line_items` expandido. Sem isso o jogo não descobre qual pacote
  * foi pago e a entrega falha em silêncio.
  */
-async function resolvePurchase(sessionId: string, env: StripeEnv) {
+async function resolvePurchase(sessionId: string, expectedUserId: string, env: StripeEnv) {
   const stripe = createStripeClient(env);
   const full = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ["line_items.data.price"],
   });
+  if (full.livemode !== (env === "live") || full.metadata?.["userId"] !== expectedUserId) {
+    throw new Error("Checkout session does not match the expected account or environment");
+  }
   const lineItem = full.line_items?.data?.[0];
   if (
     full.mode !== "payment" ||
@@ -114,6 +117,7 @@ async function fulfillSession(sessionId: string, userId: string, env: StripeEnv)
   if (await isPurchaseDelivered(userId, sessionId)) return;
   const { productKey, amount, paidAmount, session, snapshot } = await resolvePurchase(
     sessionId,
+    userId,
     env,
   );
   if (
@@ -160,7 +164,7 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
       }
       if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
         // Boleto/PIX com confirmação lenta: registra pendente e espera.
-        const { productKey, paidAmount } = await resolvePurchase(session.id, env);
+        const { productKey, paidAmount } = await resolvePurchase(session.id, userId, env);
         if (productKey) {
           await recordPendingPurchase(userId, productKey, session.id, paidAmount);
         }

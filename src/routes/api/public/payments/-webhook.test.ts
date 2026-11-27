@@ -88,6 +88,7 @@ beforeEach(() => {
   });
   deps.listSessions.mockResolvedValue({ data: [{ id: "cs_test_review" }], has_more: false });
   deps.retrieveSession.mockResolvedValue({
+    livemode: false,
     metadata: { userId: "user_1", productKey: "coins_small" },
     mode: "payment",
     currency: "brl",
@@ -158,6 +159,29 @@ describe("Stripe payment webhook lifecycle", () => {
     );
     expect(deps.fulfill).not.toHaveBeenCalled();
   });
+
+  it.each([
+    { metadata: { userId: "other_account", productKey: "coins_small" } },
+    { livemode: true },
+  ])(
+    "rejects a mismatched authoritative session before recording delayed payment (%j)",
+    async (patch) => {
+      const current = await deps.retrieveSession();
+      deps.retrieveSession.mockResolvedValue({ ...current, ...patch });
+      deps.event = sessionEvent("checkout.session.completed", {
+        id: "cs_test_pending_mismatch",
+        mode: "payment",
+        payment_status: "unpaid",
+        metadata: { userId: "user_1", productKey: "coins_small" },
+      });
+
+      expect((await post({ request: request() })).status).toBe(503);
+      expect(deps.checkoutOffer).not.toHaveBeenCalled();
+      expect(deps.recordPending).not.toHaveBeenCalled();
+      expect(deps.fulfill).not.toHaveBeenCalled();
+      expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", false);
+    },
+  );
 
   it("marks an asynchronous payment denial as failed without granting the item", async () => {
     deps.event = sessionEvent("checkout.session.async_payment_failed", {
