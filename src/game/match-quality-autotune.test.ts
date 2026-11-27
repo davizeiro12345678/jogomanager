@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { evaluateMatchQuality, type MatchQualityTrend } from "./match-quality-autotune";
 
@@ -37,4 +38,13 @@ describe("automatic match graphics quality", () => {
       trend: fresh(),
     });
   });
+  it("clears the auto-quality trend on tab visibility changes", () => {
+    const source = readFileSync(new URL("../pages/match.tsx", import.meta.url), "utf8");
+    const handlerStart = source.indexOf("const onVisibility = () =>");
+    expect(handlerStart).toBeGreaterThan(-1);
+    const handler = source.slice(handlerStart, handlerStart + 420);
+    expect(handler).toMatch(/qualityTrendRef\.current\s*=\s*\{\s*slow:\s*0,\s*healthy:\s*0\s*\}/);
+    expect(handler).toMatch(/document\.hidden/);
+  });
+
 });
