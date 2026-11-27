@@ -1,5 +1,18 @@
 # PR #179 | Continuidade do Gateway, VPS e QA visual | 27/11/2026
 
+## Retomada da homologação após `824027d`
+
+| Prioridade | Evidência | Estado |
+| --- | --- | --- |
+| P0 Auth, passkey e carreira | A saúde de `game-staging` respondeu HTTP 200 com o commit `fb07df1d`. O ambiente Supabase `staging-release-132` segue com `MIGRATIONS_FAILED` e 85 migrações registradas. | Pendente de login e persistência com duas contas no candidato do PR. |
+| P0 Stripe Sandbox | O endpoint de saúde em `game-staging` devolveu 503 com 4/5 canais. Os dois endpoints do JogoManager na conta Área restrita estão desabilitados. | Sessão autenticada, entrega Stripe assinada e concessão no banco isolado pendentes. |
+| P1 Registro do valor pago | O cenário de teste com preço de R$ 5,00 e pagamento de R$ 4,00 registrava R$ 5,00 no fluxo visitante. O total liquidado agora alimenta a compra e o subtotal valida a oferta. A conferência inclui sessão, ambiente, moeda e item antes da gravação. | Validado em testes automatizados de pagamentos. |
+| P0 Recuperação externa | O complemento de backup do Gateway está desativado. O último relatório carece de uma restauração externa verificada. | Backup externo e atualização coordenada do Wazuh continuam pendentes. |
+| P1 Partida Rápida | Na versão publicada, o seletor aplicou português brasileiro. A partida iniciou em 2D quando o Chrome não conseguiu criar WebGL. O relógio chegou ao minuto 7 e a interface respondeu a pausa e retomada. | Teste interativo da versão publicada. GPU física pendente. |
+| P2 Cobertura do idioma | O teste de navegador agora exige rótulos em português em quatro viewports e verifica avanço do relógio após retomar na largura de 375 px. | Evidência no workflow de QA do commit entregue. |
+
+O Quality Gates de `0054d0b` falhou no teste de integração do PostHog por usar uma data de consentimento inválida na fixture. A correção `824027d` é a base desta retomada. A comparação CodSpeed do mesmo commit do PR deve acompanhar a evidência de QA. A ativação de multiplayer 1×1 e 2×2 depende de sessões reais e do Worker autoritativo isolado. O PR segue em rascunho até concluir os ensaios operacionais e a revisão independente.
+
 ## Checkpoint anterior à retomada
 
 - PR: [#179](https://github.com/davizeiro12345678/jogomanager/pull/179), branch `fix/audit-vps-ui-20261126`, **Draft e atrás de main** na verificação desta sessão. Revalidar o SHA antes de qualquer aceitação.

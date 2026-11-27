@@ -19,6 +19,7 @@ import {
 import type Stripe from "stripe";
 import { markGuestCheckoutFailed, markGuestCheckoutPaid } from "@/lib/guest-checkout.functions";
 import { deliverClaimedGuestPurchase } from "@/lib/guest-checkout-delivery.server";
+import { parseNonNegativeStoreInteger } from "@/lib/store-products.server";
 
 type StripeSessionEvent = {
   id: string;
@@ -105,8 +106,8 @@ async function resolvePurchase(sessionId: string, expectedUserId: string, env: S
     lineItem?.amount_total ??
     full.amount_total ??
     0;
-  const paidAmount = full.amount_total;
-  if (paidAmount === null || !Number.isSafeInteger(paidAmount) || paidAmount < 0) {
+  const paidAmount = parseNonNegativeStoreInteger(full.amount_total);
+  if (paidAmount === null) {
     throw new Error("Checkout has no valid settled amount");
   }
   return { productKey, amount, paidAmount, snapshot: offer.snapshot, session: full };

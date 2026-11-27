@@ -562,8 +562,8 @@ try {
       waitUntil: "domcontentloaded",
     });
     if (response?.status() !== 200) throw new Error("Quick match selection did not load");
-    await page.getByRole("heading", { level: 1 }).waitFor();
-    const pick = page.getByLabel(/seu time|your team/i);
+    await page.getByRole("heading", { level: 1, name: "Partida rápida", exact: true }).waitFor();
+    const pick = page.getByLabel("Seu time", { exact: true });
     // The club list is populated asynchronously after the page heading appears.
     // Wait for the third enabled option rather than sampling the list too early.
     const thirdEnabledClub = pick.locator("option:not([disabled])").nth(2);
@@ -571,32 +571,35 @@ try {
     const nextClub = await thirdEnabledClub.getAttribute("value");
     if (!nextClub) throw new Error("Quick match roster options did not load");
     await pick.selectOption(nextClub);
+    if ((await page.locator("html").getAttribute("lang")) !== "pt-BR") {
+      throw new Error("Quick match selection did not retain pt-BR after hydration");
+    }
     await png(page, `quick-match-selection-${viewport.width}`);
-    await page.getByRole("button", { name: /^(jogar|play)$/i }).click();
+    await page.getByRole("button", { name: "Jogar", exact: true }).click();
     const scoreboard = page.locator(".match-scoreboard-quick");
     await scoreboard.waitFor({ timeout: 45_000 });
-    const pause = page.getByRole("button", { name: /pausar partida|pause match/i });
+    const pause = page.getByRole("button", { name: "Pausar partida", exact: true });
     await pause.focus();
     await pause.press("Enter");
-    await page.getByRole("button", { name: /retomar partida|resume match/i }).waitFor();
-    const trigger = page.getByRole("button", { name: /opções da partida|match options/i });
+    const resume = page.getByRole("button", { name: "Retomar partida", exact: true });
+    await resume.waitFor();
+    const trigger = page.getByRole("button", { name: "Opções da partida", exact: true });
     await trigger.click();
     const options = page.locator("#match-quick-tools");
     await options.waitFor();
-    const speed = page.getByRole("combobox", { name: /velocidade|speed/i });
+    const speed = page.getByRole("combobox", { name: "Velocidade", exact: true });
     await speed.selectOption("4");
-    const camera = page.getByRole("combobox", { name: /câmera da partida|match camera/i });
+    const camera = page.getByRole("combobox", { name: "Câmera da partida", exact: true });
     const beforeCamera = await camera.inputValue();
     const secondCamera = await camera.locator("option").nth(1).getAttribute("value");
     if (!secondCamera || beforeCamera === secondCamera)
       throw new Error("Camera preset unavailable");
     await camera.selectOption(secondCamera);
-    const shortcuts = options.getByRole("button", {
-      name: /atalhos de teclado|keyboard shortcuts/i,
-    });
+    const shortcuts = options.getByRole("button", { name: "Atalhos de teclado", exact: true });
     await shortcuts.click();
     const shortcutDialog = page.getByRole("dialog", {
-      name: /atalhos de teclado|keyboard shortcuts/i,
+      name: "Atalhos de teclado",
+      exact: true,
     });
     await shortcutDialog.waitFor();
     await page.keyboard.press("1");
@@ -609,8 +612,8 @@ try {
     await shortcutDialog.waitFor({ state: "hidden" });
     await options.waitFor();
     await png(page, `quick-match-controls-${viewport.width}`);
-    await options.getByRole("button", { name: /lances recentes|recent moments/i }).click();
-    const events = page.getByRole("log", { name: /lances recentes|recent moments/i });
+    await options.getByRole("button", { name: "Lances recentes", exact: true }).click();
+    const events = page.getByRole("log", { name: "Lances recentes", exact: true });
     await events.waitFor();
     const matchesViewport = await page.evaluate(() =>
       [".match-scoreboard-quick", ".match-quick-transport", ".match-quick-feed"].every(
@@ -628,14 +631,34 @@ try {
       ),
     );
     if (!matchesViewport) throw new Error(`Quick match controls overflowed at ${viewport.width}px`);
-    await events.getByRole("button", { name: /fechar|close/i }).click();
+    await events.getByRole("button", { name: "Fechar", exact: true }).click();
     if (!(await trigger.evaluate((element) => element === document.activeElement)))
       throw new Error("Closing the match feed did not restore keyboard focus");
-    await page
-      .getByRole("button", { name: /voltar à escolha de times|back to team selection/i })
-      .click();
+    const matchEvidence = { passed: true, locale: "pt-BR" };
+    if (viewport.width === 375) {
+      const clock = /, Minuto (\d+)$/.exec((await scoreboard.getAttribute("aria-label")) ?? "");
+      if (!clock) throw new Error("Missing Portuguese score clock");
+      const before = Number(clock[1]);
+      await speed.selectOption("8");
+      await resume.press("Enter");
+      await pause.waitFor();
+      const advanced = await page.waitForFunction(
+        (previous) => {
+          const label = document
+            .querySelector(".match-scoreboard-quick")
+            ?.getAttribute("aria-label");
+          const minute = /, Minuto (\d+)$/.exec(label ?? "");
+          return minute && Number(minute[1]) > previous ? Number(minute[1]) : false;
+        },
+        before,
+        { timeout: 20_000 },
+      );
+      matchEvidence.clock = { before, after: await advanced.jsonValue() };
+      await advanced.dispose();
+    }
+    await page.getByRole("button", { name: "Voltar à escolha de times", exact: true }).click();
     await page.locator("#quick-league").waitFor();
-    report.axes.interaction.metrics[`quickMatch${viewport.width}`] = { passed: true };
+    report.axes.interaction.metrics[`quickMatch${viewport.width}`] = matchEvidence;
   }
 
   for (const item of pageErrors) {
