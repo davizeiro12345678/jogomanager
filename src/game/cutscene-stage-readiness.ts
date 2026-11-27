@@ -24,13 +24,7 @@ export type CutsceneStageReadiness = {
 export function armCutsceneStageReadinessFallback(
   state: CutsceneStageReadiness,
 ): { cancel(): void } | null {
-  if (
-    !state.autoPlay ||
-    state.mode !== "3d" ||
-    state.stageReady ||
-    state.paused ||
-    state.hidden
-  ) {
+  if (!state.autoPlay || state.mode !== "3d" || state.stageReady || state.paused || state.hidden) {
     return null;
   }
 
