@@ -5,6 +5,25 @@ export function presentationBall(sim: SimView) {
   return sim.visualBall ?? sim.ball;
 }
 
+
+/**
+ * The Worker/renderer already interpolates `visualBall`. Applying a second
+ * camera-side spring makes the ball visibly lag behind the player's boot.
+ * The same applies while a player possesses the ball: ball-foot contact must
+ * follow the authoritative rendered position, not a trailing approximation.
+ * Only bare canonical, free-ball positions retain legacy smoothing.
+ */
+export function ballHorizontalBlend(
+  deltaSeconds: number,
+  opts: { hasVisualBall: boolean; isHeld: boolean; discontinuity: boolean },
+): number {
+  if (opts.hasVisualBall || opts.isHeld || opts.discontinuity) return 1;
+  const dt = Number.isFinite(deltaSeconds)
+    ? Math.max(0, Math.min(deltaSeconds, 0.05))
+    : 0;
+  return 1 - Math.exp(-42 * dt);
+}
+
 const BALL_RADIUS = 0.12;
 
 /**
