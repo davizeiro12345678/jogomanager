@@ -1,5 +1,6 @@
--- Verify the RLS policy structure only on an isolated staging clone.
+-- Verify the existing Drizzle 0088 RLS migration on an isolated staging clone.
 -- No mutation or table scan is needed to inspect the policy catalog.
+-- If this fails on production, first deploy drizzle/migrations/0088_rls_cached_auth_context.sql via the standard release process; do not introduce a duplicate Supabase migration.
 BEGIN;
 DO $audit$
 DECLARE policy_text text;
