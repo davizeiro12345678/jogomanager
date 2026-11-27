@@ -1,5 +1,6 @@
 import { useT } from "@/i18n/context";
 import { storeAccountMessages } from "@/i18n/store-account-messages";
+import { storePanelMessages } from "@/i18n/store-panel-messages";
 import { friendlyError } from "@/lib/friendly-error";
 import { useLocation } from "@tanstack/react-router";
 import artCoins from "@/assets/store/coins.jpg?format=webp&w=640&quality=65&as=url";
@@ -71,16 +72,6 @@ function formatBRL(cents: number, currency: string): string {
   }
 }
 
-const KIND_LABELS: Record<string, string> = {
-  coins: "Moedas",
-  scout: "Olheiros",
-  training: "Treino",
-  cosmetic: "Cosmético",
-  pass: "Passe de temporada",
-  medical: "Departamento médico",
-  tactical: "Análise tática",
-};
-
 const KIND_ART: Record<string, string> = {
   coins: artCoins,
   scout: artScout,
@@ -113,6 +104,16 @@ function formatDate(iso: string | null | undefined): string {
 export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; columns?: 1 | 2 }) {
   const { lang } = useT();
   const accountCopy = storeAccountMessages(lang);
+  const panelCopy = storePanelMessages(lang);
+  const kindLabels: Record<string, string> = {
+    coins: panelCopy.kindCoins,
+    scout: panelCopy.kindScout,
+    training: panelCopy.kindTraining,
+    cosmetic: panelCopy.kindCosmetic,
+    pass: panelCopy.kindPass,
+    medical: panelCopy.kindMedical,
+    tactical: panelCopy.kindTactical,
+  };
   const userId = useAuthUserId();
   const signedIn = userId === undefined ? null : userId !== null;
   const fetchAvailability = useServerFn(getCheckoutAvailability);
@@ -137,9 +138,9 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
     matchingEnvironment &&
     (signedIn ? availability.data?.account.enabled : availability.data?.guest.enabled);
   const checkoutMessage = availability.isLoading
-    ? "Verificando a disponibilidade dos pagamentos…"
+    ? panelCopy.checkingPayments
     : ((signedIn ? availability.data?.account.message : availability.data?.guest.message) ??
-      "Não foi possível confirmar os pagamentos agora. Tente novamente.");
+      panelCopy.paymentsUnavailable);
   const search = useLocation({ select: (location) => location.searchStr });
   const selectedProduct = new URLSearchParams(search).get("produto");
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
@@ -209,9 +210,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
         phase: "open",
         dedupeKey: "checkout-open",
       });
-      toast.error(
-        friendlyError(error, "Não foi possível abrir o pagamento. Tente de novo em instantes."),
-      );
+      toast.error(friendlyError(error, panelCopy.checkoutOpenFailed));
     } finally {
       setOpeningKey(null);
     }
@@ -231,27 +230,30 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
               </span>
               {walletQuery.data && walletQuery.data.scout_reports > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  <Search size={12} /> {walletQuery.data.scout_reports} relatórios
+                  <Search size={12} /> {walletQuery.data.scout_reports} {panelCopy.scoutReports}
                 </Badge>
               )}
               {walletQuery.data && walletQuery.data.training_boosts > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  <Dumbbell size={12} /> {walletQuery.data.training_boosts} treinos
+                  <Dumbbell size={12} /> {walletQuery.data.training_boosts}{" "}
+                  {panelCopy.trainingBoosts}
                 </Badge>
               )}
               {walletQuery.data && walletQuery.data.injury_treatments > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  <HeartPulse size={12} /> {walletQuery.data.injury_treatments} tratamentos
+                  <HeartPulse size={12} /> {walletQuery.data.injury_treatments}{" "}
+                  {panelCopy.treatments}
                 </Badge>
               )}
               {walletQuery.data && walletQuery.data.opponent_reports > 0 && (
                 <Badge variant="secondary" className="gap-1">
-                  <ClipboardList size={12} /> {walletQuery.data.opponent_reports} análises do rival
+                  <ClipboardList size={12} /> {walletQuery.data.opponent_reports}{" "}
+                  {panelCopy.opponentReports}
                 </Badge>
               )}
               {subscriptionActive && (
                 <Badge className="gap-1">
-                  <Sparkles size={12} /> Passe ativo até{" "}
+                  <Sparkles size={12} /> {panelCopy.passActiveUntil}{" "}
                   {formatDate(walletQuery.data?.season_pass_until)}
                 </Badge>
               )}
@@ -265,13 +267,12 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
             ) : null}
             {walletQuery.data && walletQuery.data.unlocked_themes.length > 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">
-                Temas desbloqueados: {walletQuery.data.unlocked_themes.join(", ")}
+                {panelCopy.unlockedThemes} {walletQuery.data.unlocked_themes.join(", ")}
               </p>
             ) : null}
             {selectedProduct ? (
               <p role="status" className="mt-2 text-xs text-primary">
-                Seu pacote escolhido está destacado abaixo. Revise os detalhes antes de abrir o
-                pagamento seguro.
+                {panelCopy.selectedProduct}
               </p>
             ) : null}
           </div>
@@ -293,7 +294,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
               disabled={availability.isFetching}
               onClick={() => void availability.refetch()}
             >
-              Verificar pagamentos
+              {panelCopy.retryPayments}
             </Button>
           ) : null}
         </div>
@@ -308,26 +309,23 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
               aria-hidden
             />
           ))}
-          <span className="sr-only">Carregando produtos…</span>
+          <span className="sr-only">{panelCopy.loadingProducts}</span>
         </div>
       ) : productsQuery.isError ? (
         <div
           role="status"
           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-secondary/40 p-4 text-sm text-muted-foreground"
         >
-          <p>Não foi possível carregar o catálogo oficial. Nenhum preço foi exibido.</p>
+          <p>{panelCopy.catalogUnavailable}</p>
           <Button variant="outline" size="sm" onClick={() => void productsQuery.refetch()}>
-            Tentar novamente
+            {panelCopy.tryAgain}
           </Button>
         </div>
       ) : products.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhum produto disponível no momento.</p>
+        <p className="text-sm text-muted-foreground">{panelCopy.noProducts}</p>
       ) : (
         <>
-          <p className="mb-4 text-xs text-muted-foreground">
-            Catálogo atual. O checkout seguro confirma o total e a disponibilidade antes do
-            pagamento.
-          </p>
+          <p className="mb-4 text-xs text-muted-foreground">{panelCopy.catalogNote}</p>
           <div className={`grid gap-4 ${columns === 2 ? "sm:grid-cols-2" : ""}`}>
             {products.map((p) => (
               <Card
@@ -347,7 +345,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
               >
                 {p.key === bestValueKey && (
                   <span className="absolute -top-2 right-3 rounded-full bg-primary px-2 py-0.5 font-display text-[10px] uppercase tracking-wider text-primary-foreground">
-                    Destaque · melhor valor
+                    {panelCopy.bestValue}
                   </span>
                 )}
                 <div className="relative mx-3 mt-3 aspect-[16/8] overflow-hidden rounded-xl border border-border/60">
@@ -371,7 +369,7 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                     </CardTitle>
                     <Badge variant="secondary" className="gap-1">
                       {KIND_ICONS[p.kind] ?? <Package size={16} />}
-                      {KIND_LABELS[p.kind] ?? p.kind}
+                      {kindLabels[p.kind] ?? p.kind}
                     </Badge>
                   </div>
                   <CardDescription>{p.description}</CardDescription>
@@ -430,18 +428,18 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
                         }}
                       >
                         {openingKey === p.key
-                          ? "Abrindo checkout…"
+                          ? panelCopy.openingCheckout
                           : p.kind === "pass" && subscriptionActive
-                            ? "Assinatura ativa"
-                            : "Comprar com segurança"}
+                            ? panelCopy.subscriptionActive
+                            : panelCopy.buySafely}
                       </Button>
                     )}
                     <p className="text-center text-[11px] text-muted-foreground">
                       {isSessionLoading
-                        ? "Aguarde a verificação da conta"
+                        ? panelCopy.waitAccount
                         : isGuest
                           ? accountCopy.signInToBuy
-                          : "Entrega automática na sua conta"}
+                          : panelCopy.automaticDelivery}
                     </p>
                   </div>
                 </CardFooter>
@@ -452,9 +450,11 @@ export function StorePanel({ next = "/loja", columns = 2 }: { next?: string; col
           {isOpen && (
             <div className="mt-6">
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-display text-sm uppercase tracking-wide">Checkout seguro</h2>
+                <h2 className="font-display text-sm uppercase tracking-wide">
+                  {panelCopy.checkoutTitle}
+                </h2>
                 <Button variant="ghost" size="sm" onClick={closeCheckout}>
-                  Fechar
+                  {panelCopy.close}
                 </Button>
               </div>
               <Separator className="mb-4" />
