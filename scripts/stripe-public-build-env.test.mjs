@@ -74,15 +74,19 @@ test("manual Wrangler deployment rejects missing or wrong-environment public key
   assert.throws(() => assertStripePublicBuildKey("sk_live_secret999", "live"));
 });
 
-test("production GitHub deploy keeps the proven direct Google OAuth mode", () => {
+test("production GitHub deploy preserves current Supabase and Stripe protections", () => {
   const workflow = readFileSync(
     new URL("../.github/workflows/cloudflare-production.yml", import.meta.url),
     "utf8",
   );
   const deploy = readFileSync(new URL("./cloudflare-deploy.mjs", import.meta.url), "utf8");
-  assert.match(workflow, /VITE_AUTH_MODE: supabase-direct/);
-  assert.match(workflow, /stripe-public-build-env\.mjs/);
-  assert.match(deploy, /VITE_AUTH_MODE.*supabase-direct/);
+  assert.match(workflow, /ref: main/);
+  assert.match(workflow, /Verify checked-out main SHA/);
+  assert.match(workflow, /EXPECTED_PRODUCTION_SUPABASE_REF/);
+  assert.match(workflow, /Load the existing live Stripe publishable key/);
+  assert.match(workflow, /VITE_PAYMENTS_CLIENT_TOKEN=%s/);
+  assert.match(deploy, /verifyProductionSupabase/);
+  assert.match(deploy, /assertStripePublicBuildKey/);
 });
 
 test("manual sandbox deployment infers the environment when explicit PAYMENTS_ENVIRONMENT is absent", () => {
