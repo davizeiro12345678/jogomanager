@@ -285,6 +285,7 @@ function LiveMatch({
   const qualityTouched = useRef(false);
   const qualityTrendRef = useRef<MatchQualityTrend>({ slow: 0, healthy: 0 });
   const activeGameplayRef = useRef(false);
+  const gameplayEligibleRef = useRef(false);
   const currentQualityRef = useRef(quality);
   currentQualityRef.current = quality;
 
@@ -354,14 +355,10 @@ function LiveMatch({
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
   pausedRef.current = paused || introActive || ceremonyActive || halfHeld || overlayActive;
+  gameplayEligibleRef.current =
+    !paused && !introActive && !ceremonyActive && !halfHeld && !overlayActive && !done;
   activeGameplayRef.current =
-    !paused &&
-    !introActive &&
-    !ceremonyActive &&
-    !halfHeld &&
-    !overlayActive &&
-    !done &&
-    (typeof document === "undefined" || !document.hidden);
+    gameplayEligibleRef.current && (typeof document === "undefined" || !document.hidden);
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
     sim,
     pausedRef.current,
@@ -455,8 +452,11 @@ function LiveMatch({
       onError: (message) => toast.warning(message),
     });
     controllerRef.current = controller;
-    const onVisibility = () =>
+    const onVisibility = () => {
+      qualityTrendRef.current = { slow: 0, healthy: 0 };
+      activeGameplayRef.current = gameplayEligibleRef.current && !document.hidden;
       controller.pause(shouldPauseMatch(pausedRef.current, false, false, false, document.hidden));
+    };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
