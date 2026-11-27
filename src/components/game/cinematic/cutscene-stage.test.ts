@@ -25,12 +25,15 @@ describe("cutscene presentation transitions", () => {
     expect(controller.advance(second.generation, "stable")).toBeNull();
   });
 
-  it("uses an opaque matte while the target is pending and never transitions movement in reduced motion", () => {
+  it("keeps the illustrated environment visible during crossfades and honors reduced motion", () => {
     expect(cutsceneMatteStyle("stable", false, true)).toEqual({
       background: CUTSCENE_OPAQUE_MATTE,
-      opacity: 1,
+      opacity: 0.58,
       transition: "none",
     });
+
+    expect(cutsceneMatteStyle("fading-out", false, false).opacity).toBeLessThan(0.6);
+    expect(cutsceneMatteStyle("stable", false, false).opacity).toBe(0);
 
     expect(cutsceneMatteStyle("fading-in", true, true)).toEqual({
       background: CUTSCENE_OPAQUE_MATTE,
