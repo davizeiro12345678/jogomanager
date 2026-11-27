@@ -306,6 +306,10 @@
   color: #e4eddd;
   font-size: 14px !important;
 }
+.career-create .career-input[aria-invalid="true"] {
+  border-color: #ff9b9b;
+  border-style: dashed;
+}
 .career-input::placeholder,
 .career-search input::placeholder {
   color: #6f8368;

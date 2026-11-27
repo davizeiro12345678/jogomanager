@@ -148,3 +148,9 @@ describe("page-owned styles", () => {
     expect(screensCss).toMatch(/\.career-content:focus-visible\s*\{/);
   });
 });
+
+it("distinguishes invalid career creation inputs without relying on color", () => {
+  expect(createCss).toMatch(
+    /\.career-create \.career-input\[aria-invalid="true"\]\s*\{[^}]*border-style:\s*dashed/s,
+  );
+});
