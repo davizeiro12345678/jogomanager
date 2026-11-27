@@ -191,8 +191,7 @@ try {
 
       entry.mode = await dialog.getAttribute("data-scene-mode");
       entry.fallback = await dialog.getAttribute("data-scene-auto-fallback");
-      if (entry.requests < 1)
-        throw new Error("3D module did not stall in the synthetic test");
+      if (entry.requests < 1) throw new Error("3D module did not stall in the synthetic test");
       if (entry.pageErrors.length)
         throw new Error("Uncaught browser exceptions: " + entry.pageErrors.join("; "));
       await page.screenshot({
