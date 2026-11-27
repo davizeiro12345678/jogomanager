@@ -29,7 +29,9 @@ export function LojaPage() {
           >
             ← {copy.backToPanel}
           </Link>
-          <h1 className="mt-2 font-display text-4xl uppercase tracking-wide sm:text-5xl">{copy.title}</h1>
+          <h1 className="mt-2 font-display text-4xl uppercase tracking-wide sm:text-5xl">
+            {copy.title}
+          </h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
             {copy.subtitle}
           </p>
