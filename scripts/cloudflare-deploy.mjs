@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { loadEnv } from "vite";
+import { assertStripePublicBuildKey } from "./stripe-public-build-env.mjs";
 import {
   verifyBrowserSupabaseBundle,
   verifyProductionSupabase,
@@ -108,6 +109,12 @@ async function prepare() {
 
 try {
   await mkdir(path.join(root, ".wrangler/logs"), { recursive: true });
+  if (action === "deploy") {
+    const configured = settings["VITE_PAYMENTS_CLIENT_TOKEN"];
+    const environment =
+      settings["PAYMENTS_ENVIRONMENT"] || (configured?.startsWith("pk_live_") ? "live" : "sandbox");
+    assertStripePublicBuildKey(configured, environment);
+  }
   if (action === "build" || action === "deploy") {
     await runNode("node_modules/vite/bin/vite.js", ["build"], false, {
       NITRO_PRESET: "cloudflare-module",
