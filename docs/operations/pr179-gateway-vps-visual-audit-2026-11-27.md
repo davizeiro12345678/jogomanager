@@ -101,3 +101,92 @@ O usuário cadastrou o sudo no Gateway e foi possível executar comandos via `Ga
 | P2 | Acesso operacional | O Gateway conserva sudo para `jmadmin`. A porta 22 escuta somente em loopback e Tailscale. O SentinelX pode solicitar uma coleta privilegiada de SSH, UFW e Fail2ban por unidade dedicada com regra Polkit de escopo fixo. A unidade do agente conserva `NoNewPrivileges=yes`. |
 
 O caminho de retorno do SentinelX fica restrito aos arquivos da nova unidade, ao coletor e à regra Polkit correspondente. O acesso do Gateway, a CA de SSH e as regras do firewall ficam fora desse procedimento.
+
+## Continuação P0/P1 e melhora visual verificável — 27/11/2026, 19:30 UTC
+
+Esta seção complementa, sem substituir, o checkpoint acima. **Não houve merge, deploy
+de produção, checkout autenticado, concessão em Stripe, atualização de Wazuh,
+restauração externa ou autenticação real 1×1/2×2 nesta retomada.**
+
+### P0 autenticado e banco isolado
+
+- PR #179 permanece Draft. Na revisão inicial desta sessão, `37bfb1cd`:
+  26 checks passaram, um foi neutro (CodSpeed walltime instável) e três pulados.
+  Novos commits de outros fluxos continuaram a chegar à branch durante a auditoria;
+  não usar checks de SHA antigo para aprovar o HEAD atual.
+- `game-staging.jogomanager.com/api/health` retornou HTTP 200 e commit
+  `fb07df1d`, **não** o código atual do #179. A produção retornou HTTP 200
+  em `7bfcfea6`; o preview do PR antes observado com 503 segue sem E2E autenticado.
+- A branch Supabase `staging-release-132` mantém `MIGRATIONS_FAILED`
+  no inventário de branches, mas consultas read-only ao projeto
+  `skycnsjbcqmsaejaairl` mostraram **85 migrations catalogadas**,
+  `public.career_save_chain`, `public.match_rooms` e
+  `public.payment_webhook_events`. A tabela de save chain tem RLS habilitada
+  e a policy `Owners read their save chain`. A tabela de eventos de webhook
+  tem RLS habilitada e nenhuma policy de cliente; isso **não constitui por si só**
+  falha, pois pode intencionalmente bloquear acesso a clientes. Migrações
+  `restore_career_save_hash_chain_0053`, `rls_cached_auth_context_0088`
+  e `moderation_foreign_key_indexes_0089` aparecem na história, mas
+  não anulam o alerta da branch nem substituem teste de owner/auth.
+- O teste do cliente de teste autorizado para Stripe `GET /v1/account`
+  retornou **HTTP 200** na conta `acct_1UCpy65Co1CQ7ndi`, sem revelar
+  a chave. **Não** houve criação de checkout nem PaymentIntent por esta
+  auditoria. O endpoint auxiliar do staging retorna
+  `configured_channels:4, required_channels:5` com HTTP 503, pois falta
+  `STRIPE_WHSEC_RISK`; a presença de segredo para outros canais não valida
+  assinaturas nem crédito. Worker auxiliar registra eventos, não concede itens.
+- O teste de integração existente de 2 clientes usa sockets loopback e tickets
+  sintéticos. Não constitui validação de duas contas reais, passkeys ou
+  multiplayer autenticado 1×1/2×2.
+
+### P0 offsite, P1 Wazuh e segurança operacional
+
+- `jm-backup-offsite-drive.timer` está ativo, mas a unidade
+  `jm-backup-offsite-drive.service` exibe `ConditionResult=no`.
+  Falta `/root/.config/rclone/rclone.conf` e também
+  `/etc/jm-backup-offsite/crypt-remote-verified`. O `rclone listremotes`
+  do root não mostrou remotes. **Não criar marker artificial**;
+  obter destino criptografado legítimo e comprovar recuperação isolada
+  antes de marcar P0 aprovado. O add-on do Gateway está desligado e só a
+  pessoa titular da conta pode ativá-lo no painel.
+- O Wazuh usa três contêineres centrais 4.14.10; o Compose fixa os três
+  tags em `/opt/jm-security-wazuh/single-node/docker-compose.yml`.
+  As três imagens **4.14.11 já estão em cache local**, sem contêineres
+  atualizados. O indexador tem volume persistente, porém a consulta
+  sem credenciais a `/_snapshot/` retornou **HTTP 401**, não uma
+  confirmação de snapshot ou restauração. Nenhuma troca de imagem nem
+  restart foi executado. Upgrade coordenado depende de snapshot, rollback
+  testado e validação pós-reinício. Não atualizar agente antes dos centrais.
+- A VPS não dispõe de GPU física dedicada verificável. Preservados
+  Gateway sudo, SSH com chaves, UFW, Tailscale, serviços de defesa e política
+  `NoNewPrivileges` do SentinelX.
+
+### QA visual e mudança gráfica no mesmo PR
+
+- Browser Gateway Chrome e Edge receberam o desafio Cloudflare; Firefox
+  staging exigiu Cloudflare Access. Foram **três sessões lançadas e três
+  encerradas**; o quarto browser já existente na conta não foi interrompido.
+  Nenhum desafio foi contornado e nenhum controle foi desativado.
+- [`8b5ffdda`](https://github.com/davizeiro12345678/jogomanager/commit/8b5ffdda4ac3ab554b45d4f716916f6a7283df4e)
+  adicionou três testes para sombra da bola;
+  [`5e2d36a0`](https://github.com/davizeiro12345678/jogomanager/commit/5e2d36a05544da40ec0b7979b625e19935550012)
+  adicionou o helper `ballShadowAppearance`;
+  [`0c2384ff`](https://github.com/davizeiro12345678/jogomanager/commit/0c2384ffb9c5dc3dd6632fd539e9139966879ced)
+  renderiza a sombra com textura radial suave, escala crescente e
+  opacidade decrescente em função da elevação; usa
+  `depthWrite={false}`. Nenhuma regra canônica, física do simulador,
+  save ou replay foi modificada. A captura real do resultado **após**
+  a alteração ainda não foi produzida: sem inventar comparação A/B ou FPS.
+- Relatório HTML mobile-first, com capturas verdadeiras **anteriores**
+  e ilustração gráfica explicitamente identificada, produzido na conversa
+  com o usuário (não é evidência de deploy). Para aceitar a alteração,
+  usar CI do SHA corrente, GPU/Chrome com a mesma cena, perfil térmico,
+  frame time e event logs; o CodSpeed anterior estava sujeito a ruído.
+
+### Critério de release e rollback
+
+Manter Draft. Corrigir e validar os P0 de Auth, duas sessões reais, Checkout
+sandbox assinado e offsite com restore, além de preparar snapshot dos
+centrais Wazuh e teste GPU. Os três commits de sombra são autocontidos e
+reversíveis. Este checkpoint não relaxa branch protection, limites de
+performance, CSP, RLS, SSH, firewall, Tailscale ou validação de assinatura.
