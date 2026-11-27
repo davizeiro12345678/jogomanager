@@ -46,5 +46,4 @@ describe("automatic match graphics quality", () => {
     expect(handler).toMatch(/qualityTrendRef\.current\s*=\s*\{\s*slow:\s*0,\s*healthy:\s*0\s*\}/);
     expect(handler).toMatch(/document\.hidden/);
   });
-
 });
