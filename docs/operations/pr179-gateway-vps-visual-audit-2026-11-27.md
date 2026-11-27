@@ -1,6 +1,6 @@
 # PR #179 | Continuidade do Gateway, VPS e QA visual | 27/11/2026
 
-## Identificação, rastreabilidade e política de publicação
+## Checkpoint anterior à retomada
 
 - PR: [#179](https://github.com/davizeiro12345678/jogomanager/pull/179), branch `fix/audit-vps-ui-20261126`, **Draft e atrás de main** na verificação desta sessão. Revalidar o SHA antes de qualquer aceitação.
 - Baseline de continuidade: `aef77abd3efd021b0bd67a1540abe94f7e7e8220`, com 25 checks `success`, um `neutral`, três `skipped`. O ciclo cinematográfico havia sido validado em Chromium com WebGL por software, não GPU dedicada.
@@ -81,3 +81,23 @@ O usuário cadastrou o sudo no Gateway e foi possível executar comandos via `Ga
 | P2 | SentinelX com sudo delegado | Não implementado por NNP e ausência de broker de menor privilégio; Gateway sudo operacional preservado |
 
 **Rollback:** GitHub commits de localização devem poder ser revertidos independentemente. Não usar `main`/deploy sem homologação em staging isolado, CI do exato HEAD, evidência E2E dos P0, backup restaurado e plano de rollback. Proteções do VPS não foram relaxadas.
+
+## Retomada após o checkpoint do Gateway
+
+- O PR #132 já foi incorporado à `main`. A preparação do #179 preservou a localização da loja e a auditoria inscritas até `3ad38ff` e incorporou a base `7bfcfea6`. O candidato continua em rascunho.
+- O Chrome 158 do VPS identificou o preview como `aef77abd` via `/api/health`. Sete páginas renderizaram em 1280×800 e 390×844, todas com HTTP 200, sem rolagem horizontal e sem exceções JavaScript de página. A saúde devolveu 503 nos dois perfis. A resposta registrou autenticação, credenciais do servidor e banco indisponíveis por configuração ausente. Os avisos do Supabase em carreiras, loja e multiplayer pertencem a esse ambiente.
+- Chrome, Firefox e Edge do Gateway exercitaram rotas de produção e preview, com quatro sessões de desktop simultâneas. No preview, a seleção **Elenco** mudou o estado do painel da Home, o fluxo de convidado abriu o criador de treinador e a loja respondeu à tentativa de verificar pagamentos. Dois lançamentos Android perderam a máquina do provedor. A cobertura móvel de 390×844 veio do Chrome do VPS.
+- O 1×1 no preview anunciava disponibilidade e encaminhava para um login indisponível. O estado corrigido oferece partida rápida local quando o cliente Supabase está ausente. O 2×2 continua identificado como em validação e a entrada normal do 1×1 continua disponível em ambientes configurados. O componente de navegação pendente usa `role="status"` em um `div`, de forma que os esqueletos coexistentes não adicionem elementos `main`.
+- Os dois testes de regressão falharam antes das correções. No candidato revisado, 63 testes focados, ESLint e TypeScript passaram. O resultado do Lighthouse, do comparador pareado de 16 benchmarks e dos nove eixos de QA em `aef77abd` é histórico. Cada gate deve ser apurado no próximo SHA publicado.
+
+| Prioridade | Controle | Evidência da retomada |
+| --- | --- | --- |
+| P0 | Backup do PostgreSQL local | Cinco arquivos conferidos por SHA-256. O dump do jogo foi restaurado em instância PostgreSQL 18 temporária, acessível por socket privado, com duas tabelas no schema de cache. |
+| P0 | Cópia criptografada externa | O timer disparou e a unidade foi ignorada porque faltava a confirmação do destino criptografado. `ConditionResult=no` e horário de saída ausente explicam por que `Result=success` sozinho não certifica uma cópia. |
+| P0 | Stripe Sandbox | O contrato SQL de entrega repetida aprovou a idempotência no banco isolado e reverteu a fixture. A conta Sandbox indicada tem seu endpoint de risco do JogoManager desabilitado e dois endpoints Lovable habilitados. O checkout autenticado e a entrega assinada do Sandbox ao jogo permanecem sem homologação. |
+| P0 | Autenticação e multiplayer | O projeto Supabase isolado responde na API de configuração de Auth e contém as tabelas de sala, carreira e serviços de carteira. O preview do PR não está ligado a ele. Login, passkey, persistência e salas autenticadas continuam pendentes. |
+| P1 | Antivírus e EDR | A versão da assinatura diária do ClamAV coincide com a do CDN. Teste do daemon em fluxo aceitou uma amostra limpa e detectou o indicador EICAR. O agente e os três componentes centrais do Wazuh estão em 4.14.10. A atualização para 4.14.11 deve iniciar pelo conjunto central. |
+| P1 | GPU física | O dispositivo DRM da VPS é virtual (`bochs-drm`). A matriz física continua pendente. |
+| P2 | Acesso operacional | O Gateway conserva sudo para `jmadmin`. A porta 22 escuta somente em loopback e Tailscale. O SentinelX pode solicitar uma coleta privilegiada de SSH, UFW e Fail2ban por unidade dedicada com regra Polkit de escopo fixo. A unidade do agente conserva `NoNewPrivileges=yes`. |
+
+O caminho de retorno do SentinelX fica restrito aos arquivos da nova unidade, ao coletor e à regra Polkit correspondente. O acesso do Gateway, a CA de SSH e as regras do firewall ficam fora desse procedimento.

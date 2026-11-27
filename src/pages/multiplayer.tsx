@@ -16,7 +16,7 @@ import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useT } from "@/i18n/provider";
 import { multiplayerAvailabilityMessages } from "@/i18n/multiplayer-availability-messages";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient, supabase } from "@/integrations/supabase/client";
 
 import { isSettlementLeaseExpired } from "@/lib/multiplayer-settlement";
 
@@ -37,26 +37,29 @@ const MatchmakingPanel = lazy(() =>
 export function MultiplayerPage() {
   const userId = useAuthUserId();
   const { t } = useT();
+  if (!getConfiguredSupabaseClient()) return <SignedOut canSignIn={false} />;
   if (userId === undefined)
     return (
       <Shell>
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       </Shell>
     );
-  if (!userId) return <SignedOut />;
+  if (!userId) return <SignedOut canSignIn />;
   return <MultiplayerAccount key={userId} userId={userId} />;
 }
 
-function SignedOut() {
+function SignedOut({ canSignIn }: { canSignIn: boolean }) {
   const copy = multiplayerAvailabilityMessages(useT().lang);
   return (
-    <Shell>
-      <p className="text-sm text-muted-foreground">{copy.signIn}</p>
+    <Shell oneAvailable={canSignIn}>
+      <p className="text-sm text-muted-foreground">
+        {canSignIn ? copy.signIn : copy.signInUnavailable}
+      </p>
       <Link
-        to="/auth"
-        className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground"
+        to={canSignIn ? "/auth" : "/partida-rapida"}
+        className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground"
       >
-        {copy.signInAction}
+        {canSignIn ? copy.signInAction : copy.quickMatchAction}
       </Link>
     </Shell>
   );
@@ -515,7 +518,13 @@ function MultiplayerAccount({ userId }: { userId: string }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  oneAvailable = true,
+}: {
+  children: React.ReactNode;
+  oneAvailable?: boolean;
+}) {
   const copy = multiplayerAvailabilityMessages(useT().lang);
   return (
     <main className="pitch-bg min-h-[100dvh] px-4 py-10">
@@ -530,7 +539,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <p className="mt-1 text-sm text-muted-foreground">{copy.intro}</p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <div className="rounded-lg border border-border/60 p-3">
-            <p className="font-medium">{copy.oneAvailable}</p>
+            <p className="font-medium">{oneAvailable ? copy.oneAvailable : copy.oneUnavailable}</p>
             <p className="text-xs text-muted-foreground">{copy.oneDescription}</p>
           </div>
           <div className="rounded-lg border border-border/60 p-3">

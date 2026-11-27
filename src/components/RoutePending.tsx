@@ -1,6 +1,6 @@
 export function RoutePending() {
   return (
-    <main
+    <div
       className="mx-auto max-w-7xl space-y-5 px-4 py-8"
       role="status"
       aria-label="Carregando página"
@@ -12,6 +12,6 @@ export function RoutePending() {
         <div className="h-48 animate-pulse rounded-xl bg-muted/50" />
       </div>
       <span className="sr-only">Carregando página</span>
-    </main>
+    </div>
   );
 }

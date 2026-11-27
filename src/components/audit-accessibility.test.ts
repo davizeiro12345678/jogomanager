@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const root = readFileSync(new URL("./RootLayout.tsx", import.meta.url), "utf8");
 const shell = readFileSync(new URL("./game/GameShell.tsx", import.meta.url), "utf8");
 const multiplayer = readFileSync(new URL("../pages/multiplayer.tsx", import.meta.url), "utf8");
+const pending = readFileSync(new URL("./RoutePending.tsx", import.meta.url), "utf8");
 const store = readFileSync(new URL("../pages/loja.tsx", import.meta.url), "utf8");
 const managerArticle = readFileSync(
   new URL("../pages/jogo-de-manager-de-futebol.tsx", import.meta.url),
@@ -11,6 +12,10 @@ const managerArticle = readFileSync(
 );
 
 describe("audit regression guards", () => {
+  it("announces pending navigation without adding a second main element", () => {
+    expect(pending).toContain('role="status"');
+    expect(pending).not.toMatch(/<main\b/);
+  });
   it("has one root skip link with a career-content focus target", () => {
     expect(root).toContain('className="skip-to-content"');
     expect(root).toContain('document.getElementById("career-content")');

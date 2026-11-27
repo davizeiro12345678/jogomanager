@@ -5,6 +5,9 @@ export function shouldPauseMatch(
   ceremonyActive: boolean,
   halfHeld: boolean,
   documentHidden: boolean,
+  overlayActive = false,
 ): boolean {
-  return manuallyPaused || introActive || ceremonyActive || halfHeld || documentHidden;
+  return (
+    manuallyPaused || introActive || ceremonyActive || halfHeld || documentHidden || overlayActive
+  );
 }

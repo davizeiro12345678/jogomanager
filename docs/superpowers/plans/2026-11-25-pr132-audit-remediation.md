@@ -243,3 +243,12 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [x] Estilos do escritório e do HUD da partida são carregados com suas próprias telas. Validação inclui os caminhos irmãos `/carreira`, `/partida-rapida` e `/match` e preserva o comparador de bundles.
 - [x] Ajustes de foco sob navegação fixa, retorno do menu, contraste, texto ampliado, largura do quadro financeiro e isolamento da nota do assistente de criação.
 - [ ] Homologação hospedada dos fluxos autenticados e publicação continuam condicionadas aos gates do SHA do candidato e à infraestrutura de staging. Os contratos SQL do checkpoint anterior permanecem evidência de banco isolado.
+
+### Continuidade do PR #179 após `aef77abd` em 27/11/2026
+
+- [x] Conferir preview no SHA da recuperação cinematográfica, com Lighthouse móvel, QA visual e comparação pareada de 16 benchmarks aprovados nessa revisão.
+- [x] Corrigir a indisponibilidade do 1×1 sem Supabase configurado e a semântica de carregamento das rotas. Os dois testes de regressão reproduziram as falhas anteriores.
+- [x] Validar restauração local de PostgreSQL, contrato SQL de idempotência em staging e diagnósticos de segurança de escopo fixo no SentinelX.
+- [ ] Validar CI e QA hospedada no novo SHA, login e passkey em staging, Stripe Sandbox e fluxo autenticado de 1×1/2×2. A restauração externa, o upgrade coordenado do Wazuh e o teste em GPU física exigem validação própria.
+
+[Auditoria operacional e visual](../../operations/pr179-gateway-vps-visual-audit-2026-11-27.md)

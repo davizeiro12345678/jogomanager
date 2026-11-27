@@ -41,6 +41,10 @@ describe("outer response protection", () => {
       const scripts = policy.split("; ").find((part) => part.startsWith("script-src "))!;
       expect(scripts).not.toContain("https://*.lovable.app");
       expect(scripts).not.toContain("https://cdn.gpteng.co");
+      // The edge injects its challenge and Access login page as scripts; a CSP
+      // that refuses them leaves the visitor on an unresolved challenge.
+      expect(scripts).toContain("https://challenges.cloudflare.com");
+      expect(scripts).toContain("https://*.cloudflareaccess.com");
       expect(response.headers.get("cache-control")).toBe("no-store");
     } finally {
       vi.unstubAllEnvs();

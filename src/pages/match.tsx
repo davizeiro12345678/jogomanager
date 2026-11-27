@@ -40,6 +40,7 @@ import { nextCameraMode } from "@/game/camera-modes";
 import { FpsPanel } from "@/components/game/FpsPanel";
 
 import { fpsMeter, type FpsMeasurementContext } from "@/game/fps-meter";
+import { evaluateMatchQuality, type MatchQualityTrend } from "@/game/match-quality-autotune";
 import type { RenderedFrameSample } from "@/components/game/graphics-probe";
 import {
   matchMeasurementKey,
@@ -290,6 +291,7 @@ function LiveMatch({
   const [quality, setQuality] = useState<Quality>(() => detectQuality() as Quality);
   const controllerRef = useRef<LiveMatchController | null>(null);
   const qualityTouched = useRef(false);
+  const qualityTrendRef = useRef<MatchQualityTrend>({ slow: 0, healthy: 0 });
 
   const chooseCamera = useCallback((next: CameraMode) => {
     setCamera(next);
@@ -355,23 +357,36 @@ function LiveMatch({
   );
   const visual = useResolvedVisual(setups.home.clubId);
   const qualityChangedAt = useRef(0);
-  /** Only this active stadium's completed-render probe can adjust its preset.
-   * Dialogue, an unloaded renderer, pauses and interval screens supply none. */
+  /** Only true rendered gameplay samples can change the stadium preset.
+   * Require repeated evidence so a single shader stall never demotes 60 FPS. */
   useEffect(() => {
-    if (!measurementActive || !visual.adaptive || visual.quality !== "auto") return;
+    if (!measurementActive || !visual.adaptive || visual.quality !== "auto") {
+      qualityTrendRef.current = { slow: 0, healthy: 0 };
+      return;
+    }
     return fpsMeter.subscribe((sample) => {
-      if (!measurementActiveRef.current || qualityTouched.current) return;
+      const valid =
+        measurementActiveRef.current &&
+        !qualityTouched.current &&
+        !document.hidden &&
+        sample.source === "rendered" &&
+        sample.phase === "match" &&
+        sample.quality === quality &&
+        sample.seconds >= 6 &&
+        sample.windowMs !== undefined &&
+        Number.isFinite(sample.windowMs) &&
+        sample.windowMs >= 6000;
+      const outcome = evaluateMatchQuality(quality, sample, qualityTrendRef.current, valid);
+      qualityTrendRef.current = outcome.trend;
+      if (outcome.quality === quality) return;
+      // Preserve the existing evidence thresholds in the production engine.
+      if (nextAutomaticMatchQuality(sample, quality, valid) !== outcome.quality) return;
       const now = Date.now();
       if (now - qualityChangedAt.current < 12_000) return;
-      const next = nextAutomaticMatchQuality(sample, quality, measurementActiveRef.current);
-      if (next === quality) return;
       qualityChangedAt.current = now;
-      setQuality(next);
-      toast.info(
-        next === "baixa" || (quality === "alta" && next === "media")
-          ? `Gráficos em "${next}" para manter a partida fluida.`
-          : `Sobra desempenho: gráficos em "${next}".`,
-      );
+      qualityTrendRef.current = { slow: 0, healthy: 0 };
+      setQuality(outcome.quality);
+      toast.info(`Gráficos em "${outcome.quality}" após desempenho sustentado.`);
     });
   }, [measurementActive, quality, visual.adaptive, visual.quality]);
   pausedRef.current = paused || introActive || ceremonyActive || halfHeld;
@@ -468,8 +483,10 @@ function LiveMatch({
       onError: (message) => toast.warning(message),
     });
     controllerRef.current = controller;
-    const onVisibility = () =>
+    const onVisibility = () => {
+      qualityTrendRef.current = { slow: 0, healthy: 0 };
       controller.pause(shouldPauseMatch(pausedRef.current, false, false, false, document.hidden));
+    };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
