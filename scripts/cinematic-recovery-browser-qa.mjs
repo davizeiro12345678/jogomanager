@@ -142,9 +142,71 @@ try {
     }
   }
 
+  // Reproduce an unresolved WebGL chunk, not a failed HTTP request. In this
+  // case the 3D module never settles, so the autoplay presentation watchdog
+  // must recover without a frame or an onUnavailable callback.
+  async function runAutoplayNeverReady() {
+    const entry = {
+      name: "autoplay-never-ready",
+      passed: false,
+      requests: 0,
+      pageErrors: [],
+    };
+    report.cases.push(entry);
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      locale: "pt-BR",
+    });
+    const page = await context.newPage();
+    page.on("pageerror", (error) => entry.pageErrors.push(error.message));
+
+    // Deliberately leave the WebGL module request pending. The route is only
+    // used by this isolated local CI origin, never a production website.
+    await page.route(/\\/CinematicStage3D-[^/]+\\.js(?:\\?.*)?$/, () => {
+      entry.requests++;
+    });
+
+    try {
+      await page.goto(`${origin}/cinematic-studio.html`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60_000,
+      });
+      await page.getByText("Ajustes de exibição e encenação", { exact: true }).click();
+      await page.getByLabel("Reprodução automática", { exact: true }).check();
+      await page.getByRole("button", { name: "Ver cena", exact: true }).click();
+
+      const dialog = page.getByRole("dialog");
+      await dialog.waitFor({ state: "visible", timeout: 30_000 });
+      await page.waitForFunction(
+        () => {
+          const el = document.querySelector('[role="dialog"][data-scene-auto-fallback]');
+          return (
+            el?.getAttribute("data-scene-auto-fallback") === "timeout" &&
+            el.getAttribute("data-scene-mode") === "2d"
+          );
+        },
+        null,
+        { timeout: 25_000 },
+      );
+
+      entry.mode = await dialog.getAttribute("data-scene-mode");
+      entry.fallback = await dialog.getAttribute("data-scene-auto-fallback");
+      if (entry.requests < 1) throw new Error("3D module did not stall in the synthetic test");
+      if (entry.pageErrors.length) throw new Error("Uncaught browser exceptions: " + entry.pageErrors.join("; "));
+      await page.screenshot({ path: path.join(output, "autoplay-never-ready-recovered.png") });
+      entry.passed = true;
+    } catch (error) {
+      entry.failure = String(error.stack || error);
+      await page.screenshot({ path: path.join(output, "autoplay-never-ready-failure.png") }).catch(() => {});
+    } finally {
+      await context.close();
+    }
+  }
+
   await runCase("transient-download", "transient");
   await runCase("explicit-retry", "retry");
   await runCase("illustrated-fallback", "illustrated");
+  await runAutoplayNeverReady();
   if (report.cases.some((entry) => !entry.passed)) process.exitCode = 1;
 } catch (error) {
   report.failure = String(error.stack || error);
