@@ -204,7 +204,7 @@ export function TrainingPage() {
           quem está relacionado.
         </p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="text-xs text-muted-foreground">
+          <label className="w-full min-w-0 max-w-full text-xs text-muted-foreground sm:w-auto">
             Liga
             <select
               value={friendlyLeague}
@@ -212,7 +212,7 @@ export function TrainingPage() {
                 setFriendlyLeague(e.target.value);
                 setFriendlyOpp("");
               }}
-              className="mt-1 block rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="mt-1 block w-full min-w-0 max-w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               {LEAGUES.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -221,12 +221,12 @@ export function TrainingPage() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-muted-foreground">
+          <label className="w-full min-w-0 max-w-full text-xs text-muted-foreground sm:w-auto">
             Adversário
             <select
               value={friendlyOpp}
               onChange={(e) => setFriendlyOpp(e.target.value)}
-              className="mt-1 block rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              className="mt-1 block w-full min-w-0 max-w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="">Escolher clube…</option>
               {opponents.map((c) => (

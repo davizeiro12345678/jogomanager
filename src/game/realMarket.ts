@@ -11,11 +11,13 @@ import { ownsRealPlayer } from "./player-identity";
 import { developedPlayer, withDevelopmentBase } from "./attributes";
 import { effectivePlayer } from "./player-development";
 import { quoteContract, roundMoney, type SigningQuote } from "./economy-contracts";
+import { MAX_TRANSFER_KEY_LENGTH, validTransferText } from "./transfer-inputs";
 import {
   finiteAmount,
   financeLedgerFor,
   financialChange,
   validFinancialState,
+  wageToEuros,
 } from "./financial-inputs";
 
 export interface RealTarget {
@@ -143,9 +145,24 @@ export function windowOpen(state: CareerState): boolean {
   return state.round <= 4 || (state.round >= 19 && state.round <= 22);
 }
 
-function nextNumber(players: Record<string, Player>, wanted: number | null): number {
-  const used = new Set(Object.values(players).map((p) => p.number));
-  if (wanted && wanted > 0 && !used.has(wanted)) return wanted;
+function nextNumber(
+  players: Record<string, Player>,
+  clubId: string,
+  wanted: number | null,
+): number {
+  const used = new Set(
+    Object.values(players)
+      .filter((p) => p.clubId === clubId)
+      .map((p) => p.number),
+  );
+  if (
+    wanted !== null &&
+    Number.isSafeInteger(wanted) &&
+    wanted > 0 &&
+    wanted <= 99 &&
+    !used.has(wanted)
+  )
+    return wanted;
   let n = 1;
   while (used.has(n)) n++;
   return n;
@@ -195,14 +212,37 @@ export interface SignOptions {
   agentName?: string;
 }
 
+function validRealTarget(target: RealTarget): boolean {
+  return (
+    !!target &&
+    validTransferText(target.id, MAX_TRANSFER_KEY_LENGTH) &&
+    validTransferText(target.name, 240) &&
+    validTransferText(target.clubId, 160) &&
+    Number.isFinite(target.ovr) &&
+    target.ovr >= 20 &&
+    target.ovr <= 99 &&
+    Number.isFinite(target.age) &&
+    target.age >= 14 &&
+    target.age <= 70 &&
+    ["GK", "DF", "MF", "FW"].includes(target.pos)
+  );
+}
+
 export function quoteRealSigning(
   state: CareerState,
   target: RealTarget,
   opts: SignOptions,
 ): SigningQuote {
   const fee = opts.loan ? roundMoney(opts.fee * 0.25) : opts.fee;
-  const wage = opts.loan ? Math.round(opts.wage * 0.5) : opts.wage;
+  // Work in integer euros; rounding k€/week charged up to €500 too much/little.
+  const wage = opts.loan ? Math.round(wageToEuros(opts.wage) * 0.5) / 1000 : opts.wage;
   const quote = quoteContract(state, fee, wage, opts.agentFee ?? 0);
+  if (!validRealTarget(target))
+    return {
+      ...quote,
+      affordable: false,
+      reason: "Jogador ou identidade de transferência inválido.",
+    };
   if (!windowOpen(state)) {
     return { ...quote, affordable: false, reason: "A janela de transferências está fechada." };
   }
@@ -213,7 +253,10 @@ export function quoteRealSigning(
   ) {
     return { ...quote, affordable: false, reason: "O jogador já pertence ao clube." };
   }
-  if (![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => Number.isFinite(v) && v >= 0)) {
+  if (
+    ![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => finiteAmount(v)) ||
+    (opts.loan !== undefined && typeof opts.loan !== "boolean")
+  ) {
     return { ...quote, affordable: false, reason: "Proposta financeira inválida." };
   }
   return quote;
@@ -221,16 +264,7 @@ export function quoteRealSigning(
 
 /** Fecha a contratação: elenco, caixa, folha e notícia. */
 export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOptions): CareerState {
-  if (
-    !Number.isFinite(t.ovr) ||
-    t.ovr < 20 ||
-    t.ovr > 99 ||
-    !Number.isFinite(t.age) ||
-    t.age < 14 ||
-    t.age > 70 ||
-    !["GK", "DF", "MF", "FW"].includes(t.pos)
-  )
-    return state;
+  if (!validRealTarget(t)) return state;
   if (ownsRealPlayer(state, t) || t.clubId === state.clubId) return state;
   if (![opts.fee, opts.wage, opts.agentFee ?? 0].every((v) => Number.isFinite(v) && v >= 0))
     return state;
@@ -250,7 +284,7 @@ export function signRealPlayer(state: CareerState, t: RealTarget, opts: SignOpti
       name: t.name,
       pos: t.pos,
       age: t.age,
-      number: nextNumber(state.players, t.number),
+      number: nextNumber(state.players, state.clubId, t.number),
       ovr: t.ovr,
       ...attrs(t.pos, t.ovr, rnd),
       condition: 88,

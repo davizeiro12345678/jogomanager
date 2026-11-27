@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { CheckoutReturn } from "@/pages/checkout/return";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/checkout/return")({
   ssr: false,
@@ -30,5 +28,8 @@ export const Route = createFileRoute("/checkout/return")({
     const id = typeof search["session_id"] === "string" ? search["session_id"] : undefined;
     return id && /^cs_[a-zA-Z0-9_]+$/.test(id) ? { session_id: id } : {};
   },
-  component: CheckoutReturn,
+  // Preserve validated route search, but do not bundle its browser UI into SSR.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/checkout/return"), "CheckoutReturn"),
 });

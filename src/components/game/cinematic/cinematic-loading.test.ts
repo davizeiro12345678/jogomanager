@@ -1,6 +1,35 @@
 import { describe, expect, it, vi } from "vitest";
+import { createElement, memo } from "react";
+import { renderToReadableStream } from "react-dom/server";
 
-import { loadWithRetry } from "./cinematic-loading";
+import { createCinematicStage, loadWithRetry } from "./cinematic-loading";
+
+describe("cinematic stage attempts", () => {
+  it("renders 3D after retrying a previously rejected stage download", async () => {
+    const failure = new Error("stage download interrupted");
+    let online = false;
+    const restoredModule = {
+      CinematicStage3D: memo(() => createElement("span", null, "Restored 3D stage")),
+    };
+    const loader = async () => {
+      if (!online) throw failure;
+      return restoredModule;
+    };
+    const props = { art: "dressing" as const, primary: "#008800", secondary: "#ffffff" };
+
+    const firstAttempt = createCinematicStage(loader);
+    await expect(
+      renderToReadableStream(createElement(firstAttempt, props), {
+        onError: () => undefined,
+      }),
+    ).rejects.toBe(failure);
+
+    online = true;
+    const retry = createCinematicStage(loader);
+    const stream = await renderToReadableStream(createElement(retry, props));
+    await expect(new Response(stream).text()).resolves.toContain("Restored 3D stage");
+  });
+});
 
 describe("loadWithRetry", () => {
   it("retries with bounded backoff and resolves after transient chunk failures", async () => {

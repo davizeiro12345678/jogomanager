@@ -3,7 +3,8 @@ import type { TimeOfDay, Weather } from "./matchday";
 /** Presentation only: overcast daylight and stadium floodlights use the same
  * existing sources, with no extra lights, shadow maps or simulation state. */
 export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
-  const cloud = weather === "chuva" || weather === "neve";
+  const snow = weather === "neve";
+  const cloud = weather === "chuva" || snow;
   const night = time === "noite",
     sunset = time === "entardecer";
   const sky = night
@@ -30,26 +31,52 @@ export function matchLighting(time: TimeOfDay, weather: Weather, low: boolean) {
       number,
       number,
     ],
-    fillIntensity: night ? 0.72 : cloud ? 0.62 : 0.36,
+    fillIntensity: night ? (cloud ? 0.84 : 0.72) : cloud ? 0.62 : 0.36,
     hemiIntensity: low
       ? night
-        ? 0.42
+        ? cloud
+          ? 0.5
+          : 0.42
         : cloud
           ? 0.78
           : sunset
             ? 0.52
             : 0.64
       : night
-        ? 0.22
+        ? cloud
+          ? 0.32
+          : 0.22
         : cloud
           ? 0.5
           : sunset
             ? 0.3
             : 0.34,
     hemiColor: night ? "#a9c9ef" : cloud ? "#c5d5e0" : sunset ? "#ffe0c6" : "#dde9f0",
-    groundColor: night ? "#08131a" : cloud ? "#203027" : "#102c1d",
-    environmentKey: cloud && !night ? 1.55 : night ? 1.45 : sunset ? 1.45 : low ? 1.75 : 2.1,
-    fogNear: night ? 80 : cloud ? 82 : sunset ? 95 : 120,
-    fogFar: night ? 230 : cloud ? 245 : sunset ? 270 : 330,
+    // Snow bounces more neutral blue light under the athletes than wet grass.
+    // Retain the existing hemisphere light and floodlight count.
+    groundColor: snow
+      ? night
+        ? "#182d3e"
+        : "#50636e"
+      : night
+        ? "#08131a"
+        : cloud
+          ? "#203027"
+          : "#102c1d",
+    environmentKey: night ? (cloud ? 1.58 : 1.45) : cloud ? 1.55 : sunset ? 1.45 : low ? 1.75 : 2.1,
+    fogNear: snow ? (night ? 55 : 72) : night ? (cloud ? 65 : 80) : cloud ? 82 : sunset ? 95 : 120,
+    fogFar: snow
+      ? night
+        ? 165
+        : 220
+      : night
+        ? cloud
+          ? 185
+          : 230
+        : cloud
+          ? 245
+          : sunset
+            ? 270
+            : 330,
   };
 }

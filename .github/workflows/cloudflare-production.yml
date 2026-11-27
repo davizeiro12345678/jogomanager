@@ -20,15 +20,29 @@ jobs:
       ${{
         github.event.workflow_run.event == 'push' &&
         github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        github.event.workflow_run.repository.full_name == github.repository &&
         github.event.workflow_run.conclusion == 'success'
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      EXPECTED_PRODUCTION_SUPABASE_REF: lguqnwvsfeefxamzeyos
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          # Only checkout the repository's protected main branch, never an event-provided ref.
+          ref: main
           persist-credentials: false
+      - name: Verify checked-out main SHA
+        env:
+          EXPECTED_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          test "$actual_sha" = "$EXPECTED_COMMIT_SHA" || {
+            echo "The successful quality-gates run did not test the checked-out main commit."
+            exit 1
+          }
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
@@ -36,15 +50,34 @@ jobs:
       - name: Verify production credentials are connected
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VITE_SUPABASE_PROJECT_ID: ${{ env.EXPECTED_PRODUCTION_SUPABASE_REF }}
+          VITE_AUTH_PROVIDER_ALLOWLIST: ${{ vars.VITE_AUTH_PROVIDER_ALLOWLIST }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN secret"; exit 1; }
           test -n "$VITE_SUPABASE_URL" || { echo "Missing VITE_SUPABASE_URL secret"; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "Missing VITE_SUPABASE_PUBLISHABLE_KEY secret"; exit 1; }
+          node --test scripts/verify-production-supabase.test.mjs
+          node scripts/verify-production-supabase.mjs
       - run: npm ci
-      - name: Verify browser Supabase build-time env references
-        run: node --test scripts/supabase-public-env-static-access.test.mjs
+      - name: Verify browser Supabase and Stripe build-time env references
+        run: node --test scripts/supabase-public-env-static-access.test.mjs scripts/stripe-public-env-static-access.test.mjs
+      - name: Load the existing live Stripe publishable key
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
+        run: |
+          set -euo pipefail
+          public_key="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/jogomanager-web/settings" \
+            | jq -r '[.result.bindings[] | select(.name == "VITE_PAYMENTS_CLIENT_TOKEN" and .type == "plain_text") | .text] | if length == 1 then .[0] else "" end')"
+          if [[ ! "$public_key" =~ ^pk_live_[A-Za-z0-9]+$ ]]; then
+            echo "Missing or invalid live Stripe publishable key in Worker settings."
+            exit 1
+          fi
+          printf 'VITE_PAYMENTS_CLIENT_TOKEN=%s\n' "$public_key" >> "$GITHUB_ENV"
       - name: Refuse publication of a superseded main revision
         env:
           GH_TOKEN: ${{ github.token }}
@@ -59,9 +92,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: 31b4ec9dfe5281c893ccfaaaefcfc88d
           CLOUDFLARE_SITE_ZONE: jogomanager.com
           SITE_URL: https://jogomanager.com
-          VITE_AUTH_MODE: supabase
+          VITE_SUPABASE_PROJECT_ID: ${{ env.EXPECTED_PRODUCTION_SUPABASE_REF }}
           PAYMENTS_ENVIRONMENT: live
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_AUTH_PROVIDER_ALLOWLIST: ${{ vars.VITE_AUTH_PROVIDER_ALLOWLIST }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}

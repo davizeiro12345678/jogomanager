@@ -48,6 +48,7 @@ import { Route as MatchRouteImport } from './routes/match'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as MelhoresFormacoesRouteImport } from './routes/melhores-formacoes'
 import { Route as MercadoDeTransferenciasRouteImport } from './routes/mercado-de-transferencias'
+import { Route as ModoCarreiraRouteImport } from './routes/modo-carreira'
 import { Route as ModoCarreiraDeJogadorRouteImport } from './routes/modo-carreira-de-jogador'
 import { Route as MultiplayerRouteImport } from './routes/multiplayer'
 import { Route as NewRouteImport } from './routes/new'
@@ -87,9 +88,11 @@ import { Route as JogadorPainelRouteImport } from './routes/jogador.painel'
 import { Route as TabelasIndexRouteImport } from './routes/tabelas.index'
 import { Route as TabelasSlugRouteImport } from './routes/tabelas.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiInternalSupportDispatchRouteImport } from './routes/api/internal/support-dispatch'
 import { Route as ApiPublicFootballAssetsRouteImport } from './routes/api/public/football-assets'
 import { Route as ApiPublicSyncFootballRouteImport } from './routes/api/public/sync-football'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as ApiInternalEmailAutomationsDispatchRouteImport } from './routes/api/internal/email-automations/dispatch'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -291,6 +294,11 @@ const MercadoDeTransferenciasRoute = MercadoDeTransferenciasRouteImport.update({
   path: '/mercado-de-transferencias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModoCarreiraRoute = ModoCarreiraRouteImport.update({
+  id: '/modo-carreira',
+  path: '/modo-carreira',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModoCarreiraDeJogadorRoute = ModoCarreiraDeJogadorRouteImport.update({
   id: '/modo-carreira-de-jogador',
   path: '/modo-carreira-de-jogador',
@@ -487,6 +495,12 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInternalSupportDispatchRoute =
+  ApiInternalSupportDispatchRouteImport.update({
+    id: '/api/internal/support-dispatch',
+    path: '/api/internal/support-dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicFootballAssetsRoute = ApiPublicFootballAssetsRouteImport.update({
   id: '/api/public/football-assets',
   path: '/api/public/football-assets',
@@ -502,6 +516,12 @@ const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInternalEmailAutomationsDispatchRoute =
+  ApiInternalEmailAutomationsDispatchRouteImport.update({
+    id: '/api/internal/email-automations/dispatch',
+    path: '/api/internal/email-automations/dispatch',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -565,6 +585,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira': typeof ModoCarreiraRoute
   '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -604,9 +625,11 @@ export interface FileRoutesByFullPath {
   '/jogador/': typeof JogadorIndexRoute
   '/tabelas/': typeof TabelasIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/internal/support-dispatch': typeof ApiInternalSupportDispatchRoute
   '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/internal/email-automations/dispatch': typeof ApiInternalEmailAutomationsDispatchRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -652,6 +675,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira': typeof ModoCarreiraRoute
   '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -691,9 +715,11 @@ export interface FileRoutesByTo {
   '/jogador': typeof JogadorIndexRoute
   '/tabelas': typeof TabelasIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/internal/support-dispatch': typeof ApiInternalSupportDispatchRoute
   '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/internal/email-automations/dispatch': typeof ApiInternalEmailAutomationsDispatchRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -740,6 +766,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/melhores-formacoes': typeof MelhoresFormacoesRoute
   '/mercado-de-transferencias': typeof MercadoDeTransferenciasRoute
+  '/modo-carreira': typeof ModoCarreiraRoute
   '/modo-carreira-de-jogador': typeof ModoCarreiraDeJogadorRoute
   '/multiplayer': typeof MultiplayerRoute
   '/new': typeof NewRoute
@@ -779,9 +806,11 @@ export interface FileRoutesById {
   '/jogador/': typeof JogadorIndexRoute
   '/tabelas/': typeof TabelasIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
+  '/api/internal/support-dispatch': typeof ApiInternalSupportDispatchRoute
   '/api/public/football-assets': typeof ApiPublicFootballAssetsRoute
   '/api/public/sync-football': typeof ApiPublicSyncFootballRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/api/internal/email-automations/dispatch': typeof ApiInternalEmailAutomationsDispatchRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -829,6 +858,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira'
     | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
@@ -868,9 +898,11 @@ export interface FileRouteTypes {
     | '/jogador/'
     | '/tabelas/'
     | '/.lovable/oauth/consent'
+    | '/api/internal/support-dispatch'
     | '/api/public/football-assets'
     | '/api/public/sync-football'
     | '/api/stripe/webhook'
+    | '/api/internal/email-automations/dispatch'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -916,6 +948,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira'
     | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
@@ -955,9 +988,11 @@ export interface FileRouteTypes {
     | '/jogador'
     | '/tabelas'
     | '/.lovable/oauth/consent'
+    | '/api/internal/support-dispatch'
     | '/api/public/football-assets'
     | '/api/public/sync-football'
     | '/api/stripe/webhook'
+    | '/api/internal/email-automations/dispatch'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -1003,6 +1038,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/melhores-formacoes'
     | '/mercado-de-transferencias'
+    | '/modo-carreira'
     | '/modo-carreira-de-jogador'
     | '/multiplayer'
     | '/new'
@@ -1042,9 +1078,11 @@ export interface FileRouteTypes {
     | '/jogador/'
     | '/tabelas/'
     | '/.lovable/oauth/consent'
+    | '/api/internal/support-dispatch'
     | '/api/public/football-assets'
     | '/api/public/sync-football'
     | '/api/stripe/webhook'
+    | '/api/internal/email-automations/dispatch'
     | '/api/public/payments/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -1091,6 +1129,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   MelhoresFormacoesRoute: typeof MelhoresFormacoesRoute
   MercadoDeTransferenciasRoute: typeof MercadoDeTransferenciasRoute
+  ModoCarreiraRoute: typeof ModoCarreiraRoute
   ModoCarreiraDeJogadorRoute: typeof ModoCarreiraDeJogadorRoute
   MultiplayerRoute: typeof MultiplayerRoute
   NewRoute: typeof NewRoute
@@ -1130,9 +1169,11 @@ export interface RootRouteChildren {
   JogadorIndexRoute: typeof JogadorIndexRoute
   TabelasIndexRoute: typeof TabelasIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
+  ApiInternalSupportDispatchRoute: typeof ApiInternalSupportDispatchRoute
   ApiPublicFootballAssetsRoute: typeof ApiPublicFootballAssetsRoute
   ApiPublicSyncFootballRoute: typeof ApiPublicSyncFootballRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  ApiInternalEmailAutomationsDispatchRoute: typeof ApiInternalEmailAutomationsDispatchRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -1414,6 +1455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MercadoDeTransferenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/modo-carreira': {
+      id: '/modo-carreira'
+      path: '/modo-carreira'
+      fullPath: '/modo-carreira'
+      preLoaderRoute: typeof ModoCarreiraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/modo-carreira-de-jogador': {
       id: '/modo-carreira-de-jogador'
       path: '/modo-carreira-de-jogador'
@@ -1687,6 +1735,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/internal/support-dispatch': {
+      id: '/api/internal/support-dispatch'
+      path: '/api/internal/support-dispatch'
+      fullPath: '/api/internal/support-dispatch'
+      preLoaderRoute: typeof ApiInternalSupportDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/football-assets': {
       id: '/api/public/football-assets'
       path: '/api/public/football-assets'
@@ -1706,6 +1761,13 @@ declare module '@tanstack/react-router' {
       path: '/api/stripe/webhook'
       fullPath: '/api/stripe/webhook'
       preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/internal/email-automations/dispatch': {
+      id: '/api/internal/email-automations/dispatch'
+      path: '/api/internal/email-automations/dispatch'
+      fullPath: '/api/internal/email-automations/dispatch'
+      preLoaderRoute: typeof ApiInternalEmailAutomationsDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/payments/webhook': {
@@ -1779,6 +1841,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   MelhoresFormacoesRoute: MelhoresFormacoesRoute,
   MercadoDeTransferenciasRoute: MercadoDeTransferenciasRoute,
+  ModoCarreiraRoute: ModoCarreiraRoute,
   ModoCarreiraDeJogadorRoute: ModoCarreiraDeJogadorRoute,
   MultiplayerRoute: MultiplayerRoute,
   NewRoute: NewRoute,
@@ -1819,9 +1882,12 @@ const rootRouteChildren: RootRouteChildren = {
   JogadorIndexRoute: JogadorIndexRoute,
   TabelasIndexRoute: TabelasIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
+  ApiInternalSupportDispatchRoute: ApiInternalSupportDispatchRoute,
   ApiPublicFootballAssetsRoute: ApiPublicFootballAssetsRoute,
   ApiPublicSyncFootballRoute: ApiPublicSyncFootballRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiInternalEmailAutomationsDispatchRoute:
+    ApiInternalEmailAutomationsDispatchRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

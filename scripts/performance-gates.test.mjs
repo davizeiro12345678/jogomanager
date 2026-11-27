@@ -7,7 +7,11 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { assessMatchSetup } from "./match-setup-budget.mjs";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import {
+  isMatchRouteEntry,
+  measureBrowserRoute,
+  pickMatchRouteEntry,
+} from "./bundle-report-comparison.mjs";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -42,6 +46,7 @@ const surfaces = [
   { name: "index-home.js", surface: "home" },
   { name: "new-career.js", surface: "new" },
   { name: "partida-rapida-route.js" },
+  { name: "multiplayer-route.js" },
   { name: "match-execution-contract.js" },
   { name: "match-command-validation.js" },
   { name: "match-physics-extras.js" },
@@ -59,17 +64,20 @@ const fixture = () => ({
   totalBrotliBytes: 80_000,
   entries: surfaces.map((entry) => ({
     ...entry,
+    startupBytes: 60_000,
     startupGzipBytes: 10_000,
     startupBrotliBytes: 8_000,
   })),
 });
 
-function compare(mutate) {
+function compare(mutate, mutateBaseline = () => {}) {
   const cwd = mkdtempSync(path.join(tmpdir(), "bundle-gate-"));
   try {
+    const baseline = fixture();
     const candidate = fixture();
+    mutateBaseline(baseline);
     mutate(candidate);
-    writeFileSync(path.join(cwd, "base.json"), JSON.stringify(fixture()));
+    writeFileSync(path.join(cwd, "base.json"), JSON.stringify(baseline));
     writeFileSync(path.join(cwd, "head.json"), JSON.stringify(candidate));
     const result = spawnSync(
       process.execPath,
@@ -81,6 +89,33 @@ function compare(mutate) {
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
+}
+
+function splitEditor(report, suffix, pageFirst = false) {
+  const page = report.entries.find((entry) => entry.name === "editor-route.js");
+  const shared = "shared.js";
+  page.name = `editor-page${suffix}.js`;
+  const wrapper = {
+    name: `editor-wrapper${suffix}.js`,
+    startupBytes: 28_000,
+    startupGzipBytes: 4_800,
+    startupBrotliBytes: 3_800,
+  };
+  wrapper.startupDependencies = [wrapper.name, shared];
+  page.startupDependencies = [page.name, shared];
+  report.chunks = [
+    { name: shared, gzipBytes: 4_000, brotliBytes: 3_000, dynamicImports: [] },
+    { name: page.name, gzipBytes: 6_000, brotliBytes: 5_000, dynamicImports: [] },
+    {
+      name: wrapper.name,
+      gzipBytes: 800,
+      brotliBytes: 800,
+      dynamicImports: [page.name],
+    },
+  ];
+  const index = report.entries.indexOf(page);
+  report.entries.splice(index, 1, ...(pageFirst ? [page, wrapper] : [wrapper, page]));
+  return { page, wrapper };
 }
 
 test("bundle gate permits equal or smaller transport budgets", () => {
@@ -127,6 +162,104 @@ test("Match 3D route selector ignores similarly named engine chunks", () => {
   assert.equal(isMatchRouteEntry({ name: "match-a1b2c3.js" }), true);
 });
 
+test("Match 3D route selection is stable when hashed chunk order flips", () => {
+  const matchSurface = (name, startupGzipBytes) => ({
+    name,
+    startupGzipBytes,
+    startupDependencies: [
+      name,
+      "rolldown-runtime-a1.js",
+      "MatchHud-CYj7Ycso.js",
+      "simWorkerClient-DbWV6Am3.js",
+      "live-match-B5jGvmYA.js",
+    ],
+  });
+  const sibling = (name, startupGzipBytes) => ({
+    name,
+    startupGzipBytes,
+    startupDependencies: [name, "rolldown-runtime-a1.js", "utils-CfntisIJ.js"],
+  });
+  // Real reports carry ~158 KB and ~580 KB entries whose hash order flips.
+  const baseline = [
+    sibling("match-CKZMMpFB.js", 158_143),
+    matchSurface("match-CNavPzuF.js", 580_137),
+  ];
+  const candidate = [
+    matchSurface("match-DKSopOgT.js", 580_166),
+    sibling("match-D_VQwkwi.js", 158_148),
+  ];
+  assert.equal(pickMatchRouteEntry(baseline).name, "match-CNavPzuF.js");
+  assert.equal(pickMatchRouteEntry(candidate).name, "match-DKSopOgT.js");
+  assert.equal(pickMatchRouteEntry([...candidate].reverse()).name, "match-DKSopOgT.js");
+  assert.equal(pickMatchRouteEntry([]), undefined);
+});
+
+test("Match 3D route selector falls back to the largest startup graph", () => {
+  const entries = [
+    { name: "match-aaaa1111.js", startupGzipBytes: 158_143, startupDependencies: ["utils-a.js"] },
+    { name: "match-bbbb2222.js", startupGzipBytes: 580_137, startupDependencies: ["utils-a.js"] },
+  ];
+  assert.equal(pickMatchRouteEntry(entries).name, "match-bbbb2222.js");
+});
+
+function splitMatchFixture(report, childGzip) {
+  const wrapper = report.entries.find((entry) => entry.name === "match-route.js");
+  wrapper.dependencies = [wrapper.name, "shared.js"];
+  wrapper.startupDependencies = wrapper.dependencies;
+  report.entries.unshift({ ...wrapper, name: "match-perception-hash.js" });
+  const chunk = (name, gzipBytes, imports = [], dynamicImports = []) => ({
+    name,
+    bytes: gzipBytes * 2,
+    gzipBytes,
+    brotliBytes: gzipBytes / 2,
+    imports,
+    dynamicImports,
+  });
+  report.chunks = [
+    chunk(
+      "hydrate-app-hash.js",
+      1,
+      [],
+      ["match-route.js", "partida-rapida-route.js", "multiplayer-route.js"],
+    ),
+    chunk("partida-rapida-route.js", 1),
+    chunk("multiplayer-route.js", 1),
+    chunk("shared.js", 4_000),
+    chunk("match-route.js", 1_000, ["shared.js"], ["match-page.js"]),
+    chunk("match-page.js", childGzip, ["shared.js"], ["StorePanel-hash.js"]),
+    chunk("StorePanel-hash.js", 100_000),
+  ];
+}
+
+test("route startup counts the rendered match and wrapper exactly once regardless of hash order", () => {
+  const model = fixture();
+  splitMatchFixture(model, 7_049);
+  for (const order of [model.chunks, [...model.chunks].reverse()]) {
+    const result = measureBrowserRoute({ ...model, chunks: order }, "match-");
+    assert.equal(result.name, "match-page.js");
+    assert.equal(result.startupGzipBytes, 12_049);
+    assert.ok(!result.startupDependencies.includes("StorePanel-hash.js"));
+  }
+  const gate = compare((candidate) => splitMatchFixture(candidate, 7_049));
+  assert.equal(gate.status, 1);
+  assert.match(gate.report.violations.join("\n"), /Match 3D.*growth 2049 bytes/);
+});
+
+test("route startup rejects ambiguous hydration roots, duplicate pages and missing page imports", () => {
+  const model = fixture();
+  splitMatchFixture(model, 1);
+  const root = model.chunks.find((c) => c.name === "hydrate-app-hash.js");
+  root.dynamicImports.push("match-second.js");
+  assert.equal(measureBrowserRoute(model, "match-"), undefined);
+  root.dynamicImports.pop();
+  const wrapper = model.chunks.find((c) => c.name === "match-route.js");
+  wrapper.dynamicImports.push("match-other.js");
+  assert.equal(measureBrowserRoute(model, "match-"), undefined);
+  wrapper.dynamicImports.pop();
+  model.chunks.find((c) => c.name === "match-page.js").imports.push("missing.js");
+  assert.equal(measureBrowserRoute(model, "match-"), undefined);
+});
+
 test("bundle gate allows route startup growth up to 2 KiB", () => {
   const result = compare((candidate) => {
     candidate.entries.find(isMatchRouteEntry).startupBrotliBytes += 2_048;
@@ -146,6 +279,40 @@ test("bundle gate rejects route startup growth above 2 KiB", () => {
   );
 });
 
+test("multiplayer lobby reports startup raw and keeps the same 2 KiB transport growth allowance", () => {
+  const result = compare((candidate) => {
+    const lobby = candidate.entries.find((entry) => entry.name.startsWith("multiplayer-"));
+    lobby.startupBytes -= 15_000;
+    lobby.startupGzipBytes += 2_048;
+    lobby.startupBrotliBytes += 2_048;
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.report.violations, []);
+  const raw = result.report.rows.find((row) => row.label === "Lobby multiplayer startup raw");
+  assert.equal(raw.before, 60_000);
+  assert.equal(raw.after, 45_000);
+  for (const label of ["Lobby multiplayer startup (gzip)", "Lobby multiplayer startup (Brotli Q6)"])
+    assert.equal(result.report.rows.find((row) => row.label === label).maxIncreaseBytes, 2_048);
+});
+
+test("multiplayer lobby cannot bypass the growth gate or disappear from a comparison", () => {
+  for (const metric of ["startupGzipBytes", "startupBrotliBytes"]) {
+    const result = compare((candidate) => {
+      candidate.entries.find((entry) => entry.name.startsWith("multiplayer-"))[metric] += 2_049;
+    });
+    assert.equal(result.status, 1);
+    assert.match(
+      result.report.violations.join("\n"),
+      /Lobby multiplayer.*growth 2049 bytes exceeds allowed \+2048 bytes/,
+    );
+  }
+  const missing = compare((candidate) => {
+    candidate.entries = candidate.entries.filter((entry) => !entry.name.startsWith("multiplayer-"));
+  });
+  assert.equal(missing.status, 1);
+  assert.match(missing.report.violations.join("\n"), /Lobby multiplayer.*missing required route/);
+});
+
 test("bundle gate cannot pass by dropping a required route", () => {
   const result = compare((candidate) => {
     candidate.entries.splice(2, 1);
@@ -160,6 +327,59 @@ test("bundle gate rejects missing or invalid measurements", () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.report.violations.join("\n"), /Brotli.*invalid/i);
+});
+
+test("editor startup compares equivalent layers when hashed names change their ordering", () => {
+  const result = compare(
+    (candidate) => splitEditor(candidate, "Head", true),
+    (baseline) => splitEditor(baseline, "Base"),
+  );
+  assert.equal(result.status, 0, result.stdout);
+  assert.deepEqual(result.report.violations, []);
+  const gzip = (name) => result.report.rows.find((row) => row.label === `${name} startup (gzip)`);
+  assert.equal(gzip("Editor").after, 10_800);
+  assert.equal(gzip("Editor conteúdo").after, 10_000);
+  assert.equal(gzip("Editor rota").after, 4_800);
+});
+
+test("editor wrapper and content keep independent 2 KiB startup budgets", () => {
+  for (const [role, label] of [
+    ["wrapper", "rota"],
+    ["page", "conteúdo"],
+  ]) {
+    const result = compare(
+      (candidate) => {
+        const layers = splitEditor(candidate, "Head", role === "wrapper");
+        layers[role].startupGzipBytes += 2_049;
+      },
+      (baseline) => splitEditor(baseline, "Base", role === "wrapper"),
+    );
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.report.violations.join("\n"), new RegExp(`Editor ${label}.*growth 2049`));
+  }
+});
+
+test("editor total includes a new wrapper when the baseline editor was a single chunk", () => {
+  const result = compare((candidate) => {
+    const { wrapper } = splitEditor(candidate, "Head", true);
+    candidate.chunks.find((chunk) => chunk.name === wrapper.name).brotliBytes += 1_249;
+  });
+  assert.equal(result.status, 1, result.stdout);
+  assert.match(result.report.violations.join("\n"), /Editor startup \(Brotli Q6\).*growth 2049/);
+});
+
+test("editor comparison rejects a split report missing its page or wrapper", () => {
+  for (const role of ["wrapper", "page"]) {
+    const result = compare(
+      (candidate) => {
+        const layers = splitEditor(candidate, "Head");
+        candidate.entries = candidate.entries.filter((entry) => entry !== layers[role]);
+      },
+      (baseline) => splitEditor(baseline, "Base"),
+    );
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.report.violations.join("\n"), /Editor.*missing required route.*candidate/);
+  }
 });
 
 test("constructor CPU gate accepts an unchanged or faster candidate", () => {
@@ -346,4 +566,141 @@ test("startup measurement retains the deferred hydration runtime and its bootstr
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test("multiplayer analyzer uses the existing static/root/hydration closure and excludes lazy live graphics", () => {
+  const cwd = mkdtempSync(path.join(tmpdir(), "multiplayer-startup-"));
+  try {
+    const sources = {
+      "index-bootstrap.js": 'export const start=()=>import("./hydrate-app-test.js");',
+      "hydrate-app-test.js": 'import "./renderer.js"; import "./router.js";',
+      "renderer.js": 'export const renderer="mandatory hydration runtime";',
+      "router.js": 'export const dashboard=()=>import("./dashboard-lazy.js");',
+      "dashboard-lazy.js": 'export const screen="unopened dashboard";',
+      "multiplayer-route.js":
+        'import "./lobby-shared.js"; export const live=()=>import("./LiveRoom-live.js");',
+      "lobby-shared.js": 'import "./renderer.js"; export const lobby="room list";',
+      "LiveRoom-live.js": 'import "./Stadium3D-live.js"; export const live="active match";',
+      "Stadium3D-live.js": 'export const graphics="deferred graphics";',
+    };
+    for (const [name, source] of Object.entries(sources))
+      writeFileSync(path.join(cwd, name), source);
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts/bundle-report.mjs"), "fixture", cwd],
+      { cwd, encoding: "utf8" },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(
+      readFileSync(path.join(cwd, "verification/bundle-2026-10-01/fixture.json"), "utf8"),
+    );
+    const entry = report.entries.find((entry) => entry.name === "multiplayer-route.js");
+    assert.deepEqual(entry.dependencies.sort(), [
+      "lobby-shared.js",
+      "multiplayer-route.js",
+      "renderer.js",
+    ]);
+    assert.deepEqual(entry.startupDependencies.sort(), [
+      "hydrate-app-test.js",
+      "index-bootstrap.js",
+      "lobby-shared.js",
+      "multiplayer-route.js",
+      "renderer.js",
+      "router.js",
+    ]);
+    for (const [metric, total] of [
+      ["startupBytes", "bytes"],
+      ["startupGzipBytes", "gzipBytes"],
+      ["startupBrotliBytes", "brotliBytes"],
+    ]) {
+      assert.equal(
+        entry[metric],
+        report.chunks
+          .filter((chunk) => entry.startupDependencies.includes(chunk.name))
+          .reduce((sum, chunk) => sum + chunk[total], 0),
+      );
+    }
+    assert.ok(!entry.startupDependencies.includes("LiveRoom-live.js"));
+    assert.ok(!entry.startupDependencies.includes("Stadium3D-live.js"));
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test("browser-only gameplay routes cannot pull page and 3D graphs into SSR eagerly", () => {
+  for (const route of [
+    "carreira",
+    "dashboard",
+    "new",
+    "squad",
+    "editor",
+    "tactics",
+    "stats",
+    "club",
+    "pre-jogo",
+    "training",
+    "scouting",
+    "cup",
+    "board",
+    "league",
+    "perfil",
+    "visual",
+    "replays",
+    "history",
+    "finances",
+    "coletiva",
+    "transfers",
+    "carreiras",
+    "conquistas",
+    "temporada-automatica",
+    "assistente",
+    "auth",
+    "loja",
+    "chat",
+    "news",
+    "compras",
+    "cadastro",
+    "clube.novo",
+    "jogador.novo",
+    "jogador.index",
+    "jogador.painel",
+    "checkout/claim",
+    "checkout/guest",
+    "checkout/return",
+    "match",
+    "multiplayer",
+  ]) {
+    const source = readFileSync(path.join(root, `src/routes/${route}.tsx`), "utf8");
+    assert.match(source, /\bssr:\s*false\b/, `${route} should remain client-only`);
+    assert.match(source, /component:\s*import\.meta\.env\.SSR/, `${route} requires SSR pruning`);
+    assert.match(source, /:\s*lazyRouteComponent\(/, `${route} needs a client lazy page`);
+    assert.doesNotMatch(source, /import\s*\{[^}]+\}\s*from\s*["']@\/pages\//);
+  }
+});
+
+test("legacy multiplayer SSR does not eagerly evaluate the match physics engine", () => {
+  const source = readFileSync(path.join(root, "src/lib/multiplayer.functions.ts"), "utf8");
+  assert.ok(!source.includes('import { buildTeamSetup } from "@/game/quickMatch";'));
+  assert.ok(!source.includes('import { CLUBS } from "@/game/data/leagues";'));
+  assert.ok(!source.includes('MatchSim,\n} from "@/game/sim";'));
+  assert.ok(source.includes('import("@/game/sim")'));
+  assert.ok(source.includes('import("@/game/quickMatch")'));
+  assert.ok(source.includes('import("@/game/data/leagues")'));
+});
+
+test("restricted email previews do not eagerly bundle rendering SDKs on every edge request", () => {
+  for (const route of [
+    "src/routes/lovable/email/auth/preview.ts",
+    "src/routes/lovable/email/transactional/preview.ts",
+  ]) {
+    const source = readFileSync(path.join(root, route), "utf8");
+    assert.ok(!source.includes('import { render } from "@react-email/render";'));
+    assert.ok(source.includes('import("@react-email/render")'));
+  }
+  const transactional = readFileSync(
+    path.join(root, "src/routes/lovable/email/transactional/preview.ts"),
+    "utf8",
+  );
+  assert.ok(!transactional.includes('import { TEMPLATES } from "@/lib/email-templates/registry";'));
+  assert.ok(transactional.includes('import("@/lib/email-templates/registry")'));
 });

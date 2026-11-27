@@ -102,4 +102,5 @@ export type FpsSample = {
   drawCalls: number;
   memoryMb: number | null;
   measuredAt: string;
+  measurementKey?: string;
 };

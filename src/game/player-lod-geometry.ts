@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import {
   anatomicalLimb,
   anatomicalSection,
@@ -11,6 +12,21 @@ import { sculptedHead } from "./player-sculpt";
 import { lowShortsGeometry } from "./player-lod-shorts";
 import { LOW_HAIR_FAMILIES, lowHairGeometry } from "./player-lod-hair";
 import { articulateLowTorso } from "./player-lod-torso";
+
+function lowSleeve(radial: number): THREE.BufferGeometry {
+  const sleeve = new THREE.CylinderGeometry(0.46, 0.5, 1, radial, 1, true);
+  // The shoulder opening becomes visible when the clavicle rotates away
+  // from the jersey. The backing shares the existing sleeve draw. Leave the
+  // cuff open so the moving arm remains visible through the distal ring.
+  const backing = new THREE.CircleGeometry(0.46, radial)
+    .rotateX(-Math.PI / 2)
+    .rotateY(-Math.PI / 2)
+    .translate(0, 0.5, 0);
+  const geometry = mergeGeometries([sleeve, backing])!;
+  sleeve.dispose();
+  backing.dispose();
+  return geometry;
+}
 
 /** Distant bodies use the same anatomical landmarks with one sample per span.
  * At match-camera scale extra intermediate rings add vertices without detail. */
@@ -49,9 +65,7 @@ export function createLowPlayerGeometries(compact = false): Record<string, THREE
     thighs: footballThigh(1, 0.5, radial, 2).translate(0, 0.5, 0),
     shins: anatomicalLimb("calf", 1, 0.5, radial, true, 1).translate(0, 0.5, 0),
     hands: new THREE.SphereGeometry(0.5, radial, compact ? 4 : 6),
-    // Shirt and real upper arm already close these openings. Hidden cloth
-    // discs wasted 704 team triangles; spend them on continuous thigh skin.
-    sleeves: new THREE.CylinderGeometry(0.46, 0.5, 1, radial, 1, true),
+    sleeves: lowSleeve(radial),
     neck: new THREE.CylinderGeometry(0.4, 0.5, 1, radial),
     shadow: new THREE.CircleGeometry(1, 12),
   };

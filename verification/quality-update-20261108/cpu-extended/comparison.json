@@ -1,0 +1,282 @@
+{
+  "generatedAt": "2026-11-09T00:02:39.211Z",
+  "environment": {
+    "node": "v24.22.0",
+    "v8": "13.6.233.17-node.57",
+    "platform": "win32",
+    "arch": "x64",
+    "kernel": "10.0.26300",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12500H",
+    "logicalProcessors": 16
+  },
+  "protocol": {
+    "registrations": "existing CodSpeed match, season and rig fixtures",
+    "timeMs": 1000,
+    "warmupMs": 250,
+    "instrument": "local Tinybench performance timer; not CodSpeed CI simulation, GPU or FPS"
+  },
+  "baselineRuns": 2,
+  "candidateRuns": 2,
+  "pairedSourceParity": true,
+  "violations": [],
+  "cases": [
+    {
+      "name": "match setup: buildTeamSetup",
+      "baselineMs": 0.15025659666458568,
+      "candidateMs": 0.19168265449540134,
+      "baselineRunsMs": [
+        0.13857465705973063,
+        0.1619385362694407
+      ],
+      "candidateRunsMs": [
+        0.18944345519984399,
+        0.1939218537909587
+      ],
+      "throughputGainPercent": -21.61179264752383,
+      "elapsedTimeReductionPercent": -27.57020906262777,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "match setup: new MatchSim",
+      "baselineMs": 0.29344643755120026,
+      "candidateMs": 0.3352779488521363,
+      "baselineRunsMs": [
+        0.2517255158530634,
+        0.3351673592493371
+      ],
+      "candidateRunsMs": [
+        0.3068854249769914,
+        0.3636704727272812
+      ],
+      "throughputGainPercent": -12.476666432776495,
+      "elapsedTimeReductionPercent": -14.255245914729265,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "match simulation: 300 live ticks",
+      "baselineMs": 5.445849566546213,
+      "candidateMs": 5.976341530541001,
+      "baselineRunsMs": [
+        5.028287437185936,
+        5.863411695906491
+      ],
+      "candidateRunsMs": [
+        5.270471727748749,
+        6.682211333333253
+      ],
+      "throughputGainPercent": -8.876533599758407,
+      "elapsedTimeReductionPercent": -9.741215902356037,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "match simulation: 120 coarse steps",
+      "baselineMs": 3.668939680054377,
+      "candidateMs": 3.5789993328741048,
+      "baselineRunsMs": [
+        3.435188698630112,
+        3.902690661478642
+      ],
+      "candidateRunsMs": [
+        3.558617730496393,
+        3.5993809352518165
+      ],
+      "throughputGainPercent": 2.513002624899796,
+      "elapsedTimeReductionPercent": 2.4513989060441443,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "live match: snapshotMatch",
+      "baselineMs": 0.0028137947904418367,
+      "candidateMs": 0.002578617049084715,
+      "baselineRunsMs": [
+        0.0024900093375325423,
+        0.0031375802433511314
+      ],
+      "candidateRunsMs": [
+        0.00249119066302917,
+        0.00266604343514026
+      ],
+      "throughputGainPercent": 9.120305065872358,
+      "elapsedTimeReductionPercent": 8.358027463694063,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "live match: WorkerMatchView.apply",
+      "baselineMs": 0.01524160892803709,
+      "candidateMs": 0.014259803959736774,
+      "baselineRunsMs": [
+        0.014165362986046325,
+        0.016317854870027855
+      ],
+      "candidateRunsMs": [
+        0.0142708532530348,
+        0.014248754666438747
+      ],
+      "throughputGainPercent": 6.885122481855199,
+      "elapsedTimeReductionPercent": 6.441609760071165,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "replay codec: encodeReplay",
+      "baselineMs": 18.07545546874998,
+      "candidateMs": 18.426838281249942,
+      "baselineRunsMs": [
+        18.08787499999997,
+        18.06303593749999
+      ],
+      "candidateRunsMs": [
+        18.49306406249991,
+        18.360612499999974
+      ],
+      "throughputGainPercent": -1.906907778408784,
+      "elapsedTimeReductionPercent": -1.943977639221628,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "replay codec: decodeReplay",
+      "baselineMs": 11.945044865508534,
+      "candidateMs": 10.509348734243797,
+      "baselineRunsMs": [
+        12.071972289156566,
+        11.818117441860501
+      ],
+      "candidateRunsMs": [
+        8.45134621848739,
+        12.567351250000206
+      ],
+      "throughputGainPercent": 13.661133221192333,
+      "elapsedTimeReductionPercent": 12.019177386351442,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "season: generateFixtures",
+      "baselineMs": 0.025206227708478766,
+      "candidateMs": 0.014352284153495423,
+      "baselineRunsMs": [
+        0.02398486556495863,
+        0.026427589851998903
+      ],
+      "candidateRunsMs": [
+        0.013817189637308006,
+        0.01488737866968284
+      ],
+      "throughputGainPercent": 75.6251997166592,
+      "elapsedTimeReductionPercent": 43.06056297084208,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "season: tableFromFixtures",
+      "baselineMs": 0.03863899754203515,
+      "candidateMs": 0.035935091454756235,
+      "baselineRunsMs": [
+        0.037375848407841125,
+        0.039902146676229176
+      ],
+      "candidateRunsMs": [
+        0.035906682226207846,
+        0.03596350068330463
+      ],
+      "throughputGainPercent": 7.524416880038398,
+      "elapsedTimeReductionPercent": 6.997868110675876,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "season: simulateDivisionTable",
+      "baselineMs": 3.749316014686942,
+      "candidateMs": 3.54557339598999,
+      "baselineRunsMs": [
+        3.5482273049645507,
+        3.9504047244093337
+      ],
+      "candidateRunsMs": [
+        3.5727071428572343,
+        3.5184396491227456
+      ],
+      "throughputGainPercent": 5.746394050885617,
+      "elapsedTimeReductionPercent": 5.434127662188115,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "rng: makeRng 10k draws",
+      "baselineMs": 0.08677012804563983,
+      "candidateMs": 0.08745974332275179,
+      "baselineRunsMs": [
+        0.08486362016292431,
+        0.08867663592835533
+      ],
+      "candidateRunsMs": [
+        0.08724574245334774,
+        0.08767374419215584
+      ],
+      "throughputGainPercent": -0.7884945129178811,
+      "elapsedTimeReductionPercent": -0.7947611610636729,
+      "fasterBy89Percent": false
+    },
+    {
+      "name": "rig geometry: fallback 64 radial",
+      "baselineMs": 0.09551702515777225,
+      "candidateMs": 0.04242015377974431,
+      "baselineRunsMs": [
+        0.08810779735681884,
+        0.10292625295872565
+      ],
+      "candidateRunsMs": [
+        0.04277199743370377,
+        0.04206831012578485
+      ],
+      "throughputGainPercent": 125.16897428924874,
+      "elapsedTimeReductionPercent": 55.58890814524852,
+      "fasterBy89Percent": true
+    },
+    {
+      "name": "rig geometry: fallback 16 radial",
+      "baselineMs": 0.023346493708154878,
+      "candidateMs": 0.011257199413532825,
+      "baselineRunsMs": [
+        0.024777925617578016,
+        0.02191506179873174
+      ],
+      "candidateRunsMs": [
+        0.011131272468258022,
+        0.011383126358807628
+      ],
+      "throughputGainPercent": 107.39166866040347,
+      "elapsedTimeReductionPercent": 51.78205535163205,
+      "fasterBy89Percent": true
+    },
+    {
+      "name": "rig geometry: Rust/WASM 64 radial",
+      "baselineMs": 0.1480696531554211,
+      "candidateMs": 0.03831575569216172,
+      "baselineRunsMs": [
+        0.15992569966414727,
+        0.13621360664669493
+      ],
+      "candidateRunsMs": [
+        0.039880925224311845,
+        0.03675058616001159
+      ],
+      "throughputGainPercent": 286.4458640592904,
+      "elapsedTimeReductionPercent": 74.12315428878351,
+      "fasterBy89Percent": true
+    },
+    {
+      "name": "rig geometry: Rust/WASM 16 radial",
+      "baselineMs": 0.03518543377034272,
+      "candidateMs": 0.010375781338833993,
+      "baselineRunsMs": [
+        0.0353211041254625,
+        0.03504976341522295
+      ],
+      "candidateRunsMs": [
+        0.010930967163661856,
+        0.00982059551400613
+      ],
+      "throughputGainPercent": 239.1111726560034,
+      "elapsedTimeReductionPercent": 70.51114558780974,
+      "fasterBy89Percent": true
+    }
+  ],
+  "everyBenchmark89PercentFaster": false,
+  "limitation": "Local Tinybench wall timing; not instrumented CodSpeed CI. Repetitions summarize observed variation and do not establish statistical significance or GPU/FPS gains."
+}

@@ -1,32 +1,23 @@
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { installFrameCampaignCapture } from "./frame-campaign-capture.mjs";
+import { chromiumLaunchOptions, playwrightModuleSpecifier } from "./realism-browser-runtime.mjs";
 
 const require = createRequire(import.meta.url);
-const { chromium } = require("C:/Users/User/.codex/mcp-game-runtime/node_modules/playwright");
+const { chromium } = require(playwrightModuleSpecifier());
 const phase = process.argv[2] ?? "before";
 const port = process.argv[3] ?? "4261";
 const out = path.resolve("verification/realism-data-20261022", phase);
 const native = process.env.REALISM_NATIVE === "1";
 const assetMode = process.env.REALISM_ASSETS ?? "live";
 await mkdir(out, { recursive: true });
-const browser = await chromium.launch({
-  headless: true,
-  executablePath:
-    "C:/Users/User/AppData/Local/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe",
-  args: native
-    ? [
-        "--use-angle=d3d11",
-        "--enable-gpu",
-        "--ignore-gpu-blocklist",
-        "--disable-software-rasterizer",
-      ]
-    : [],
-});
+const browser = await chromium.launch(chromiumLaunchOptions({ native }));
 const page = await browser.newPage({
   viewport: { width: 1280, height: 720 },
   deviceScaleFactor: 1,
 });
+await page.addInitScript(installFrameCampaignCapture);
 const errors = [];
 const resourceFailures = [];
 if (assetMode === "procedural")
@@ -99,6 +90,7 @@ try {
   await page.waitForTimeout(32000);
   const metrics = await page.evaluate(() => ({
     samples: window.__realismSamples,
+    frameCampaignEvidence: window.__PFM_FRAME_CAMPAIGN_EVIDENCE__,
     scene: window.render_game_to_text?.(),
     resources: performance.getEntriesByType("resource").map((r) => ({
       name: r.name.split("/").pop(),
@@ -127,6 +119,14 @@ try {
   });
   await page.waitForTimeout(8000);
   await page.screenshot({ path: path.join(out, "cutscene.png"), fullPage: true });
+  const cutsceneCampaigns = await page.evaluate(() => {
+    window.dispatchEvent(new Event("frame-campaign-snapshot-request"));
+    return window.__PFM_FRAME_CAMPAIGN_EVIDENCE__;
+  });
+  await writeFile(
+    path.join(out, "cutscene-frame-campaigns.json"),
+    JSON.stringify(cutsceneCampaigns, null, 2),
+  );
   await writeFile(path.join(out, "cutscene-dom.txt"), await page.locator("body").innerText());
   console.log(
     JSON.stringify({ phase, images: 10, metrics: path.join(out, "browser-metrics.json"), errors }),

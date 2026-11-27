@@ -1,0 +1,381 @@
+import { getRealtimeReconnectDelayMs } from "../multiplayer-connection";
+import { AuthorityLatencyMetrics } from "./authority-latency-metrics";
+import {
+  MATCH_PROTOCOL_VERSION,
+  assertCurrentTicket,
+  parseMatchCommandV1,
+  parseMatchTicketV1,
+  type MatchCommandV1,
+  type MatchTicketV1,
+} from "./match-protocol";
+import {
+  AuthoritativePresentationFeed,
+  type AuthorityFeedEvent,
+} from "./authoritative-presentation-feed";
+
+export interface AuthorityClientSocket {
+  readonly readyState: number;
+  send(data: string): void;
+  close(code?: number, reason?: string): void;
+  onopen: ((event: Event) => void) | null;
+  onmessage: ((event: MessageEvent) => void) | null;
+  onclose: ((event: CloseEvent) => void) | null;
+}
+
+export type AuthorityConnectionStatus =
+  "disconnected" | "connecting" | "authenticating" | "connected" | "retrying" | "unavailable";
+
+export interface AuthoritySocketClientOptions {
+  /** Absolute WSS URL for the server-owned match gateway, never a user input. */
+  gatewayUrl: string;
+  /** Used to prevent a game key or signed ticket going to a foreign domain. */
+  pageOrigin: string;
+  roomId: string;
+  issueTicket: () => Promise<MatchTicketV1>;
+  onEvent: (event: AuthorityFeedEvent) => void;
+  onStatus?: (status: AuthorityConnectionStatus) => void;
+  socketFactory?: (url: string) => AuthorityClientSocket;
+  now?: () => number;
+}
+
+const WS_OPEN = 1;
+const AUTH_DEADLINE_MS = 5_000;
+// The bridge drops an authenticated peer after 45 seconds of inactivity.
+const HEARTBEAT_INTERVAL_MS = 20_000;
+const TICKET_RENEWAL_LEAD_MS = 10_000;
+// WebSocket.close in a browser accepts 1000 or an application code (3000–4999).
+const TICKET_RENEWAL_CLOSE_CODE = 4002;
+const CLIENT_AUTH_REJECTED_CLOSE_CODE = 4003;
+
+/**
+ * Client transport only. A valid WSS origin, the real server HMAC admission
+ * gateway and durable room storage are deployment prerequisites. The client
+ * never sends a seed, state, score or reward. Every reconnection requests a
+ * new verified ticket; monotonic command sequence survives socket replacement.
+ * An authenticated socket stays active during passive play and renews its
+ * connection before the seat ticket expires.
+ */
+export class AuthoritativeMatchSocketClient {
+  private readonly feed: AuthoritativePresentationFeed;
+  private readonly ackLatency = new AuthorityLatencyMetrics();
+  private readonly url: string;
+  private readonly origin: string;
+  private socket: AuthorityClientSocket | null = null;
+  private ticket: MatchTicketV1 | null = null;
+  private started = false;
+  private generation = 0;
+  private retryCount = 0;
+  private sequence = 0;
+  private currentStatus: AuthorityConnectionStatus = "disconnected";
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private authTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private renewalTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(private readonly options: AuthoritySocketClientOptions) {
+    const target = new URL(options.gatewayUrl);
+    const page = new URL(options.pageOrigin);
+    const trustedDomain = page.hostname;
+    if (
+      target.protocol !== "wss:" ||
+      page.protocol !== "https:" ||
+      target.username ||
+      target.password ||
+      target.hash ||
+      target.search ||
+      !trustedDomain ||
+      (target.hostname !== trustedDomain && !target.hostname.endsWith("." + trustedDomain))
+    )
+      throw new Error("match authority must use a trusted same-site WSS gateway");
+    this.url = target.toString();
+    this.origin = target.origin;
+    this.feed = new AuthoritativePresentationFeed(options.roomId);
+  }
+
+  start(): void {
+    if (this.started) return;
+    this.started = true;
+    void this.connect();
+  }
+
+  dispose(): void {
+    if (!this.started) return;
+    this.started = false;
+    this.generation += 1;
+    this.clearTimers();
+    this.ticket = null;
+    const socket = this.socket;
+    this.socket = null;
+    if (socket) {
+      this.clearSocketListeners(socket);
+      socket.close(1000, "client_closed");
+    }
+    this.status("disconnected");
+  }
+
+  statusSnapshot(): AuthorityConnectionStatus {
+    return this.currentStatus;
+  }
+
+  /** Return copies, never a mutable reducer that could ingest browser frames. */
+  officialSnapshot(): ReturnType<AuthoritativePresentationFeed["snapshot"]> {
+    return this.feed.snapshot();
+  }
+
+  officialReceipt(): ReturnType<AuthoritativePresentationFeed["receipt"]> {
+    return this.feed.receipt();
+  }
+
+  /** Aggregated command-to-ACK times only; no player identifiers or secrets. */
+  latencySummary(): ReturnType<AuthorityLatencyMetrics["summary"]> {
+    return this.ackLatency.summary();
+  }
+
+  /**
+   * Input is shaped as a command without authority fields. Zod refuses an
+   * injected score, seed or identity. Never reuse a sequence after a failed
+   * network send: the server may have accepted that frame.
+   */
+  sendCommand(input: Omit<MatchCommandV1, "version" | "roomId" | "sequence">): boolean {
+    return this.sendTrackedCommand(input) !== null;
+  }
+
+  /** Lets the UI associate an ACK or NACK with a particular pending action. */
+  sendTrackedCommand(
+    input: Omit<MatchCommandV1, "version" | "roomId" | "sequence">,
+  ): number | null {
+    const socket = this.socket;
+    if (
+      this.currentStatus !== "connected" ||
+      !socket ||
+      socket.readyState !== WS_OPEN ||
+      this.feed.hasFinalReceipt()
+    )
+      return null;
+    const now = (this.options.now ?? Date.now)();
+    if (!this.ticket || this.ticket.expiresAt <= now) {
+      socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
+      return null;
+    }
+    if (this.sequence >= Number.MAX_SAFE_INTEGER) return null;
+    const command = parseMatchCommandV1({
+      ...input,
+      version: MATCH_PROTOCOL_VERSION,
+      roomId: this.options.roomId,
+      sequence: this.sequence + 1,
+    });
+    this.sequence += 1;
+    try {
+      socket.send(JSON.stringify({ type: "command", command }));
+      this.ackLatency.recordSent(command.sequence, now);
+      return command.sequence;
+    } catch {
+      socket.close(1000, "send_failed");
+      return null;
+    }
+  }
+
+  private async connect(): Promise<void> {
+    if (!this.started) return;
+    const generation = ++this.generation;
+    this.status("connecting");
+    try {
+      const candidate = parseMatchTicketV1(await this.options.issueTicket());
+      if (!this.started || generation !== this.generation) return;
+      const now = (this.options.now ?? Date.now)();
+      assertCurrentTicket(candidate, now);
+      if (candidate.roomId !== this.options.roomId) throw new Error("match ticket room mismatch");
+
+      const socket = this.options.socketFactory
+        ? this.options.socketFactory(this.url)
+        : new WebSocket(this.url);
+      this.socket = socket;
+      this.ticket = candidate;
+      this.feed.bindSeat(candidate.seat);
+      let resumeFrom = 0;
+      let authDeadlineAt = 0;
+      socket.onopen = () => {
+        if (!this.isCurrent(socket, generation) || this.currentStatus !== "connecting") return;
+        const openedAt = (this.options.now ?? Date.now)();
+        if (!this.ensureCurrentTicket(socket, candidate, openedAt)) return;
+        authDeadlineAt = openedAt + AUTH_DEADLINE_MS;
+        this.status("authenticating");
+        try {
+          socket.send(
+            JSON.stringify({
+              type: "authenticate",
+              version: MATCH_PROTOCOL_VERSION,
+              ticket: candidate,
+            }),
+          );
+        } catch {
+          socket.close(1000, "auth_send_failed");
+          return;
+        }
+        this.authTimer = setTimeout(() => {
+          if (this.isCurrent(socket, generation) && this.currentStatus === "authenticating")
+            socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "auth_timeout");
+        }, AUTH_DEADLINE_MS);
+      };
+      socket.onmessage = (message) => {
+        if (!this.isCurrent(socket, generation)) return;
+        // Native WebSocket events carry the authenticated transport's origin.
+        // A synthetic DOM event or a frame attributed to a foreign origin
+        // must never mutate the presentation feed or its connection state.
+        if (!message.isTrusted || message.origin !== this.origin) return;
+        // Until ready authenticates this seat, no snapshot or final result is official.
+        const phase = this.currentStatus;
+        if (phase !== "authenticating" && phase !== "connected") return;
+        // Queued frames can outlive the ticket while the tab suspends its timers.
+        const receivedAt = (this.options.now ?? Date.now)();
+        if (!this.ensureCurrentTicket(socket, candidate, receivedAt)) return;
+        if (phase === "authenticating" && receivedAt >= authDeadlineAt) {
+          socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "auth_timeout");
+          return;
+        }
+        const event = this.feed.accept(message.data, phase);
+        if (event.kind === "ignored" && event.reason === "seat_mismatch") {
+          this.rejectForeignSeat(socket);
+          return;
+        }
+        if (event.kind === "sequence_resume") {
+          // The feed only emits this event for the seat bound from the ticket.
+          if (phase === "authenticating") resumeFrom = Math.max(resumeFrom, event.sequence);
+          return;
+        }
+        if (event.kind === "ack" || event.kind === "nack")
+          this.ackLatency.recordAcknowledged(
+            event.sequence,
+            (this.options.now ?? Date.now)(),
+            event.kind === "nack",
+          );
+        // The feed confirms the seat bound from the signed ticket. A message
+        // type alone never authenticates this transport, so the decision reads
+        // local state instead of the frame that just arrived.
+        if (phase === "authenticating" && this.feed.readyAuthorized()) {
+          this.clearAuthTimer();
+          this.retryCount = 0;
+          this.sequence = Math.max(this.sequence, resumeFrom);
+          this.startConnectionTimers(socket, generation, candidate);
+          this.status("connected");
+        }
+        if (this.feed.hasFinalReceipt()) this.clearConnectionTimers();
+        if (event.kind !== "ignored") this.options.onEvent(event);
+      };
+      socket.onclose = (close) => {
+        if (!this.isCurrent(socket, generation)) return;
+        this.clearAuthTimer();
+        this.clearConnectionTimers();
+        this.clearSocketListeners(socket);
+        this.socket = null;
+        this.ticket = null;
+        // A rejected signature or a replaced session is not a reason to
+        // repeatedly mint new tickets or fight another authorized device.
+        if (
+          close.code === 1008 ||
+          close.code === 4001 ||
+          close.code === CLIENT_AUTH_REJECTED_CLOSE_CODE
+        ) {
+          this.status("unavailable");
+          return;
+        }
+        this.retry();
+      };
+    } catch {
+      if (this.started && generation === this.generation) this.retry();
+    }
+  }
+
+  private ensureCurrentTicket(
+    socket: AuthorityClientSocket,
+    candidate: MatchTicketV1,
+    now: number,
+  ): boolean {
+    if (this.ticket !== candidate) return false;
+    try {
+      assertCurrentTicket(candidate, now);
+      return true;
+    } catch {
+      socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
+      return false;
+    }
+  }
+
+  private retry(): void {
+    if (!this.started || this.currentStatus === "unavailable") return;
+    const delay = getRealtimeReconnectDelayMs(this.retryCount);
+    this.retryCount += 1;
+    this.status("retrying");
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      void this.connect();
+    }, delay);
+  }
+
+  private status(status: AuthorityConnectionStatus): void {
+    this.currentStatus = status;
+    this.options.onStatus?.(status);
+  }
+
+  /**
+   * A frame claiming another seat is never presentation state: the signed
+   * ticket bound in the feed decides authority, and this closes the transport.
+   */
+  private rejectForeignSeat(socket: AuthorityClientSocket): void {
+    this.status("unavailable");
+    socket.close(CLIENT_AUTH_REJECTED_CLOSE_CODE, "seat_mismatch");
+  }
+
+  private isCurrent(socket: AuthorityClientSocket, generation: number): boolean {
+    return this.started && generation === this.generation && this.socket === socket;
+  }
+
+  private clearAuthTimer(): void {
+    if (this.authTimer) clearTimeout(this.authTimer);
+    this.authTimer = null;
+  }
+
+  private startConnectionTimers(
+    socket: AuthorityClientSocket,
+    generation: number,
+    ticket: MatchTicketV1,
+  ): void {
+    this.heartbeatTimer = setInterval(() => {
+      if (!this.isCurrent(socket, generation) || socket.readyState !== WS_OPEN) return;
+      try {
+        socket.send(JSON.stringify({ type: "ping" }));
+      } catch {
+        socket.close(1000, "heartbeat_failed");
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    const remaining = ticket.expiresAt - (this.options.now ?? Date.now)();
+    const delay = Math.max(0, remaining - Math.min(TICKET_RENEWAL_LEAD_MS, remaining / 2));
+    this.renewalTimer = setTimeout(() => {
+      if (this.isCurrent(socket, generation) && socket.readyState === WS_OPEN) {
+        socket.close(TICKET_RENEWAL_CLOSE_CODE, "ticket_renewal");
+      }
+    }, delay);
+  }
+
+  private clearConnectionTimers(): void {
+    if (this.heartbeatTimer !== null) clearInterval(this.heartbeatTimer);
+    if (this.renewalTimer !== null) clearTimeout(this.renewalTimer);
+    this.heartbeatTimer = null;
+    this.renewalTimer = null;
+  }
+
+  private clearTimers(): void {
+    this.clearAuthTimer();
+    this.clearConnectionTimers();
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+  }
+
+  private clearSocketListeners(socket: AuthorityClientSocket): void {
+    socket.onopen = null;
+    socket.onmessage = null;
+    socket.onclose = null;
+  }
+}

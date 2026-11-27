@@ -333,6 +333,14 @@ export function buildRigSkin(
   for (const key of Object.keys(ctx.mats) as (keyof PlayerMaterials)[]) {
     materialKeys.set(ctx.mats[key], key);
   }
+  // This body is private to the skin construction. Its merged geometries own
+  // their buffers, so a surface used once can move straight into the skinned
+  // buckets instead of copying every vertex before disposing the original.
+  // Keep cloning aliases: separate joints must never mutate the same surface.
+  const bodyReferences = new Map<THREE.BufferGeometry, number>();
+  for (const mesh of body.all)
+    bodyReferences.set(mesh.geometry, (bodyReferences.get(mesh.geometry) ?? 0) + 1);
+  const transferred = new Set<THREE.BufferGeometry>();
   for (const [key, owner] of Object.entries(MESH_OWNER) as [
     Exclude<keyof RigBody, "all">,
     RigJoint,
@@ -344,8 +352,10 @@ export function buildRigSkin(
     const boneIndex = indexOf[owner];
     const rest = localRest.get(owner)!;
     for (const mesh of meshes) {
-      const geometry = mesh.geometry.clone();
-      // rigPart already normalizes pigment, and clone owns an independent buffer.
+      const geometry =
+        bodyReferences.get(mesh.geometry) === 1 ? mesh.geometry : mesh.geometry.clone();
+      if (geometry === mesh.geometry) transferred.add(geometry);
+      // rigPart already normalizes pigment; the consumed geometry is exclusive.
       if (mesh.material === ctx.mats.glove) {
         // Latex palm, coloured backhand and a dark wrist closure share one
         // material. Bake their albedo once, including articulated fingers.
@@ -419,9 +429,9 @@ export function buildRigSkin(
       });
     }
   }
-  // The intermediate body is cloned into the skinned buckets. Release its
-  // CPU geometry too when changing appearance or promoting another athlete.
-  for (const mesh of body.all) mesh.geometry.dispose();
+  // Moved surfaces are now owned by the buckets (or already released by their
+  // merge). Only aliased originals remain owned by the intermediate body.
+  for (const geometry of bodyReferences.keys()) if (!transferred.has(geometry)) geometry.dispose();
 
   const all = groups.slice();
   // Acquire immediately: creating the next athlete can evict an earlier

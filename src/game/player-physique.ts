@@ -115,7 +115,9 @@ export function physiqueFor(player: Player): { height: number; weight: number } 
       weight: player.developmentBase.profile.weight,
     };
   const rnd = makeRng(`profile-${player.id}-${player.name}`);
-  buildAttrs(player, rnd);
+  // The full profile uses 29 draws from this stream for legacy attributes.
+  // Advance it directly when only height and weight are needed.
+  for (let draw = 0; draw < 29; draw++) rnd();
   // O pé dominante consome uma ou duas amostras antes das medidas na ficha.
   if (rnd() >= 0.72) rnd();
   const tall = player.pos === "GK" ? 8 : player.pos === "DF" ? 4 : 0;

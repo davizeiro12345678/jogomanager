@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient } from "@/integrations/supabase/client";
 import { reportSilent } from "@/lib/silent-errors";
 
 /** undefined while loading, null for a visitor, otherwise the current account ID. */
 export function useAuthUserId() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   useEffect(() => {
+    const client = getConfiguredSupabaseClient();
+    if (!client) {
+      setUserId(null);
+      return;
+    }
     let alive = true;
     let changed = false;
     const observePushIdentity = (nextUserId: string | null) => {
@@ -26,13 +31,13 @@ export function useAuthUserId() {
           });
         });
     };
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = client.auth.onAuthStateChange((_event, session) => {
       changed = true;
       const nextUserId = session?.user.id ?? null;
       if (alive) setUserId(nextUserId);
       observePushIdentity(nextUserId);
     });
-    void supabase.auth
+    void client.auth
       .getSession()
       .then(({ data: session }) => {
         if (!alive || changed) return;

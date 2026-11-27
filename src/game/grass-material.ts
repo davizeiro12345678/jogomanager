@@ -27,7 +27,7 @@ export function createGrassBladeMaterial(
     side: THREE.DoubleSide,
   });
   material.customProgramCacheKey = () =>
-    `match-grass-contact-wind-v4:${webgl2 ? "webgl2" : "webgpu-standard"}`;
+    `match-grass-contact-wind-v5:${webgl2 ? "webgl2" : "webgpu-standard"}`;
   if (webgl2)
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -67,6 +67,10 @@ export function createGrassBladeMaterial(
         for (int i = 0; i < 22; i++) {
           if (i >= uPlayerCount || fade <= 0.001) break;
           vec2 offset = wp.xz - uPlayers[i].xz;
+          // Beyond 0.56 m the original contact contribution is exactly zero.
+          // A conservative squared-distance bound avoids length/normalize for
+          // distant players without changing the near-contact falloff.
+          if (dot(offset, offset) > 0.314) continue;
           float contact = 1.0 - smoothstep(0.12, 0.56, length(offset));
           trample = max(trample, contact);
           bend.xz += normalize(offset + vec2(0.001)) * contact * 0.033 * h * h;

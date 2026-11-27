@@ -1,0 +1,72 @@
+{
+  "observedDate": "2026-11-12",
+  "source": "NPMScan batch_query_vulnerabilities",
+  "scope": "Seven selected exact core versions; not a full dependency-tree audit",
+  "results": [
+    {
+      "package": {
+        "name": "three",
+        "version": "0.186.1"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    },
+    {
+      "package": {
+        "name": "@react-three/fiber",
+        "version": "9.8.1"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    },
+    {
+      "package": {
+        "name": "@react-three/drei",
+        "version": "10.7.9"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    },
+    {
+      "package": {
+        "name": "@dimforge/rapier3d-compat",
+        "version": "0.21.0"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    },
+    {
+      "package": {
+        "name": "vite",
+        "version": "8.3.3"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    },
+    {
+      "package": {
+        "name": "@tanstack/react-start",
+        "version": "1.168.60"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    },
+    {
+      "package": {
+        "name": "postprocessing",
+        "version": "6.39.5"
+      },
+      "registryStatus": "found",
+      "scanStatus": "scanned",
+      "vulnerabilities": []
+    }
+  ],
+  "unresolvedPackages": [],
+  "packagesWithVulnerabilities": 0
+}

@@ -17,7 +17,9 @@ import {
   emptyActionContext,
   emptyContactContext,
   emptyVersionedVisualData,
+  getActionPhase,
   migrateVisualData,
+  type ActionContext,
   type VersionedVisualData,
   VISUAL_CONTEXT_VERSION,
 } from "./visual-context";
@@ -220,10 +222,10 @@ export class ReplaySim implements SimView {
 
   private sync() {
     const f = this.replay.frames;
-    while (this.i < f.length - 2 && f[this.i + 1]!.t <= this.time) this.i++;
+    while (this.i < f.length - 1 && f[this.i + 1]!.t <= this.time) this.i++;
     while (this.i > 0 && f[this.i]!.t > this.time) this.i--;
     const a = f[this.i];
-    const b = f[Math.min(f.length - 1, this.i + 1)];
+    const b = f[this.i + 1] ?? a;
     if (!a || !b) return;
     const span = b.t - a.t;
     const k = span > 0 ? Math.max(0, Math.min(1, (this.time - a.t) / span)) : 0;
@@ -252,6 +254,7 @@ export class ReplaySim implements SimView {
       // Frame sem dados visuais (replay antigo), cria dados vazios
       this.currentVisualData = emptyVersionedVisualData(this.players.length);
     }
+    const nextActionContexts = b.v?.version === VISUAL_CONTEXT_VERSION ? b.v.actionContexts : null;
 
     for (let n = 0; n < this.players.length; n++) {
       const p = this.players[n]!;
@@ -261,10 +264,46 @@ export class ReplaySim implements SimView {
       p.vx = a.p[o + 2] ?? 0;
       p.vz = a.p[o + 3] ?? 0;
       p.action = a.a[n] ?? null;
-      p.actionT = p.action ? 0.3 : 0;
-      p.actionDur = p.action ? 0.6 : 0;
+      const clock = recordedActionClock(this.currentVisualData.actionContexts[n], p.action);
+      if (!clock) {
+        p.actionT = p.action ? 0.3 : 0;
+        p.actionDur = p.action ? 0.6 : 0;
+        continue;
+      }
+      p.actionDur = clock.actionDur;
+      p.actionT = clock.actionT;
+      // A rising countdown or a changed duration is a new action even if
+      // both samples name the same clip. Jump to it at its recorded frame.
+      if (k > 0 && b.a[n] === p.action) {
+        const next = recordedActionClock(nextActionContexts?.[n], p.action);
+        if (next && next.actionDur === clock.actionDur && next.actionT < clock.actionT) {
+          p.actionT = lerp(clock.actionT, next.actionT, k);
+          this.currentVisualData.actionContexts[n] = {
+            ...clock,
+            actionT: p.actionT,
+            phase: getActionPhase(1 - p.actionT / p.actionDur),
+          };
+        }
+      }
     }
   }
+}
+
+function recordedActionClock(
+  context: ActionContext | null | undefined,
+  action: PlayerAction | null,
+) {
+  if (
+    !action ||
+    context?.action !== action ||
+    !Number.isFinite(context.actionDur) ||
+    context.actionDur <= 0 ||
+    !Number.isFinite(context.actionT) ||
+    context.actionT < 0 ||
+    context.actionT > context.actionDur
+  )
+    return null;
+  return context;
 }
 
 function lerp(a: number, b: number, k: number) {

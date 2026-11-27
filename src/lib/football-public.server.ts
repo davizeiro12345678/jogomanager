@@ -1,11 +1,11 @@
 import type { AppDb } from "@/lib/app-db";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { footballPublicEnvironment } from "./football-public-env.server";
 
 /** Public projections keep caller RLS and never require a privileged key. */
 export function createFootballPublicClient(): AppDb {
-  const url = process.env["SUPABASE_URL"];
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  const { SUPABASE_URL: url, SUPABASE_PUBLISHABLE_KEY: key } = footballPublicEnvironment();
   if (!url || !key) throw new Error("Os dados públicos de futebol estão indisponíveis.");
   return createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },

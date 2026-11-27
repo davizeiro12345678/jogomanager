@@ -74,6 +74,14 @@ Deno.serve(async (request: Request) => {
         const limit = Number(
           value.response?.requests?.limit_day ?? value.response?.requests?.limit,
         );
+        const minuteLimitHeader = Number(status.headers.get("x-ratelimit-limit"));
+        // Custom450 is the contracted ceiling. If the provider omits its
+        // optional header, retain that explicit plan limit instead of failing
+        // discovery and stopping every scheduled import.
+        const minuteLimit =
+          Number.isSafeInteger(minuteLimitHeader) && minuteLimitHeader > 0
+            ? Math.min(450, minuteLimitHeader)
+            : 450;
         if (
           !status.ok ||
           (value.errors && Object.keys(value.errors).length) ||
@@ -87,7 +95,7 @@ Deno.serve(async (request: Request) => {
             p_key: body.key,
             p_url: Deno.env.get("SUPABASE_URL"),
             p_daily: limit,
-            p_minute: Number(status.headers.get("x-ratelimit-limit")) || 450,
+            p_minute: minuteLimit,
           }),
         );
       }
@@ -96,7 +104,15 @@ Deno.serve(async (request: Request) => {
     if (!settings.apiKey) return reply(409, { error: "queue_not_configured" });
     if (!adminToken && (!settings.enabled || Date.parse(settings.nextRunAt) > Date.now()))
       return reply(200, { paused: true });
-    const deadline = Date.now() + 49000,
+    if (
+      !adminToken &&
+      body.workerLanes !== undefined &&
+      (!Number.isSafeInteger(body.workerLanes) || body.workerLanes < 1 || body.workerLanes > 12)
+    )
+      return reply(400, { error: "invalid_worker_lanes" });
+    // Scheduled workers use short, bounded windows to stay below the Edge CPU
+    // budget. The authenticated manual pilot retains its longer single lane.
+    const deadline = Date.now() + (adminToken ? 45000 : 18000),
       summary = {
         completed: 0,
         failed: 0,
@@ -120,7 +136,9 @@ Deno.serve(async (request: Request) => {
       nextRequest = Date.now(),
       nextProviderRequest = Date.now();
     const { lanes, spacingMs, maxRequests } = footballWindowBudget(
-      Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "48",
+      !adminToken && body.workerLanes !== undefined
+        ? body.workerLanes
+        : (Deno.env.get("FOOTBALL_IMPORT_LANES") ?? "8"),
       !!adminToken,
     );
     summary.lanes = lanes;

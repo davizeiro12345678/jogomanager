@@ -3,6 +3,18 @@
 Status: **off by default**. This change does not switch production traffic,
 user accounts, matches, purchases or saves.
 
+
+## Frankfurt canary status (2026-11-10)
+
+- Live VPS gateway: `jm-catalog.service` on loopback `127.0.0.1:3093`, with Nginx allowlisting `GET /v1/public/clubs` on `127.0.0.1:8088`; deny all other public routes and methods.
+- Cloudflare DNS: proxied CNAME `catalog-vps.jogomanager.com` targets the dedicated `jogomanager-vps-fra-01` tunnel. The existing `catalog.jogomanager.com` DNS was NOT changed.
+- Cloudflare ingress: only `catalog-vps.jogomanager.com -> http://127.0.0.1:8088`, followed by a 404 fallback.
+- **Tunnel connector currently disconnected (0 connections).** No production client traffic has been switched. Connector activation requires a trusted clean OS and securely installed tunnel credentials; never commit the token.
+- Supabase has 38,854 public clubs (Nov 10). An actual loopback smoke test returned page 0 (1,000), page 38 (854), page 39 (0). Cold rebuild ~3.27 s and cached response ~5 ms, both local measurements only.
+- The frontend canary remains **off by default**. It now supports 1,000-row pages up to 80 pages, an explicit staging-host allowlist and a 10-second request budget, with Supabase fallback on errors or truncated snapshots.
+- The anonymous gateway uses only the Supabase publishable key, never a service-role credential; 32 MiB maximum in-memory cache, 300-second TTL. 
+- Preserve the existing production hostname and fallback until end-to-end HTTPS, JWT/cookie stripping, rate limits and Supabase load comparison are verified on a clean connector host.
+
 ## Topology
 
 ```
@@ -12,7 +24,7 @@ TanStack Start server --(GET public catalog over HTTPS)--> Cloudflare Tunnel
          |                                  restricted /v1/public/clubs
          |                                                |
          |                                                v
-         |                                  VPS localhost 127.0.0.1:3092
+         |                                  Nginx 127.0.0.1:8088 => gateway 127.0.0.1:3093
          |                                                |
          |                                                v
          |                                   Supabase public REST API
@@ -20,9 +32,10 @@ TanStack Start server --(GET public catalog over HTTPS)--> Cloudflare Tunnel
          +-- on any failure/timeout/incomplete response --> Supabase public API
 ```
 
-The existing VPS gateway (`pfm-public-cache-gateway`) exposes **only loopback
-127.0.0.1:3092**. Its internal cache is bounded to 32 MiB, with 300 seconds
-TTL, and currently serves public `clubs(id,name,crest_url)` projections.
+The Frankfurt VPS canary uses a dedicated `jm-catalog.service` listening on
+`127.0.0.1:3093`, with Nginx at `127.0.0.1:8088`. Its cache is bounded to
+32 MiB with a 300-second TTL and serves only public `clubs(id,crest_url)` projections.
+The prior `127.0.0.1:3092` diagnostic service is not the catalog gateway.
 It must not cache JWT-dependent content, permissions, balances, saves,
 payments, or user-specific responses.
 
@@ -31,8 +44,10 @@ payments, or user-specific responses.
 - `VPS_CATALOG_ENABLED=0`: default, always query the Supabase public client.
 - `VPS_CATALOG_ENABLED=1`: optional canary, only for public crest projections
   when the LOGO_DEV_API_KEY fallback is not in use.
-- `VPS_CATALOG_URL=https://catalog.jogomanager.com`: exact allowlisted origin.
-  Other hosts, IPs, ports, credentials, protocols, and paths are rejected.
+- `VPS_CATALOG_URL=https://catalog-vps.jogomanager.com`: dedicated canary origin.
+  The existing `https://catalog.jogomanager.com` is also explicitly allowlisted
+  for compatibility. All other hosts, IPs, ports, credentials, protocols and
+  extra paths are rejected.
 
 Never expose this server-only setting as a `VITE_*` or browser variable.
 Never send a Supabase service role key to the VPS public catalog.
@@ -65,7 +80,7 @@ Never send a Supabase service role key to the VPS public catalog.
 - Exact HTTPS host allowlist; no dynamic upstream paths (SSRF mitigation).
 - No browser auth, cookies or private headers sent.
 - Only public club crest projections; never authenticated or private data.
-- 4.5 second request budget, bounded pages and page-size validation.
+- 10-second request budget, at most 80 pages of 1,000 rows, and page-size validation.
 - Rejects invalid/duplicate responses and truncation.
 - Falls back to original read-only Supabase path instead of breaking pages.
 - Remote results do not override the existing `LOGO_DEV_API_KEY` mechanism.

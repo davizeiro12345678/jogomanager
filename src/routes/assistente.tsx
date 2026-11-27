@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { AssistentePage } from "@/pages/assistente";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/assistente")({
   ssr: false,
@@ -31,5 +29,8 @@ export const Route = createFileRoute("/assistente")({
       },
     ],
   }),
-  component: AssistentePage,
+  // Keep the browser's module graph out of the SSR Worker build.
+  component: import.meta.env.SSR
+    ? () => null
+    : lazyRouteComponent(() => import("@/pages/assistente"), "AssistentePage"),
 });

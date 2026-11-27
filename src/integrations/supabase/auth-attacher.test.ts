@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type SessionResult = { data: { session: { access_token: string } | null } };
 type NextOptions = { headers: Record<string, string> };
-type ClientRun = (context: { next: (options: NextOptions) => Promise<string> }) => Promise<string>;
+type ClientRun = (context: { next: (options?: NextOptions) => Promise<string> }) => Promise<string>;
 
 const observed = vi.hoisted(() => ({
   clientLoads: 0,
+  configured: true,
   getSession: vi.fn<() => Promise<SessionResult>>(),
   run: undefined as ClientRun | undefined,
 }));
@@ -22,14 +23,18 @@ vi.mock("@tanstack/react-start", () => ({
 
 vi.mock("./client", () => {
   observed.clientLoads++;
-  return { supabase: { auth: { getSession: observed.getSession } } };
+  return {
+    getConfiguredSupabaseClient: () =>
+      observed.configured ? { auth: { getSession: observed.getSession } } : null,
+  };
 });
 
 beforeEach(() => {
   observed.getSession.mockReset();
+  observed.configured = true;
 });
 
-async function invoke(next: (options: NextOptions) => Promise<string>) {
+async function invoke(next: (options?: NextOptions) => Promise<string>) {
   await import("./auth-attacher");
   if (!observed.run) throw new Error("Client middleware was not registered");
   return observed.run({ next });
@@ -85,5 +90,13 @@ describe("server function session attachment", () => {
     const next = vi.fn(async () => "must not send");
     await expect(invoke(next)).rejects.toThrow("session storage unavailable");
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("allows a public RPC to reach the server when browser auth is unconfigured", async () => {
+    observed.configured = false;
+    const next = vi.fn(async () => "public result");
+    await expect(invoke(next)).resolves.toBe("public result");
+    expect(next).toHaveBeenCalledWith();
+    expect(observed.getSession).not.toHaveBeenCalled();
   });
 });

@@ -400,6 +400,7 @@ export type Database = {
           price_cents: number | null
           product_key: string | null
           session_id: string
+          starter_slot_released_at: string | null
           stripe_price_id: string | null
           user_id: string
         }
@@ -411,6 +412,7 @@ export type Database = {
           price_cents?: number | null
           product_key?: string | null
           session_id: string
+          starter_slot_released_at?: string | null
           stripe_price_id?: string | null
           user_id: string
         }
@@ -422,6 +424,7 @@ export type Database = {
           price_cents?: number | null
           product_key?: string | null
           session_id?: string
+          starter_slot_released_at?: string | null
           stripe_price_id?: string | null
           user_id?: string
         }
@@ -1172,6 +1175,8 @@ export type Database = {
       match_rooms: {
         Row: {
           code: string
+          contact_physics_revision: 1 | 2
+          settlement_authority: "legacy" | "websocket"
           created_at: string
           guest_club: string | null
           guest_id: string | null
@@ -1187,6 +1192,8 @@ export type Database = {
         }
         Insert: {
           code: string
+          contact_physics_revision?: 1 | 2
+          settlement_authority?: "legacy" | "websocket"
           created_at?: string
           guest_club?: string | null
           guest_id?: string | null
@@ -1202,6 +1209,8 @@ export type Database = {
         }
         Update: {
           code?: string
+          contact_physics_revision?: 1 | 2
+          settlement_authority?: "legacy" | "websocket"
           created_at?: string
           guest_club?: string | null
           guest_id?: string | null
@@ -2348,6 +2357,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      read_official_asset_catalog: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       activate_training_boost: {
         Args: { _user_id: string }
         Returns: {

@@ -41,15 +41,11 @@ import skinNormalAsset from "@/assets/textures/skin_normal.ktx2.asset.json";
 import sockNormalAsset from "@/assets/textures/sock_normal.ktx2.asset.json";
 import sweatMaskAsset from "@/assets/textures/sweat_mask.ktx2.asset.json";
 import sweatNormalAsset from "@/assets/textures/sweat_normal.ktx2.asset.json";
-import grassAlbedoAsset from "@/assets/textures/grass_albedo.ktx2.asset.json";
 import grassNormalAsset from "@/assets/textures/grass_normal.ktx2.asset.json";
 import grassRoughAsset from "@/assets/textures/grass_rough.ktx2.asset.json";
 import concreteAlbedoAsset from "@/assets/textures/concrete_albedo.ktx2.asset.json";
-import concreteRoughAsset from "@/assets/textures/concrete_rough.ktx2.asset.json";
 import netMaskAsset from "@/assets/textures/net_mask.ktx2.asset.json";
 
-import asset0 from "@/assets/textures/jersey_solid_normal.ktx2.asset.json";
-import asset1 from "@/assets/textures/jersey_solid_rough.ktx2.asset.json";
 import asset2 from "@/assets/textures/jersey_stripes_normal.ktx2.asset.json";
 import asset3 from "@/assets/textures/jersey_stripes_rough.ktx2.asset.json";
 import asset4 from "@/assets/textures/jersey_pin_normal.ktx2.asset.json";
@@ -82,9 +78,11 @@ export type Ktx2Name =
   | "fiberNormal"
   | "fiberRough"
   | "skinNormal"
+  | "skinDetailNormal"
   | "sweatNormal"
   | "sweatMask"
   | "hairNormal"
+  | "hairDetailNormal"
   | "hairRough"
   | "bootNormal"
   | "bootRough"
@@ -92,7 +90,15 @@ export type Ktx2Name =
   | "shinRough"
   | "sockNormal";
 export type StadiumKtx2Name =
-  "grassAlbedo" | "grassNormal" | "grassRough" | "concreteAlbedo" | "concreteRough" | "netMask";
+  | "grassAlbedo"
+  | "grassNormal"
+  | "grassRough"
+  | "grassDetailNormal"
+  | "grassDetailRough"
+  | "concreteAlbedo"
+  | "concreteDetailNormal"
+  | "concreteRough"
+  | "netMask";
 export type DetailKtx2Name =
   | "jersey_solid_normal"
   | "jersey_solid_rough"
@@ -126,27 +132,51 @@ export type DetailKtx2Name =
 export type TextureName = Ktx2Name | StadiumKtx2Name | DetailKtx2Name;
 
 /** repetição de cada mapa sobre a malha do jogador */
-const SOURCES: Record<TextureName, { url: string; repeat: number; color?: boolean }> = {
+const SOURCES: Record<
+  TextureName,
+  { url: string; repeat: number | readonly [number, number]; color?: boolean; fineDetail?: boolean }
+> = {
   fiberNormal: { url: fiberNormalAsset.url, repeat: 6 },
   fiberRough: { url: fiberRoughAsset.url, repeat: 6 },
   skinNormal: { url: skinNormalAsset.url, repeat: 4 },
+  skinDetailNormal: {
+    url: "/textures/surface-v1/skin-pore-normal.ktx2",
+    repeat: 3,
+    fineDetail: true,
+  },
   sweatNormal: { url: sweatNormalAsset.url, repeat: 3 },
   sweatMask: { url: sweatMaskAsset.url, repeat: 3 },
   hairNormal: { url: hairNormalAsset.url, repeat: 3 },
+  hairDetailNormal: { url: "/textures/detail-v1/hair-normal.ktx2", repeat: 2, fineDetail: true },
   hairRough: { url: hairRoughAsset.url, repeat: 3 },
   bootNormal: { url: bootNormalAsset.url, repeat: 3 },
   bootRough: { url: bootRoughAsset.url, repeat: 3 },
   shinNormal: { url: shinNormalAsset.url, repeat: 2 },
   shinRough: { url: shinRoughAsset.url, repeat: 2 },
   sockNormal: { url: sockNormalAsset.url, repeat: 4 },
-  grassAlbedo: { url: grassAlbedoAsset.url, repeat: 1, color: true },
+  grassAlbedo: { url: "/textures/surface-v1/grass-checker-albedo.ktx2", repeat: 1, color: true },
   grassNormal: { url: grassNormalAsset.url, repeat: 6 },
+  grassDetailNormal: {
+    url: "/textures/detail-v1/turf-normal.ktx2",
+    repeat: [48, 32],
+    fineDetail: true,
+  },
+  grassDetailRough: {
+    url: "/textures/detail-v1/turf-rough.ktx2",
+    repeat: [48, 32],
+    fineDetail: true,
+  },
   grassRough: { url: grassRoughAsset.url, repeat: 6 },
   concreteAlbedo: { url: concreteAlbedoAsset.url, repeat: 1, color: true },
-  concreteRough: { url: concreteRoughAsset.url, repeat: 1 },
+  concreteRough: { url: "/textures/surface-v1/concrete-rough.ktx2", repeat: 1 },
+  concreteDetailNormal: { url: "/textures/surface-v1/concrete-normal.ktx2", repeat: 1 },
   netMask: { url: netMaskAsset.url, repeat: 1 },
-  jersey_solid_normal: { url: asset0.url, repeat: 6 },
-  jersey_solid_rough: { url: asset1.url, repeat: 6 },
+  jersey_solid_normal: {
+    url: "/textures/detail-v1/fabric-normal.ktx2",
+    repeat: 6,
+    fineDetail: true,
+  },
+  jersey_solid_rough: { url: "/textures/detail-v1/fabric-rough.ktx2", repeat: 6, fineDetail: true },
   jersey_stripes_normal: { url: asset2.url, repeat: 6 },
   jersey_stripes_rough: { url: asset3.url, repeat: 6 },
   jersey_pin_normal: { url: asset4.url, repeat: 6 },
@@ -274,7 +304,7 @@ export function requestKtx2(names: readonly TextureName[]): void {
               }
               retryTimers.get(name)?.();
               retryTimers.delete(name);
-              const prepared = prepareGpuTexture(tex, Boolean(src.color), policy);
+              const prepared = prepareGpuTexture(tex, Boolean(src.color), policy, src.fineDetail);
               if (
                 !prepared.compressed ||
                 gpuTextureStats.residentBytes + prepared.bytes > policy.residentBudget
@@ -292,7 +322,8 @@ export function requestKtx2(names: readonly TextureName[]): void {
                 return;
               }
               tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-              tex.repeat.set(src.repeat, src.repeat);
+              if (typeof src.repeat === "number") tex.repeat.set(src.repeat, src.repeat);
+              else tex.repeat.set(...src.repeat);
               tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
               tex.needsUpdate = true;
               loaded.set(name, tex);
@@ -374,11 +405,17 @@ export function retainKtx2(
     detector.dispose();
     supportProfiles.set(renderer, profile);
   }
+  const firstOwner = owners.count === 0;
   const compatibleBefore = owners.compatible;
   const releaseOwner = owners.acquire(renderer, profile);
   if (started && owners.compatible && decoderProfile !== profile) disposeKtx2();
+  const wasStarted = started;
   initKtx2(renderer);
-  if (compatibleBefore !== owners.compatible) notifyKtx2Change();
+  // A restored first Canvas can have mounted consumers even though disposal
+  // cleared the request queue. Compatibility remains true across zero owners.
+  if ((firstOwner && !wasStarted && started) || compatibleBefore !== owners.compatible) {
+    notifyKtx2Change();
+  }
   let released = false;
   return () => {
     if (released) return;

@@ -26,14 +26,6 @@ import {
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-
 import { BroadcastCockpit } from "@/components/game/BroadcastCockpit";
 
 import { Stadium3D, type CameraMode, type Quality } from "@/components/game/LazyStadium";
@@ -46,8 +38,14 @@ import { nextCameraMode } from "@/game/camera-modes";
 
 import { FpsPanel } from "@/components/game/FpsPanel";
 
-import { fpsMeter } from "@/game/fps-meter";
+import { fpsMeter, type FpsMeasurementContext } from "@/game/fps-meter";
 import { evaluateMatchQuality, type MatchQualityTrend } from "@/game/match-quality-autotune";
+import type { RenderedFrameSample } from "@/components/game/graphics-probe";
+import {
+  matchMeasurementKey,
+  matchMeasurementPhase,
+  nextAutomaticMatchQuality,
+} from "@/game/match-measurement";
 
 import { Cutscene } from "@/components/game/Cutscene";
 
@@ -76,13 +74,14 @@ import {
   type LiveMatchController,
 } from "@/game/simWorkerClient";
 
-import { achievementById } from "@/game/achievements";
+import { reportSilent } from "@/lib/silent-errors";
 
 import { detectQuality, detectQualityByGpu } from "@/game/device";
 
 import {
   getBroadcastPreferences,
   setBroadcastPreferences,
+  useResolvedVisual,
   type QualityPref,
 } from "@/game/visual-settings";
 
@@ -102,7 +101,11 @@ import { useT } from "@/i18n/provider";
 import type { CareerState, ManagerLook, Player } from "@/game/types";
 
 import { Feed, Scoreboard } from "@/features/match/MatchHud";
-import { MatchManagementControls } from "@/features/match/MatchManagementControls";
+const MatchManagementControls = lazy(() =>
+  import("@/features/match/MatchManagementControls").then((module) => ({
+    default: module.MatchManagementControls,
+  })),
+);
 
 import { snapshot, type Snap } from "@/features/match/types";
 
@@ -123,13 +126,7 @@ const PrematchCeremony = lazy(() =>
   })),
 );
 
-const StorePanel = lazy(() =>
-  import("@/components/game/StorePanel").then((module) => ({ default: module.StorePanel })),
-);
-
-const ChatPanel = lazy(() =>
-  import("@/components/game/ChatPanel").then((module) => ({ default: module.ChatPanel })),
-);
+const MatchDrawer = lazy(() => import("@/features/match/MatchDrawer"));
 
 const MatchStatsPanel = lazy(() =>
   import("@/features/match/MatchStatsPanel").then((module) => ({
@@ -233,6 +230,7 @@ function LiveMatch({
       home: isHome ? mySetup : oppSetup,
       away: isHome ? oppSetup : mySetup,
       seed: `${career.clubId}-${career.round}`,
+      rulesRevision: career.matchRulesRevision ?? 1,
     };
   }, [career, isHome, myClub, oppId]);
   const lineupError = useMemo(() => {
@@ -245,10 +243,11 @@ function LiveMatch({
   const mySide = isHome ? "home" : "away";
   const { t } = useT();
   const [speed, setSpeed] = useState(1);
-  const [paused, setPaused] = useState(false);
+  const [pausedManually, setPaused] = useState(false);
   const [camera, setCamera] = useState<CameraMode>(() => getBroadcastPreferences().camera);
   const [showStats, setShowStats] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [panelVisited, setPanelVisited] = useState(false);
   const panelTrigger = useRef<HTMLButtonElement>(null);
   const panelClose = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -267,8 +266,16 @@ function LiveMatch({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [panelOpen]);
   /** gaveta lateral: loja ou chat sem sair da partida (o jogo pausa) */
-  const [drawer, setDrawer] = useState<"none" | "store" | "chat">("none");
+  const [drawer, setDrawer] = useState<{
+    panel: "store" | "chat";
+    open: boolean;
+    trigger: HTMLButtonElement;
+  } | null>(null);
+  function openDrawer(panel: "store" | "chat", trigger: HTMLButtonElement) {
+    setDrawer({ panel, open: true, trigger });
+  }
   const [narrationSettingsOpen, setNarrationSettingsOpen] = useState(false);
+  const paused = pausedManually || drawer?.open === true || narrationSettingsOpen;
   const [done, setDone] = useState(false);
   const [postMatchStep, setPostMatchStep] = useState<number | null>(null);
   const [advancing, setAdvancing] = useState(false);
@@ -284,10 +291,6 @@ function LiveMatch({
   const controllerRef = useRef<LiveMatchController | null>(null);
   const qualityTouched = useRef(false);
   const qualityTrendRef = useRef<MatchQualityTrend>({ slow: 0, healthy: 0 });
-  const activeGameplayRef = useRef(false);
-  const gameplayEligibleRef = useRef(false);
-  const currentQualityRef = useRef(quality);
-  currentQualityRef.current = quality;
 
   const chooseCamera = useCallback((next: CameraMode) => {
     setCamera(next);
@@ -318,47 +321,74 @@ function LiveMatch({
     };
   }, []);
 
-  /**
-   * Auto graphics must respond to sustained *gameplay* performance, not one
-   * cutscene/shader warmup frame left in the rolling 1%-low FPS window.
-   * Explicitly selected quality remains authoritative.
-   */
-  useEffect(() => {
-    let lastChange = 0;
-    const off = fpsMeter.subscribe((sample) => {
-      if (qualityTouched.current || sample.seconds < 10) {
-        qualityTrendRef.current = { slow: 0, healthy: 0 };
-        return;
-      }
-      const outcome = evaluateMatchQuality(
-        currentQualityRef.current,
-        sample,
-        qualityTrendRef.current,
-        activeGameplayRef.current,
-      );
-      qualityTrendRef.current = outcome.trend;
-      if (outcome.quality === currentQualityRef.current) return;
-      const now = Date.now();
-      if (now - lastChange < 12_000) return;
-      lastChange = now;
-      currentQualityRef.current = outcome.quality;
-      setQuality(outcome.quality);
-      toast.info(`Gráficos em "${outcome.quality}" após desempenho sustentado.`);
-    });
-    return off;
-  }, []);
-
   const speedRef = useRef(speed);
   speedRef.current = speed;
-  const overlayActive = drawer !== "none" || narrationSettingsOpen;
   const pausedRef = useRef(paused);
   const [halfTalk, setHalfTalk] = useState<TeamTalkKind | null>(null);
   const [halfHeld, setHalfHeld] = useState(false);
-  pausedRef.current = paused || introActive || ceremonyActive || halfHeld || overlayActive;
-  gameplayEligibleRef.current =
-    !paused && !introActive && !ceremonyActive && !halfHeld && !overlayActive && !done;
-  activeGameplayRef.current =
-    gameplayEligibleRef.current && (typeof document === "undefined" || !document.hidden);
+  const measurementPhase = matchMeasurementPhase({
+    introActive,
+    ceremonyActive,
+    paused,
+    halfHeld,
+    done,
+    postMatchStep,
+    matchPhase: snap.phase,
+  });
+  const measurementActive = !lineupError && measurementPhase === "match";
+  const measurementContextKey = matchMeasurementKey({
+    seed: setups.seed,
+    home: setups.home.clubId,
+    away: setups.away.clubId,
+    quality,
+    camera,
+    speed,
+    rulesRevision: setups.rulesRevision,
+    phase: measurementPhase,
+  });
+  const measurementActiveRef = useRef(measurementActive);
+  measurementActiveRef.current = measurementActive;
+  const onRenderedMatchFrame = useCallback(
+    (frame: RenderedFrameSample, context: FpsMeasurementContext) => {
+      if (measurementActiveRef.current) fpsMeter.recordRenderedFrame(frame.now, context);
+    },
+    [],
+  );
+  const visual = useResolvedVisual(setups.home.clubId);
+  const qualityChangedAt = useRef(0);
+  /** Only true rendered gameplay samples can change the stadium preset.
+   * Require repeated evidence so a single shader stall never demotes 60 FPS. */
+  useEffect(() => {
+    if (!measurementActive || !visual.adaptive || visual.quality !== "auto") {
+      qualityTrendRef.current = { slow: 0, healthy: 0 };
+      return;
+    }
+    return fpsMeter.subscribe((sample) => {
+      const valid =
+        measurementActiveRef.current &&
+        !qualityTouched.current &&
+        !document.hidden &&
+        sample.source === "rendered" &&
+        sample.phase === "match" &&
+        sample.quality === quality &&
+        sample.seconds >= 6 &&
+        sample.windowMs !== undefined &&
+        Number.isFinite(sample.windowMs) &&
+        sample.windowMs >= 6000;
+      const outcome = evaluateMatchQuality(quality, sample, qualityTrendRef.current, valid);
+      qualityTrendRef.current = outcome.trend;
+      if (outcome.quality === quality) return;
+      // Preserve the existing evidence thresholds in the production engine.
+      if (nextAutomaticMatchQuality(sample, quality, valid) !== outcome.quality) return;
+      const now = Date.now();
+      if (now - qualityChangedAt.current < 12_000) return;
+      qualityChangedAt.current = now;
+      qualityTrendRef.current = { slow: 0, healthy: 0 };
+      setQuality(outcome.quality);
+      toast.info(`Gráficos em "${outcome.quality}" após desempenho sustentado.`);
+    });
+  }, [measurementActive, quality, visual.adaptive, visual.quality]);
+  pausedRef.current = paused || introActive || ceremonyActive || halfHeld;
   const { narrating, setNarrating, caption, narratorRef } = useMatchNarration(
     sim,
     pausedRef.current,
@@ -454,7 +484,6 @@ function LiveMatch({
     controllerRef.current = controller;
     const onVisibility = () => {
       qualityTrendRef.current = { slow: 0, healthy: 0 };
-      activeGameplayRef.current = gameplayEligibleRef.current && !document.hidden;
       controller.pause(shouldPauseMatch(pausedRef.current, false, false, false, document.hidden));
     };
     document.addEventListener("visibilitychange", onVisibility);
@@ -468,16 +497,9 @@ function LiveMatch({
   useEffect(
     () =>
       controllerRef.current?.pause(
-        shouldPauseMatch(
-          paused,
-          introActive,
-          ceremonyActive,
-          halfHeld,
-          document.hidden,
-          overlayActive,
-        ),
+        shouldPauseMatch(paused, introActive, ceremonyActive, halfHeld, document.hidden),
       ),
-    [paused, introActive, ceremonyActive, halfHeld, overlayActive],
+    [paused, introActive, ceremonyActive, halfHeld],
   );
 
   // Intervalo: segura o jogo e abre o papo de vestiário (uma escolha por jogo).
@@ -553,11 +575,21 @@ function LiveMatch({
     setAdvancing(true);
     void advanceRoundAsync(career, { hg: snap.hg, ag: snap.ag }, perf).then((next) => {
       const before = new Set(career.achievements ?? []);
-      for (const id of next.achievements ?? []) {
-        if (!before.has(id)) {
-          const a = achievementById(id);
-          if (a) toast.success(`Conquista desbloqueada: ${a.title}`);
-        }
+      const unlocked = (next.achievements ?? []).filter((id) => !before.has(id));
+      if (unlocked.length > 0) {
+        void import("@/game/achievements")
+          .then(({ achievementById }) => {
+            for (const id of unlocked) {
+              const achievement = achievementById(id);
+              if (achievement) toast.success(`Conquista desbloqueada: ${achievement.title}`);
+            }
+          })
+          .catch((error: unknown) =>
+            reportSilent("match.achievement-notice", error, {
+              classification: "degradation",
+              feature: "achievements",
+            }),
+          );
       }
       update(next);
       setAdvancing(false);
@@ -620,11 +652,20 @@ function LiveMatch({
           mode={camera}
           quality={quality}
           supporters={supporters}
-          paused={paused || halfHeld || done || introActive || ceremonyActive || overlayActive}
+          paused={!measurementActive}
+          measurementKey={measurementContextKey}
+          onRenderedFrame={measurementActive ? onRenderedMatchFrame : undefined}
         />
       )}
       <div className="match-fps pointer-events-none absolute right-3 top-3 z-20">
-        <FpsPanel quality={quality} detail={{ Câmera: camera, Velocidade: speed }} />
+        <FpsPanel
+          quality={quality}
+          source="rendered"
+          active={measurementActive}
+          phase={measurementPhase}
+          measurementKey={measurementContextKey}
+          detail={{ [t("match.camera")]: camera, [t("match.speed")]: speed }}
+        />
       </div>
 
       {narrating && caption ? (
@@ -713,12 +754,7 @@ function LiveMatch({
         {safeClub(fixture.home).name} x {safeClub(fixture.away).name} — partida ao vivo em 3D
       </h1>
 
-      <Scoreboard
-        homeId={fixture.home}
-        awayId={fixture.away}
-        snap={snap}
-        paused={paused || introActive || ceremonyActive || halfHeld || overlayActive}
-      />
+      <Scoreboard homeId={fixture.home} awayId={fixture.away} snap={snap} paused={paused} />
       <Feed events={snap.events} />
       <MatchMinimap view={sim} />
 
@@ -792,18 +828,16 @@ function LiveMatch({
             onOpenChange={setNarrationSettingsOpen}
           />
           <button
-            onClick={() => {
-              setDrawer("store");
-            }}
+            onClick={(event) => openDrawer("store", event.currentTarget)}
+            aria-haspopup="dialog"
             aria-label="Abrir loja"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ShoppingBag size={16} />
           </button>
           <button
-            onClick={() => {
-              setDrawer("chat");
-            }}
+            onClick={(event) => openDrawer("chat", event.currentTarget)}
+            aria-haspopup="dialog"
             aria-label="Abrir chat"
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
@@ -820,6 +854,7 @@ function LiveMatch({
         <button
           ref={panelTrigger}
           onClick={() => {
+            setPanelVisited(true);
             setPanelOpen((v) => !v);
             setShowStats(false);
           }}
@@ -834,39 +869,22 @@ function LiveMatch({
       </div>
 
       {/* Loja e chat sem sair da partida */}
-      <Sheet open={drawer !== "none"} onOpenChange={(o) => !o && setDrawer("none")}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col overflow-y-auto sm:max-w-md"
-          closeLabel={drawer === "store" ? "Fechar loja" : "Fechar chat"}
+      {drawer && (
+        <Suspense
+          fallback={
+            <p role="status" className="sr-only">
+              {t("common.loading")}
+            </p>
+          }
         >
-          <SheetHeader>
-            <SheetTitle className="pr-10 font-display uppercase tracking-wide">
-              {drawer === "store" ? "Loja" : "Chat global"}
-            </SheetTitle>
-            <SheetDescription>
-              {drawer === "store"
-                ? "Se precisar entrar, a loja abre em outra página e esta partida ao vivo não é salva. Com conta, o jogo fica pausado durante o checkout."
-                : "Converse com outros técnicos sem perder o jogo."}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4 flex min-h-0 flex-1 flex-col">
-            <Suspense
-              fallback={
-                <p role="status" className="py-8 text-center text-sm text-muted-foreground">
-                  Carregando…
-                </p>
-              }
-            >
-              {drawer === "store" ? (
-                <StorePanel next="/loja" columns={1} />
-              ) : drawer === "chat" ? (
-                <ChatPanel next="/match" />
-              ) : null}
-            </Suspense>
-          </div>
-        </SheetContent>
-      </Sheet>
+          <MatchDrawer
+            open={drawer.open}
+            panel={drawer.panel}
+            trigger={drawer.trigger}
+            onClose={() => setDrawer({ ...drawer, open: false })}
+          />
+        </Suspense>
+      )}
 
       {/* Painel de controle */}
       <section
@@ -929,15 +947,19 @@ function LiveMatch({
           </button>
         </div>
 
-        <MatchManagementControls
-          myTactics={myTactics}
-          setMentality={setMentality}
-          setPressing={setPressing}
-          subsUsed={subsUsed}
-          onPitch={onPitch}
-          benchAvailable={benchAvailable}
-          onSubstitute={makeSub}
-        />
+        {panelVisited && (
+          <Suspense fallback={<p role="status">{t("common.loading")}</p>}>
+            <MatchManagementControls
+              myTactics={myTactics}
+              setMentality={setMentality}
+              setPressing={setPressing}
+              subsUsed={subsUsed}
+              onPitch={onPitch}
+              benchAvailable={benchAvailable}
+              onSubstitute={makeSub}
+            />
+          </Suspense>
+        )}
 
         <button
           onClick={() => {
@@ -951,17 +973,15 @@ function LiveMatch({
         <div className="match-panel-actions">
           <button
             type="button"
-            onClick={() => {
-              setDrawer("store");
-            }}
+            onClick={(event) => openDrawer("store", event.currentTarget)}
+            aria-haspopup="dialog"
           >
             <ShoppingBag size={16} /> Loja
           </button>
           <button
             type="button"
-            onClick={() => {
-              setDrawer("chat");
-            }}
+            onClick={(event) => openDrawer("chat", event.currentTarget)}
+            aria-haspopup="dialog"
           >
             <MessageCircle size={16} /> Chat
           </button>

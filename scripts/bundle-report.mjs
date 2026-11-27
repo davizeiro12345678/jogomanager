@@ -9,7 +9,7 @@ const brotliBytes = (data) =>
     params: { [constants.BROTLI_PARAM_QUALITY]: 6 },
   }).length;
 import { init, parse } from "es-module-lexer";
-import { isMatchRouteEntry } from "./bundle-report-comparison.mjs";
+import { measureBrowserRoute } from "./bundle-report-comparison.mjs";
 
 const cinematicSetChunkPrefixes = [
   { set: "locker", prefix: "LockerRoom-" },
@@ -111,7 +111,7 @@ const cinematicSetChunks = cinematicSetChunkPrefixes.map(({ set, prefix }) => {
 const entries = chunks
   .filter(
     (c) =>
-      /^(?:client-|index-|new-|dashboard-|editor-|jogador\.painel-|jogador\.index-|match-|partida-rapida-|match\.worker-|CinematicStage3D-)/.test(
+      /^(?:client-|index-|new-|dashboard-|editor-|jogador\.painel-|jogador\.index-|match-|partida-rapida-|multiplayer-|match\.worker-|CinematicStage3D-)/.test(
         c.name,
       ) || c.surface === "home",
   )
@@ -184,18 +184,21 @@ if (process.argv.includes("--check")) {
   if (hydration && bootstraps.some((chunk) => closure(chunk.name).includes(hydration.name)))
     throw new Error("The first-paint bootstrap must not statically import its hydration runtime");
   const worker = entries.find((e) => e.name.startsWith("match.worker-"));
-  const quick = entries.find((e) => e.name.startsWith("partida-rapida-"));
+  const quick = measureBrowserRoute({ entries, chunks }, "partida-rapida-");
   const home = entries.find((e) => e.surface === "home");
   const newCareer = entries.find((e) => e.surface === "new");
   const playerCareer = entries.find((e) => e.name.startsWith("jogador.painel-"));
-  const editor = entries.find((e) => e.name.startsWith("editor-"));
-  const match = entries.find(isMatchRouteEntry);
+  const editors = entries.filter((e) => e.name.startsWith("editor-"));
+  const match = measureBrowserRoute({ entries, chunks }, "match-");
   const matchReport = chunks.find((c) => c.name.startsWith("MatchReport-"));
   const deferredEditorTabs = /^(?:roster-|clubs-|competitions-|import-export-)/;
   if (
-    !editor ||
-    editor.staticBytes > 500_000 ||
-    editor.dependencies.some((name) => deferredEditorTabs.test(name))
+    editors.length === 0 ||
+    editors.some(
+      (editor) =>
+        editor.staticBytes > 500_000 ||
+        editor.dependencies.some((name) => deferredEditorTabs.test(name)),
+    )
   )
     throw new Error("Editor must keep its heavy tabs split from the route startup chunk");
   if (!match || !matchReport || match.dependencies.includes(matchReport.name))

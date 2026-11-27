@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FootballHome } from "@/components/home/FootballHome";
-import { getLeagueDigests } from "@/lib/real-football.functions";
 import {
   canonical,
   gameLd,
@@ -52,6 +51,10 @@ export const Route = createFileRoute("/")({
   }),
   // The secondary league section streams independently; a slow backend must
   // not hold the first byte, hero discovery or the primary navigation hostage.
-  loader: () => ({ leagues: getLeagueDigests().catch(() => []) }),
+  loader: () => ({
+    leagues: import("@/lib/real-football.functions")
+      .then(({ getLeagueDigests }) => getLeagueDigests())
+      .catch(() => []),
+  }),
   component: FootballHome,
 });

@@ -6,13 +6,8 @@
  * case the game falls back to its own hand-drawn crests.
  */
 import type { OfficialAssets } from "./football.functions";
-import { reportSilent } from "./silent-errors";
-import { get, set } from "idb-keyval";
 
-// v1 could contain a Data API-truncated catalog. Fetch it completely once.
-const CACHE_KEY = "manager3d.official.v3";
 const PREF_KEY = "manager3d.officialLook";
-const TTL = 1000 * 60 * 60 * 24;
 
 let cache: OfficialAssets = { crests: {}, kits: {} };
 let loaded = false;
@@ -45,46 +40,6 @@ export function officialKit(clubId: string): string | undefined {
   return cache.kits[clubId];
 }
 
-function stringRecord(value: unknown): value is Record<string, string> {
-  return (
-    !!value &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    Object.values(value).every((item) => typeof item === "string")
-  );
-}
-function reportCacheError(error: unknown, phase: "read" | "write" | "load") {
-  reportSilent("assets.cache", error, {
-    classification: phase === "write" ? "ignorable" : "degradation",
-    feature: "official-assets",
-    phase,
-    dedupeKey: `official-assets-${phase}`,
-  });
-}
-async function readCache(): Promise<OfficialAssets | null> {
-  let parsed: { at: number; data: OfficialAssets } | null | undefined;
-  try {
-    parsed = await get(CACHE_KEY);
-  } catch {
-    // An existing offline catalogue remains usable if IndexedDB is denied.
-  }
-  try {
-    if (parsed == null && typeof localStorage !== "undefined")
-      parsed = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "null");
-    return parsed &&
-      Number.isFinite(parsed.at) &&
-      Date.now() - parsed.at <= TTL &&
-      parsed.data &&
-      stringRecord(parsed.data.crests) &&
-      stringRecord(parsed.data.kits)
-      ? parsed.data
-      : null;
-  } catch (error) {
-    reportCacheError(error, "read");
-    return null;
-  }
-}
-
 /** Kick off the load; safe to call from anywhere, runs at most once. */
 export function loadOfficialAssets(): Promise<void> {
   if (loaded) return Promise.resolve();
@@ -92,28 +47,23 @@ export function loadOfficialAssets(): Promise<void> {
 
   inflight = (async () => {
     try {
-      const cached = await readCache();
-      if (cached) cache = cached;
-      else {
-        // These URLs are public. Fetch them without the authenticated RPC middleware.
-        const response = await fetch("/api/public/football-assets", { credentials: "omit" });
-        if (!response.ok) throw new Error("Catálogo de escudos indisponível.");
-        const data: Partial<OfficialAssets> | null = await response.json();
-        if (!data || !stringRecord(data.crests) || !stringRecord(data.kits))
-          throw new Error("Catálogo de escudos inválido.");
-        if (Object.keys(data.crests).length || Object.keys(data.kits).length) {
-          cache = { crests: data.crests, kits: data.kits };
-          // Persist the structured catalogue asynchronously. Synchronous JSON +
-          // localStorage writes stalled the selection UI on slower devices.
-          void set(CACHE_KEY, { at: Date.now(), data: cache }).catch((error) => {
-            reportCacheError(error, "write");
-          });
-        }
-      }
+      const { readOrFetchOfficialAssets } = await import("./official-assets-loader");
+      cache = await readOrFetchOfficialAssets();
       loaded = true;
       listeners.forEach((l) => l());
     } catch (error) {
-      reportCacheError(error, "load");
+      // A failed optional chunk must not fail the picker. Diagnostics is lazy
+      // too, so synchronous crest readers retain no storage/telemetry imports.
+      void import("./silent-errors")
+        .then(({ reportSilent }) =>
+          reportSilent("assets.cache", error, {
+            classification: "degradation",
+            feature: "official-assets",
+            phase: "load",
+            dedupeKey: "official-assets-load",
+          }),
+        )
+        .catch(() => undefined);
       // A failed request did not load a catalog. A later explicit load may
       // recover; simultaneous callers still share the in-flight request.
       loaded = false;
@@ -123,4 +73,15 @@ export function loadOfficialAssets(): Promise<void> {
   })();
 
   return inflight;
+}
+
+/** Keep optional catalogue parsing off the initial quick-picker hydration. */
+export function deferOfficialAssets(): () => void {
+  if (typeof window === "undefined" || loaded) return () => {};
+  if (typeof window.requestIdleCallback === "function") {
+    const handle = window.requestIdleCallback(() => void loadOfficialAssets(), { timeout: 2500 });
+    return () => window.cancelIdleCallback(handle);
+  }
+  const handle = window.setTimeout(() => void loadOfficialAssets(), 1500);
+  return () => window.clearTimeout(handle);
 }

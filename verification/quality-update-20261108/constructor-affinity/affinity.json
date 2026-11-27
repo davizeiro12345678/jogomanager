@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-11-09T00:05:37.5036107Z",
+  "benchmarkShellPid": 36416,
+  "mask": "0x1",
+  "logicalCpu": 0,
+  "priorShellMask": "0xFFFF",
+  "verifiedChildNodeMask": "0x1",
+  "scope": "Only this short-lived benchmark shell and its own Node descendants; no system or user application changes",
+  "cpu": {
+    "Name": "12th Gen Intel(R) Core(TM) i5-12500H",
+    "NumberOfCores": 12,
+    "NumberOfLogicalProcessors": 16
+  }
+}

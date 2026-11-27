@@ -101,3 +101,87 @@ it("pairs seeded leather, synthetic and knit detail maps with their physical fin
     (set.jersey as THREE.MeshPhysicalMaterial).sheen,
   );
 });
+
+it("uses stronger fibre relief than skin pores and keeps hair highlights restrained", () => {
+  const look = { ...lookFor("material-detail", "MF"), sweat: 0 };
+  const kit: Kit = {
+    base: "#cc2028",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const set = playerMaterials(look, kit, null, "alta");
+  const skin = set.skin as THREE.MeshPhysicalMaterial;
+  const shirt = set.jersey as THREE.MeshPhysicalMaterial;
+  const sleeve = set.jerseyPlain as THREE.MeshPhysicalMaterial;
+  const hair = set.hair as THREE.MeshPhysicalMaterial;
+  expect(shirt.normalScale.x).toBeGreaterThanOrEqual(0.3);
+  expect(sleeve.normalScale.equals(shirt.normalScale)).toBe(true);
+  expect(skin.normalScale.x).toBeGreaterThanOrEqual(0.14);
+  expect(skin.normalScale.x).toBeLessThan(shirt.normalScale.x);
+  expect(hair.normalScale.y).toBeGreaterThanOrEqual(0.23);
+  expect(hair.specularIntensity).toBeLessThanOrEqual(0.1);
+  expect(shirt.sheen).toBeLessThan(0.35);
+});
+
+it("keeps contrasting sleeves distinct when kits share every color and texture", () => {
+  const look = lookFor("contrasting-sleeves", "MF");
+  const solid: Kit = {
+    base: "#ad2030",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const sleeves: Kit = { ...solid, pattern: "sleeves" };
+  for (const quality of ["baixa", "media", "alta"] as const) {
+    const a = playerMaterials(look, solid, null, quality);
+    const b = playerMaterials(look, sleeves, null, quality);
+    expect(a).not.toBe(b);
+    expect((a.jerseyPlain as THREE.MeshStandardMaterial).color.getHexString()).toBe("ad2030");
+    expect((b.jerseyPlain as THREE.MeshStandardMaterial).color.getHexString()).toBe("ffffff");
+    expect(playerMaterials(look, sleeves, null, quality)).toBe(b);
+  }
+});
+
+it("keeps knit, leather and synthetic boots distinct even in reduced detail", () => {
+  const look = lookFor("reduced-boot-finish", "FW");
+  const kit: Kit = {
+    base: "#ac2028",
+    shorts: "#202020",
+    socks: "#202020",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  for (const quality of ["baixa", "media"] as const) {
+    const [leather, synthetic, knit] = [0, 9, 18].map(
+      (seed) =>
+        playerMaterials({ ...look, seed }, kit, null, quality).boot as THREE.MeshStandardMaterial,
+    );
+    expect(knit!.roughness).toBeGreaterThan(leather!.roughness);
+    expect(leather!.roughness).toBeGreaterThan(synthetic!.roughness);
+    expect(
+      [leather, synthetic, knit].every((boot) => boot!.metalness === 0 && boot!.normalMap === null),
+    ).toBe(true);
+  }
+});
+
+it("reuses the low-detail kit when ignored weather and field wear steps change", () => {
+  const look = lookFor("low-quality-surface", "MF");
+  const kit: Kit = {
+    base: "#cc2028",
+    shorts: "#222222",
+    socks: "#222222",
+    detail: "#ffffff",
+    pattern: "solid",
+  };
+  const dry = { sweat: 0, dirt: 0, wet: 0 };
+  const worn = { sweat: 2, dirt: 2, wet: 1 };
+  expect(playerMaterials(look, kit, null, "baixa", worn)).toBe(
+    playerMaterials(look, kit, null, "baixa", dry),
+  );
+  expect(playerMaterials(look, kit, null, "media", worn)).not.toBe(
+    playerMaterials(look, kit, null, "media", dry),
+  );
+});

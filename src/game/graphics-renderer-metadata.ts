@@ -18,11 +18,29 @@ export type GraphicsRenderer = {
   } | null;
 };
 
+/** Privacy-filtered/null GL values must never become a claimed GPU identity. */
+function rendererIdentity(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const name = value.trim();
+  if (
+    !name ||
+    name.length > 1024 ||
+    /^(?:null|undefined|unknown(?: renderer| gpu)?|disabled|unavailable|n\/a|none|\[object Object\]|webgl(?: renderer)?|webkit webgl)$/i.test(
+      name,
+    )
+  )
+    return null;
+  return name;
+}
+
 /** Integrated Intel is physical hardware. Only an explicit software renderer
  * is classified as software; a hidden renderer stays unverified. */
 export function graphicsRendererClass(name: string | null): "hardware" | "software" | "unknown" {
-  if (!name) return "unknown";
-  return /swiftshader|llvmpipe|softpipe|software|basic render|lavapipe/i.test(name)
+  const identity = rendererIdentity(name);
+  if (!identity) return "unknown";
+  return /swiftshader|llvmpipe|softpipe|software|basic render|lavapipe|microsoft warp/i.test(
+    identity,
+  )
     ? "software"
     : "hardware";
 }
@@ -46,9 +64,9 @@ export function rendererMetadata(gl: unknown) {
       contextVersion = typeof value === "string" ? value : null;
       const debug = context.getExtension?.("WEBGL_debug_renderer_info");
       if (debug?.UNMASKED_RENDERER_WEBGL)
-        gpuRenderer = String(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
+        gpuRenderer = rendererIdentity(context.getParameter(debug.UNMASKED_RENDERER_WEBGL));
       if (debug?.UNMASKED_VENDOR_WEBGL)
-        gpuVendor = String(context.getParameter(debug.UNMASKED_VENDOR_WEBGL));
+        gpuVendor = rendererIdentity(context.getParameter(debug.UNMASKED_VENDOR_WEBGL));
     }
   } catch {
     // WebGPU and privacy settings may hide GPU identity.

@@ -11,6 +11,12 @@ INSERT INTO public.match_rooms (id, code, host_id, guest_id, host_club, guest_cl
  ('10000000-0000-4000-8000-000000000003','TESTCHAT03','00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002','ARS','CHE','','done',true);
 RESET ROLE;
 
+-- Realtime supplies its own probe UUIDs and uses database defaults for the event.
+INSERT INTO realtime.messages (id, topic, extension) VALUES
+ ('10000000-0000-4000-a000-000000000011','room-chat-10000000-0000-4000-8000-000000000001','broadcast'),
+ ('10000000-0000-4000-a000-000000000012','room-chat-10000000-0000-4000-8000-000000000002','broadcast'),
+ ('10000000-0000-4000-a000-000000000013','room-chat-10000000-0000-4000-8000-000000000003','broadcast');
+
 -- Privileged fixtures represent server-originated REST broadcasts.
 INSERT INTO realtime.messages (topic, extension, payload, event, private) VALUES
  ('room-chat-10000000-0000-4000-8000-000000000001','broadcast','{"id":"00000000-0000-4000-8000-000000000011","text":"from-host","senderId":"00000000-0000-4000-8000-000000000001","createdAt":"2026-11-08T00:00:00Z"}'::jsonb,'msg',true),
@@ -23,6 +29,7 @@ SELECT set_config('realtime.topic','room-chat-10000000-0000-4000-8000-0000000000
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
 SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 DO $$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM realtime.messages WHERE id='10000000-0000-4000-a000-000000000011') THEN RAISE EXCEPTION 'host cannot join private broadcast'; END IF;
  IF NOT EXISTS (SELECT 1 FROM realtime.messages WHERE payload ->> 'text'='from-host') THEN RAISE EXCEPTION 'member cannot receive valid server event'; END IF;
  IF EXISTS (SELECT 1 FROM realtime.messages WHERE payload ->> 'text'='spoofed sender') THEN RAISE EXCEPTION 'receiver accepted a spoofed sender'; END IF;
  BEGIN
@@ -35,12 +42,21 @@ END $$;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000002',true);
 SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 DO $$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM realtime.messages WHERE id='10000000-0000-4000-a000-000000000011') THEN RAISE EXCEPTION 'guest cannot join private broadcast'; END IF;
  IF NOT EXISTS (SELECT 1 FROM realtime.messages WHERE payload ->> 'text'='from-host') THEN RAISE EXCEPTION 'guest cannot receive member event'; END IF;
 END $$;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000003',true);
 SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 DO $$ BEGIN
+ IF EXISTS (SELECT 1 FROM realtime.messages WHERE id='10000000-0000-4000-a000-000000000011') THEN RAISE EXCEPTION 'non-member received broadcast probe'; END IF;
  IF EXISTS (SELECT 1 FROM realtime.messages WHERE payload ->> 'text'='from-host') THEN RAISE EXCEPTION 'non-member received room event'; END IF;
+END $$;
+-- A former member cannot rejoin a completed room.
+SELECT set_config('realtime.topic','room-chat-10000000-0000-4000-8000-000000000003',true);
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',true);
+SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+DO $$ BEGIN
+ IF EXISTS (SELECT 1 FROM realtime.messages WHERE id IN ('10000000-0000-4000-a000-000000000011','10000000-0000-4000-a000-000000000013')) THEN RAISE EXCEPTION 'closed or different topic authorized'; END IF;
 END $$;
 RESET ROLE;
 ROLLBACK;

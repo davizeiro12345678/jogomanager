@@ -9,4 +9,5 @@ export const CREATOR = {
   secondaryEmail: "davithomazini779@gmail.com",
   discordUsername: "davizeiro10",
   discordDisplayName: "Davi",
+  publicRegion: "Espírito Santo, Brasil",
 };

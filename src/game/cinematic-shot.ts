@@ -99,6 +99,7 @@ export function cinematicShotFor(
   time = 0,
   drill: CinematicDrill = "dribble",
 ): CinematicShot {
+  if (!Number.isFinite(aspect) || aspect <= 0) aspect = 16 / 9;
   const mark = cinematicStageFocus(kind, speaker, art, festive, time, drill);
   if (opening || !mark || size === "geral") {
     const shot =

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { PublicLinks } from "@/components/PublicLinks";
 
 import { CREATOR } from "@/content/creator";
+import { CreatorDetails } from "@/components/creator/CreatorDetails";
 
 import { CommunityInvite } from "@/components/CommunityInvite";
 
@@ -103,6 +104,7 @@ export function SobrePage() {
           </p>
         </section>
 
+        <CreatorDetails />
         <div className="mt-12 flex flex-wrap gap-3">
           <Link
             to="/new"

@@ -7,15 +7,21 @@ import { mergeRigParts, rigPart, type RigPart } from "@/game/rig-geometry";
 /** Public builder makes the same three-material geometry budget testable. */
 export function buildArenaArchitecture(rings: number, color: string, night: boolean) {
   rings = THREE.MathUtils.clamp(Math.round(rings), 4, 16);
-  const concrete = new THREE.MeshStandardMaterial({ color: "#77827a", roughness: 0.95 });
+  const concrete = new THREE.MeshStandardMaterial({
+    color: "#7c817e",
+    roughness: 0.95,
+    envMapIntensity: 0.35,
+  });
   const metal = new THREE.MeshStandardMaterial({
     color: "#abb3b8",
-    roughness: 0.55,
-    metalness: 0.4,
+    roughness: 0.48,
+    metalness: 0.65,
+    envMapIntensity: 0.85,
   });
   const accent = new THREE.MeshStandardMaterial({
     color,
-    roughness: 0.65,
+    roughness: 0.74,
+    envMapIntensity: 0.5,
     emissive: color,
     emissiveIntensity: night ? 0.3 : 0.03,
   });

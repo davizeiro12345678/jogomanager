@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { installFrameCampaignCapture } from "./frame-campaign-capture.mjs";
 const require = createRequire(import.meta.url);
 const { chromium } = require("C:/Users/User/.codex/mcp-game-runtime/node_modules/playwright");
 const gpu = process.env.REALISM_GPU === "nvidia" ? "nvidia" : "intel";
@@ -42,6 +43,7 @@ for (const [phase, port] of [
     route.fulfill({ status: 404, body: "controlled procedural fallback" }),
   );
   try {
+    await page.addInitScript(installFrameCampaignCapture);
     await page.addInitScript(() => {
       window.__realismSamples = [];
       window.addEventListener("graphics-sample", (event) =>
@@ -67,6 +69,7 @@ for (const [phase, port] of [
     });
     const metrics = await page.evaluate(() => ({
       samples: window.__realismSamples,
+      frameCampaignEvidence: window.__PFM_FRAME_CAMPAIGN_EVIDENCE__,
       scene: window.render_game_to_text?.(),
       navigation: performance.getEntriesByType("navigation").map((entry) => ({
         domContentLoaded: entry.domContentLoadedEventEnd,

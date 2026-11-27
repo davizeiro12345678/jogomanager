@@ -16,6 +16,22 @@ describe("backend readiness", () => {
     expect((await checkBackendHealth({}, fetcher)).status).toBe("degraded");
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it("distinguishes missing configuration from a failed Supabase Auth request without leaking keys", async () => {
+    const missing = await checkBackendHealth({}, vi.fn());
+    expect(missing.failureStage).toBe("missing_configuration");
+    const rejected = await checkBackendHealth(
+      env,
+      vi.fn().mockResolvedValue(Response.json({ message: "Forbidden" }, { status: 403 })),
+    );
+    expect(rejected.failureStage).toBe("auth_upstream_http_error");
+    const network = await checkBackendHealth(
+      env,
+      vi.fn().mockRejectedValue(new Error("private-token")),
+    );
+    expect(network.failureStage).toBe("auth_transport_error");
+    expect(JSON.stringify(network)).not.toContain("private-token");
+  });
+
   it("requires both reachable auth and server credentials", async () => {
     const fetcher = vi
       .fn()
@@ -66,6 +82,44 @@ describe("backend readiness", () => {
     ).toBe("ready");
     expect(fetcher.mock.calls[1]![1].headers.Authorization).toBe(`Bearer ${legacyKey}`);
   });
+  it("never follows redirects on any credential-bearing health request", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ external: { email: true } }))
+      .mockResolvedValueOnce(Response.json({ users: [] }))
+      .mockResolvedValueOnce(Response.json([]));
+    expect((await checkBackendHealth(env, fetcher)).status).toBe("ready");
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    for (const [, request] of fetcher.mock.calls) {
+      // Workerd rejects "error" outright, so "manual" is the only mode that both
+      // survives the runtime and keeps credentials off a redirect target.
+      expect(request.redirect).toBe("manual");
+    }
+  });
+
+  it("survives the Workers runtime redirect contract instead of failing the probe", async () => {
+    // Mirrors workerd: anything but follow/manual throws before dispatch.
+    const workerdFetch = vi.fn<typeof fetch>(async (_input, init) => {
+      const mode = init?.redirect;
+      if (mode !== undefined && mode !== "follow" && mode !== "manual")
+        throw new TypeError(
+          'Invalid redirect value, must be one of "follow" or "manual" ("error" won\'t be implemented)',
+        );
+      return Response.json({ external: { email: true } });
+    });
+    const result = await checkBackendHealth(env, workerdFetch);
+    expect(result.checks.auth).toBe(true);
+    expect(result.failureStage).not.toBe("auth_transport_error");
+  });
+
+  it("classifies an upstream redirect hop as an unhealthy stage", async () => {
+    const redirecting = vi.fn(async () => new Response(null, { status: 302 }));
+    const result = await checkBackendHealth(env, redirecting);
+    expect(result.status).toBe("degraded");
+    expect(result.failureStage).toBe("auth_upstream_http_error");
+    expect(result.checks.auth).toBe(false);
+  });
+
   it("does not treat an HTML error page as healthy", async () => {
     expect(
       (await checkBackendHealth(env, vi.fn().mockResolvedValue(new Response("<html>error</html>"))))
@@ -88,6 +142,15 @@ describe("request-scoped Cloudflare health bindings", () => {
     });
     expect(requestCloudflareBindings(request)).toBe(env);
     expect(selectBackendHealthEnvironment({}, requestCloudflareBindings(request))).toEqual(env);
+  });
+
+  it("accepts adapter-attached Cloudflare env when Nitro omits runtime.name", () => {
+    const request = new Request("https://jogomanager.com/api/health");
+    const binding = { SUPABASE_URL: "https://project.supabase.co" };
+    Object.defineProperty(request, "runtime", {
+      value: { cloudflare: { env: binding } },
+    });
+    expect(requestCloudflareBindings(request)).toBe(binding);
   });
 
   it("does not trust headers or non-Cloudflare runtime state", () => {

@@ -7,7 +7,11 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
   async ({ next }) => {
     // The global middleware is part of the application shell. Load the SDK
     // when an RPC needs a session, then read the current token for every call.
-    const { supabase } = await import("./client");
+    const { getConfiguredSupabaseClient } = await import("./client");
+    const supabase = getConfiguredSupabaseClient();
+    // Public RPCs can run without a session. Protected handlers still require
+    // and validate a token on the server.
+    if (!supabase) return next();
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
     return next({

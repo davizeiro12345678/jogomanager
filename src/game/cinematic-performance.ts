@@ -14,12 +14,17 @@ export function cinematicDelta(raw: number, stopped: boolean): number {
  * one or two narrative subjects a portrait mesh and articulated hands from
  * `media` upward. Extras retain the compact mesh at every tier.
  */
+const LOW_NARRATIVE_HEAD = Object.freeze({ columns: 32, rows: 36 });
+
 export function cinematicDetail(quality: string, hero: boolean) {
   const portrait = hero && quality !== "baixa";
   return {
     high: quality === "alta" && hero,
     portrait,
-    radial: hero ? (quality === "alta" ? 16 : quality === "media" ? 12 : 8) : 8,
+    headSampling: hero && quality === "baixa" ? LOW_NARRATIVE_HEAD : undefined,
+    // The protagonist retains the 12-sided body at the low tier;
+    // background actors remain compact and material/animation tiers stay unchanged.
+    radial: hero ? (quality === "alta" ? 16 : 12) : 8,
   };
 }
 
