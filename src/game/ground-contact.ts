@@ -176,7 +176,8 @@ export function solveGroundContact(input: GroundContactInput): GroundContactResu
   // to zero or permanently contaminating subsequent ankle/support samples.
   const elapsed = Number.isFinite(dt) ? Math.max(0, dt) : 0;
   const k = 1 - Math.exp(-20 * elapsed);
-  const eased = previousRootY + (target - previousRootY) * k;
+  const previous = Number.isFinite(previousRootY) ? previousRootY : 0;
+  const eased = previous + (target - previous) * k;
   // Ground penetration must be corrected immediately; upward/downward
   // suspension can settle smoothly when the sole has clearance.
   let rootY = air < 0.1 ? Math.max(eased, supported) : eased;

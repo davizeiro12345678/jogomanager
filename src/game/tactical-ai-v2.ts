@@ -22,6 +22,7 @@ export interface OffsideTrapSituation {
 /** Advance the entire defensive line only when a high press has safe space. */
 export function coordinatedOffsideTrap(s: OffsideTrapSituation): number {
   if (
+    (s.attackDirection !== 1 && s.attackDirection !== -1) ||
     s.pressing !== 2 ||
     ![s.ballX, s.defenderLineX, s.minute, s.scoreDifference].every(Number.isFinite) ||
     s.minute < 5 ||
@@ -47,6 +48,7 @@ export interface DefensiveCoverSituation {
 /** Bounded lateral compactness and coordinated late-match pressing. */
 export function coordinatedDefensiveCover(s: DefensiveCoverSituation) {
   if (
+    (s.attackDirection !== 1 && s.attackDirection !== -1) ||
     ![s.ballZ, s.targetZ, s.stamina, s.pressing, s.minute, s.scoreDifference].every(Number.isFinite)
   )
     return { lateral: 0, forward: 0, sprint: 1 };
@@ -126,6 +128,7 @@ export interface SupportRunSituation {
 export function coordinatedSupportRun(s: SupportRunSituation) {
   const neutral = { forward: 0, lateral: 0, sprint: 1 };
   if (
+    (s.attackingDirection !== 1 && s.attackingDirection !== -1) ||
     ![s.holderX, s.holderZ, s.playerX, s.playerZ, s.opponentLineX, s.stamina].every(Number.isFinite)
   )
     return neutral;

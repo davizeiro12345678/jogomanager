@@ -96,3 +96,21 @@ it("keeps actual outer sole vertices above the turf during inclined lateral supp
   }
   sole.dispose();
 });
+
+it("recovers a corrupted previous root without losing planted sole contact", () => {
+  const P = proportionsFor(lookFor("root-recovery", "MF"));
+  const input = {
+    P,
+    pose: { ...emptyPose(), legLPitch: 0.3, kneeL: -0.7, ankleL: 0.2 },
+    hipShiftX: 0,
+    leanX: 0.1,
+    leanZ: 0.1,
+    airborne: 0,
+    previousRootY: 0,
+    dt: 1 / 60,
+  };
+  const expected = solveGroundContact(input);
+  for (const previousRootY of [NaN, Infinity, -Infinity]) {
+    expect(solveGroundContact({ ...input, previousRootY })).toEqual(expected);
+  }
+});

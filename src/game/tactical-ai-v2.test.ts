@@ -158,3 +158,35 @@ describe("Versioned spatial intelligence", () => {
     }
   });
 });
+
+describe("runtime attack direction safety", () => {
+  it("rejects corrupted directions rather than multiplying positional offsets", () => {
+    const neutral = { forward: 0, lateral: 0, sprint: 1 };
+    for (const direction of [NaN, Infinity, 0, 2, -2] as (1 | -1)[]) {
+      expect(coordinatedOffsideTrap({ ...trap, attackDirection: direction })).toBe(0);
+      expect(
+        coordinatedDefensiveCover({
+          ballZ: 11,
+          targetZ: -7,
+          stamina: 68,
+          pressing: 2,
+          minute: 83,
+          scoreDifference: -1,
+          attackDirection: direction,
+        }),
+      ).toEqual(neutral);
+      expect(
+        coordinatedSupportRun({
+          holderX: 5,
+          holderZ: 0,
+          playerX: 15,
+          playerZ: 3,
+          opponentLineX: 14,
+          attackingDirection: direction,
+          stamina: 75,
+          midfield: false,
+        }),
+      ).toEqual(neutral);
+    }
+  });
+});
