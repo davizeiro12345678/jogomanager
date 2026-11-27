@@ -21,7 +21,7 @@ beforeEach(() => {
   vi.stubGlobal("window", {
     location: { origin: "https://jogomanager.com" },
     localStorage: {
-      getItem: () => JSON.stringify({ analytics: allowed, decidedAt: "fixture" }),
+      getItem: () => JSON.stringify({ analytics: allowed, decidedAt: "2026-11-27T00:00:00.000Z" }),
     },
   });
   allowed = false;
