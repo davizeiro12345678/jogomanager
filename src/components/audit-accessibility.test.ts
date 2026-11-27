@@ -18,8 +18,8 @@ describe("audit regression guards", () => {
   });
   it("exposes a single main landmark on the public manager article", () => {
     expect(managerArticle).toContain('<main className="pitch-bg min-h-dvh px-4 py-14">');
-    expect(managerArticle.match(/<main\\b/g)).toHaveLength(1);
-    expect(managerArticle.match(/<\\/main>/g)).toHaveLength(1);
+    expect(managerArticle.split("<main ").length - 1).toBe(1);
+    expect(managerArticle.split("</main>").length - 1).toBe(1);
   });
   it("explains which multiplayer mode is actually available without advertising unvalidated 2x2", () => {
     expect(multiplayer).toContain("copy.title");
