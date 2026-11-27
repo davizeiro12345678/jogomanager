@@ -73,7 +73,19 @@ async function waitForAuthView(page) {
 const png = async (page, name) => {
   if (new URL(page.url()).pathname === "/auth") await waitForAuthView(page);
   const file = path.join("screenshots", name + ".png");
-  await page.screenshot({ path: path.join(output, file), fullPage: true, animations: "disabled" });
+  // Full-page screenshots can omit offscreen content-visibility:auto subtrees.
+  // Temporarily expose the Home guide only in the screenshot rendering pass;
+  // app CSS and the preceding layout/performance measurements stay unchanged.
+  const screenshotStyle =
+    new URL(page.url()).pathname === "/"
+      ? ".home-guide-content { content-visibility: visible !important; contain-intrinsic-size: none !important; }"
+      : undefined;
+  await page.screenshot({
+    path: path.join(output, file),
+    fullPage: true,
+    animations: "disabled",
+    ...(screenshotStyle ? { style: screenshotStyle } : {}),
+  });
   report.screenshots.push(file);
 };
 const source = (route) => (route === "/contato" ? "src/pages/contato.tsx" : route);
