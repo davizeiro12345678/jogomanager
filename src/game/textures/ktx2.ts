@@ -294,64 +294,70 @@ export function requestKtx2(names: readonly TextureName[]): void {
             resolve();
             return;
           }
-          activeLoader.load(
-            src.url,
-            (tex) => {
-              resolve();
-              if (activeGeneration !== generation || loader !== activeLoader) {
-                tex.dispose();
-                return;
-              }
-              retryTimers.get(name)?.();
+          const onError = (error: unknown) => {
+            resolve();
+            if (activeGeneration !== generation || loader !== activeLoader) return;
+            const failure = textureFailureAfter(
+              failures.get(name),
+              Date.now(),
+              textureHttpStatus(error),
+            );
+            failures.set(name, failure);
+            notifyKtx2Change();
+            requested.delete(name);
+            const cancel = scheduleTextureRetry(failure, Date.now(), () => {
               retryTimers.delete(name);
-              const prepared = prepareGpuTexture(tex, Boolean(src.color), policy, src.fineDetail);
-              if (
-                !prepared.compressed ||
-                gpuTextureStats.residentBytes + prepared.bytes > policy.residentBudget
-              ) {
-                if (!prepared.compressed) gpuTextureStats.rejectedUncompressed += 1;
-                else gpuTextureStats.rejectedOverBudget += 1;
-                tex.dispose();
-                requested.delete(name);
-                failures.set(name, {
-                  attempts: 3,
-                  retryAt: Number.POSITIVE_INFINITY,
-                  permanent: true,
-                });
-                notifyKtx2Change();
-                return;
-              }
-              tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-              if (typeof src.repeat === "number") tex.repeat.set(src.repeat, src.repeat);
-              else tex.repeat.set(...src.repeat);
-              tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-              tex.needsUpdate = true;
-              loaded.set(name, tex);
-              gpuTextureStats.residentBytes += prepared.bytes;
-              gpuTextureStats.residentTextures = loaded.size;
-              gpuTextureStats.droppedMips += prepared.droppedMips;
-              failures.delete(name);
-              notifyKtx2Change();
-            },
-            undefined,
-            (error) => {
-              resolve();
-              if (activeGeneration !== generation || loader !== activeLoader) return;
-              const failure = textureFailureAfter(
-                failures.get(name),
-                Date.now(),
-                textureHttpStatus(error),
-              );
-              failures.set(name, failure);
-              notifyKtx2Change();
-              requested.delete(name);
-              const cancel = scheduleTextureRetry(failure, Date.now(), () => {
+              if (!loaded.has(name)) requestKtx2([name]);
+            });
+            if (cancel) retryTimers.set(name, cancel);
+          };
+          try {
+            activeLoader.load(
+              src.url,
+              (tex) => {
+                resolve();
+                if (activeGeneration !== generation || loader !== activeLoader) {
+                  tex.dispose();
+                  return;
+                }
+                retryTimers.get(name)?.();
                 retryTimers.delete(name);
-                if (!loaded.has(name)) requestKtx2([name]);
-              });
-              if (cancel) retryTimers.set(name, cancel);
-            },
-          );
+                const prepared = prepareGpuTexture(tex, Boolean(src.color), policy, src.fineDetail);
+                if (
+                  !prepared.compressed ||
+                  gpuTextureStats.residentBytes + prepared.bytes > policy.residentBudget
+                ) {
+                  if (!prepared.compressed) gpuTextureStats.rejectedUncompressed += 1;
+                  else gpuTextureStats.rejectedOverBudget += 1;
+                  tex.dispose();
+                  requested.delete(name);
+                  failures.set(name, {
+                    attempts: 3,
+                    retryAt: Number.POSITIVE_INFINITY,
+                    permanent: true,
+                  });
+                  notifyKtx2Change();
+                  return;
+                }
+                tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+                if (typeof src.repeat === "number") tex.repeat.set(src.repeat, src.repeat);
+                else tex.repeat.set(...src.repeat);
+                tex.colorSpace = src.color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+                tex.needsUpdate = true;
+                loaded.set(name, tex);
+                gpuTextureStats.residentBytes += prepared.bytes;
+                gpuTextureStats.residentTextures = loaded.size;
+                gpuTextureStats.droppedMips += prepared.droppedMips;
+                failures.delete(name);
+                notifyKtx2Change();
+              },
+              undefined,
+              onError,
+            );
+          } catch (error) {
+            // A synchronous loader exception must use the same bounded recovery path.
+            onError(error);
+          }
         }),
     );
   }
