@@ -276,3 +276,10 @@ Protocolo: [coordenação](https://github.com/davizeiro12345678/jogomanager/pull
 - [ ] P0: backup offsite com condição não atendida e varredura incompleta; comprovar restauração externa e triagem. Gateway/SentinelX acessíveis; nenhum acesso alterado.
 - [ ] P1/P2: apito, partidas/IA/física/arte em browser, GPU física, QA PT-BR desktop/mobile no SHA definitivo; obter entrega 05. CI completo, CodeQL, Lighthouse e CodSpeed ABBA no HEAD final, revisão independente e rollback antes de release.
 - [ ] P3: atualizar ledger com resultados finais do SHA; manter PR Draft/HOLD, sem merge na main, deploy em produção, relaxamento de gates ou alteração de segredos.
+
+### Coordenação — regressão de localização do CAPTCHA (27/11/2026 BRT)
+
+- Base integrada `15be6abd`, quatro frentes (01–04), 14 caminhos distintos; 95/95 testes focados, TypeScript e lint aprovados. Gate de performance local: 52/52. O gate de textos fixos falhou com quatro novos candidatos do CAPTCHA.
+- RED: dois testes de acessibilidade/localização em inglês e espanhol falharam; GREEN: 14/14 em duas suítes, zero novos candidatos no gate i18n, ESLint, Prettier, TypeScript e diff check aprovados. Reutilizado catálogo de autenticação pt/en/es com fallback inglês. Baseline intacto.
+- Preservado o avanço concorrente `62705c14` (inventário independente e documentação), com comparação dos três blobs-base idênticos. Frente 05 ainda não publicou commit próprio na última consulta. Não atribuir resultados históricos ao novo SHA.
+- HOLD: staging Supabase MIGRATIONS_FAILED, webhook sandbox 503 segundo handoff, backup externo não comprovado (rclone do usuário sem remotes), revisão independente humana, GPU física, E2E autenticado e screenshots no candidato final ainda abertos. Sem produção, merge main ou redução de gates.

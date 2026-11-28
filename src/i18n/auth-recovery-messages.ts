@@ -3,6 +3,9 @@ import { featureMessages, type FeatureMessages } from "./feature-messages";
 
 const pt = {
   alternative: "Acesso alternativo",
+  captchaTitle: "Verificação de segurança",
+  captchaUnavailable: "Não foi possível carregar a verificação.",
+  captchaRetry: "Tentar novamente",
   unavailableTitle: "Acesso à conta indisponível",
   unavailableHint: "Não foi possível iniciar o serviço de login. Tente novamente mais tarde.",
   backToGame: "Voltar ao jogo",
@@ -16,6 +19,9 @@ export const AUTH_RECOVERY_MESSAGES: FeatureMessages<keyof typeof pt> = {
   pt,
   en: {
     alternative: "Alternative sign-in",
+    captchaTitle: "Security verification",
+    captchaUnavailable: "Could not load the security verification.",
+    captchaRetry: "Try again",
     unavailableTitle: "Sign-in unavailable",
     unavailableHint: "The sign-in service could not be started. Please try again later.",
     backToGame: "Return to the game",
@@ -26,6 +32,9 @@ export const AUTH_RECOVERY_MESSAGES: FeatureMessages<keyof typeof pt> = {
   },
   es: {
     alternative: "Acceso alternativo",
+    captchaTitle: "Verificación de seguridad",
+    captchaUnavailable: "No se pudo cargar la verificación de seguridad.",
+    captchaRetry: "Intentar de nuevo",
     unavailableTitle: "Acceso a la cuenta no disponible",
     unavailableHint: "No se pudo iniciar el servicio de acceso. Inténtalo de nuevo más tarde.",
     backToGame: "Volver al juego",

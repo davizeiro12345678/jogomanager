@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/i18n/context";
+import { authRecoveryMessages } from "@/i18n/auth-recovery-messages";
 
 type Turnstile = {
   ready: (callback: () => void) => void;
@@ -55,6 +57,7 @@ export function AuthCaptcha({
   onToken: (token: string | null) => void;
   onRetry: () => void;
 }) {
+  const copy = authRecoveryMessages(useT().lang);
   const container = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -101,14 +104,14 @@ export function AuthCaptcha({
   }, [siteKey, onToken]);
 
   return (
-    <section aria-label="Verificação de segurança" className="mt-4 space-y-2">
-      <p className="text-sm">Verificação de segurança</p>
+    <section aria-label={copy.captchaTitle} className="mt-4 space-y-2">
+      <p className="text-sm">{copy.captchaTitle}</p>
       <div ref={container} className="min-h-16 max-w-full" />
       {failed && (
         <div role="alert" className="text-sm">
-          Não foi possível carregar a verificação.
+          {copy.captchaUnavailable}
           <button type="button" className="ml-2 min-h-11 underline" onClick={onRetry}>
-            Tentar novamente
+            {copy.captchaRetry}
           </button>
         </div>
       )}
