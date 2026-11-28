@@ -501,6 +501,105 @@ try {
       );
   }
 
+  // A clean first visit must leave both the privacy decision and the fixed
+  // career navigation usable, even when accessible text doubles the nav rows.
+  for (const { width, textSize } of [
+    { width: 390, textSize: "normal" },
+    { width: 320, textSize: "xlarge" },
+  ]) {
+    const consentContext = await browser.newContext({
+      locale: "pt-BR",
+      viewport: { width, height: 844 },
+      reducedMotion: "reduce",
+      deviceScaleFactor: 1,
+      serviceWorkers: "block",
+    });
+    try {
+      await consentContext.addInitScript((size) => {
+        localStorage.setItem("manager3d.accessibility.v1", JSON.stringify({ textSize: size }));
+      }, textSize);
+      const consentPage = await consentContext.newPage();
+      consentPage.on("pageerror", (error) => {
+        pageErrors.push({
+          url: consentPage.url(),
+          message: String(error.message).slice(0, 260),
+          stack: String(error.stack ?? "").slice(0, 900),
+        });
+      });
+      const response = await consentPage.goto(new URL("/dashboard", origin).href, {
+        waitUntil: "domcontentloaded",
+        timeout: 30_000,
+      });
+      if (!response?.ok()) throw new Error("Anonymous dashboard did not load");
+      await consentPage
+        .locator("#career-content h1")
+        .waitFor({ state: "visible", timeout: 20_000 });
+      const banner = consentPage.locator("[data-pfm-consent-banner]");
+      const nav = consentPage.locator(".career-bottom-nav");
+      await banner.waitFor({ state: "visible" });
+      await nav.waitFor({ state: "visible" });
+      await consentPage.waitForFunction(
+        (size) => {
+          const outlet = document.getElementById("conteudo");
+          const footer = document.querySelector(".career-bottom-nav");
+          return (
+            outlet &&
+            footer &&
+            document.documentElement.dataset.textSize === size &&
+            Math.abs(
+              parseFloat(outlet.style.getPropertyValue("--pfm-career-nav-height")) -
+                footer.getBoundingClientRect().height,
+            ) < 1
+          );
+        },
+        textSize,
+        { timeout: 12_000 },
+      );
+      const layout = await consentPage.evaluate(() => {
+        const notice = document.querySelector("[data-pfm-consent-banner]");
+        const nav = document.querySelector(".career-bottom-nav");
+        const menu = nav.querySelector("button");
+        const b = notice.getBoundingClientRect();
+        const n = nav.getBoundingClientRect();
+        const m = menu.getBoundingClientRect();
+        const target = document.elementFromPoint((m.left + m.right) / 2, (m.top + m.bottom) / 2);
+        return {
+          gapPx: n.top - b.bottom,
+          menuHit: Boolean(target && menu.contains(target)),
+          bannerHeight: b.height,
+          navHeight: n.height,
+          overflowPx: document.documentElement.scrollWidth - innerWidth,
+        };
+      });
+      report.axes.responsive.metrics[`dashboard-consent-${width}-${textSize}`] = layout;
+      await png(consentPage, `dashboard-consent-${width}-${textSize}`);
+      if (layout.gapPx < 5 || !layout.menuHit || layout.overflowPx > 2) {
+        throw new Error("First-visit consent obscures the fixed career navigation or overflows");
+      }
+      await nav.locator("button").click();
+      const menu = consentPage.locator("#career-mobile-menu");
+      await menu.waitFor({ state: "visible" });
+      await consentPage.keyboard.press("Escape");
+      await menu.waitFor({ state: "hidden" });
+      await banner.getByRole("button", { name: "Só o essencial", exact: true }).click();
+      await banner.waitFor({ state: "hidden" });
+      report.axes.interaction.metrics[`dashboard-consent-${width}-${textSize}`] = {
+        menuOpenedAndClosed: true,
+        dismissed: true,
+      };
+    } catch (error) {
+      find(
+        "interaction",
+        "error",
+        { route: "/dashboard", width, textSize },
+        String(error.message || error).slice(0, 300),
+        "Keep the first-visit consent controls and measured mobile navigation independently reachable.",
+      );
+    } finally {
+      await consentContext.close();
+    }
+  }
+
   // Full athlete Studio lives in the isolated 3D build, not in a public
   // SSR route. Only a credential-free loopback fixture is accepted.
   await page.setViewportSize({ width: 1365, height: 900 });

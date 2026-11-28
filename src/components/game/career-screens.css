@@ -600,3 +600,31 @@ html[data-text-size="xlarge"] .career-content {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* First-visit privacy controls must not obscure the fixed career navigation. */
+@media (max-width: 1179px) {
+  #conteudo:has(.career-shell) > [data-pfm-consent-banner] {
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--pfm-career-nav-height, 6rem) + 8px);
+  }
+  #conteudo:has(.career-shell) > [data-pfm-consent-banner] > div {
+    max-block-size: calc(
+      100dvh - max(12px, env(safe-area-inset-bottom)) - var(--pfm-career-nav-height, 6rem) - 24px
+    );
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+/* In short/landscape viewports avoid stacking overlays over the entire game.
+ * The notice stays in the document flow and can be reached by scrolling. */
+@media (max-width: 1179px) and (max-height: 32rem) {
+  #conteudo:has(.career-shell) > [data-pfm-consent-banner] {
+    position: static;
+    width: calc(100% - 24px);
+    margin-block: 12px
+      calc(max(12px, env(safe-area-inset-bottom)) + var(--pfm-career-nav-height, 6rem) + 8px);
+  }
+  #conteudo:has(.career-shell) > [data-pfm-consent-banner] > div {
+    max-block-size: none;
+    overflow-y: visible;
+  }
+}
