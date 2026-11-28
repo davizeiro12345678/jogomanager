@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthMethods } from "@/integrations/supabase/social-auth";
 import { parseAuthMethods } from "@/integrations/supabase/social-auth";
 
@@ -62,7 +62,13 @@ beforeEach(() => {
   state.passkeysSupported = true;
 });
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe("game login screen", () => {
+  it("renders security verification when a public CAPTCHA site key is configured", () => {
+    vi.stubEnv("VITE_AUTH_TURNSTILE_SITE_KEY", "synthetic-site-key");
+    expect(renderAuth()).toContain("Verificação de segurança");
+  });
   it("renders an actionable unavailable state when the project is unconfigured", () => {
     state.configured = false;
     const markup = renderAuth();
