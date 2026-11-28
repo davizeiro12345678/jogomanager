@@ -41,6 +41,7 @@ import type { Club, ManagerLook } from "@/game/types";
 import type { QualityLevel } from "@/game/device";
 import type { CinematicManner } from "@/game/cinematic-actor";
 import { createCinematicStage, preloadCinematicStage } from "./cinematic-loading";
+import { armCutsceneStageReadinessFallback } from "@/game/cutscene-stage-readiness";
 import { cinematicSetFor } from "@/game/cinematic-set";
 import { CutsceneLoadFallback } from "./CutsceneLoadFallback";
 import { CutsceneDialogue } from "./CutsceneDialogue";
@@ -359,6 +360,26 @@ export function CutsceneStage({
   const matteStyle = cutsceneMatteStyle(mattePhase, reduced, transitionPending);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
+
+  // A failed WebGL stage must not hold an autoplay match introduction forever.
+  // Only the cinematic presentation is released; the match controller keeps
+  // its own pause/visibility checks and resumes through the normal onDone path.
+  useEffect(() => {
+    const watchdog = armCutsceneStageReadinessFallback({
+      autoPlay,
+      mode,
+      stageReady,
+      paused,
+      hidden,
+      loadFailed: stageLoadError !== null,
+      onFallback: (reason) => {
+        if (dialogRef.current) dialogRef.current.dataset["sceneAutoFallback"] = reason;
+        setMode("2d");
+      },
+    });
+    return () => watchdog?.cancel();
+  }, [autoPlay, mode, stageReady, paused, hidden, stageLoadError]);
+
   const stageRef = useRef<HTMLDivElement>(null);
   const illustrationRef = useRef<HTMLDivElement>(null);
   const par = useRef({ x: 0, y: 0 });

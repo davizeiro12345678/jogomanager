@@ -101,32 +101,62 @@ function RootReadingControls({ pathname }: { pathname: string }) {
   }, [pathname, lang, t]);
   useEffect(() => {
     let frame = 0;
-    // A pathname can change before the lazy page mounts. Wait for the router
-    // to acknowledge the new DOM, then allow closing menus to release focus.
+    let deadline = 0;
+    const observer = new MutationObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(focusHeading);
+    });
+
+    function stopWaiting() {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.clearTimeout(deadline);
+    }
+
+    function focusHeading() {
+      const heading = document.querySelector<HTMLElement>("#conteudo main h1, #conteudo h1");
+      // Dialogs can briefly keep the outlet hidden after the next route renders.
+      if (!heading || heading.closest('[aria-hidden="true"], [inert]')) return;
+      if (document.activeElement !== heading) {
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+      }
+      if (document.activeElement === heading) stopWaiting();
+    }
+
     const unsubscribe = router.subscribe("onRendered", ({ toLocation }) => {
-      // Lazy routes can acknowledge rendering after the URL is already
-      // resolved. Compare the rendered destinations, not event.pathChanged.
       if (renderedPath.current === toLocation.pathname) return;
       renderedPath.current = toLocation.pathname;
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const heading = document.querySelector<HTMLElement>(
-          "main h1, #career-content h1, #conteudo h1",
-        );
-        if (heading) {
-          heading.tabIndex = -1;
-          heading.focus({ preventScroll: true });
-        }
+      stopWaiting();
+      const outlet = document.getElementById("conteudo");
+      if (!outlet) return;
+      observer.observe(outlet, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["aria-hidden", "inert"],
       });
+      frame = requestAnimationFrame(focusHeading);
+      deadline = window.setTimeout(stopWaiting, 3000);
     });
     return () => {
       unsubscribe();
-      cancelAnimationFrame(frame);
+      stopWaiting();
     };
   }, [router]);
   return (
     <>
-      <a href={pathname === "/" ? "#home-content" : "#conteudo"} className="skip-to-content">
+      <a
+        href={pathname === "/" ? "#home-content" : "#conteudo"}
+        className="skip-to-content"
+        onClick={(event) => {
+          const careerContent = document.getElementById("career-content");
+          if (!careerContent) return;
+          event.preventDefault();
+          careerContent.focus({ preventScroll: true });
+          careerContent.scrollIntoView({ block: "start", behavior: "instant" });
+        }}
+      >
         {t("common.skip")}
       </a>
       {pathname === "/" ? (

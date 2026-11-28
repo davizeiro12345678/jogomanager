@@ -1,6 +1,5 @@
 import { Await, getRouteApi, Link } from "@tanstack/react-router";
 import { HomeLeaguePulse } from "@/components/home/HomeLeaguePulse";
-import { HomeDeferredAssets } from "./HomeDeferredAssets";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import {
   ArrowDown,
@@ -73,7 +72,7 @@ function DeferredTacticalPreview() {
           observer.disconnect();
         }
       },
-      { rootMargin: "700px 0px" },
+      { rootMargin: "320px 0px" },
     );
     observer.observe(node);
     return () => observer.disconnect();
@@ -95,6 +94,7 @@ function DeferredTacticalPreview() {
 export function FootballHome() {
   const { leagues } = getRouteApi("/").useLoaderData();
   const [menu, setMenu] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [system, setSystem] = useState(0);
   const [resume, setResume] = useState<{
     club: string;
@@ -160,7 +160,10 @@ export function FootballHome() {
   useEffect(() => {
     if (!menu) return;
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenu(false);
+      if (event.key === "Escape") {
+        setMenu(false);
+        menuButton.current?.focus();
+      }
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
@@ -168,7 +171,6 @@ export function FootballHome() {
   const active = SYSTEMS[system]!;
   return (
     <main className="football-home">
-      <HomeDeferredAssets />
       <header className="home-nav">
         <Link to="/" className="home-brand" aria-label="jogomanager — início">
           <img
@@ -194,6 +196,7 @@ export function FootballHome() {
           <ArrowRight size={16} />
         </Link>
         <button
+          ref={menuButton}
           className="home-menu-button"
           type="button"
           aria-label={menu ? "Fechar menu" : "Abrir menu"}
@@ -232,7 +235,7 @@ export function FootballHome() {
           <img
             className="home-hero-image"
             src={heroFallback}
-            alt="Treinador à beira do gramado em um estádio iluminado"
+            alt=""
             width={1600}
             height={912}
             fetchPriority="high"
@@ -242,10 +245,6 @@ export function FootballHome() {
         </picture>
         <div className="home-hero-shade" aria-hidden="true" />
         <div className="home-hero-content">
-          <p className="home-kicker">
-            <span />
-            FUTEBOL. DECISÕES. HISTÓRIAS.
-          </p>
           <h1 id="home-title">
             <span className="sr-only">Pro Football Manager 3D: jogo de gestão de futebol. </span>
             SEU CLUBE.
@@ -307,12 +306,10 @@ export function FootballHome() {
           ) : null}
         </div>
         <div className="home-hero-foot">
-          <span>PRO FOOTBALL MANAGER 3D</span>
           <a href="#modos">
             Encontre seu jogo
             <ArrowDown size={15} />
           </a>
-          <span>DA PRANCHETA AO GRAMADO</span>
         </div>
       </section>
       <div className="home-promises" aria-label="Experiência do jogo">
@@ -348,8 +345,7 @@ export function FootballHome() {
           <div className="home-mode-grid">
             <Link to="/new" className="home-mode home-mode-career">
               <div className="home-mode-art" aria-hidden="true">
-                <span>01</span>
-                <Trophy size={86} />
+                <Trophy />
               </div>
               <p className="home-kicker">O SEU PROJETO</p>
               <h3>Modo carreira</h3>
@@ -363,9 +359,8 @@ export function FootballHome() {
               </span>
             </Link>
             <Link to="/partida-rapida" className="home-mode">
-              <div className="home-mode-art home-mode-art-match" aria-hidden="true">
-                <span>02</span>
-                <Gamepad2 size={76} />
+              <div className="home-mode-art" aria-hidden="true">
+                <Gamepad2 />
               </div>
               <p className="home-kicker">O PRIMEIRO APITO</p>
               <h3>Partida rápida</h3>
@@ -378,10 +373,9 @@ export function FootballHome() {
                 <ArrowRight size={19} />
               </span>
             </Link>
-            <Link to="/jogador" className="home-mode">
-              <div className="home-mode-art home-mode-art-match" aria-hidden="true">
-                <span>★</span>
-                <Users size={76} />
+            <Link to="/jogador" className="home-mode home-mode-player">
+              <div className="home-mode-art" aria-hidden="true">
+                <Users />
               </div>
               <p className="home-kicker">DA BASE AO AUGE</p>
               <h3>Carreira de jogador</h3>
@@ -394,10 +388,9 @@ export function FootballHome() {
                 <ArrowRight size={19} />
               </span>
             </Link>
-            <Link to="/multiplayer" className="home-mode">
-              <div className="home-mode-art home-mode-art-friends" aria-hidden="true">
-                <span>03</span>
-                <Users size={76} />
+            <Link to="/multiplayer" className="home-mode home-mode-friends">
+              <div className="home-mode-art" aria-hidden="true">
+                <Users />
               </div>
               <p className="home-kicker">A RIVALIDADE CONTINUA</p>
               <h3>Com amigos</h3>

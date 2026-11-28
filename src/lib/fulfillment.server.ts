@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import {
   getServerStoreProduct,
   getStoreServiceSupabase,
+  parseNonNegativeStoreInteger,
   parseStoreProductContents,
   type StoreProductContents,
 } from "@/lib/store-products.server";
@@ -131,11 +132,7 @@ export async function fulfillOneTimePurchase(
   const supabase = getStoreServiceSupabase();
   const priceCents = snapshot.priceCents;
   const contents = parseStoreProductContents(snapshot.contents);
-  if (
-    !Number.isSafeInteger(paidAmountCents) ||
-    paidAmountCents < 0 ||
-    paidAmountCents > 2_147_483_647
-  )
+  if (parseNonNegativeStoreInteger(paidAmountCents) === null)
     throw new Error("O total do pagamento é inválido.");
   if (
     !Number.isSafeInteger(priceCents) ||

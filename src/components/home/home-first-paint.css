@@ -2,7 +2,9 @@
 .football-home {
   --home-lime: #b5ec70;
   --home-ink: #0c1211;
-  --home-muted: #a5b3ab;
+  --home-muted: #b0c0b5;
+  --home-border: #a9c4af36;
+  --home-panel: #14231c;
   background: var(--home-ink);
   color: #eef3ed;
   overflow-x: clip;
@@ -91,7 +93,7 @@
   background: #293e2d;
 }
 .home-nav-cta {
-  min-height: 43px;
+  min-height: 44px;
   padding: 9px 17px;
   font-size: 13px;
 }
@@ -101,7 +103,7 @@
 .home-hero {
   max-width: 1536px;
   margin: auto;
-  min-height: 650px;
+  min-height: clamp(590px, 65vw, 705px);
   position: relative;
   isolation: isolate;
   display: flex;
@@ -121,8 +123,8 @@
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(90deg, #08130ff5 0%, #09160ee0 28%, #08140f82 60%, #0b1a1120 100%),
-    linear-gradient(0deg, #0c1211 0%, transparent 40%);
+    linear-gradient(90deg, #09140ff7 0%, #09140fed 23%, #09140f91 48%, #09140f0d 82%),
+    linear-gradient(0deg, var(--home-ink), transparent 30%);
 }
 .home-hero-content {
   width: min(100%, 1280px);
@@ -148,16 +150,17 @@
 .home-hero h1 {
   font-family: var(--font-display);
   font-size: clamp(46px, 6.5vw, 90px);
-  letter-spacing: -0.045em;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   line-height: 1.04;
-  margin: 20px 0 24px;
+  margin: 0 0 20px;
 }
 .home-hero h1 em {
   font-style: normal;
   color: var(--home-lime);
 }
 .home-hero-copy {
-  max-width: 480px;
+  max-width: 44ch;
   color: #c5d2c4;
   font-size: 18px;
   line-height: 1.65;
@@ -184,11 +187,8 @@
   position: absolute;
   inset: auto 40px 22px;
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  font-size: 9px;
-  letter-spacing: 0.17em;
-  color: #a3b4a4;
+  justify-content: center;
+  font-size: 12px;
 }
 .home-hero-foot a {
   display: flex;
@@ -196,6 +196,7 @@
   align-items: center;
   min-height: 44px;
   color: #dce5dc;
+  padding-inline: 12px;
 }
 .home-resume-wrap {
   display: grid;
@@ -321,7 +322,8 @@
 @media (max-width: 760px) {
   .home-nav {
     height: 72px;
-    padding-inline: 19px;
+    padding-inline: 12px;
+    gap: 9px;
   }
   .home-desktop-nav {
     display: none;
@@ -329,7 +331,8 @@
   .home-nav-cta {
     margin-left: auto;
     font-size: 11px;
-    padding-inline: 12px;
+    padding-inline: 9px;
+    text-align: center;
   }
   .home-nav-cta svg {
     display: none;
@@ -369,16 +372,16 @@
     min-height: 620px;
   }
   .home-hero-content {
-    padding: 65px 22px 95px;
+    padding: 54px 18px 85px;
   }
   .home-hero-image {
     object-position: 62% 50%;
   }
   .home-hero-shade {
-    background: linear-gradient(180deg, #08130f6e 0%, #08130fbc 45%, #0c1211 100%);
+    background: linear-gradient(180deg, #08130f52 0%, #08130fd9 26%, var(--home-ink) 100%);
   }
   .home-hero h1 {
-    font-size: clamp(40px, 9.2vw, 65px);
+    font-size: clamp(35px, 9.3vw, 65px);
   }
   .home-hero-copy {
     font-size: 16px;
@@ -388,13 +391,6 @@
     flex-direction: column;
     align-items: stretch;
     max-width: 360px;
-  }
-  .home-hero-foot {
-    inset-inline: 22px;
-    font-size: 8px;
-  }
-  .home-hero-foot > span:last-child {
-    display: none;
   }
   .home-promises {
     display: grid;
@@ -410,10 +406,6 @@
   }
   .home-section {
     padding-top: 55px;
-  }
-  .home-first-season > .home-button {
-    width: 100%;
-    font-size: 14px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -432,62 +424,50 @@
 .home-hero-stats {
   margin-top: 26px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  max-width: 420px;
-  border: 1px solid color-mix(in oklab, var(--primary) 35%, transparent);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
+  max-width: 26.25rem;
+  border: 1px solid color-mix(in oklab, var(--home-lime) 35%, transparent);
   border-radius: 14px;
-  /* Opaque enough to read over the photo without a costly backdrop blur. */
-  background: color-mix(in oklab, var(--background) 86%, transparent);
+  /* One-pixel gaps stay consistent even when the grid wraps. */
+  gap: 1px;
+  background: color-mix(in oklab, var(--home-lime) 25%, var(--home-ink));
   overflow: hidden;
 }
 .home-hero-stats > div {
-  display: flex;
-  flex-direction: column-reverse;
-  padding: 12px 10px;
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  background: var(--home-ink);
+  padding: 0.75rem clamp(0.3125rem, 2vw, 0.625rem);
   text-align: center;
 }
-.home-hero-stats > div + div {
-  border-left: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
-}
 .home-hero-stats dd {
+  grid-row: 1;
   margin: 0;
   font-family: var(--font-display, inherit);
-  font-size: 24px;
+  font-size: clamp(1.0625rem, 4vw, 1.4375rem);
   font-weight: 800;
-  line-height: 1;
-  color: var(--primary);
+  line-height: 1.2;
+  color: var(--home-lime);
 }
 .home-hero-stats dt {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted-foreground);
+  color: var(--home-muted);
 }
 
-/* Keep each offscreen section in the DOM for links, search and assistive
-   technology while skipping its layout/paint until the browser approaches it.
-   Learned sizes are retained when scrolling back. Never contain the hero. */
-.home-body > .home-section {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 740px;
-}
-.home-body > .home-first-season {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 560px;
-}
-.home-body > .home-final-cta {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 280px;
-}
-
-/* Preserve the space before the interactive SVG lazy chunk mounts. */
-.home-tactics-slot {
-  min-width: 0;
-  min-height: 405px;
-}
-.home-tactics-placeholder {
-  width: 100%;
-  min-height: 405px;
-  border-radius: 12px;
+@media (forced-colors: active) {
+  .football-home :is(a, button):focus-visible {
+    outline-color: Highlight;
+  }
+  .home-hero-stats {
+    border-color: CanvasText;
+  }
+  .home-hero-stats > div {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

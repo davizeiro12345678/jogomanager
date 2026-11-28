@@ -1,4 +1,4 @@
-/* Beyond the hero: load after hydration before the first offscreen game mode. */
+/* Layout for the server-rendered content, including direct section links. */
 
 .home-section-heading {
   display: flex;
@@ -14,65 +14,73 @@
 }
 .home-mode-grid {
   display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr;
-  gap: 19px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.5vw, 20px);
 }
 .home-mode {
-  padding: 24px;
-  border: 1px solid #c1d4c21a;
-  background: #141f19;
+  --mode-accent: #9cd7be;
+  padding: clamp(17px, 2.1vw, 27px);
+  border: 1px solid var(--home-border);
+  border-top-color: var(--mode-accent);
   border-radius: 12px;
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--mode-accent) 8%, var(--home-panel)),
+    var(--home-panel) 65%
+  );
   display: flex;
   flex-direction: column;
   transition:
     border-color 0.2s,
     transform 0.2s;
 }
-.home-mode:hover {
-  border-color: #b5ec7088;
-  transform: translateY(-4px);
+.home-mode:is(:hover, :focus-visible) {
+  border-color: var(--mode-accent);
+}
+@media (hover: hover) {
+  .home-mode:hover {
+    transform: translateY(-3px);
+  }
 }
 .home-mode-career {
-  background: linear-gradient(135deg, #253822, #142219);
+  --mode-accent: var(--home-lime);
 }
 .home-mode-art {
-  height: 150px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #b5ec7099;
-  margin-bottom: 22px;
-  background: radial-gradient(ellipse at center, #b5ec701c, transparent 70%);
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 21px;
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+  border-radius: 12px;
+  color: var(--mode-accent);
+  background: color-mix(in srgb, currentColor 9%, transparent);
 }
-.home-mode-art > span {
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-size: 12px;
-  color: #779773;
-  letter-spacing: 0.1em;
+.home-mode-art svg {
+  width: 28px;
+  height: 28px;
 }
-.home-mode-art-match {
-  color: #93cdbb99;
-  background: radial-gradient(ellipse at center, #83c1a516, transparent 70%);
+.home-mode-player {
+  --mode-accent: #a8caec;
 }
-.home-mode-art-friends {
-  color: #d3bd8399;
-  background: radial-gradient(ellipse at center, #d8bc7714, transparent 70%);
+.home-mode-friends {
+  --mode-accent: #e3c78c;
 }
 .home-mode h3 {
   font-family: var(--font-display);
-  font-size: 25px;
-  letter-spacing: -0.03em;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
   margin: 11px 0;
 }
 .home-mode-link {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--home-lime);
-  font-weight: 600;
+  color: var(--mode-accent);
+  gap: 10px;
+  font-weight: 700;
   font-size: 14px;
   padding-top: 24px;
   margin-top: auto;
@@ -83,11 +91,15 @@
   align-items: center;
   gap: 80px;
 }
+.home-mode-link svg {
+  flex: none;
+}
 .home-manager-copy h2 {
   margin-top: 16px;
 }
 .home-system-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: 28px;
   padding-bottom: 15px;
@@ -95,7 +107,7 @@
 }
 .home-system-buttons button {
   min-height: 44px;
-  padding: 10px 22px;
+  padding: 10px clamp(12px, 2vw, 22px);
   border-radius: 6px;
   color: #9cad9f;
   font-size: 14px;
@@ -120,7 +132,7 @@
   margin: 12px 0;
 }
 .home-system-detail small {
-  color: #77907c;
+  color: var(--home-muted);
   font-size: 11px;
 }
 .home-system-detail > a {
@@ -131,55 +143,6 @@
   color: var(--home-lime);
   font-size: 13px;
   margin-top: 12px;
-}
-.home-tactics {
-  max-width: 375px;
-  width: 100%;
-  justify-self: center;
-  border: 1px solid #accbad24;
-  border-radius: 12px;
-  background: #111e18;
-  padding: 19px;
-  box-shadow: 0 30px 80px #0004;
-}
-.home-tactics-top {
-  display: flex;
-  justify-content: space-between;
-  font-size: 8px;
-  letter-spacing: 0.14em;
-  color: #88a38d;
-}
-.home-tactics svg {
-  display: block;
-  width: 100%;
-  max-height: 335px;
-  margin: 10px auto;
-}
-.home-player {
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-.home-formation-buttons {
-  display: flex;
-  gap: 8px;
-}
-.home-formation-buttons button {
-  flex: 1;
-  min-height: 44px;
-  border: 1px solid #aac4ae24;
-  border-radius: 5px;
-  font-size: 12px;
-  color: #a8bdad;
-}
-.home-formation-buttons button[aria-pressed="true"] {
-  background: var(--home-lime);
-  color: #112410;
-  border-color: var(--home-lime);
-}
-.home-tactics-caption {
-  font-size: 11px;
-  color: #8da191;
-  text-align: center;
-  margin-top: 14px;
 }
 .home-first-season {
   margin-top: 85px;
@@ -258,6 +221,25 @@
   color: var(--home-muted);
   margin-top: 14px;
 }
+/* Match the lazy pitch box to its final contents across screen sizes. */
+.home-tactics-slot {
+  --home-pitch-height: clamp(234px, 38vw, 335px);
+  justify-self: center;
+  width: min(100%, 375px);
+  min-width: 0;
+  min-height: calc(var(--home-pitch-height) + 150px);
+}
+.home-tactics-placeholder {
+  min-height: inherit;
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  background: var(--home-panel);
+}
+@media (max-width: 1050px) {
+  .home-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 1000px) {
   .home-manager-section {
     gap: 35px;
@@ -272,29 +254,6 @@
   }
   .home-section-heading > p {
     margin-top: 14px;
-  }
-  .home-mode-grid {
-    grid-template-columns: 1fr;
-  }
-  .home-mode {
-    padding: 22px;
-    position: relative;
-  }
-  .home-mode-art {
-    height: 60px;
-    margin-bottom: 12px;
-    justify-content: end;
-  }
-  .home-mode-art svg {
-    width: 54px;
-    height: 54px;
-  }
-  .home-mode-career .home-mode-art {
-    height: 100px;
-  }
-  .home-mode-career .home-mode-art svg {
-    width: 75px;
-    height: 75px;
   }
   .home-manager-section {
     grid-template-columns: 1fr;
@@ -326,5 +285,17 @@
   }
   .home-guide-content {
     contain-intrinsic-size: auto 1850px;
+  }
+}
+
+@media (max-width: 540px) {
+  .home-mode-grid {
+    grid-template-columns: 1fr;
+  }
+  .home-mode-art {
+    margin-bottom: 14px;
+  }
+  .home-first-season > .home-button {
+    width: 100%;
   }
 }

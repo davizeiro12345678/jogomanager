@@ -74,7 +74,8 @@ export function assertStoreProductKey(value: unknown): asserts value is string {
   }
 }
 
-function nonNegativeInteger(value: unknown): number | null {
+/** The store persists item counts and cent amounts as PostgreSQL integers. */
+export function parseNonNegativeStoreInteger(value: unknown): number | null {
   return typeof value === "number" &&
     Number.isSafeInteger(value) &&
     value >= 0 &&
@@ -87,13 +88,17 @@ function nonNegativeInteger(value: unknown): number | null {
 export function parseStoreProductContents(value: unknown): StoreProductContents | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
-  const coins = nonNegativeInteger(record["coins"]);
-  const scoutReports = nonNegativeInteger(record["scoutReports"]);
-  const trainingBoosts = nonNegativeInteger(record["trainingBoosts"]);
+  const coins = parseNonNegativeStoreInteger(record["coins"]);
+  const scoutReports = parseNonNegativeStoreInteger(record["scoutReports"]);
+  const trainingBoosts = parseNonNegativeStoreInteger(record["trainingBoosts"]);
   const injuryTreatments =
-    record["injuryTreatments"] === undefined ? 0 : nonNegativeInteger(record["injuryTreatments"]);
+    record["injuryTreatments"] === undefined
+      ? 0
+      : parseNonNegativeStoreInteger(record["injuryTreatments"]);
   const opponentReports =
-    record["opponentReports"] === undefined ? 0 : nonNegativeInteger(record["opponentReports"]);
+    record["opponentReports"] === undefined
+      ? 0
+      : parseNonNegativeStoreInteger(record["opponentReports"]);
   const rawThemes = record["themes"];
   if (
     coins === null ||

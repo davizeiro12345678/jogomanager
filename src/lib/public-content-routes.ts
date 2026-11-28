@@ -53,7 +53,8 @@ export function shouldPreloadArticleHeadingFont(pathname: string): boolean {
   );
 }
 
-/** The creation wizard owns catalog loading at club selection. */
+/** The creation wizard starts the catalog at club selection. Sign-in uses only Auth. */
 export function shouldInitializeWorldOnEntry(pathname: string): boolean {
-  return !isLightweightCssPath(pathname) && pathname.replace(/\/$/, "") !== "/new";
+  const path = pathname.replace(/\/$/, "");
+  return !isLightweightCssPath(pathname) && path !== "/new" && path !== "/auth";
 }

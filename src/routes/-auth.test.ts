@@ -1,6 +1,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { I18nContext } from "@/i18n/context";
+import type { Lang } from "@/i18n/locale-catalog";
+import { translateBootstrap } from "@/i18n/bootstrap-messages";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthMethods } from "@/integrations/supabase/social-auth";
 import { parseAuthMethods } from "@/integrations/supabase/social-auth";
 
@@ -29,14 +32,28 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: object) => ({ options, useSearch: () => ({}) }),
   getRouteApi: () => ({ useSearch: () => ({}) }),
   useNavigate: () => vi.fn(),
-  Link: ({ children }: { children: React.ReactNode }) => createElement("a", null, children),
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) =>
+    createElement("a", { href: to }, children),
 }));
 
 // Exercise the real browser page, not the SSR-only placeholder of its route.
 import { AuthPage } from "@/pages/auth";
 
-function renderAuth() {
-  return renderToStaticMarkup(createElement(AuthPage));
+function renderAuth(lang: Lang = "pt-BR") {
+  return renderToStaticMarkup(
+    createElement(
+      I18nContext.Provider,
+      {
+        value: {
+          lang,
+          setLang: () => undefined,
+          t: (key) => translateBootstrap(lang, key),
+          dir: "ltr",
+        },
+      },
+      createElement(AuthPage),
+    ),
+  );
 }
 
 beforeEach(() => {
@@ -61,12 +78,29 @@ beforeEach(() => {
   state.passkeysSupported = true;
 });
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe("game login screen", () => {
+  it("renders security verification when a public CAPTCHA site key is configured", () => {
+    vi.stubEnv("VITE_AUTH_TURNSTILE_SITE_KEY", "synthetic-site-key");
+    expect(renderAuth()).toContain("Verificação de segurança");
+  });
+  it.each([
+    ["en", "Security verification"],
+    ["es", "Verificación de seguridad"],
+  ] as const)("localizes the CAPTCHA accessible label in %s", (lang, label) => {
+    vi.stubEnv("VITE_AUTH_TURNSTILE_SITE_KEY", "synthetic-site-key");
+    const markup = renderAuth(lang);
+    expect(markup).toContain(`aria-label="${label}"`);
+    expect(markup).not.toContain("Verificação de segurança");
+  });
   it("renders an actionable unavailable state when the project is unconfigured", () => {
     state.configured = false;
     const markup = renderAuth();
     expect(markup).toContain('id="auth-unavailable-title"');
     expect(markup).toContain('href="/"');
+    expect(markup).toContain('href="/new"');
+    expect(markup).toContain("Continuar como convidado");
     expect(markup).not.toContain("auth-email");
   });
 

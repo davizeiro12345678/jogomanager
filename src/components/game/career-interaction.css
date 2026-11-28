@@ -187,18 +187,6 @@
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
-.match-quick-tools,
-.match-quick-feed {
-  animation: career-panel-in 180ms var(--career-ease);
-}
-.match-quick-transport {
-  gap: 8px;
-  padding: 6px;
-}
-.match-quick-transport :where(button, select):focus-visible {
-  outline: 3px solid #a5e8ff;
-  outline-offset: 3px;
-}
 @keyframes career-panel-in {
   from {
     opacity: 0;
@@ -278,10 +266,6 @@
   .trainer-quick-actions small {
     font-size: 0.8125rem;
   }
-  .match-quick-transport {
-    gap: 4px;
-    padding: 4px;
-  }
 }
 @media (prefers-contrast: more) {
   .career-shell {
@@ -302,16 +286,13 @@ html[data-contrast="high"] .career-shell {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .career-shell *,
-  .match-quick-tools,
-  .match-quick-feed {
+  .career-shell * {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
 }
-html[data-reduced-motion="true"] .career-shell *,
-html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
+html[data-motion="reduced"] .career-shell * {
   animation: none !important;
   transition: none !important;
   scroll-behavior: auto !important;
@@ -357,4 +338,3 @@ html[data-reduced-motion="true"] :is(.match-quick-tools, .match-quick-feed) {
     --career-content-bottom-space: 3rem;
   }
 }
-

@@ -1,4 +1,4 @@
-name: PR 132 independent full-diff risk inventory
+name: PR 132/179 independent full-diff risk inventory
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   full-diff:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 132 }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 132 || github.event.pull_request.number == 179 }}
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
@@ -37,10 +37,14 @@ jobs:
       - name: Independently enumerate every changed file, including binary assets
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha || '' }}
+          EXPECTED_CHANGED_FILES: ${{ github.event.pull_request.changed_files || '' }}
+          REVIEW_PR: ${{ github.event.pull_request.number || '' }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin main:refs/remotes/origin/main
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          node --test scripts/pr179-independent-diff-gate.test.mjs
           mkdir -p "$RUNNER_TEMP/pr132-full-diff"
           node --input-type=module <<'NODE'
           import { execFileSync } from "node:child_process";
@@ -51,7 +55,7 @@ jobs:
           const output = path.join(process.env.RUNNER_TEMP, "pr132-full-diff");
           await mkdir(output, { recursive: true });
           const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-          const base = execFileSync("git", ["merge-base", "origin/main", "HEAD"], { encoding: "utf8" }).trim();
+          const base = execFileSync("git", ["merge-base", process.env.EXPECTED_BASE || "origin/main", "HEAD"], { encoding: "utf8" }).trim();
           const changed = execFileSync("git", ["diff", "--name-only", "-z", base, "HEAD"])
             .toString("utf8")
             .split("\0")
@@ -190,7 +194,7 @@ jobs:
             .slice(0, 100);
           const safe = (x) => String(x).replace(/[|\r\n]/g, " ").slice(0, 150);
           const md = [
-            "# PR #132: complete changed-file review inventory",
+            "# PR " + (process.env.REVIEW_PR || "manual") + ": complete changed-file review inventory",
             "",
             "HEAD: " + head,
             "",
@@ -227,7 +231,16 @@ jobs:
             await writeFile(process.env.GITHUB_STEP_SUMMARY, md.slice(0, 35).join("\n") + "\n", { flag: "a" });
           }
           console.log(JSON.stringify(summary));
-          if (rows.length < 850) {
+          const expectedChangedFiles = Number(process.env.EXPECTED_CHANGED_FILES);
+          const eventCountValid = Number.isSafeInteger(expectedChangedFiles) && expectedChangedFiles > 0;
+          if (process.env.REVIEW_PR === "179") {
+            // Use the exact PR event snapshot rather than the historical PR 132 size.
+            // A count mismatch fails closed; it is not a review approval.
+            if (!eventCountValid || rows.length !== expectedChangedFiles) {
+              console.error("PR 179 changed-file count differs from the GitHub event");
+              process.exitCode = 1;
+            }
+          } else if (rows.length < 850) {
             console.error("Changed-file enumeration was unexpectedly incomplete");
             process.exitCode = 1;
           }

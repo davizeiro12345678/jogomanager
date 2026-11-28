@@ -7,6 +7,7 @@ import quickCss from "../public-quick-styles.css?url";
 import homeCss from "../public-home-styles.css?url";
 import storeCss from "../public-store-styles.css?url";
 import tablesCss from "../public-tables-styles.css?url";
+import onboardingCss from "../onboarding-styles.css?url";
 
 import { isLightweightCssPath, shouldPreloadArticleHeadingFont } from "@/lib/public-content-routes";
 import { CONSENT_VISIBILITY_SCRIPT } from "@/lib/consent";
@@ -18,6 +19,7 @@ function stylesheetForPath(pathname: string) {
   if (path === "/") return homeCss;
   if (path === "/partida-rapida") return quickCss;
   if (path === "/produtos") return storeCss;
+  if (path === "/new" || path === "/auth" || path === "/carreiras") return onboardingCss;
   if (path === "/tabelas" || path.startsWith("/tabelas/")) return tablesCss;
   return isLightweightCssPath(path) ? publicCss : appCss;
 }

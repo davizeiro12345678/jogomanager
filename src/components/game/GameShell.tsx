@@ -38,6 +38,7 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
@@ -134,18 +135,7 @@ export function GameShell({
   const header = useRef<HTMLElement>(null);
   const bottomNav = useRef<HTMLElement>(null);
   const menuTrigger = useRef<HTMLButtonElement | null>(null);
-  useEffect(() => {
-    // Each career screen mounts its own shell after its lazy content loads.
-    // Focusing here avoids announcing the outgoing page during navigation.
-    const frame = requestAnimationFrame(() => {
-      const heading = shell.current?.querySelector<HTMLElement>("#career-content h1");
-      if (heading) {
-        heading.tabIndex = -1;
-        heading.focus({ preventScroll: true });
-      }
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
+  const navigatingFromMenu = useRef(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const tutorialTrigger = useRef<HTMLButtonElement>(null);
@@ -163,22 +153,30 @@ export function GameShell({
     setMenuQuery("");
   }, [pathname]);
   useEffect(() => {
+    // The global consent notice is a sibling of this shell. Share only the
+    // measured footer height with their common outlet, never a global override.
+    const outlet = shell.current?.closest<HTMLElement>("#conteudo");
     const measure = () => {
+      const footerHeight = `${bottomNav.current?.getBoundingClientRect().height ?? 0}px`;
       shell.current?.style.setProperty(
         "--career-header-height",
         `${header.current?.getBoundingClientRect().height ?? 0}px`,
       );
-      shell.current?.style.setProperty(
-        "--career-footer-height",
-        `${bottomNav.current?.getBoundingClientRect().height ?? 0}px`,
-      );
+      shell.current?.style.setProperty("--career-footer-height", footerHeight);
+      outlet?.style.setProperty("--pfm-career-nav-height", footerHeight);
     };
-    const observer = new ResizeObserver(measure);
-    if (header.current) observer.observe(header.current);
-    if (bottomNav.current) observer.observe(bottomNav.current);
     measure();
-    return () => observer.disconnect();
-  }, [pathname]);
+    const observer =
+      typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
+    if (header.current) observer?.observe(header.current);
+    if (bottomNav.current) observer?.observe(bottomNav.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+      outlet?.style.removeProperty("--pfm-career-nav-height");
+    };
+  }, []);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [signOutError, setSignOutError] = useState<string | null>(null);
   useEffect(() => {
@@ -208,6 +206,13 @@ export function GameShell({
   useClubTheme(club);
   useActiveTimeTracking(career, signedIn);
 
+  function closeMenuForLink(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0)
+      return;
+    navigatingFromMenu.current = event.currentTarget.pathname !== pathname;
+    setMenuOpen(false);
+  }
+
   function navigationLinks(group: string, closeMenu = false) {
     return TABS.filter(
       (tab) =>
@@ -221,7 +226,7 @@ export function GameShell({
           key={tab.to}
           to={tab.to}
           preload="intent"
-          onClick={() => closeMenu && setMenuOpen(false)}
+          onClick={closeMenu ? closeMenuForLink : undefined}
           aria-current={pathname === tab.to ? "page" : undefined}
           className="career-nav-item"
         >
@@ -236,7 +241,7 @@ export function GameShell({
   const overview = (closeMenu = false) => (
     <Link
       to="/dashboard"
-      onClick={() => closeMenu && setMenuOpen(false)}
+      onClick={closeMenu ? closeMenuForLink : undefined}
       className="career-nav-item career-nav-overview"
       aria-current={pathname === "/dashboard" ? "page" : undefined}
     >
@@ -252,9 +257,6 @@ export function GameShell({
       data-density={density}
     >
       <OfflineBar />
-      <a href="#career-content" className="career-skip">
-        {t("common.skip")}
-      </a>
       <header ref={header} className="game-shell-header career-header">
         <div className="career-header-inner">
           <button
@@ -319,7 +321,10 @@ export function GameShell({
               <DropdownMenuTrigger className="career-icon-button" aria-label={t("shell.account")}>
                 <Settings2 size={19} />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="career-preferences w-72">
+              <DropdownMenuContent
+                align="end"
+                className="career-preferences w-72 max-w-[calc(100vw-2rem)]"
+              >
                 <p className="mb-3 text-sm font-semibold">Preferências e conta</p>
                 <p className="text-xs text-muted-foreground" id="career-density-label">
                   {t("shell.density")}
@@ -382,6 +387,7 @@ export function GameShell({
                 onFocus={() => {
                   void prepareMatch();
                 }}
+                aria-label={t("action.play")}
                 className="career-primary-button career-header-play"
               >
                 <Play size={15} aria-hidden="true" />
@@ -451,7 +457,8 @@ export function GameShell({
           closeLabel={t("nav.closeMenu")}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            menuTrigger.current?.focus();
+            if (!navigatingFromMenu.current) menuTrigger.current?.focus();
+            navigatingFromMenu.current = false;
           }}
         >
           <SheetTitle className="pe-10 font-display">{t("nav.menu")}</SheetTitle>

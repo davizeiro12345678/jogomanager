@@ -73,7 +73,19 @@ async function waitForAuthView(page) {
 const png = async (page, name) => {
   if (new URL(page.url()).pathname === "/auth") await waitForAuthView(page);
   const file = path.join("screenshots", name + ".png");
-  await page.screenshot({ path: path.join(output, file), fullPage: true, animations: "disabled" });
+  // Full-page screenshots can omit offscreen content-visibility:auto subtrees.
+  // Temporarily expose the Home guide only in the screenshot rendering pass;
+  // app CSS and the preceding layout/performance measurements stay unchanged.
+  const screenshotStyle =
+    new URL(page.url()).pathname === "/"
+      ? ".home-guide-content { content-visibility: visible !important; contain-intrinsic-size: none !important; }"
+      : undefined;
+  await page.screenshot({
+    path: path.join(output, file),
+    fullPage: true,
+    animations: "disabled",
+    ...(screenshotStyle ? { style: screenshotStyle } : {}),
+  });
   report.screenshots.push(file);
 };
 const source = (route) => (route === "/contato" ? "src/pages/contato.tsx" : route);
@@ -489,6 +501,105 @@ try {
       );
   }
 
+  // A clean first visit must leave both the privacy decision and the fixed
+  // career navigation usable, even when accessible text doubles the nav rows.
+  for (const { width, textSize } of [
+    { width: 390, textSize: "normal" },
+    { width: 320, textSize: "xlarge" },
+  ]) {
+    const consentContext = await browser.newContext({
+      locale: "pt-BR",
+      viewport: { width, height: 844 },
+      reducedMotion: "reduce",
+      deviceScaleFactor: 1,
+      serviceWorkers: "block",
+    });
+    try {
+      await consentContext.addInitScript((size) => {
+        localStorage.setItem("manager3d.accessibility.v1", JSON.stringify({ textSize: size }));
+      }, textSize);
+      const consentPage = await consentContext.newPage();
+      consentPage.on("pageerror", (error) => {
+        pageErrors.push({
+          url: consentPage.url(),
+          message: String(error.message).slice(0, 260),
+          stack: String(error.stack ?? "").slice(0, 900),
+        });
+      });
+      const response = await consentPage.goto(new URL("/dashboard", origin).href, {
+        waitUntil: "domcontentloaded",
+        timeout: 30_000,
+      });
+      if (!response?.ok()) throw new Error("Anonymous dashboard did not load");
+      await consentPage
+        .locator("#career-content h1")
+        .waitFor({ state: "visible", timeout: 20_000 });
+      const banner = consentPage.locator("[data-pfm-consent-banner]");
+      const nav = consentPage.locator(".career-bottom-nav");
+      await banner.waitFor({ state: "visible" });
+      await nav.waitFor({ state: "visible" });
+      await consentPage.waitForFunction(
+        (size) => {
+          const outlet = document.getElementById("conteudo");
+          const footer = document.querySelector(".career-bottom-nav");
+          return (
+            outlet &&
+            footer &&
+            document.documentElement.dataset.textSize === size &&
+            Math.abs(
+              parseFloat(outlet.style.getPropertyValue("--pfm-career-nav-height")) -
+                footer.getBoundingClientRect().height,
+            ) < 1
+          );
+        },
+        textSize,
+        { timeout: 12_000 },
+      );
+      const layout = await consentPage.evaluate(() => {
+        const notice = document.querySelector("[data-pfm-consent-banner]");
+        const nav = document.querySelector(".career-bottom-nav");
+        const menu = nav.querySelector("button");
+        const b = notice.getBoundingClientRect();
+        const n = nav.getBoundingClientRect();
+        const m = menu.getBoundingClientRect();
+        const target = document.elementFromPoint((m.left + m.right) / 2, (m.top + m.bottom) / 2);
+        return {
+          gapPx: n.top - b.bottom,
+          menuHit: Boolean(target && menu.contains(target)),
+          bannerHeight: b.height,
+          navHeight: n.height,
+          overflowPx: document.documentElement.scrollWidth - innerWidth,
+        };
+      });
+      report.axes.responsive.metrics[`dashboard-consent-${width}-${textSize}`] = layout;
+      await png(consentPage, `dashboard-consent-${width}-${textSize}`);
+      if (layout.gapPx < 5 || !layout.menuHit || layout.overflowPx > 2) {
+        throw new Error("First-visit consent obscures the fixed career navigation or overflows");
+      }
+      await nav.locator("button").click();
+      const menu = consentPage.locator("#career-mobile-menu");
+      await menu.waitFor({ state: "visible" });
+      await consentPage.keyboard.press("Escape");
+      await menu.waitFor({ state: "hidden" });
+      await banner.getByRole("button", { name: "Só o essencial", exact: true }).click();
+      await banner.waitFor({ state: "hidden" });
+      report.axes.interaction.metrics[`dashboard-consent-${width}-${textSize}`] = {
+        menuOpenedAndClosed: true,
+        dismissed: true,
+      };
+    } catch (error) {
+      find(
+        "interaction",
+        "error",
+        { route: "/dashboard", width, textSize },
+        String(error.message || error).slice(0, 300),
+        "Keep the first-visit consent controls and measured mobile navigation independently reachable.",
+      );
+    } finally {
+      await consentContext.close();
+    }
+  }
+
   // Full athlete Studio lives in the isolated 3D build, not in a public
   // SSR route. Only a credential-free loopback fixture is accepted.
   await page.setViewportSize({ width: 1365, height: 900 });
@@ -550,8 +661,8 @@ try {
       waitUntil: "domcontentloaded",
     });
     if (response?.status() !== 200) throw new Error("Quick match selection did not load");
-    await page.getByRole("heading", { level: 1 }).waitFor();
-    const pick = page.getByLabel(/seu time|your team/i);
+    await page.getByRole("heading", { level: 1, name: "Partida rápida", exact: true }).waitFor();
+    const pick = page.getByLabel("Seu time", { exact: true });
     // The club list is populated asynchronously after the page heading appears.
     // Wait for the third enabled option rather than sampling the list too early.
     const thirdEnabledClub = pick.locator("option:not([disabled])").nth(2);
@@ -559,32 +670,35 @@ try {
     const nextClub = await thirdEnabledClub.getAttribute("value");
     if (!nextClub) throw new Error("Quick match roster options did not load");
     await pick.selectOption(nextClub);
+    if ((await page.locator("html").getAttribute("lang")) !== "pt-BR") {
+      throw new Error("Quick match selection did not retain pt-BR after hydration");
+    }
     await png(page, `quick-match-selection-${viewport.width}`);
-    await page.getByRole("button", { name: /^(jogar|play)$/i }).click();
+    await page.getByRole("button", { name: "Jogar", exact: true }).click();
     const scoreboard = page.locator(".match-scoreboard-quick");
     await scoreboard.waitFor({ timeout: 45_000 });
-    const pause = page.getByRole("button", { name: /pausar partida|pause match/i });
+    const pause = page.getByRole("button", { name: "Pausar partida", exact: true });
     await pause.focus();
     await pause.press("Enter");
-    await page.getByRole("button", { name: /retomar partida|resume match/i }).waitFor();
-    const trigger = page.getByRole("button", { name: /opções da partida|match options/i });
+    const resume = page.getByRole("button", { name: "Retomar partida", exact: true });
+    await resume.waitFor();
+    const trigger = page.getByRole("button", { name: "Opções da partida", exact: true });
     await trigger.click();
     const options = page.locator("#match-quick-tools");
     await options.waitFor();
-    const speed = page.getByRole("combobox", { name: /velocidade|speed/i });
+    const speed = page.getByRole("combobox", { name: "Velocidade", exact: true });
     await speed.selectOption("4");
-    const camera = page.getByRole("combobox", { name: /câmera da partida|match camera/i });
+    const camera = page.getByRole("combobox", { name: "Câmera da partida", exact: true });
     const beforeCamera = await camera.inputValue();
     const secondCamera = await camera.locator("option").nth(1).getAttribute("value");
     if (!secondCamera || beforeCamera === secondCamera)
       throw new Error("Camera preset unavailable");
     await camera.selectOption(secondCamera);
-    const shortcuts = options.getByRole("button", {
-      name: /atalhos de teclado|keyboard shortcuts/i,
-    });
+    const shortcuts = options.getByRole("button", { name: "Atalhos de teclado", exact: true });
     await shortcuts.click();
     const shortcutDialog = page.getByRole("dialog", {
-      name: /atalhos de teclado|keyboard shortcuts/i,
+      name: "Atalhos de teclado",
+      exact: true,
     });
     await shortcutDialog.waitFor();
     await page.keyboard.press("1");
@@ -597,8 +711,8 @@ try {
     await shortcutDialog.waitFor({ state: "hidden" });
     await options.waitFor();
     await png(page, `quick-match-controls-${viewport.width}`);
-    await options.getByRole("button", { name: /lances recentes|recent moments/i }).click();
-    const events = page.getByRole("log", { name: /lances recentes|recent moments/i });
+    await options.getByRole("button", { name: "Lances recentes", exact: true }).click();
+    const events = page.getByRole("log", { name: "Lances recentes", exact: true });
     await events.waitFor();
     const matchesViewport = await page.evaluate(() =>
       [".match-scoreboard-quick", ".match-quick-transport", ".match-quick-feed"].every(
@@ -616,14 +730,49 @@ try {
       ),
     );
     if (!matchesViewport) throw new Error(`Quick match controls overflowed at ${viewport.width}px`);
-    await events.getByRole("button", { name: /fechar|close/i }).click();
+    await events.getByRole("button", { name: "Fechar", exact: true }).click();
     if (!(await trigger.evaluate((element) => element === document.activeElement)))
       throw new Error("Closing the match feed did not restore keyboard focus");
-    await page
-      .getByRole("button", { name: /voltar à escolha de times|back to team selection/i })
-      .click();
+    const matchEvidence = { passed: true, locale: "pt-BR" };
+    if (viewport.width === 375) {
+      const clock = /, Minuto (\d+)$/.exec((await scoreboard.getAttribute("aria-label")) ?? "");
+      if (!clock) throw new Error("Missing Portuguese score clock");
+      const before = Number(clock[1]);
+      await speed.selectOption("8");
+      await resume.press("Enter");
+      await pause.waitFor();
+      const advanced = await page.waitForFunction(
+        (previous) => {
+          const label = document
+            .querySelector(".match-scoreboard-quick")
+            ?.getAttribute("aria-label");
+          const minute = /, Minuto (\d+)$/.exec(label ?? "");
+          return minute && Number(minute[1]) > previous ? Number(minute[1]) : false;
+        },
+        before,
+        { timeout: 20_000 },
+      );
+      matchEvidence.clock = { before, after: await advanced.jsonValue() };
+      await advanced.dispose();
+      const essential = page.getByRole("button", { name: "Só o essencial", exact: true });
+      if (await essential.isVisible()) await essential.click();
+      await trigger.click();
+      await options.getByRole("button", { name: "Pular para o fim", exact: true }).click();
+      const fullTime = page.getByRole("dialog", { name: "Fim de jogo", exact: true });
+      await fullTime.waitFor({ timeout: 45_000 });
+      if (await fullTime.getByRole("complementary", { name: "Salvar carreira na nuvem" }).count()) {
+        throw new Error("Quick match report unexpectedly offered career cloud saving");
+      }
+      await png(page, "quick-match-full-time-375");
+      await fullTime
+        .getByRole("button", { name: "Voltar à escolha de times", exact: true })
+        .click();
+      matchEvidence.fullTimeReturnedToSelection = true;
+    } else {
+      await page.getByRole("button", { name: "Voltar à escolha de times", exact: true }).click();
+    }
     await page.locator("#quick-league").waitFor();
-    report.axes.interaction.metrics[`quickMatch${viewport.width}`] = { passed: true };
+    report.axes.interaction.metrics[`quickMatch${viewport.width}`] = matchEvidence;
   }
 
   for (const item of pageErrors) {

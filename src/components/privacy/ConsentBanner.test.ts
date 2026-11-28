@@ -13,21 +13,26 @@ it("renders the initial consent question before downloading or hydrating JavaScr
   expect(html).toContain("Aceitar");
 });
 
-it.each([null, "broken json", "{}", '{"decidedAt":null}', '{"decidedAt":12}'])(
-  "keeps the question visible for missing or invalid decisions: %s",
-  (stored) => {
-    const styles: unknown[] = [];
-    runInNewContext(CONSENT_VISIBILITY_SCRIPT, {
-      localStorage: { getItem: () => stored },
-      document: {
-        readyState: "loading",
-        createElement: () => ({}),
-        head: { appendChild: (element: unknown) => styles.push(element) },
-      },
-    });
-    expect(styles).toHaveLength(0);
-  },
-);
+it.each([
+  null,
+  "broken json",
+  "{}",
+  '{"decidedAt":null}',
+  '{"decidedAt":12}',
+  '{"decidedAt":""}',
+  '{"decidedAt":"not-a-date"}',
+])("keeps the question visible for missing or invalid decisions: %s", (stored) => {
+  const styles: unknown[] = [];
+  runInNewContext(CONSENT_VISIBILITY_SCRIPT, {
+    localStorage: { getItem: () => stored },
+    document: {
+      readyState: "loading",
+      createElement: () => ({}),
+      head: { appendChild: (element: unknown) => styles.push(element) },
+    },
+  });
+  expect(styles).toHaveLength(0);
+});
 
 it.each([false, true])(
   "hides a prior decision before paint without changing analytics=%s",

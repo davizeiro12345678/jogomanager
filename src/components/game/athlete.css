@@ -1,4 +1,5 @@
 .athlete-shell {
+  --athlete-readable-accent: color-mix(in srgb, var(--club, var(--primary)) 45%, var(--foreground));
   min-height: 100dvh;
   background:
     radial-gradient(
@@ -91,9 +92,16 @@
 .career-hub-heading {
   max-width: 48rem;
 }
+.career-hub-title {
+  margin: 0.35rem 0 0.65rem;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-weight: 750;
+  line-height: 1.12;
+  text-wrap: balance;
+}
 .career-hub-kicker,
 .career-hub-card-label {
-  color: var(--club, var(--primary));
+  color: var(--athlete-readable-accent);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -153,7 +161,7 @@
   border: 1px solid color-mix(in oklab, var(--club, var(--primary)) 38%, var(--border));
   border-radius: 1rem;
   background: color-mix(in oklab, var(--club, var(--primary)) 12%, var(--card));
-  color: var(--club, var(--primary));
+  color: var(--athlete-readable-accent);
 }
 .career-hub-club {
   margin: 0.15rem 0;
@@ -208,7 +216,7 @@
   place-items: center;
   border-radius: 999px;
   background: color-mix(in oklab, var(--club, var(--primary)) 18%, var(--card));
-  color: var(--club, var(--primary));
+  color: var(--athlete-readable-accent);
   font-size: 0.75rem;
   font-weight: 850;
 }
@@ -367,7 +375,7 @@
 .athlete-attrs {
   display: grid;
   gap: 0.35rem 0.9rem;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
 }
 .athlete-attr {
   display: flex;
@@ -420,14 +428,13 @@
   font:
     700 2.4rem/1 "Space Grotesk",
     system-ui;
-  color: var(--club, var(--primary));
+  color: var(--athlete-readable-accent);
 }
 .athlete-sticky {
   position: fixed;
   inset: auto 0 0 0;
   padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  background: color-mix(in oklab, var(--background) 88%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--background);
   border-top: 1px solid var(--border);
   display: flex;
   gap: 0.5rem;
@@ -640,7 +647,7 @@
 .athlete-national-honours > svg {
   width: 2rem;
   height: 2rem;
-  color: var(--club, var(--primary));
+  color: var(--athlete-readable-accent);
 }
 @media (max-width: 47.99rem) {
   .athlete-shell {
@@ -838,5 +845,21 @@
   }
   .career-hub-priority .career-hub-card-actions {
     align-self: stretch;
+  }
+}
+
+.athlete-wrap > *,
+.athlete-card > * {
+  min-inline-size: 0;
+}
+.athlete-shell :where(h1, h2, h3, p, a, button) {
+  overflow-wrap: anywhere;
+}
+.athlete-shell :where(a, button, input, select, summary, [tabindex]) {
+  scroll-margin-block-end: calc(5rem + env(safe-area-inset-bottom));
+}
+@media (forced-colors: active) {
+  .athlete-shell :focus-visible {
+    outline-color: Highlight;
   }
 }

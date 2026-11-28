@@ -14,8 +14,11 @@ import { useOnline } from "@/hooks/useOnline";
 
 import { useAuthUserId } from "@/hooks/useAuthUserId";
 import { useT } from "@/i18n/provider";
+import { multiplayerAvailabilityMessages } from "@/i18n/multiplayer-availability-messages";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getConfiguredSupabaseClient, supabase } from "@/integrations/supabase/client";
+
+import { readMultiplayerRoomQuery } from "@/lib/multiplayer-room-query";
 
 import { isSettlementLeaseExpired } from "@/lib/multiplayer-settlement";
 
@@ -36,27 +39,29 @@ const MatchmakingPanel = lazy(() =>
 export function MultiplayerPage() {
   const userId = useAuthUserId();
   const { t } = useT();
+  if (!getConfiguredSupabaseClient()) return <SignedOut canSignIn={false} />;
   if (userId === undefined)
     return (
       <Shell>
         <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
       </Shell>
     );
-  if (!userId) return <SignedOut />;
+  if (!userId) return <SignedOut canSignIn />;
   return <MultiplayerAccount key={userId} userId={userId} />;
 }
 
-function SignedOut() {
+function SignedOut({ canSignIn }: { canSignIn: boolean }) {
+  const copy = multiplayerAvailabilityMessages(useT().lang);
   return (
-    <Shell>
+    <Shell oneAvailable={canSignIn}>
       <p className="text-sm text-muted-foreground">
-        O multiplayer precisa de uma conta para identificar os dois jogadores.
+        {canSignIn ? copy.signIn : copy.signInUnavailable}
       </p>
       <Link
-        to="/auth"
-        className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground"
+        to={canSignIn ? "/auth" : "/partida-rapida"}
+        className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 font-display text-sm uppercase tracking-wide text-primary-foreground"
       >
-        Entrar ou criar conta
+        {canSignIn ? copy.signInAction : copy.quickMatchAction}
       </Link>
     </Shell>
   );
@@ -76,41 +81,41 @@ function MultiplayerAccount({ userId }: { userId: string }) {
 
   const refresh = useCallback(async () => {
     if (!userId || !online) return;
-    const [{ data: rooms }, { data: mine }] = await Promise.all([
-      supabase
-        .from("match_rooms")
-        .select("*")
-        .eq("status", "open")
-        .eq("server_seeded", true)
-        .is("guest_id", null)
-        .order("created_at", { ascending: false })
-        .limit(12),
-      supabase
-        .from("match_rooms")
-        .select("*")
-        .or(`host_id.eq.${userId},guest_id.eq.${userId}`)
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
-    setOpen((rooms ?? []) as unknown as Room[]);
-    const list = (mine ?? []) as unknown as Room[];
-    const active = list.find((r) => r.status !== "done");
-    setHistory(
-      list.filter((r) => {
-        const state = r.state as { hg?: unknown; ag?: unknown };
-        return (
-          r.server_seeded &&
-          r.status === "done" &&
-          Number.isInteger(state.hg) &&
-          Number.isInteger(state.ag)
-        );
-      }),
-    );
-    setRoom((cur) => cur ?? active ?? null);
-  }, [online, userId]);
-
-  useEffect(() => {
-    void refresh().catch((error) => {
+    try {
+      const [roomsResult, mineResult] = await Promise.all([
+        supabase
+          .from("match_rooms")
+          .select("*")
+          .eq("status", "open")
+          .eq("server_seeded", true)
+          .is("guest_id", null)
+          .order("created_at", { ascending: false })
+          .limit(12),
+        supabase
+          .from("match_rooms")
+          .select("*")
+          .or(`host_id.eq.${userId},guest_id.eq.${userId}`)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+      const rooms = readMultiplayerRoomQuery(roomsResult);
+      const mine = readMultiplayerRoomQuery(mineResult);
+      setOpen((rooms ?? []) as unknown as Room[]);
+      const list = (mine ?? []) as unknown as Room[];
+      const active = list.find((r) => r.status !== "done");
+      setHistory(
+        list.filter((r) => {
+          const state = r.state as { hg?: unknown; ag?: unknown };
+          return (
+            r.server_seeded &&
+            r.status === "done" &&
+            Number.isInteger(state.hg) &&
+            Number.isInteger(state.ag)
+          );
+        }),
+      );
+      setRoom((cur) => cur ?? active ?? null);
+    } catch (error) {
       reportSilent("multiplayer.operation", error, {
         classification: "fatal",
         feature: "rooms",
@@ -118,7 +123,11 @@ function MultiplayerAccount({ userId }: { userId: string }) {
         dedupeKey: "rooms-refresh",
       });
       setError("Não foi possível atualizar as salas agora.");
-    });
+    }
+  }, [online, userId]);
+
+  useEffect(() => {
+    void refresh();
   }, [refresh]);
 
   // Atualização em tempo real da sala atual.
@@ -126,20 +135,38 @@ function MultiplayerAccount({ userId }: { userId: string }) {
     const roomId = room?.id;
     if (!roomId || !online) return;
     let disposed = false;
+    let inFlight = false;
     const revalidateRoom = async () => {
-      const { data } = await supabase
-        .from("match_rooms")
-        .select("*")
-        .eq("id", roomId)
-        .maybeSingle();
-      if (!disposed && data) setRoom(data as unknown as Room);
+      if (disposed || inFlight) return;
+      inFlight = true;
+      try {
+        const result = await supabase
+          .from("match_rooms")
+          .select("*")
+          .eq("id", roomId)
+          .maybeSingle();
+        const data = readMultiplayerRoomQuery(result);
+        if (!disposed && data) setRoom(data as unknown as Room);
+      } catch (error) {
+        if (!disposed)
+          reportSilent("multiplayer.operation", error, {
+            classification: "fatal",
+            feature: "rooms",
+            phase: "refresh",
+            dedupeKey: "room-revalidate",
+          });
+      } finally {
+        inFlight = false;
+      }
     };
     const channel = supabase
       .channel(`room-${roomId}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "match_rooms", filter: `id=eq.${roomId}` },
-        (payload) => setRoom(payload.new as unknown as Room),
+        (payload) => {
+          if (!disposed) setRoom(payload.new as unknown as Room);
+        },
       )
       .subscribe();
     // Reconexão automática: revalida a sala periodicamente.
@@ -225,15 +252,26 @@ function MultiplayerAccount({ userId }: { userId: string }) {
   async function joinByCode() {
     const code = joinCode.trim().toUpperCase();
     if (!code) return;
-    const { data } = await supabase
-      .from("match_rooms")
-      .select("*")
-      .eq("code", code)
-      .eq("status", "open")
-      .eq("server_seeded", true)
-      .maybeSingle();
-    if (!data) return setError("Código não encontrado.");
-    await joinRoom(data as unknown as Room);
+    try {
+      const result = await supabase
+        .from("match_rooms")
+        .select("*")
+        .eq("code", code)
+        .eq("status", "open")
+        .eq("server_seeded", true)
+        .maybeSingle();
+      const data = readMultiplayerRoomQuery(result);
+      if (!data) return setError("Código não encontrado.");
+      await joinRoom(data as unknown as Room);
+    } catch (error) {
+      reportSilent("multiplayer.operation", error, {
+        classification: "fatal",
+        feature: "rooms",
+        phase: "join",
+        dedupeKey: "room-lookup",
+      });
+      setError("Não foi possível consultar o código agora.");
+    }
   }
 
   async function leave() {
@@ -515,23 +553,38 @@ function MultiplayerAccount({ userId }: { userId: string }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  oneAvailable = true,
+}: {
+  children: React.ReactNode;
+  oneAvailable?: boolean;
+}) {
+  const copy = multiplayerAvailabilityMessages(useT().lang);
   return (
     <main className="pitch-bg min-h-[100dvh] px-4 py-10">
       <div className="mx-auto max-w-4xl">
         <ScreenHeader
           title={
             <>
-              <Swords className="text-primary" /> Multiplayer 1x1
+              <Swords className="text-primary" /> {copy.title}
             </>
           }
         />
-        <p className="mt-1 text-sm text-muted-foreground">
-          Crie uma sala, mande o código e joguem a mesma partida ao vivo, cada um no seu aparelho.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.intro}</p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-lg border border-border/60 p-3">
+            <p className="font-medium">{oneAvailable ? copy.oneAvailable : copy.oneUnavailable}</p>
+            <p className="text-xs text-muted-foreground">{copy.oneDescription}</p>
+          </div>
+          <div className="rounded-lg border border-border/60 p-3">
+            <p className="font-medium">{copy.twoPending}</p>
+            <p className="text-xs text-muted-foreground">{copy.unavailable}</p>
+          </div>
+        </div>
         <div className="mt-6">{children}</div>
         <Link to="/dashboard" className="mt-6 inline-block text-xs text-muted-foreground underline">
-          Voltar ao painel
+          {copy.backToDashboard}
         </Link>
       </div>
     </main>

@@ -4,7 +4,11 @@ import {
   syncSubscriptionForUser,
 } from "@/lib/fulfillment.server";
 import { type StripeEnv, createStripeClient } from "@/lib/stripe.server";
-import { getStoreServiceSupabase, parseStoreProductContents } from "@/lib/store-products.server";
+import {
+  getStoreServiceSupabase,
+  parseNonNegativeStoreInteger,
+  parseStoreProductContents,
+} from "@/lib/store-products.server";
 
 interface ClaimedIntentRow {
   id: string;
@@ -54,6 +58,8 @@ export async function deliverClaimedGuestPurchase(
     expand: ["line_items.data.price", "subscription"],
   });
   if (
+    session.id !== sessionId ||
+    session.livemode !== (environment === "live") ||
     session.metadata?.["guestCheckoutIntentId"] !== intent.id ||
     session.metadata?.["productKey"] !== intent.product_key
   ) {
@@ -63,27 +69,37 @@ export async function deliverClaimedGuestPurchase(
     return;
   }
 
-  const lineItem = session.line_items?.data?.[0];
-  // Preço de tabela antes dos descontos da Stripe; promoções baixam só o total.
-  const amount = lineItem?.amount_subtotal ?? session.amount_subtotal ?? 0;
-  const paymentCurrency = lineItem?.price?.currency ?? session.currency;
+  const lineItems = session.line_items;
+  const lineItem = lineItems?.data[0];
+  const listAmount = lineItem?.amount_subtotal;
   const snapshotContents = parseStoreProductContents(intent.contents_snapshot);
   if (
     !intent.stripe_price_id ||
     !snapshotContents ||
+    lineItems?.data.length !== 1 ||
+    lineItems.has_more ||
+    lineItem?.quantity !== 1 ||
     lineItem?.price?.id !== intent.stripe_price_id ||
-    amount !== intent.amount_cents ||
-    paymentCurrency?.toUpperCase() !== intent.currency
+    listAmount !== intent.amount_cents ||
+    session.currency?.toUpperCase() !== intent.currency ||
+    lineItem.price.currency.toUpperCase() !== intent.currency
   ) {
     throw new Error("O valor do pagamento não confere com a compra registrada.");
   }
 
   if (session.mode === "payment") {
-    await recordPendingPurchase(userId, intent.product_key, session.id, amount);
-    await fulfillOneTimePurchase(userId, intent.product_key, session.id, amount, {
-      priceCents: intent.amount_cents,
-      contents: snapshotContents,
-    });
+    // Use the subtotal to validate the offer and the settled total for the receipt.
+    const paidAmount = parseNonNegativeStoreInteger(session.amount_total);
+    if (paidAmount === null) throw new Error("O total do pagamento é inválido.");
+    await recordPendingPurchase(userId, intent.product_key, session.id, paidAmount);
+    await fulfillOneTimePurchase(
+      userId,
+      intent.product_key,
+      session.id,
+      listAmount,
+      { priceCents: intent.amount_cents, contents: snapshotContents },
+      paidAmount,
+    );
     return;
   }
 

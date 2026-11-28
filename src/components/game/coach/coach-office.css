@@ -441,9 +441,10 @@
 .coach-office-nav a {
   min-height: 44px;
   max-width: 100%;
-  padding-inline: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--career-line);
   white-space: normal;
-  border-radius: 0.4rem;
+  border-radius: 0.6rem;
 }
 
 .coach-office-nav a:hover,
@@ -466,4 +467,18 @@
 
 .coach-decision-review p:last-child {
   margin-block-end: 0.75rem;
+}
+
+@container career-content (max-width: 25rem) {
+  .coach-office-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    padding-inline: 0;
+  }
+  .coach-office-nav a {
+    font-size: 0.85rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
 }

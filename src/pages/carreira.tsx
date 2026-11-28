@@ -23,6 +23,7 @@ import { CoachWeekPlanner } from "@/components/game/coach/CoachWeekPlanner";
 import { CoachLeagueTable } from "@/components/game/coach/CoachLeagueTable";
 import { CoachResults } from "@/components/game/coach/CoachResults";
 import { summarizeCoachSquad } from "@/game/coach-office";
+import "@/components/game/coach/coach-office.css";
 
 import { CareerWorldPanel } from "@/components/game/CareerWorldPanel";
 

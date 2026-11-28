@@ -46,6 +46,7 @@ jobs:
           cache: npm
       - name: Preserve candidate analyzers and install one dependency graph
         run: |
+          node --test scripts/route-bundle-layers.test.mjs
           cp scripts/bundle-report.mjs "$RUNNER_TEMP/bundle-report.mjs"
           cp scripts/bundle-report-comparison.mjs "$RUNNER_TEMP/bundle-report-comparison.mjs"
           cp scripts/normalize-baseline-entities-alias.mjs "$RUNNER_TEMP/normalize-baseline-entities-alias.mjs"

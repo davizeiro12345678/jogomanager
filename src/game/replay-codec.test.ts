@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { buildTeamSetup } from "./quickMatch";
 import { MatchSim } from "./sim";
@@ -212,6 +212,60 @@ describe("versioned replay codec", () => {
     expect(playback.stats.home.goals).toBe(1);
     expect(playback.possession).toBe("away");
     expect(playback.players[0]).toMatchObject({ action: null, actionT: 0, actionDur: 0 });
+  });
+
+  it("counts exact UTF-8 replay bytes without encoding the entire frame history at once", () => {
+    const fixture = makeActionReplay();
+    const replay = {
+      ...fixture,
+      title: "Ação ⚽ 𐐷",
+      frames: Array.from({ length: 64 }, (_, i) => ({
+        ...fixture.frames[i % fixture.frames.length]!,
+        t: i,
+      })),
+    };
+    const stored = encodeReplay(replay);
+    const text = new TextEncoder();
+    const expectedV2 = text.encode(JSON.stringify(replay)).byteLength;
+    const envelope = {
+      version: stored.version,
+      id: stored.id,
+      createdAt: stored.createdAt,
+      title: stored.title,
+      home: stored.home,
+      away: stored.away,
+      meta: stored.meta,
+      score: stored.score,
+      visual: stored.frames.visual,
+    };
+    const expectedV3 =
+      text.encode(JSON.stringify(envelope)).byteLength +
+      [
+        stored.frames.timesMs,
+        stored.frames.ball,
+        stored.frames.positions,
+        stored.frames.actions,
+        stored.frames.score,
+        stored.frames.possession,
+      ].reduce((sum, value) => sum + value.byteLength, 0);
+    const original = TextEncoder.prototype.encode;
+    let largest = 0;
+    const spy = vi.spyOn(TextEncoder.prototype, "encode").mockImplementation(function (
+      this: TextEncoder,
+      input?: string,
+    ) {
+      largest = Math.max(largest, input?.length ?? 0);
+      return original.call(this, input);
+    });
+    try {
+      const report = estimateReplayBytes(replay, stored);
+      expect(report.v2Bytes).toBe(expectedV2);
+      expect(report.v3Bytes).toBe(expectedV3);
+      expect(report.reductionRatio).toBe(1 - expectedV3 / expectedV2);
+      expect(largest).toBeLessThan(expectedV2 / 2);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("reports the byte comparison used to decide whether v3 is justified", () => {

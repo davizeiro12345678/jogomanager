@@ -1,6 +1,6 @@
 import { GameShell } from "@/components/game/GameShell";
 
-import { NoCareer, ScreenHeader, StatStrip } from "@/components/game/screen-kit";
+import { NoCareer, ScreenHeader, SkeletonRows, StatStrip } from "@/components/game/screen-kit";
 
 import { CLUBS } from "@/game/data/leagues";
 
@@ -22,7 +22,14 @@ import { computeTable } from "@/game/season";
 import { financeLedgerFor, financialChange } from "@/game/financial-inputs";
 
 export function FinancesPage() {
-  const { career, update } = useCareer();
+  const { career, isLoading, update } = useCareer();
+  if (isLoading) {
+    return (
+      <GameShell career={career}>
+        <SkeletonRows />
+      </GameShell>
+    );
+  }
   if (!career) return <NoCareer />;
 
   const club = CLUBS[career.clubId]!;
@@ -123,14 +130,14 @@ export function FinancesPage() {
           },
         ]}
       />
-      <div className="mt-6 grid gap-5 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
         <section className="rounded-2xl border border-border/60 surface-card p-5">
           <h2 className="font-display text-lg">Custos e receitas recorrentes</h2>
           <dl className="mt-4 divide-y divide-border/40 text-sm">
             {rows.slice(3).map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 py-3">
+              <div key={k} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 py-3">
                 <dt className="text-muted-foreground">{k}</dt>
-                <dd className="font-medium">{v}</dd>
+                <dd className="text-end font-medium [overflow-wrap:anywhere]">{v}</dd>
               </div>
             ))}
           </dl>
@@ -189,7 +196,7 @@ export function FinancesPage() {
             Risco {forecast.risk}
           </p>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
           {OPERATING_PLAN_PRESETS.map((preset) => {
             const selected = Object.entries(preset.plan).every(
               ([key, value]) => plan[key as keyof typeof plan] === value,
@@ -210,7 +217,7 @@ export function FinancesPage() {
             );
           })}
         </div>
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <Metric label="Receita projetada" value={`${formatMoney(forecast.income)}/sem`} />
           <Metric label="Custo projetado" value={`${formatMoney(forecast.expense)}/sem`} />
           <Metric label="Folha / receita" value={`${Math.round(forecast.wageRatio * 100)}%`} />

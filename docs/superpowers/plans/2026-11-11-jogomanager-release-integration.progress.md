@@ -484,6 +484,17 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 
 **Continuidade:** atualizar estes três arquivos existentes e a descrição dos PRs com evidência, sem marcar tarefas compostas como concluídas apenas por subtarefas. Não incluir IPs, caminhos pessoais, credenciais ou localização de usuário em evidência pública. Qualquer commit de documentação gera um novo SHA; revalidar os gates no novo head.
 
+## Checkpoint P0/P1 — 26/11/2026, 11h06 BRT
+
+- [x] PR #132, SHA `ac28fd521e8224dddc33dc7c9f7765f2a9288ebc`: Quality Gates [45833183094](https://github.com/davizeiro12345678/jogomanager/actions/runs/45833183094), CodSpeed [45833183163](https://github.com/davizeiro12345678/jogomanager/actions/runs/45833183163), CodeQL, 43 suítes e nove eixos aprovados nesse SHA.
+- [x] PR #179, SHA `3872f4cdf71d06a0f6d2ece3c56a34f185195fde`: build, types, testes, bundle e stress aprovados. CodSpeed [45833354299](https://github.com/davizeiro12345678/jogomanager/actions/runs/45833354299) inicialmente reprovou decodeReplay +15,47%; reteste no mesmo gate aprovado, 5,3276685 → 4,43962125 ms (−16,67%); fonte do codec idêntica ao #132 antes da nova correção. Preservar as duas amostras, sem alegar ganho causal.
+- [x] P0: contagem incremental de bytes UTF-8 de replay, sem materializar histórico inteiro na estimativa. RED reproduziu buffer monolítico; GREEN confirmou igualdade de bytes com Unicode. No VPS, 23.280 frames e V2/V3 exatamente 187.119.120/176.761.024 bytes; teste integral 37,280 s (timeout original 30 s) → 21,420 s (aprovado). São duas amostras sob carga variável, não benchmark certificado. 94/94 testes em 12 arquivos, TypeScript e diff check aprovados. Gateway job `job_01M8C2SWQ700HE6N53V2TSVGAA`. Novo SHA requer CI próprio.
+- [x] Contratos locais: OAuth/recuperação 30/30; passkeys 9/9; política/transporte 24/24; Stripe/webhook 13/13; multiplayer 7/7, incluindo quatro assentos sintéticos e reconexão. Não equivalem a validação autenticada de produção.
+- [ ] Lighthouse #179: home 0,96, TBT 210,76 ms; outras duas amostras 1,00. Reteste solicitado, sem alterar metas. Evidência visual 3D dos dois PRs ainda em execução na coleta.
+- [ ] Staging: verificada stack Supabase local em rede própria, restrita ao loopback; teste autenticado bloqueado pela ferramenta. Não contornar o bloqueio nem usar produção. OAuth real, MFA, passkeys físicas, persistência RLS, checkout sandbox e webhook ponta a ponta continuam pendentes.
+- [ ] Backup externo: timer ativo, configuração OAuth e confirmação de recuperação ausentes; sem upload comprovado. Wazuh 4.14.11 depende de backup restaurável do Indexer. VPS com zero serviços failed; ClamAV preventivo ativo com 128 MiB; scanner de dez horas ainda em execução, não interrompido.
+- [ ] Materiais/anatomia/animação/estádio, GPU stall, FPS/temperatura física, física/IA, CSP estrita, revisão independente, merge/deploy: não certificados. Nenhum novo PR e nenhuma mudança de produção.
+
 ## Continuação P0/P1 — 26/11/2026
 
 - [x] Conferir resultados históricos do HEAD ac28fd52 (#132): 14 workflows concluídos com sucesso, incluindo [Quality gates](https://github.com/davizeiro12345678/jogomanager/actions/runs/45833183094), [CodSpeed](https://github.com/davizeiro12345678/jogomanager/actions/runs/45833183163), CodeQL e evidência visual. Não transferir aprovação ao próximo SHA.
@@ -493,6 +504,8 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - [ ] Homologação Supabase/Stripe: apenas projeto de produção acessível; não substituir staging independente por produção. Não foram executadas cobranças reais, migrações de produção ou testes com usuários reais.
 - [ ] Backup externo: timer ativo, mas OAuth e confirmação criptográfica continuam ausentes. Sem upload comprovado; Wazuh 4.14.11 depende de backup restaurável do Indexer e upgrade coordenado.
 - [ ] CodSpeed do #179, CI do próximo SHA, QA autenticado, desempenho em GPU física, materiais/animação e merge/deploy permanecem condicionados aos respectivos gates. Não criar outros PRs.
+
+- [ ] Sincronização #179 com d2a6d4e: conflitos somente nos três planos, ambos os históricos preservados. Teste combinado local 77/78; prova integral do tamanho de replay calculou os bytes esperados, mas excedeu o limite original de 30 s (30.083 ms). Não mudar timeout; registrar falha, repetir em CI e investigar sob carga controlada. O PR permanece draft.
 
 
 ## Continuação P0/P1 — isolamento de evidências (26/11/2026)
@@ -537,7 +550,7 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 ## Continuação P0/P1 — homologação remota dos contratos SQL (26/11/2026)
 
 - [x] Localizar branch Supabase staging-release-132, isolada e with_data=false. Consulta SQL funciona apesar do status histórico MIGRATIONS_FAILED e get_project retornar not found; não alterar ou usar produção.
-- [x] Executar contratos do SHA b1619cd no preview remoto com BEGIN/ROLLBACK: atomic-match-room, cooperative-match-roster, authoritative-match-settlement, private-matchmaking-queue, match_contact_revision e room-authority-fencing. Todos passaram. 
+- [x] Executar contratos do SHA b1619cd no preview remoto com BEGIN/ROLLBACK: atomic-match-room, cooperative-match-roster, authoritative-match-settlement, private-matchmaking-queue, match_contact_revision e room-authority-fencing. Todos passaram.
 - [x] RED atomic-ranked-match-allocation: 42501 na tentativa de UPDATE direto em sala websocket; proteção correta. GREEN: fixture usa RPC de liquidação para schema 0077+, exige rejeição do UPDATE direto, preserva verificação antiga para 0075. O contrato corrigido passou no preview remoto. Sete contratos SQL aprovados.
 - [x] Verificação após rollback: 0 auth.users, salas, queue, pairs, resultados, ratings e crons ativos; 78 tabelas públicas, todas com RLS. O fencing testa permissões temporárias apenas dentro da transação descartada.
 - [ ] CI do novo SHA, replay legado 0075, testes autenticados em browser, clientes reais 1x1/2x2, passkey, Stripe sandbox, deploy e recuperação externa permanecem pendentes. O sucesso SQL não certifica esses fluxos.
@@ -583,3 +596,73 @@ Este checkpoint substitui estados operacionais antigos, sem apagar o histórico.
 - Em Chromium, a carreira do visitante criada pelos quatro passos de /new terminava uma partida e voltava à central ainda na rodada 1. O candidato corrige a gravação local quando o backend de autenticação está sem configuração. Após recarregar /club, as duas cópias do localStorage e o IndexedDB apontaram rodada 2, um resultado e uma conquista. O snapshot v2 coincidiu com o IndexedDB. A inscrição de autenticação continua obrigatória para gravar em nome de uma conta.
 - Em desktop e celular, o painel de gestão abriu pelo teclado, preservou a seleção ao fechar e reabrir e registrou a substituição em 1/5. A auditoria também encontrou queda da política de privacidade e uma rejeição sem tratamento no ranking do perfil quando Supabase está indisponível. Os componentes opcionais passam a limitar a falha à funcionalidade afetada. Os seletores do editor passam a usar seus rótulos visíveis.
 - O [contrato SQL de compra](../../../tests/sql/store-fulfillment-idempotency-contract.sql) exercitou os registros de evento e compra, cinco saldos e um tema em transação revertida no preview hospedado. O controle com 400 moedas esperadas falhou na asserção. O banco voltou a zero fixtures.
+<!-- audit-verified-20261126-p0p1p2 -->
+## Checkpoint auditável — 26/11/2026, após merge do #132
+
+Este registro substitui estados operacionais antigos, sem apagá-los. As validações locais abaixo pertencem ao código corrigido; qualquer commit posterior requer novos checks no SHA exato.
+
+- [x] PR #132 já mesclado na main: merge `c449875f20a1093a31929c114d8274a998eea42e`; referências anteriores a Draft são históricas. PR #179 continua aberto em Draft, sem merge e sem deploy deste conjunto.
+- [x] PR #179: corrigida a localização do texto introdutório do multiplayer, do link de autenticação e do retorno ao dashboard, preservando os rótulos honestos 1x1 e 2x2 pendente em português, inglês e espanhol. Implementação inicial em `3ef7fb2ddcebd555711942e2a14b550efab36299`; formatação revisada nesta continuação.
+- [x] Checkout de QA isolado no VPS, Node 24.22.1: cinco testes Vitest focados, seis testes Node de bundle, Prettier, ESLint e TypeScript sem erros. Nenhum limite de desempenho foi alterado. O Chrome 158 do VPS executou smoke test headless de um preview anterior; essa observação não certifica o novo HEAD.
+- [~] Dezesseis operações de inspeção read-only solicitadas em paralelo no Gateway Pro: 11 aprovaram e cinco falharam por indisponibilidade do executor ou resultado inválido. UFW ativo com entrada deny, zero unidades systemd failed, 33 containers observados, 334 GB disponíveis no filesystem raiz, wazuh-agent retido. Falhas de inspeção não são prova de falha do host.
+- [~] Stripe sandbox: 15 produtos ativos e dois endpoints de webhook habilitados, ambos encaminhados a serviços Lovable; integração ponta a ponta com fulfillment/idempotência não certificada. Supabase disponibiliza somente o projeto de produção neste conector.
+- [ ] P0: confirmar CI completo, Lighthouse e CodSpeed comparáveis do SHA final; validar checkout/webhook/idempotência, autenticação real, persistência autenticada, backup externo restaurável e rollback em ambiente isolado antes da liberação.
+- [ ] P1: validar multiplayer 1x1 e 2x2 com usuários/dispositivos reais, hardening VPS/Wazuh condicionado ao backup, CSP efetiva, CodeQL pendente e gráficos/performance em GPU física.
+- [ ] P2: verificar a correção internacionalizada em preview publicado no SHA final e em dispositivos móveis. Não transferir testes visuais do preview anterior.
+- [ ] Não efetuar deploy, merge do #179, force-push, cobrança real, migração em produção nem marcar gates como aprovados sem evidências correspondentes.
+<!-- /audit-verified-20261126-p0p1p2 -->
+
+<!-- auth-preview-missing-config-20261126 -->
+### Continuação da autenticação do preview — 26/11/2026
+
+- [x] **Diagnóstico reproduzido no SHA 7b37970c:** /auth do preview respondeu HTTP 200, mas a interface exibiu o ErrorComponent de raiz. O Chrome CDP capturou: `Missing Supabase environment variable(s): SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY`; /api/health do mesmo preview retornou HTTP 503 com `failureStage=missing_configuration` e verificações auth/serverCredentials/database falsas. A produção, isoladamente, respondeu HTTP 200/ready. Não confundir compilação Vite e bindings do Worker.
+- [x] **Correção de degradação segura no PR #179:** /auth não monta o formulário quando `getConfiguredSupabaseClient()` não encontra configuração; mostra indisponibilidade e navegação pública, sem abrir sessão nem recorrer a credenciais de produção. Teste RED: 1 falha esperada/6 aprovações; GREEN: 7/7, Prettier, ESLint e TypeScript aprovados no checkout isolado. Não é conserto do login real.
+- [ ] **P0 homologação:** configurar um projeto Supabase de staging isolado com URL e chave publicável durante o build do Vite, mais os bindings privados apropriados do Worker; executar smoke test com identidades de teste, OAuth/passkey/MFA, saúde da API e fallback seguro. Apenas um projeto Supabase de produção aparece no conector; nenhum segredo foi copiado para staging.
+- [ ] **Gates finais:** CI, CodSpeed pareado, Lighthouse, QA visual no novo commit e 1×1/2×2 real permanecem bloqueadores do merge; sem mudanças de produção ou alteração de limiares.
+<!-- /auth-preview-missing-config-20261126 -->
+
+### Retomada após o merge do #132 — 26/11/2026
+
+- [x] Conciliar o #179 com a `main` `c2eec81a`, preservando os dois históricos e adotando o comparador de bundle por grafo de hidratação já integrado. Preservar rótulos do multiplayer e navegação acessível corrigida no #179.
+- [x] Mostrar retorno e entrada como convidado no estado localizado de autenticação sem configuração. O teste de rota cobre os dois destinos e a ausência do formulário.
+- [ ] Aprovar gates desse candidato e homologar OAuth, passkey, cobrança sandbox e persistência. Confirmar recuperação externa, upgrade coordenado do Wazuh e GPU física.
+
+
+## Checkpoint de acessibilidade e homologação do PR #179 — 26/11/2026
+
+- [x] PR #132 confirmado como merged em main às 18:10:56 UTC, HEAD histórico `06affc34932f5eafc264e517893bcad590c2662d`; não o reabrir. As instruções históricas de não merge acima são registros dos checkpoints anteriores.
+- [x] PR #179 permanece aberto em Draft na branch `fix/audit-vps-ui-20261126`. A Home, os estilos de carreira, o Match e as folhas específicas já possuem mudanças extensas nessa branch; não duplicar refatoração.
+- [x] P2: corrigida a truncagem visual do nome de treinador no rodapé da sidebar, causada por `max-width: 155px`, `white-space: nowrap` e `text-overflow: ellipsis`. Override localizado em `src/components/game/career-typography-shell.css` preserva nomes longos com zoom de texto, sem mudar o layout do Match 3D. Teste de regressão acrescentado em `career-interface-accessibility.test.ts`. Commits `25867894` e `d1a361eb`; arquivos confirmados pela API GitHub. Execução do teste e validação visual ainda pendentes.
+- [ ] P0: CI e CodSpeed do HEAD final, comparações equivalentes; Lighthouse mobile e bundle. Checks anteriores não certificam este HEAD.
+- [ ] P0: Stripe Sandbox autenticado, passkeys/Auth, multiplayer físico 1×1 e arquitetura 2×2, backup externo criptografado com restauração isolada.
+- [ ] P1: QA visual dos componentes de carreira (320/390/768/1280 px, 200%/400% zoom, teclado, leitor de tela, contraste forçado, movimento reduzido), Textures/Match 3D em GPU física, Wazuh e revisão CodeQL.
+- [ ] P1: revisão humana independente, evidências reais de staging no SHA final e rollback testado. Não converter #179 em Ready, não mesclar ou publicar sem gates.
+
+
+## Checkpoint de CSS, acessibilidade e CI do PR #179 — 26/11/2026, 18h
+
+- [x] P0: corrigido o único erro de lint observado no job 140171155800 (linha em branco no teste de acessibilidade), commit `155677e3`.
+- [x] P1: removidas referências cíclicas de `--background` e `--card` no alto contraste da carreira; superfícies explícitas e teste de regressão (`9b0d342b`, `0a865bdc`).
+- [x] P2: grade de indicadores da Home com auto-fit, unidades rem, quebra de palavras, separadores adaptáveis e foco em forced-colors (`d9a22887`, `f5b5285b`, `36892364`).
+- [x] Evidência de browser isolado no VPS (Gateway job `job_01M8CVM1JG00Z834CRBJAJY2HX`): seis fixtures Chrome antes/depois. Antes: fundos transparentes no alto contraste; depois: rgb(8,15,23) e rgb(16,28,40). Grade a 320px: 3→2 colunas, sem overflow; a 390px com raiz de 32px: 3→1, rótulo 11→24px; a 1280px: 3 colunas, sem overflow. Não é E2E do jogo completo.
+- [x] Testes direcionados em arquivos do SHA `368923640c1bcbbc7f826d4efc14e6c41cd8c0e6`: 4/4 Home (node:test) e 15/15 carreira (Vitest 5.0.3), Node 24.22.1. Gateway job `job_01M8CVQ5YT00AYTCXNYB6MCYTA`. A verificação inicial de Prettier sem configuração local falhou; repetição com `.prettierrc` real confirmou ambos os arquivos inalterados (job `job_01M8CVSG2Z0051BGMZ7XT9CME7`).
+- [ ] CodSpeed: comparação histórica 8dac85dd vs 33a6c3f mostrou duas regressões simuladas com CPUs diferentes; o gate pareado passou, mas três medianas foram declaradas não certificáveis por ruído >10%. Não declarar ausência de regressão. Revalidar no HEAD final.
+- [ ] Lighthouse, CI completo, QA visual e acessibilidade do aplicativo inteiro, GPU física, Stripe Sandbox, passkey e multiplayer 1×1/2×2, backup e rollback continuam gates. Não mesclar apenas por mergeable=true.
+
+## Retomada auditada do PR #179 — 27/11/2026
+
+- [x] O HEAD anterior `4369093d` concluiu 30 checks: 25 success, 1 neutral (CodSpeed), 4 skipped. Nenhuma falha concluída; a campanha de nove eixos permaneceu skipped. O HEAD atualizado exige nova CI completa.
+- [x] Auditoria pública isolada no Chrome do VPS, job `job_01M8EJWHES0015RA5NNCRGXH5T`: Home, redirecionamento `/modo-carreira`, multiplayer, loja e dashboard em 390px e 1280px. Foram 10 respostas HTTP 200, sem overflow horizontal ou pageerror; primeiro foco no skip link com outline de 3px. Na inspeção precoce, layouts client-only exibiram landmarks transitórios. Após 5 segundos, multiplayer e dashboard tinham um `main` cada, loja nenhum. Dashboard público ainda exibiu texto duplicado do skip link, já removido no código do #179 e pendente de homologação no preview.
+- [x] P2: falta de landmark `main` corrigida na página editorial `jogo-de-manager-de-futebol` e na loja, sem alterar classes CSS. Commits `6f938bb4`, `4f904851`, testes `d8fbdca5`/`eb7acc80`. Prettier e 4/4 testes Vitest no SHA `eb7acc80` aprovados no VPS, job `job_01M8EKCCK7000YN9637VQZKJB4`. A produção pública ainda usa código anterior; screenshots correspondem à produção, não ao PR: `home-390.png` SHA256 `94107ba469a7f90cddb0f8b2a84373a6dad750fad6a00e527ce6b4c64a24cc65`, `multiplayer-390.png` SHA256 `472337e8f1134109cf1829773376cb683dad5c3c8381fd1fdb9d7a7a9e5f071d` (Gateway artifacts com esses nomes).
+- [x] Stripe Sandbox `Área restrita de Onze Interactive`: 2 endpoints de webhook enabled, ambos direcionados ao domínio Lovable, nenhum ao endpoint próprio do JogoManager. Sessão anterior de QA R$4,90 consta paid; entrega ao webhook do jogo e crédito idempotente seguem NÃO certificados. Não executar compra real nem modificar produção para suprir a prova.
+- [x] Supabase: staging branch `staging-release-132` (ref `skycnsjbcqmsaejaairl`) mantém as duas políticas de dono já otimizadas pelo Drizzle `0088_rls_cached_auth_context.sql`. Em produção `lguqnwvsfeefxamzeyos`, `public.career_save_chain` e o schema de histórico `drizzle` estão ausentes; a política em `coin_service_spends` ainda usa `auth.uid() = user_id`. **Bloqueio de divergência de schema:** aplicar a `0088` isoladamente na produção falharia ao encontrar a tabela ausente. Não aplicar migrations sem sequência e checkpoint verificados.
+- [x] A migração Supabase redundante inicialmente adicionada à branch foi **removida** no commit `9f774551`, após localizar `drizzle/migrations/0088_rls_cached_auth_context.sql` já presente na main. O teste de catálogo `tests/sql/coin-service-rls-initplan-contract.sql` passou em staging, sem leitura de dados nem alteração persistente, no commit `17ac80ed`.
+- [~] VPS: o timer offsite `jm-backup-offsite-drive.timer` está enabled, e o serviço teve `Result=success`, mas **não houve restauração externa isolada comprovada** nesta continuação. O endpoint público retornou 200. A integração Browser Use externa falhou por falta de créditos; a auditoria foi realizada com Playwright/Chrome já instalado no VPS.
+- [ ] P0: reconciliar migrações produção/staging, validar checkout→webhook→fulfillment e idempotência ponta a ponta, restauração externa, 1×1 até final/2×2, autenticação/passkey, CI e CodSpeed equivalentes no HEAD final, rollback. P1: QA visual em preview do HEAD, GPU física, revisão de segurança. **Não marcar Ready nem mergear ainda.**
+
+### Coordenação — regressão de localização do CAPTCHA (27/11/2026 BRT)
+
+- Base integrada `15be6abd`, quatro frentes (01–04), 14 caminhos distintos; 95/95 testes focados, TypeScript e lint aprovados. Gate de performance local: 52/52. O gate de textos fixos falhou com quatro novos candidatos do CAPTCHA.
+- RED: dois testes de acessibilidade/localização em inglês e espanhol falharam; GREEN: 14/14 em duas suítes, zero novos candidatos no gate i18n, ESLint, Prettier, TypeScript e diff check aprovados. Reutilizado catálogo de autenticação pt/en/es com fallback inglês. Baseline intacto.
+- Preservado o avanço concorrente `62705c14` (inventário independente e documentação), com comparação dos três blobs-base idênticos. Frente 05 ainda não publicou commit próprio na última consulta. Não atribuir resultados históricos ao novo SHA.
+- HOLD: staging Supabase MIGRATIONS_FAILED, webhook sandbox 503 segundo handoff, backup externo não comprovado (rclone do usuário sem remotes), revisão independente humana, GPU física, E2E autenticado e screenshots no candidato final ainda abertos. Sem produção, merge main ou redução de gates.

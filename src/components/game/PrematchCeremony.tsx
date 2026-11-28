@@ -483,9 +483,16 @@ export function PrematchCeremony({
   // Enter/Espaço pula a cerimônia; a saída tem um fade rápido
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.defaultPrevented || e.repeat || e.metaKey || e.ctrlKey || e.altKey || e.isComposing)
+        return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest("button, input, select, textarea, a, [contenteditable='true']")
+      )
+        return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
-        doneRef.current();
+        completionRef.current?.complete();
       }
     }
     window.addEventListener("keydown", onKey);

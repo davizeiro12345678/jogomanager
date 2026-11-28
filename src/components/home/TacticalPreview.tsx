@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./home-tactics.css";
 
 const FORMATIONS = {
   "4-3-3": [

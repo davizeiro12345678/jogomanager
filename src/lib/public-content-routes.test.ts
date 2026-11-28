@@ -10,6 +10,8 @@ describe("public content isolation", () => {
   it("defers the new-career world while preserving existing career startup", () => {
     expect(shouldInitializeWorldOnEntry("/new")).toBe(false);
     expect(shouldInitializeWorldOnEntry("/new/")).toBe(false);
+    expect(shouldInitializeWorldOnEntry("/auth/")).toBe(false);
+    expect(shouldInitializeWorldOnEntry("/carreiras")).toBe(true);
     expect(shouldInitializeWorldOnEntry("/dashboard")).toBe(true);
     expect(shouldInitializeWorldOnEntry("/match")).toBe(true);
   });

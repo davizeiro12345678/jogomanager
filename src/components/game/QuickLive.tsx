@@ -33,7 +33,7 @@ import { createLiveMatchController, type LiveMatchController } from "@/game/simW
 import { safeClub } from "@/game/squad";
 import { CAMERA_OPTIONS } from "@/game/camera-modes";
 import { useT } from "@/i18n/provider";
-import "./career-interface.css";
+import "./match-interface.css";
 
 interface Snap {
   minute: number;
@@ -452,7 +452,14 @@ export default function QuickLive({
       </div>
 
       {done ? (
-        <MatchReport sim={sim} homeId={myId} awayId={oppId} mySide="home" onFinish={onExit} />
+        <MatchReport
+          sim={sim}
+          homeId={myId}
+          awayId={oppId}
+          mySide="home"
+          mode="quick"
+          onFinish={onExit}
+        />
       ) : null}
     </div>
   );

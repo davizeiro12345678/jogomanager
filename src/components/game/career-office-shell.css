@@ -234,13 +234,6 @@
   outline: 2px solid var(--primary);
   outline-offset: 4px;
 }
-.career-skip {
-  z-index: var(--career-z-skip, 100);
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border-radius: 8px;
-  padding: 12px 18px;
-}
 
 /* The next fixture is the central decision. The rest supports it. */
 .trainer-heading {
@@ -648,4 +641,3 @@
   font-size: 0.875rem;
   color: var(--foreground);
 }
-

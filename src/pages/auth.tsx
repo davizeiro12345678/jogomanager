@@ -13,7 +13,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { AuthCaptcha } from "@/components/security/AuthCaptcha";
+import { needsAuthCaptcha, takeCaptchaOptions } from "@/integrations/supabase/auth-captcha";
 import { needsMfaChallenge } from "@/lib/mfa-session";
 
 import { Button } from "@/components/ui/button";
@@ -62,12 +64,20 @@ export function AuthPage() {
             {copy.unavailableTitle}
           </h1>
           <p className="mt-3 text-sm text-muted-foreground">{copy.unavailableHint}</p>
-          <a
-            href={search.next ?? "/"}
-            className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
-          >
-            {copy.backToGame}
-          </a>
+          <div className="mt-4 flex flex-wrap gap-x-4">
+            <Link
+              to="/new"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
+            >
+              {copy.playAsGuest}
+            </Link>
+            <a
+              href={search.next ?? "/"}
+              className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline"
+            >
+              {copy.backToGame}
+            </a>
+          </div>
         </section>
       </main>
     );
@@ -102,6 +112,24 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
   const [mfaRequired, setMfaRequired] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
   const passkeysSupported = supportsPasskeys();
+  const captchaSiteKey = import.meta.env.VITE_AUTH_TURNSTILE_SITE_KEY?.trim() ?? "";
+  const captchaToken = useRef<string | null>(null);
+  const [captchaReady, setCaptchaReady] = useState(false);
+  const [captchaGeneration, setCaptchaGeneration] = useState(0);
+  const receiveCaptcha = useCallback((token: string | null) => {
+    captchaToken.current = token;
+    setCaptchaReady(Boolean(token?.trim()));
+  }, []);
+  const resetCaptcha = useCallback(() => {
+    receiveCaptcha(null);
+    setCaptchaGeneration((value) => value + 1);
+  }, [receiveCaptcha]);
+  const takeCaptcha = () => {
+    const options = takeCaptchaOptions(Boolean(captchaSiteKey), captchaToken);
+    if (captchaSiteKey) resetCaptcha();
+    return options;
+  };
+  const captchaBlocked = Boolean(captchaSiteKey) && !captchaReady;
 
   const checkMfa = useCallback(async () => {
     const { data, error: assuranceError } =
@@ -197,6 +225,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
   const callback = (recovery = false) =>
     `${window.location.origin}/auth?next=${encodeURIComponent(destination)}${recovery ? "&recovery=1" : ""}`;
   function switchMode(nextMode: AuthMode) {
+    resetCaptcha();
     setMode(nextMode);
     setError(null);
     setNotice(null);
@@ -240,6 +269,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
             options: {
               emailRedirectTo: callback(),
               shouldCreateUser: false,
+              ...takeCaptcha(),
             },
           });
           if (result.error) throw result.error;
@@ -252,6 +282,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
       } else if (mode === "reset") {
         const result = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: callback(true),
+          ...takeCaptcha(),
         });
         if (result.error) throw result.error;
         setNotice(
@@ -271,6 +302,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
             ? await supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password,
+                options: takeCaptcha(),
               })
             : await supabase.auth.signUp({
                 email: email.trim(),
@@ -278,6 +310,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
                 options: {
                   emailRedirectTo: callback(),
                   data: { display_name: name.trim() },
+                  ...takeCaptcha(),
                 },
               });
         if (result.error) throw result.error;
@@ -332,7 +365,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
     setError(null);
     setNotice(null);
     try {
-      const result = await supabase.auth.signInWithPasskey();
+      const result = await supabase.auth.signInWithPasskey({ options: takeCaptcha() });
       if (result.error) throw result.error;
       if (!result.data?.session) throw new Error("No passkey session");
       window.__lovableEvents?.track?.("project.account_signed_in", {
@@ -357,6 +390,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
         email: email.trim(),
         options: {
           emailRedirectTo: callback(),
+          ...takeCaptcha(),
         },
       });
       if (result.error) throw result.error;
@@ -537,13 +571,21 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
               )}
             </div>
           )}
+          {captchaSiteKey && (confirmationSent || needsAuthCaptcha(mode, otpSent)) && (
+            <AuthCaptcha
+              key={captchaGeneration}
+              siteKey={captchaSiteKey}
+              onToken={receiveCaptcha}
+              onRetry={resetCaptcha}
+            />
+          )}
           {(mode === "in" || mode === "up") && methods?.passkeys && (
             <div className="mt-4">
               <Button
                 type="button"
                 variant="outline"
                 className="min-h-11 w-full"
-                disabled={busy || !passkeysSupported}
+                disabled={busy || !passkeysSupported || captchaBlocked}
                 onClick={signInWithPasskey}
               >
                 <Fingerprint size={18} /> Entrar com chave de acesso
@@ -578,7 +620,7 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
             <Button
               type="button"
               variant="outline"
-              disabled={busy}
+              disabled={busy || captchaBlocked}
               onClick={resend}
               className="mt-4 min-h-11 w-full"
             >
@@ -706,7 +748,11 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
                 )}
                 <Button
                   type="submit"
-                  disabled={busy || (mode === "update" && !recoveryReady)}
+                  disabled={
+                    busy ||
+                    (mode === "update" && !recoveryReady) ||
+                    (needsAuthCaptcha(mode, otpSent) && captchaBlocked)
+                  }
                   className="min-h-11 w-full"
                 >
                   <Mail size={18} />
@@ -750,6 +796,8 @@ function ConfiguredAuthPage({ search }: { search: ReturnType<typeof Route.useSea
             import.meta.env.VITE_PHONE_AUTH_ENABLED === "true" && (
               <Suspense fallback={null}>
                 <PhoneAuthPanel
+                  captchaOptions={takeCaptcha}
+                  captchaBlocked={captchaBlocked}
                   onSignedIn={async () => {
                     window.__lovableEvents?.track?.("project.account_signed_in", {
                       method: "phone",

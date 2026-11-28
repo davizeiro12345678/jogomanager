@@ -8,7 +8,8 @@ import { footballTextures } from "./textures/ball";
 import { BallResponse } from "@/game/ball-response";
 import type { SimView } from "@/game/sim-contracts";
 import type { Quality } from "../Stadium3D";
-import { presentationBall } from "./stadium-ball";
+import { ballHorizontalBlend, ballShadowAppearance, presentationBall } from "./stadium-ball";
+import { softShadowTexture } from "../players/soft-shadow";
 
 export function Ball({
   sim,
@@ -27,6 +28,7 @@ export function Ball({
   const prevH = useRef(0.12);
   const spray = useRef(0);
   const textures = useMemo(footballTextures, []);
+  const shadowTexture = useMemo(softShadowTexture, []);
   const response = useMemo(() => new BallResponse(), []);
   const previous = useRef<{
     x: number;
@@ -47,7 +49,11 @@ export function Ball({
     const delta = Math.min(Math.max(0, dt), 0.05);
     const snap =
       !previous.current || Math.hypot(visualBall.x - m.position.x, visualBall.z - m.position.z) > 4;
-    const blend = snap ? 1 : 1 - Math.exp(-42 * delta);
+    const blend = ballHorizontalBlend(delta, {
+      hasVisualBall: sim.visualBall != null,
+      isHeld: sim.ball.holder != null,
+      discontinuity: snap,
+    });
     m.position.x += (visualBall.x - m.position.x) * blend;
     m.position.z += (visualBall.z - m.position.z) * blend;
     // The simulation exposes height of the centre, including the ball radius.
@@ -96,9 +102,9 @@ export function Ball({
     const s = shadow.current;
     if (s) {
       s.position.set(m.position.x, 0.015, m.position.z);
-      const k = Math.max(0.35, 1 - visualBall.height * 0.25);
-      s.scale.setScalar(k);
-      (s.material as THREE.MeshBasicMaterial).opacity = 0.36 * k;
+      const appearance = ballShadowAppearance(visualBall.height);
+      s.scale.setScalar(appearance.scale);
+      (s.material as THREE.MeshBasicMaterial).opacity = appearance.opacity;
     }
     // respingo: quicada no gramado molhado levanta água
     const p = puff.current;
@@ -144,7 +150,13 @@ export function Ball({
       )}
       <mesh ref={shadow} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.18, 16]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.36} />
+        <meshBasicMaterial
+          map={shadowTexture}
+          color="#000000"
+          transparent
+          opacity={0.34}
+          depthWrite={false}
+        />
       </mesh>
       <mesh ref={puff} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
         <ringGeometry args={[0.12, 0.3, 20]} />
