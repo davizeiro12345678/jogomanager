@@ -264,3 +264,16 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [ ] P0/P1 — Validar multiplayer 1×1 e 2×2 no aplicativo de staging, comprovar a restauração externa e executar o upgrade coordenado do Wazuh após o ensaio de recuperação.
 - [ ] P2 — Acumular a evidência visual do novo commit, incluindo Android e GPU física. O executor do navegador Android encerrou a sessão antes da interação.
 - [ ] Revalidar todos os gates no novo SHA antes de liberar o PR.
+
+
+### Coordenação das cinco frentes — 27/11/2026
+
+- [x] Confirmar integração serial de 01/02/03/04 no HEAD `15be6abd22d80806cee7d6516bab05a5ad87b76c`, árvore `78253e94a608779a4548e4670c47d307b16be9f7`. Gateway `job_01M8FT91GV005AF8G0N5F2C0X6`: quatro commits originais ancestrais, 14/14 blobs iguais, sem conflitos de arquivo ou diff-check. Não reintegrar commits. Frente 05 ainda sem diff próprio na comparação.
+- [x] Revisar diff incremental das quatro frentes: CAPTCHA e consumo único (01), recuperação invoice.paid (02), evidência documental de infraestrutura (03), retry KTX2 limitado (04). Nenhum novo bloqueio comprovado nessa leitura; não equivale a revisão independente humana ou revisão integral de todo o PR.
+- [x] CI do checkpoint anterior `6c15026f`: 10 success, 1 skipped. Não transferir para HEAD atual. No HEAD integrado, acceptance 43-suite (46090259047), segurança do ambiente público (46090258955) e QA cinematográfico (46090258942) concluídos com success na última leitura. ESLint focado e diff check local passaram; suíte integral e typecheck em execução na leitura, sem certificação.
+- [ ] P0 — Staging `fb07df1` desatualizado; health Stripe 503; 4/5 bindings, endpoint canônico desabilitado. Supabase staging MIGRATIONS_FAILED. Confirmar isolamento, provider CAPTCHA e ledger antes do E2E autenticado de login/passkey/MFA/saves, checkout e fulfillment, multiplayer 1x1/2x2. Não usar produção.
+- [ ] P0 — Restore externo criptografado e triagem de segurança incompleta; preservar acessos e evidências. Sem alteração de sudo, WAF, RLS ou configuração live.
+- [ ] P1 — Conferir CodSpeed pareado, CodeQL, Quality Gates/Lighthouse, visual nove eixos e rollback do SHA integrado. Inventário independente atual foi skipped; workflow legado só habilita #132 automaticamente e exige 850 caminhos, não reduzir limite. Revisão independente real permanece obrigatória.
+- [ ] P1/P2/P3 — Handoff 05, navegador PT-BR desktop/mobile com capturas do candidato, apito/partida real, GPU física, métricas comparáveis e ajustes de interface. Não declarar aprovação sem evidência.
+
+Referências dos handoffs: #issuecomment-7231071503, #issuecomment-7231030378, #issuecomment-7231017026, #issuecomment-7231073021. Manter PR #179 Draft/HOLD; este registro documental fica em branch de evidência para não cancelar CI concorrente. Nenhum merge em main ou deploy em produção.
