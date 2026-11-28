@@ -264,3 +264,15 @@ Este registro substitui estados operacionais antigos, sem apagá-los. As valida�
 - [ ] P0/P1 — Validar multiplayer 1×1 e 2×2 no aplicativo de staging, comprovar a restauração externa e executar o upgrade coordenado do Wazuh após o ensaio de recuperação.
 - [ ] P2 — Acumular a evidência visual do novo commit, incluindo Android e GPU física. O executor do navegador Android encerrou a sessão antes da interação.
 - [ ] Revalidar todos os gates no novo SHA antes de liberar o PR.
+
+### Coordenação das cinco frentes do #179 — 27/11/2026
+
+Protocolo: [coordenação](https://github.com/davizeiro12345678/jogomanager/pull/179#issuecomment-7230970583). Base `6c15026f`; as frentes 01–04 foram integradas com histórico preservado no HEAD concorrente `15be6abd22d80806cee7d6516bab05a5ad87b76c`. A árvore `78253e94a608779a4548e4670c47d307b16be9f7` é idêntica à candidata `2155a31411c1468ac04eb74f27715cba20558618` testada em checkout isolado; não duplicar merges. A frente 05 não tinha novo commit na última coleta.
+
+- [x] Recuperar quatro entregas e comparar os 14 arquivos distintos; revisar os diffs de Auth, pagamentos, KTX2 e documentação. Testes focados no candidato: 125/125 em 11 suítes, ESLint, TypeScript e diff check aprovados. Dependências pré-existentes compartilhadas com lockfile idêntico; CI deve instalar do zero.
+- [x] Corrigir a exclusão do #179 no workflow de inventário independente; preservar o piso histórico do #132 e exigir contagem exata do evento GitHub no #179. RED reproduzido; 6 testes Node verdes. Ensaio local enumerou 110 caminhos do candidato, inclusive uma exclusão; divergência proposital de contagem rejeitada. Inventário automatizado não equivale à revisão independente humana.
+- [x] Validar contrato SQL de fulfillment idempotente na branch isolada sem dados de produção, com rollback; zero usuários, carteiras, compras e recibos após teste. Não é entrega Stripe assinada.
+- [ ] P0: staging hospedado ainda em `fb07df1d` e Stripe health HTTP 503; reconciliar ledger Supabase `MIGRATIONS_FAILED`, configurar CAPTCHA real, completar auth/passkey/MFA/recuperação/saves autenticados, checkout sandbox e entrega assinada, 1x1/2x2 real.
+- [ ] P0: backup offsite com condição não atendida e varredura incompleta; comprovar restauração externa e triagem. Gateway/SentinelX acessíveis; nenhum acesso alterado.
+- [ ] P1/P2: apito, partidas/IA/física/arte em browser, GPU física, QA PT-BR desktop/mobile no SHA definitivo; obter entrega 05. CI completo, CodeQL, Lighthouse e CodSpeed ABBA no HEAD final, revisão independente e rollback antes de release.
+- [ ] P3: atualizar ledger com resultados finais do SHA; manter PR Draft/HOLD, sem merge na main, deploy em produção, relaxamento de gates ou alteração de segredos.
