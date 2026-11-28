@@ -134,20 +134,36 @@ async function fulfillSession(sessionId: string, userId: string, env: StripeEnv)
   await fulfillOneTimePurchase(userId, productKey, sessionId, amount, snapshot, paidAmount);
 }
 
+/** Stripe event destinations may still use pre-Basil invoice snapshots. */
+function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const legacy = invoice as Stripe.Invoice & { subscription?: string | { id: string } | null };
+  const reference =
+    invoice.parent?.type === "subscription_details"
+      ? invoice.parent.subscription_details?.subscription
+      : invoice.parent
+        ? null
+        : legacy.subscription;
+  const id = typeof reference === "string" ? reference : reference?.id;
+  if (!id && invoice.parent?.type === "subscription_details") {
+    throw new Error("Subscription invoice has no subscription reference");
+  }
+  return id || null;
+}
+
+async function reconcileSubscription(subscriptionId: string, env: StripeEnv): Promise<void> {
+  const subscription = await createStripeClient(env).subscriptions.retrieve(subscriptionId);
+  // Until a guest claims the purchase there is no account wallet to update.
+  if (!isUnclaimedGuestSubscription(subscription)) {
+    await syncSubscription(subscription, env);
+  }
+}
+
 async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
   switch (event.type) {
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      const subscription = await createStripeClient(env).subscriptions.retrieve(
-        event.data.object.id,
-      );
-      if (isUnclaimedGuestSubscription(subscription)) {
-        // The claim flow adds `userId` to the Stripe subscription before the
-        // next reconciliation. Until then there is no wallet to update.
-        break;
-      }
-      await syncSubscription(subscription, env);
+      await reconcileSubscription(event.data.object.id, env);
       break;
     }
     case "checkout.session.completed": {
@@ -234,8 +250,10 @@ async function handleWebhook(event: Stripe.Event, env: StripeEnv) {
     }
 
     case "invoice.paid": {
-      // Subscription renewals reconcile here; customer.subscription.updated
-      // already keeps the row current. Use this for extra reconciliation if needed.
+      // Recover missed or out-of-order subscription updates from the current
+      // Stripe state; standalone invoices do not grant any game entitlement.
+      const subscriptionId = getInvoiceSubscriptionId(event.data.object);
+      if (subscriptionId) await reconcileSubscription(subscriptionId, env);
       break;
     }
     default:
