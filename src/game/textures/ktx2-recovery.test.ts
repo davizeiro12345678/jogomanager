@@ -1,6 +1,6 @@
 import type { WebGLRenderer } from "three";
 import { afterEach, expect, it, vi } from "vitest";
-import { disposeKtx2, ktx2, onKtx2Ready, retainKtx2 } from "./ktx2";
+import { disposeKtx2, ktx2, needsKtx2ProceduralFallback, onKtx2Ready, retainKtx2 } from "./ktx2";
 
 const { load, alternateProfile } = vi.hoisted(() => ({
   load: vi.fn(),
@@ -102,5 +102,33 @@ it("requeues mounted material textures after the last renderer is lost and reacq
   } finally {
     release();
     unsubscribe();
+  }
+});
+
+it("retries synchronous loader failures and eventually enables the procedural fallback", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("window", {});
+  vi.stubGlobal("navigator", {});
+  load.mockImplementation(() => {
+    throw new Error("texture loader unavailable");
+  });
+  const release = retainKtx2({} as WebGLRenderer);
+  try {
+    expect(ktx2("hairDetailNormal")).toBeNull();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(needsKtx2ProceduralFallback("hairDetailNormal")).toBe(false);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(load).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(load).toHaveBeenCalledTimes(3);
+    expect(needsKtx2ProceduralFallback("hairDetailNormal")).toBe(true);
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(load).toHaveBeenCalledTimes(3);
+  } finally {
+    release();
+    disposeKtx2();
+    load.mockReset();
+    vi.useRealTimers();
   }
 });
