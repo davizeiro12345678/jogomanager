@@ -154,3 +154,15 @@ it("distinguishes invalid career creation inputs without relying on color", () =
     /\.career-create \.career-input\[aria-invalid="true"\]\s*\{[^}]*border-style:\s*dashed/s,
   );
 });
+
+it("keeps first-visit privacy controls clear of the measured mobile navigation", () => {
+  const gameShell = readFileSync(new URL("./GameShell.tsx", import.meta.url), "utf8");
+  expect(gameShell).toMatch(/outlet\?\.style\.setProperty\(\s*"--pfm-career-nav-height"/);
+  expect(gameShell).toMatch(/outlet\?\.style\.removeProperty\("--pfm-career-nav-height"\)/);
+  expect(screensCss).toMatch(
+    /#conteudo:has\(\.career-shell\)\s*>\s*\[data-pfm-consent-banner\]\s*\{[^}]*bottom:[^;]*var\(--pfm-career-nav-height/s,
+  );
+  expect(screensCss).toMatch(
+    /@media\s*\(max-width: 1179px\) and \(max-height: 32rem\)[\s\S]*position:\s*static;/,
+  );
+});

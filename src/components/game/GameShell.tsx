@@ -153,22 +153,29 @@ export function GameShell({
     setMenuQuery("");
   }, [pathname]);
   useEffect(() => {
+    // The global consent notice is a sibling of this shell. Share only the
+    // measured footer height with their common outlet, never a global override.
+    const outlet = shell.current?.closest<HTMLElement>("#conteudo");
     const measure = () => {
+      const footerHeight = `${bottomNav.current?.getBoundingClientRect().height ?? 0}px`;
       shell.current?.style.setProperty(
         "--career-header-height",
         `${header.current?.getBoundingClientRect().height ?? 0}px`,
       );
-      shell.current?.style.setProperty(
-        "--career-footer-height",
-        `${bottomNav.current?.getBoundingClientRect().height ?? 0}px`,
-      );
+      shell.current?.style.setProperty("--career-footer-height", footerHeight);
+      outlet?.style.setProperty("--pfm-career-nav-height", footerHeight);
     };
     measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    if (header.current) observer.observe(header.current);
-    if (bottomNav.current) observer.observe(bottomNav.current);
-    return () => observer.disconnect();
+    const observer =
+      typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(measure);
+    if (header.current) observer?.observe(header.current);
+    if (bottomNav.current) observer?.observe(bottomNav.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+      outlet?.style.removeProperty("--pfm-career-nav-height");
+    };
   }, []);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [signOutError, setSignOutError] = useState<string | null>(null);
