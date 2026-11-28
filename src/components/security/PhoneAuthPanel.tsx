@@ -5,7 +5,15 @@ const PHONE_NUMBER = /^\+[1-9]\d{7,14}$/;
 
 type PhoneChannel = "sms" | "whatsapp";
 
-export function PhoneAuthPanel({ onSignedIn }: { onSignedIn: () => Promise<void> }) {
+export function PhoneAuthPanel({
+  onSignedIn,
+  captchaOptions,
+  captchaBlocked = false,
+}: {
+  onSignedIn: () => Promise<void>;
+  captchaOptions?: () => { captchaToken?: string };
+  captchaBlocked?: boolean;
+}) {
   const [phone, setPhone] = useState("");
   const [channel, setChannel] = useState<PhoneChannel>("sms");
   const [code, setCode] = useState("");
@@ -43,13 +51,17 @@ export function PhoneAuthPanel({ onSignedIn }: { onSignedIn: () => Promise<void>
         await onSignedIn();
         return;
       }
+      if (captchaBlocked) {
+        setNotice("Conclua a verificação de segurança antes de solicitar o código.");
+        return;
+      }
       if (Date.now() - lastRequest < 60_000) {
         setNotice("Aguarde um minuto para solicitar outro código.");
         return;
       }
       const result = await supabase.auth.signInWithOtp({
         phone: phone.trim(),
-        options: { channel, shouldCreateUser: false },
+        options: { channel, shouldCreateUser: false, ...captchaOptions?.() },
       });
       if (result.error) throw result.error;
       setSentTo(phone.trim());
