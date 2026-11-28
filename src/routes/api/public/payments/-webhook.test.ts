@@ -336,6 +336,60 @@ describe("Stripe payment webhook lifecycle", () => {
     expect(deps.syncSubscription).toHaveBeenCalledWith(current, "sandbox");
   });
 
+  it.each([
+    {
+      parent: {
+        type: "subscription_details",
+        subscription_details: { subscription: "sub_fixture" },
+      },
+    },
+    {
+      parent: {
+        type: "subscription_details",
+        subscription_details: { subscription: { id: "sub_fixture" } },
+      },
+    },
+    { subscription: "sub_fixture" },
+  ])(
+    "reconciles a paid subscription invoice using the latest Stripe subscription (%j)",
+    async (invoice) => {
+      const current = { id: "sub_fixture", status: "active", metadata: { userId: "user_1" } };
+      deps.retrieveSubscription.mockResolvedValue(current);
+      deps.event = sessionEvent("invoice.paid", { id: "in_fixture", ...invoice });
+      expect((await post({ request: request() })).status).toBe(200);
+      expect(deps.retrieveSubscription).toHaveBeenCalledWith("sub_fixture");
+      expect(deps.syncSubscription).toHaveBeenCalledWith(current, "sandbox");
+      expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", true);
+    },
+  );
+
+  it("acknowledges a paid standalone invoice without granting a subscription", async () => {
+    deps.event = sessionEvent("invoice.paid", { id: "in_standalone", parent: null });
+    expect((await post({ request: request() })).status).toBe(200);
+    expect(deps.retrieveSubscription).not.toHaveBeenCalled();
+    expect(deps.syncSubscription).not.toHaveBeenCalled();
+  });
+
+  it("does not grant an unclaimed guest subscription on invoice.paid", async () => {
+    deps.retrieveSubscription.mockResolvedValue({
+      id: "sub_guest",
+      metadata: { guestCheckoutIntentId: "guest_fixture" },
+    });
+    deps.event = sessionEvent("invoice.paid", { id: "in_guest", subscription: "sub_guest" });
+    expect((await post({ request: request() })).status).toBe(200);
+    expect(deps.retrieveSubscription).toHaveBeenCalledWith("sub_guest");
+    expect(deps.syncSubscription).not.toHaveBeenCalled();
+  });
+
+  it("retries invoice reconciliation instead of acknowledging a transient failure", async () => {
+    deps.retrieveSubscription.mockRejectedValueOnce(new Error("temporary Stripe outage"));
+    deps.event = sessionEvent("invoice.paid", { id: "in_retry", subscription: "sub_fixture" });
+    const response = await post({ request: request() });
+    expect(response.status).toBe(503);
+    expect(deps.finishEvent).toHaveBeenCalledWith("evt_fixture", false);
+    expect(deps.syncSubscription).not.toHaveBeenCalled();
+  });
+
   it("rejects an invalid signature before writing any payment event", async () => {
     deps.verify.mockRejectedValueOnce(new Error("invalid signature"));
     expect((await post({ request: request() })).status).toBe(400);
